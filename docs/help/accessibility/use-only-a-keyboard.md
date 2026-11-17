@@ -1,4 +1,4 @@
-[Help centre](../README.md) · Accessibility · reference
+[Help centre](../README.md) · Accessibility · how-to
 <!-- help: a11y / ways -->
 
 # Use only a keyboard
@@ -25,7 +25,7 @@ moves through slide-outs and dialogs and after you do something.
 | Escape | Closes a slide-out, a dialog, a menu, the search on a phone or a help text, and gives focus back to what opened it. |
 
 Starboard has no shortcuts of a single letter, so nothing clashes with the keys of a screen reader or voice
-control. In the folder picker, the arrow keys move and open folders, and typing a letter jumps to a folder.
+control. In the folder picker, the arrow keys move and open folders, and pressing a letter jumps to a folder.
 
 ## Skip to main content
 
@@ -62,7 +62,7 @@ box that asks before doing something, such as **Delete the history?**. Both work
    belonged to, focus goes to the same control drawn again, then its row, then the heading of its section, and
    last the page's heading.
 
-![The Display and accessibility slide-out just opened: focus is on its Close button, and the page behind is dimmed](../images/a11y-slide-out-focus.png)
+![The Display and accessibility slide-out after opening: focus is on its Close button, and the page behind is dimmed](../images/a11y-slide-out-focus.png)
 
 ![The Delete the history? box over the History page, with focus on Cancel, the safe choice, so pressing Enter does not delete anything](../images/a11y-dialog-focus.png)
 
@@ -92,7 +92,7 @@ page: it stays on the same control drawn again, or moves to the nearest thing th
 - [Accessibility in Starboard](overview.md)
 - [Use a screen reader](use-a-screen-reader.md)
 - [Zoom and large screens](zoom-and-large-screens.md)
-- [Report a problem](tell-us-about-a-problem.md)
+- [Tell us about an accessibility problem](tell-us-about-a-problem.md)
 
 <!-- footer: download rights -->
 

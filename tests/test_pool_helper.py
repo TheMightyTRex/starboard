@@ -68,7 +68,7 @@ class DrivesTest(unittest.TestCase):
         c = Computer(standard())
         uses = {d["name"]: d for d in ph.drives(c.host)}
         self.assertEqual(uses["sda"]["use"], "system")
-        self.assertIn("system drive", uses["sda"]["blocked"])
+        self.assertIn("system disk", uses["sda"]["blocked"])
         self.assertEqual(uses["sde"]["use"], "in use")
         self.assertIn("RAID", uses["sde"]["blocked"])
         self.assertEqual(uses["sdb"]["use"], "free")

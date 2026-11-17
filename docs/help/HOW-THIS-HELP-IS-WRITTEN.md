@@ -1,6 +1,6 @@
 # How this help is written
 
-Starboard's help follows the shared guides in the design system, which Starboard and Storyarr both use:
+Starboard's help follows the shared guides in the design system, which Starboard uses:
 
 - [Help writing guide](https://github.com/TheMightyTRex/design-system/blob/main/docs/HELP-WRITING.md): the three
   tiers (topics, guides and the basics), the layout of each, the rules for help, screenshots, and how to get an AI
@@ -11,7 +11,7 @@ Starboard's help follows the shared guides in the design system, which Starboard
   example data (`tools/screenshots.sh`), and keep them in `docs/help/images`.
 - [Content design guide](https://github.com/TheMightyTRex/design-system/blob/main/docs/CONTENT-DESIGN.md): voice,
   words and punctuation for everything on screen and in the help. For example, settings are activated and
-  deactivated, never turned on or off.
+  deactivated, never with the words for a light switch.
 
 ## Only in Starboard
 
@@ -20,7 +20,7 @@ Starboard's help follows the shared guides in the design system, which Starboard
 - **The first line** of every article is `[Help centre](../README.md) · <Area>`, followed by the kind for a topic
   (how-to, reference or troubleshooting).
 - **The second line** says where the article is listed in the help centre's side menu:
-  `<!-- help: <area> / <group> -->`, such as `<!-- help: fix / apps -->`. The areas are the design system's seven
+  `<!-- help: <area> / <group> -->`, such as `<!-- help: fix / apps -->`. The areas are the design system's six, beside Home
   (`start`, `use`, `plugins`, `a11y`, `fix`, `dev`) and the groups are in `help-centre.json`. A new group goes there
   first. The journey, the newest thing and the problem solver on the help centre's home page are there too.
 - **Flow chart first:** every troubleshooting topic starts with a flow chart in a `flow` block, straight after its

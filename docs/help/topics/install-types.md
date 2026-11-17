@@ -140,7 +140,7 @@ read [Move your apps to Reelix](move-your-apps-to-reelix.md) for what to do with
 | You need | Basics | Full install | Everything |
 |---|---|---|---|
 | A computer running Linux Mint 22.3, Debian 13, Ubuntu Server 26.04 or Raspberry Pi OS (read [What you need](what-you-need.md)) | ✓ | ✓ | ✓ |
-| A folder or drive for your media | ✓ | ✓ | ✓ |
+| A folder or disk for your media | ✓ | ✓ | ✓ |
 | An account with a VPN provider, for the VPN | Recommended | Recommended | Recommended |
 | An account with a Usenet provider, to download from Usenet | Only for Usenet | Only for Usenet | Only for Usenet |
 | A TMDB API key, free from themoviedb.org | Recommended | Recommended | Recommended |
@@ -164,7 +164,7 @@ read [Move your apps to Reelix](move-your-apps-to-reelix.md) for what to do with
   keep their settings folders, so adding one back carries on where it left off.
 - **Add-ons:** any app can be added to any install. Go to **System**, then **Apps**, then **Install apps**, and
   select **Add** beside it under 'You can add'.
-- **Choose myself:** Install apps also lets you tick each group, and with **Advanced settings** each app.
+- **Choose myself:** Install apps also lets you tick each group, and with **More settings** each app.
 - **Apps already running** on the server are left out of a new install.
 - **Converting video** (Jellyfin for phones and browsers, or Tdarr) is the heaviest work on any install. With an
   Intel processor from 2018 or later, Jellyfin uses its video hardware.

@@ -18,7 +18,7 @@ listen in Audiobookshelf. Starboard shows what is due in Coming up, and episodes
 
 ### Find and follow a show
 
-![The Search page with example data, with Discover in the side menu (step 1), the search box (step 2) and Follow beside a radio show under Not in your library (step 3) outlined](../images/follow-radio-shows-1-search-link.png)
+![The Search page with example data, with Discover (step 1), the search box (step 2) and Follow (step 3) outlined](../images/follow-radio-shows-1-search-link.png)
 
 1. Select **Discover** in the side menu. It opens on **Search**. Or enter the name in the search box at the top
    of any page.
@@ -27,7 +27,7 @@ listen in Audiobookshelf. Starboard shows what is due in Coming up, and episodes
 3. Under **Not in your library**, **Radio** lists the shows Reelix found. Select **Follow** beside the one you want.
 4. In **Get**, choose **Every episode, old and new**, or **New episodes only**.
 5. Select **Follow this show**. The button beside it changes to **Following**, and the show appears in **Library**,
-   **Radio** within a few minutes. Reelix looks for each episode as it is broadcast.
+   **Radio** within a few minutes. Reelix searches for each episode as it is broadcast.
 
 ### Listen in Audiobookshelf
 
@@ -52,7 +52,7 @@ up Audiobookshelf yourself, do this once. After that, every episode Reelix downl
 ![The Downloads page with example data, with Activity (step 4) and The Example Hour, Lighthouses, downloading in Reelix (step 5) outlined](../images/follow-radio-shows-3-downloads.png)
 
 4. Go to **Activity**, then **Downloads**, then **Queue**.
-5. A radio episode shows the show's name and the episode's name, with **Reelix** as its app. Select it to see
+5. A radio episode shows the show's name and the episode's name, with **Reelix** as its app. Select it to show
    its details, find another copy or remove it, as for any download. Read
    [Pause, resume and remove downloads](manage-downloads.md).
 
@@ -72,7 +72,7 @@ Radio shows already in Audiobookshelf's Radio library can come into your library
 
 ## Things to note
 
-- Reelix files each episode in `media/radio`, inside the data folder. Audiobookshelf sees the same folder as
+- Reelix files each episode in `media/radio`, inside the data folder. Audiobookshelf reaches the same folder as
   `/media/radio`.
 - Coming up reads the 20 shows Reelix checked most recently. Shows beyond those are still followed and
   downloaded, but Coming up does not list them.

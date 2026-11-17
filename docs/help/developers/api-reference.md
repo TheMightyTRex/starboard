@@ -495,7 +495,7 @@ with urllib.request.urlopen(req, timeout=10) as r:
 
 ### POST /api/v1/containers/check
 
-Look for newer images of the apps' containers now.
+Check for newer images of the apps' containers now.
 
 - **Key:** a key made with Read and manage whose scopes are empty or include `apps` (your apps and their status). A key without it gets `404 not_found`.
 - **Needs:** `manage`. A read key gets `403 right_needed`. Send a JSON body; `Idempotency-Key` makes a retry safe.
@@ -1138,7 +1138,7 @@ with urllib.request.urlopen(req, timeout=10) as r:
 
 ### GET /api/v1/version
 
-Starboard's version, and the newest release when looking for new versions is active.
+Starboard's version, and the newest release when checking for new versions is active.
 
 - **Key:** any key whose scopes are empty or include `system` (processor, memory, disks and alerts). A key without it gets `404 not_found`.
 - **Fresh for:** 3600 seconds (`Cache-Control: private, max-age=3600`).
@@ -1769,7 +1769,7 @@ Parameters:
 |---|---|---|
 | `limit` | query | How many to give back; 1 to 200, 50 if left out. |
 | `cursor` | query | The next_cursor of the previous answer. |
-| `q` | query | What to look for. Required. |
+| `q` | query | What to search for. Required. |
 
 The answer:
 
@@ -1939,7 +1939,7 @@ with urllib.request.urlopen(req, timeout=10) as r:
 
 What can be updated: Starboard, Reelix, the other apps and the plug-ins.
 
-Only for keys that ticked Updates: a key with no scopes does not have them. From what Starboard already knows (its release check, the last look for app updates and the catalogues it has read): nothing is fetched to answer. running is the update running now, if any.
+Only for keys that ticked Updates: a key with no scopes does not have them. From what Starboard already knows (its release check, the last check for app updates and the catalogues it has read): nothing is fetched to answer. running is the update running now, if any.
 
 - **Key:** any key whose scopes include `updates` (updates, only when ticked). A key without it gets `404 not_found`.
 - **Fresh for:** 30 seconds (`Cache-Control: private, max-age=30`).

@@ -249,12 +249,12 @@ function showGroup() {
 // An opened collection or series, complete (owner, 12 November 2026): how many you have of how many, every one in
 // order with the missing ones as outlines, and Add missing, which adds them all to Reelix.
 async function groupComplete() {
-  const box = el("section", { class: "group-complete", "aria-label": "The whole collection" }, el("p", { class: "small muted", text: "Looking for the rest…" }));
+  const box = el("section", { class: "group-complete", "aria-label": "The whole collection" }, el("p", { class: "small muted", text: "Searching for the rest…" }));
   $(".page-head").after(box);
   $("#lib-add-missing")?.remove();
   let d;
   try { d = await api(`/api/library/group-detail?tab=${TAB}&group=${encodeURIComponent(state.group)}`); }
-  catch (e) { box.replaceChildren(notice("info", "Could not look for the rest", e.message)); return; }
+  catch (e) { box.replaceChildren(notice("info", "Could not search for the rest", e.message)); return; }
   if (!d.total) { box.remove(); return; }
   const noun = TAB === "films" ? ["film", "films"] : ["book", "books"];
   const add = el("button", { type: "button", class: "btn btn--primary" }, icon("plus"), `Add missing (${d.missing})`);
@@ -262,8 +262,8 @@ async function groupComplete() {
   add.addEventListener("click", async () => {
     const titles = d.items.filter((i) => !i.have && !i.wanted).map((i) => i.title);
     if (!await confirmDialog({ title: `Add ${titles.length} missing ${titles.length === 1 ? noun[0] : noun[1]}?`, confirm: "Add them",
-      message: [el("p", { text: TAB === "films" ? "Reelix adds each one with the collection's quality and folder, and starts looking for them."
-        : `Reelix adds each one as ${TAB === "books" ? "an ebook" : "an audiobook"} and starts looking for them.` }),
+      message: [el("p", { text: TAB === "films" ? "Reelix adds each one with the collection's quality and folder, and starts searching for them."
+        : `Reelix adds each one as ${TAB === "books" ? "an ebook" : "an audiobook"} and starts searching for them.` }),
         el("ul", {}, titles.slice(0, 30).map((t) => el("li", { text: t })))] })) return;
     add.disabled = true;
     add.textContent = "Adding…";
@@ -280,7 +280,7 @@ async function groupComplete() {
   const strip = el("ol", { class: "group-complete__strip" }, d.items.map((i) => el("li", { class: i.have ? "" : "is-missing" },
     i.poster ? el("img", { src: i.poster, alt: "", loading: "lazy" }) : el("span", { class: "group-complete__blank", "aria-hidden": "true" }),
     el("span", { class: "group-complete__title", text: i.title }),
-    el("span", { class: "small muted", text: [i.when, i.have ? "" : i.wanted ? "Wanted" : "Missing"].filter(Boolean).join(" · ") }))));
+    el("span", { class: "small muted", text: [i.when, i.have ? "" : i.wanted ? STATUS.wanted[0] : "Not requested"].filter(Boolean).join(" · ") }))));
   // Add missing at the right of the heading's line (issue #14), where a page's own buttons go.
   $(".page-head").append(el("div", { class: "actions", id: "lib-add-missing" }, add));
   box.replaceChildren(
@@ -426,7 +426,7 @@ async function radioNote() {
   const box = (title, text, action) => el("div", { id: "lib-import" }, el("div", { class: "notice", role: "status" }, icon("folder-input"),
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text })), action));
   if (!s.connected) {
-    $(".page-head").after(box("Bring in radio shows already on disk", "Reelix does not read Audiobookshelf's Radio library yet, so it cannot see the shows you have. Connect it once in Settings, Reelix, Radio.",
+    $(".page-head").after(box("Bring in radio shows already on disk", "Reelix does not read Audiobookshelf's Radio library yet, so it cannot find the shows you have. Connect it once in Settings, Reelix, Radio.",
       el("a", { class: "btn", href: "/settings-reelix.html#rx-radio-h" }, "Connect it")));
     return;
   }
@@ -585,7 +585,7 @@ function setUpBulk() {
     if (action === "delete") {
       const files = el("input", { type: "checkbox", id: "bulk-files" });
       const ok = await confirmDialog({ title: `Delete ${state.ticked.size} from your library?`, confirm: "Delete", danger: true,
-        message: "Reelix stops tracking them. Their files stay unless you tick below.",
+        message: "Reelix stops tracking them. Their files stay unless you tick Delete their files too.",
         fields: [el("label", { class: "check" }, files, el("span", { class: "check__text", text: "Delete their files too" }))] });
       if (!ok) return;
       deleteFiles = files.checked;

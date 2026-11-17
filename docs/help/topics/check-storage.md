@@ -3,8 +3,8 @@
 
 # Check free space and what is using it
 
-The Storage page shows how full each of your folders or drives is, and can sort the space by type, such as TV,
-films and books. Use it to find out how much room is left before a drive fills up.
+The Storage page shows how full each of your folders or disks is, and can sort the space by type, such as TV,
+films and books. Use it to find out how much room is left before a disk fills up.
 
 ## Before you begin
 
@@ -28,7 +28,7 @@ these ways:
 
 1. On the Storage page, find **What is using the space**.
 2. Select **Sort by type now**. The button says **Sorting by type…** while Starboard reads the folders.
-3. Wait. A large drive can take a few minutes. The charts then show the space by type, with free space.
+3. Wait. A large disk can take a few minutes. The charts then show the space by type, with free space.
 
 To sort again later, select **Sort by type again**.
 
@@ -36,15 +36,15 @@ To sort again later, select **Sort by type again**.
 
 - Sorting by type reads every file name in your folders, so it runs only when you choose. To run it on a
   schedule, change **Work out what uses the space** in **Settings**, **Performance**, under
-  **Advanced settings**. Read [Make Starboard use less of your server](make-starboard-lighter.md#background-work).
+  **More settings**. Read [Make Starboard use less of your server](make-starboard-lighter.md#background-work).
 - **Space used over time** needs **Daily record of used space** active in the same place. It shows a forecast of
   when the space runs out, after a week of readings.
-- **Drives in the pool** lists each drive in the pool, fullest first. Read
-  [What a drive pool is](../basics/what-is-a-drive-pool.md).
-- **Drives in this computer** lists every drive and where it is used. It needs Disk health set up. Read
+- **Disks in the pool** lists each disk in the pool, fullest first. Read
+  [What a disk pool is](../basics/what-is-a-drive-pool.md).
+- **Disks in this computer** lists every disk and where it is used. It needs Disk health set up. Read
   [Check your disks' health](check-disk-health.md).
 - A file shared by a download and the library counts once, for the library.
-- A drive with a Windows file system, such as NTFS, is marked as slower on Linux.
+- A disk with a Windows file system, such as NTFS, is marked as slower on Linux.
 
 ## If it does not work
 
@@ -52,14 +52,14 @@ To sort again later, select **Sort by type again**.
 - **Starboard cannot find this folder:** the folder is missing, or not shared with Starboard. Check the path,
   then run `./install.sh` again or check `compose.image.yaml`.
 - **Sorting by type is inactive:** **Work out what uses the space** is set to **Off** in **Settings**,
-  **Performance**, under **Advanced settings**.
-- **Nearly full:** free some space or add a drive before it fills. Downloads stop when there is no room. To be
+  **Performance**, under **More settings**.
+- **Nearly full:** free some space or add a disk before it fills. Downloads stop when there is no room. To be
   told before this happens, read [Activate alerts](activate-alerts.md#choose-what-to-alert-on).
 
 ## Find out more
 
 - [Check your disks' health](check-disk-health.md)
-- [Add a drive to the pool](add-a-drive-to-the-pool.md)
+- [Add a disk to the pool](add-a-drive-to-the-pool.md)
 - [Make Starboard use less of your server](make-starboard-lighter.md)
 - [Change what Starboard can access](change-what-starboard-can-access.md)
 

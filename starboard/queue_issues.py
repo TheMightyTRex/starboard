@@ -53,7 +53,7 @@ KINDS = {"sonarr": "episode", "radarr": "film", "lidarr": "album", "readarr": "b
 
 PROMPT = """You are helping me fix downloads on my home media server. Starboard (https://github.com/TheMightyTRex/starboard) is the dashboard. Reelix (or Sonarr, Radarr, Lidarr or Readarr) finds each release and imports it into the library, and a download client such as qBittorrent, NZBGet or SABnzbd fetches it.
 
-Below is every download in Starboard's queue (Activity, Downloads, Queue) that needs attention or failed. For each one:
+Here is every download in Starboard's queue (Activity, Downloads, Queue) that needs attention or failed. For each one:
 
 1. Diagnose the issue from its state and its messages.
 2. Say the most likely cause.
@@ -372,7 +372,7 @@ def gather(all_services, data_dir=None, stuck_since=None, now=None):
         item["tried"] = _tried_for(tried, item)
         seen = [v for k, v in stuck.items() if k.split("|", 1)[-1] == item["title"]]
         if seen:
-            item["tried"].insert(0, {"at": _iso(min(seen)), "what": "The watch has seen it needing attention since then (alerts for stuck downloads are active)"})
+            item["tried"].insert(0, {"at": _iso(min(seen)), "what": "The watch has found it needing attention since then (alerts for stuck downloads are active)"})
         item.pop("_app_ids", None)
     rows.sort(key=lambda i: (i["status"] != "Failed", i["app"].lower(), i["title"].lower()))
     return {"generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "count": len(rows), "apps_asked": len(asked),

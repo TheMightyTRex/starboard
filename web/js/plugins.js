@@ -3,20 +3,20 @@
 // drawn by Starboard from its manifest. A plug-in never adds code to this page.
 
 const RISK = { low: ["Low", "success"], medium: ["Medium", "warning"], high: ["High", "danger"] };
-const STATE = { installed: ["Added, not active", "muted"], enabled: ["Active", "success"], disabled: ["Inactive", "muted"], failed: ["Did not start", "danger"],
+const STATE = { installed: ["Added, not active", "muted"], enabled: STATUS.active, disabled: STATUS.inactive, failed: ["Did not start", "danger"],
   "needs-setup": ["Needs setting up", "warning"], "not-supported": ["Not supported", "danger"] };  // DASH-330
 const stateOf = (p) => p.status?.state || p.state;
 // An active plug-in that is not answering its health path, or resting after idle stop (DASH-357).
 const chipOf = (p) => {
-  if (stateOf(p) === "enabled" && p.health && p.health !== "ok") return ["Not answering", "warning"];
+  if (stateOf(p) === "enabled" && p.health && p.health !== "ok") return STATUS.notResponding;
   if (stateOf(p) === "enabled" && p.resting?.length) return ["Resting", "muted"];
   return STATE[stateOf(p)] || ["Unknown", "muted"];
 };
 const healthNote = (p) => {
   if (stateOf(p) !== "enabled") return null;
   if (p.health && p.health !== "ok") return el("div", { class: "notice", "data-tone": "warning", role: "note" }, icon("triangle-alert"),
-    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "Not answering" }),
-      el("p", { text: `It is active, but it is not answering. ${p.health}. Deactivate it and activate it again to restart it.` })));
+    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: STATUS.notResponding[0] }),
+      el("p", { text: `It is active, but it is not responding. ${p.health}. Deactivate it and activate it again to restart it.` })));
   if (p.resting?.length) return el("p", { class: "small", text: "Resting: nothing has used it for a while, so it is stopped to save memory. It starts again by itself when Starboard needs it." });
   return null;
 };
@@ -49,8 +49,8 @@ function installWarning(s, { builtin = false, opener, verb = "Install" } = {}) {
         el("div", { class: "notice", "data-tone": w.risk === "high" ? "danger" : "warning", role: "note" }, icon("triangle-alert"),
           el("div", { class: "notice__body" },
             el("span", { class: "notice__title", text: builtin ? "Installed at your own risk" : "Made by someone else, installed at your own risk" }),
-            el("p", { text: (builtin ? "It comes with Starboard, but it still runs on your server with the access below. "
-              : "Starboard checks plug-ins and keeps them in a locked-down container, but it cannot vouch for what one does with the access below. ")
+            el("p", { text: (builtin ? "It comes with Starboard, but it still runs on your server with the access in What it may do. "
+              : "Starboard checks plug-ins and keeps them in a locked-down container, but it cannot vouch for what one does with that access. ")
               + "Install it only if you trust who made it." }))),
         // The name with the risk on the same line, at the right (owner, 12 November 2026); who made it below.
         el("div", { class: "install-warning__head" }, pluginLogo(s, { compact: true }), el("strong", { text: `${s.name} ${s.version || ""}` }),
@@ -63,7 +63,7 @@ function installWarning(s, { builtin = false, opener, verb = "Install" } = {}) {
         s.new_permissions?.length ? el("div", { class: "notice", "data-tone": "warning", role: "note" }, icon("triangle-alert"),
           el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "This version asks for more" }),
             el("ul", {}, s.permissions.filter((x) => s.new_permissions.includes(x.permission)).map((x) => el("li", { text: `New: ${x.words}` }))))) : null,
-        group("It can see", "eye", w.see, "Nothing of yours."),
+        group("It can read", "eye", w.see, "Nothing of yours."),
         group("It can change", "pencil", w.change, "Nothing: it has no folder and no keys."),
         group("It can reach", "globe", w.reach, "Nothing: it runs no containers."),
         w.runs.length ? group("It runs", "server", w.runs, "") : null,
@@ -311,7 +311,7 @@ function ownLook(all) {
   const pick = (c) => Object.fromEntries(["bg", "header", "surface_raised", "surface_sunken", "text", "text_muted", "border", "accent", "accent_text"]
     .map((k) => [k, c[`color-${k.replace(/_/g, "-")}`]]));
   return { ...STARBOARD_LOOK, light: pick(p.light), dark: pick(p.dark),
-    description: `${p.label} colours from the design system, chosen above. Use it to go back from any style, as Reset style does in Display.` };
+    description: `${p.label} colours from the design system, chosen in Style and colours. Use it to go back from any style, as Reset style does in Display.` };
 }
 
 // The Styles section (owner, 12 November 2026: "you need a default option which resets the style"): Starboard's own
@@ -544,7 +544,7 @@ function rollbackButton(p, redraw, primary = false) {
 // page. The same warning as installing, with what is new, then the password.
 function updateFromAddress(p, redraw) {
   const address = el("input", { class: "input", id: `pl-${p.id}-update-address`, type: "url", placeholder: "https://", autocomplete: "off", spellcheck: "false" });
-  const go = el("button", { type: "submit", class: "btn" }, "See what is new");
+  const go = el("button", { type: "submit", class: "btn" }, "What is new");
   const form = el("form", { class: "form-stack", novalidate: true, "aria-labelledby": `pl-${p.id}-update-h` },
     el("h3", { id: `pl-${p.id}-update-h`, text: "Update from an address" }),
     field("Address of the new version", address, { hint: "The https address of its starboard-plugin.json, from the plug-in's own page." }),
@@ -683,8 +683,8 @@ function pluginPage(p, redraw) {
 
 // A plug-in's own screen (11 November 2026): a managed list the plug-in describes as data, drawn here. Rows grouped
 // with a state, Test, Activate or Deactivate, Move and Remove; Add takes an address; Test all checks everything.
-const CUSTOM_STATE = { ok: ["Works", "success"], warning: ["Slow", "warning"], problem: ["Not answering", "danger"],
-  off: ["Inactive", "muted"], unknown: ["Not tested", "muted"] };
+const CUSTOM_STATE = { ok: STATUS.running, warning: STATUS.needsAttention, problem: STATUS.notResponding,
+  off: STATUS.inactive, unknown: STATUS.notChecked };
 function customScreen(p, s) {
   const box = el("div", { class: "stack-4" }, el("p", { class: "muted", text: "Loading…" }));
   const said = el("p", { class: "small", role: "status" });
@@ -978,7 +978,7 @@ function customScreen(p, s) {
     box.replaceChildren(...[
       ...(here ? [] : noticesOf(data)), ...top, bulkPanel(data, sets),
       controls.length ? el("div", { class: "actions" }, ...controls) : null, said,
-      pool.length && !shown.length && !kids.length ? emptyState(show === "on" ? "None active" : "None inactive", "Choose All to see every one.")
+      pool.length && !shown.length && !kids.length ? emptyState(show === "on" ? "None active" : "None inactive", "Choose All to show every one.")
         : here && !pool.length && !kids.length ? emptyState(`No ${(data.title || "items").toLowerCase()} here`, null) : null,
       ...menuRows(data, kids, under), ...itemRows(data, shown), add].filter(Boolean));  // replaceChildren writes null as text
   };
@@ -1139,7 +1139,7 @@ function customScreen(p, s) {
               : chip(...(CUSTOM_STATE[it.state] || CUSTOM_STATE.unknown))), el("td", {}, btn));
         })));
       return el("section", { class: "fold" }, head, el("div", { id: panelId, class: "fold__panel" }, shown.length ? el("div", { class: "table-wrap" }, table)
-        : emptyState("None here", "Change the search or filters to see more.")));
+        : emptyState("None here", "Change the search or filters to show more.")));
     }).filter(Boolean);
     const sets = (data.bulk || []).filter((b) => !b.fold);
     box.replaceChildren(...[
@@ -1149,9 +1149,9 @@ function customScreen(p, s) {
         showFilter(data, data.items), refreshButton()),
       stay.size ? el("p", { class: "small muted", text: `Changed ${noun} stay in view while the filter is on. Select Refresh to show only those that match it now.` }) : null,
       ...chipRows, pickedBar, said,
-      sections.length ? el("div", { class: "folds" }, ...sections) : emptyState(`No ${noun} found`, "Change the search or filters to see more.")].filter(Boolean));
+      sections.length ? el("div", { class: "folds" }, ...sections) : emptyState(`No ${noun} found`, "Change the search or filters to show more.")].filter(Boolean));
   };
-  if (p.state !== "enabled") box.replaceChildren(emptyState(`${p.name} is not active`, `Activate it on State to see ${s.label.toLowerCase()}.`));
+  if (p.state !== "enabled") box.replaceChildren(emptyState(`${p.name} is not active`, `Activate it on State to show ${s.label.toLowerCase()}.`));
   else api(path).then(draw).catch((err) => box.replaceChildren(notice("info", `${p.name} did not answer`, err.message)));
   return box;
 }
@@ -1197,7 +1197,7 @@ function builtinSection(list, redraw) {
 function addPluginSection(redraw) {
   const address = el("input", { class: "input", id: "pl-address", type: "url", placeholder: "https://", autocomplete: "off", spellcheck: "false" });
   const seen = el("div", { class: "stack-4", "aria-live": "polite" });
-  const look = el("button", { type: "submit", class: "btn btn--primary", text: "See what it does" });
+  const look = el("button", { type: "submit", class: "btn btn--primary", text: "What it does" });
   const file = el("input", { type: "file", id: "pl-file", accept: ".json,application/json", class: "input" });
   const form = el("form", { class: "form-stack", novalidate: true },
     field("The plug-in's manifest address", address, { hint: "The https address of its starboard-plugin.json, from the plug-in's own page." }),
@@ -1301,7 +1301,7 @@ function zipSection() {
 // any update, with a build step first; Roll back needs nothing more.
 function updateFromZip(p, redraw) {
   const file = el("input", { type: "file", id: `pl-${p.id}-update-zip`, accept: ".zip,application/zip", class: "input" });
-  const go = el("button", { type: "submit", class: "btn" }, "See what is new");
+  const go = el("button", { type: "submit", class: "btn" }, "What is new");
   const form = el("form", { class: "form-stack", novalidate: true, "aria-labelledby": `pl-${p.id}-update-zip-h` },
     el("h3", { id: `pl-${p.id}-update-zip-h`, text: "Update from a zip file" }),
     field("The new version's zip file", file, { hint: "From the plug-in's own page. Starboard checks it before anything changes." }),
@@ -1395,7 +1395,7 @@ async function startPlugins() {
     });
     const active = r.plugins.filter((p) => p.state === "enabled").length;
     holder.replaceChildren(...setupOffers(r, null, draw),
-      section("pl-yours", "Your plug-ins", `${r.plugins.length} added, ${active} active. Each one's settings are in its own tab above.`,
+      section("pl-yours", "Your plug-ins", `${r.plugins.length} added, ${active} active. Each one's settings are in its own tab.`,
         el("ul", { class: "rows" }, r.plugins.map((p) => el("li", { class: "row" }, pluginLogo(p),  // its logo or initials (API 1.14)
           el("div", {}, el("h3", { class: "row__title" }, el("a", { href: `/settings-plugin.html?id=${encodeURIComponent(p.id)}`, text: p.name })),
             el("div", { class: "row__meta", text: [`Version ${p.version}`, p.builtin ? "Built into Starboard" : p.author && `By ${p.author}`, p.message].filter(Boolean).join(" · ") })),
@@ -1408,7 +1408,7 @@ async function startPlugins() {
               el("span", { class: "visually-hidden", text: ` for ${p.name}` })),
             stateButton(p, draw))))),
         el("div", { class: "actions" }, el("a", { class: "btn", href: "/settings-plugins-catalogue.html" }, icon("plus"), "Add a plug-in"))),
-      dangerSection("pl-all", "All plug-ins at once", "Stops every plug-in, for example while you look into a problem.", el("div", { class: "actions" }, stopAll)));
+      dangerSection("pl-all", "All plug-ins at once", "Stops every plug-in, for example while you find the cause of a problem.", el("div", { class: "actions" }, stopAll)));
   };
   draw();
 }
@@ -1422,7 +1422,7 @@ async function startCatalogue() {
     try { [r, c] = await Promise.all([api("/api/plugins"), api("/api/plugins/catalogue")]); }
     catch (e) { holder.replaceChildren(notice("danger", "Could not load the catalogue", e.message)); return; }
     holder.removeAttribute("aria-busy");
-    const ORDER = ["Look", "Accessibility", "Jellyfin", "Downloads", "Network", "Home", "System", "Apps you can add"];
+    const ORDER = ["Appearance", "Look", "Accessibility", "Jellyfin", "Downloads", "Network", "Home", "System", "Apps you can add"];
     const rank = (k) => (ORDER.includes(k) ? ORDER.indexOf(k) : ORDER.length);
     const byKind = (list) => {
       const kinds = new Map();
@@ -1444,7 +1444,7 @@ async function startCatalogue() {
     const entry = (e) => {
       let side;
       if (e.added) side = el("a", { class: "btn btn--quiet btn--compact", href: `/settings-plugin.html?id=${encodeURIComponent(e.id)}` }, icon("circle-check"), "Added");
-      else if (!e.published || !e.manifest) side = chip("Coming soon", "muted");
+      else if (!e.published || !e.manifest) side = chip("Not published", "muted");
       else {
         side = el("button", { type: "button", class: "btn btn--compact" }, icon("plus"), "Install…", el("span", { class: "visually-hidden", text: ` ${e.name}` }));
         side.addEventListener("click", async () => {
@@ -1523,7 +1523,7 @@ function sourcesSection(cats, redraw) {
     })();
     return el("li", { class: "row row--no-lead" },
       el("div", {}, el("div", { class: "row__title", text: cat.own ? "The Starboard plug-ins collection" : cat.name }),
-        el("div", { class: "row__meta row__meta--wrap", text: [`${cat.count} plug-in${cat.count === 1 ? "" : "s"}`, cat.url, cat.error && "Not answering"].filter(Boolean).join(" · ") })),
+        el("div", { class: "row__meta row__meta--wrap", text: [`${cat.count} plug-in${cat.count === 1 ? "" : "s"}`, cat.url, cat.error && STATUS.notResponding[0]].filter(Boolean).join(" · ") })),
       el("div", { class: "row__side" }, side));
   });
   return section("pl-sources", "Catalogue sources", "Where this page finds plug-ins. Add another catalogue by its link; each is read at most once a day.",

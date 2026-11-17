@@ -28,7 +28,7 @@ q: Which number did it give?
 5: Starboard's installer #starboards-installer
 ```
 
-## How an error looks
+## What an error says
 
 1. When the script or the installer stops, its last lines say why, then give the error number and the address of
    its help on this page.
@@ -51,12 +51,12 @@ q: Which number did it give?
 ### RF-01
 
 **An option the script does not know.** The command has a word after `bash` that the script does not use, often a
-typing mistake. Run it with no options, or with one of `--browser`, `--terminal`, `--plain`, `--yes`, `--dir` or
+spelling mistake. Run it with no options, or with one of `--browser`, `--terminal`, `--plain`, `--yes`, `--dir` or
 `--check`. Run it with `--help` for what each does.
 
 ### RF-02
 
-**No terminal to type in.** The script was started somewhere it cannot ask questions, such as from another
+**No terminal to enter answers in.** The script was started somewhere it cannot ask questions, such as from another
 program or a scheduled job. Run it in a terminal window, or add `--yes` to accept every safe answer without being
 asked.
 
@@ -133,8 +133,8 @@ install Docker by hand with [Install Docker](install-docker.md).
 ### RF-16
 
 **Your user is not allowed to install software.** Run the script as the user you made when installing Linux, or
-ask whoever looks after this computer to add you to the `sudo` group. On Debian, this happens when a root
-password was set while installing: see [RF-18](#rf-18).
+ask the person who manages this computer to add you to the `sudo` group. On Debian, this happens when a root
+password was set while installing: read [RF-18](#rf-18).
 
 ### RF-17
 
@@ -200,7 +200,7 @@ yourself to [change what Starboard can access](change-what-starboard-can-access.
 
 ### IN-02
 
-**--terminal needs a terminal to type in.** Run it in a terminal window, or leave out `--terminal` and finish in a
+**--terminal needs a terminal to enter answers in.** Run it in a terminal window, or leave out `--terminal` and finish in a
 browser.
 
 ### IN-03
@@ -269,7 +269,7 @@ folder, or move Starboard to a folder without them.
 
 ### IN-16
 
-**sudo did not accept the password, or there is nowhere to type it.** Disk health and Drive pools need sudo. Run
+**sudo did not accept the password, or there is nowhere to enter it.** Disk health and Disk pools need sudo. Run
 `./install.sh` in a terminal and enter the password you use to sign in to this computer.
 
 ### IN-17

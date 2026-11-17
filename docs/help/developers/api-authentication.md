@@ -8,7 +8,7 @@ can read, how long it lasts, and the limits on it. To make one and use it, read 
 
 ## What a key is
 
-- A key looks like `sb_read_a1b2c3_` or `sb_manage_a1b2c3_` and a long secret: `sb`, its right, its id (six
+- A key has the form `sb_read_a1b2c3_` or `sb_manage_a1b2c3_` and a long secret: `sb`, its right, its id (six
   letters and numbers), then the secret.
 - Starboard shows the key once, when it is made. It keeps only the key's SHA-256 fingerprint, so nobody can read
   the key back, Starboard included.
@@ -33,7 +33,7 @@ A key anywhere else, such as in the address (`?key=...`), is not read, and the c
 | Right | Shown as | What it allows |
 |---|---|---|
 | `read` | **Read only** | Read what the API offers |
-| `manage` | **Read and manage** | Read, and the everyday actions of the pages: approve or decline a request, remove or block a download, pause or resume downloads, build a Library tab again, look for container updates, run a Jellyfin job and send a test alert. With **Updates** ticked, also update Starboard, Reelix, an app or a plug-in, and roll a plug-in back (API 1.2.0) |
+| `manage` | **Read and manage** | Read, and the everyday actions of the pages: approve or decline a request, remove or block a download, pause or resume downloads, build a Library tab again, check for container updates, run a Jellyfin job and send a test alert. With **Updates** ticked, also update Starboard, Reelix, an app or a plug-in, and roll a plug-in back (API 1.2.0) |
 
 Every address that changes something is a `POST`, marked **Needs:** `manage` in the [API reference](api-reference.md).
 A read key gets `403` [`right_needed`](../../api/errors.md#right_needed) there.
@@ -45,13 +45,13 @@ version Starboard already found, with the same backup, health check and way back
 person signed in to Starboard. Read [What the API covers](api-coverage.md) for every page action and its right.
 
 A key's scopes narrow what it reads and does. A key with no scopes reaches everything its right allows. In
-**Settings**, **Security**, **What it may see**, tick only what the app or script needs. Plug-in keys only read, with
+**Settings**, **Security**, **What it may read**, tick only what the app or script needs. Plug-in keys only read, with
 the scopes of the read permissions the person approved. Read
 [The plug-in's API key](plugin-api-reference.md#the-plug-ins-api-key).
 
 | Scope | Shown as | What it covers |
 |---|---|---|
-| `apps` | **Apps** | `/apps`, `/apps/{id}`, `/status`, `/health`, `/uptime`, `/app-updates`, `/numbers` and `/containers`; looking for container updates |
+| `apps` | **Apps** | `/apps`, `/apps/{id}`, `/status`, `/health`, `/uptime`, `/app-updates`, `/numbers` and `/containers`; checking for container updates |
 | `downloads` | **Downloads** | `/downloads`, `/downloads/issues`, `/transfer`, `/download-hours` and `/history`; download actions and download hours |
 | `media` | **Media** | `/recent`, `/playing`, `/calendar` and `/extras`; running a Jellyfin or Audiobookshelf job |
 | `library` | **Library** | `/library`, `/library/search` and `/library/status`; building a tab again |
@@ -75,7 +75,7 @@ and the VPN's own internet address is left out.
   [`too_large`](../../api/errors.md#too_large).
 - Send an `Idempotency-Key` header, such as a new random value for each action, to make a retry safe: the same key
   and value within 24 hours gets the first answer again, with `Idempotent-Replayed: true`, and nothing is done twice.
-- Work that takes a while, such as building a Library tab, answers `202` with `status`, the address to read to see
+- Work that takes a while, such as building a Library tab, answers `202` with `status`, the address to read to find out
   how it went.
 - Every change made with a key is written to the audit log with the key's id, the address and the answer.
 

@@ -29,7 +29,7 @@ four layouts. You can choose another layout, add and remove cards, and change ea
    - Select the up or down arrow to move it earlier or later.
    - Select **Remove** to take it off the dashboard.
 
-   ![Edit dashboard with example data, with the Picture shrinker card's size set to Small, its arrows and Remove (step 5) outlined; at this size its title is Space saved](../images/use-the-dashboard-3-card.png)
+   ![Edit dashboard with example data, with a card's size, arrows and Remove (step 5) outlined](../images/use-the-dashboard-3-card.png)
 
 6. Select **Save**. Starboard confirms with **Dashboard saved**.
 
@@ -69,11 +69,11 @@ the right of the band, a status and when the card was updated show when the card
 **Nearly full** on **Disk space**. A small card shows only the status's icon, so the band stays on one line.
 **Still to set up** has **Go through them** at the right of its band.
 
-![The small cards at the foot of the dashboard with example data: each has a grey band with its logo and name, and the small VPN card's band, which shows only the status chip's icon, is outlined](../images/use-the-dashboard-4-band.png)
+![The small cards at the foot of the dashboard with example data, each with its grey band, the VPN card's band outlined](../images/use-the-dashboard-4-band.png)
 
 ## Things to note
 
-- Your choice is saved to your account, so the dashboard looks the same on each device you sign in from.
+- Your choice is saved to your account, so the dashboard is the same on each device you sign in from.
 - **Still to set up** stays first while anything is left to set up, and cannot be removed. It goes by itself
   when everything is done.
 - Cards update once a minute while the page is in view. A hidden tab asks for nothing.

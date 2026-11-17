@@ -83,7 +83,7 @@ Rules for every step:
 ## Find out more
 
 - [Get Starboard up and running, from a bare computer](../guides/get-up-and-running.md)
-- [The terminal: typing commands](../basics/the-terminal.md)
+- [The terminal: entering commands](../basics/the-terminal.md)
 - [Send feedback about a page](send-feedback.md)
 
 <!-- footer: download rights -->

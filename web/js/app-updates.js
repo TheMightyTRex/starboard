@@ -40,13 +40,13 @@ function statusCell(row) {
   const done = lastResult(row);
   // The chip holds no version (DASH-309, R3): the version is in the small line beside it.
   if (done?.phase === "done") return [chip("Updated", "success"), done.version ? el("div", { class: "small muted", text: `Now ${done.version}` }) : null];
-  if (done?.phase === "failed") return [chip("Update failed", "danger"), el("div", { class: "small", text: done.error || "" })];
+  if (done?.phase === "failed") return [chip(...STATUS.failed), el("div", { class: "small", text: done.error || "" })];
   if (!row.container) return chip("No container found", "muted");
-  if (row.update) return chip(row.big_change ? "Big change: check first" : "Update available", row.big_change ? "warning" : "info");
+  if (row.update) return chip(...(row.big_change ? STATUS.checkFirst : STATUS.updateAvailable));
   if (row.error) return [chip("Cannot check", "muted"), el("div", { class: "small muted", text: row.error })];
-  if (data.checked_at && !row.unknown) return chip("Up to date", "success");
+  if (data.checked_at && !row.unknown) return chip(...STATUS.upToDate);
   if (data.checked_at) return chip("Cannot check", "muted");
-  return chip("Not checked yet", "neutral");
+  return chip(...STATUS.notChecked);
 }
 
 function actionCell(row) {
@@ -145,9 +145,9 @@ function showUnavailable() {
   $("#check-updates").disabled = true;
   $("#updates-notice").replaceChildren(el("div", { class: "notice", role: "status" }, icon("info"),
     el("div", { class: "notice__body" },
-      el("span", { class: "notice__title", text: "Starboard cannot see your containers" }),
+      el("span", { class: "notice__title", text: "Starboard cannot reach your apps' containers" }),
       el("p", {}, "To check and install updates, Starboard needs access to Docker on the server. That access is full control of Docker, so it is inactive unless you choose it. ",
-        el("a", { href: "/settings-updates.html#access", text: "See what Starboard can access and how to change it" }), "."))));
+        el("a", { href: "/settings-updates.html#access", text: "What Starboard can access, and how to change it" }), "."))));
 }
 
 async function refresh() {

@@ -304,7 +304,8 @@ async function renderSetupLeft() {
       el("p", { text: `${todo.length} of ${r.items.length} left${done ? `, ${done} done` : ""}. Each one goes from this list when it is done.` }),
       el("details", { class: "setup-left__list", open: wasOpen }, el("summary", { text: "Show what is left" }),
         el("ul", { class: "stack-2" }, todo.map((i) => el("li", {},
-          el("a", { href: i.href.startsWith("http") ? reachableUrl(i.href) : i.href, text: i.title, ...(i.guided && i.href.startsWith("http") ? { target: "_blank", rel: "noopener" } : {}) }),
+          el("a", { href: i.href.startsWith("http") ? reachableUrl(i.href) : i.href, text: i.title, ...(i.guided && i.href.startsWith("http") ? { target: "_blank", rel: "noopener" } : {}) },
+            i.guided && i.href.startsWith("http") ? el("span", { class: "visually-hidden", text: " (opens in a new tab)" }) : null),
           el("span", { class: "small muted", text: ` ${i.why}` })))))),
     walk), ignoredItems.length ? el("p", { class: "small muted" }, `${ignoredItems.length} ignored. `, back) : "");
   box.hidden = false;

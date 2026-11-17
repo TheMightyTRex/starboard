@@ -39,7 +39,7 @@ class Warning(unittest.TestCase):
     def test_styles_only(self):
         w = plugins.install_warning(manifest(containers=[], permissions=["appearance:styles"]))
         self.assertEqual((w["reach"], w["runs"]), ([], []))
-        self.assertTrue(w["change"][0].startswith("How Starboard looks"))
+        self.assertTrue(w["change"][0].startswith("Starboard's appearance"))
 
     def test_in_summary(self):
         self.assertIn("warning", plugins_admin.summary(manifest()))

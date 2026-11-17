@@ -26,7 +26,7 @@ each issue, say the likely cause, the fix to try in Starboard or Reelix, and wha
 3. Optional: select **Show what was copied** to read it first. Keys, passwords and private addresses are taken
    out.
 
-   ![The Copied 1 issue for an AI helper notice, with Show what was copied (step 3) open and outlined](../images/copy-download-issues-2-copied.png)
+   ![The Copied 1 issue for an AI helper notice, with Show what was copied (step 3) open and outlined, with example data](../images/copy-download-issues-2-copied.png)
 
 4. Paste it into a chat with your AI helper and send it.
 
@@ -49,10 +49,10 @@ For each download that needs attention or failed:
 - its size, how far it got, the time left and how long ago it was added
 - the indexer it came from, the protocol and the quality
 - the download app, and the download's id in it
-- where it downloaded to, as the app sees it inside its container
+- where it downloaded to, as the path inside the app's container
 - its ids in Reelix or in the app
 - what Starboard already tried, such as **Try the import again** or **Choose the episode**, and since when the
-  watch has seen it needing attention
+  watch has found it needing attention
 
 ## Things to note
 
@@ -68,7 +68,7 @@ For each download that needs attention or failed:
 
 ## If it does not work
 
-- **It says No issues to copy:** nothing in the queue needs attention or failed. To see everything, read
+- **It says No issues to copy:** nothing in the queue needs attention or failed. For everything in the queue, read
   [Pause, resume and remove downloads](manage-downloads.md).
 - **It says the browser did not let Starboard copy:** select the text it shows and copy it yourself, or select
   **Download as Markdown**.

@@ -68,7 +68,7 @@ async function tdDraw(said, box = $("#tdarr-sections"), inPlugin = false) {
   const libs = el("fieldset", { class: "stack-2" }, el("legend", { class: "field__label", text: "Libraries" }),
     ...[["films", "Films", "/media/movies"], ["series", "Series", "/media/tv"]].map(([k, label, folder]) => el("label", { class: "check" },
       el("input", { type: "checkbox", name: `lib-${k}`, checked: saved.libraries[k] || !Object.values(saved.libraries).some(Boolean) }),
-      el("span", { class: "check__text" }, el("strong", { text: label }), el("span", { class: "check__hint", text: `Tdarr sees it as ${folder}` })))));
+      el("span", { class: "check__text" }, el("strong", { text: label }), el("span", { class: "check__hint", text: `Tdarr names it ${folder}` })))));
   const mode = el("fieldset", { class: "stack-2" }, el("legend", { class: "field__label", text: "What Tdarr does" }),
     el("div", { class: "option-cards" },
       tdChoice("mode", "save_space", "Save space", "Converts to H.265 and keeps the new file only when it is smaller. Same picture, often half the size.", s.mode === "save_space"),

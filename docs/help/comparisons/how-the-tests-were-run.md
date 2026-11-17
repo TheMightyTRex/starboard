@@ -53,7 +53,7 @@ testing in a browser, and the swap was full, with 3.0 to 6.7 GiB of memory free.
 
 - **Memory figures are lower than on a quiet computer.** When memory runs short, Linux takes back file cache that
   Docker counts as an app's memory. This happened to every app, so the apps still compare fairly with each other.
-- **Processor figures at rest are still fair,** because each container's own use is measured. Short peaks can look
+- **Processor figures at rest are still fair,** because each container's own use is measured. Short peaks can seem
   longer, because an app may wait for a free processor.
 - **Compare apps within one run.** The same test on 4 November 2026 gave higher figures for every app. Compare
   figures from the same day, not across days.
@@ -121,7 +121,7 @@ are different. The apps should still come out in about the same order.
 - [How Starboard compares with other media server stacks](how-starboard-compares.md)
 - [Find out what each app is using](../topics/monitor-apps.md)
 - [What Docker is](../basics/what-is-docker.md)
-- [The terminal: typing commands](../basics/the-terminal.md)
+- [The terminal: entering commands](../basics/the-terminal.md)
 
 <!-- footer: download rights -->
 

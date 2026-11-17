@@ -24,7 +24,7 @@ HELP.update({
     "settings": "Each part of Starboard's settings that can be changed here. Everything here can also be changed in "
                 "Starboard's Settings pages from a browser. Type q to close the settings at any time; nothing changes "
                 "until you choose it.",
-    "updates": "Look for new versions: Starboard checks GitHub once a day and says on Settings, Updates and in the "
+    "updates": "Check for new versions: Starboard checks GitHub once a day and says on Settings, Updates and in the "
                "side menu when a new version is out. Install Starboard updates automatically: in the quiet hours "
                "(your download hours when they are set, otherwise 01:00 to 06:00), Starboard installs its newest "
                "release with ./update.sh, which backs up its settings first and goes back by itself if the new version "
@@ -54,7 +54,7 @@ def releases(folder=".", run=None):
 
 def sign_in(api, term):
     term.heading("Sign in")
-    term.note("Type your Starboard password, the one you sign in with from a browser.")
+    term.note("Enter your Starboard password, the one you sign in with from a browser.")
     for _ in range(5):
         password = term.hidden("Your Starboard password", help_key="settings-password")
         term.typed.add(fingerprint(password))  # never in a feedback report
@@ -76,14 +76,14 @@ def automatic_updates(api, term, version, folder="."):
         has_reelix = any(s.get("icon") == "reelix" or s.get("type") == "reelix" for s in cfg.get("services", []))
         term.heading("Automatic updates")
         term.card("Now", [("Starboard", version or "unknown version"),
-                          ("Look for new versions", ON if check else OFF),
+                          ("Check for new versions", ON if check else OFF),
                           # DASH-417: the same words and order as Settings, Updates in the browser
                           ("Install Starboard updates automatically", ON if mine else OFF),
                           ("Install Reelix updates automatically", (ON if reelix else OFF) if has_reelix else "No Reelix yet"),
                           ("Your apps", "Updated from Apps, Updates, when you choose")])
         # Nothing to change is the recommended answer, first, so Enter never changes a setting by mistake.
         options = [("Done: back to the settings (recommended)", "Nothing changes."),
-                   ("Look for new Starboard versions: " + ("deactivate" if check else "activate"),
+                   ("Check for new Starboard versions: " + ("deactivate" if check else "activate"),
                     "Starboard says when a new version is out."),
                    ("Install Starboard updates automatically: " + ("deactivate" if mine else "activate"),
                     "In the quiet hours, with its settings backed up first and a way back if it does not start."),
@@ -96,9 +96,9 @@ def automatic_updates(api, term, version, folder="."):
         name = options[picked][0]
         if name.startswith("Done"):
             return
-        if name.startswith("Look for new"):
+        if name.startswith("Check for new"):
             api.call("PUT", "/api/config/general", {"update_check": not check})
-            term.ok(f"Look for new versions is now {(OFF if check else ON).lower()}.")
+            term.ok(f"Check for new versions is now {(OFF if check else ON).lower()}.")
         elif name.startswith("Install Starboard"):
             api.call("PUT", "/api/config/general", {"starboard_auto_update": not mine})
             term.ok(f"Install Starboard updates automatically is now {(OFF if mine else ON).lower()}.")
@@ -141,7 +141,7 @@ def main(argv=None):
     parser.add_argument("--plain", action="store_true", help="Plain lines with no boxes, colour or redrawing, for a screen reader")
     args = parser.parse_args(argv)
     if not sys.stdin.isatty():
-        print("Stopped: this needs a terminal to type in. Change the settings in a browser instead.", file=sys.stderr)
+        print("Stopped: this needs a terminal to enter answers in. Change the settings in a browser instead.", file=sys.stderr)
         return 2
     plain = bool(args.plain or os.environ.get("STARBOARD_PLAIN"))
     term = Terminal(fancy=False if plain else None)

@@ -76,9 +76,9 @@ def save_mapping(reelix, body):
     if not _HOST.match(host):
         raise ValueError("Choose the download app's host, as Reelix's Download apps list it")
     remote = _clean_path(body.get("remote"), "The folder the download app reports")
-    local = _clean_path(body.get("local"), "The folder Reelix sees")
+    local = _clean_path(body.get("local"), "The folder inside Reelix")
     if not local.startswith("/"):
-        raise ValueError("The folder Reelix sees starts with /")
+        raise ValueError("The folder inside Reelix starts with /")
     payload = {"host": host, "remote_path": remote, "local_path": local}
     if body.get("id"):
         reelix.call("PUT", f"/remotepathmappings/{int(body['id'])}", payload)

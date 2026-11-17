@@ -22,7 +22,7 @@ from . import plugins_admin as pa
 STATES = {
     "needs-setup": ("Fill in its settings, then activate it.", "Set it up", "settings"),
     "not-supported": ("This Starboard is newer than this version was made for, so it is stopped. An update may fix it.",
-                      "Look for an update", "update"),
+                      "Check for an update", "update"),
     "failed": ("It did not start, or stopped answering.", "Try again", "enable"),
 }
 

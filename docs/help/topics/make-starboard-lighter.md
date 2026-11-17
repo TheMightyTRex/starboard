@@ -17,10 +17,10 @@ you choose a preset, or activate and deactivate each piece of work one by one.
    - **Everything:** everything on and as fresh as it goes, including watching every 5 minutes with a weekly
      summary.
    - **Custom:** your own choices. Changing any single item yourself makes the preset **Custom**.
-3. Optional: to change single items, activate **Advanced settings**. Then change any item under
+3. Optional: to change single items, activate **More settings**. Then change any item under
    **Background work** or **While a page is open**. Each one applies at once.
 
-With **Advanced settings** active, **Starboard now** also shows Starboard's own **Memory**, its **Processor** use
+With **More settings** active, **Starboard now** also shows Starboard's own **Memory**, its **Processor** use
 and what is **Running**.
 
 ## What each item costs
@@ -42,7 +42,7 @@ This runs with no page open.
 - **Keep applying imported history:** up to 40 MB more memory for about 20 seconds an hour.
 - **Jellyfin user defaults:** two small requests per Jellyfin user an hour.
 - **Keep applying listening progress:** one reading of Audiobookshelf an hour, under a second of processor.
-- **Work out what uses the space:** reads every file name in your folders. A few minutes for a large drive, so
+- **Work out what uses the space:** reads every file name in your folders. A few minutes for a large disk, so
   it runs only when you choose. Read [Check free space and what is using it](check-storage.md#sort-the-space-by-type).
 - **Daily record of used space:** one size check a day. Nothing noticeable.
 - **Posters on Coming up and the Library:** a small download per new poster, kept for a week. When it is

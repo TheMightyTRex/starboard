@@ -3,14 +3,14 @@
 
 # Change text size, theme and other display settings
 
-The **Display and accessibility** panel changes how Starboard looks and moves for you: light or dark, bigger text,
+The **Display and accessibility** panel changes Starboard's colours, text and movement for you: light or dark, bigger text,
 higher contrast, less movement, underlined links, wider spacing, the design of the Apps page and styles from
 plug-ins. Each choice applies at once, is kept in the browser you use, and is undone the same way.
 
 ![Where Display is in the header, and a table of what each setting in the Display and accessibility panel changes](../images/a11y-display-map.svg)
 
 The diagram shows the Display button as the last item in the header, and each setting with its choices and what it
-changes. The same information is in the table below.
+changes. The same information is in **The choices**.
 
 ## Steps
 
@@ -18,7 +18,7 @@ changes. The same information is in the table below.
    Sign in and the set-up. A slide-out opens, called **Display and accessibility**, with focus on its **Close**
    button.
    ![The Apps page with example data, with Display at the end of the header (step 1) outlined](../images/display-and-accessibility-1-button.png)
-2. Make any of the choices in the table below. Each one applies at once, so you see the result behind the panel
+2. Make any of the choices in **The choices**. Each one applies at once, and the page behind the panel changes
    straight away.
 3. Select **Done**, or press Escape. Focus goes back to **Display**.
    ![The Display and accessibility slide-out open over the Apps page, with Theme (step 2) and Done (step 3) outlined](../images/display-and-accessibility-2-panel.png)
@@ -54,7 +54,7 @@ accessibility before it can be chosen: every colour pair must meet WCAG 2.2 AA, 
 shows in the Display panel only when an active plug-in has styles. Read [Add a plug-in](add-a-plugin.md).
 
 1. Select **Display** in the header.
-2. Under **Style**, choose a style. **Starboard's own style** is the standard look.
+2. Under **Style**, choose a style. **Starboard's own style** is the standard style.
 3. Select **Done**.
 
 To go back to Starboard's own style, select **Reset style** under the list. **High contrast**, text size, wider
@@ -73,7 +73,7 @@ spacing, underlined links and reduced motion always win over a style.
 - **Match device** uses the light, dark and motion settings of your phone or computer, so Starboard changes when
   they do.
 - Starboard is built to WCAG 2.2 AA (Web Content Accessibility Guidelines), with large controls. Its typeface,
-  Atkinson Hyperlegible Next, is designed to be easy to read for people with low vision, so there is no separate
+  Atkinson Hyperlegible Next, is designed for readers with low vision, so there is no separate
   font setting.
 
 ## If it does not work

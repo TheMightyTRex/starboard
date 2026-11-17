@@ -15,7 +15,7 @@ stops you, or you find something that is not listed, [report a problem](tell-us-
 ## What is not tested yet
 
 - **Real screen readers:** Starboard has not yet been listened to with NVDA, JAWS, VoiceOver, TalkBack or Orca by a
-  person. The automated checks look at what a screen reader would be given, not at what each one says.
+  person. The automated checks read what a screen reader would be given, not at what each one says.
 - **People who use assistive technology:** no testing yet with people who use screen readers, switch access, voice
   control or magnifiers every day.
 - **Browsers:** the automated checks run in Chromium, the engine of Chrome and Edge. Firefox and Safari are not part
@@ -41,7 +41,7 @@ stops you, or you find something that is not listed, [report a problem](tell-us-
 
 ## What Starboard cannot control
 
-![What Starboard controls, and what it does not: its own pages; plug-in styles and cards, checked but made by others; and Jellyfin, Reelix's own pages, other apps and your own tools, outside its control](../images/a11y-who-controls.svg)
+![Diagram of what Starboard controls and what it does not](../images/a11y-who-controls.svg)
 
 - **Starboard's own pages** are built and tested to WCAG 2.2 AA: Apps, Home, Library, Discover, Activity, System,
   Settings, Sign in, the set-up and Display and accessibility.
@@ -59,7 +59,7 @@ stops you, or you find something that is not listed, [report a problem](tell-us-
   - **Other apps' own pages,** opened from **Apps**, and any page a plug-in adds of its own, such as Tdarr's.
   - **Your browser, screen reader, magnifier and device,** and how they work together.
 
-![Settings, Plug-ins, Test a plug-in, with a made-up style that fails: Accessibility failed, and each colour pair that is too faint listed with how to fix it](../images/a11y-plugin-test.png)
+![Test a plug-in with a made-up style that fails its accessibility check](../images/a11y-plugin-test.png)
 
 ## Open issues
 
@@ -82,11 +82,11 @@ The choices on this page, and in **Display**, are kept in this browser only.
 
 ## Find out more
 
-- [Report a problem](tell-us-about-a-problem.md)
+- [Tell us about an accessibility problem](tell-us-about-a-problem.md)
 - [How Starboard is tested](how-starboard-is-tested.md)
 - [Latest test results](latest-test-results.md)
 - [Accessibility in Starboard](overview.md)
-- [What Starboard does not do yet, and what is planned](../comparisons/what-starboard-does-not-do-yet.md)
+- [What Starboard does not do](../comparisons/what-starboard-does-not-do-yet.md)
 
 <!-- footer: download rights -->
 

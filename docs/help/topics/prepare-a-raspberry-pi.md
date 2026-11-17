@@ -23,7 +23,7 @@ ready for [Connect to your server from another computer](connect-with-ssh.md).
 4. For the operating system, choose **Raspberry Pi OS (64-bit)**. On a Pi 3 or Zero 2 W you can choose
    **Raspberry Pi OS Lite (64-bit)** from **Raspberry Pi OS (other)**: it has no desktop, which leaves more
    memory for your apps.
-5. For the storage, choose your microSD card. Check it is the card, not another drive.
+5. For the storage, choose your microSD card. Check it is the card, not another disk.
 6. When Imager asks whether to apply OS customisation settings, choose **Edit settings**.
 7. Fill in the settings:
    - **Hostname:** a short name for the Pi, such as `starboard-pi`. You use it to find the Pi later.

@@ -10,8 +10,8 @@ const D_WORDS = { films: "films", tv: "series", music: "artists", radio: "shows"
 function dCard(c) {
   const kindWord = c.kind === "radio" ? "Follow" : "Add";
   let side;
-  if (c.state === "have") side = chip("In your library", "success");
-  else if (c.state === "wanted") side = chip("Wanted", "info");
+  if (c.state === "have") side = chip(...STATUS.inLibrary);
+  else if (c.state === "wanted") side = chip(...STATUS.wanted);
   else {
     side = el("button", { type: "button", class: "btn btn--compact" }, icon(c.kind === "radio" ? "radio" : "plus"), kindWord,
       el("span", { class: "visually-hidden", text: ` ${c.title}` }));
@@ -120,7 +120,7 @@ function radioFinder(d, picked) {
       const list = el("ul", { class: "discover-shelf discover-shelf--wrap", "aria-labelledby": "radio-results-h" }, got.items.map(dCard));
       results.replaceChildren(el("h2", { id: "radio-results-h", text: `Found for “${words}”` }), got.note ? notice("info", "This filter needs a newer Reelix", got.note)
         : got.items.length ? list
-        : emptyState("Nothing found", on(stations) || on(feeds) ? "Try again with fewer filters." : "Try other words, or choose a genre or a station below."));
+        : emptyState("Nothing found", on(stations) || on(feeds) ? "Try again with fewer filters." : "Try other words, or choose a genre or a station."));
       said.textContent = `${got.items.length} ${got.items.length === 1 ? "show" : "shows"} found`;
       announce(said.textContent);
     } catch (e) { said.textContent = e.message; announce(e.message); }
@@ -130,7 +130,7 @@ function radioFinder(d, picked) {
       el("div", { class: "search-field" }, q, el("button", { type: "submit", class: "btn btn--primary" }, icon("search"), "Search"))),
     el("div", { class: "toolbar__row radio-search__filters" },
       el("div", { class: "filter-chips", role: "group", "aria-label": "Only" }, stations, feeds)),
-    el("p", { class: "small muted", id: "radio-filters-hint", text: "From radio stations: only shows a broadcaster makes, such as the BBC, LBC or Times Radio. Podcast feeds only: shows with a podcast feed, the simplest to follow." }),
+    el("p", { class: "small muted", id: "radio-filters-hint", text: "From radio stations: only shows a broadcaster makes, such as the BBC, LBC or Times Radio. Podcast feeds only: shows with a podcast feed, which Reelix follows with the fewest steps." }),
     said);
   form.addEventListener("submit", (e) => { e.preventDefault(); run(); });
   const pickers = el("div", { class: "radio-pickers" },

@@ -59,7 +59,7 @@ while [ $# -gt 0 ]; do
     --dir) DIR="${2:?--dir needs a folder}"; shift ;;
     --main) CHANNEL=main ;;
     --) shift; PASS=("$@"); break ;;
-    -h|--help) sed -n '2,22p' "$0" 2>/dev/null || echo "See https://github.com/TheMightyTRex/starboard"; exit 0 ;;
+    -h|--help) sed -n '2,22p' "$0" 2>/dev/null || echo "Help: https://github.com/TheMightyTRex/starboard"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; err RF-01 >&2; exit 2 ;;
   esac
   shift
@@ -69,7 +69,7 @@ done
 IN=/dev/tty
 if ! { : < /dev/tty; } 2>/dev/null; then
   IN=""
-  [ "$ASK" = 0 ] || [ "$CHECK" = 1 ] || { echo "Stopped: no terminal to type in. Run it in a terminal, or add --yes." >&2; err RF-02 >&2; exit 2; }
+  [ "$ASK" = 0 ] || [ "$CHECK" = 1 ] || { echo "Stopped: no terminal to enter answers in. Run it in a terminal, or add --yes." >&2; err RF-02 >&2; exit 2; }
 fi
 [ "$(id -u)" -ne 0 ] || { echo "Stopped: run this as your normal user, not root or sudo. It asks for your password when it needs it." >&2; err RF-03 >&2; exit 1; }
 
@@ -192,7 +192,7 @@ screen_lines() {
 }
 ok() { if [ "$FANCY" = 1 ]; then hang "  $(c 32 "✔") " "" "$1"; else say "Ready: $1"; fi; }
 bad() { if [ "$FANCY" = 1 ]; then hang "  $(c 33 "✘") " "" "$1"; else say "Missing: $1"; fi; }
-note() { if [ "$FANCY" = 1 ]; then hang "  $(c 33 "⚠") " "" "$1"; else say "Note: $1"; fi; }
+note() { if [ "$FANCY" = 1 ]; then hang "  $(c 33 "⚠") " "" "$1"; else say "Warning: $1"; fi; }
 
 
 header() {
@@ -212,6 +212,7 @@ header() {
 menu() {
   local line="" plain="" k label gap right keys
   right="${MENU_RIGHT:-Enter: recommended}"
+  [ "$MENU_RIGHT" = none ] && right=""  # while a job runs: only Ctrl+C Stop, with nothing on the right
   [ "${CAME_BACK:-0}" = 1 ] && [ -z "$MENU_RIGHT" ] && right="Enter: keep"
   read -ra keys <<< "$KEYS"  # read, not $KEYS, so ? is never taken as a file name pattern
   for k in "${keys[@]}"; do
@@ -240,8 +241,8 @@ page() {
   if [ "$FANCY" = 0 ]; then
     printf '\n== %s | %s (step %d of %d)\n' "$APP_NAME" "${TITLES[$STEP]}" "$STEP" "$STEPS"
     if [ -z "$IN" ]; then :
-    elif [ "$STEP" -gt "${FIRST_BACK:-1}" ]; then echo "Type b to go back, ? for help, f to send feedback or q to stop."
-    else echo "Type ? for help, f to send feedback or q to stop."; fi
+    elif [ "$STEP" -gt "${FIRST_BACK:-1}" ]; then echo "Press b to go back, ? for help, f to send feedback or q to stop."
+    else echo "Press ? for help, f to send feedback or q to stop."; fi
     [ "${CAME_BACK:-0}" = 1 ] && echo "You came back to this step. Your last answer is in [brackets]: press Enter to keep it."
     return
   fi
@@ -269,7 +270,7 @@ resized() {
   measure
   if [ "$COLS" -lt 60 ] || [ "$ROWS" -lt 20 ]; then
     # Too small for the frame: say so on a cleared window, and draw the step again when it is larger.
-    printf '\033[r\033[2J\033[1;1H%s\n%s' "This window is too small for the boxed look. Make it at least 60 by 20." "$PROMPT"
+    printf '\033[r\033[2J\033[1;1H%s\n%s' "This window is too small for the box layout. Make it at least 60 columns wide and 20 lines high." "$PROMPT"
     return 0
   fi
   header "${TITLES[$STEP]}" "$STEP"
@@ -322,7 +323,7 @@ popup() {
   while [ "$from" -lt "${#all[@]}" ]; do
     local body=("${all[@]:$from:$room}") foot="Enter: close help"
     from=$(( from + room ))
-    [ "$from" -lt "${#all[@]}" ] && foot="Enter: more below"
+    [ "$from" -lt "${#all[@]}" ] && foot="Enter: show more"
     POPUP=1
     popup_page "$title" "$foot" "${body[@]}"
     POPUP=0
@@ -351,7 +352,7 @@ popup_page() {
     printf '\033[%d;%dH%s %s %s' $(( top + 1 + i )) $(( left + 1 )) "$(c 36 "│")" "$line" "$(c 36 "│")"
   done
   printf '\033[%d;%dH%s' $(( top + 1 + ${#body[@]} )) $(( left + 1 )) "$(c 36 "╰$(rep ─ $(( bw - 2 )))╯")"
-  local key="Close help"; [ "$foot" = "Enter: more below" ] && key="More"
+  local key="Close help"; [ "$foot" = "Enter: show more" ] && key="Show more"
   printf '\0337\033[%d;1H\033[2K\033[%d;%dH%s\033[%d;1H\033[2K\033[%d;%dH  %s %s\0338' $(( ROWS - 1 )) $(( ROWS - 1 )) $(( L + 1 )) \
     "$(dim "$(rep ─ "$W")")" "$ROWS" "$ROWS" $(( L + 1 )) "$(accent Enter)" "$key"
   tty_read || true
@@ -502,7 +503,7 @@ choose() {
       CHOICE="$ANSWER"
       return 0
     fi
-    say "  Type a number from 1 to ${#opts[@]}, ? for help or q to stop."
+    say "  Enter a number from 1 to ${#opts[@]}, ? for help or q to stop."
   done
 }
 
@@ -550,7 +551,7 @@ work() {
   local name="$1" cmd="$2" n="$3" of="$4" pid tick=0 status
   printf '\n== %s\n$ %s\n' "$name" "$cmd" >> "$LOG"
   if [ "$FANCY" = 0 ]; then
-    say "$name ($n of $of). Please wait..."
+    say "$name ($n of $of)…"
     # Keys pressed meanwhile are not shown (each Enter would push the words above off the screen) and are dropped.
     ECHO_WAS="$(stty -g 2>/dev/null < "${IN:-/dev/tty}")" && stty -echo 2>/dev/null < "${IN:-/dev/tty}"
     # Never silent for long (TERMINAL.md): "Still working" every 2 minutes, with the count when the job has one.
@@ -579,7 +580,7 @@ work() {
   JOB_START=$SECONDS; DETAIL_NOW=""
   # While a job runs, only Ctrl+C works: the menu says so.
   local keys_were="$KEYS" right_were="$MENU_RIGHT"
-  KEYS="Ctrl+C"; MENU_RIGHT="Please wait"; menu
+  KEYS="Ctrl+C"; MENU_RIGHT="none"; menu
   # Keys pressed while the bar moves (Enter, out of impatience) would print new lines under it and repeat the bar
   # down the window: they are not shown until the job ends, and dropped then.
   ECHO_WAS="$(stty -g 2>/dev/null < "${IN:-/dev/tty}")" && stty -echo 2>/dev/null < "${IN:-/dev/tty}"
@@ -626,11 +627,11 @@ jobs_page() {
 job_failed() {
   local name="$1" why="$2" tip="$3" code="$4"
   say ""
-  note "$name did not work. Error $code."
+  note "$name did not finish (error $code)."
   para "$why${tip:+ $tip}"
   printf 'Error %s while %s\n' "$code" "${name,}" >> "$LOG"
   [ -z "$IN" ] || [ "${ASK:-1}" = 0 ] && { finish; echo "The details are in $LOG"; err "$code"; exit 1; }
-  LAST_PROBLEM="Error $code: $name did not work. $why"
+  LAST_PROBLEM="Error $code: $name did not finish. $why"
   local keys_were="$KEYS"
   KEYS="${KEYS/f/f r}"
   [ "$FANCY" = 1 ] && menu
@@ -991,12 +992,12 @@ explain() {
       TIP="Check the network cable or Wi-Fi, then try again." ;;
     *"Could not get lock"*|*"is held by process"*|*"dpkg was interrupted"*|*"Waiting for cache lock"*|*"another process"*)
       CODE=RF-12
-      WHY="Another program is still installing updates on this computer. This often happens just after Linux is installed. The script waited for it, then stopped waiting."
+      WHY="Another program is still installing updates on this computer. This often happens soon after Linux is installed. The script waited for it, then stopped waiting."
       TIP="Wait until it finishes, or restart the computer, then try again." ;;
     *"is not signed"*|*"NO_PUBKEY"*|*"signature verification failed"*|*"EXPKEYSIG"*)
       CODE=RF-13
       WHY="One of this computer's software sources has a signing key that Linux no longer accepts, so the list of software could not be updated."
-      TIP="Choose Show the details to see which source. Install that source's new key, or turn the source off, then try again. The help pages for each system explain how." ;;
+      TIP="Choose Show the details to find out which source. Install that source's new key, or remove the source, then try again. The help pages for each system explain how." ;;
     *"No space left"*)
       CODE=RF-14
       WHY="The disk is full."
@@ -1008,11 +1009,11 @@ explain() {
     *"password was not accepted"*)
       CODE=RF-17
       WHY="sudo did not accept the password."
-      TIP="Type the password you use to sign in to this computer, then try again." ;;
+      TIP="Enter the password you use to sign in to this computer, then try again." ;;
     *"a password is required"*|*"incorrect password"*|*"not in the sudoers"*|*"may not run sudo"*)
       CODE=RF-16
       WHY="Your user is not allowed to install software on this computer."
-      TIP="$(sudo_steps "$USER") Or ask whoever looks after this computer." ;;
+      TIP="$(sudo_steps "$USER") Or ask the person who manages this computer." ;;
     *)
       CODE=RF-19
       WHY="Something went wrong while ${1,}."
@@ -1230,8 +1231,8 @@ pick_draw() {
     [ -z "$about" ] || line+=" $(dim "$about")"
     printf '\r\033[2K%s%s\n' "$PAD" "$line"
   done
-  [ "$top" -gt 0 ] && more="↑ $top more above"
-  if [ $(( top + room )) -lt "$n" ]; then [ -z "$more" ] || more+=" · "; more+="↓ $(( n - top - room )) more below"; fi
+  [ "$top" -gt 0 ] && more="↑ $top earlier"
+  if [ $(( top + room )) -lt "$n" ]; then [ -z "$more" ] || more+=" · "; more+="↓ $(( n - top - room )) more"; fi
   printf '\r\033[2K%s  %s' "$PAD" "$(dim "$more")"
   drawn=1
 }
@@ -1467,7 +1468,7 @@ $(symbols_help "${CHOSEN_KB:-gb}")" \
     note "$(sudo_steps "$USER")"; finish; err RF-18; exit 1
   fi
   [[ " ${FIX[*]} " != *"sudo "* ]] || sudo_once
-  para "Please wait, this can take some time..."
+  para "Making the changes this computer needs…"
   say ""
   PROMPT=""
   for i in "${!FIX[@]}"; do
@@ -1479,12 +1480,12 @@ $(symbols_help "${CHOSEN_KB:-gb}")" \
       if is_package_job "${FIX[$i]}" && held_lock && [ "$lock_tries" -lt 2 ]; then
         lock_tries=$(( lock_tries + 1 ))
         printf 'The package lock was held: waiting for the updates, then trying again\n' >> "$LOG"
-        jobs_page 5 "Please wait, this can take some time..."
+        jobs_page 5 "Making the changes this computer needs…"
         sleep 5
         continue
       fi
       problem "${FIX_NAME[$i]}"
-      jobs_page 5 "Please wait, this can take some time..."
+      jobs_page 5 "Making the changes this computer needs…"
     done
   done
   [[ " ${FIX[*]} " == *"usermod -aG docker"* ]] && NEW_GROUP=1
@@ -1532,13 +1533,13 @@ Keep it as it is changes nothing and shows where to open Starboard." \
     note "$where exists but is not a Starboard download. Move it or choose another folder with --dir, then run this again."
     finish; err RF-30; exit 1
   else
-    para "Downloading Starboard into $where. Please wait, this can take a minute or two..."
+    para "Downloading Starboard into $where. This can take a minute or two."
     say ""
     PROMPT=""
     until work "Downloading Starboard" "git clone -q $(printf '%q %q' "$REPO" "$DIR")" 1 1; do
       rm -rf "$DIR"
       problem "Downloading Starboard"
-      jobs_page 6 "Downloading Starboard into ${DIR/#$HOME/~}. Please wait, this can take a minute or two..."
+      jobs_page 6 "Downloading Starboard into ${DIR/#$HOME/~}. This can take a minute or two."
     done
     # DASH-416: the clone is on the main branch, which can have changes not released yet; the newest release, as
     # ./update.sh installs it, unless --main asked for main.
@@ -1569,14 +1570,14 @@ Afterwards, update with ./update.sh in the same folder." || return $?
 # Accessible mode is asked before anything is drawn, in plain words, so software that reads text aloud reads it.
 if [ "$FANCY" = 1 ] && [ "$ASK" = 1 ] && [ "$CHECK" = 0 ]; then
   printf '\nStarboard: the Run first script.\n'
-  printf 'Press Enter to start, or type a and press Enter for accessible mode: plain lines with no boxes or colour, for software that reads text aloud.\n' | fold -s -w "$(( COLS - 1 ))" | sed 's/ *$//'
+  printf 'Press Enter to start, or press a and then Enter for accessible mode: plain lines with no boxes or colour, for software that reads text aloud.\n' | fold -s -w "$(( COLS - 1 ))" | sed 's/ *$//'
   printf '> '
   tty_read || true; first="$REPLY_LINE"
   case "$first" in a|A) FANCY=0; PLAIN=1; COLOUR=0; measure ;; q|Q) echo "Stopped. Nothing was changed."; exit 1 ;; esac
 fi
 
 if [ "$SMALL" = 1 ]; then
-  para "This window is $COLS by $ROWS characters, so set-up shows plain lines. For the boxed look, make it at least 60 by 20 and run this again."
+  para "This window is $COLS by $ROWS characters, so set-up shows plain lines. For the box layout, make it at least 60 columns wide and 20 lines high, and run this again."
 fi
 if [ "$CHECK" = 1 ]; then n=4; else n=1; fi
 while [ "$n" -lt "$STEPS" ]; do
@@ -1729,10 +1730,10 @@ if [ "$status" != 0 ]; then
       tell "Stopped. Run the Run first script again at any time: it carries on from what is missing." ;;
     [A-Z][A-Z]-[0-9][0-9])
       # The installer's own number, again as the last lines, so it is the one a person sees and looks up.
-      tell "The installer stopped with Error $inner, explained just above."
+      tell "The installer stopped with Error $inner, explained in the last lines."
       err "$inner" ;;
     *)
-      tell "The installer stopped without giving an error number. Error RF-40. The lines just above are the last it wrote."
+      tell "The installer stopped without giving an error number. Error RF-40. The last lines are the last it wrote."
       err RF-40 ;;
   esac
   exit "$status"
@@ -1838,7 +1839,7 @@ json.dump({"request": sys.argv[1], "ok": sys.argv[2] == "0", "log": log}, open(s
       if [ "$status" = 0 ]; then
         tell "Your apps are running. Keep this window open until the set-up in the browser has finished."
       else
-        tell "Error RF-50: the apps did not start. The reason is in the line above."
+        tell "Error RF-50: the apps did not start. The reason is in the last line."
         err RF-50
         tell "Waiting: select Try again in the browser, or press q to close this window."
       fi

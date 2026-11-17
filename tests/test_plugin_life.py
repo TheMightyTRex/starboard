@@ -49,7 +49,7 @@ class Life(unittest.TestCase):
         pa.install(self.tmp.name, ON_DEMAND, "/srv/media")
         with mock.patch.object(plugins, "API_VERSION", "9.0.0"):
             s = plugin_life.status(self.tmp.name, "on-demand")
-        self.assertEqual((s["state"], s["button"]), ("not-supported", "Look for an update"))
+        self.assertEqual((s["state"], s["button"]), ("not-supported", "Check for an update"))
 
     def test_update_keeps_the_previous_version_and_roll_back_swaps(self):
         pa.install(self.tmp.name, ON_DEMAND, "/srv/media")

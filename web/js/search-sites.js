@@ -67,7 +67,7 @@ function drawTable() {
   $("#sites-count").textContent = `${rows.length} of ${found.results.length}`;
   if (!rows.length) {
     $("#sites-table").replaceChildren(emptyState(found.results.length ? "Nothing from this site" : "Nothing found",
-      found.results.length ? "Choose All sites to see the rest." : "Try fewer words, or All instead of one kind. Sites that did not answer are listed below."));
+      found.results.length ? "Choose All sites to show the rest." : "Try fewer words, or All instead of one kind. Sites that did not answer are listed on this page."));
     return;
   }
   const head = ["Release", "Site", "Size", "Seeders", "Age"];

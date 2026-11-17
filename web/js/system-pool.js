@@ -8,7 +8,7 @@ let flow = null;   // the job in progress: { kind, step, steps, ... }
 let watching = 0;  // timer while a job runs
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-const ROLE = { pool: "In the pool", parity: "Parity drive", copy: "Copy drive" };
+const ROLE = { pool: "In the pool", parity: "Parity disk", copy: "Copy disk" };
 const nameOf = (d) => `${d.model || d.name} ${formatBytes(d.size)}`;
 const serialOf = (d) => (d.ends ? `serial ends ${d.ends}` : "no serial number");
 
@@ -57,7 +57,7 @@ async function waitFor(request) {
     }
     await new Promise((r) => setTimeout(r, i < 10 ? 500 : 1500));
   }
-  throw new Error("The pool helper did not answer within two minutes. Check that it is installed (help: Add a drive to the pool)");
+  throw new Error("The pool helper did not answer within two minutes. Check that it is installed (help: Add a disk to the pool)");
 }
 
 // Overview -----------------------------------------------------------------------------------------------
@@ -65,8 +65,8 @@ async function waitFor(request) {
 // A row for each drive (DASH-309, R7: a list of things with an action is rows, not a table): the state first in the
 // row's side, then Take out of the pool, as backupRow does.
 function poolRows(drives) {
-  if (!drives.length) return el("p", { class: "muted", text: "No drives in the pool yet. Add a drive to make one." });
-  return el("ul", { class: "rows", "aria-label": "Drives in the pool" }, drives.map((d) => {
+  if (!drives.length) return el("p", { class: "muted", text: "No disks in the pool yet. Add a disk to make one." });
+  return el("ul", { class: "rows", "aria-label": "Disks in the pool" }, drives.map((d) => {
     const pct = d.fs_size ? d.used / d.fs_size : 0;
     const st = d.fs_size == null ? chip("Not mounted", "danger") : pct >= 0.9 ? chip("Full", "danger") : pct >= 0.8 ? chip("Nearly full", "warning") : chip("Mounted", "success");
     return el("li", { class: "row row--no-lead pool-drive" },
@@ -81,7 +81,7 @@ function poolRows(drives) {
 function backupRow(d) {
   const night = state.nightly?.results?.find((r) => r.what === (d.use === "parity" ? "parity" : d.label));
   const when = state.nightly?.at ? formatDate(state.nightly.at * 1000, true) : null;
-  const result = !night ? chip("Not checked yet", "muted") : night.state === "done" ? chip("Up to date", "success", "shield-check")
+  const result = !night ? chip(...STATUS.notChecked) : night.state === "done" ? chip("Up to date", "success", "shield-check")
     : night.state === "skipped" ? chip("Check skipped", "warning") : chip("Check failed", "danger");
   const how = d.use === "parity" ? "Parity with SnapRAID" : "Copy with rsync";
   return el("li", { class: "row row--no-lead" },
@@ -96,14 +96,14 @@ function spareRow(d) {
     el("div", {}, el("p", { class: "row__title" }, `${nameOf(d)} `, el("span", { class: "small muted", text: `${serialOf(d)} · ${d.path}` })),
       el("p", { class: "row__meta", text: what })),
     el("div", { class: "row__side" }, d.use === "free"
-      ? el("button", { type: "button", class: "btn btn--compact", text: "Use this drive", onclick: () => startAdd(d) })
-      : chip(d.use === "system" ? "System drive" : "Not offered", "muted", "lock")));
+      ? el("button", { type: "button", class: "btn btn--compact", text: "Use this disk", onclick: () => startAdd(d) })
+      : chip(d.use === "system" ? "System disk" : "Not offered", "muted", "lock")));
 }
 
 function jobView(job) {
   if (!job) return null;
-  const words = { running: ["Running", "info", "hourglass"], done: ["Finished", "success"], failed: ["Failed", "danger"], stopped: ["Stopped", "warning"] }[job.state] || ["", "muted"];
-  const what = { add: "Add a drive", remove: "Take out of the pool", balance: "Balance the files" }[job.action] || "Change";
+  const words = { running: STATUS.inProgress, done: STATUS.done, failed: STATUS.failed, stopped: STATUS.stopped }[job.state] || ["", "muted"];
+  const what = { add: "Add a disk", remove: "Take out of the pool", balance: "Balance the files" }[job.action] || "Change";
   const parts = [titleChip(el("p", { class: "strong", text: `${what}${job.of ? `: ${job.moved} of ${plural(job.of, "folder", "folders")} moved` : ""}${job.paused ? ", paused for download hours" : ""}` }), chip(words[0], words[1], words[2]))];
   if (job.current) parts.push(el("p", { class: "small muted", text: `Now moving ${job.current}` }));
   if (job.of) {
@@ -132,15 +132,15 @@ function render() {
   const free = state.space ? state.space.size - state.space.used : inPool.reduce((n, d) => n + (d.free || 0), 0);
   const size = inPool.reduce((n, d) => n + (d.fs_size || d.size), 0);
   $("#pool-summary").textContent = inPool.length
-    ? `${plural(inPool.length, "drive makes", "drives make")} one folder, ${state.pool}: ${formatBytes(size)}, ${formatBytes(free)} free. ${plural(backups.length, "backup drive", "backup drives")}.`
-    : "No pool yet. A pool joins drives into one folder for your media.";
+    ? `${plural(inPool.length, "disk makes", "disks make")} one folder, ${state.pool}: ${formatBytes(size)}, ${formatBytes(free)} free. ${plural(backups.length, "backup disk", "backup disks")}.`
+    : "No pool yet. A pool joins disks into one folder for your media.";
   $("#pool-actions").hidden = !!state.handmade?.mount;
   $("#balance").hidden = inPool.length < 2;
   $("#pool-stats").replaceChildren(
-    el("div", { class: "stat", "data-tone": inPool.length ? "success" : null }, el("span", { class: "stat__value", text: String(inPool.length) }), el("span", { class: "stat__label", text: "Drives in the pool" })),
+    el("div", { class: "stat", "data-tone": inPool.length ? "success" : null }, el("span", { class: "stat__value", text: String(inPool.length) }), el("span", { class: "stat__label", text: "Disks in the pool" })),
     el("div", { class: "stat" }, el("span", { class: "stat__value", text: formatBytes(free) }), el("span", { class: "stat__label", text: "Free" })),
     el("div", { class: "stat", "data-tone": backups.length ? "success" : "warning" }, el("span", { class: "stat__value", text: String(backups.length) }),
-      el("span", { class: "stat__label", text: backups.length ? "Backup drives" : "No backup drive" })));
+      el("span", { class: "stat__label", text: backups.length ? "Backup disks" : "No backup disk" })));
   $("#in-pool-panel").hidden = !!state.handmade?.mount;
   $("#in-pool").replaceChildren(poolRows(inPool));
   $("#backup-panel").hidden = !backups.length;
@@ -169,8 +169,8 @@ async function load() {
       $("#overview").hidden = true;
       n.replaceChildren(notice("info", "Set up the pool helper first",
         state.why === "no answer" ? "Starboard has a folder for the pool helper, but the helper has not answered yet. Check that it is installed."
-          : "The pool helper makes the pool. It runs on the server with the right to change drives, which Starboard itself never has. Run ./install.sh again and say yes to Drive pools.",
-        [el("p", {}, helpLink("Add a drive to the pool", "topics/add-a-drive-to-the-pool.md"))]));
+          : "The pool helper makes the pool. It runs on the server with the right to change disks, which Starboard itself never has. Run ./install.sh again and say yes to Disk pools.",
+        [el("p", {}, helpLink("Add a disk to the pool", "topics/add-a-drive-to-the-pool.md"))]));
       return;
     }
     $("#overview").hidden = !!flow;
@@ -185,7 +185,7 @@ async function load() {
 // Steps --------------------------------------------------------------------------------------------------
 
 const FLOWS = {
-  add: { title: "Add a drive", steps: ["Choose a drive", "What it is for", "Check", "Confirm", "Done"] },
+  add: { title: "Add a disk", steps: ["Choose a disk", "What it is for", "Check", "Confirm", "Done"] },
   balance: { title: "Balance the files", steps: ["How to balance", "Check", "Confirm", "Done"] },
   remove: { title: "Take out of the pool", steps: ["Check", "Confirm", "Done"] },
 };
@@ -236,7 +236,7 @@ function optionCards(legend, name, items, chosen, onPick) {
 }
 
 function checkView(plan) {
-  const steps = el("ol", { class: "changes" }, plan.steps.map((s) => el("li", {}, s.danger ? chip("Erases the drive", "danger", "triangle-alert") : null, ` ${s.say}`)));
+  const steps = el("ol", { class: "changes" }, plan.steps.map((s) => el("li", {}, s.danger ? chip("Erases the disk", "danger", "triangle-alert") : null, ` ${s.say}`)));
   const commands = plan.steps.flatMap((s) => s.commands || []);
   const moves = plan.moves || [];
   return [
@@ -251,9 +251,9 @@ function checkView(plan) {
 
 function balanceTable(drives) {
   return el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" },
-    el("caption", { class: "visually-hidden", text: "Each drive before and after" }),
-    el("thead", {}, el("tr", {}, ["Drive", "Now", "After"].map((h) => el("th", { scope: "col", text: h })))),
-    el("tbody", {}, drives.map((d) => el("tr", {}, el("td", { "data-label": "Drive", text: `${d.label}, ${formatBytes(d.size)}` }),
+    el("caption", { class: "visually-hidden", text: "Each disk before and after" }),
+    el("thead", {}, el("tr", {}, ["Disk", "Now", "After"].map((h) => el("th", { scope: "col", text: h })))),
+    el("tbody", {}, drives.map((d) => el("tr", {}, el("td", { "data-label": "Disk", text: `${d.label}, ${formatBytes(d.size)}` }),
       el("td", { "data-label": "Now" }, meter(d.before, d.size)), el("td", { "data-label": "After" }, meter(d.after, d.size)))))));
 }
 
@@ -272,22 +272,22 @@ function confirmView() {
   const plan = flow.plan;
   const drives = state.drives.filter((d) => plan.erases.includes(d.by_id));
   const fields = drives.map((d, n) => el("div", { class: "field" },
-    el("label", { for: `serial-${n}` }, `Type the last 4 characters of its serial number, `, el("strong", { text: d.ends }), ", to confirm"),
-    el("span", { class: "hint", id: `serial-hint-${n}`, text: "They are on the drive's label too. This makes sure you erase the drive you mean." }),
+    el("label", { for: `serial-${n}` }, `Enter the last 4 characters of its serial number, `, el("strong", { text: d.ends }), ", to confirm"),
+    el("span", { class: "hint", id: `serial-hint-${n}`, text: "They are on the disk's label too. This makes sure you erase the disk you mean." }),
     sized(el("input", { class: "input", id: `serial-${n}`, "data-drive": d.by_id, autocomplete: "off", spellcheck: "false", "aria-describedby": `serial-hint-${n}` }), { maxWidth: "12ch" })));
   const body = [
     heading(drives.length ? `Erase ${drives.map(nameOf).join(" and ")}?` : "Make these changes?"),
-    drives.length ? el("p", { text: "Everything on it is erased and cannot be got back. The other drives are not touched." })
+    drives.length ? el("p", { text: "Everything on it is erased and cannot be got back. The other disks are not touched." })
       : el("p", { text: `${plan.steps.length} changes, as checked. You can stop a balance or a take-out between two folders.` }),
     ...fields,
     el("div", { class: "field" }, el("label", { for: "pool-password", text: "Your Starboard password" }),
-      el("span", { class: "hint", id: "pool-password-hint", text: "Asked again for every change to the drives." }),
+      el("span", { class: "hint", id: "pool-password-hint", text: "Asked again for every change to the disks." }),
       sized(el("input", { class: "input", id: "pool-password", type: "password", autocomplete: "current-password", "aria-describedby": "pool-password-hint" }), { maxWidth: "28ch" })),
   ];
   const go = async (e) => {
     const confirm = Object.fromEntries($$("[data-drive]").map((i) => [i.dataset.drive, i.value.trim()]));
     const password = $("#pool-password").value;
-    if (!password) return inlineError($("#pool-password"), "Type your password");
+    if (!password) return inlineError($("#pool-password"), "Enter your password");
     const bad = drives.find((d, n) => $(`#serial-${n}`).value.replace(/[^a-z0-9]/gi, "").toUpperCase() !== d.ends);
     if (bad) return inlineError($(`#serial-${drives.indexOf(bad)}`), `Type ${bad.ends}, the last 4 characters of the serial number`);
     e.target.disabled = true;
@@ -301,8 +301,8 @@ function confirmView() {
       else problem(err.message, $("#wizard-body"));
     }
   };
-  const label = drives.length ? (flow.kind === "add" ? `Erase and ${flow.role === "pool" ? "add to the pool" : "use as a backup drive"}` : "Erase")
-    : { add: "Add the drive", balance: "Start balancing", remove: "Take it out" }[flow.kind];
+  const label = drives.length ? (flow.kind === "add" ? `Erase and ${flow.role === "pool" ? "add to the pool" : "use as a backup disk"}` : "Erase")
+    : { add: "Add the disk", balance: "Start balancing", remove: "Take it out" }[flow.kind];
   return [body, [btn(label, go, drives.length ? "btn btn--primary btn--danger" : "btn btn--primary"), back(), cancel()]];
 }
 
@@ -321,7 +321,7 @@ function doneView() {
       const pool = state.drives.filter((d) => d.use === "pool");
       const fills = pool.filter((d) => d.fs_size).map((d) => d.used / d.fs_size);
       if (flow.kind === "add" && fills.length > 1 && Math.max(...fills) - Math.min(...fills) > 0.2) {
-        $("#done-job").append(notice("info", "The drives are uneven", "New files go to the emptiest drive, so this evens out over time. To even it out now, balance the files."));
+        $("#done-job").append(notice("info", "The disks are uneven", "New files go to the emptiest disk, so this evens out over time. To even it out now, balance the files."));
         $("#wizard-foot").prepend(btn("Balance the files", startBalance, "btn btn--primary"));
       }
     } catch { setTimeout(follow, 3000); }
@@ -334,14 +334,14 @@ const VIEWS = {
   add: [
     () => {
       const free = state.drives.filter((d) => d.use === "free");
-      if (!free.length) return [[heading("Choose a drive"), notice("info", "No drive to add", "Every drive is in the pool, a backup drive, the system drive or in use for something else. Plug in a new drive, then look again.")], [cancel()]];
+      if (!free.length) return [[heading("Choose a disk"), notice("info", "No disk to add", "Every disk is in the pool, a backup disk, the system disk or in use for something else. Plug in a new disk, then check again.")], [cancel()]];
       flow.drive = flow.drive || free[0];
-      return [[heading("Choose a drive"),
-        el("p", { class: "muted", text: "These drives are not in the pool, not a backup drive and not the system drive. Check the end of the serial number against the label on the drive." }),
-        optionCards("Drive", "drive", free.map((d) => ({ value: d.by_id, title: `${nameOf(d)}, ${serialOf(d)}`,
+      return [[heading("Choose a disk"),
+        el("p", { class: "muted", text: "These disks are not in the pool, not a backup disk and not the system disk. Check the end of the serial number against the label on the disk." }),
+        optionCards("Disk", "drive", free.map((d) => ({ value: d.by_id, title: `${nameOf(d)}, ${serialOf(d)}`,
           text: d.files ? `Has files: ${d.parts.filter((p) => p.fs).map((p) => `${formatBytes(p.size)} on ${p.fs}${p.mounted.length ? `, mounted at ${p.mounted[0]}` : ""}`).join("; ")}. ${d.path}` : `Empty. ${d.path}` })),
         flow.drive.by_id, (v) => { flow.drive = free.find((d) => d.by_id === v); }),
-        el("p", { class: "help-links" }, helpLink("My drive is not listed", "topics/add-a-drive-to-the-pool.md#if-it-does-not-work"))],
+        el("p", { class: "help-links" }, helpLink("My disk is not listed", "topics/add-a-drive-to-the-pool.md#if-it-does-not-work"))],
       [btn("Continue to What it is for", () => show(1), "btn btn--primary"), cancel()]];
     },
     () => {
@@ -352,20 +352,20 @@ const VIEWS = {
       if (flow.erase === undefined) flow.erase = !hasFiles;
       const roleCards = optionCards("Use it", "role", [
         { value: "pool", title: "Add it to the pool (recommended)", text: `Its space joins ${state.pool}: ${formatBytes(d.size)} more for films, series and books.` },
-        { value: "parity", title: "Parity drive (recommended backup)", text: d.size >= biggest
-          ? "One drive protects every drive in the pool: if one fails, SnapRAID rebuilds its files. Checked every night. It must be at least as big as the biggest pool drive: it is."
-          : `Not offered: a parity drive must be at least as big as the biggest pool drive (${formatBytes(biggest)}).`, disabled: d.size < biggest || !state.drives.some((x) => x.use === "pool") },
-        { value: "copy", title: "Copy drive", text: "A plain copy of the folders you choose, every night. It needs as much space as those folders. Files you delete in the pool move to a dated holding folder on it, never erased." },
+        { value: "parity", title: "Parity disk (recommended backup)", text: d.size >= biggest
+          ? "One disk protects every disk in the pool: if one fails, SnapRAID rebuilds its files. Checked every night. It must be at least as big as the biggest pool disk: it is."
+          : `Not offered: a parity disk must be at least as big as the biggest pool disk (${formatBytes(biggest)}).`, disabled: d.size < biggest || !state.drives.some((x) => x.use === "pool") },
+        { value: "copy", title: "Copy disk", text: "A plain copy of the folders you choose, every night. It needs as much space as those folders. Files you delete in the pool move to a dated holding folder on it, never erased." },
       ], flow.role, (v) => { flow.role = v; if (v === "parity") flow.erase = true; show(1); });
       const keepCards = optionCards("What is on it now", "keep", [
-        { value: "keep", title: "Keep its files", text: hasFiles ? "Its files appear in the pool as they are." : "Not offered: the drive has no files to keep.", disabled: !hasFiles || flow.role === "parity" },
-        { value: "erase", title: "Erase it and prepare it (ext4)", text: "Everything on it is erased. ext4 copes best when the power goes off unexpectedly. You confirm by typing the end of its serial number." },
+        { value: "keep", title: "Keep its files", text: hasFiles ? "Its files appear in the pool as they are." : "Not offered: the disk has no files to keep.", disabled: !hasFiles || flow.role === "parity" },
+        { value: "erase", title: "Erase it and prepare it (ext4)", text: "Everything on it is erased. ext4 copes best when the power goes off unexpectedly. You confirm by entering the end of its serial number." },
       ], flow.erase ? "erase" : "keep", (v) => { flow.erase = v === "erase"; });
       const folders = flow.role === "copy" ? el("div", { class: "field" },
         el("label", { for: "copy-folders", text: "Folders in the pool to copy, with commas between them" }),
         el("span", { class: "hint", id: "copy-folders-hint", text: "For example: media/music, photos. Leave it as media to copy all your media." }),
         el("input", { class: "input", id: "copy-folders", value: (flow.folders || ["media"]).join(", "), "aria-describedby": "copy-folders-hint" })) : null;
-      const warn = flow.role !== "pool" ? notice("warning", "Not a full backup on its own", "A backup drive is in the same computer, so a fire, theft or power surge can take it too. Keep a third copy of what matters somewhere else (the 3-2-1 rule).") : null;
+      const warn = flow.role !== "pool" ? notice("warning", "Not a full backup on its own", "A backup disk is in the same computer, so a fire, theft or power surge can take it too. Keep a third copy of what matters somewhere else (the 3-2-1 rule).") : null;
       return [[heading(`What is ${nameOf(d)} (${serialOf(d)}) for?`), roleCards, keepCards, folders, warn,
         el("p", { class: "help-links" }, helpLink("Pool, parity or copy: which do I need?", "topics/use-a-drive-as-a-backup-drive.md"))],
       [btn("Continue to Check", () => {
@@ -384,11 +384,11 @@ const VIEWS = {
       flow.engine = flow.engine || "starboard";
       if (flow.pause === undefined) flow.pause = true;
       return [[heading("How to balance"),
-        el("p", { text: "Balancing moves whole folders from fuller drives to emptier ones, under the pool. The pool shows every file in the same place all the time, so the apps notice nothing." }),
-        el("figure", {}, sized(el("img", { src: "/images/balance.svg", alt: "Before balancing, disk 1 is 85% full and disk 4 is empty. After, folder B has moved to disk 4 and folder C to disk 3, so each disk is between 22% and 48% full, and every folder is still whole on one drive.", width: 640, height: 580 }), { maxWidth: "100%", height: "auto" })),
+        el("p", { text: "Balancing moves whole folders from fuller disks to emptier ones, under the pool. The pool shows every file in the same place all the time, so the apps notice nothing." }),
+        el("figure", {}, sized(el("img", { src: "/images/balance.svg", alt: "Before balancing, disk 1 is 85% full and disk 4 is empty. After, folder B has moved to disk 4 and folder C to disk 3, so each disk is between 22% and 48% full, and every folder is still whole on one disk.", width: 640, height: 580 }), { maxWidth: "100%", height: "auto" })),
         optionCards("Balancer", "engine", [
-          { value: "starboard", title: "Starboard's balancer (recommended)", text: "Moves whole series, film and book folders, so a failed drive takes whole series, not a few episodes of each. Shows each drive before and after first. Nothing to install." },
-          { value: "mergerfs.balance", title: "mergerfs.balance", text: hasTool ? "Moves single files until the drives are even. A series can end up spread over several drives." : "Not installed. It is an extra download from the mergerfs-tools project; the help says how.", disabled: !hasTool },
+          { value: "starboard", title: "Starboard's balancer (recommended)", text: "Moves whole series, film and book folders, so a failed disk takes whole series, not a few episodes of each. Shows each disk before and after first. Nothing to install." },
+          { value: "mergerfs.balance", title: "mergerfs.balance", text: hasTool ? "Moves single files until the disks are even. A series can end up spread over several disks." : "Not installed. It is an extra download from the mergerfs-tools project; the help says how.", disabled: !hasTool },
         ], flow.engine, (v) => { flow.engine = v; }),
         el("label", { class: "check" }, el("input", { type: "checkbox", id: "pause", checked: flow.pause, onchange: (e) => { flow.pause = e.target.checked; } }),
           el("span", { class: "check__text", text: "Pause during download hours (Settings, Downloads, Download hours)" })),
@@ -432,7 +432,7 @@ async function startRemove(drive) {
 }
 
 startPage().then(() => {
-  $("#add-drive").replaceChildren(icon("plus"), el("span", { text: "Add a drive" }));
+  $("#add-drive").replaceChildren(icon("plus"), el("span", { text: "Add a disk" }));
   $("#add-drive").addEventListener("click", () => startAdd());
   $("#balance").replaceChildren(icon("arrow-up-down"), el("span", { text: "Balance the files" }));
   $("#balance").addEventListener("click", startBalance);

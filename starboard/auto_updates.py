@@ -285,7 +285,7 @@ def _waits(app, part, lines):
     watch = getattr(app, "watch", None)
     if watch:
         try:
-            watch.alert(f"update-waits:{part}:{'|'.join(lines)[:200]}", "An update waits for you", "; ".join(lines) + ". See Settings, Updates.", "warning")
+            watch.alert(f"update-waits:{part}:{'|'.join(lines)[:200]}", "An update waits for you", "; ".join(lines) + ". Go to Settings, Updates.", "warning")
         except Exception as e:  # noqa: BLE001
             logs.error("updates", f"The alert was not sent: {e}", e)
 
@@ -375,6 +375,8 @@ def jellyfin_plugins_begin(app, by="automatic", batch=False):
     if not task:
         raise update_runs.Refused("Jellyfin has no Update plugins task, so its plug-ins cannot be updated from here")
     run = update_runs._new(app.data_dir, "jellyfin-plugins", "jellyfin-plugins", "Jellyfin's plug-ins", "update", "", "", by, JF_STEPS)
+    from . import update_check
+    update_check.forget_jellyfin()  # what Check for updates found is being installed now (DASH-462)
     with update_runs._lock:
         update_runs._active[run["id"]] = threading.current_thread()
     return run, jf, task, before

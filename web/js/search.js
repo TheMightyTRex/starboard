@@ -62,7 +62,7 @@ function shownResults() { return results.filter((r) => !kind || r.kind === kind)
 
 function renderRow(r) {
   const side = r.in_library
-    ? chip("In library", "success")
+    ? chip(...STATUS.inLibrary)
     : el("button", { type: "button", class: "btn", onclick: (e) => openPanel(r, e.currentTarget) },
       icon("plus"), "Add", el("span", { class: "visually-hidden", text: ` ${r.title} to ${r.service_name}` }));
   const title = el("button", { type: "button", onclick: (e) => openPanel(r, e.currentTarget) }, titleWithYear(r));
@@ -92,7 +92,7 @@ async function radioLink(q) {
     .find((s) => s.icon === "reelix" && s.type === "link" && s.enabled !== false && s.link);
   box.hidden = !reelix;
   if (!reelix) return;
-  box.replaceChildren("Looking for a radio show or podcast? ",
+  box.replaceChildren("Searching for a radio show or podcast? ",
     el("a", { href: `${reachableUrl(reelix.link)}/radio/add?term=${encodeURIComponent(q)}`, target: "_blank", rel: "noopener noreferrer" },
       `Search for "${q}" in Reelix radio`, el("span", { class: "visually-hidden", text: " (opens in a new tab)" })), ".");
 }

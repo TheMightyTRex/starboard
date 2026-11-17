@@ -5,7 +5,7 @@
 
 A plug-in is a folder with one file Starboard reads, `starboard-plugin.json`, called the manifest. It says what the
 plug-in is, what it adds and what it may do. You do not change Starboard's code, and Starboard draws everything a
-person sees. What a plug-in can and cannot do is in [What a plug-in can change](what-plugins-can-change.md).
+person reads. What a plug-in can and cannot do is in [What a plug-in can change](what-plugins-can-change.md).
 
 ## What a plug-in can add
 
@@ -56,7 +56,7 @@ plug-in in [The plug-in collection](plugin-collection.md) is a full example to c
 
 A card puts one small piece of your plug-in on the dashboard, next to Starboard's own cards: how many titles it has,
 the last few things it did, or whether it is working. People add your card with **Edit dashboard**, choose its
-size and move it. Use a card for something worth seeing at a glance. Long lists, settings and anything people act
+size and move it. Use a card for something worth knowing at a glance. Long lists, settings and anything people act
 on belong in the plug-in's own section of **Settings**, then **Plug-ins**. Read
 [Use and change the dashboard](../topics/use-the-dashboard.md) for how people add cards.
 
@@ -65,7 +65,7 @@ on belong in the plug-in's own section of **Settings**, then **Plug-ins**. Read
 A setting of type `folder` lets people choose a folder for your plug-in with Browse, as they do everywhere else in
 Starboard. It needs plug-in API 1.3 (`"starboard_api": ">=1.3 <2.0"`) and a container that mounts the media folder,
 `media:ro`, or one folder in it, `media/<folder>`. The folder is always inside what you mount, and your plug-in reads
-it as it sees it, such as `/media/music`. Nothing outside the media folder can be chosen.
+it by its path inside the plug-in, such as `/media/music`. Nothing outside the media folder can be chosen.
 
 ### The three kinds
 

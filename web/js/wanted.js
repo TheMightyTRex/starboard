@@ -10,7 +10,7 @@ const W_NOUN = { movie: ["film", "films"], episode: ["episode", "episodes"], alb
   audiobook: ["audiobook", "audiobooks"] };
 
 function wantedTabs() {
-  const tabs = [["missing", "Missing"], ["cutoff", "Below the quality wanted"]];
+  const tabs = [["missing", "Not in library"], ["cutoff", "Below the quality wanted"]];
   const list = el("div", { role: "tablist", "aria-label": "Which list" }, tabs.map(([v, t]) => {
     const b = el("button", { type: "button", role: "tab", class: "topic-tabs__tab", "aria-selected": String(v === WHICH), "aria-controls": "wanted-list", text: t });
     b.addEventListener("click", () => {
@@ -63,7 +63,7 @@ async function wantedDetail(w, name, opener) {
   const facts = [["Year", d.year], ["Aired", d.aired], ["Length", d.runtime ? `${d.runtime} minutes` : ""], ["Genres", (d.genres || []).join(", ")],
     ["Quality wanted", d.profile]].filter(([, v]) => v);
   const results = el("div", { class: "stack-2", "aria-live": "polite" });
-  const find = el("button", { type: "button", class: "btn btn--primary" }, icon("search"), "See what Reelix can find");
+  const find = el("button", { type: "button", class: "btn btn--primary" }, icon("search"), "Find releases");
   find.addEventListener("click", async () => {
     find.disabled = true;
     results.replaceChildren(el("p", { class: "muted", text: "Asking every site. This can take a minute…" }));
@@ -85,8 +85,8 @@ async function wantedDetail(w, name, opener) {
         return el("li", { class: "row row--no-lead" }, el("div", {}, el("div", { class: "row__title", text: x.title }),
           el("div", { class: "row__meta", text: [x.quality, x.size ? formatBytes(x.size) : "", x.seeders != null ? `${x.seeders} seeders` : "", x.site, x.languages.join(", ")].filter(Boolean).join(" · ") }),
           x.why_not.length ? el("div", { class: "row__meta", text: `Reelix would not take it: ${x.why_not.join("; ")}` }) : null),
-          el("div", { class: "row__side" }, x.accepted ? null : chip("Turned down", "warning"), take));
-      })) : el("p", { text: "No site has it at the moment. Reelix keeps looking while it is wanted." }));
+          el("div", { class: "row__side" }, x.accepted ? null : chip("Not accepted", "warning"), take));
+      })) : el("p", { text: "No site has it at the moment. Reelix keeps searching while it is wanted." }));
     } catch (e) { results.replaceChildren(el("p", { text: e.message })); }
     finally { find.disabled = false; }
   });
@@ -114,7 +114,7 @@ async function wantedLoad(more = false) {
     list.append(...added);
     if (!wantedState.items.length) list.replaceChildren(el("li", { class: "empty", text: WHICH === "missing" ? "Nothing is missing." : "Everything is at the quality wanted." }));
     const noun = W_NOUN[wantedState.kind] || ["item", "items"];
-    $("#wanted-summary").textContent = `${r.total.toLocaleString("en-GB")} ${r.total === 1 ? noun[0] : noun[1]}${WHICH === "missing" ? " missing" : " below the quality wanted"}`;
+    $("#wanted-summary").textContent = `${r.total.toLocaleString("en-GB")} ${r.total === 1 ? noun[0] : noun[1]}${WHICH === "missing" ? " not in library" : " below the quality wanted"}`;
     if (!more) announce($("#wanted-summary").textContent);  // Show more says its own (SharedComponents.loadMore)
     $("#wanted-more").hidden = wantedState.items.length >= r.total;
     $("#wanted-all").disabled = !r.total;

@@ -43,7 +43,7 @@ do not need to enter each address, and with Docker access Starboard can fill in 
 
 - **An app is missing from the list:** it may run on a port Starboard does not expect. Add it with
   [Add an app](add-an-app.md), or give Starboard Docker access and search again.
-- **Could not look:** Starboard could not finish the search. Reload the page and try again. If it happens again,
+- **Could not check this computer for apps:** Starboard could not finish the search. Reload the page and try again. If it happens again,
   read [Report a problem](read-the-log.md#report-a-problem).
 
 ## Find out more

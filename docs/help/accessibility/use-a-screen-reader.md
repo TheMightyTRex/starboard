@@ -1,4 +1,4 @@
-[Help centre](../README.md) · Accessibility · reference
+[Help centre](../README.md) · Accessibility · how-to
 <!-- help: a11y / ways -->
 
 # Use a screen reader
@@ -81,7 +81,7 @@ for screen readers only, so each makes sense on its own. Cards update quietly in
 - [Accessibility in Starboard](overview.md)
 - [Use only a keyboard](use-only-a-keyboard.md)
 - [How Starboard is tested](how-starboard-is-tested.md)
-- [Report a problem](tell-us-about-a-problem.md)
+- [Tell us about an accessibility problem](tell-us-about-a-problem.md)
 
 <!-- footer: download rights -->
 

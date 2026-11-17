@@ -40,16 +40,16 @@ personal. You can also have the page checked automatically and choose which prob
 
 ## Things to note
 
-- What is sent never holds your password, API keys, cookies or anything typed into the page's fields. The page title
+- What is sent never holds your password, API keys, cookies or anything entered in the page's fields. The page title
   and the text on the page are copied as they are, so check it before you send it.
 - **Open in GitHub** posts it as an issue on Starboard's GitHub page, from your own GitHub account, where anyone can
   read it.
 - Problems with Jellyfin, Audiobookshelf or another app's own pages belong with that app. Read
   [Limits and known gaps](limits-and-known-gaps.md#what-starboard-cannot-control).
-- Before sending, it may help to check [Limits and known gaps](limits-and-known-gaps.md) to see whether the problem
+- Before sending, it may help to read [Accessibility limits and known gaps](limits-and-known-gaps.md) to find out whether the problem
   is already known.
 
-![What Starboard controls, and what it does not: its own pages; plug-in styles and cards, checked but made by others; and Jellyfin, Reelix's own pages, other apps and your own tools, outside its control](../images/a11y-who-controls.svg)
+![Diagram of what Starboard controls and what it does not](../images/a11y-who-controls.svg)
 
 ## Find out more
 

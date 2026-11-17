@@ -112,7 +112,7 @@ screen_lines() {
 }
 ok() { if [ "$FANCY" = 1 ]; then hang "  $(c 32 "✔") " "" "$1"; else say "Ready: $1"; fi; }
 bad() { if [ "$FANCY" = 1 ]; then hang "  $(c 33 "✘") " "" "$1"; else say "Missing: $1"; fi; }
-note() { if [ "$FANCY" = 1 ]; then hang "  $(c 33 "⚠") " "" "$1"; else say "Note: $1"; fi; }
+note() { if [ "$FANCY" = 1 ]; then hang "  $(c 33 "⚠") " "" "$1"; else say "Warning: $1"; fi; }
 
 
 header() {
@@ -132,6 +132,7 @@ header() {
 menu() {
   local line="" plain="" k label gap right keys
   right="${MENU_RIGHT:-Enter: recommended}"
+  [ "$MENU_RIGHT" = none ] && right=""  # while a job runs: only Ctrl+C Stop, with nothing on the right
   [ "${CAME_BACK:-0}" = 1 ] && [ -z "$MENU_RIGHT" ] && right="Enter: keep"
   read -ra keys <<< "$KEYS"  # read, not $KEYS, so ? is never taken as a file name pattern
   for k in "${keys[@]}"; do
@@ -160,8 +161,8 @@ page() {
   if [ "$FANCY" = 0 ]; then
     printf '\n== %s | %s (step %d of %d)\n' "$APP_NAME" "${TITLES[$STEP]}" "$STEP" "$STEPS"
     if [ -z "$IN" ]; then :
-    elif [ "$STEP" -gt "${FIRST_BACK:-1}" ]; then echo "Type b to go back, ? for help, f to send feedback or q to stop."
-    else echo "Type ? for help, f to send feedback or q to stop."; fi
+    elif [ "$STEP" -gt "${FIRST_BACK:-1}" ]; then echo "Press b to go back, ? for help, f to send feedback or q to stop."
+    else echo "Press ? for help, f to send feedback or q to stop."; fi
     [ "${CAME_BACK:-0}" = 1 ] && echo "You came back to this step. Your last answer is in [brackets]: press Enter to keep it."
     return
   fi
@@ -189,7 +190,7 @@ resized() {
   measure
   if [ "$COLS" -lt 60 ] || [ "$ROWS" -lt 20 ]; then
     # Too small for the frame: say so on a cleared window, and draw the step again when it is larger.
-    printf '\033[r\033[2J\033[1;1H%s\n%s' "This window is too small for the boxed look. Make it at least 60 by 20." "$PROMPT"
+    printf '\033[r\033[2J\033[1;1H%s\n%s' "This window is too small for the box layout. Make it at least 60 columns wide and 20 lines high." "$PROMPT"
     return 0
   fi
   header "${TITLES[$STEP]}" "$STEP"
@@ -242,7 +243,7 @@ popup() {
   while [ "$from" -lt "${#all[@]}" ]; do
     local body=("${all[@]:$from:$room}") foot="Enter: close help"
     from=$(( from + room ))
-    [ "$from" -lt "${#all[@]}" ] && foot="Enter: more below"
+    [ "$from" -lt "${#all[@]}" ] && foot="Enter: show more"
     POPUP=1
     popup_page "$title" "$foot" "${body[@]}"
     POPUP=0
@@ -271,7 +272,7 @@ popup_page() {
     printf '\033[%d;%dH%s %s %s' $(( top + 1 + i )) $(( left + 1 )) "$(c 36 "│")" "$line" "$(c 36 "│")"
   done
   printf '\033[%d;%dH%s' $(( top + 1 + ${#body[@]} )) $(( left + 1 )) "$(c 36 "╰$(rep ─ $(( bw - 2 )))╯")"
-  local key="Close help"; [ "$foot" = "Enter: more below" ] && key="More"
+  local key="Close help"; [ "$foot" = "Enter: show more" ] && key="Show more"
   printf '\0337\033[%d;1H\033[2K\033[%d;%dH%s\033[%d;1H\033[2K\033[%d;%dH  %s %s\0338' $(( ROWS - 1 )) $(( ROWS - 1 )) $(( L + 1 )) \
     "$(dim "$(rep ─ "$W")")" "$ROWS" "$ROWS" $(( L + 1 )) "$(accent Enter)" "$key"
   tty_read || true
@@ -422,7 +423,7 @@ choose() {
       CHOICE="$ANSWER"
       return 0
     fi
-    say "  Type a number from 1 to ${#opts[@]}, ? for help or q to stop."
+    say "  Enter a number from 1 to ${#opts[@]}, ? for help or q to stop."
   done
 }
 
@@ -470,7 +471,7 @@ work() {
   local name="$1" cmd="$2" n="$3" of="$4" pid tick=0 status
   printf '\n== %s\n$ %s\n' "$name" "$cmd" >> "$LOG"
   if [ "$FANCY" = 0 ]; then
-    say "$name ($n of $of). Please wait..."
+    say "$name ($n of $of)…"
     # Keys pressed meanwhile are not shown (each Enter would push the words above off the screen) and are dropped.
     ECHO_WAS="$(stty -g 2>/dev/null < "${IN:-/dev/tty}")" && stty -echo 2>/dev/null < "${IN:-/dev/tty}"
     # Never silent for long (TERMINAL.md): "Still working" every 2 minutes, with the count when the job has one.
@@ -499,7 +500,7 @@ work() {
   JOB_START=$SECONDS; DETAIL_NOW=""
   # While a job runs, only Ctrl+C works: the menu says so.
   local keys_were="$KEYS" right_were="$MENU_RIGHT"
-  KEYS="Ctrl+C"; MENU_RIGHT="Please wait"; menu
+  KEYS="Ctrl+C"; MENU_RIGHT="none"; menu
   # Keys pressed while the bar moves (Enter, out of impatience) would print new lines under it and repeat the bar
   # down the window: they are not shown until the job ends, and dropped then.
   ECHO_WAS="$(stty -g 2>/dev/null < "${IN:-/dev/tty}")" && stty -echo 2>/dev/null < "${IN:-/dev/tty}"
@@ -546,11 +547,11 @@ jobs_page() {
 job_failed() {
   local name="$1" why="$2" tip="$3" code="$4"
   say ""
-  note "$name did not work. Error $code."
+  note "$name did not finish (error $code)."
   para "$why${tip:+ $tip}"
   printf 'Error %s while %s\n' "$code" "${name,}" >> "$LOG"
   [ -z "$IN" ] || [ "${ASK:-1}" = 0 ] && { finish; echo "The details are in $LOG"; err "$code"; exit 1; }
-  LAST_PROBLEM="Error $code: $name did not work. $why"
+  LAST_PROBLEM="Error $code: $name did not finish. $why"
   local keys_were="$KEYS"
   KEYS="${KEYS/f/f r}"
   [ "$FANCY" = 1 ] && menu

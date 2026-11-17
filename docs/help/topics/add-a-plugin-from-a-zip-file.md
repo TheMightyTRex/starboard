@@ -30,7 +30,7 @@ activate.
    ![The checked zip of a made-up plug-in, with What it may do (step 3) outlined, and the test result, Ready to add, under it](../images/add-a-plugin-from-a-zip-file-2-checked.png)
 
 4. Select **Install** and the plug-in's name, such as **Install Harbour notes…**. A slide-out lists what it **can
-   see**, what it **can change**, what it **can reach** and what it **runs**, including the build. Read it all.
+   read**, what it **can change**, what it **can reach** and what it **runs**, including the build. Read it all.
 
    ![The Install Harbour notes slide-out, with It runs, the build from the zip (step 4), outlined](../images/add-a-plugin-from-a-zip-file-3-warning.png)
 5. To go ahead, enter your Starboard password and select **Install** and the plug-in's name. To stop, select
@@ -43,9 +43,9 @@ activate.
 
 1. Go to the plug-in's own page, under **Settings**, then **Plug-ins**.
 2. Select the **Versions** tab. In **Update from a zip file**, choose the new version's zip in **The new version's zip
-   file**, then select **See what is new**.
+   file**, then select **What is new**.
 
-   ![On demand's Versions, with Update from a zip file, its zip file field and See what is new (step 2), outlined](../images/add-a-plugin-from-a-zip-file-4-update.png)
+   ![On demand's Versions, with Update from a zip file, its zip file field and What is new (step 2), outlined](../images/add-a-plugin-from-a-zip-file-4-update.png)
 
 3. Read what is new and anything the new version asks for, enter your Starboard password, then select **Update**
    and its name.
@@ -60,7 +60,7 @@ server. Read [Update a plug-in and roll it back](update-a-plugin.md).
 - **What Starboard checks in the zip:** up to 50 MB, unpacking to at most 200 MB in at most 2,000 files;
   `starboard-plugin.json` at the top; no links, no names that point outside the zip, nothing encrypted.
 - **What the build may do:** fetch what the plug-in's `Dockerfile` names from the internet, with up to 2 GB of memory
-  and 2 processor cores, for up to 20 minutes. It never sees your folders, your other apps or Docker itself. Once
+  and 2 processor cores, for up to 20 minutes. It never reaches your folders, your other apps or Docker itself. Once
   built, the plug-in runs locked down like any other.
 - Starboard keeps the zip of the version you have and the one before, beside the plug-in, so it can build the
   container again if it goes missing.
@@ -69,7 +69,7 @@ server. Read [Update a plug-in and roll it back](update-a-plugin.md).
 ## If it does not work
 
 - **"That is not a zip file"** or **"The zip is damaged":** download the zip again from the plug-in's page.
-- **"starboard-plugin.json must be at the top of the zip":** the zip was made from the folder above the plug-in.
+- **"starboard-plugin.json must be at the top of the zip":** the zip was made from the plug-in's parent folder.
   Ask its maker for a zip made with the plug-in's own tool, such as On demand's `tools/make-zip.sh`.
 - **"The build failed"** with the last lines of the build: often the internet dropped while it fetched what the
   plug-in needs. Try again. If it fails the same way, send the lines to the plug-in's maker.

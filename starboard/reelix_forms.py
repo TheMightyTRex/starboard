@@ -37,7 +37,7 @@ FORMS = {
         ("recycle_bin_path", "Recycle bin folder", "Deleted and replaced files go here. Empty deletes them for good.", "path", r"^(/[^\x00]*)?$"),
         ("recycle_bin_retention_days", "Keep recycled files for", "0 keeps them for ever.", "number", (0, 3650)),
         ("delete_empty_folders", "Delete empty folders", "After the last file in a folder is deleted.", "bool", None),
-        ("unmonitor_deleted", "Stop following what you delete", "When a file is deleted outside Reelix, Reelix stops looking for it.", "bool", None),
+        ("unmonitor_deleted", "Stop following what you delete", "When a file is deleted outside Reelix, Reelix stops searching for it.", "bool", None),
         ("import_extra_files", "Bring in extra files", "Subtitles and other files that come with a download.", "bool", None),
         ("extra_file_extensions", "Extra file types", "Separated by commas, such as srt, nfo.", "list", None),
         ("analyze_video_files", "Read each file's details", "Resolution, sound and length, during scans.", "bool", None),

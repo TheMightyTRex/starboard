@@ -168,8 +168,8 @@ function renderJellyfin(j) {
   $("#jellyfin-sub").textContent = `Version ${j.version}`;
   const state = [];
   if (j.restart) state.push(chip("Restart needed", "warning"));
-  if (j.update) state.push(chip("Update available", "info"));
-  if (!j.restart && !j.update) state.push(chip("Up to date", "success"));
+  if (j.update) state.push(chip(...STATUS.updateAvailable));
+  if (!j.restart && !j.update) state.push(chip(...STATUS.upToDate));
   $("#jellyfin-state").replaceChildren(...state);  // beside the name, on the heading's line
   const facts = [];
   if (j.channels != null) facts.push(el("dt", { text: "Live TV" }), el("dd", { text: `${j.channels} ${j.channels === 1 ? "channel" : "channels"}` }));
@@ -178,7 +178,7 @@ function renderJellyfin(j) {
     ? el("ul", { class: "rows" }, j.playing.map((p) => el("li", { class: "row row--no-lead" },
       el("div", {}, el("div", { class: "row__title", text: p.series ? `${p.series}: ${p.title}` : p.title }),
         el("div", { class: "row__meta", text: [p.user, p.device, p.progress != null ? `${p.progress}% through` : ""].filter(Boolean).join(" · ") })),
-      el("div", { class: "row__side" }, p.paused ? chip("Paused", "muted") : null,
+      el("div", { class: "row__side" }, p.paused ? chip(...STATUS.paused) : null,
         p.transcoding ? chip("Converting", "warning") : chip("Direct play", "success")))))
     : el("p", { class: "muted", text: "Nobody is watching or listening." });
   const added = el("ul", { class: "rows" }, j.added.slice(0, 8).map((a) => el("li", { class: "row row--no-lead" },

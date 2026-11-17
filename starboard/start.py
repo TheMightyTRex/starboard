@@ -28,7 +28,7 @@ CHOICES = [
      "help": "For moving to a new computer, or starting again. Full without media is a .starboard file on this "
              "computer's disks, made in Settings, General, Backup and restore; it brings the same apps back with their "
              "settings. Settings only is a .json file downloaded there. Each is checked before anything changes, and "
-             "your password stays the one you just chose."},
+             "your password stays the one you chose."},
 ]
 # Apps that mean "this computer already runs a media server".
 MEDIA = {"sonarr", "radarr", "lidarr", "readarr", "prowlarr", "bazarr", "jellyfin", "emby", "plex", "seerr",
@@ -85,7 +85,7 @@ def storage(main_folder, drives, pool_ready):
     if len(drives) >= 2 or pool_ready:
         choices.append({"key": "pool", "title": "A pool of several disks",
                         "about": "Joins disks into one folder, /mnt/pool, so the media has one place however many disks "
-                                 "there are. Needs the pool helper" + ("." if pool_ready else ": run ./install.sh again and say yes to Drive pools."),
+                                 "there are. Needs the pool helper" + ("." if pool_ready else ": run ./install.sh again and say yes to Disk pools."),
                         "folder": "/mnt/pool/media", "ready": bool(pool_ready)})
     if len(drives) >= 2 and pool_ready:
         recommended = "pool"

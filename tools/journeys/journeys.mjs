@@ -429,7 +429,7 @@ await open("settings-radio.html#radio-link-h");
 await page.locator("#radio-link").fill("https://www.bbc.co.uk/programmes/example");
 await page.locator("#radio-link").press("Enter");
 await page.locator("button", { hasText: "Follow this show" }).waitFor({ timeout: 5000 }).catch(() => {});
-check("RAD-12", "Look it up shows the show behind the link", await page.locator("#radio-link-title").textContent().catch(() => "") === "The Lighthouse Keepers");
+check("RAD-12", "Find it shows the show behind the link", await page.locator("#radio-link-title").textContent().catch(() => "") === "The Lighthouse Keepers");
 await page.locator("button", { hasText: "Follow this show" }).click();
 await page.locator("section[aria-labelledby=radio-link-h] .notice", { hasText: "added" }).waitFor({ timeout: 5000 }).catch(() => {});
 check("RAD-12", "Follow this show adds it and says so", await page.locator("section[aria-labelledby=radio-link-h] .notice", { hasText: "added" }).count() === 1);
@@ -753,7 +753,7 @@ const upgradeText = (latest) => page.evaluate((l) => {
   showVersion("0.16.5", "TheMightyTRex/starboard", l);
   return document.querySelector("[data-footer-updates]").textContent;
 }, latest);
-check("FOOT-02", "About and updates says Upgrade available when a newer release is out", /About and updates, ?Upgrade available/.test(await upgradeText("99.0.0")));
+check("FOOT-02", "About and updates says Update available when a newer release is out", /About and updates, ?Update available/.test(await upgradeText("99.0.0")));
 check("FOOT-02", "and says nothing more when Starboard is up to date", (await upgradeText("0.16.5")).trim() === "About and updates");
 const signedOut = await (await browser.newContext()).newPage();
 await signedOut.goto(`${base}/login.html`, { waitUntil: "networkidle" });
@@ -1429,7 +1429,7 @@ check("BAND-08", "Starboard's own cards show a design system icon on the tile",
   ["disk", "load", "alerts", "health", "setup"].filter((k) => byId[k]).every((k) => byId[k].own && byId[k].app === "starboard" && !byId[k].img), JSON.stringify(builtIn.map((c) => [c.id, c.own, c.app])));
 const healthChip = (await page.locator('[data-card="health"] .card-band .chip').textContent()) || "";
 check("BAND-09", "Service health's state is a chip in the band, in words with no number, and the footer says when it was updated",
-  /^Status: (All running|Not responding)$/.test(healthChip) && /^Updated /.test(await page.locator('[data-card="health"] > .card-foot time').textContent()), healthChip);
+  /^Status: (Running|Not responding)$/.test(healthChip) && /^Updated /.test(await page.locator('[data-card="health"] > .card-foot time').textContent()), healthChip);
 check("BAND-09", "a card with nothing to say has no chip and no time (Recently added, kept by the server for 5 minutes)",
   (await page.locator('[data-card="recent"] .card-band__side > *').count()) === 0
   && (await page.locator('[data-card="recent"] > .card-foot').count()) === 0);
@@ -1632,6 +1632,60 @@ check("UPD-01", "the hours are a choice, the download hours first", (await page.
   && await page.locator('#updates-auto input[value="download"]').isChecked());
 check("UPD-05", "Recent updates lists what each did, by whom", (await page.locator("#updates-recent li").count()) >= 3
   && (await page.locator("#updates-recent").textContent()).includes("updated by itself"));
+// UPD-09 Check for updates (DASH-462): it asks every part now, says what it found in the live region, and focus stays
+// on the button. The stand-in Jellyfin has a newer Playback Reporting, which only Jellyfin knows about until asked.
+const checkBtn = page.locator("#check-updates-now");
+check("UPD-09", "Ready to update has Check for updates", (await checkBtn.count()) === 1 && (await checkBtn.textContent()).trim() === "Check for updates");
+check("UPD-09", "nothing asks Jellyfin which plug-ins are new before it is pressed", !(await page.locator("#up-list-summary").textContent()).includes("Playback Reporting"));
+await checkBtn.focus();
+await page.keyboard.press("Enter");
+await page.locator("#up-list-summary", { hasText: "Checked at" }).waitFor({ timeout: 30000 }).catch(() => {});
+const checkedSays = await page.locator("#up-list-summary").textContent();
+check("UPD-09", "it says in the live region when it checked and what is ready, Jellyfin's plug-ins too", /^Checked at \d\d:\d\d\. \d+ updates are ready: .*Playback Reporting 20\.0\.0\.0 for Jellyfin/.test(checkedSays), checkedSays);
+check("UPD-09", "focus stays on Check for updates", await page.evaluate(() => document.activeElement?.id === "check-updates-now"));
+check("UPD-09", "Jellyfin's row names the new version", (await page.locator('[data-key="jellyfin-plugins"]').textContent()).includes("New versions: Playback Reporting 20.0.0.0"));
+const readyNow = (checkedSays.match(/(\d+) updates are ready/) || [])[1];
+check("UPD-09", "Install all updates counts what the check found", (await page.locator("#install-all").textContent()).trim() === `Install all ${readyNow} updates`, readyNow);
+
+// UPD-10 What is new (DASH-462): one slide-out with the notes of every waiting update, by item, under Added, Changed,
+// Fixed and Security; an item without notes says so; a jump link takes focus to its item; Escape gives focus back.
+await page.locator("#whats-new").click();
+const wnPanel = page.getByRole("dialog", { name: /^What is new in \d+ updates$/ });
+await wnPanel.locator("h3").first().waitFor({ timeout: 15000 }).catch(() => {});
+const wnHeads = await wnPanel.locator("section.release-notes > h3").allTextContents();
+check("UPD-10", "it lists Starboard first, then Reelix and the plug-ins, each from the version you have to the new one",
+  /^Starboard \d+\.\d+\.\d+ to \d+\.\d+\.\d+$/.test(wnHeads[0] || "") && /^Reelix 0\.7\.1 to 0\.7\.2$/.test(wnHeads[1] || "")
+  && wnHeads.includes("Picture shrinker 1.0.0 to 1.1.0") && wnHeads.includes("Playback Reporting 19.0.0.0 to 20.0.0.0"), wnHeads.join(" / "));
+const sbKinds = await wnPanel.locator("section.release-notes").first().locator("h4").allTextContents();
+check("UPD-10", "Starboard's notes are under Added, Changed, Fixed and Security", sbKinds.join(",") === "Added,Changed,Fixed,Security", sbKinds.join(","));
+const psKinds = await wnPanel.locator("section.release-notes", { hasText: "Picture shrinker 1.0.0" }).locator("h4").allTextContents();
+check("UPD-10", "a plug-in's notes come from its new manifest", psKinds.join(",") === "Added,Changed,Fixed" && (await wnPanel.textContent()).includes("Photos of people"), psKinds.join(","));
+check("UPD-10", "an item with no notes says so plainly", /Starboard has no notes for [^.]+\. Its maker lists what changed on its release page\.|Starboard has no notes for [^,]+, and does not know where its maker lists them\./.test(await wnPanel.textContent()), (await wnPanel.textContent()).slice(0, 400));
+check("UPD-10", "the release page links open in a new tab and say so", (await wnPanel.locator('a[target="_blank"]').count()) >= 2
+  && (await wnPanel.locator('a[target="_blank"] .visually-hidden').first().textContent()).includes("opens in a new tab"));
+await wnPanel.getByRole("navigation", { name: "Updates in this list" }).getByRole("link", { name: /^Reelix / }).click();
+check("UPD-10", "a jump link takes focus to its item's heading", await page.evaluate(() => document.activeElement?.tagName === "H3" && document.activeElement.textContent.startsWith("Reelix")));
+await page.keyboard.press("Escape");
+await page.waitForTimeout(400);
+check("UPD-10", "Escape closes it and focus returns to What is new", (await page.locator("#side-panel").count()) === 0 && await page.evaluate(() => document.activeElement?.id === "whats-new"));
+
+// UPD-11 Install all updates with only one update waiting (DASH-462: it was shown only from two).
+await page.route("**/api/updates", async (route) => {
+  const r = await route.fetch();
+  const body = await r.json();
+  let kept = false;
+  body.items = body.items.map((t) => { if (t.update_available && !kept) { kept = true; return t; } return { ...t, update_available: false }; });
+  body.jellyfin_waiting = [];
+  await route.fulfill({ response: r, json: body });
+});
+await open("settings-updates.html");
+await page.locator("#updates-list:not([aria-busy])").waitFor({ timeout: 5000 }).catch(() => {});
+check("UPD-11", "one update waiting still offers Install 1 update and What is new", (await page.locator("#install-all").textContent().catch(() => "")).trim() === "Install 1 update"
+  && (await page.locator("#whats-new").count()) === 1);
+await page.unroute("**/api/updates");
+await open("settings-updates.html");
+await page.locator("#updates-list:not([aria-busy])").waitFor({ timeout: 5000 }).catch(() => {});
+
 const appsAuto = page.getByRole("switch", { name: "Your other apps: update by itself" });
 await appsAuto.check();
 await page.waitForTimeout(500);
@@ -1780,7 +1834,7 @@ await page.waitForTimeout(800);
 check("ZIP-07", "then its own page opens, offering Update from a zip file", /id=zip-hello/.test(page.url())
   && (await page.getByRole("heading", { name: "Update from a zip file" }).count()) === 1);
 await page.getByLabel("The new version's zip file").setInputFiles(zipFile("1.0.1"));
-await page.getByRole("button", { name: "See what is new" }).click();
+await page.getByRole("button", { name: "What is new" }).click();
 const zipUp = page.getByRole("dialog", { name: "Update Zip hello to 1.0.1?" });
 await zipUp.waitFor({ timeout: 8000 }).catch(() => {});
 check("ZIP-08", "a newer zip opens the update warning", (await zipUp.count()) === 1);
@@ -2122,7 +2176,7 @@ check("BRING-2", "a share's password is kept, and never sent back", pub455.set =
 await open("bring-in.html?part=bring-names");
 await page.waitForSelector(".bring-name", { timeout: 15000 }).catch(() => {});
 const counts455 = await page.locator("[data-filter=bring-state] label").allTextContents();
-check("BRING-3", "Check names has Matched, Needs a look and Left where it is, with counts", counts455.length === 3 && counts455.every((x) => /\d/.test(x)), counts455.join(" | "));
+check("BRING-3", "Check names has Matched, Needs attention and Left where it is, with counts", counts455.length === 3 && counts455.every((x) => /\d/.test(x)), counts455.join(" | "));
 await open("bring-in.html?part=bring-copy");
 await page.waitForSelector("main table", { timeout: 10000 }).catch(() => {});
 check("BRING-4", "the copy part shows what will happen before anything is copied", /Sources, in order/.test(await page.locator("main table").first().textContent().catch(() => "")));

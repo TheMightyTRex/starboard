@@ -41,7 +41,7 @@ function eventsFor(d) {
 }
 
 // One event: its time, then the words, with a status icon (the word is in hidden text and the tooltip).
-const EVENT_WORDS = { danger: ["Problem", "circle-x"], warning: ["Worth a look", "triangle-alert"], info: ["Information", "info"] };
+const EVENT_WORDS = { danger: ["Problem", "circle-x"], warning: ["Warning", "triangle-alert"], info: ["Information", "info"] };
 function eventRow(e) {
   const [word, iconName] = EVENT_WORDS[e.tone] || EVENT_WORDS.info;
   return el("li", { class: "row row--no-lead" },
@@ -66,7 +66,7 @@ function reportBody(d) {
     ["Report from", formatDate(d.checked * 1000, true)],
   ];
   const advice = tone === "danger" ? "Back up what is on it now and replace it."
-    : d.problems.length ? "Back up what is on it and plan to replace it. Check again after the next report to see if the counts are rising."
+    : d.problems.length ? "Back up what is on it and plan to replace it. Check again after the next report to find out whether the counts are rising."
     : isHot(d) ? "Check the airflow around the disk. Hot disks wear out sooner." : "";
   const events = eventsFor(d);
   return [
@@ -119,8 +119,8 @@ function tempCharts(d) {
     const now = Date.now() / 1000;
     const step = d.sct.minutes * 60;
     const points = d.sct.temps.map((temp, i) => ({ t: now - (d.sct.temps.length - 1 - i) * step, temp }));
-    const chart = lineChart({ level: 3, title: "Temperature, the drive's own log", series: [{ key: "temp", name: "Temperature" }], format: (v) => `${Math.round(v)}°C`, points: [] });
-    chart.update({ points, span: `the last ${Math.round((points.length * step) / 3600)} hours`, note: `The drive records one reading every ${d.sct.minutes} ${d.sct.minutes === 1 ? "minute" : "minutes"}.` });
+    const chart = lineChart({ level: 3, title: "Temperature, the disk's own log", series: [{ key: "temp", name: "Temperature" }], format: (v) => `${Math.round(v)}°C`, points: [] });
+    chart.update({ points, span: `the last ${Math.round((points.length * step) / 3600)} hours`, note: `The disk records one reading every ${d.sct.minutes} ${d.sct.minutes === 1 ? "minute" : "minutes"}.` });
     out.push(chart);
   }
   return out;

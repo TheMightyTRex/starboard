@@ -21,9 +21,9 @@ approve or decline each one there. Reported problems with a film or series are i
    approval.
 2. Find the request. Each one shows the title, the year, the kind, who asked for it and when.
 3. Select **Approve** to accept it. Starboard confirms with **Approved** and the title.
-4. Or select **Decline** to turn it down. Starboard asks you to confirm, because the person who asked sees that
+4. Or select **Decline** to turn it down. Starboard asks you to confirm, because the person who asked is told that
    it was declined.
-5. With Reelix's requests, you can enter a reason in **Why (optional)**. The person sees it with the answer.
+5. With Reelix's requests, you can enter a reason in **Why (optional)**. The person gets it with the answer.
 6. Select **Decline** again to confirm.
 
 A Reelix request that failed shows **Try again**. Select it to ask Reelix to try again.
@@ -50,7 +50,7 @@ People can report a problem with a film or series in Reelix. Starboard shows tho
 
 ## If it does not work
 
-- **Add Reelix or Seerr to see requests here:** Starboard has no Reelix or Seerr app with an API key. Add one
+- **Add Reelix or Seerr to show requests here:** Starboard has no Reelix or Seerr app with an API key. Add one
   in **Settings**, then **Apps**, then **Manage apps**. Read [Change or remove an app](change-or-remove-an-app.md#change-an-apps-details).
 - **Could not ask Seerr** and a message: the app did not answer. Check it is running. Read
   [An app shows as not responding](app-not-responding.md).

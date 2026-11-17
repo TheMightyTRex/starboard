@@ -116,7 +116,7 @@ def read_plex(url, token):
     sections = [s for s in get("/library/sections").get("Directory") or [] if s.get("type") == "artist"
                 and (re.search(r"book", s.get("title", ""), re.I) or re.search(r"audnexus|audiobook", s.get("agent", ""), re.I))]
     if not sections:
-        raise ValueError("No Plex library looks like audiobooks. Its name needs the word book, or it needs the Audnexus agent")
+        raise ValueError("No Plex library is set up for audiobooks. Its name needs the word book, or it needs the Audnexus agent")
     owner = (get("/myplex/account") or {}).get("username") or "Plex"
     albums = {}
     for section in sections:

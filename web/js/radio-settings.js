@@ -108,7 +108,7 @@ function radioLogosSection() {
       el("p", { class: "small muted", text: "Logos are kept on this server only. Each one belongs to its broadcaster." }),
       form].filter(Boolean));
   };
-  api("/api/library/radio-logos?tab=radio").then((s) => draw(s)).catch((e) => body.replaceChildren(notice("info", "Could not look", e.message)));
+  api("/api/library/radio-logos?tab=radio").then((s) => draw(s)).catch((e) => body.replaceChildren(notice("info", "Could not read the radio logos", e.message)));
   return section("radio-logos", "Station logos", "Shown on Library, Radio, Stations, light or dark to suit the page.", body);
 }
 
@@ -175,7 +175,7 @@ function radioLibrarySection() {
       finally { again.disabled = false; }
     });
     const rows = r.groups.map((g) => {
-      const open = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, g.show_id ? "Match by hand" : "See the files",
+      const open = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, g.show_id ? "Match by hand" : "Show the files",
         el("span", { class: "visually-hidden", text: ` for ${g.podcast}` }));
       open.addEventListener("click", () => openPodcast(g, open));
       return el("li", { class: "row row--no-lead", "data-key": g.key }, el("div", {}, el("div", { class: "row__title", text: g.podcast }),
@@ -203,7 +203,7 @@ function radioLibrarySection() {
 // and its newest episodes (nothing is saved), then Follow this show adds it, with what Reelix gets (choice cards).
 function radioLinkSection() {
   const link = el("input", { class: "input", id: "radio-link", type: "url", inputmode: "url", autocomplete: "off", spellcheck: "false", placeholder: "https://" });
-  const look = el("button", { type: "submit", class: "btn" }, icon("search"), "Look it up");
+  const look = el("button", { type: "submit", class: "btn" }, icon("search"), "Find it");
   const found = el("div", { class: "stack-4" });
   const form = el("form", { class: "form-stack", novalidate: true },
     field("The show's address", link, { hint: "A programme page on BBC Sounds, a show on Apple Podcasts, or a podcast feed address." }),

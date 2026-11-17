@@ -30,8 +30,8 @@ PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 18792
 FAKE_PORT = PORT + 1
 os.environ["STARBOARD_HISTORY"] = "0"
 os.environ["STARBOARD_REPO"] = "TheMightyTRex/starboard"  # the public repository: release notes and Report a problem
-os.environ["STARBOARD_DISKS"] = ("Media pool=/disks/pool,System disk=/data,Drive 1=/disks/each/1,Drive 2=/disks/each/2,"
-                                 "Drive 3=/disks/each/3,Drive 4=/disks/each/4")
+os.environ["STARBOARD_DISKS"] = ("Media pool=/disks/pool,System disk=/data,Disk 1=/disks/each/1,Disk 2=/disks/each/2,"
+                                 "Disk 3=/disks/each/3,Disk 4=/disks/each/4")
 from starboard import changes, child, containers, discovery, stack, sysinfo  # noqa: E402
 child.ENABLED = os.environ.get("STARBOARD_CHILD_JOBS") == "1"  # heavy jobs in a short-lived process, as the server (DASH-79)
 os.environ["EXAMPLE_REELIX_BASE"] = f"http://127.0.0.1:{FAKE_PORT}/reelix"
@@ -40,8 +40,8 @@ from starboard.server import make_server  # noqa: E402
 from tests.reelix_stand_in import StandIn  # noqa: E402
 
 GB, TB = 1024 ** 3, 1024 ** 4
-DISKS = {"Media pool": (24 * TB, 14.2 * TB), "System disk": (0.5 * TB, 0.12 * TB), "Drive 1": (8 * TB, 6.9 * TB),
-         "Drive 2": (8 * TB, 4.1 * TB), "Drive 3": (4 * TB, 2.2 * TB), "Drive 4": (4 * TB, 1.0 * TB)}
+DISKS = {"Media pool": (24 * TB, 14.2 * TB), "System disk": (0.5 * TB, 0.12 * TB), "Disk 1": (8 * TB, 6.9 * TB),
+         "Disk 2": (8 * TB, 4.1 * TB), "Disk 3": (4 * TB, 2.2 * TB), "Disk 4": (4 * TB, 1.0 * TB)}
 _snapshot = sysinfo.snapshot
 
 
@@ -158,6 +158,26 @@ def _example_self_update():
         self._latest.update(tag=newer, checked=time.time())
         return newer
     server_mod.App.latest_release = latest_release
+    # What is new for the made-up release (DASH-462): its changelog at its tag, without reaching GitHub.
+    from starboard import changes as changes_mod
+    real_fetch = changes_mod._fetch
+    made_up = f"""# Changelog
+
+## [{newer[1:]}] (18 November 2026)
+
+### Added
+- **Check for updates:** Settings, Updates asks every part for new versions when you choose.
+
+### Changed
+- **Install all updates:** Shown when one update or more is ready.
+
+### Fixed
+- **Release notes:** Dates are written out in full.
+
+### Security
+- **Checks:** Every scanner ran and found nothing to fix.
+"""
+    changes_mod._fetch = lambda url: changes_mod.parse(made_up) if url.endswith(f"/{newer}/CHANGELOG.md") else real_fetch(url)
     self_update.plan = lambda data_dir, root: {"how": "native", "folder": str(REPO)}
 
     def launch(p, to):
@@ -442,7 +462,7 @@ def _example_bring_in(data, root):
         with open(p, "wb") as f:
             f.truncate(int(gb * GB_))  # sparse: the size shows, no space is used
     (root / "srv/media/media/movies").mkdir(parents=True, exist_ok=True)
-    fo.disk_places = lambda: [{"name": "Drive 2", "path": str(root / "mnt/disk2")}, {"name": "USB disk", "path": str(root / "media/usb")}]
+    fo.disk_places = lambda: [{"name": "Disk 2", "path": str(root / "mnt/disk2")}, {"name": "USB disk", "path": str(root / "media/usb")}]
     # The example tree lives in a throwaway folder: names show as this computer would show them (/mnt/disk2...).
     real_describe, real_places = bring_in.describe, fo.places
     bring_in.describe = lambda s: real_describe(s).replace(str(root), "")

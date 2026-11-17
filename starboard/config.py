@@ -683,7 +683,7 @@ def clean_extras(incoming, current):
     if "livetv_jellyfin_folder" in incoming:  # the Live TV folder as Jellyfin sees it (DASH-229); "" works it out
         path = str(incoming["livetv_jellyfin_folder"] or "").strip().rstrip("/")[:300]
         if path and not re.match(r"^/[A-Za-z0-9 ._()&+/-]*$", path):
-            raise ConfigError("Enter the folder as Jellyfin sees it, such as /config/iptv")
+            raise ConfigError("Enter the folder inside Jellyfin, such as /config/iptv")
         out["livetv_jellyfin_folder"] = path
     return out
 

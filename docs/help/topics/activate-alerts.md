@@ -32,9 +32,9 @@ Choose where alerts go. Starboard can send them to one of these:
 
 ### Activate watching
 
-The rest of the Alerts page is under **Advanced settings**.
+The rest of the Alerts page is under **More settings**.
 
-1. On the same page, activate **Advanced settings**.
+1. On the same page, activate **More settings**.
 2. Under **Watching**, activate **Watch in the background**. Starboard now checks your apps with no page open.
 3. In **How often**, choose how often it checks. **Every 5 minutes** is plenty for a home server.
 
@@ -44,7 +44,7 @@ Under **What to alert on**, each alert is active unless you deactivate it. Each 
 
 - **An app stops answering:** after two checks in a row, so a restart does not alert. Another message comes
   when it answers again.
-- **A disk reports a problem:** from Disk health, when a drive fails its health check or counts damaged areas.
+- **A disk reports a problem:** from Disk health, when a disk fails its health check or counts damaged areas.
   Read [Check your disks' health](check-disk-health.md).
 - **A folder gets full:** choose **At 80%**, **At 85%**, **At 90%**, **At 95%** or **Off**, for the folders on
   System, Storage. Read [Check free space and what is using it](check-storage.md).
@@ -69,7 +69,7 @@ Under **What to alert on**, each alert is active unless you deactivate it. Each 
 - **Not sent** and a message: Starboard could not reach the address. Check the address and token, select
   **Save where alerts go**, then send another test.
 - **No alerts arrive, but the test works:** check that **Watch in the background** is active, under
-  **Advanced settings**. Then check the alert you want is active under **What to alert on**.
+  **More settings**. Then check the alert you want is active under **What to alert on**.
 - **A disk or folder alert never comes:** Disk health or the Storage folders may not be set up. Read
   [Check your disks' health](check-disk-health.md) and [Check free space and what is using it](check-storage.md).
 

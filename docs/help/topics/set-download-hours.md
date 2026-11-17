@@ -37,7 +37,7 @@ in the other. **Settings**, then **Downloads** also holds your VPN and your Usen
 1. Go to **Activity**, then **Downloads**, then **Queue**.
 2. In **Download hours**, select **Resume downloads now**, or **Pause downloads until** a time.
 
-   ![Activity, Downloads, Queue while download hours pause downloads, with Paused and Resume downloads now (step 2) outlined](../images/set-download-hours-3-resume.png)
+   ![Activity, Downloads, Queue while download hours pause downloads, with Paused and Resume downloads now (step 2) outlined, with example data](../images/set-download-hours-3-resume.png)
 
 3. To go back to your hours, select **Follow the hours**. Otherwise Starboard goes back to them at the next
    start or end time.
@@ -56,7 +56,7 @@ Starboard downloads that one item and keeps everything else paused. Read
 - Starboard starts again only what it paused. Anything you paused yourself stays paused. Seeding is left alone.
 - Soulseek is paused by disconnecting it from the Soulseek network until the hours start.
 - Starboard checks every minute while download hours are active. To check less often, go to **Settings**, then
-  **Performance**, activate **Advanced settings**, and change **Download hours check**. Read [Make Starboard use less of your server](make-starboard-lighter.md#background-work).
+  **Performance**, activate **More settings**, and change **Download hours check**. Read [Make Starboard use less of your server](make-starboard-lighter.md#background-work).
 
 ## If it does not work
 

@@ -317,7 +317,7 @@ def check_dockerfile(text):
             elif len(parts) != 1:
                 problems.append(f"{where}: FROM is an image, then AS and a short name if you need one")
             if "$" in image:
-                problems.append(f"{where}: FROM names its image in full, not with a variable, so you see what is used")
+                problems.append(f"{where}: FROM names its image in full, not with a variable, so the image used is clear")
             elif image.lower() in [s.lower() for s in stages[:-1 if len(parts) == 3 else None]] or image == "scratch":
                 pass
             elif not re.match(IMAGE_NAME, image):
@@ -354,7 +354,7 @@ def build_words(manifest):
     """The line in What it may do for a plug-in that builds its own image (API 1.15)."""
     return (f"Starboard builds its image, {plugins.built_image(manifest)}, from the Dockerfile in the zip. The build can "
             f"fetch what the Dockerfile names from the internet, with up to {BUILD_MEMORY_MB // 1024} GB of memory and "
-            f"{BUILD_CPUS} processor cores for up to {BUILD_MINUTES} minutes, and sees only the zip's own files: never "
+            f"{BUILD_CPUS} processor cores for up to {BUILD_MINUTES} minutes, and reads only the zip's own files: never "
             "your folders, other apps or Docker")
 
 
@@ -602,8 +602,8 @@ def start_install(data_dir, token, media_dir, after=None):
 def plugin_tester_errors(manifest):
     from . import plugin_tester
     r = plugin_tester.report(manifest)
-    return [] if r["ok"] else ["Test it to see its errors"] if not r.get("issues") else [
-        i.get("what", "") for i in r["issues"] if i.get("severity") == "error"][:4] or ["Test it to see its errors"]
+    return [] if r["ok"] else ["Test it to list its errors"] if not r.get("issues") else [
+        i.get("what", "") for i in r["issues"] if i.get("severity") == "error"][:4] or ["Test it to list its errors"]
 
 
 def preview(data_dir, token):
@@ -614,7 +614,7 @@ def preview(data_dir, token):
     try:
         out = {**pa.summary(manifest), "test": plugin_tester.report(manifest), "zip": {**report, "token": token}}
     except (KeyError, TypeError, AttributeError, ValueError):  # a manifest too far from the format to describe
-        raise ZipProblem(f"{MANIFEST} is not a plug-in manifest Starboard can read. Test it to see why") from None
+        raise ZipProblem(f"{MANIFEST} is not a plug-in manifest Starboard can read. Test it to find out why") from None
     if report["problems"]:
         out["test"] = {**out["test"], "ok": False, "errors": out["test"]["errors"] + len(report["problems"]),
                        "issues": [{"severity": "error", "area": "zip", "where": "zip", "what": p, "fix": "Ask its maker for a zip that keeps to these rules"}

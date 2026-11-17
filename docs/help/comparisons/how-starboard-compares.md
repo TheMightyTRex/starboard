@@ -26,7 +26,7 @@ Bazarr, for subtitles, and Gluetun, for a VPN, are left out of every stack, beca
 
 In Starboard's stack, one app does the work of several. Reelix finds and downloads films, series, music and books,
 and handles requests, in place of Radarr, Sonarr, Lidarr, Readarr, Prowlarr and Jellyseerr. Starboard is the
-dashboard and runs everything else, so you have one place to look.
+dashboard and runs everything else, so everything is in one place.
 
 ## What each stack can do
 
@@ -44,7 +44,7 @@ dashboard and runs everything else, so you have one place to look.
 <tr><th scope="row">Install and set up the apps for you</th><td>Yes</td><td>Not included</td><td>Not included</td><td>Not included</td></tr>
 <tr><th scope="row">App updates, with a backup first</th><td>Yes</td><td>With an add-on</td><td>With an add-on</td><td>With an add-on</td></tr>
 <tr><th scope="row">Alerts when an app stops</th><td>Yes, to ntfy, Gotify or a webhook</td><td>With an add-on</td><td>With an add-on, such as Uptime Kuma</td><td>With an add-on</td></tr>
-<tr><th scope="row">Disk health and drive pools</th><td>Yes</td><td>Not included</td><td>Not included</td><td>Not included</td></tr>
+<tr><th scope="row">Disk health and disk pools</th><td>Yes</td><td>Not included</td><td>Not included</td><td>Not included</td></tr>
 <tr><th scope="row">Audiobooks, podcasts and radio</th><td>Yes, with Audiobookshelf and Reelix</td><td>With more apps</td><td>With more apps</td><td>With more apps</td></tr>
 <tr><th scope="row">Live TV</th><td>Yes, through a plug-in and Jellyfin</td><td>Through Jellyfin</td><td>Through Jellyfin</td><td>Built into Plex</td></tr>
 <tr><th scope="row">Subtitles</th><td>With Bazarr, for now</td><td>With Bazarr</td><td>With Bazarr</td><td>Built into Plex</td></tr>
@@ -64,13 +64,13 @@ dashboard and runs everything else, so you have one place to look.
   stack built on Plex.
 - **Some apps have changed.** Jellyseerr and Overseerr are being replaced by Seerr. Readarr has no image that can be
   pulled. Watchtower, a common add-on for updates, stopped being maintained in December 2025.
-- **What is missing in Starboard** is listed, with what is planned, in
-  [What Starboard does not do yet](what-starboard-does-not-do-yet.md).
+- **What Starboard does not do** is listed in
+  [What Starboard does not do](what-starboard-does-not-do-yet.md).
 
 ## Find out more
 
 - [Memory and processor: Starboard against other stacks](memory-and-processor.md)
-- [What Starboard does not do yet, and what is planned](what-starboard-does-not-do-yet.md)
+- [What Starboard does not do](what-starboard-does-not-do-yet.md)
 - [Everything Starboard does](../topics/everything-starboard-does.md)
 - [What Reelix is](../basics/what-is-reelix.md)
 - [Move from Radarr, Sonarr and the others to Reelix](../topics/move-your-apps-to-reelix.md)

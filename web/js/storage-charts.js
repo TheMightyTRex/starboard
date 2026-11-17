@@ -159,8 +159,8 @@ function drivesChart(drives, onOpen) {
       tone ? chip(tone === "danger" ? "Full" : "Nearly full", tone) : null);
   }));
   return [list, el("details", { class: "chart__table" }, el("summary", { text: "Show as a table" }),
-    el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" }, el("caption", { class: "visually-hidden", text: "Drives in the pool" }),
-      el("thead", {}, el("tr", {}, ["Drive", "Size", "Used", "Free"].map((h) => el("th", { scope: "col", text: h })))),
+    el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" }, el("caption", { class: "visually-hidden", text: "Disks in the pool" }),
+      el("thead", {}, el("tr", {}, ["Disk", "Size", "Used", "Free"].map((h) => el("th", { scope: "col", text: h })))),
       el("tbody", {}, sorted.map((d) => el("tr", {}, el("th", { scope: "row", text: d.label }), el("td", { class: "num", "data-label": "Size", text: formatBytes(d.total) }),
         el("td", { class: "num", "data-label": "Used", text: `${formatBytes(d.used)} (${Math.round((d.used / d.total) * 100)}%)` }), el("td", { class: "num", "data-label": "Free", text: formatBytes(d.free) })))))))];
 }

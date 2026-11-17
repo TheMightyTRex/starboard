@@ -46,7 +46,7 @@ class Locations(unittest.TestCase):
     def test_describe_outside_what_the_app_sees(self):
         got = locations.describe("reelix", "/config/x", mounts=self.m, read=lambda host: {})
         self.assertFalse(got["ok"])
-        self.assertIn("Reelix cannot see that folder", got["lines"][0])
+        self.assertIn("Reelix cannot reach that folder", got["lines"][0])
 
     def test_without_docker_browse_is_off_and_typing_works(self):
         self.assertEqual(locations.describe("reelix", "/data/media/movies", mounts=[])["words"], "Media, Films")

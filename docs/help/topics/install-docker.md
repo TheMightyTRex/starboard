@@ -14,7 +14,7 @@ Use this page to do it by hand.
 - A computer with Linux Mint 22.3, Debian 13, Ubuntu Server 26.04 or Raspberry Pi OS (64-bit), or a later version.
   Read [The four systems](what-you-need.md#the-four-systems).
 - The password you use to sign in to that computer. The terminal asks for it.
-- A terminal open on that computer. Read [The terminal: typing commands](../basics/the-terminal.md).
+- A terminal open on that computer. Read [The terminal: entering commands](../basics/the-terminal.md).
 - Not sure what Docker is? Read [What Docker is](../basics/what-is-docker.md).
 
 ## Steps for Debian, Ubuntu Server and Raspberry Pi OS

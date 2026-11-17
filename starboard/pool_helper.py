@@ -149,7 +149,7 @@ class Host:
         return out
 
     def by_id(self, kname):
-        """The stable name of a drive, /dev/disk/by-id/..., which does not change between starts as sda and sdb can."""
+        """The stable name of a disk, /dev/disk/by-id/..., which does not change between starts as sda and sdb can."""
         folder = os.path.join(self.root, "dev/disk/by-id")
         best = ""
         try:
@@ -240,13 +240,13 @@ def drives(host):
             if st:
                 item.update(used=st["used"], free=st["free"], fs_size=st["size"])
         elif system:
-            item.update(use="system", blocked="This is the system drive, which Starboard never offers")
+            item.update(use="system", blocked="This is the system disk, which Starboard never offers")
         elif member:
             item.update(use="in use", blocked=f"Part of {member}, which Starboard leaves alone")
         elif any(b == m or b.startswith(m.rstrip("/") + "/") for m in mounted for b in handmade.get("branches", [])):
             item.update(use="other pool", blocked="Part of a pool made outside Starboard, which Starboard only shows")
         elif not bid:
-            item.update(use="in use", blocked="Starboard cannot find a stable name for this drive in /dev/disk/by-id")
+            item.update(use="in use", blocked="Starboard cannot find a stable name for this disk in /dev/disk/by-id")
         else:
             item["use"] = "free"
             item["files"] = sum(p["size"] or 0 for p in parts if p["fs"])
@@ -273,7 +273,7 @@ def find(host, ident, listing=None):
     for d in listing if listing is not None else drives(host):
         if ident in (d["by_id"], d["name"], d["path"], d.get("label")) or (d["by_id"] and ident == os.path.basename(d["by_id"])):
             return d
-    raise Refused(f"There is no drive called {ident}")
+    raise Refused(f"There is no disk called {ident}")
 
 
 # fstab and the pool -----------------------------------------------------------------------------------------
@@ -427,7 +427,7 @@ def tools(host):
 
 def plan_add(host, ident, role, erase=False, folders=()):
     if role not in ("pool", "parity", "copy"):
-        raise Refused("A drive can be added to the pool, or as a parity or copy drive")
+        raise Refused("A disk can be added to the pool, or as a parity or copy disk")
     if handmade_pool(host):
         raise Refused("This computer has a pool made outside Starboard. Starboard shows it, but does not change it")
     cfg = host.config()
@@ -446,15 +446,15 @@ def plan_add(host, ident, role, erase=False, folders=()):
                       " ".join({"mkfs.ext4": "e2fsprogs", "sgdisk": "gdisk", "wipefs": "util-linux"}.get(m, m) for m in missing) + ")")
     keepable = [p for p in d["parts"] if p["fs"] in KEEPABLE]
     if not erase and not keepable:
-        raise Refused("This drive has no files to keep, so it has to be erased and prepared to be used")
+        raise Refused("This disk has no files to keep, so it has to be erased and prepared to be used")
     if not erase and len(keepable) > 1:
-        raise Refused("This drive has more than one partition with files; Starboard only keeps a drive with one")
+        raise Refused("This disk has more than one partition with files; Starboard only keeps a disk with one")
     if role == "parity":
         biggest = max([x.get("size", 0) for x in cfg["drives"] if x["role"] == "pool"] or [0])
         if d["size"] < biggest:
-            raise Refused(f"A parity drive must be at least as big as the biggest pool drive ({human(biggest)})")
+            raise Refused(f"A parity disk must be at least as big as the biggest pool disk ({human(biggest)})")
         if not erase:
-            raise Refused("A parity drive is always erased first: parity needs a whole drive to itself")
+            raise Refused("A parity disk is always erased first: parity needs a whole disk to itself")
     if erase and any(fstab_has(host, p) for p in d["parts"]):
         raise Refused("/etc/fstab already mounts this drive. Take that line out first, or the computer may wait for it at start")
     if role == "pool" and not any(x["role"] == "pool" for x in cfg["drives"]) and os.path.isdir(host.real(host.pool)) \
@@ -464,7 +464,7 @@ def plan_add(host, ident, role, erase=False, folders=()):
     base = {"pool": host.disks_dir, "parity": host.parity_dir, "copy": host.backup_dir}[role]
     steps, entry = [], {"by_id": d["by_id"], "serial": d["serial"], "role": role, "label": label, "size": d["size"],
                         "model": d["model"]}
-    name = f"{d['model'] or 'Drive'} {human(d['size'])}, serial ends {d['ends']}"
+    name = f"{d['model'] or 'Disk'} {human(d['size'])}, serial ends {d['ends']}"
     if erase:
         part = d["by_id"] + "-part1"
         if d["mounted"]:
@@ -501,11 +501,11 @@ def plan_add(host, ident, role, erase=False, folders=()):
             steps.append({"do": "branch", "say": f"Add it to the pool. {host.pool} grows from "
                           f"{human(total)} to {human(total + d['size'])}. Files already in the pool stay where they are"})
         else:
-            steps.append({"do": "branch", "say": f"Make the pool at {host.pool} from this drive"})
+            steps.append({"do": "branch", "say": f"Make the pool at {host.pool} from this disk"})
             steps.append({"do": "protect", "say": "Make Docker wait for the pool, and lock the empty folder under it, "
                           "so the apps never run against an empty folder"})
     if role == "parity" or (role == "pool" and any(x["role"] == "parity" for x in cfg["drives"])):
-        steps.append({"do": "snapraid", "say": "Write /etc/snapraid.conf for the new drive; the next nightly check takes longer"})
+        steps.append({"do": "snapraid", "say": "Write /etc/snapraid.conf for the new disk; the next nightly check takes longer"})
     if role == "parity":
         steps.append({"do": "note", "say": f"The first check starts tonight at {cfg['check_at']} and can take many hours"})
     if role == "copy":
@@ -542,27 +542,27 @@ def plan_remove(host, ident):
     cfg = host.config()
     d = next((x for x in cfg["drives"] if ident in (x["by_id"], x["label"], os.path.basename(x["by_id"]))), None)
     if not d:
-        raise Refused("That drive is not in Starboard's pool or a backup drive")
+        raise Refused("That disk is not in Starboard's pool or a backup disk")
     steps, moves = [], []
     if d["role"] == "pool":
         others = [x for x in cfg["drives"] if x["role"] == "pool" and x is not d]
         if not others:
-            raise Refused("This is the only drive in the pool. Add another drive first, so its files have somewhere to go")
+            raise Refused("This is the only disk in the pool. Add another disk first, so its files have somewhere to go")
         branches = {x["mount"]: host.statvfs(x["mount"]) or {"size": x["size"], "used": 0, "free": x["size"]} for x in cfg["drives"] if x["role"] == "pool"}
         moves = drain_moves(host, d["mount"], branches)
         size = sum(m["bytes"] for m in moves)
         steps.append({"do": "drain", "say": f"Move {human(size)} in {len(moves)} folders from {d['label']} to the other "
-                      f"pool drives, about {duration(size)}. The pool shows every file in the same place throughout"})
+                      f"pool disks, about {duration(size)}. The pool shows every file in the same place throughout"})
         steps.append({"do": "branch", "say": f"Take {d['label']} out of the pool"})
         if any(x["role"] == "parity" for x in cfg["drives"]):
             steps.append({"do": "snapraid", "say": "Take it out of /etc/snapraid.conf; the next check rebuilds the parity"})
     elif d["role"] == "parity":
         steps.append({"do": "snapraid", "say": f"Stop using {d['label']} for parity. The pool is not protected until "
-                      "another parity drive is added"})
+                      "another parity disk is added"})
     else:
         steps.append({"do": "note", "say": f"Stop copying to {d['label']}. The copy already on it stays"})
     if d.get("own_line"):
-        steps.append({"do": "unmount", "say": f"Unmount {d['mount']} and take its line out of /etc/fstab. The drive "
+        steps.append({"do": "unmount", "say": f"Unmount {d['mount']} and take its line out of /etc/fstab. The disk "
                       "is not erased", "points": [d["mount"]]})
     steps.append({"do": "note", "say": "Save a copy of /etc/fstab first, in /var/lib/starboard-pool/saved"})
     drive = next((x for x in drives(host) if x["by_id"] == d["by_id"]), None)
@@ -642,13 +642,13 @@ def balance_moves(host, branches, tolerance=TOLERANCE, now_=None, recent=RECENT)
 
 
 def drain_moves(host, mount, branches):
-    """Every piece on one drive, each to whichever other pool drive has the most room then."""
+    """Every piece on one disk, each to whichever other pool disk has the most room then."""
     free = {b: s["size"] - s["used"] - (64 * 1024 ** 2) for b, s in branches.items() if b != mount}
     moves = []
     for rel, (nbytes, newest) in sorted(units(host.real(mount)).items(), key=lambda kv: -kv[1][0]):
         dst = max(free, key=free.get)
         if free[dst] < nbytes:
-            raise Refused(f"The other pool drives do not have room for {rel} ({human(nbytes)}). Add a drive first")
+            raise Refused(f"The other pool disks do not have room for {rel} ({human(nbytes)}). Add a disk first")
         moves.append({"from": mount, "to": dst, "path": rel, "bytes": nbytes, "mtime": newest})
         free[dst] -= nbytes
     return moves
@@ -658,18 +658,18 @@ def plan_balance(host, pause=(), engine="starboard"):
     cfg = host.config()
     pool = [x for x in cfg["drives"] if x["role"] == "pool"]
     if len(pool) < 2:
-        raise Refused("A pool needs two drives or more to balance")
+        raise Refused("A pool needs two disks or more to balance")
     if engine == "mergerfs.balance" and not tools(host)["mergerfs.balance"]:
         raise Refused("mergerfs.balance is not installed. Starboard's own balancer needs nothing extra")
     branches = {x["mount"]: host.statvfs(x["mount"]) or {"size": x["size"], "used": 0} for x in pool}
     moves, sides = balance_moves(host, branches)
     total = sum(m["bytes"] for m in moves)
     label = {x["mount"]: x["label"] for x in pool}
-    steps = [{"do": "note", "say": "Nothing needs moving: the drives are within 5% of each other" if not moves else
+    steps = [{"do": "note", "say": "Nothing needs moving: the disks are within 5% of each other" if not moves else
               f"Move {human(total)} in {len(moves)} folders, about {duration(total)} at low priority"}]
     if engine == "mergerfs.balance":
         steps.append({"do": "note", "say": "Run mergerfs.balance instead of Starboard's balancer: it moves single "
-                      "files, so a series can end up spread over several drives"})
+                      "files, so a series can end up spread over several disks"})
     return save_plan(host, {"action": "balance", "engine": engine, "moves": moves, "pause": list(pause),
                             "drives": [{"label": label[b], "mount": b, **s} for b, s in sides.items()],
                             "steps": steps, "fingerprints": {}})
@@ -691,17 +691,17 @@ def load_plan(host, plan_id):
 
 
 def verify(host, plan, confirm):
-    """Before anything is written: the drives are as they were in the check, and every erase is confirmed."""
+    """Before anything is written: the disks are as they were in the check, and every erase is confirmed."""
     listing = drives(host)
     for bid, fp in plan["fingerprints"].items():
         d = next((x for x in listing if x["by_id"] == bid), None)
         if not d or fingerprint(d) != fp:
-            raise Refused("The drive changed since the check, so nothing was done. Check again")
+            raise Refused("The disk changed since the check, so nothing was done. Check again")
     for bid in plan["erases"]:
         d = next(x for x in listing if x["by_id"] == bid)
         typed = re.sub(r"[^A-Za-z0-9]", "", str((confirm or {}).get(bid, ""))).upper()
         if not typed or typed != d["ends"]:
-            raise Refused(f"To erase {d['model'] or d['name']}, type the last 4 characters of its serial number, {d['ends']}")
+            raise Refused(f"To erase {d['model'] or d['name']}, enter the last 4 characters of its serial number, {d['ends']}")
 
 
 class Job:
@@ -831,7 +831,7 @@ def wait_for(host, path, seconds=30):
         if os.path.exists(path):
             return
         time.sleep(0.5)
-    raise Refused(f"{path} did not appear after the drive was prepared")
+    raise Refused(f"{path} did not appear after the disk was prepared")
 
 
 def pool_branches(host, cfg, add=None, remove=None):
@@ -858,7 +858,7 @@ def protect(host):
 
 
 def move_piece(host, m, job):
-    """Copy one folder to the emptier drive, check the copy, then remove it from the fuller one."""
+    """Copy one folder to the emptier disk, check the copy, then remove it from the fuller one."""
     src = os.path.join(host.real(m["from"]), m["path"])
     dst = os.path.join(host.real(m["to"]), m["path"])
     if not os.path.exists(src):
@@ -935,7 +935,7 @@ def run_moves(host, plan, job):
             skipped += 1
     job.data.pop("current", None)
     job.step(f"Moved {job.data['moved']} folders" + (f"; left {skipped} where they were, because they changed "
-                                                       "or were already on the other drive" if skipped else ""))
+                                                       "or were already on the other disk" if skipped else ""))
     return True
 
 
@@ -967,7 +967,7 @@ def apply_remove(host, plan, job):
     host.save_config(cfg)
     if e.get("own_line"):
         host.run("umount", e["mount"], check=False)
-        job.step(f"Unmounted {e['mount']}; the drive is not erased")
+        job.step(f"Unmounted {e['mount']}; the disk is not erased")
 
 
 # Nightly ----------------------------------------------------------------------------------------------------
@@ -1123,7 +1123,7 @@ def print_plan(plan, out=sys.stdout):
 
 
 def main(argv=None):
-    p = argparse.ArgumentParser(prog="starboard-pool", description="Starboard's drive pool helper (runs as root).")
+    p = argparse.ArgumentParser(prog="starboard-pool", description="Starboard's disk pool helper (runs as root).")
     p.add_argument("--json", action="store_true", help="answer in JSON, for Starboard's terminal set-up")
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("drives")
@@ -1146,7 +1146,7 @@ def main(argv=None):
     sv.add_argument("folder")
     a = p.parse_args(argv)
     if os.geteuid() != 0:
-        print("Run with sudo: the pool helper changes drives, so it runs as root", file=sys.stderr)
+        print("Run with sudo: the pool helper changes disks, so it runs as root", file=sys.stderr)
         return 2
     exchange = a.folder if a.cmd == "serve" else read_json("/var/lib/starboard-pool/exchange.json", {}).get("folder")
     host = Host(exchange=exchange)

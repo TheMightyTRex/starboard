@@ -66,7 +66,7 @@ in **Activity**, **Downloads**.
 ## What next
 
 - [Set up your dashboard after installing](set-up-your-dashboard.md): the default install, then more apps and
-  advanced options.
+  more options.
 - [Download only at certain hours](../topics/set-download-hours.md).
 - [Update your apps](../topics/update-your-apps.md).
 

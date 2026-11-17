@@ -10,7 +10,7 @@ Starboard's plug-in tester, accessibility included. To add one, read [Add a plug
 
 Eight styles for Starboard, each checked for accessibility in light and dark.
 
-| Style | What it looks like |
+| Style | What it is like |
 |---|---|
 | Midnight | Dark first and dense, with calm blue accents, for screens you leave on |
 | Frost | Soft frosted tints and gentle shadows, with solid panels for reading |
@@ -27,7 +27,7 @@ Eight styles for Starboard, each checked for accessibility in light and dark.
   Copy it into **The plug-in's manifest address** in **Settings**, **Plug-ins**, **Add a plug-in**.
 - **Download:** [styles.zip](https://github.com/TheMightyTRex/starboard-plugins/raw/main/zips/styles.zip)
   (5 KB): the manifest, its installer, readme and licence.
-  [See its files](https://github.com/TheMightyTRex/starboard-plugins/tree/main/styles).
+  [The Styles plug-in's files on GitHub](https://github.com/TheMightyTRex/starboard-plugins/tree/main/styles).
 - **How to add it:** paste the install address. Or unzip the download and run its installer,
   `python3 install.py`, or choose its `starboard-plugin.json` under **Or its manifest file**.
 - **Version:** 1.0.0. Made by TheMightyTRexUK. Licence: MIT.

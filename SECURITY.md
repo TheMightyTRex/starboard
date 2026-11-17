@@ -6,4 +6,4 @@ repository, not in a public issue. Say what you found, how to reproduce it and w
 Only the newest release gets fixes. Update with `./update.sh`.
 
 How Starboard protects you, what the November 2026 security review found and fixed, and which security tests
-pass: [docs/SECURITY-AND-TESTS.md](docs/SECURITY-AND-TESTS.md).
+pass: read [Security: how Starboard protects you, and how it was tested](docs/SECURITY-AND-TESTS.md).

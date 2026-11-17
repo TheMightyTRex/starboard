@@ -103,7 +103,7 @@ class LiveTvJellyfinTest(unittest.TestCase):
 
     def test_says_what_is_missing(self):
         self.assertIn("API key", lj.connect([], {}, "", local_folder=self.dir, host_path="", env=ENV))
-        self.assertIn("as Jellyfin sees it", lj.connect(self.services, {}, "", local_folder=self.dir, host_path="/elsewhere", env=ENV))
+        self.assertIn("inside Jellyfin", lj.connect(self.services, {}, "", local_folder=self.dir, host_path="/elsewhere", env=ENV))
 
 
 if __name__ == "__main__":

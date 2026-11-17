@@ -11,7 +11,7 @@ can change Starboard's settings.
 
 - Your Starboard password.
 - A terminal on any computer that can open Starboard, such as the server itself. Read
-  [The terminal: typing commands](../basics/the-terminal.md).
+  [The terminal: entering commands](../basics/the-terminal.md).
 - Starboard's address. These examples use `http://192.168.1.20:8095`. Use your own.
 
 ## 1. Make a key
@@ -20,12 +20,12 @@ can change Starboard's settings.
 2. Find **API keys** and select **Make a key**.
 3. In **Name it after what will use it**, enter a name, such as `My script`.
 4. In **What it may do**, keep **Read only** unless the script must act, such as pausing downloads.
-5. In **What it may see**, tick only what the script needs, or none for everything.
+5. In **What it may read**, tick only what the script needs, or none for everything.
 6. In **Ends**, choose when the key stops working.
 7. Enter your Starboard password, then select **Make a key**.
 8. Select **Copy**. Starboard shows the key only this once.
 
-A key looks like `sb_read_`, six letters and numbers, another `_`, then a long secret. Keep it like a password. Read
+A key has the form `sb_read_`, six letters and numbers, another `_`, then a long secret. Keep it like a password. Read
 [Authentication and keys](api-authentication.md).
 
 ## 2. Keep the key out of your commands
@@ -46,7 +46,7 @@ With curl:
 curl -s -H "Authorization: Bearer $STARBOARD_KEY" http://192.168.1.20:8095/api/v1/me
 ```
 
-It worked when you see your key's name, such as
+It worked when the answer gives your key's name, such as
 `{"id":"a1b2c3","name":"My script","right":"read","scopes":[],...}`. The answer never includes the key itself.
 
 With Python, using only the standard library:

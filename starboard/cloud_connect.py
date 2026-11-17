@@ -565,7 +565,7 @@ def _signed_in(sess, got, own_client=None):
     if sid == "onedrive":
         status, drive = HTTP((TEST_HOOK or {}).get("graph", GRAPH_DRIVE), None, {"Authorization": f"Bearer {json.loads(token)['access_token']}"})
         if status != 200 or not re.match(r"^[A-Za-z0-9!._-]{1,200}$", str(drive.get("id") or "")):
-            raise CloudError("Signed in, but OneDrive did not say which drive to use. Select Start again")
+            raise CloudError("Signed in, but OneDrive did not say which of its storage areas to use. Select Start again")
         kind = drive.get("driveType") if drive.get("driveType") in ("personal", "business", "documentLibrary") else "personal"
         lines += [("drive_id", drive["id"]), ("drive_type", kind)]
         sess["account"] = str((drive.get("owner") or {}).get("user", {}).get("displayName") or "")[:100]
@@ -718,7 +718,7 @@ def plain(said, sess=None, signin=None):
     if "no such host" in low or "connection refused" in low or "i/o timeout" in low or "dial tcp" in low or "network is unreachable" in low:
         return "Starboard could not reach the service. Check the address and that it is on, then select Try again"
     if "bucket" in low and ("not found" in low or "does not exist" in low or "nosuchbucket" in low):
-        return "That bucket is not there, or the key cannot see it. Make the bucket at the service first, or choose one from the list"
+        return "That bucket is not there, or the key has no access to it. Make the bucket at the service first, or choose one from the list"
     if "quota" in low or ("insufficient" in low and "storage" in low) or "no space" in low:
         return "The service is full. Free some space there, or keep fewer copies"
     if "permission" in low or "forbidden" in low or "access denied" in low:

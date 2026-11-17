@@ -5,7 +5,7 @@
 
 An AI assistant, such as one in your terminal or a chat app that can run commands, can answer questions about your
 server from Starboard's API: which apps are down, what is downloading, what the logs say. It uses a key of its own
-that only reads, so it can look but not change anything. This page explains how to set one up safely.
+that only reads, so it can read but not change anything. This page explains how to set one up safely.
 
 ## What an assistant can and cannot do
 
@@ -17,7 +17,7 @@ that only reads, so it can look but not change anything. This page explains how 
   logs it reads have addresses, names and keys taken out.
 - **Never settings.** No key, whatever its right, can change settings, security, Docker access, the install or
   plug-ins, or delete anything from Settings. Read [What the API covers](api-coverage.md).
-- **Logged.** Every key that is refused and every change made with a key is written to the audit log, so you can see
+- **Logged.** Every key that is refused and every change made with a key is written to the audit log, so you can check
   what an assistant did.
 
 Letting an assistant act, asking you first each time, is not built yet. It needs its own decision.
@@ -33,7 +33,7 @@ Letting an assistant act, asking you first each time, is not built yet. It needs
 2. In **Name it after what will use it**, name the assistant, such as `AI assistant in the terminal`. The name shows
    in the audit log.
 3. In **What it may do**, keep **Read only**.
-4. In **What it may see**, tick only what it needs, such as **Apps**, **Downloads** and **System**. Tick **Logs** only
+4. In **What it may read**, tick only what it needs, such as **Apps**, **Downloads** and **System**. Tick **Logs** only
    if it should read them: logs are never included when nothing is ticked. Leave **Updates** unticked unless the
    assistant should update Starboard, apps and plug-ins for you: it is never included either, and it also needs
    **Read and manage**.
@@ -64,7 +64,7 @@ A good first question is "Which of my apps are not answering, and why?". The ass
 
 - Do not paste the key into a chat. If it gets out, revoke it in **Settings**, **Security**, **API keys** and make
   another.
-- The assistant sees only what the API answers. It cannot open Starboard's pages, which need your password.
+- The assistant gets only what the API answers. It cannot open Starboard's pages, which need your password.
 - Each key can make up to 120 requests a minute. An assistant that asks too often gets
   [`rate_limited`](../../api/errors.md#rate_limited).
 

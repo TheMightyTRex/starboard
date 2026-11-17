@@ -61,7 +61,7 @@
       "steps": [
         5
       ],
-      "alt": "Settings, General, Names and apps with only its basic settings, with Advanced settings inactive (step 5) outlined",
+      "alt": "Settings, General, Names and apps with only its basic settings, with More settings inactive (step 5) outlined",
       "topic": "find-a-setting"
     },
     {
@@ -88,7 +88,7 @@
         5,
         5
       ],
-      "alt": "Settings, General, Names and apps with Advanced settings active (step 5): its tabs now include Categories, App cards and Set-up guide, both outlined",
+      "alt": "Settings, General, Names and apps with More settings active (step 5): its tabs now include Categories, App cards and Set-up guide, both outlined",
       "topic": "find-a-setting"
     }
   ]

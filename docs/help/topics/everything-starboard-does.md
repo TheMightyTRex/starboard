@@ -22,7 +22,7 @@ A short tour of what Starboard can do, by area. Each item links to the article t
   [Find out what is coming up](coming-up.md).
 - **Downloads and download hours.** Read [Pause, resume and remove downloads](manage-downloads.md) and
   [Download only at certain hours](set-download-hours.md).
-- **Wanted:** what is missing, or below the quality you want. Read [Find and get what is missing](get-what-is-missing.md).
+- **Wanted:** what is not in your library yet, or under the quality you want. Read [Find and get what is missing](get-what-is-missing.md).
 - **Requests.** Read [Approve or decline requests](approve-requests.md).
 - **Radio shows and podcasts.** Read [Follow radio shows and podcasts](follow-radio-shows.md).
 - **Jellyfin and Audiobookshelf extras.** Read [Import watch history into Jellyfin](import-watch-history.md) and
@@ -33,8 +33,8 @@ A short tour of what Starboard can do, by area. Each item links to the article t
 - **Install apps:** a complete media server, set up for you. Read [Install apps with Starboard](install-apps.md) and
   [Basics, Full install and Everything](install-types.md).
 - **App updates,** with a backup first. Read [Update your apps](update-your-apps.md).
-- **Storage, disk health and drive pools.** Read [Check free space and what is using it](check-storage.md),
-  [Check your disks' health](check-disk-health.md) and [Add a drive to the pool](add-a-drive-to-the-pool.md).
+- **Storage, disk health and disk pools.** Read [Check free space and what is using it](check-storage.md),
+  [Check your disks' health](check-disk-health.md) and [Add a disk to the pool](add-a-drive-to-the-pool.md).
 - **Alerts** to ntfy, Gotify or a webhook. Read [Activate alerts](activate-alerts.md).
 - **Backups.** Read [Back up and restore Starboard's settings](back-up-settings.md) and
   [Back up the whole server](back-up-the-server.md).

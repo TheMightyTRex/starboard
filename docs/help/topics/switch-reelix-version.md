@@ -3,7 +3,7 @@
 
 # Switch between the two versions of Reelix
 
-Reelix comes in two versions. **Reelix** looks after films, series, books, audiobooks, music and radio, and is the
+Reelix comes in two versions. **Reelix** manages films, series, books, audiobooks, music and radio, and is the
 smaller download. **Reelix with YouTube and Spotify downloads** also downloads straight from YouTube and Spotify, and
 takes about 600 MB more disk. You can switch either way at any time, and your library, users and settings stay.
 

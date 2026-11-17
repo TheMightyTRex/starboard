@@ -13,7 +13,7 @@ this installer for you. Use this page to do it by hand.
 
 - A Linux computer that is big enough. Read [What you need to run Starboard](what-you-need.md).
 - Docker is installed and `docker compose version` shows a version number. Read [Install Docker](install-docker.md).
-- A terminal open on that computer. Read [The terminal: typing commands](../basics/the-terminal.md).
+- A terminal open on that computer. Read [The terminal: entering commands](../basics/the-terminal.md).
 - Run everything as your normal user. Do not put `sudo` in front of the installer.
 
 ## Steps
@@ -61,7 +61,7 @@ this installer for you. Use this page to do it by hand.
 
 Every question is optional. If you are unsure, answer no: only that part of Starboard is missing, and you can change
 your answer later. On a new install it asks only about your home network, Docker access and, when the computer has
-more than one extra drive, Drive pools. When you run it again, it also asks about each app's use, a Live TV folder,
+more than one extra disk, Disk pools. When you run it again, it also asks about each app's use, a Live TV folder,
 folders to show and disk health.
 
 [What the installer asks, and what each answer means](what-the-installer-asks.md#the-access-it-asks-for) explains

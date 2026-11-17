@@ -8,13 +8,13 @@ page says what downloading without a VPN means, how to choose it, and how to add
 
 ## What it means
 
-- Other people sharing the same torrents can see your home internet address.
-- Your internet provider can see what you download.
+- Other people sharing the same torrents can find your home internet address.
+- Your internet provider can tell what you download.
 - Where downloading something is not allowed, this can lead to warning letters from your internet provider or to
   legal action.
-- Usenet over SSL hides what you download from your internet provider, but your Usenet provider still sees it.
+- Usenet over SSL hides what you download from your internet provider, but your Usenet provider still knows it.
 
-With a VPN, your internet provider and other people sharing torrents see only the VPN. Read
+With a VPN, your internet provider and other people sharing torrents can tell only that you use a VPN. Read
 [How Starboard keeps you safe](../basics/how-starboard-keeps-you-safe.md).
 
 ## Steps

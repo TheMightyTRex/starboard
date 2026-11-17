@@ -18,7 +18,7 @@ device you use, and every other browser and phone is signed out.
 3. In **Current password**, enter the password you use now.
 4. In **New password**, enter the new one. It must have at least 10 characters. A short sentence is a good
    choice.
-5. In **Type the new password again**, enter the new password a second time.
+5. In **Enter the new password again**, enter the new password a second time.
 6. Select **Change password**.
 
 Beside the button, Starboard shows "Password changed. Everyone else is signed out". The form empties.

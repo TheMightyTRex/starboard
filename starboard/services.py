@@ -293,7 +293,7 @@ def check(service):
             version = version.get("current", "") if isinstance(version, dict) else str(version)
             server = slskd(service, "GET", "server", timeout=5) or {}
             if not server.get("isLoggedIn"):
-                raise ServiceError("Not signed in to Soulseek: type your Soulseek name and password in slskd")
+                raise ServiceError("Not signed in to Soulseek: enter your Soulseek name and password in slskd")
         elif kind == "gluetun":
             v = vpn_one(service)
             if not v["running"]:

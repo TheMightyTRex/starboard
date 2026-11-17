@@ -40,8 +40,43 @@ def _text_checks(m):
             add("warning", f"actions[{i}]", "The button label does not say what it does", "Name the action, such as Update now")
     words = " ".join(str(m.get(k, "")) for k in ("name", "description"))
     if EM_DASH in words:
-        add("info", "description", "An em dash can be read oddly by some screen readers", "Use a full stop or a comma instead")
+        add("warning", "description", "An em dash can be read oddly by some screen readers", "Use a full stop or a comma instead")
+    # The writing rules of the design system's CONTENT-DESIGN.md (17 November 2026): the words people read in a
+    # label, hint or confirm text, each with the house replacement as the fix.
+    for where, text in _shown_texts(m):
+        for rx, what, fix in WORD_RULES:
+            if rx.search(text):
+                add("warning", where, what, fix)
+        if text == "Title Case":
+            add("warning", where, "The label is in Title Case", "Write it in sentence case: only the first word and names take a capital")
+        elif EM_DASH in text:
+            add("warning", where, "An em dash can be read oddly by some screen readers", "Use a full stop or a comma instead")
     return out
+
+
+# Each rule: what to find, what is wrong, and the house replacement.
+WORD_RULES = [
+    (re.compile(r"\b\w+n['’]t\b|\b(?:you|we|they|it|that|there|what|who|here|let|I)['’](?:s|re|ll|ve|d|m)\b", re.I),
+     "A contraction", "Write it in full, such as do not or it is"),
+    (re.compile(r"\b(?:see|sees|seen|seeing|look|looks|looked|looking)\b", re.I),
+     "\"See\" or \"look\"", "Say what happens instead: show, read, check, find or search"),
+    (re.compile(r"\b(?:click|clicks|clicked|clicking|tap|tapped)\b", re.I), "\"Click\" or \"tap\"", "Use select"),
+    (re.compile(r"!"), "An exclamation mark", "End with a full stop"),
+]
+TITLE_CASE = re.compile(r"^(?:[A-Z][a-z]+ ){2,}[A-Z][a-z]+$")
+
+
+def _shown_texts(m):
+    """(where, text) for each label, hint and confirm text in settings and actions."""
+    for kind in ("settings", "actions"):
+        for i, s in enumerate(m.get(kind) or []):
+            if not isinstance(s, dict):
+                continue
+            for key in ("label", "hint", "confirm"):
+                if isinstance(s.get(key), str) and s[key]:
+                    yield f"{kind}[{i}].{key}", s[key]
+            if kind == "settings" and TITLE_CASE.match(str(s.get("label", ""))):
+                yield f"{kind}[{i}].label", "Title Case"
 
 
 def card_titles(card):
@@ -68,7 +103,7 @@ def run(manifest, dev=False, builtin=False, logo_problem=""):
     for p in plugins.check(manifest, dev=dev, builtin=builtin):
         if p not in style_errors:  # style problems are listed once, with their fix
             where, _, what = p.partition(": ") if re.match(r"^[a-z_]+(\[\d+\])?(\.[a-z]+)?: ", p) else ("manifest", "", p)
-            issues.append({"severity": "error", "area": "manifest", "where": where, "what": what or p, "fix": "See the manifest reference in the help centre"})
+            issues.append({"severity": "error", "area": "manifest", "where": where, "what": what or p, "fix": "Read the manifest reference in the help centre"})
     issues += _text_checks(manifest)
     for i, c in enumerate(manifest.get("containers") or []):
         if isinstance(c, dict):
@@ -85,7 +120,7 @@ def run(manifest, dev=False, builtin=False, logo_problem=""):
                                "fix": "Leave out start and idle_stop_minutes here, or make it the first container if Starboard alone calls it"})
             if c.get("network") == "lan":
                 issues.append({"severity": "info", "area": "security", "where": f"containers[{i}]", "what": "It can reach your home network",
-                               "fix": "Use the default network unless it really needs other computers"})
+                               "fix": "Use the default network unless it needs other computers"})
     from . import plugin_cards
     for i, c in enumerate(manifest.get("cards") or []):
         if not isinstance(c, dict):

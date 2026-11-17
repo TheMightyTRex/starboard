@@ -21,3 +21,5 @@ HAX = "HAX"          # rsync -aHAX
 ser = "ser"          # a made-up series id
 Exemple = "Exemple"  # a made-up name in a stand-in
 exportfs = "exportfs"  # the NFS command
+enabl = "enabl"      # tools/check_words.py: the stem of enable, enables, enabled
+disabl = "disabl"    # tools/check_words.py: the stem of disable, disables, disabled

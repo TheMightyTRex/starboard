@@ -16,7 +16,7 @@
     "accessibility": "Accessibility"
   },
   "footer_starts": "Download only what you have the right to",
-  "search_example": "Type what you want to do, such as \"add a drive\" or \"forgotten password\".",
+  "search_example": "Enter what you want to do, such as \"add a disk\" or \"forgotten password\".",
   "front_door": true,
   "footer_note": "**Download only what you have the right to.** Use the download apps only for files you have the right to download, such as open-source software, works in the public domain and your own backups. Downloading films, series, music or books without the copyright holder's permission is against the law in the UK and most other countries. Starboard does not host or provide any files, and you are responsible for what you download.",
   "strip_between": [
@@ -26,11 +26,11 @@
   "banners": [
     {
       "label": "Ad",
-      "markdown": "Need a Usenet provider for NZBGet or SABnzbd? [Newshosting](https://www.newshosting.com/?a_aid=6aec3d712dec1) works with Starboard. [See every provider](topics/choose-a-usenet-provider.html)\n\nThis is an affiliate link: if you sign up through it, Newshosting pays a small commission towards Starboard's development, and you pay the same price. Download only what you have the right to."
+      "markdown": "Need a Usenet provider for NZBGet or SABnzbd? [Newshosting](https://www.newshosting.com/?a_aid=6aec3d712dec1) works with Starboard. Read [Choose a Usenet provider and add it](topics/choose-a-usenet-provider.html).\n\nThis is an affiliate link: if you sign up through it, Newshosting pays a small commission towards Starboard's development, and you pay the same price. Download only what you have the right to."
     },
     {
       "label": "Ad",
-      "markdown": "Want your downloads kept private? [PrivadoVPN](https://privadovpn.com/getprivadovpn/#a_aid=themightytrexuk) works with Starboard through Gluetun. [How to add a VPN](topics/install-apps.html)\n\nThis is an affiliate link: if you sign up through it, PrivadoVPN pays a small commission towards Starboard's development, and you pay the same price. Download only what you have the right to."
+      "markdown": "Want your downloads kept private? [PrivadoVPN](https://privadovpn.com/getprivadovpn/#a_aid=themightytrexuk) works with Starboard through Gluetun. Read [Install apps with Starboard](topics/install-apps.html).\n\nThis is an affiliate link: if you sign up through it, PrivadoVPN pays a small commission towards Starboard's development, and you pay the same price. Download only what you have the right to."
     }
   ],
   "sponsored_links": [
@@ -75,7 +75,7 @@
     },
     {
       "key": "use",
-      "intro": "The dashboard, your apps, your library and downloads, and looking after the server.",
+      "intro": "The dashboard, your apps, your library and downloads, and keeping the server healthy.",
       "groups": [
         {
           "key": "dashboard",
@@ -125,7 +125,7 @@
         },
         {
           "key": "looking-after",
-          "label": "Looking after them"
+          "label": "Update and remove them"
         }
       ],
       "link_card": {
@@ -150,13 +150,13 @@
         },
         {
           "key": "checks",
-          "label": "How we check it"
+          "label": "How it is tested"
         }
       ]
     },
     {
       "key": "fix",
-      "intro": "Something not working? Each article starts with a flow chart: find what you see, then follow its numbered answer.",
+      "intro": "Something not working? Each article starts with a flow chart: find what is happening, then follow its numbered answer.",
       "groups": [
         {
           "key": "starboard",
@@ -340,7 +340,7 @@
                 "to": "topics/manage-downloads.md"
               },
               {
-                "label": "Have an AI helper look at downloads that failed",
+                "label": "Have an AI helper check downloads that failed",
                 "to": "topics/copy-download-issues.md"
               },
               {
@@ -361,10 +361,10 @@
         {
           "label": "Something is wrong with a disk",
           "next": {
-            "question": "What do you see?",
+            "question": "What is wrong with the disk?",
             "answers": [
               {
-                "label": "A drive in the pool has failed",
+                "label": "A disk in the pool has failed",
                 "to": "topics/a-pool-drive-has-failed.md"
               },
               {
@@ -452,7 +452,7 @@
         ]
       },
       {
-        "label": "Home and look",
+        "label": "Home and appearance",
         "ids": [
           "home-assistant",
           "styles"

@@ -57,8 +57,8 @@
   },
   {
    "id": "drives",
-   "title": "Your drives",
-   "question": "Which drives go in the pool?",
+   "title": "Your disks",
+   "question": "Which disks go in the pool?",
    "help": "topics/add-a-drive-to-the-pool.md"
   },
   {

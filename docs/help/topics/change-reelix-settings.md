@@ -9,7 +9,7 @@ them behind its admin password, so each section asks for it before it opens.
 ## Before you begin
 
 - Reelix is on your dashboard. [Install apps with Starboard](install-apps.md) adds it, or
-  [add your own Reelix](add-an-app.md).
+  add your own Reelix: read [Add an app](add-an-app.md).
 - You know Reelix's admin password. If Starboard set Reelix up, it is the same as your Starboard password.
 
 ## Steps
@@ -18,7 +18,7 @@ them behind its admin password, so each section asks for it before it opens.
 
 1. Go to **Settings**, then **Apps**, then **Reelix**. The page opens on **Version**. Each section has its own
    tab under the heading, such as **Basic settings** and **Sites to search**.
-2. For any other section, activate **Advanced settings** at the right of the heading. More tabs appear. The
+2. For any other section, activate **More settings** at the right of the heading. More tabs appear. The
    sections are in [Which settings are where](#which-settings-are-where).
 3. Select the section's tab, then its **Show** button, such as **Show sites to search**.
 
@@ -40,7 +40,7 @@ one's state.
 3. Select **Test**. Reelix tries the settings and says whether **The test passed**.
 4. Select **Save**.
 
-   ![The Change 1337x panel, with Test (step 3) outlined beside Save](../images/change-reelix-settings-3-form.png)
+   ![The Change 1337x panel, with Test (step 3) outlined beside Save, with example data](../images/change-reelix-settings-3-form.png)
 
 ### Change the other settings
 
@@ -58,7 +58,7 @@ Shown at first:
 - **YouTube and Spotify**, in the full version only.
 - **Sites to search**. Read [Choose the sites Reelix searches](choose-sites-to-search.md).
 
-Under **Advanced settings**:
+Under **More settings**:
 
 - **Media servers**. Read [Connect Reelix to Jellyfin and Audiobookshelf](connect-reelix-to-media-servers.md).
 - **Download apps**, **Naming and background work**, **Folders**, **Notifications** and **Lists**.

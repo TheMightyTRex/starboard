@@ -214,6 +214,42 @@ function chip(text, tone, iconName) {
   return el("span", { class: "chip", "data-tone": tone }, icon(name, 14), el("span", { text }));
 }
 
+// Starboard's status words (design system COMPONENTS.md section 6, 17 November 2026): one word and one tone for each
+// state, for every chip, band, row and notice on every page. Each is [word, tone] or [word, tone, icon], ready for
+// chip(...STATUS.running). A word means one state only: "Running" is an app that answers; a job that runs is
+// "In progress" or its own word. A detail goes after a middle dot ("Downloading · 45%"), never a second word.
+const STATUS = Object.freeze({
+  running: ["Running", "success"],
+  notResponding: ["Not responding", "danger"],
+  healthy: ["Healthy", "success"],
+  needsAttention: ["Needs attention", "warning"],
+  notWorking: ["Not working", "danger"],
+  notChecked: ["Not checked", "muted"],
+  active: ["Active", "success"],
+  inactive: ["Inactive", "muted"],
+  waiting: ["Waiting", "neutral", "clock"],
+  inProgress: ["In progress", "info", "hourglass"],
+  downloading: ["Downloading", "info"],
+  waitingToImport: ["Waiting to import", "neutral"],
+  importing: ["Importing", "info"],
+  downloaded: ["Downloaded", "success"],
+  inLibrary: ["In library", "success"],
+  updating: ["Updating", "info", "refresh-cw"],
+  backingUp: ["Backing up", "info"],
+  done: ["Done", "success", "circle-check"],
+  failed: ["Failed", "danger", "circle-x"],
+  notStarted: ["Not started", "warning"],
+  wentBack: ["Went back", "warning", "undo-2"],
+  heldBack: ["Held back", "muted", "pause"],
+  paused: ["Paused", "muted"],
+  stopped: ["Stopped", "warning"],
+  updateAvailable: ["Update available", "info", "circle-arrow-up"],
+  checkFirst: ["Check before updating", "warning"],
+  upToDate: ["Up to date", "success"],
+  neverUpdated: ["Never updated", "warning"],
+  wanted: ["Wanted", "neutral"],
+});
+
 // A plug-in's logo (plug-in API 1.14, DASH-428): the design system's .app-icon, with the cleaned logo Starboard
 // serves, or the plug-in's initials on the tile when it has none, so every row and card looks the same. Beside the
 // plug-in's name it is decorative (alt ""); pass { alt: true } where the logo stands for the plug-in on its own.
@@ -230,7 +266,7 @@ function pluginLogo(p, { compact = false, alt = false } = {}) {
 // How long ago, in words a screen reader reads as they are ("30 seconds ago", "2 minutes ago", "yesterday at 21:04").
 function timeAgo(when) {
   const secs = Math.max(0, Math.round((Date.now() - when) / 1000));
-  if (secs < 60) return secs < 5 ? "just now" : `${secs} seconds ago`;
+  if (secs < 60) return secs < 5 ? "a moment ago" : `${secs} seconds ago`;
   const mins = Math.round(secs / 60);
   if (mins < 60) return `${mins} ${mins === 1 ? "minute" : "minutes"} ago`;
   const hours = Math.round(mins / 60);
@@ -825,7 +861,7 @@ function showVersion(version, repo, latest) {
           // A newer release adds "Upgrade available" to About and updates, in words and with the update dot.
           el("li", {}, el("a", { href: "/settings-updates.html", "data-footer-updates": true }, "About and updates",
             newer ? el("span", { class: "site-footer__upgrade" }, el("span", { class: "update-dot", "aria-hidden": "true" }),
-              el("span", { class: "visually-hidden", text: ", " }), "Upgrade available") : null))))),
+              el("span", { class: "visually-hidden", text: ", " }), STATUS.updateAvailable[0]) : null))))),
       maker));
   }
 }
@@ -1045,7 +1081,7 @@ function locationPicker({ id, label, value = "", app = "host", setting = "", hin
     el("span", { class: "visually-hidden", text: ` for ${label.toLowerCase()}` }));
   const auto = el("button", { type: "button", class: "btn btn--quiet", hidden: true }, "Set automatically",
     el("span", { class: "visually-hidden", text: ` for ${label.toLowerCase()}` }));
-  const type = el("details", { class: "location__type" }, el("summary", {}, "Type a path (Advanced)"),
+  const type = el("details", { class: "location__type" }, el("summary", {}, "More options: enter a path"),
     el("label", { for: id, class: "visually-hidden", text: label }), input, error);
   let last = null, seen = null;
   const show = (r) => {
@@ -1192,7 +1228,7 @@ async function folderBrowser(start, opener, onChoose, { purpose = "", place: sta
       el("button", { type: "button", class: "btn btn--quiet btn--compact", text: c.name, "aria-current": k === trail.length - 1 ? "location" : null,
         onclick: () => open(c.path) })]).flat().filter(Boolean));
     back.querySelector("span.visually-hidden")?.remove();
-    back.append(el("span", { class: "visually-hidden", text: here && r.parent !== null && !(place.startsWith("disk:") && here === place.slice(5)) ? " to the folder above" : " to the places" }));
+    back.append(el("span", { class: "visually-hidden", text: here && r.parent !== null && !(place.startsWith("disk:") && here === place.slice(5)) ? " to the parent folder" : " to the places" }));
     info.textContent = r.why || [here ? `In ${trail.map((c) => c.name).join(" / ")}` : `In ${placeName || "This computer"}`, r.free != null ? `${formatBytes(r.free)} free on its disk` : "",
       r.folders.length ? `${r.folders.length} ${r.folders.length === 1 ? "folder" : "folders"}` : "No folders inside"].filter(Boolean).join(" · ");
     list.replaceChildren(...r.folders.map((f, k) => el("li", { role: "option", id: `folder-opt-${k}`, "aria-selected": "false", "data-path": f.path, "data-name": f.name,
@@ -1240,7 +1276,7 @@ async function bringInBanner(after) {
     const pct = j.bytes_total ? Math.round((j.bytes_done / j.bytes_total) * 100) : 0;
     const title = j.state === "done" ? "Your media is in" : j.state === "paused" ? "Bringing in your media: paused" :
       j.state === "stopped" ? "Bringing in your media: stopped" : `Bringing in your media: ${PHASES[j.phase] || `${pct}%`}`;
-    const words = j.state === "done" ? `${j.report?.copied ?? 0} copied, ${j.report?.look ?? 0} need a look. See the report.` :
+    const words = j.state === "done" ? `${j.report?.copied ?? 0} copied, ${j.report?.look ?? 0} need attention. The report has the details.` :
       j.state === "stopped" ? j.error || "Open it to carry on." :
       `${(j.files_done || 0).toLocaleString("en-GB")} of ${(j.files_total || 0).toLocaleString("en-GB")} files, ${formatBytes(j.bytes_done || 0)} of ${formatBytes(j.bytes_total || 0)}`;
     const tone = j.state === "stopped" ? "warning" : j.state === "done" ? "success" : null;
@@ -1248,7 +1284,7 @@ async function bringInBanner(after) {
       el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text: words }),
         ["running", "waiting", "paused"].includes(j.state) ? el("div", { class: "progress", role: "progressbar", "aria-label": "Bringing in your media",
           "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(pct), "aria-valuetext": words }, (() => { const s = el("span"); s.style.width = `${pct}%`; return s; })()) : null),
-      el("a", { class: "btn btn--compact", href: "/bring-in.html" }, j.state === "done" ? "See the report" : "Open", el("span", { class: "visually-hidden", text: " Bring in media" })));
+      el("a", { class: "btn btn--compact", href: "/bring-in.html" }, j.state === "done" ? "Open the report" : "Open", el("span", { class: "visually-hidden", text: " Bring in media" })));
     if (box) box.replaceWith(node); else after.after(node);
     box = node;
     if (!["running", "waiting"].includes(j.state)) clearInterval(timer);

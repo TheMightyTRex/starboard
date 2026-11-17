@@ -17,7 +17,7 @@ set-up. Read [Change text size, theme and other display settings](../topics/disp
 
 These are always on. Nothing needs to be activated.
 
-- **Readable type:** every page uses Atkinson Hyperlegible Next, a typeface designed to be easy to read for people
+- **Readable type:** every page uses Atkinson Hyperlegible Next, a typeface designed for readers
   with low vision. It comes with Starboard.
 - **Strong colours:** text and controls meet the WCAG 2.2 AA contrast levels in every theme: at least 4.5 to 1 for
   text, and 3 to 1 for the edges of controls and the focus outline.
@@ -56,17 +56,17 @@ Each of these is in **Display**, applies at once and is kept in your browser.
 - [On a phone or tablet](on-a-phone-or-tablet.md): the phone layout and menu, touch, and your device's own
   settings.
 
-## How we check it
+## How it is tested
 
 - [How Starboard is tested](how-starboard-is-tested.md): the tools and steps, and when they run.
 - [Latest test results](latest-test-results.md): the figures from the most recent runs, with their dates.
 - [Limits and known gaps](limits-and-known-gaps.md): what is not tested, what Starboard cannot control, and
   open issues.
-- [Report a problem](tell-us-about-a-problem.md): tell us about anything that is hard to use with your tools or needs.
+- [Tell us about an accessibility problem](tell-us-about-a-problem.md): tell us about anything that is hard to use with your tools or needs.
 
-![What Starboard controls, and what it does not: its own pages; plug-in styles and cards, checked but made by others; and Jellyfin, Reelix's own pages, other apps and your own tools, outside its control](../images/a11y-who-controls.svg)
+![Diagram of what Starboard controls and what it does not](../images/a11y-who-controls.svg)
 
-The diagram sorts what you see into three groups. Starboard's own pages are built and tested to WCAG 2.2 AA.
+The diagram sorts the pages and tools you use into three groups. Starboard's own pages are built and tested to WCAG 2.2 AA.
 Plug-in styles and cards are made by others, but checked and drawn by Starboard. Jellyfin, Audiobookshelf and
 their players, Reelix's own pages, other apps' own pages, and your browser and screen reader are outside
 Starboard's control. Read [Limits and known gaps](limits-and-known-gaps.md).
