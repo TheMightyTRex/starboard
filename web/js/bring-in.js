@@ -35,7 +35,7 @@ async function bringInStep(id, ctx = {}) {
 // 1. Sources, in order ---------------------------------------------------------------------------------------------------
 async function bringSources(ctx) {
   let d;
-  try { d = await api("/api/bring-in"); } catch (e) { return { nodes: [notice("danger", "Could not look", e.message)], save: async () => false }; }
+  try { d = await api("/api/bring-in"); } catch (e) { return { nodes: [notice("danger", "Could not read your sources", e.message)], save: async () => false }; }
   if (ctx.media && ctx.media !== d.media) {
     try { d = await api("/api/bring-in/sources", { method: "PUT", body: { sources: d.sources, media: ctx.media } }); } catch { /* the media folder is read again later */ }
   }
@@ -163,7 +163,7 @@ function cloudSignIn(place, opener, then) {
   el("div", { class: "progress progress--busy", role: "progressbar", "aria-label": words.replace(/…$/, ""), "aria-valuetext": "Waiting" }, el("span")));
   const draw = (focusIt = false) => {
     const s = st.sess || { state: "none" };
-    const parts = [el("p", { text: `Starboard asks ${place.name} only to read your files. It copies them down, brings them in, and never changes anything there. Starboard never sees your password.` })];
+    const parts = [el("p", { text: `Starboard asks ${place.name} only to read your files. It copies them down, brings them in, and never changes anything there. Starboard never receives your password.` })];
     if (ways.length > 1) {
       const cards = el("fieldset", { class: "option-cards option-cards--row" }, el("legend", { class: "field__label", text: "How do you want to sign in?" }),
         [["phone", "Complete on the phone", "Scan a QR code and sign in on your phone. Starboard waits by itself."],
@@ -278,7 +278,7 @@ async function bringWhat(ctx) {
       found.length || l.other.files ? el("div", { class: "table-wrap", "data-stack": "" }, el("table", { class: "table table--middle" },
         el("caption", { class: "visually-hidden", text: `What Starboard found in ${s.name}` }),
         el("thead", {}, el("tr", {}, el("th", { scope: "col", text: "Kind" }), el("th", { scope: "col", text: "Found" }), el("th", { scope: "col", text: "Size" }))),
-        el("tbody", {}, rows))) : emptyState("No media found here", "Choose another folder in the sources, or change what it is below."),
+        el("tbody", {}, rows))) : emptyState("No media found here", "Choose another folder in the sources, or change Everything in it is."),
       el("div", { class: "field bring-whole" }, el("label", { for: `whole-${s.id}`, text: "Everything in it is" }),
         Object.assign(fixSelect(s, "", l.fix, `Everything in ${s.name}`), { id: `whole-${s.id}` })),
       folderRows.length ? el("details", { class: "fold", open: (l.folders || []).length <= 8 ? true : null },
@@ -315,12 +315,12 @@ async function bringWhat(ctx) {
     for (const s of d.sources) {
       n += 1;
       if (s.look) { drawOne(s); continue; }
-      said.textContent = `Looking inside ${n} of ${d.sources.length}: ${s.name}…`;
-      cards[s.id].replaceChildren(el("h3", { text: s.name }), el("p", { class: "muted", text: "Looking inside…" }));
+      said.textContent = `Reading ${n} of ${d.sources.length}: ${s.name}…`;
+      cards[s.id].replaceChildren(el("h3", { text: s.name }), el("p", { class: "muted", text: "Reading…" }));
       try { s.look = await api("/api/bring-in/look", { method: "POST", body: { source: s.id } }); drawOne(s); }
-      catch (e) { cards[s.id].replaceChildren(el("h3", { text: s.name }), notice("danger", "Could not look inside", e.message)); }
+      catch (e) { cards[s.id].replaceChildren(el("h3", { text: s.name }), notice("danger", "Could not read", e.message)); }
     }
-    said.textContent = `Looked inside ${d.sources.length} ${d.sources.length === 1 ? "source" : "sources"}.`;
+    said.textContent = `Read ${d.sources.length} ${d.sources.length === 1 ? "source" : "sources"}.`;
     showLinks();
   };
   lookAll();
@@ -335,7 +335,7 @@ async function bringNames(ctx) {
   const filterBox = el("div");
   const top = el("div", { class: "stack-2" });
   let state = "matched", page = null;
-  const words = { matched: "Matched", look: "Needs a look", left: "Left where it is" };
+  const words = { matched: "Matched", look: "Needs attention", left: "Left where it is" };
   const showSpace = (sp) => {
     if (!sp) return;
     const pct = sp.free ? Math.min(100, Math.round(((sp.needed + sp.margin) / sp.free) * 100)) : 0;
@@ -387,7 +387,7 @@ async function bringNames(ctx) {
     page.items.forEach((r) => ul.append(row(r)));
     const more = page.start + page.items.length < page.total ? el("button", { type: "button", class: "btn", text: `Show ${Math.min(50, page.total - page.start - page.items.length)} more` }) : null;
     more?.addEventListener("click", () => { const first = page.items.length; load(state, page.start + 50, true).then(() => ul.children[page.start]?.querySelector("button, input")?.focus?.()); void first; });
-    if (!append) listBox.replaceChildren(page.items.length ? ul : emptyState(`Nothing ${state === "look" ? "needs a look" : state === "left" ? "is left where it is" : "matched yet"}`, ""), ...(more ? [more] : []));
+    if (!append) listBox.replaceChildren(page.items.length ? ul : emptyState(`Nothing ${state === "look" ? "needs attention" : state === "left" ? "is left where it is" : "matched yet"}`, ""), ...(more ? [more] : []));
     else { listBox.querySelector(":scope > button")?.remove(); if (more) listBox.append(more); }
   };
   const nodes = [top, space, filterBox, listBox, el("p", { class: "help-links" },
@@ -398,7 +398,7 @@ async function bringNames(ctx) {
       await api("/api/bring-in/check", { method: "POST" });
       await load("matched");
       const counts = page.counts;
-      said.textContent = `${counts.matched} matched, ${counts.look} need a look, ${counts.left} left where they are.`;
+      said.textContent = `${counts.matched} matched, ${counts.look} need attention, ${counts.left} left where they are.`;
       if (!page.checked) top.append(notice("info", "Reelix checks every name before copying", "Reelix is not running yet, so these names are read from the files. Once the apps start, Reelix checks each one before anything is copied, and holds back any it does not agree with."));
     } catch (e) { said.replaceChildren(); top.replaceChildren(notice("danger", "Could not check names", e.message)); }
   })();
@@ -424,8 +424,8 @@ async function bringCopy(ctx) {
     ["Sources, in order", el("ol", { class: "plain-list" }, d.sources.map((s) => el("li", { text: s.name }))), "bring-sources", "the sources"],
     ["To copy", `${c.matched} ${c.matched === 1 ? "title" : "titles"}, ${formatBytes(sp.needed + sp.linked)}`, "bring-names", "what is copied"],
     ["Space", `${formatBytes(sp.needed)} needed, ${sp.free != null ? `${formatBytes(sp.free)} free` : "free space checked when it starts"}`, "bring-names", "the space"],
-    ["Linking films and series", d.hardlinks ? "On, on the same disk" : "Off: everything is copied", "bring-sources", "linking"],
-    ["Needs a look", c.look ? `${c.look}: left where they are until you choose` : "None", "bring-names", "the titles that need a look"],
+    ["Linking films and series", d.hardlinks ? "Active, on the same disk" : "Inactive: everything is copied", "bring-sources", "linking"],
+    ["Needs attention", c.look ? `${c.look}: left where they are until you choose` : "None", "bring-names", "the titles that need attention"],
     ["Left where it is", `${c.left}`, "bring-names", "what is left where it is"],
   ];
   box.append(el("div", { class: "table-wrap", "data-stack": "" }, el("table", { class: "table table--fixed table--middle" },
@@ -460,7 +460,7 @@ function bringProgress(box, job, ctx = {}) {
     const pct = j.bytes_total ? Math.round((j.bytes_done / j.bytes_total) * 100) : 0;
     const phase = PHASE_WORDS[j.phase] || "Copying";
     words.replaceChildren(el("strong", { text: j.state === "paused" ? "Paused" : j.state === "stopped" ? "Stopped" : phase }),
-      j.state === "running" ? el("span", { class: "muted", text: " · Please wait, this can take some time…" }) : null,
+      j.state === "running" ? el("span", { class: "muted", text: " · Copying…" }) : null,
       j.current ? el("span", { class: "muted", text: ` · ${j.current}` }) : null);
     const text = `${(j.files_done || 0).toLocaleString("en-GB")} of ${(j.files_total || 0).toLocaleString("en-GB")} files · ${formatBytes(j.bytes_done || 0)} of ${formatBytes(j.bytes_total || 0)}`;
     count.textContent = text;
@@ -513,7 +513,7 @@ async function bringReport(box, ctx = {}) {
   box.replaceChildren(head,
     notice("success", `${c.copied} ${c.copied === 1 ? "title" : "titles"} brought in`, "Nothing was changed, moved or deleted at your sources. Reelix has added them and named every file its own way; Jellyfin shows them once it scans."),
     part("copied", "Copied", "In your library now. Nothing to do.", "success"),
-    part("look", "Needs a look", "Not copied yet. Select Got it, then Bring in media again: these wait in Check names, under Needs a look.", "warning"),
+    part("look", "Needs attention", "Not copied yet. Select Got it, then Bring in media again: these wait in Check names, under Needs attention.", "warning"),
     part("left", "Left where it is", "Not copied, with why. Nothing to do unless one of these should be in your library.", null),
     r.holding ? el("p", { class: "small muted", text: `The files copied down from cloud services are in ${r.holding}, in case you want them. Remove them when you are sure.` }) : null,
     ctx.inWizard ? null : el("div", { class: "actions" }, got));

@@ -30,7 +30,7 @@ hours. It takes about 10 minutes, plus the time to download the apps.
 4. **How to start:** on a new computer, press Enter for **New install**. Moving from apps you already run, or
    restoring a backup, is in [Other answers](#other-answers).
 5. **Storage:** choose where your media goes: this computer's main disk, a separate disk, or a pool of several
-   disks. Press Enter to take the media folder shown. **Your drives** follows when you chose a pool.
+   disks. Press Enter to take the media folder shown. **Your disks** follows when you chose a pool.
 6. **What to set up:** press Enter for **Basics** (recommended): Reelix Lite, Jellyfin, Audiobookshelf, Bazarr,
    and qBittorrent and NZBGet through a VPN. Press Enter again to install the apps listed. Bigger installs are in
    [Other answers](#other-answers).
@@ -114,7 +114,7 @@ error filled in. Enter `q` at any feedback question to go back to the step.
 - Starboard checks your answers exactly as the browser does, and saves them in the same place. VPN details are saved
   in `data/stack/.env`, which only you can read.
 - A feedback report never holds your set-up answers, password, VPN details or setup code. Email addresses, network
-  addresses, user names in folder paths and anything that looks like a key are replaced. Do not enter a password in
+  addresses, user names in folder paths and anything that has the form of a key are replaced. Do not enter a password in
   your feedback: one on its own could stay in it. If something private is in the report, enter `q` and start again.
 - The QR code is made to fit your window. In a window 80 characters by 24 lines it holds only the report's title; a
   larger window, or smaller text, fits more. With `STARBOARD_PLAIN=1`, there is no QR code: it shows the link.
@@ -123,7 +123,7 @@ error filled in. Enter `q` at any feedback question to go back to the step.
 
 ## If it does not work
 
-- **"Stopped: --terminal needs a terminal to type in":** read [IN-02](run-first-errors.md#in-02).
+- **"Stopped: --terminal needs a terminal to enter answers in":** read [IN-02](run-first-errors.md#in-02).
 - **"Starboard said: ...":** Starboard refused an answer and says why. Enter the answer again.
 - **"Starboard cannot start apps itself":** Starboard has no Docker access. Run the command it shows, or run
   `./install.sh` again and answer yes to Docker access.
@@ -135,7 +135,7 @@ error filled in. Enter `q` at any feedback question to go back to the step.
 - [Install Starboard with the installer](install-with-the-installer.md)
 - [Create your password and sign in](create-your-password.md)
 - [Connect to your server with SSH](connect-with-ssh.md)
-- [The terminal: typing commands](../basics/the-terminal.md)
+- [The terminal: entering commands](../basics/the-terminal.md)
 
 <!-- footer: download rights -->
 

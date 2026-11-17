@@ -18,8 +18,8 @@ computer. Every kind of access is optional: say no, and only that part of Starbo
 
 ## The access it asks for
 
-A new install asks only the first two questions, plus **Set up Drive pools?** when the computer has more than one
-extra drive. The others come when you run the installer again, with your last answers as the defaults. The
+A new install asks only the first two questions, plus **Set up Disk pools?** when the computer has more than one
+extra disk. The others come when you run the installer again, with your last answers as the defaults. The
 set-up in the browser or the terminal asks about folders, Live TV and disk health for a new install.
 
 | Question | What it is for | What it means for your computer | Recommended when new | Change it |
@@ -29,8 +29,8 @@ set-up in the browser or the terminal asks about folders, Live TV and disk healt
 | **Show each app's processor and memory use?** | **System**, **Monitor**: each app's processor and memory | `/sys/fs/cgroup` is shared read-only; two small files for each app are read while Monitor is open | No | `--app-use`, `--no-app-use` |
 | **Give Starboard a Live TV folder?** | Free Live TV channels and guides for Jellyfin | Jellyfin's Live TV folder is shared; Starboard writes playlists, guides and logos there while Live TV is active | None | `--livetv-folder /path`, `--no-livetv` |
 | **Choose folders to show?** | **System**, **Storage**: free space. Enter one folder per line, such as `Media=/mnt/media`, then press Enter on an empty line | Each folder is shared read-only; Starboard reads sizes, not files | None | `--disk Name=/path`, `--no-disks` |
-| **Set up Disk health reports?** | **System**, **Disk health**: each drive's health report | Runs `deploy/install-smart.sh` with `sudo`: a timer reads each drive every 30 minutes as root and saves the reports in `./smart` | No | `--disk-health`, `--no-disk-health` |
-| **Set up Drive pools?** | **System**, **Pool**: join drives into one folder | Installs a small helper with `sudo` that changes drives only from a fixed list of actions, after a check | No | Answer **Set up Drive pools?** again |
+| **Set up Disk health reports?** | **System**, **Disk health**: each disk's health report | Runs `deploy/install-smart.sh` with `sudo`: a timer reads each disk every 30 minutes as root and saves the reports in `./smart` | No | `--disk-health`, `--no-disk-health` |
+| **Set up Disk pools?** | **System**, **Pool**: join disks into one folder | Installs a small helper with `sudo` that changes disks only from a fixed list of actions, after a check | No | Answer **Set up Disk pools?** again |
 
 Docker access is what lets Starboard start and update your media apps for you. Answer yes if you want that, and keep
 your Starboard password safe: anyone who can sign in could then control Docker.
@@ -45,7 +45,7 @@ Some access needs nothing from the installer, so it is a setting in Starboard:
 - **Your apps** (**Settings**, **Apps**, **Manage apps**): Starboard reads status, queues and calendars with the
   API keys you give it, and adds films, series and books only when you choose **Add**.
 - **Download hours** (**Settings**, **Downloads**, **Download hours**): pauses the download apps outside the hours you choose.
-- **Updates** (**Settings**, **Updates**, **What Starboard can access**): looks for new Starboard releases, at most every 6
+- **Updates** (**Settings**, **Updates**, **What Starboard can access**): checks for new Starboard releases, at most every 6
   hours, and downloads app icons and posters.
 
 [Change what Starboard can access](change-what-starboard-can-access.md#check-what-starboard-can-access-now) shows

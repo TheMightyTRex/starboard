@@ -75,7 +75,7 @@
       "steps": [
         5
       ],
-      "alt": "Edit dashboard with example data, with the Picture shrinker card's size set to Small, its arrows and Remove (step 5) outlined; at this size its title is Space saved",
+      "alt": "Edit dashboard with example data, with a card's size, arrows and Remove (step 5) outlined",
       "topic": "use-the-dashboard"
     },
     {
@@ -91,7 +91,7 @@
         }
       ],
       "steps": [],
-      "alt": "The small cards at the foot of the dashboard with example data: each has a grey band with its logo and name, and the small VPN card's band, which shows only the status chip's icon, is outlined",
+      "alt": "The small cards at the foot of the dashboard with example data, each with its grey band, the VPN card's band outlined",
       "topic": "use-the-dashboard"
     }
   ]

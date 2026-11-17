@@ -80,7 +80,7 @@ function drawFound() {
         drawFound();
         $(`#lib-found [data-kind="${g.tab}"] .rows > li:nth-child(${SHOW_FIRST + 1}) a`)?.focus();
       }) : null,
-      g.count > g.items.length ? el("a", { href: `/${KIND_PAGE[g.tab]}?q=${encodeURIComponent(q)}`, text: `See all ${g.count.toLocaleString("en-GB")} in ${g.label}` }) : null));
+      g.count > g.items.length ? el("a", { href: `/${KIND_PAGE[g.tab]}?q=${encodeURIComponent(q)}`, text: `All ${g.count.toLocaleString("en-GB")} in ${g.label}` }) : null));
   }
   const heading = shownAll ? `In your library, ${shownAll.toLocaleString("en-GB")}` : "In your library";
   box.replaceChildren(el("h2", { id: "found-h", text: heading }),
@@ -164,7 +164,7 @@ async function lookupReelix(q) {
   lookErrors = {};
   lookDone = false;
   [...expanded].filter((k) => k.startsWith("out-")).forEach((k) => expanded.delete(k));
-  box.replaceChildren(el("h2", { text: "Not in your library" }), el("p", { class: "muted", id: "lookup-status", text: `Looking for "${q}"…` }),
+  box.replaceChildren(el("h2", { text: "Not in your library" }), el("p", { class: "muted", id: "lookup-status", text: `Searching for "${q}"…` }),
     ...LOOK_KINDS.map(([kind]) => el("div", { class: "lib-search-group", "data-kind": kind })));
   await Promise.all(LOOK_KINDS.map(async ([kind, label]) => {
     try {
@@ -197,7 +197,7 @@ const FILTER_KINDS = [["all", "Everything"], ["films", "Films"], ["tv", "Series"
   ["books", "Books"], ["audiobooks", "Audiobooks"]];
 const NO_FILTERS = { where: "all", kind: "all", decade: "", genre: "", status: [], release: "", followed: "", language: "", rating: "", source: "", more: false };
 let filters = { ...NO_FILTERS, status: [] };
-const STATUS_WORDS = [["have", "Have it"], ["missing", "Missing"], ["downloading", "Downloading"], ["below", "Below the quality wanted"]];
+const STATUS_WORDS = [["have", "Have it"], ["missing", "Not in library"], ["downloading", "Downloading"], ["below", "Below the quality wanted"]];
 const languageName = (() => {
   let names = null;
   try { names = new Intl.DisplayNames(["en-GB"], { type: "language" }); } catch { names = null; }
@@ -325,7 +325,7 @@ function drawFilters() {
       return b;
     }))));
   }
-  for (const [key, choices] of [["release", [["", "All"], ["released", "Released"], ["coming", "Coming soon"]]],
+  for (const [key, choices] of [["release", [["", "All"], ["released", "Released"], ["coming", "Not released"]]],
     ["followed", [["", "All"], ["yes", "Followed"], ["no", "Not followed"]]]]) {
     const counts = tally(key, (x) => FACETS[key].of(x.item.fx || {}));
     if (valuesOf(FACETS[key]).size < 2 && !filters[key]) continue;

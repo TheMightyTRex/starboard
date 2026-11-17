@@ -199,7 +199,7 @@ class JobsTest(unittest.TestCase):
         term, out = plain()
         self.assertEqual(term.waiting("Setting up Reelix", lambda: 1, 0, (2, 3)), 1)
         text = out.getvalue()
-        self.assertIn("Job 2 of 3: Setting up Reelix. Please wait, this can take some time...", text)
+        self.assertIn("Job 2 of 3: Setting up Reelix…", text)
         self.assertIn("Done: Job 2 of 3: Setting up Reelix", text)
 
     def test_a_job_that_did_not_finish_keeps_its_line_and_offers_the_choices(self):
@@ -296,9 +296,9 @@ class JobsTest(unittest.TestCase):
             self.assertTrue(ts.step_drives(None, term, {"pool_run": h}))
         finally:
             ts.STEP_FUNCTIONS.remove(ts.step_drives)
-            ts.STEPS.remove("Your drives")
+            ts.STEPS.remove("Your disks")
         text = out.getvalue()
-        self.assertIn("Job 1 of 2: Adding Drive 1 to the pool. Please wait, this can take some time...", text)
+        self.assertIn("Job 1 of 2: Adding Drive 1 to the pool…", text)
         self.assertIn("Did not finish: Job 1 of 2", text)
         self.assertIn("The pool helper stopped: the drive is busy", text)
         self.assertIn("Done: Job 2 of 2", text)

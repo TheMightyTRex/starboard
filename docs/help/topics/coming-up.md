@@ -37,29 +37,29 @@ to return.
 
 ![The Coming up page as a month calendar with example data, with Calendar chosen (step 2) outlined](../images/coming-up-2-calendar.png)
 
-### Change how far ahead it looks
+### Change how far ahead it shows
 
 1. On the Coming up page, select **Change how far ahead**. This opens **Settings**, then **General**, then
-   **Pages and lists**. The **Coming up** section shows when **Advanced settings** is active: activate it if you
-   do not see the section.
+   **Pages and lists**. The **Coming up** section shows when **More settings** is active: activate it if the
+   section is not there.
 2. In **How far ahead**, choose **1 week**, **2 weeks**, **30 days**, **60 days** or **90 days**. The change
    applies at once.
 3. Optional: in **View**, choose whether the page opens as **List** or **Calendar**.
 
-   ![Settings, General, Pages and lists with Advanced settings active, with How far ahead (step 2) and View (step 3) outlined in the Coming up section](../images/coming-up-4-how-far.png)
+   ![Settings, General, Pages and lists with More settings active, with How far ahead (step 2) and View (step 3) outlined in the Coming up section](../images/coming-up-4-how-far.png)
 
 ### Show or hide posters
 
-1. Go to **Settings**, then **Performance**, and activate **Advanced settings**.
+1. Go to **Settings**, then **Performance**, and activate **More settings**.
 2. Select the **Background work** tab, then activate or deactivate **Posters on Coming up and the Library**. When it is
    inactive, each release shows its app's icon instead.
 
 ## Things to note
 
-- Coming up looks 2 weeks ahead until you change it.
+- Coming up shows 2 weeks ahead until you change it.
 - Choosing **List** or **Calendar** on the page also saves it as the view the page opens with.
 - Starboard fetches posters from your own apps and keeps copies for a week. Your browser loads them from
-  Starboard, so no image site sees them.
+  Starboard, so no image site receives them.
 - The **Small server** preset deactivates posters. Read
   [Make Starboard use less of your server](make-starboard-lighter.md).
 - To get something wanted now, use **Activity**, then **Wanted**. Read

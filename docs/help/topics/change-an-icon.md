@@ -10,7 +10,7 @@ collection, the web address of a picture, or a picture file of your own.
 
 - The app is in Starboard. Read [Add an app](add-an-app.md).
 - To use your own picture, you need an SVG or PNG file and a way to copy it to the server. Read
-  [The terminal: typing commands](../basics/the-terminal.md) if you have not used one.
+  [The terminal: entering commands](../basics/the-terminal.md) if you have not used one.
 
 ## Steps
 

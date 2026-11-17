@@ -94,11 +94,11 @@ async function installFlow({ chosenMedia = "" } = {}) {
   // between them and the rest (DASH-265).
   const before = () => [
     { id: "groups", ...stepNamed(T, "apps"), skippable: false,
-      intro: "Tick what you want. Starboard picks the apps for each one; you can see and change them with Advanced settings." },
+      intro: "Tick what you want. Starboard picks the apps for each one; More settings lists them, and you can change them there." },
     ...(state.chosenMedia ? [] : [{ id: "folders", ...stepNamed(T, "folders"), skippable: false,
       intro: "One media folder holds your downloads and your library together, so a finished download moves into the library instantly." }]),
     ...(state.apps.has("gluetun") || state.noVpn ? [{ id: "vpn", ...stepNamed(T, "vpn"), skippable: false,
-      intro: "Downloads go through your VPN, so your internet provider sees only the VPN. A VPN is recommended; you can also continue without one." }] : []),
+      intro: "Downloads go through your VPN, so your internet provider can tell only that you use a VPN. A VPN is recommended; you can also continue without one." }] : []),
     ...(state.apps.has("sabnzbd") || state.apps.has("nzbget") ? [{ id: "usenet", ...stepNamed(T, "usenet"), skippable: false }] : []),
     ...(state.apps.has("reelix") ? [{ id: "sites", ...stepNamed(T, "sites"), skippable: false },
       { id: "films", ...stepNamed(T, "films"), skippable: false }] : []),
@@ -120,7 +120,7 @@ async function startInstall() {
   // An older link from the set-up guide's Storage step carries the media folder already (DASH-103): use it.
   const chosenMedia = fromGuide && /^\/[A-Za-z0-9._/-]{0,250}$/.test(params.get("media") || "") ? params.get("media") : "";
   let flow;
-  try { flow = await installFlow({ chosenMedia }); } catch (e) { root.replaceChildren(notice("danger", "Could not look", e.message)); return; }
+  try { flow = await installFlow({ chosenMedia }); } catch (e) { root.replaceChildren(notice("danger", "Could not read what to install", e.message)); return; }
   // DASH-173: once the server is set up, Install apps opens on what is installed; the wizard is a choice.
   if (!fromGuide && !params.get("wizard") && config?.setup_guide_done) {
     const chosen = new Set(flow.data.chosen || []);
@@ -254,10 +254,10 @@ async function installStep(id, state, data, apps, go) {
         el("li", {}, el("strong", { text: "Watch and listen. " }), "Jellyfin plays your films and series on TVs, phones and browsers; Audiobookshelf plays audiobooks.")),
       el("p", { text: "This guide picks the apps for what you want, sets up the folders, writes the set-up file and starts the apps. Starboard sets Reelix up and connects it to the download apps for you; the rest it shows you step by step. It takes about 15 minutes; the downloads take longer." }),
       el("h3", { text: "You need" }),
-      el("ul", {}, el("li", { text: "A folder or drive with room for your media." }),
+      el("ul", {}, el("li", { text: "A folder or disk with room for your media." }),
         el("li", { text: "Docker on this computer (it is, if Starboard runs in Docker)." }),
         el("li", { text: "Optional: a VPN account, to keep your downloads private." })),
-      el("label", { class: "check" }, adv, el("span", { class: "check__text" }, el("strong", { text: "Advanced settings" }),
+      el("label", { class: "check" }, adv, el("span", { class: "check__text" }, el("strong", { text: "More settings" }),
         el("span", { class: "check__hint", text: "Show every app in each group, the settings folder, the user and group numbers and time zone, and the files before they are written. The defaults suit most people." }))),
     ];
     save = async () => {
@@ -382,7 +382,7 @@ async function installStep(id, state, data, apps, go) {
       })), el("p", { class: "small muted", text: "You can switch either way later in Settings, Reelix. Your library and settings stay." }));
     const showWhich = () => { which.hidden = data.reelix_editions.length < 2 || !state.apps.has("reelix"); };
     afterCount = showWhich;
-    const installs = [...(data.installs || []), { key: "custom", name: "Choose myself", about: "Tick each group below, and with Advanced settings each app." }];
+    const installs = [...(data.installs || []), { key: "custom", name: "Choose myself", about: "Tick each group, and with More settings each app." }];
     const whatToInstall = el("fieldset", { class: "stack-2" }, el("legend", { class: "h3", text: "What to install" }),
       el("div", { class: "option-cards" }, installs.map((i) => {
         const radio = el("input", { type: "radio", name: "install", id: `install-${i.key}`, value: i.key, checked: state.install === i.key });
@@ -409,7 +409,7 @@ async function installStep(id, state, data, apps, go) {
           });
           return el("label", { class: "option-card" }, r, el("strong", { text: n }), el("small", { text: t }));
         })))] : []),
-      el("p", { class: "small muted", text: "The groups below show what is ticked. Changing any of them makes it your own choice." }));
+      el("p", { class: "small muted", text: "The groups show what is ticked. Changing any of them makes it your own choice." }));
     nodes = [whatToInstall, ...kinds.map(([kind, name]) => el("fieldset", { class: "stack-2" }, el("legend", { class: "h3", text: name }),
       el("div", { class: "option-cards" }, data.groups.filter((g) => g.kind === kind).map(groupRow)))), which, needsNote, total, memoryNote, error];
     count();
@@ -445,7 +445,7 @@ async function installStep(id, state, data, apps, go) {
     const showPool = () => poolBox.replaceChildren(...(state.pool ? [notice("info", `Pool: ${state.pool.path}`,
       `Made from ${state.pool.mounts.join(", ")}. Run these commands on the server before you start the apps.`),
       el("pre", { class: "code-block", text: state.pool.commands }), copyButton(state.pool.commands, "Copy the commands")] : []));
-    const poolButton = el("button", { type: "button", class: "btn" }, icon("layers"), state.pool ? "Change the pool" : "Join several drives into one");
+    const poolButton = el("button", { type: "button", class: "btn" }, icon("layers"), state.pool ? "Change the pool" : "Join several disks into one");
     poolButton.addEventListener("click", async () => {
       const made = await poolDialog(data.drives, state.pool);
       if (!made) return;
@@ -461,12 +461,12 @@ async function installStep(id, state, data, apps, go) {
         el("p", { class: "small muted", text: "Your other apps already use these. Choosing one points the new apps at your media where it is; nothing is moved." }),
         el("div", { class: "option-cards" }, radios.map(({ m, input }) => el("label", { class: "option-card" }, input,
           el("strong", { text: m.path }), el("small", { text: `Used by ${m.used_by.join(", ")}` }))),
-          el("label", { class: "option-card" }, otherRadio, el("strong", { text: "Another folder" }), el("small", { text: "Type it below." }))))
+          el("label", { class: "option-card" }, otherRadio, el("strong", { text: "Another folder" }), el("small", { text: "Enter it in the field." }))))
         : null,
       folderField({ input: other, label: radios.length ? "Other media folder" : "Media folder", required: !radios.length,
-        hint: "A folder on the drive with the most room, such as /srv/media, typed or chosen with Browse. Starboard makes movies, tv, books and downloads folders inside it." }).node,
+        hint: "A folder on the disk with the most room, such as /srv/media, entered or chosen with Browse. Starboard makes movies, tv, books and downloads folders inside it." }).node,
       el("div", { class: "stack-2" },
-        el("p", { class: "small muted", text: "Several drives? A pool joins them into one folder, so the apps see one big drive. Nothing on them is erased." }),
+        el("p", { class: "small muted", text: "Several disks? A pool joins them into one folder, so the apps get one large disk. Nothing on them is erased." }),
         el("div", { class: "actions" }, poolButton), poolBox),
       state.advanced ? folderField({ input: cfg, label: "Settings folder", required: true, hint: "Each app gets its own folder inside it, such as …/config/sonarr. Back this folder up." }).node : null,
       state.advanced ? el("fieldset", { class: "form-stack" }, el("legend", { text: "User, group and time zone" }),
@@ -498,7 +498,7 @@ async function installStep(id, state, data, apps, go) {
     const pickName = `vpn-provider-${Date.now()}`;
     const other = el("input", { class: "input", autocomplete: "off", spellcheck: "false", value: known ? "" : (state.vpn.provider || ""), id: "vpn-other" });
     const otherBox = el("div", { class: "form-stack" }, field("Its name, as Gluetun's list writes it", other, { required: true },
-      { hint: "Gluetun's list of providers is on its wiki, under Providers. Type the name in small letters, such as mullvad." }));
+      { hint: "Gluetun's list of providers is on its wiki, under Providers. Enter the name in lower case, such as mullvad." }));
     // An affiliate link (affiliate: true) is marked as paid and says so: "Ad" on the card, and the note under the hint.
     const card = (id, name, site, affiliate) => {
       const link = site ? newTabLink(site, new URL(site).host.replace(/^www\./, ""), { about: `${name}'s site${affiliate ? ", affiliate link" : ""}` }) : null;
@@ -506,7 +506,7 @@ async function installStep(id, state, data, apps, go) {
       return el("label", { class: "option-card" },
         el("input", { type: "radio", name: pickName, value: id, checked: id === "other" ? (!known && !!state.vpn.provider) : state.vpn.provider === id }),
         el("strong", { text: name }),
-        link ? el("small", {}, link) : el("small", { text: "Type its name below" }),
+        link ? el("small", {}, link) : el("small", { text: "Enter its name" }),
         affiliate ? el("small", { class: "muted", "aria-hidden": "true", text: "Ad: affiliate link" }) : null);
     };
     const paid = providers.filter((v) => v.affiliate).map((v) => v.name);
@@ -565,7 +565,7 @@ async function installStep(id, state, data, apps, go) {
     const reuseBox = reuse ? el("div", { class: "stack-2" },
       el("label", { class: "option-card" }, reuse,
         el("strong", { text: `Use the VPN from ${existing.name}, already on this computer (recommended)` }),
-        el("small", { text: `${providers.find((v) => v.id === existing.provider)?.name || existing.provider}, ${existing.type === "openvpn" ? "OpenVPN" : "WireGuard"}${existing.countries ? `, ${existing.countries}` : ""}. Starboard copies its key into the new set-up, so you need not type it.` }))) : null;
+        el("small", { text: `${providers.find((v) => v.id === existing.provider)?.name || existing.provider}, ${existing.type === "openvpn" ? "OpenVPN" : "WireGuard"}${existing.countries ? `, ${existing.countries}` : ""}. Starboard copies its key into the new set-up, so you need not enter it.` }))) : null;
     nodes = [reuseBox, typed];
     typed.append(provider, el("div", { class: "form-stack" },
       otherBox,
@@ -741,7 +741,7 @@ async function installStep(id, state, data, apps, go) {
     save = async () => {
       const v = key.value.trim();
       setError(key, "");
-      if (v && !/^([0-9a-f]{32}|eyJ[\w-]+\.[\w-]+\.[\w-]+)$/.test(v)) return stop(key, "That does not look like a TMDB key. Paste the API Read Access Token or the API key from themoviedb.org, Settings, API");
+      if (v && !/^([0-9a-f]{32}|eyJ[\w-]+\.[\w-]+\.[\w-]+)$/.test(v)) return stop(key, "That is not in the form of a TMDB key. Paste the API Read Access Token or the API key from themoviedb.org, Settings, API");
       state.tmdb = v;
       state.language = $("input:checked", langs)?.value ?? "English";
       return true;
@@ -778,7 +778,7 @@ async function installStep(id, state, data, apps, go) {
         ...(state.apps.has("reelix") && state.reelix_edition === "full" ? row("Reelix", "With YouTube and Spotify downloads", "groups")
           : state.apps.has("reelix") && state.installNote ? row("Reelix", state.installNote, "groups") : []),
         ...row("Media folder", el("code", { text: state.data_dir }), "folders"),
-        ...(state.pool ? row("Pool", `${state.pool.path}, from ${state.pool.mounts.length} drives (run its commands first)`, "folders") : []),
+        ...(state.pool ? row("Pool", `${state.pool.path}, from ${state.pool.mounts.length} disks (run its commands first)`, "folders") : []),
         ...(state.advanced ? row("Settings folder", el("code", { text: state.config_dir }), "folders") : []),
         ...(state.apps.has("reelix") ? row("Sites to search", sitesSummary(state.sites, await loadReelixSites()), "sites") : []),
         ...(state.apps.has("reelix") ? row("TMDB key", state.tmdb ? "Added" : "None for now: Reelix uses open data", "films") : []),
@@ -883,7 +883,7 @@ async function installStep(id, state, data, apps, go) {
           state.heldPassword = "";
           form.hidden = true;
           // One bar for the job, updated in place; a problem goes below it (WIZARD.md section 5, A job's progress).
-          const words = el("span", { text: "Downloading and starting the apps. Please wait, this can take some time…" });
+          const words = el("span", { text: "Downloading and starting the apps…" });
           const time = el("span", { class: "numeric nowrap", text: "0 min 00 s" });
           // After the timer: how many apps are on the computer, then how many are running (from Docker).
           const count = el("span", { class: "numeric nowrap" });
@@ -908,7 +908,7 @@ async function installStep(id, state, data, apps, go) {
             if (j.ok) {
               words.textContent = "The apps are running.";
               bar.setAttribute("aria-valuetext", "Done");
-              status.append(notice("success", "The apps are running", "Now connect them: the steps are below."));
+              status.append(notice("success", "The apps are running", "Now connect them, in these steps."));
               await showAfter(true);
             } else {
               // The bar stays where it stopped, marked; the problem and its choices are below it.
@@ -972,20 +972,20 @@ async function poolDialog(drives, current) {
   const typed = el("textarea", { class: "input", rows: "3", spellcheck: "false", placeholder: "/srv/disk1\n/srv/disk2" });
   const boxes = (drives || []).map((d) => ({ d, input: el("input", { type: "checkbox", checked: !!current?.mounts.includes(d.mount) }) }));
   const choose = boxes.length
-    ? el("fieldset", { class: "form-stack" }, el("legend", { text: "Drives to join" }), boxes.map(({ d, input }) => el("label", { class: "check" }, input,
+    ? el("fieldset", { class: "form-stack" }, el("legend", { text: "Disks to join" }), boxes.map(({ d, input }) => el("label", { class: "check" }, input,
       el("span", { class: "check__text" }, el("strong", { text: d.mount }), el("span", { class: "check__hint", text: [d.size, d.fs, d.model, d.label].filter(Boolean).join(" · ") })))))
-    : field("Drives to join", typed, { hint: "Starboard has no list of this computer's drives (it comes with Disk health). Type the folder each drive is mounted at, one a line." });
+    : field("Disks to join", typed, { hint: "Starboard has no list of this computer's disks (it comes with Disk health). Enter the folder each disk is mounted at, one a line." });
   const ok = await confirmDialog({
-    title: "Join several drives into one",
-    message: "A pool (mergerfs) shows several drives as one folder. New files go to the drive with the most room. Nothing on the drives is erased or moved.",
+    title: "Join several disks into one",
+    message: "A pool (mergerfs) shows several disks as one folder. New files go to the disk with the most room. Nothing on the disks is erased or moved.",
     fields: [choose, field("Pool folder", path, { required: true, hint: "Where the joined folder appears, such as /srv/pool. This becomes your media folder." })],
-    confirm: "Use these drives",
+    confirm: "Use these disks",
   });
   if (!ok) return null;
   const mounts = boxes.length ? boxes.filter((b) => b.input.checked).map((b) => b.d.mount) : typed.value.split("\n").map((s) => s.trim()).filter(Boolean);
   const where = path.value.trim();
   if (mounts.length < 2 || !mounts.every((m) => /^\/[\w./-]+$/.test(m)) || !/^\/[\w./-]+$/.test(where)) {
-    problem("Choose at least two drives, and a pool folder starting with /");
+    problem("Choose at least two disks, and a pool folder starting with /");
     return null;
   }
   const line = `${mounts.join(":")} ${where} fuse.mergerfs defaults,allow_other,use_ino,cache.files=off,moveonenospc=true,category.create=mfs,minfreespace=20G,fsname=mergerfs 0 0`;
@@ -1020,7 +1020,7 @@ function connectGuide(state, apps) {
         // Until the set-ups ask for it (DASH-178), the TMDB key is the one setting still made in Reelix's own pages.
         el("li", {}, "Films and series information: add a free TMDB key, from themoviedb.org, in ",
           el("a", { href: "/settings-reelix.html#rx-basics-h", text: "Settings, Reelix, Basic settings" }), ", if you did not give it in the Films and series step."),
-        el("li", {}, "Sites to search: the ones you chose are added. See each one's state, and add more, in ",
+        el("li", {}, "Sites to search: the ones you chose are added. Each one's state, and the way to add more, is in ",
           el("a", { href: "/settings-reelix.html", text: "Settings, Reelix, Sites to search" }), "."),
         has("jellyfin") || has("audiobookshelf") ? el("li", {}, `Reelix is connected to ${[has("jellyfin") ? "Jellyfin" : "", has("audiobookshelf") ? "Audiobookshelf" : ""].filter(Boolean).join(" and ")}, so new things show up there at once. Check it, or connect again, in `,
           el("a", { href: "/settings-reelix.html#rx-mediaservers", text: "Settings, Reelix, Media servers" }), ".") : null,
@@ -1081,13 +1081,13 @@ function connectGuide(state, apps) {
     steps.push(el("li", {}, el("strong", { text: "Bazarr. " }), open("bazarr"), ". In Settings, connect Sonarr (", code("sonarr"), ", port 8989) and Radarr (", code("radarr"), ", port 7878) with their API keys, and choose your languages."));
   }
   steps.push(el("li", {}, el("strong", { text: "Starboard. " }), "In ", el("a", { href: "/settings.html", text: "Manage apps" }), ", give each app its API key, so Search, Downloads and Coming up work."));
-  if (state.moving.has("reelix") || state.moving.has("takeover")) steps.push(el("li", {}, state.moving.has("reelix") ? "Move your apps into Reelix, then let Starboard run them: below, once Reelix has set itself up, or later in " : "Let Starboard run the apps you already have: below, or later in ",
+  if (state.moving.has("reelix") || state.moving.has("takeover")) steps.push(el("li", {}, state.moving.has("reelix") ? "Move your apps into Reelix, then let Starboard run them: in Apps you already run, once Reelix has set itself up, or later in " : "Let Starboard run the apps you already have: in Apps you already run, or later in ",
     el("a", { href: "/settings-install.html#in-takeover-h", text: "Settings, Your install, Apps you already run" }), "."));
   if (state.moving.has("history")) steps.push(el("li", {}, "Import watch history: ", el("a", { href: "/settings-jellyfin.html", text: "Settings, Apps, Jellyfin" }), "."));
   if (state.moving.has("settings")) steps.push(el("li", {}, "Copy settings from your old apps: ", el("a", { href: "/copy-settings.html", text: "Copy app settings" }), "."));
   if (state.moving.has("listening")) steps.push(el("li", {}, "Copy listening progress once Audiobookshelf has scanned in your books: ", el("a", { href: "/settings-audiobookshelf.html", text: "Settings, Apps, Audiobookshelf" }), "."));
   return [el("h3", { text: "Connect your apps, in this order" }),
-    el("p", { class: "small muted", text: "Inside Docker the apps find each other by name (such as sonarr), not by this computer's address. Every app sees your media at /data." }),
+    el("p", { class: "small muted", text: "Inside Docker the apps find each other by name (such as sonarr), not by this computer's address. Every app finds your media at /data." }),
     el("ol", { class: "stack-4" }, steps)];
 }
 

@@ -8,14 +8,14 @@ Reelix Lite, with the apps they need to find, download and play your films, seri
 radio. It takes about 20 minutes, most of it waiting for downloads.
 
 This page covers the default install, **Basics**. More apps are in [Add more apps](#add-more-apps), and what you
-can change later is in [Advanced options](#advanced-options).
+can change later is in [More options](#more-options).
 
 ## Before you begin
 
 - Starboard is installed and you have chosen your password. If not, start with
   [Quick start: one command sets up everything](quick-start.md).
 - An account with a VPN (virtual private network) provider is recommended. Downloads go through it, so your
-  internet provider and other people sharing torrents cannot see what you download or your home internet address.
+  internet provider and other people sharing torrents cannot tell what you download or find your home internet address.
   You can continue without one and add it later: read [Download without a VPN](../topics/download-without-a-vpn.md).
 - Optional: a free TMDB key from themoviedb.org, for film and series posters. You can add it later.
 
@@ -67,7 +67,7 @@ step, with these few to fill in:
 - **Films and series:** paste your TMDB key, or leave it empty to add it later.
 
 Read [Install apps with Starboard](../topics/install-apps.md) for each of these steps. You can change every answer
-later: read [Advanced options](#advanced-options).
+later: read [More options](#more-options).
 
 **It worked when** the **Check** step lists your answers. Enter **Your Starboard password** and select **Write the
 files**.
@@ -113,7 +113,7 @@ The default install is complete on its own. Add these only when you want what th
 - **A plug-in,** such as free Live TV in Jellyfin: read [Add a plug-in](../topics/add-a-plugin.md) and
   [Set up free Live TV in Jellyfin](../topics/set-up-live-tv.md).
 
-## Advanced options
+## More options
 
 The default install works with all of these as they are. Change them when you want to.
 
@@ -129,7 +129,7 @@ The default install works with all of these as they are. Change them when you wa
   then [Change or remove an app](../topics/change-or-remove-an-app.md#change-an-apps-details).
 - **Reelix's sites and settings:** [Choose the sites Reelix searches](../topics/choose-sites-to-search.md) and
   [Change Reelix's settings in Starboard](../topics/change-reelix-settings.md).
-- **The set-up guide again:** go to **Settings**, then **General**, then **Names and apps**, activate **Advanced
+- **The set-up guide again:** go to **Settings**, then **General**, then **Names and apps**, activate **More
   settings**, and select **Run the set-up guide again** under **Set-up guide**. Nothing changes until you select **Continue**.
 
 ## What next

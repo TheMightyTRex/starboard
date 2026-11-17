@@ -116,7 +116,7 @@ def check(app, verdict, status_all=None, pool_status=None, backup_status=None):
             os.listdir(path)
             answering += 1
         except OSError:
-            problems.append(f"{label} ({path}) is not answering. Check its drive is connected, then restart the server.")
+            problems.append(f"{label} ({path}) is not answering. Check its disk is connected, then restart the server.")
     if disks:
         checked.append(f"{answering} of {len(disks)} folders answering")
     # The pool, when the pool helper looks after one.
@@ -125,7 +125,7 @@ def check(app, verdict, status_all=None, pool_status=None, backup_status=None):
         if found.get("mounted"):
             checked.append("the pool is mounted")
         else:
-            problems.append("The pool is not mounted, so the apps cannot see your media. Open System, Pool.")
+            problems.append("The pool is not mounted, so the apps cannot reach your media. Open System, Pool.")
         job = found.get("job") or {}
         if job.get("state") == "running" and not job.get("finished"):
             problems.append(f"A pool job ({job.get('action', 'a job')}) stopped part-way. Open System, Pool to "

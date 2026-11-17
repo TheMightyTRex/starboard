@@ -96,7 +96,7 @@ def do_POST(self):
 ```
 
 - `before` runs on the version installed now, so a step you add in 2.0.0 runs from the update after 2.0.0.
-- Answer `{"ok": false}` with a short reason when it is not safe to update. Nothing is changed, and people see the
+- Answer `{"ok": false}` with a short reason when it is not safe to update. Nothing is changed, and people are shown the
   reason.
 - `after` hears `outcome`: `updated` on the new version, or `rolled_back` on the old one when the update did not
   work. Start the work again either way.

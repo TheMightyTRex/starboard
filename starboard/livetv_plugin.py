@@ -574,7 +574,7 @@ def sources_act(body, fetch=None):
             livetv_jellyfin.refresh_guide(_services())
         _rebuild()
         return sources_screen(f"{item['name']} removed")
-    raise ValueError("Not something this screen does")
+    raise ValueError("Not something this page does")
 
 
 def _test(item, fetch=None):

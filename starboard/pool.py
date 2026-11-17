@@ -41,7 +41,7 @@ def ask(action, **fields):
     """Write one request for the helper; returns its ID, to read the answer with answer(). The file is written under
     a name the helper skips, then renamed, so the helper never reads half a request."""
     if not folder():
-        raise ValueError("The pool helper is not set up. Run ./install.sh again and say yes to Drive pools")
+        raise ValueError("The pool helper is not set up. Run ./install.sh again and say yes to Disk pools")
     rid = secrets.token_hex(8)
     req = dict(fields, action=action, id=rid)
     base = os.path.join(folder(), "requests")
@@ -70,12 +70,12 @@ def plan_request(data, download_hours=None):
     if kind in ("add", "remove"):
         drive = str(data.get("drive", ""))
         if not re.fullmatch(r"[A-Za-z0-9/._:-]{1,200}", drive):
-            raise ValueError("Choose a drive")
+            raise ValueError("Choose a disk")
         out["drive"] = drive
     if kind == "add":
         role = data.get("as")
         if role not in ("pool", "parity", "copy"):
-            raise ValueError("Choose the pool, a parity drive or a copy drive")
+            raise ValueError("Choose the pool, a parity disk or a copy disk")
         out.update({"as": role, "erase": bool(data.get("erase"))})
         folders = [str(x).strip("/") for x in data.get("folders") or [] if str(x).strip("/")]
         if any(not re.fullmatch(r"[\w .()'-]+(/[\w .()'-]+)*", f) or ".." in f.split("/") for f in folders):

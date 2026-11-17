@@ -21,7 +21,7 @@ Starboard supports four systems, in the version named here or any later one. Cho
 
 | You want | Install | Why |
 |---|---|---|
-| A screen on the server, and the set-up in its browser | **Linux Mint 22.3 (recommended)** | A desktop that looks familiar; the set-up opens in its browser by itself |
+| A screen on the server, and the set-up in its browser | **Linux Mint 22.3 (recommended)** | A desktop that is familiar; the set-up opens in its browser by itself |
 | No screen: the set-up in the terminal, or from a phone or laptop | **Debian 13** | The lightest: it leaves the most memory for your apps |
 | No screen, with 5 years of updates | **Ubuntu Server 26.04 LTS** | Long support, and many guides online |
 | A Raspberry Pi | **Raspberry Pi OS (64-bit)** | Follow [Prepare a Raspberry Pi](prepare-a-raspberry-pi.md) instead of this page |
@@ -109,7 +109,7 @@ for the minimum and recommended computer for each.
 
 - [Connect to the internet, by cable or Wi-Fi](connect-to-the-internet.md)
 - [Connect to your server from another computer](connect-with-ssh.md)
-- [The terminal: typing commands](../basics/the-terminal.md)
+- [The terminal: entering commands](../basics/the-terminal.md)
 - [Set up everything with the Run first script](run-first.md)
 - [Get Starboard up and running, from a bare computer](../guides/get-up-and-running.md)
 

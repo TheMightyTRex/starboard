@@ -98,7 +98,7 @@ def connect(services, extras, data_dir, local_folder=None, opener=None, host_pat
         return "Jellyfin: add its API key in Settings, Apps to add the channels to Jellyfin by itself"
     inside = jellyfin_folder(extras, data_dir, host_path=host_path, env=env)
     if not inside:
-        return "Jellyfin: type the Live TV folder as Jellyfin sees it in Settings, Apps, Jellyfin, so Starboard can add the channels"
+        return "Jellyfin: enter the Live TV folder inside Jellyfin in Settings, Apps, Jellyfin, so Starboard can add the channels"
     here = local_folder or livetv.folder()
     try:
         options = _call(jf["url"], jf["api_key"], "GET", "/System/Configuration/livetv", opener=opener) or {}

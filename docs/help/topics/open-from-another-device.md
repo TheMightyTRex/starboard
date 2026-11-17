@@ -42,7 +42,7 @@ as `http://192.168.1.20:8095`. At the end, Starboard opens in the device's brows
 
 ## Things to note
 
-- Enter the address with `http://` and the `:8095` at the end. Without the port, the browser looks for a different app.
+- Enter the address with `http://` and the `:8095` at the end. Without the port, the browser opens a different app.
 - On a phone, you can add Starboard to your home screen so it opens like an app. In the browser's share or menu
   button, choose **Add to Home Screen** or **Install app**.
 - Your router can give the server a new address, for example after a power cut. If the address stops working, find it

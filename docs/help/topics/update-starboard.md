@@ -10,13 +10,13 @@ command on the server.
 
 ## Before you begin
 
-- A terminal open on the server. Read [The terminal: typing commands](../basics/the-terminal.md).
+- A terminal open on the server. Read [The terminal: entering commands](../basics/the-terminal.md).
 - Know which way you installed Starboard: with the installer, or from the ready-made image. If your Starboard folder
   has a file called `update.sh`, you used the installer.
 
 ## Find out whether an update is out
 
-- Starboard's version is at the foot of the side menu. When a newer one is out, a red dot appears just above it and
+- Starboard's version is at the foot of the side menu. When a newer one is out, a red dot appears beside the version and
   pulses gently (it keeps still when **Reduce motion** is on). Select the version to go to **Settings**, then
   **Updates**. **About and updates** in the footer of any page goes there too.
 - At the top of **Updates**, a notice says "Version 0.20.0 is out", for example, with a **Release notes** button that
@@ -46,7 +46,7 @@ This works if you used the installer and Starboard has Docker access, or if you 
 4. A dialog shows each step with its state: checking, backing up, getting the new version, building it, restarting
    and checking that it answers. While Starboard restarts, the dialog loses touch for about a minute and reconnects
    by itself.
-5. When it ends, it says **Starboard is updated**. Select **Done**, then **See what is new** to choose any new
+5. When it ends, it says **Starboard is updated**. Select **Done**, then **What is new** to choose any new
    settings.
 
 Closing the dialog does not stop the update. If **Update now** is not there, the page says why, such as a Starboard
@@ -60,7 +60,7 @@ first, is checked afterwards and goes back by itself if it does not work, and th
 
 1. Go to **Settings**, then **Updates**. At the top of **Ready to update**, select **Install all updates**. The
    button says how many are waiting, such as **Install all 6 updates**.
-2. Enter **Your Starboard password** and select **Continue**. Starboard looks at each waiting update.
+2. Enter **Your Starboard password** and select **Continue**. Starboard checks each waiting update.
 3. A dialog lists what will install, in the order it installs. Under **Held back for you**, it lists any update that
    always waits for you, with the reason:
    - a plug-in that asks for new permissions, or comes as a zip file: update it on its own page;

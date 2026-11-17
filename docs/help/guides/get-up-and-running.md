@@ -19,7 +19,7 @@ After the Run first script the guide splits into two paths. Both end in the same
   [The four systems](../topics/what-you-need.md#the-four-systems).
 - A USB stick of 8 GB or more, and another computer to prepare it. For a Raspberry Pi, a microSD card instead.
 - A disk for your media: plan for 1 TB or more for films and series.
-- If the terminal is new to you, read [The terminal: typing commands](../basics/the-terminal.md) first.
+- If the terminal is new to you, read [The terminal: entering commands](../basics/the-terminal.md) first.
 - Want a helper beside you? [Ask an AI assistant to help you set up](../topics/ask-an-ai-for-help.md) has a prompt
   to copy into one.
 
@@ -109,7 +109,7 @@ shows what is left: read [Finish what is still to set up](../topics/finish-setti
 ## What next
 
 - [Set up your dashboard after installing](set-up-your-dashboard.md): the default install, then more apps and
-  advanced options.
+  more options.
 - [Use Starboard away from home safely](use-starboard-away-from-home.md).
 - Keep it current with [Update Starboard](../topics/update-starboard.md).
 - Something not right? [Send feedback about a page](../topics/send-feedback.md).

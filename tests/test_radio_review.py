@@ -86,7 +86,7 @@ class Review(unittest.TestCase):
         self.assertIn(("POST", "/radio/shows", {"link": "https://www.bbc.co.uk/programmes/b0", "follow": "from_now_on", "monitored": True,
                                                 "root_folder_id": 4}), self.calls)
         self.assertIn(("POST", "/radio/shows/12/search", {}), self.calls)
-        self.assertEqual(out["done"], "Keepers added. Reelix is looking for its episodes")
+        self.assertEqual(out["done"], "Keepers added. Reelix is searching for its episodes")
         with self.assertRaises(ValueError):
             radio_review.add(None, "https://x.invalid/feed", "everything")
 

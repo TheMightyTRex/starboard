@@ -15,16 +15,16 @@ let panelKey = null;
 let checkedAt = null;
 
 const STATE_WORDS = {
-  downloading: ["Downloading", "info"], importPending: ["Waiting to import", "neutral"], importing: ["Importing", "info"],
-  imported: ["In library", "success"], importBlocked: ["Needs attention", "warning"], failedPending: ["Failed", "danger"], failed: ["Failed", "danger"],
-  paused: ["Paused", "muted"], queued: ["Waiting", "neutral"], delay: ["Waiting", "neutral"], completed: ["Downloaded", "success"],
+  downloading: STATUS.downloading, importPending: STATUS.waitingToImport, importing: STATUS.importing,
+  imported: STATUS.inLibrary, importBlocked: STATUS.needsAttention, failedPending: STATUS.failed, failed: STATUS.failed,
+  paused: STATUS.paused, queued: STATUS.waiting, delay: STATUS.waiting, completed: STATUS.downloaded,
 };
 // Order of the filter chips, and of "Needs you first".
 const STATE_ORDER = ["Needs attention", "Failed", "Downloading", "Importing", "Waiting to import", "Waiting", "Paused", "Downloaded", "In library"];
 const SORT_LABEL = { attention: "Needs you first", time: "Time left", title: "Name", queue: "Queue order" };
 
 function words(item) {
-  if (item.problem) return ["Needs attention", "warning"];
+  if (item.problem) return STATUS.needsAttention;
   // An app's own state word, such as post_processing, as words: "Post processing" (issue #7).
   const plain = (item.status || "").replace(/[_-]+/g, " ").trim().toLowerCase();
   return STATE_WORDS[item.status] || [plain ? plain[0].toUpperCase() + plain.slice(1) : "Waiting", "neutral"];
@@ -205,9 +205,9 @@ function detailsBody(item) {
       setProgress(newBar(), item, `${pct}% downloaded`)),
   ];
   if (item.problem) {
-    body.push(notice("warning", `${item.service_name} needs you to look at this`, item.messages.length
-      ? `Read the messages below, then sort it out in the queue in ${item.service_name}.`
-      : `${item.service_name} flagged this download without a message. Open the queue in ${item.service_name} to see why.`));
+    body.push(notice("warning", `${item.service_name} needs a decision from you`, item.messages.length
+      ? `Read its messages, then sort it out in the queue in ${item.service_name}.`
+      : `${item.service_name} flagged this download without a message. Open the queue in ${item.service_name} to find out why.`));
   }
   if (item.messages.length) {
     body.push(el("section", { class: "media-panel-section", "aria-labelledby": "dd-msg-h" },
@@ -247,7 +247,7 @@ function detailsFoot(item) {
   const stuck = item.reelix && ["importPending", "importBlocked", "failedPending"].includes(item.status);
   const fix = stuck ? [
     el("button", { type: "button", class: "btn btn--primary", onclick: () => queueAction(item, "import", {
-      title: "Try the import again?", message: `Reelix looks at the finished files again and moves them into your library if it can. Read its messages first if it failed before.`,
+      title: "Try the import again?", message: `Reelix checks the finished files again and moves them into your library if it can. Read its messages first if it failed before.`,
       confirm: "Try again" }) }, icon("refresh-cw"), "Try the import again"),
     el("button", { type: "button", class: "btn", onclick: () => queueAction(item, "ignore", {
       title: "Ignore this download?", message: `Reelix stops warning about it and leaves the files in ${item.client || "the download client"}'s folder. Nothing is deleted.`,
@@ -423,8 +423,8 @@ async function issuesExport(how, button) {
       announce(`Copied ${issueWords(out.count)}`);
     } else {
       exportBox("warning", "The browser did not let Starboard copy",
-        "Select the text below and copy it, or use Download as Markdown.", [exportPreview(out.markdown, true)]);
-      announce("Not copied. The issues are shown below to copy by hand");
+        "Select the text of the issues and copy it, or use Download as Markdown.", [exportPreview(out.markdown, true)]);
+      announce("Not copied. The issues are on the page, to copy by hand");
     }
   } catch (e) {
     problem(`The issues could not be gathered: ${e.message}`, button);
@@ -551,7 +551,7 @@ async function loadTransfer(fresh = false) {
       `${v.name}${where ? `: ${where}` : ""}${v.port ? `, forwarded port ${v.port}` : v.running ? ", no forwarded port" : ""}`,
       v.running ? "success" : "danger", v.running ? null : "Downloads may stop"));
   }
-  for (const e of t.errors) tiles.push(stat("Not answering", e.message, "danger"));
+  for (const e of t.errors) tiles.push(stat(STATUS.notResponding[0], e.message, STATUS.notResponding[1]));
   $("#transfer").hidden = !tiles.length;
   $("#transfer").replaceChildren(...tiles);
   // DASH-304: NZBGet's unpacking paused, so finished downloads wait and nothing reaches the library.
@@ -609,7 +609,7 @@ function renderSchedule(s) {
   const settings = el("a", { href: "/settings-downloads-hours.html", text: "Settings, Downloads, Download hours" });
   box.dataset.tone = !s.enabled ? "neutral" : s.mode === "run" ? "success" : "warning";
   if (!s.enabled) {
-    $("#schedule-chip").replaceChildren(chip("Off", "muted"));
+    $("#schedule-chip").replaceChildren(chip(...STATUS.inactive));
     $("#schedule-text").replaceChildren(`Downloads run at any time. To download only at night, activate download hours in `, settings, ".");
     $("#schedule-actions").replaceChildren();
     return;

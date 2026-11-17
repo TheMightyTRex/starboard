@@ -11,7 +11,7 @@ to answer. At the end, Starboard is running and you have the setup code for choo
 - A Linux computer that is big enough. Read [What you need to run Starboard](what-you-need.md). Images are made for
   64-bit computers and for Raspberry Pi models on 32-bit or 64-bit Raspberry Pi OS.
 - Docker is installed and `docker compose version` prints a version number. Read [Install Docker](install-docker.md).
-- A terminal open on that computer. Read [The terminal: typing commands](../basics/the-terminal.md).
+- A terminal open on that computer. Read [The terminal: entering commands](../basics/the-terminal.md).
 
 ## Steps
 
@@ -89,7 +89,7 @@ The Compose file has some extra lines that start with `#`, which means they are 
 that explains it. To activate one, follow
 [If you used the ready-made image](change-what-starboard-can-access.md#if-you-used-the-ready-made-image).
 
-- **Folders for System, Storage:** shows how full your drives are. You need two lines: the `STARBOARD_DISKS` line,
+- **Folders for System, Storage:** shows how full your disks are. You need two lines: the `STARBOARD_DISKS` line,
   and one line for each folder under `volumes`, such as `/mnt/media:/disks/media:ro`. The `:ro` means read-only.
 - **The Docker socket:** lets **System**, **Apps**, **Updates** update your other apps, and lets Starboard find
   their API keys. This gives Starboard full control of Docker, which is the same as full control of the computer.

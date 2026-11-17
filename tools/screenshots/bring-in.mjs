@@ -13,7 +13,7 @@ const desk = { width: 1280, height: 900 };
 const phone = { width: 390, height: 844 };
 const until = (sel, ms = 15000) => `(async () => { for (let i = 0; i < ${ms / 250} && !document.querySelector(${JSON.stringify(sel)}); i++) await new Promise((r) => setTimeout(r, 250)); await new Promise((r) => setTimeout(r, 700)); })()`;
 const GB = 1e9;
-// In the picker: Drive 2, then its first folder, then wait for the sizes to be counted.
+// In the picker: Disk 2, then its first folder, then wait for the sizes to be counted.
 const intoFolder = `(async () => { const w = async (f) => { for (let i = 0; i < 60 && !f(); i++) await new Promise((r) => setTimeout(r, 250)); };
   await w(() => document.querySelector("[data-place^='disk:']")); document.querySelector("[data-place^='disk:']").click();
   await w(() => document.querySelector(".folder-list [role=option]")); document.querySelector(".folder-list [role=option]").click();
@@ -25,14 +25,14 @@ const stopped = { ...running, state: "stopped", error: "The media disk is nearly
 const report = {
   at: Date.now() / 1000, holding: "", added: { films: 6, series: 3 },
   counts: { copied: 9, look: 1, left: 5 },
-  copied: [["Harbour Lights (2019)", "films", "media/movies/Harbour Lights (2019)", "Drive 2: Old media"], ["The Long Field (2021)", "films", "media/movies/The Long Field (2021)", "Drive 2: Old media"],
-    ["Paper Planets (2017)", "films", "media/movies/Paper Planets (2017)", "Drive 2: Old media"], ["Glass Orchard (2015)", "films", "media/movies/Glass Orchard (2015)", "/home/sam"],
-    ["Northern Line (2023)", "films", "media/movies/Northern Line (2023)", "/home/sam"], ["Copper Valley (2018)", "series", "media/tv/Copper Valley (2018)", "Drive 2: Old media"],
-    ["Saltmarsh (2016)", "series", "media/tv/Saltmarsh (2016)", "Drive 2: Old media"], ["First Light", "music", "media/music/Midnight Garden/First Light", "Drive 2: Old media"],
+  copied: [["Harbour Lights (2019)", "films", "media/movies/Harbour Lights (2019)", "Disk 2: Old media"], ["The Long Field (2021)", "films", "media/movies/The Long Field (2021)", "Disk 2: Old media"],
+    ["Paper Planets (2017)", "films", "media/movies/Paper Planets (2017)", "Disk 2: Old media"], ["Glass Orchard (2015)", "films", "media/movies/Glass Orchard (2015)", "/home/sam"],
+    ["Northern Line (2023)", "films", "media/movies/Northern Line (2023)", "/home/sam"], ["Copper Valley (2018)", "series", "media/tv/Copper Valley (2018)", "Disk 2: Old media"],
+    ["Saltmarsh (2016)", "series", "media/tv/Saltmarsh (2016)", "Disk 2: Old media"], ["First Light", "music", "media/music/Midnight Garden/First Light", "Disk 2: Old media"],
     ["Little Lanterns (2022)", "series", "media/tv/Little Lanterns (2022)", "//192.0.2.20/media"]].map(([title, kind, to, from]) => ({ title, kind, to, from, linked: false, note: "" })),
-  look: [{ title: "Tidewater", kind: "films", to: "media/movies/Tidewater", from: "Drive 2: Old media", why: "More than one match: choose the right one" }],
+  look: [{ title: "Tidewater", kind: "films", to: "media/movies/Tidewater", from: "Disk 2: Old media", why: "More than one match: choose the right one" }],
   left: [["sample.mkv", "A sample, not the whole film or episode"], ["RARBG.txt", "Not media"], ["Thumbs.db", "Not media"],
-    ["Paper Planets (2017).mkv", "The same title is in Drive 2: Old media, which comes first in your list"], ["The Quiet Coast.epub", "You chose to leave this folder where it is"]]
+    ["Paper Planets (2017).mkv", "The same title is in Disk 2: Old media, which comes first in your list"], ["The Quiet Coast.epub", "You chose to leave this folder where it is"]]
     .map(([title, why]) => ({ title, kind: null, from: "", why })),
 };
 const write = (name, value) => fs.writeFileSync(`${data}/bring-in/${name}`, JSON.stringify(value));

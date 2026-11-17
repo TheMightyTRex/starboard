@@ -76,7 +76,7 @@ function renderHolding() {
   $("#danger").hidden = !items.length;
   if (!items.length) {
     list.replaceChildren(emptyState("The holding folder is empty", "Move things here from What is left over.",
-      el("a", { class: "btn btn--primary", href: "/system-cleanup.html" }, "See what is left over")));
+      el("a", { class: "btn btn--primary", href: "/system-cleanup.html" }, "Show what is left over")));
     return;
   }
   list.replaceChildren(el("ul", { class: "rows" }, items.map((i, n) => el("li", { class: "row row--no-lead", "data-key": i.id },
@@ -126,7 +126,7 @@ async function deleteForGood(items, button, index) {
 
 startPage().then(async () => {
   try { cleanup = await api("/api/cleanup"); }
-  catch (e) { $("#cleanup-list").replaceChildren(emptyState("Could not look", e.message)); return; }
+  catch (e) { $("#cleanup-list").replaceChildren(emptyState("Could not check what is left over", e.message)); return; }
   if (HOLDING_PAGE) {
     renderHolding();
     renderBesideApps();

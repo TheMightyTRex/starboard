@@ -40,7 +40,7 @@ Do not use the `sudo snap install curl` Ubuntu suggests: the snap version cannot
 wget -qO- https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash
 ```
 
-Typing it? Type it exactly: everything after `TheMightyTRex/starboard/` is case-sensitive, so `main/run-first.sh`
+Entering it by hand? Enter it exactly: everything after `TheMightyTRex/starboard/` is case-sensitive, so `main/run-first.sh`
 must be in small letters with a hyphen, or GitHub answers 404 (not found). The `|` (vertical bar) is in different
 places on different keyboards: on a UK keyboard it is **Shift**
 and the `\` key next to the left **Shift**, not the `¦` key. The help has
@@ -53,13 +53,13 @@ bash run-first.sh
 ```
 
 It checks the computer, installs Docker and anything else missing after you say yes, downloads Starboard and
-starts its installer. Type `a` at its first question for accessible mode, which carries on through the whole
+starts its installer. Enter `a` at its first question for accessible mode, which carries on through the whole
 installation.
 
 **With a desktop: set up in the browser.** When the installer finishes, the set-up page opens in your browser by
 itself, with the setup code filled in.
 
-**With no desktop: set up in the terminal.** On the server, or connected to it over SSH, the script sees there is
+**With no desktop: set up in the terminal.** On the server, or connected to it over SSH, the script finds there is
 no desktop and asks every set-up question in the terminal instead: your password, your apps and your download
 hours. To choose the terminal yourself:
 
@@ -67,9 +67,9 @@ hours. To choose the terminal yourself:
 curl -fsSL https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash -s -- --terminal
 ```
 
-![The Run first script's welcome page in a terminal: the Starboard logo in blocks, what the script will do, and a choice to finish setting up in a browser (recommended, as this computer has a desktop) or here in the terminal](docs/screenshots/run-first.jpg)
+![The Run first script's welcome page in a terminal, offering to finish setting up in a browser or in the terminal](docs/screenshots/run-first.jpg)
 
-**New to all this?** Follow the beginners' guide,
+**Starting from a bare computer?** Follow the step-by-step guide,
 [Get Starboard up and running, from a bare computer](https://themightytrex.github.io/starboard/help/guides/get-up-and-running.html). It starts with
 installing Linux, then takes you through either path step by step. Check
 [what you need to run Starboard](https://themightytrex.github.io/starboard/help/topics/what-you-need.html) first. Already have Docker and git?
@@ -83,7 +83,7 @@ In the help centre: [Quick start guide](https://themightytrex.github.io/starboar
 - **One set-up, complete.** It asks what you want (films, series, music, books, audiobooks, live TV), picks the
   apps, folders and settings, checks every step, starts the apps and connects them to each other, in a browser or
   entirely in the terminal.
-- **One dashboard.** Every app's status, your library from Reelix, one search that looks in your library first,
+- **One dashboard.** Every app's status, your library from Reelix, one search that checks your library first,
   downloads, what is coming up, requests, storage, disk health, alerts and backups.
 - **Lightweight first.** Starboard idles in about 16 MB of memory and almost no processor time, and every piece of
   background work can be paused or slowed.
@@ -105,7 +105,7 @@ In the help centre: [Everything Starboard does](https://themightytrex.github.io/
 
 The **Library** shows everything Reelix holds: TV, films, music, radio, books and audiobooks, each as a wall of
 covers with an A to Z list, filters and its own page for each title, with episodes, albums or reading order.
-**Search** looks in your library first as you type, then lists what Reelix can add, with **Add**, or **Follow** for
+**Search** checks your library first as you enter words, then lists what Reelix can add, with **Add**, or **Follow** for
 radio. Starboard keeps a small list of each kind and reads Reelix again only while you use the Library, so it stays
 light on small servers.
 
@@ -148,9 +148,9 @@ In the help centre: [What Reelix is](https://themightytrex.github.io/starboard/h
 
 ## Install
 
-Three ways, from simplest:
+Three ways, with the fewest steps first:
 
-1. **The Run first script** (above): checks the computer, installs what is missing, downloads Starboard and starts
+1. **The Run first script** (in Quick start): checks the computer, installs what is missing, downloads Starboard and starts
    the set-up.
 2. **The installer,** if you already have Docker with the Compose plugin and git:
 
@@ -182,14 +182,14 @@ In the help centre: [Install with the installer](https://themightytrex.github.io
 - **Home network by default, never the open internet.** Use a VPN or a reverse proxy with HTTPS to reach it from
   away.
 
-Report a problem privately as [SECURITY.md](SECURITY.md) explains. How it was reviewed and tested:
-[docs/SECURITY-AND-TESTS.md](docs/SECURITY-AND-TESTS.md).
+Report a problem privately as the [security policy](SECURITY.md) explains. How it was reviewed and tested:
+[Security: how Starboard protects you, and how it was tested](docs/SECURITY-AND-TESTS.md).
 
 In the help centre: [How Starboard keeps your server safe](https://themightytrex.github.io/starboard/help/basics/how-starboard-keeps-you-safe.html) · [Choose who can open Starboard](https://themightytrex.github.io/starboard/help/topics/choose-who-can-open-starboard.html) · [Use Starboard away from home](https://themightytrex.github.io/starboard/help/guides/use-starboard-away-from-home.html)
 
 ## Develop, credits and licence
 
-How to run it from a checkout, test it and keep your details out of the repository: [docs/DEVELOP.md](docs/DEVELOP.md).
+How to run it from a checkout, test it and keep your details out of the repository: [Develop Starboard](docs/DEVELOP.md).
 The help centre is built from [docs/help](docs/help) by the design system's help centre builder, with the settings in [help-centre.json](help-centre.json).
 
 Pillow, Lucide, Atkinson Hyperlegible Next and the data sources Starboard uses are listed, with their licences, in

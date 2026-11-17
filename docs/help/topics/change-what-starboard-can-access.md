@@ -10,7 +10,7 @@ Starboard. Others you change by running the installer again, which keeps your se
 
 - You can sign in to Starboard. Read [Create your password and sign in](create-your-password.md).
 - For changes made with the installer, a terminal open on the server. Read
-  [The terminal: typing commands](../basics/the-terminal.md).
+  [The terminal: entering commands](../basics/the-terminal.md).
 
 ## Check what Starboard can access now
 

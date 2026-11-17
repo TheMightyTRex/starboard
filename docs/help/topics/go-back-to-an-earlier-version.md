@@ -8,7 +8,7 @@ backed up first, and you can update again when you are ready.
 
 ## Before you begin
 
-- A terminal open on the server. Read [The terminal: typing commands](../basics/the-terminal.md).
+- A terminal open on the server. Read [The terminal: entering commands](../basics/the-terminal.md).
 - Know which version you had before, such as `v0.7.2`. The steps show how to list the versions.
 
 ## Steps if you used the installer
@@ -79,7 +79,7 @@ backed up first, and you can update again when you are ready.
 ## Going back for Reelix, apps and plug-ins
 
 - **Starboard:** when a new version does not start, Starboard goes back by itself, whether you used **Update now**,
-  the automatic update or `./update.sh`. Going back later is done on the server, with the steps above.
+  the automatic update or `./update.sh`. Going back later is done on the server, with the steps in this article.
 - **Reelix:** when its automatic update, or an update through Starboard's API, is not healthy within five minutes,
   Starboard puts the version before back by itself. Its settings from before are in `reelix-before-update.tgz`
   beside the set-up files. Read [Updates for Reelix](update-your-apps.md#updates-for-reelix).
@@ -94,7 +94,7 @@ backed up first, and you can update again when you are ready.
 - Staying on an older version means you miss fixes, including security fixes. Go forward again once the problem is
   solved.
 - A newer version can change how settings are stored. When it does, Starboard keeps a copy of the old settings in
-  `data/backups` first. If something looks wrong on the older version, put back the backup from before the update. Read
+  `data/backups` first. If something is wrong on the older version, put back the backup from before the update. Read
   [If it does not work](#if-it-does-not-work).
 - Tell the people who make Starboard what went wrong, so it can be fixed. Read
   [Read the log and report a problem](read-the-log.md).

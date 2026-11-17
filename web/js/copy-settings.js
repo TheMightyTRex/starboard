@@ -6,7 +6,7 @@ const PART_HINTS = {
   formats: "Custom formats the new app does not have, by name.",
   profiles: "Quality profiles the new app does not have, with their custom format scores.",
   folders: "Root folders. Each folder must exist inside the new app's container.",
-  clients: "Download clients and remote path mappings. Passwords are asked for below.",
+  clients: "Download clients and remote path mappings. Starboard asks for the passwords on this page.",
   naming: "Replaces the new app's naming with the old app's.",
   media: "Replaces the new app's media management (hard links, file permissions, recycling bin).",
 };

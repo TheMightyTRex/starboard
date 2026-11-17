@@ -3,7 +3,7 @@
 
 # Starboard does not open
 
-If your browser cannot open Starboard, find what you see on the chart, then follow its numbered answer. Most of the
+If your browser cannot open Starboard, find what happens on the chart, then follow its numbered answer. Most of the
 time Starboard is not running, the address is wrong, or Starboard is set to open on the server only.
 
 ```flow
@@ -31,7 +31,7 @@ q3: What does the phone or other computer show?
 ## Before you begin
 
 - You can type commands on the server, at its keyboard or over SSH (secure shell). Read
-  [The terminal: typing commands](../basics/the-terminal.md) and
+  [The terminal: entering commands](../basics/the-terminal.md) and
   [Connect to your server from another computer](connect-with-ssh.md).
 
 ## Start Starboard

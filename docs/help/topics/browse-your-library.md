@@ -20,10 +20,10 @@ albums or reading order.
 2. Choose a kind in the menu along the top: **TV**, **Films**, **Music**, **Radio**, **Books** or **Audiobooks**.
    **My library** shows them all as covers, A to Z.
 3. Optional: to find one title, type part of its name in **Search your films** (or series, books and so on).
-   The wall shows only what matches as you type.
-4. Optional: to show only some, select a filter, such as **Missing** or **Coming soon**. Each filter says how many it
+   The wall shows only what matches as you enter it.
+4. Optional: to show only some, select a filter, such as **Not in library** or **Not released**. Each filter says how many it
    holds. Select it again to show everything.
-![The Films wall with example data, opened at the letter M with Show earlier titles above it, with M in the letter row (step 5) and the sort list (step 6) outlined](../images/browse-your-library-2-letters.png)
+![The Films wall with example data at the letter M, with steps 5 and 6 outlined](../images/browse-your-library-2-letters.png)
 
 5. Optional: to jump to a letter, select it in the row of letters, such as **M**. Letters with
    nothing under them are greyed out and cannot be selected.
@@ -49,7 +49,7 @@ A title's page has buttons for what Reelix can do with it. Each one shows only w
   have all of has **Get the** number **missing**.
 - **Choose a download**, for a film you do not have or a season: Reelix lists what its sites have, best first.
   Select **Get this one**. A copy Reelix turned down says why, and has **Get it anyway**.
-- **Follow** or **Stop following**: whether Reelix keeps looking for new episodes, releases or books.
+- **Follow** or **Stop following**: whether Reelix keeps searching for new episodes, releases or books.
 - **Watched** or **Not watched**: from Jellyfin. Select it to change it, for a title, a season or an episode.
   It shows only when Jellyfin has the title.
 - **Delete**: Reelix stops following the title and takes it out of your library. Tick **Delete its files too**
@@ -66,14 +66,14 @@ go to **Settings**, then **General**, then **Pages and lists**, and select **Res
 
 ## Things to note
 
-- To add something new, use **Search**: it looks in your library first, then finds what you do not have yet.
+- To add something new, use **Search**: it searches your library first, then finds what you do not have yet.
   Read [Search for and add films, series, music and books](search-and-add.md).
 - **Networks**, **Collections**, **Stations**, **Series** and **Authors** group the same titles another way.
   Select a group to show its titles on the wall.
 - Something added in the last few minutes may take a moment to appear. Starboard reads the list again from
   Reelix when it is more than five minutes old.
 - Covers come through Starboard, so your browser never contacts the image sites. To show plain tiles instead,
-  go to **Settings**, then **Performance**, activate **Advanced settings**, and deactivate **Posters on Coming up
+  go to **Settings**, then **Performance**, activate **More settings**, and deactivate **Posters on Coming up
   and the Library**.
 - With the keyboard, Tab reaches the letter row once. Use the arrow keys to move along the letters, and Enter to
   jump. The page moves to that letter's heading.

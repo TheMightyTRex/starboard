@@ -451,7 +451,7 @@ function openService(s = null, opener = null, { background = false, preset = nul
       jellyfin: "Dashboard, API keys. Optional: it adds Jellyfin's state, what is playing and recently added to System",
       audiobookshelf: "Settings, API Keys, for an admin user. Optional: it is needed only to copy listening progress (Settings, Apps, Audiobookshelf)",
       gluetun: "its control server settings. Optional: only if you gave its control server an API key",
-      nzbget: "Settings, Security: type its control user name and password as user:password",
+      nzbget: "Settings, Security: enter its control user name and password as user:password",
       slskd: "Options, web, authentication, API keys (in its slskd.yml)" }[t] || "Settings, General";
     keyHint.textContent = `In ${config.types[t]?.label || "the app"}: ${where}.${current?.has_api_key ? " Leave blank to keep the saved key; it is never shown again." : ""}`;
     followsField.hidden = !bg.checked;
@@ -556,7 +556,7 @@ function openService(s = null, opener = null, { background = false, preset = nul
         heading,
         loadState,
         el("div", { class: "form-grid" }, field("Quality profile", quality), field("Folder", root), metaField),
-        el("div", { class: "switch-list" }, switchRow("Search as soon as something is added", `Active: ${current.name} looks for ${kind} straight away.`, searchOnAdd))));
+        el("div", { class: "switch-list" }, switchRow("Search as soon as something is added", `Active: ${current.name} searches for ${kind} straight away.`, searchOnAdd))));
     form.replaceWith(optionsForm);
     const saveOptions = el("button", { type: "submit", form: "options-form", class: "btn btn--primary", text: "Save adding options" });
     panel.setFoot([saveOptions, el("button", { type: "button", class: "btn btn--quiet", "data-closes": true, text: "Skip for now" })]);
@@ -853,7 +853,7 @@ function startGeneral() {
     section("gn-name", "Names", "The server name shows at the start of the menu. The dashboard name shows in the browser tab and in alerts.", namesForm),
     el("div", { id: "categories" }, section("gn-cat", "Categories", "The headings apps sit under on the Apps page, in this order. Changes apply at once.",
       el("ul", { class: "rows", id: "category-list" }), el("div", { id: "category-loose" }), addForm)),
-    section("gn-card", "App cards", "What everyone sees on each card. These apply at once.",
+    section("gn-card", "App cards", "What each app card shows, for everyone. Changes apply at once.",
       el("ul", { class: "settings-rows" },
         settingRow("Home address", "In Health first and Tiles, the address is the link that opens the app. Copy it from the app's details.", cardSwitch("show_home_address", "card-home-l"), "card-home-l"),
         settingRow("Outside address", "With a copy button, when the app has one.", cardSwitch("show_outside_address", "card-out-l"), "card-out-l"))),
@@ -870,8 +870,8 @@ function startGeneral() {
     wants(holder, "gn-logs") ? el("div", { id: "logs" }, logsSection()) : null,
     // Appearance (owner, 13 November 2026: "Change the word Style to Appearance and add the accessibility options
     // there as well"): the own style and its colours, the default design and accessibility, together.
-    styleForm && section("gn-style", "Style and colours", "A style from a plug-in is chosen in Display, for this browser only. Reset style goes back to Starboard's own style, in its colours below, and keeps your other Display choices.", styleForm),
-    section("gn-design", "Default design", "Everyone sees this unless they choose their own in Display.", designForm),
+    styleForm && section("gn-style", "Style and colours", "A style from a plug-in is chosen in Display, for this browser only. Reset style goes back to Starboard's own style, in the colours chosen in this section, and keeps your other Display choices.", styleForm),
+    section("gn-design", "Default design", "This design applies to everyone who has not chosen their own in Display.", designForm),
     wants(holder, "gn-access") ? section("gn-access", "Accessibility", "Theme, text size, motion, contrast, links and spacing for this browser, the same choices as in Display. They apply at once.", accessibilityForm()) : null,
     el("div", { id: "testing" }, section("gn-test", "Send feedback", "Report a problem or suggest something from any page. On unless you deactivate it.",
       el("ul", { class: "settings-rows" },
@@ -964,11 +964,11 @@ async function renderAccess() {
         el("div", { class: "command" }, el("code", { class: "code-block", text: command }), copyButton(command, `the command for ${a.title}`))), true);
     }
     if (a.change === "readme") {
-      return row(a, el("span", { class: "small access-change", text: "Set up by hand: see Backup and restore in the README." }), true);
+      return row(a, el("span", { class: "small access-change", text: "Set up by hand: read Backup and restore in the README." }), true);
     }
     const where = a.link?.startsWith("#") ? null : a.link;
     return row(a, where ? el("a", { class: "btn", href: where }, a.change === "apps" ? "Manage apps" : "Change it", el("span", { class: "visually-hidden", text: ` for ${a.title}` }))
-      : el("span", { class: "small access-change", text: "Use the switch above" }), true);
+      : el("span", { class: "small access-change", text: "Use this section's switch" }), true);
   }));
   list.removeAttribute("aria-busy");
   if (location.hash === "#access") $("#access").scrollIntoView();
@@ -993,10 +993,10 @@ const COSTS = {
   downloadsRefresh: "Each update asks each download app once (shared for 10 seconds). Slower, or off, means fewer requests while Downloads is open.",
   monitorRefresh: "Each reading takes under a thousandth of a second on the server. Slower means fewer readings while Monitor is open.",
   cardNumbers: "Costs about: one small request per app when Apps opens, shared for a minute. Deactivating it saves that.",
-  usage: "Costs about: each run reads every file name in your folders (a few minutes for 30 TB, mostly disk reading, under 20 MB of memory), and nothing between runs. Starboard skips the drives inside a pool, so a pool is read once. Every night or every week keeps one sleeping thread; the other choices keep none.",
+  usage: "Costs about: each run reads every file name in your folders (a few minutes for 30 TB, mostly disk reading, under 20 MB of memory), and nothing between runs. Starboard skips the disks inside a pool, so a pool is read once. Every night or every week keeps one sleeping thread; the other choices keep none.",
   spaceLog: "Costs about: one size check of each folder a day, taken when a page or the history asks anyway, and a few kilobytes a year. Nothing noticeable.",
   logKeep: "Costs about: a few kilobytes a day on disk (about 100 KB a month for a quiet server). Nothing in memory.",
-  logSize: "Costs about: nothing between days. Starboard counts what it writes as it writes it, so the size is only looked at when the count passes the limit.",
+  logSize: "Costs about: nothing between days. Starboard counts what it writes as it writes it, so the size is only checked when the count passes the limit.",
   logDetail: "Costs about: one short line per page request and per call to your apps, about 1 to 5 MB a day on a busy dashboard. For 24 hours deactivates itself, so it cannot fill the disk.",
   storageRefresh: "Each update checks the size of each folder, under a thousandth of a second. Inactive means only when you open the page or press Check again.",
   posters: "Costs about: a small download per new poster, kept for a week (a few megabytes on disk).",
@@ -1030,7 +1030,7 @@ function logsSection() {
     el("div", { class: "stack-2" },
       el("h3", { text: "What the limits cover" }),
       el("p", { class: "small", text: "Starboard's own log, one file a day, which also holds its jobs, updates and plug-ins' lines; the API's audit log; and the last Starboard update's log. Plug-ins keep no log files in Starboard." }),
-      el("p", { class: "small", id: "logs-now", text: "Looking at the logs…" })),
+      el("p", { class: "small", id: "logs-now", text: "Checking the logs…" })),
     el("div", { class: "stack-2" },
       el("h3", { text: "The apps' own logs" }),
       el("p", { class: "small", id: "logs-apps", text: "Asking Docker…" })),
@@ -1055,7 +1055,7 @@ function logsAppsText(a) {
 
 async function loadLogLimits() {
   try { logLimits = await api("/api/logs/limits"); }
-  catch (e) { $("#logs-now")?.replaceChildren(`The logs could not be looked at: ${e.message}`); return; }
+  catch (e) { $("#logs-now")?.replaceChildren(`The logs could not be checked: ${e.message}`); return; }
   $("#logs-now")?.replaceChildren(logsNowText(logLimits.summary));
   $("#logs-apps")?.replaceChildren(logsAppsText(logLimits.apps));
   const size = $("#logs-delete-size");
@@ -1079,7 +1079,7 @@ function logsDangerSection() {
     button.focus();
   });
   return el("div", { id: "delete-logs" }, dangerSection("gn-logdel", "Delete all logs", "Removes Starboard's logs now, before the limits would. It asks for your password first.",
-    el("p", { class: "small", id: "logs-delete-size", text: "Looking at the logs…" }),
+    el("p", { class: "small", id: "logs-delete-size", text: "Checking the logs…" }),
     el("div", { class: "actions" }, button), status));
 }
 
@@ -1103,7 +1103,7 @@ function withCost(hint, key) {
 // With expect (the keys of apps just started), it looks again until each one it can recognise answers, for up to 4
 // minutes: an app opens its port a while after it starts (Radarr and Sonarr can take over a minute).
 async function appFinder(onAdded, { expect = null, shown = null } = {}) {
-  const box = el("div", { class: "stack-4", "aria-busy": "true" }, el("p", { class: "muted", text: "Looking for apps on this computer…" }));
+  const box = el("div", { class: "stack-4", "aria-busy": "true" }, el("p", { class: "muted", text: "Finding apps on this computer…" }));
   let found;
   try {
     found = await api("/api/discover");
@@ -1114,7 +1114,7 @@ async function appFinder(onAdded, { expect = null, shown = null } = {}) {
       await new Promise((r) => setTimeout(r, 5000));
       found = await api("/api/discover");
     }
-  } catch (e) { box.replaceChildren(notice("danger", "Could not look", e.message)); return { box, add: null }; }
+  } catch (e) { box.replaceChildren(notice("danger", "Could not check this computer for apps", e.message)); return { box, add: null }; }
   const fresh = found.items.filter((i) => !i.already);
   const known = found.items.filter((i) => i.already);
   if (!fresh.length) {
@@ -1172,7 +1172,7 @@ async function stepContent(id, root, step = {}) {
     const have = el("input", { type: "radio", name: "install", checked: true });
     const fresh = el("input", { type: "radio", name: "install" });
     nodes = [el("div", { class: "option-cards" },
-      el("label", { class: "option-card" }, have, el("strong", { text: "Use the apps I have" }), el("small", { text: "Starboard looks for them on the next step." })),
+      el("label", { class: "option-card" }, have, el("strong", { text: "Use the apps I have" }), el("small", { text: "Starboard finds them on the next step." })),
       el("label", { class: "option-card" }, fresh, el("strong", { text: "Install apps for me" }),
         el("small", { text: "Choose groups such as Movies, TV, Ebooks and Audiobooks. Starboard writes the files, shows them, and starts the apps when you say. It also offers to bring over what your current apps have." })))];
     save = async () => {
@@ -1281,7 +1281,7 @@ async function stepContent(id, root, step = {}) {
               el("small", { text: [formatBytes(b.size), `${b.apps.length} apps: ${b.apps.join(", ")}`, b.pictures ? "with your pictures" : "without pictures"].join(" · ") }));
           }))));
         fullChoice = r.found[0].path;
-      } catch (e) { fullChoice = null; fullList.replaceChildren(notice("danger", "Could not look in the folder", e.message)); }
+      } catch (e) { fullChoice = null; fullList.replaceChildren(notice("danger", "Could not read the folder", e.message)); }
     };
     where.input.addEventListener("change", showFound);
     const fullBox = el("div", { class: "form-stack" }, where.node, fullList,
@@ -1293,7 +1293,7 @@ async function stepContent(id, root, step = {}) {
       el("fieldset", {}, el("legend", { class: "field__label", text: "What kind of backup" }),
         el("div", { class: "option-cards" }, kinds.map((k) => el("label", { class: "option-card" }, k.input, el("strong", { text: k.title }), el("small", { text: k.about }))))),
       fullBox, fileBox,
-      field("Your Starboard password", password, { required: true, hint: "The one you just chose. Starboard checks it before it restores.", span: true }));
+      field("Your Starboard password", password, { required: true, hint: "The one you chose. Starboard checks it before it restores.", span: true }));
     setTimeout(() => { if (where.input.value) showFound(); }, 0);
     radios.forEach(({ input }) => input.addEventListener("change", () => { restoreBox.hidden = input.value !== "restore" || !input.checked; }));
     nodes = [found.found.length ? notice("info", "Found on this computer", found.found.join(", ")) : null,
@@ -1343,7 +1343,7 @@ async function stepContent(id, root, step = {}) {
     nodes = [el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Where your media goes" }),
       el("div", { class: "option-cards" }, radios.map(({ c, input }) => el("label", { class: "option-card" }, input,
         el("strong", { text: c.title + (c.recommended ? " (recommended)" : "") }), el("small", { text: c.about }))))),
-      folderField({ input: folder, label: "Media folder", required: true, hint: "Made for you when the apps start. Type it, or choose it with Browse." }).node,
+      folderField({ input: folder, label: "Media folder", required: true, hint: "Made for you when the apps start. Enter it, or choose it with Browse." }).node,
       el("p", { class: "small muted", text: found.help })];
     save = async () => {
       const picked = radios.find((r) => r.input.checked)?.c || found.choices[0];
@@ -1371,13 +1371,13 @@ async function stepContent(id, root, step = {}) {
     const yes = el("input", { type: "radio", name, value: "yes", checked: true });
     const no = el("input", { type: "radio", name, value: "no" });
     nodes = [
-      inPool.length ? notice("success", `The pool is at ${pool.pool || "/mnt/pool"}`, `With ${count(inPool.length, "drive", "drives")}.`) : null,
+      inPool.length ? notice("success", `The pool is at ${pool.pool || "/mnt/pool"}`, `With ${count(inPool.length, "disk", "disks")}.`) : null,
       free.length
-        ? el("p", { text: `Starboard found ${count(free.length, "drive", "drives")} besides the system drive and any drive in use.` })
-        : notice("info", "There is no other drive to add", "Add drives later on System, Storage, Pool."),
-      free.length ? el("fieldset", {}, el("legend", { class: "h3", text: inPool.length ? "Add drives to the pool now?" : "Make a pool from your drives now?" }),
+        ? el("p", { text: `Starboard found ${count(free.length, "disk", "disks")} besides the system disk and any disk in use.` })
+        : notice("info", "There is no other disk to add", "Add disks later on System, Storage, Pool."),
+      free.length ? el("fieldset", {}, el("legend", { class: "h3", text: inPool.length ? "Add disks to the pool now?" : "Make a pool from your disks now?" }),
         el("div", { class: "option-cards" },
-          el("label", { class: "option-card" }, yes, el("strong", { text: "Yes (recommended)" }), el("small", { text: "Choose the drives on System, Storage, Pool, then come back to the set-up." })),
+          el("label", { class: "option-card" }, yes, el("strong", { text: "Yes (recommended)" }), el("small", { text: "Choose the disks on System, Storage, Pool, then come back to the set-up." })),
           el("label", { class: "option-card" }, no, el("strong", { text: "No: later, on System, Storage, Pool" }), el("small", { text: "The set-up carries on." })))) : null,
     ].filter(Boolean);
     save = async () => {
@@ -1423,8 +1423,8 @@ async function stepContent(id, root, step = {}) {
       read.found.length === 1 ? "It read it from the app's own settings, so there is nothing to type for it." : "It read them from each app's own settings, so there is nothing to type for them.") : null;
     nodes = rows.length
       ? [got, el("p", { text: `Starboard could not read ${rows.length === 1 ? "this key" : "these keys"} itself, so ${rows.length === 1 ? "it is" : "they are"} asked for here.` }),
-        el("div", { class: "form-stack" }, rows.map((r) => r.node)), el("p", { class: "small muted", text: "Leave a box empty to add that key later in Manage apps." })].filter(Boolean)
-      : [got || notice("success", "Starboard has every key it needs", "There is nothing to type here.")];
+        el("div", { class: "form-stack" }, rows.map((r) => r.node)), el("p", { class: "small muted", text: "Leave a field empty to add that key later in Manage apps." })].filter(Boolean)
+      : [got || notice("success", "Starboard has every key it needs", "There is nothing to enter here.")];
     save = async () => {
       for (const r of rows.filter((x) => x.input.value.trim())) {
         const saved = await api("/api/services", { method: "POST", body: serviceBody(r.s, { api_key: r.input.value.trim() }) });
@@ -1707,7 +1707,7 @@ async function startGuide() {
       list.push({ id: "where", ...stepNamed(T, "storage"), skippable: false,
         intro: "Your films, series, books and downloads go in one media folder. Next, choose what your server does." });
       if (guideMemory().where === "pool" && poolReady) {
-        list.push({ id: "drives", ...stepNamed(T, "drives"), intro: "A pool joins drives into one folder for your media; each drive stays readable on its own." });
+        list.push({ id: "drives", ...stepNamed(T, "drives"), intro: "A pool joins disks into one folder for your media; each disk stays readable on its own." });
       }
       // DASH-455: media you already have, copied into the media folder chosen just before; optional, in four parts.
       if (typeof bringInSteps === "function" && (!flow || flow.state.apps.has("reelix"))) list.push(...bringInSteps(T));
@@ -1719,7 +1719,7 @@ async function startGuide() {
       }
     } else {
       list.push({ id: "apps", ...stepNamed(T, "find"),
-        intro: "Starboard looked for apps it knows on this computer. Tick the ones to add; you can add others by hand later." });
+        intro: "Starboard checked this computer for apps it knows. Tick the ones to add; you can add others by hand later." });
       if (!dockerAccess) list.push({ id: "docker", ...stepNamed(T, "docker"), skippable: false });  // before anything moves
       list.push({ id: "movehow", ...stepNamed(T, "movehow"), skippable: false });
       if (moveInto()) {
@@ -1871,7 +1871,7 @@ async function startUpgrade() {
     hours: "Only download at set hours?", alerts: "Get an alert when something stops?", preset: "How much should Starboard do in the background?", names: "Do you open Starboard with another name?" };
   const steps = [{ id: "new", title: "What is new", question: `What is new in ${p.to}` },
     ...p.review.map((id) => ({ id, title: titles[id] || id, question: questions[id] || titles[id] })),
-    { id: "done", title: "Finish", question: "Upgrade finished", skippable: false }];
+    { id: "done", title: "Finish", question: "Update finished", skippable: false }];
   // In the slide-out (?panel=1), finishing or Remind me later tells the page around it, which closes the slide-out.
   const inPanel = document.documentElement.classList.contains("in-panel");
   const leave = (what) => { if (inPanel) window.parent.postMessage({ starboard: what }, location.origin); else location.href = "/index.html"; };
@@ -1954,7 +1954,7 @@ function startAlerts() {
 
   // Watching
   const watching = el("ul", { class: "settings-rows" },
-    settingRow("Watch in the background", withCost("Checks your apps every few minutes with no page open, keeps their uptime history and sends the alerts below. Inactive: nothing runs in the background.", "watch"),
+    settingRow("Watch in the background", withCost("Checks your apps every few minutes with no page open, keeps their uptime history and sends the alerts you choose here. Inactive: nothing runs in the background.", "watch"),
       switchFor("al-on-l", w().enabled, (on) => save({ enabled: on })), "al-on-l"),
     settingRow("How often", withCost("Each check is a few small requests. Every 5 minutes is plenty for a home server.", "every"),
       selectFor("al-every-l", [[1, "Every minute"], [5, "Every 5 minutes"], [10, "Every 10 minutes"], [15, "Every 15 minutes"], [30, "Every 30 minutes"], [60, "Every hour"]], w().every,
@@ -2083,7 +2083,7 @@ async function startJellyfin() {
     if (await save({ livetv_address: address.value })) { await startJellyfin(); showSaved("livetv-address-saved"); }
   });
   // Where Jellyfin sees the files (DASH-229): blank lets Starboard work it out for an Install apps stack.
-  const jfFolderForm = locationPicker({ id: "livetv-folder", label: "Live TV folder, as Jellyfin sees it", app: "jellyfin", value: x().livetv_jellyfin_folder || "",
+  const jfFolderForm = locationPicker({ id: "livetv-folder", label: "Live TV folder inside Jellyfin", app: "jellyfin", value: x().livetv_jellyfin_folder || "",
     hint: "Starboard adds the channels and guides to Jellyfin itself. Empty: Starboard works it out when it installed Jellyfin.",
     onChange: async (v) => { if (await save({ livetv_jellyfin_folder: v })) settingSaved(); } }).node;
   const liveRows = el("ul", { class: "settings-rows" },
@@ -2092,7 +2092,7 @@ async function startJellyfin() {
     settingRow("White channel logos", withCost(d.pillow ? "Turns each logo white on a clear background, with Pillow (open source, credited in About). Inactive: channels keep their own logos." : "Needs Pillow, which this install does not have. Channels keep their own logos.", "white"),
       sw("lt-white-l", x().white_logos && d.pillow, (on) => save({ white_logos: on }), !d.pillow), "lt-white-l"));
   const liveNeeds = lt.needs.length ? notice("warning", "Needs set-up on the server", `Starboard needs ${lt.needs.join(" and ")}. Run ./install.sh and say yes to Live TV.`) : null;
-  const liveHelp = el("p", { class: "help-links" }, helpButton("How Jellyfin uses these files", { body: el("p", { text: "With Jellyfin's API key, Starboard adds these to Jellyfin after each run, and leaves your own alone. By hand, in Jellyfin: Dashboard, Live TV. Add a tuner of type M3U for each playlist (channels.m3u, samsung.m3u, pluto.m3u) and an XMLTV guide for each guide file (guide.xml, guide-samsung.xml, guide-pluto.xml), from the folder Jellyfin sees them in." }) }));
+  const liveHelp = el("p", { class: "help-links" }, helpButton("How Jellyfin uses these files", { body: el("p", { text: "With Jellyfin's API key, Starboard adds these to Jellyfin after each run, and leaves your own alone. By hand, in Jellyfin: Dashboard, Live TV. Add a tuner of type M3U for each playlist (channels.m3u, samsung.m3u, pluto.m3u) and an XMLTV guide for each guide file (guide.xml, guide-samsung.xml, guide-pluto.xml), from the folder they are in inside Jellyfin." }) }));
 
   // Import watch history
   const h = d.history;
@@ -2415,7 +2415,7 @@ async function startListening() {
 
 // small, balanced and everything come from the server (config.preset_about), shared with the terminal set-up.
 const PRESET_WORDS = {
-  custom: "Your own choices below. Changing anything here or on another Settings page makes it Custom.",
+  custom: "Your own choices. Changing anything here or on another Settings page makes it Custom.",
 };
 
 async function startPerformance() {
@@ -2507,8 +2507,8 @@ async function startPerformance() {
 
   root.removeAttribute("aria-busy");
   root.replaceChildren(...onlyParts(root, [
-    now ? section("pf-now", "Starboard now", "Measured on this server while you look.", now) : null,
-    section("pf-preset", "Preset", "Sets everything below at once. Features you chose for what they do, such as Live TV and download hours, stay as they are.", presetForm),
+    now ? section("pf-now", "Starboard now", "Measured on this server while this page is open.", now) : null,
+    section("pf-preset", "Preset", "Sets every setting on this page at once. Features you chose for what they do, such as Live TV and download hours, stay as they are.", presetForm),
     section("pf-bg", "Background work", "Runs with no page open. Each part's thread exists only while it is active.", background),
     section("pf-pages", "While a page is open", "Only while the page is open and in view; a hidden tab asks for nothing.", pages),
     ...(wants(root, "pf-pictures") ? picturesSection() : []),
@@ -2590,14 +2590,14 @@ async function startSecurity() {
     el("div", { class: "form-stack" },
       field("Current password", current, { required: true }),
       field("New password", fresh, { required: true }),
-      field("Type the new password again", again, { required: true })),
+      field("Enter the new password again", again, { required: true })),
     el("div", { class: "actions" }, el("button", { type: "submit", class: "btn btn--primary", text: "Change password" }), savedNote("password-saved")));
   pwForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     [current, fresh, again].forEach((c) => setError(c, ""));
     if (!current.value) { setError(current, "Enter your current password"); current.focus(); return; }
     if (fresh.value.length < 10) { setError(fresh, `Use at least 10 characters. This one has ${fresh.value.length}.`); fresh.focus(); return; }
-    if (fresh.value !== again.value) { setError(again, "The two new passwords are different. Type the new one again."); again.focus(); return; }
+    if (fresh.value !== again.value) { setError(again, "The two new passwords are different. Enter the new one again."); again.focus(); return; }
     try {
       await api("/api/password", { method: "POST", body: { current: current.value, new: fresh.value } });
       pwForm.reset();
@@ -2662,7 +2662,7 @@ async function startSecurity() {
       el("ul", { class: "settings-rows" },
         settingRow("Phones and other computers on your home network", result, el("label", { class: "switch" }, access), "net-l")),
       addresses, forced),
-    section("sc-pw", "Password", "At least 10 characters; a short sentence is easy to remember. You stay signed in here and everyone else is signed out.", pwForm),
+    section("sc-pw", "Password", "At least 10 characters; a short sentence of 4 or more words makes a strong password that you can remember. You stay signed in here and everyone else is signed out.", pwForm),
     section("sc-ses", "Sessions", "How long Remember me lasts, and signing out.", daysForm),
     wants(holder, "sc-keys") ? section("sc-keys", "API keys", "For other apps, scripts and AI assistants. Each key reads, or reads and manages, only what you choose, and is shown once.", apiKeys()) : null]));
   daysForm.append(
@@ -2710,7 +2710,7 @@ function apiKeys() {
     const panel = sidePanel({ title: k.name, opener, body: [el("dl", { class: "facts" },
       el("dt", { text: "Starts with" }), el("dd", { text: `${k.prefix}…` }),
       el("dt", { text: "May" }), el("dd", { text: KEY_RIGHTS[k.right] || k.right }),
-      el("dt", { text: "Sees" }), el("dd", { text: k.scopes.length ? k.scopes.map((s) => (KEY_SCOPES[s] || [s])[0]).join(", ") : "Everything the API offers, except Logs and Updates" }),
+      el("dt", { text: "Reads" }), el("dd", { text: k.scopes.length ? k.scopes.map((s) => (KEY_SCOPES[s] || [s])[0]).join(", ") : "Everything the API offers, except Logs and Updates" }),
       el("dt", { text: "Ends" }), el("dd", { text: k.expires_at ? when(k.expires_at) : "Never" }),
       el("dt", { text: "Last used" }), el("dd", { text: k.last_used_at ? new Date(k.last_used_at).toLocaleString("en-GB") : "Not used yet" }))],
       foot: [revoke] });
@@ -2737,8 +2737,8 @@ function apiKeys() {
         el("span", { class: "check__text" }, el("strong", { text: title }), el("span", { class: "check__hint", text: hint }))) };
     });
     const scopes = el("fieldset", { class: "form-stack", id: "key-scopes", "aria-describedby": "key-scopes-hint" },
-      el("legend", { class: "field__label", text: "What it may see" }),
-      el("span", { class: "hint", id: "key-scopes-hint", text: "Leave them all empty for everything the API offers, except Logs and Updates, which are only given when ticked. An AI assistant should see only what it needs." }),
+      el("legend", { class: "field__label", text: "What it may read" }),
+      el("span", { class: "hint", id: "key-scopes-hint", text: "Leave them all empty for everything the API offers, except Logs and Updates, which are only given when ticked. Give an AI assistant only what it needs." }),
       boxes.map((b) => b.node));
     const pw = el("input", { class: "input", id: "key-password", type: "password", autocomplete: "current-password" });
     const go = el("button", { type: "submit", class: "btn btn--primary", form: "key-form", text: "Make a key" });
@@ -2793,10 +2793,10 @@ async function startAbout() {
     const notes = repo && v.latest ? el("a", { class: "btn", href: `https://github.com/${repo}/releases/tag/${encodeURIComponent(v.latest)}`, target: "_blank", rel: "noopener noreferrer" },
       "Release notes", el("span", { class: "visually-hidden", text: " (opens in a new tab)" })) : null;
     let box;
-    if (latest && isNewer(latest, v.current)) box = notice("info", `Version ${latest} is out`, `You have ${v.current}. Read what changed, then choose Update now below, or run the update command on the server.`, notes);
+    if (latest && isNewer(latest, v.current)) box = notice("info", `Version ${latest} is out`, `You have ${v.current}. Read what changed, then choose Update now, or run the update command on the server.`, notes);
     else if (latest) box = notice("success", "You have the newest version", `Version ${v.current}.`);
-    else if (!repo) box = notice("info", `You have version ${v.current}`, "Starboard cannot look for new versions, because STARBOARD_REPO is not set on the server.");
-    else if (!config.update_check) box = notice("info", `You have version ${v.current}`, "Looking for new versions is deactivated. Activate it below to see when one is out.");
+    else if (!repo) box = notice("info", `You have version ${v.current}`, "Starboard cannot check for new versions, because STARBOARD_REPO is not set on the server.");
+    else if (!config.update_check) box = notice("info", `You have version ${v.current}`, "Checking for new versions is inactive. Activate Check GitHub for new releases to find out when one is out.");
     else box = notice("info", `You have version ${v.current}`, "GitHub did not answer, so Starboard does not know yet whether a newer version is out.");
     box.classList.add("notice--page");
     top.replaceChildren(box);
@@ -2838,13 +2838,13 @@ let updatesRefresh = null;  // draws Ready to update and Recent updates again, a
 // same Update words and dialog everywhere; Update by themselves sets each part and the hours; Recent updates says
 // what each update did and what is new. Nothing here asks the internet: GitHub, the registries and the catalogues
 // are read by their own checks (DASH-421).
-const RUN_WORDS = { updated: ["Updated", "success"], "up-to-date": ["Up to date", "success"], "rolled-back": ["Rolled back", "info"],
-  "went-back": ["Went back by itself", "warning"], refused: ["Not updated", "warning"], failed: ["Stopped", "danger"], running: ["Updating", "info"],
+const RUN_WORDS = { updated: ["Updated", "success"], "up-to-date": STATUS.upToDate, "rolled-back": ["Rolled back", "info"],
+  "went-back": ["Went back by itself", "warning"], refused: ["Not updated", "warning"], failed: STATUS.failed, running: STATUS.updating,
   "some-updated": ["Some updated", "warning"] };
 // Each update's state in Install all updates (DASH-454): words, tone and icon, so the state never rests on colour.
-const BATCH_WORDS = { waiting: ["Waiting", "muted", "clock"], working: ["Updating", "info", "refresh-cw"], done: ["Done", "success", "circle-check"],
-  "went-back": ["Went back", "warning", "undo-2"], failed: ["Not updated", "danger", "circle-x"], skipped: ["Not updated", "danger", "circle-x"],
-  held: ["Held back", "muted", "pause"] };
+const BATCH_WORDS = { waiting: STATUS.waiting, working: STATUS.updating, done: STATUS.done,
+  "went-back": STATUS.wentBack, failed: STATUS.failed, skipped: STATUS.notStarted,
+  held: STATUS.heldBack };
 const byWords = (by) => (by === "automatic" ? "by itself" : String(by || "").startsWith("api") ? "from the API" : "by you");
 
 // The password dialog every update and Roll back uses: what happens, then the Starboard password. send(password)
@@ -2853,7 +2853,7 @@ async function updateWithPassword({ title, steps, confirm, send }) {
   const input = el("input", { class: "input", id: `up-pw-${Date.now()}`, type: "password", autocomplete: "current-password", required: true });
   const err = el("span", { class: "field-error", id: `${input.id}-error`, hidden: true });
   input.setAttribute("aria-describedby", err.id);
-  const what = el("div", { class: "stack-2" }, el("ul", {}, steps.map((t) => el("li", { text: t }))), el("p", { text: "Type your Starboard password to go ahead." }));
+  const what = el("div", { class: "stack-2" }, el("ul", {}, steps.map((t) => el("li", { text: t }))), el("p", { text: "Enter your Starboard password to go ahead." }));
   for (;;) {
     const asked = confirmDialog({ title, message: what, confirm, fields: [el("div", { class: "field" }, el("label", { for: input.id, text: "Your Starboard password" }), input, err)] });
     if (!(await asked)) return null;
@@ -2922,7 +2922,7 @@ async function startUpdatesPlace() {
     }
     if (t.kind === "plugin") {
       const pid = t.id.split(":")[1];
-      if (t.update_available) return el("a", { class: "btn btn--primary", href: `/settings-plugin.html?id=${encodeURIComponent(pid)}`, "aria-describedby": `up-${t.id}-l` }, "See what is new and update");
+      if (t.update_available) return el("a", { class: "btn btn--primary", href: `/settings-plugin.html?id=${encodeURIComponent(pid)}`, "aria-describedby": `up-${t.id}-l` }, "Read what is new and update");
       if (t.can_roll_back) return el("a", { class: "btn", href: `/settings-plugin.html?id=${encodeURIComponent(pid)}`, "aria-describedby": `up-${t.id}-l` }, "Roll back");
       return null;
     }
@@ -2941,14 +2941,14 @@ async function startUpdatesPlace() {
       el("div", { class: "setting__text" },
         el("span", { class: "setting__label", id: `up-${t.id}-l`, text: t.name }),
         el("span", { class: "setting__hint" }, `${facts}.`, why ? ` ${why}.`.replace(/\.\.$/, ".") : "", note ? ` ${note}` : ""),
-        el("span", { class: "chips" }, ready ? chip("Update available", "info", "circle-arrow-up") : unknown ? chip("Not looked at yet", "muted") : chip("Up to date", "success"),
+        el("span", { class: "chips" }, ready ? chip(...STATUS.updateAvailable) : unknown ? chip(...STATUS.notChecked) : chip(...STATUS.upToDate),
           ready ? (t.automatic ? chip("Updates by itself", "muted", "clock") : chip("Waits for you", "warning", "user")) : null)),
       el("div", { class: "setting__control" }, action(t)));
   };
   const jellyRow = () => {
     if (!jelly?.connected) return null;
     const t = { id: "jellyfin-plugins", kind: "jellyfin-plugins", name: "Jellyfin's plug-ins" };
-    const b = el("button", { type: "button", class: "btn", "aria-haspopup": "dialog", "aria-describedby": "up-jellyfin-plugins-l" }, icon("circle-arrow-up"), "Look for updates and install them");
+    const b = el("button", { type: "button", class: "btn", "aria-haspopup": "dialog", "aria-describedby": "up-jellyfin-plugins-l" }, icon("circle-arrow-up"), "Check for updates and install them");
     b.addEventListener("click", () => startApp(t, b));
     const own = jelly.own_schedule ? " Jellyfin also updates them by itself on its own schedule." : "";
     return el("li", { class: "setting", "data-key": t.id },
@@ -3004,7 +3004,7 @@ async function startUpdatesPlace() {
       input.addEventListener("change", async () => {
         try { await saveGeneral({ [p.key]: input.checked }, true); } catch (e) { input.checked = !input.checked; problem(e.message); }
       });
-      const last = p.last ? `Last looked ${timeAgo(p.last.at * 1000)}: ${p.last.runs.length ? p.last.runs.map((r) => `${r.name} ${(RUN_WORDS[r.state] || RUN_WORDS.failed)[0].toLowerCase()}`).join(", ") : "nothing to update"}.` : "";
+      const last = p.last ? `Last checked ${timeAgo(p.last.at * 1000)}: ${p.last.runs.length ? p.last.runs.map((r) => `${r.name} ${(RUN_WORDS[r.state] || RUN_WORDS.failed)[0].toLowerCase()}`).join(", ") : "nothing to update"}.` : "";
       const hint = `Deactivated: it waits for you, and you are told when an update is ready.${p.id === "jellyfin_plugins" && jelly && !jelly.connected ? " Needs Jellyfin with its API key in Manage apps." : ""}${last ? ` ${last}` : ""}`;
       return el("li", { class: "setting" }, switchRow(`${p.name}: update by itself`, hint, input),
         el("dl", { class: "facts small" }, el("dt", { text: "Copy first" }), el("dd", { text: p.safety.copy }),
@@ -3045,7 +3045,7 @@ async function startUpdatesPlace() {
     let plan;
     try {
       plan = await updateWithPassword({ title: "Install all updates", confirm: "Continue",
-        steps: ["Starboard looks at each waiting update, then shows you what will install before anything does.",
+        steps: ["Starboard checks each waiting update, then shows you what will install before anything does.",
           "They install one at a time, each with a copy first, a check afterwards and the way back.",
           "Starboard updates last. It restarts, and this page reconnects by itself."],
         send: async (pw) => { const r = await api("/api/updates/all/plan", { method: "POST", body: { password: pw } }); password = pw; return r; } });
@@ -3170,7 +3170,7 @@ async function startSelfUpdate() {
   const ended = (u, focus) => {
     if (!u || !u.title) return;
     const tone = u.outcome === "updated" || u.outcome === "up-to-date" ? "success" : u.outcome === "went-back" ? "warning" : "danger";
-    const guide = u.outcome === "updated" ? el("a", { class: "btn", href: "/upgrade.html" }, "See what is new") : null;
+    const guide = u.outcome === "updated" ? el("a", { class: "btn", href: "/upgrade.html" }, "What is new") : null;
     const box2 = notice(tone, u.title, u.text, guide);
     box2.setAttribute("tabindex", "-1");
     result.replaceChildren(box2);
@@ -3193,7 +3193,7 @@ async function startSelfUpdate() {
       el("ul", {}, el("li", { text: "Your settings are backed up first." }),
         el("li", { text: "Starboard restarts, and is away for about a minute." }),
         el("li", { text: `If the new version does not start, Starboard goes back to ${s.current} by itself, with your settings as they were.` })),
-      el("p", { text: "Type your Starboard password to go ahead." }));
+      el("p", { text: "Enter your Starboard password to go ahead." }));
     for (;;) {
       const asked = confirmDialog({ title: `Update Starboard to ${latest}`, message: what, confirm: "Update now",
         fields: [el("div", { class: "field" }, el("label", { for: input.id, text: "Your Starboard password" }), input, err)] });
@@ -3280,7 +3280,7 @@ async function startReleases(repo) {
 async function startReelix() {
   const root = $("#reelix-sections");
   let d;
-  try { d = await api("/api/reelix/editions"); } catch (e) { root.replaceChildren(notice("danger", "Could not look", e.message)); root.removeAttribute("aria-busy"); return; }
+  try { d = await api("/api/reelix/editions"); } catch (e) { root.replaceChildren(notice("danger", "Could not read the Reelix versions", e.message)); root.removeAttribute("aria-busy"); return; }
   const names = Object.fromEntries(d.editions.map((e) => [e.key, e.name]));
   const status = el("div", { class: "stack-2", "aria-live": "polite" });
   let body;
@@ -3332,7 +3332,7 @@ async function startReelix() {
         const j = await api("/api/stack/job").catch(() => ({}));
         if (!j.finished) continue;
         status.replaceChildren(j.ok ? notice("success", `${names[want]} is running`, "Your library, users and settings are as they were.")
-          : notice("danger", "Reelix did not start", "The details are below. The old Compose file is kept in data/stack, next to the new one."),
+          : notice("danger", "Reelix did not start", "The details follow. The old Compose file is kept in data/stack, next to the new one."),
         j.ok ? "" : el("pre", { class: "code-block", text: j.log || "" }));
         if (j.ok) setTimeout(() => startReelix(), 1500);
         return;
@@ -3386,7 +3386,7 @@ async function startYourInstall() {
   const root = $("#install-sections");
   const facts = (pairs) => el("dl", { class: "facts" }, ...pairs.flatMap(([k, v]) => [el("dt", { text: k }), el("dd", { text: v })]));
   let d;
-  try { d = await api("/api/install"); } catch (e) { root.replaceChildren(notice("danger", "Could not look", e.message)); root.removeAttribute("aria-busy"); return; }
+  try { d = await api("/api/install"); } catch (e) { root.replaceChildren(notice("danger", "Could not read your install", e.message)); root.removeAttribute("aria-busy"); return; }
   root.removeAttribute("aria-busy");
   const status = el("div", { class: "stack-2", "aria-live": "polite" });
   const how = section("in-how", "How changing works", "The same steps for a bigger install or a smaller one.",
@@ -3423,7 +3423,7 @@ async function startYourInstall() {
     }
     if (want.usenet && want.usenet !== cur.usenet) parts.push(`uses ${usenetName(want.usenet)} for Usenet in place of ${usenetName(cur.usenet)}`);
     if (want.reelix_edition && want.reelix_edition !== cur.reelix_edition) parts.push(`switches Reelix to ${editionName(want.reelix_edition)}`);
-    summary.textContent = parts.length ? `This change ${parts.join("; ")}.` : "Choose a change above.";
+    summary.textContent = parts.length ? `This change ${parts.join("; ")}.` : "Choose a change first.";
     button.disabled = !parts.length;
   };
   const installCards = el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Install" }),
@@ -3433,7 +3433,7 @@ async function startYourInstall() {
       const lines = i.error ? [i.error] : [i.about,
         cur.install === i.key ? "In use now" : [i.add.length ? `Adds ${i.add.join(", ")}` : "", i.remove.length ? `Takes away ${i.remove.join(", ")}` : ""].filter(Boolean).join(". ") || "Nothing to add or take away",
         // DASH-250: apps from the person's own Compose file are not added again as new, empty apps.
-        (i.outside || []).length ? `${i.outside.join(", ")} already ${i.outside.length === 1 ? "runs" : "run"} from your own Compose file: ${i.outside.length === 1 ? "it joins" : "they join"} once taken over below` : "",
+        (i.outside || []).length ? `${i.outside.join(", ")} already ${i.outside.length === 1 ? "runs" : "run"} from your own Compose file: ${i.outside.length === 1 ? "it joins" : "they join"} once taken over in Apps you already run` : "",
         `About ${(i.memory / 1000).toFixed(1)} GB of memory`];
       return el("label", { class: "option-card" }, r, el("strong", { text: i.name }), ...lines.filter(Boolean).map((t) => el("small", { text: t })));
     })));
@@ -3483,7 +3483,7 @@ async function startYourInstall() {
     if (!r.started) {
       status.replaceChildren(notice("info", "One step on the server", "Starboard wrote the new set-up but cannot start apps itself. Run this in a terminal on the server:"),
         el("pre", { class: "code-block", text: r.command }), copyButton(r.command, "Copy the command"),
-        el("p", { class: "muted", text: "Once the apps have started, Starboard finishes off by itself within a minute: it updates the dashboard and Reelix, and moves Usenet servers if you changed the Usenet app. Keep this page open, or come back to it, to see what was done." }));
+        el("p", { class: "muted", text: "Once the apps have started, Starboard finishes off by itself within a minute: it updates the dashboard and Reelix, and moves Usenet servers if you changed the Usenet app. Keep this page open, or come back to it, to find out what was done." }));
       // DASH-141: the page shows when the command has run and Starboard is finishing off, then what was done,
       // so it never looks stuck. Starboard writes change-result.json when it has finished (data/stack).
       const waiting = el("div", { class: "meter", role: "status" },
@@ -3500,7 +3500,7 @@ async function startYourInstall() {
         announce("Your install is changed");
         return;
       }
-      waiting.replaceWith(notice("warning", "Not finished yet", "Starboard has not seen the apps start in the last hour. Run the command above on the server, then open this page again."));
+      waiting.replaceWith(notice("warning", "Not finished yet", "Starboard has not detected the apps starting in the last hour. Run the command on this page on the server, then open this page again."));
       return;
     }
     status.replaceChildren(el("p", { class: "muted", text: "Downloading and starting the apps…" }));
@@ -3509,7 +3509,7 @@ async function startYourInstall() {
       const j = await api("/api/stack/job").catch(() => ({}));
       if (!j.finished) continue;
       status.replaceChildren(j.ok ? notice("success", "Your install is changed", "Finishing off: the dashboard and Reelix are being updated. This page shows what was done.")
-        : notice("danger", "The apps did not all start", "The details are below. The old set-up file is kept in data/stack."), j.ok ? "" : el("pre", { class: "code-block", text: j.log || "" }));
+        : notice("danger", "The apps did not all start", "The details follow. The old set-up file is kept in data/stack."), j.ok ? "" : el("pre", { class: "code-block", text: j.log || "" }));
       if (j.ok) setTimeout(() => startYourInstall(), 20000);
       return;
     }
@@ -3518,7 +3518,7 @@ async function startYourInstall() {
   root.replaceChildren(now,
     section("in-change", "Change your install", "Bigger or smaller, either way. Apps you added yourself outside Starboard are not touched.",
       (d.outside || []).length ? notice("info", `${d.outside.join(", ")} ${d.outside.length === 1 ? "runs" : "run"} from your own Compose file`,
-        "So a change here does not add them again as new, empty apps. Take them over in Apps you already run, below: then they are part of your install.",
+        "So a change here does not add them again as new, empty apps. Take them over in Apps you already run: then they are part of your install.",
         el("a", { class: "btn", href: "#in-takeover-h" }, "Apps you already run")) : null, installCards),
     section("in-usenet", "Usenet app", "The app that downloads from Usenet. Your Usenet servers move across from SABnzbd to NZBGet.", usenetCards),
     section("in-reelix", "Reelix", "Reelix, or Reelix with YouTube and Spotify downloads. The library, users and settings stay.", reelixBox),
@@ -3531,14 +3531,14 @@ async function startYourInstall() {
 // task list (each app or step with its state, and what it is doing), what is happening now, and the result at the
 // end. Closing it does not stop the work: the step on the page says it is still running, with Show progress.
 // taskJob({ title, url, failedWord }) returns { open(), running(), node, done: Promise of the last job }.
-const TASK_WORDS = { waiting: ["Waiting", "muted"], working: ["Working", "info"], done: ["Done", "success"], failed: ["Did not finish", "danger"], skipped: ["Not started", "warning"] };
+const TASK_WORDS = { waiting: STATUS.waiting, working: STATUS.inProgress, done: STATUS.done, failed: STATUS.failed, skipped: STATUS.notStarted };
 let taskJobCount = 0;
-function taskJob({ title, url, failedWord = "Did not finish", intro = "", returnTo = "" }) {
+function taskJob({ title, url, failedWord = STATUS.failed[0], intro = "", returnTo = "" }) {
   const id = `task-job-${++taskJobCount}`;
   const words = { ...TASK_WORDS, failed: [failedWord, "danger"] };
   const heading = el("h2", { class: "panel-header__title", id: `${id}-h`, text: title, tabindex: "-1" });
   const close = el("button", { type: "button", class: "icon-btn", "aria-label": `Close ${title}` }, icon("x", 20));
-  const label = el("span", { text: "Working. Please wait, this can take some time." });
+  const label = el("span", { text: `${title}…` });
   const count = el("span", { class: "numeric" });
   const bar = el("div", { class: "progress progress--busy", role: "progressbar", "aria-labelledby": `${id}-bar`, "aria-valuetext": "Starting" }, el("span"));
   const meter = el("div", { class: "meter" }, el("div", { class: "meter__label", id: `${id}-bar` }, label, count), bar);
@@ -3599,7 +3599,7 @@ function taskJob({ title, url, failedWord = "Did not finish", intro = "", return
     bar.classList.remove("progress--busy");
     bar.firstChild.style.width = "100%";
     if (!ok) bar.dataset.tone = j.ok === false ? "danger" : "warning";
-    label.textContent = ok ? "Finished" : j.ok === false ? "Stopped" : "Finished, with things to look at";
+    label.textContent = ok ? "Finished" : j.ok === false ? "Stopped" : "Finished, with things that need attention";
     now.textContent = "";
     now.hidden = true;
     shutHint.hidden = true;
@@ -3641,7 +3641,7 @@ function takeoverSection() {
   // A step inside this section: an h3 under the section's h2.
   const section = (id, title, description, ...content) => el("div", { class: "stack-2", role: "group", "aria-labelledby": `${id}-h` },
     el("h3", { id: `${id}-h`, text: title }), description ? el("p", { class: "small muted" }, description) : null, ...content);
-  const box = el("div", { class: "stack-2", "aria-busy": "true" }, el("p", { class: "muted", text: "Looking for apps you already run…" }));
+  const box = el("div", { class: "stack-2", "aria-busy": "true" }, el("p", { class: "muted", text: "Finding apps you already run…" }));
   const list = (items) => el("ul", { class: "stack-1" }, items.map((t) => el("li", { text: t })));
   const pw = (hint) => { const i = el("input", { class: "input", type: "password", autocomplete: "current-password", required: true }); return [i, field("Your password", i, { required: true, hint })]; };
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
@@ -3676,7 +3676,7 @@ function takeoverSection() {
   const draw = async () => {
     let t, m;
     try { [t, m] = await Promise.all([api("/api/takeover"), api("/api/reelix/move")]); }
-    catch (e) { box.replaceChildren(notice("danger", "Could not look", e.message)); box.removeAttribute("aria-busy"); return; }
+    catch (e) { box.replaceChildren(notice("danger", "Could not find the apps you already run", e.message)); box.removeAttribute("aria-busy"); return; }
     box.removeAttribute("aria-busy");
     const parts = [];
     // A change that is still running (started here or elsewhere): its line on the page, and its dialog on request.
@@ -3849,9 +3849,9 @@ function takeoverSection() {
         job.open();
         const j = await job.follow((j, ok) => ({ title: ok ? "Moved into Reelix" : j.error ? "The move stopped" : "Not everything moved",
           text: j.error ? `${j.error}. Steps after it did not start. Fix it, then choose Move them into Reelix again: what moved already is not moved twice.`
-            : ok ? "Look at the review below: sites held off, and titles that did not move." : "What did not move is listed in the review below." }));
+            : ok ? "Read the review: sites held off, and titles that did not move." : "What did not move is listed in the review." }));
         said.replaceChildren(notice(j.ok ? "success" : "warning", j.ok ? "Moved into Reelix" : j.error ? "The move stopped" : "Not everything moved",
-          j.error ? `${j.error}. Steps after it did not start.` : "The review below lists what to look at."));
+          j.error ? `${j.error}. Steps after it did not start.` : "The review lists what needs attention."));
         announce(j.ok ? "Moved into Reelix" : "The move into Reelix did not all finish");
         setTimeout(redraw, 1500);
       });
@@ -3862,7 +3862,7 @@ function takeoverSection() {
         el("div", { class: "form-stack" }, p2f,
           // DASH-129: the old apps may have needed no password, because qBittorrent lets their addresses in.
           q.allow_list?.length ? notice("info", "Your old apps did not need qBittorrent's password",
-            `qBittorrent lets in addresses from ${q.allow_list.join(", ")} without one (its allow list in Options, Web UI). Reelix reaches qBittorrent by its name, from an address that may not be on that list, so give the password below.`) : null,
+            `qBittorrent lets in addresses from ${q.allow_list.join(", ")} without one (its allow list in Options, Web UI). Reelix reaches qBittorrent by its name, from an address that may not be on that list, so give the password in this section.`) : null,
           field("qBittorrent's password (optional)", qbit, { hint: `What it is for: Reelix sends each download to qBittorrent, so it needs qBittorrent's password. ${userLine} Starboard checks it with qBittorrent first and keeps it only in Reelix. Leave it empty to connect qBittorrent later in Settings, Reelix, Download apps; a fixed address Reelix has for it, such as Gluetun's IP address, still becomes its name.` }),
           el("label", { class: "check" }, hold, el("span", { class: "check__text" }, el("strong", { text: "Hold the sites to search" }),
             el("span", { class: "check__hint", text: "Deactivated in Reelix after the move, so only your old apps search until Starboard runs your apps. Activate them in the review step." })))),
@@ -3906,7 +3906,7 @@ function takeoverSection() {
         el("div", { class: "row__side" },
           el("a", { class: "btn", href: `/search.html?q=${encodeURIComponent(String(x.name).replace(/\s*\(\d{4}\)$/, ""))}` }, "Add by hand",
             el("span", { class: "visually-hidden", text: ` ${x.name}` })))));
-      return section("tk-review", n ? `Step ${n}: review the move` : "Review the move", "What the move left for you to look at. Nothing here is urgent.",
+      return section("tk-review", n ? `Step ${n}: review the move` : "Review the move", "What the move left for you to check. Nothing here is urgent.",
         r.held.length ? el("h4", { text: `Sites to search held off (${r.held.length})` }) : null,
         r.held.length ? el("p", { class: "small muted", text: "Held so only your old apps searched until the switch. Activate them once Starboard runs your apps, or now if your old apps no longer search." }) : null,
         r.held.length ? el("ul", { class: "rows" }, held) : null,
@@ -4121,7 +4121,7 @@ function advancedSwitch() {
     // on: it was left showing on those pages while on (issue #11).
     box.hidden = !n;
     const text = input.checked ? "Showing every setting. Your choice is saved for every Settings page."
-      : n ? `${n} more ${n === 1 ? "section is" : "sections are"} under Advanced settings.` : "";
+      : n ? `${n} more ${n === 1 ? "section is" : "sections are"} under More settings.` : "";
     if (note.textContent !== text) note.textContent = text;  // only a real change, or the watcher below would loop
   };
   input.addEventListener("change", async () => {
@@ -4132,7 +4132,7 @@ function advancedSwitch() {
   note.classList.add("visually-hidden");
   input.setAttribute("aria-describedby", "advanced-note");
   const box = el("label", { class: "switch advanced-toggle", title: "Shows everything each app can change" },
-    el("span", { text: "Advanced settings" }), input, note);
+    el("span", { text: "More settings" }), input, note);
   // On the heading's line, at the right (12 November 2026: it was among the page's own buttons on Manage apps).
   const h1 = $(".page-head h1", main);
   if (h1) onTitle(h1, box); else main.prepend(box);
@@ -4248,7 +4248,7 @@ async function startDownloadsSettings() {
     return;
   }
   let d;
-  try { d = await api("/api/downloads/settings"); } catch (e) { root.replaceChildren(notice("danger", "Could not look", e.message)); root.removeAttribute("aria-busy"); return; }
+  try { d = await api("/api/downloads/settings"); } catch (e) { root.replaceChildren(notice("danger", "Could not read the download settings", e.message)); root.removeAttribute("aria-busy"); return; }
   const words = await setupWords();
   const parts = [];
   if (d.vpn.on) {
@@ -4280,7 +4280,7 @@ async function startDownloadsSettings() {
       } catch (e) { said.replaceChildren(notice("danger", "Not saved", e.message)); }
       finally { save.disabled = false; }
     });
-    parts.push(section("dl-vpn", "VPN", "Downloads go through your VPN, so your internet provider sees only the VPN.",
+    parts.push(section("dl-vpn", "VPN", "Downloads go through your VPN, so your internet provider can tell only that you use a VPN.",
       el("div", { class: "form-stack" },
         field("VPN provider", provider, { hint: "As Gluetun's list writes it, such as surfshark or protonvpn." }), field("Connection", type),
         field("Countries", countries, { hint: "Optional. A nearby country is fastest." }),
@@ -4339,7 +4339,7 @@ async function vpnAddSection(d) {
   const provider = el("select", { class: "select", id: "dl-vpn-add-provider" }, el("option", { value: "", text: "Choose your VPN provider" }),
     providers.map((v) => el("option", { value: v.id, text: v.name })), el("option", { value: "other", text: "Another one that Gluetun supports" }));
   const other = el("input", { class: "input", id: "dl-vpn-add-other", autocomplete: "off", spellcheck: "false" });
-  const otherField = field("Its name, as Gluetun's list writes it", other, { hint: "Type it in small letters, such as mullvad." });
+  const otherField = field("Its name, as Gluetun's list writes it", other, { hint: "Enter it in lower case, such as mullvad." });
   const type = el("select", { class: "select", id: "dl-vpn-add-type" }, [["wireguard", "WireGuard"], ["openvpn", "OpenVPN"]].map(([v, t]) => el("option", { value: v, text: t })));
   const inputs = {
     wireguard_private_key: el("input", { class: "input", type: "password", autocomplete: "off", id: "dl-vpn-add-key" }),
@@ -4467,7 +4467,7 @@ async function hostChange(opener) {
   const input = el("input", { class: "input", id: "host-password", type: "password", autocomplete: "current-password", required: true });
   const err = el("span", { class: "field-error", id: "host-password-error", hidden: true });
   for (;;) {
-    const asked = confirmDialog({ title: "Make the change to the server", message: "Starboard's helper on the server runs the installer with your answers. Type your Starboard password to go ahead.",
+    const asked = confirmDialog({ title: "Make the change to the server", message: "Starboard's helper on the server runs the installer with your answers. Enter your Starboard password to go ahead.",
       confirm: "Make the change", fields: [el("div", { class: "field" }, el("label", { for: input.id, text: "Your Starboard password" }), input, err)] });
     input.focus();
     if (!(await asked)) return;
@@ -4507,13 +4507,13 @@ async function hostChange(opener) {
       return;
     }
     if (p.state === "failed") {
-      now.replaceChildren(notice("danger", "The change stopped", "What the installer said is below. Run first's window on the server shows it too, and the help has each error number."));
+      now.replaceChildren(notice("danger", "The change stopped", "What the installer said is in the log on this page. Run first's window on the server shows it too, and the help has each error number."));
       return;
     }
     const where = `${p.state}|${p.n}|${p.name}|${(p.log || "").length}`;
     if (where !== same) { same = where; since = Date.now(); }
     if (p.state === "running" && Date.now() - since > 10 * 60 * 1000) {
-      now.replaceChildren(notice("danger", "The change has stopped", "Nothing has happened for 10 minutes. What the installer said is below. Select Make the change now again, or run ./install.sh in the Starboard folder on the server."));
+      now.replaceChildren(notice("danger", "The change has stopped", "Nothing has happened for 10 minutes. What the installer said is in the log on this page. Select Make the change now again, or run ./install.sh in the Starboard folder on the server."));
       return;
     }
     bar.style.width = `${Math.max(3, Math.min(97, shown))}%`; meter.setAttribute("aria-valuenow", String(Math.max(0, shown)));

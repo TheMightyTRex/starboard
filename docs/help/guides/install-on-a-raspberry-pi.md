@@ -14,7 +14,7 @@ downloads.
 - A microSD card of 32 GB or more, the official power supply for your Pi, and a way to connect it to your home
   network.
 - Another computer with a card reader, to prepare the card.
-- If the terminal is new to you, read [The terminal: typing commands](../basics/the-terminal.md) first.
+- If the terminal is new to you, read [The terminal: entering commands](../basics/the-terminal.md) first.
 
 ## The steps at a glance
 

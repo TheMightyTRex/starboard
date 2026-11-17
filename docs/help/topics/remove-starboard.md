@@ -8,7 +8,7 @@ folder, or move it somewhere safe, so you can bring your settings back if you ch
 
 ## Before you begin
 
-- A terminal open on the server. Read [The terminal: typing commands](../basics/the-terminal.md).
+- A terminal open on the server. Read [The terminal: entering commands](../basics/the-terminal.md).
 - If you might want your settings again, download a copy first. Read
   [Back up and restore Starboard's settings](back-up-settings.md).
 
@@ -52,7 +52,7 @@ folder, or move it somewhere safe, so you can bring your settings back if you ch
 
 ## If you activated Disk health
 
-The installer set up a small job that checks your drives every 30 minutes. It keeps running after Starboard is gone,
+The installer set up a small job that checks your disks every 30 minutes. It keeps running after Starboard is gone,
 so remove it too.
 
 1. Go to the Starboard folder:
@@ -69,8 +69,8 @@ so remove it too.
 
    It says "Removed the Disk health timer". The reports it already saved stay in the `smart` folder.
 
-If you set up Drive pools, remove the pool helper in the same way, with `sudo deploy/install-pool.sh --remove`.
-Your pool and the files on its drives stay as they are.
+If you set up Disk pools, remove the pool helper in the same way, with `sudo deploy/install-pool.sh --remove`.
+Your pool and the files on its disks stay as they are.
 
 ## Your settings and the Starboard folder
 
@@ -79,7 +79,7 @@ The Starboard folder still holds your settings, API keys and backups, in the `da
 
 - **If you might use Starboard again:** keep the folder as it is. To start Starboard again later, run
   `docker compose up -d` in it, or `docker compose -f compose.image.yaml up -d` for the ready-made image.
-- **If you want it out of the way:** move the whole folder somewhere else, such as an external drive or a folder for
+- **If you want it out of the way:** move the whole folder somewhere else, such as an external disk or a folder for
   old things. It holds your API keys, so keep it somewhere private.
 - **Only when you are sure** you will never want the settings again, delete the folder. This cannot be undone.
 

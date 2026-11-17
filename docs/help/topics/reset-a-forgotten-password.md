@@ -9,7 +9,7 @@ out, and your apps and settings stay as they are.
 ## Before you begin
 
 - You can enter commands on the server, at its keyboard or over SSH (secure shell). Read
-  [The terminal: typing commands](../basics/the-terminal.md) and
+  [The terminal: entering commands](../basics/the-terminal.md) and
   [Connect to your server from another computer](connect-with-ssh.md).
 - You know how you installed Starboard: with the installer, or from the ready-made image. Follow the steps
   for your way.
@@ -34,7 +34,7 @@ out, and your apps and settings stay as they are.
    It ends with "The password is removed and everyone is signed out", then shows a new setup code.
 3. Open Starboard in your browser. It shows **Set up Starboard**.
 4. In **Setup code**, enter the code the script showed.
-5. In **Choose a password** and **Type it again**, enter your new password. It must have at least 10
+5. In **Choose a password** and **Enter it again**, enter your new password. It must have at least 10
    characters.
 6. Select **Save password and continue**.
 

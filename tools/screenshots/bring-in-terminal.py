@@ -117,7 +117,7 @@ def main(out):
     real_describe = b.describe
     with mock.patch.object(folders, "ROOTS", (root,)), mock.patch.object(b, "_in_docker", lambda: False), \
             mock.patch.object(folders, "_in_docker", lambda: False), mock.patch.object(b, "describe", lambda s: real_describe(s).replace(root, "/mnt")), \
-            mock.patch.object(folders, "disk_places", lambda: [{"name": "Drive 2", "path": root + "/disk2"}]):
+            mock.patch.object(folders, "disk_places", lambda: [{"name": "Disk 2", "path": root + "/disk2"}]):
         term = ts.Terminal(out=rec, ask=ask, secret=ask, fancy=True, colour=False, width=W, rows=H)
         ts.step_bring(LocalApi(data), term, {"start": "new", "media_dir": root + "/media"})
     for name, shot in zip(names, rec.shots):

@@ -8,7 +8,7 @@ restarts for a moment while it updates, and so does anything that depends on it.
 
 ## Before you begin
 
-- Starboard has Docker access. Without it, the page says **Starboard cannot see your containers**. Read
+- Starboard has Docker access. Without it, the page says **Starboard cannot reach your apps' containers**. Read
   [Change access with the installer](change-what-starboard-can-access.md#change-access-with-the-installer), and
   [What Docker is](../basics/what-is-docker.md) if Docker is new to you.
 - Your apps run in Docker and were started with Docker Compose.

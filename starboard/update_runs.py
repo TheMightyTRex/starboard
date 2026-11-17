@@ -10,7 +10,7 @@ Each kind reuses what already does the work:
 - A plug-in: plugin_update.update_safely (before, settings migration, install, health, after; back by itself).
 
 Nothing is checked or fetched here that the pages do not already: what can be updated comes from Starboard's
-release check, the last look for app updates and the catalogues already read. One update runs at a time, in its own
+release check, the last check for app updates and the catalogues already read. One update runs at a time, in its own
 thread, which ends with it. The last 20 runs are kept in data/update-runs.json, so a page or a script can read how
 one ended after Starboard restarted.
 """
@@ -169,7 +169,7 @@ def targets(app):
             out.append({"id": "reelix" if reelix else f"app:{r['id']}", "kind": "reelix" if reelix else "app", "name": r["name"],
                         "current": r["container"].get("version") or "", "latest": r.get("latest") or "",
                         "update_available": bool(r.get("update")), "can_update": bool(r.get("update")) and r["container"].get("compose", False),
-                        "why": "" if r.get("update") else ("Look for updates first" if "update" not in r else "Up to date"),
+                        "why": "" if r.get("update") else ("Check for updates first" if "update" not in r else "Up to date"),
                         "can_roll_back": False, "roll_back_to": "", "big_change": bool(r.get("update") and r.get("big_change")),
                         "note": "Goes back by itself when the new version is not healthy"})
     known = plugin_life.updates_known(app.data_dir)
@@ -253,7 +253,7 @@ def _start_app(app, target, by):
         raise LookupError("No app with that id runs in a container Starboard knows")
     if target == "reelix":
         run = _new(app.data_dir, target, "reelix", row["name"], "update", row["container"].get("version"), row.get("latest"), by,
-                   [("check", "Looking for the new version"), ("backup", "Saving a copy of its settings"),
+                   [("check", "Finding the new version"), ("backup", "Saving a copy of its settings"),
                     ("install", "Installing the new version"), ("health", "Waiting for it to answer healthy")])
 
         def work():
@@ -264,7 +264,7 @@ def _start_app(app, target, by):
         _go(app.data_dir, run, work)
         return run
     if not row.get("update"):
-        raise Refused(f"No newer version of {row['name']} is known. Look for updates first: POST /api/v1/containers/check, or Check on Apps, Updates")
+        raise Refused(f"No newer version of {row['name']} is known. Check for updates first: POST /api/v1/containers/check, or Check on Apps, Updates")
     if not row["container"].get("compose"):
         raise Refused(f"{row['name']} was not started by Docker Compose, so Starboard cannot update it")
     run = _new(app.data_dir, target, "app", row["name"], "update", row["container"].get("version"), row.get("latest"), by,
@@ -394,7 +394,7 @@ def _start_plugin(app, pid, by, address):
     elif known:
         manifest, source = pa.fetch_manifest(known["manifest"], sha256=known.get("sha256", "")), known["manifest"]
     else:
-        raise Refused("No newer version is known. Open the Catalogue to look again, or give an address on the plug-in's page")
+        raise Refused("No newer version is known. Open the Catalogue to check again, or give an address on the plug-in's page")
     if manifest.get("id") != pid:
         raise ValueError("That manifest is for another plug-in")
     from . import plugins
@@ -481,7 +481,7 @@ def _live(app, run):
         from . import update_batch
         update_batch.settle(app, run)
     elif run["state"] == "running" and run["id"] not in _active:
-        run.update(state="failed", said="Starboard restarted while it ran, so it did not finish. Look at the plug-in's or app's state")
+        run.update(state="failed", said="Starboard restarted while it ran, so it did not finish. Check the plug-in's or app's state")
     return run
 
 

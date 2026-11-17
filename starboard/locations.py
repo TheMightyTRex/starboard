@@ -114,7 +114,7 @@ def describe(app, path, setting="", read=None, mounts=None, host_defaults=None, 
     start = [h for h, a in mounts if a not in ("/",)]
     out["start"] = start[0] if start else ""
     if not mounts:
-        out["lines"].append(f"Starboard cannot see where {name} keeps its folders, so Browse is off. Type the folder under Advanced.")
+        out["lines"].append(f"Starboard cannot find where {name} keeps its folders, so Browse is not available. Enter the folder in More options.")
     path = (path or "").strip()
     if not path:
         out["words"] = "Not set"
@@ -128,7 +128,7 @@ def describe(app, path, setting="", read=None, mounts=None, host_defaults=None, 
     host = to_host(clean, mounts) if mounts else None
     if mounts and host is None:
         tops = ", ".join(a for _, a in mounts)
-        return {**out, "ok": False, "lines": [f"{name} cannot see that folder. Choose one inside {tops}."]}
+        return {**out, "ok": False, "lines": [f"{name} cannot reach that folder. Choose one inside {tops}."]}
     out["host"] = host
     if host and folders.allowed(host):
         out["start"] = host
@@ -151,5 +151,5 @@ def chosen(app, host_path, mounts=None, data_dir=None):
     inside = to_app(folders.tidy(host_path), mounts)
     if inside is None:
         tops = ", ".join(h for h, _ in mounts) or "its folders"
-        raise ValueError(f"{NAMES.get(app, app)} cannot see that folder. Choose one inside {tops}.")
+        raise ValueError(f"{NAMES.get(app, app)} cannot reach that folder. Choose one inside {tops}.")
     return inside

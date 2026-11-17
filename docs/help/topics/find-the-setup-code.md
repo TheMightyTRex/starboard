@@ -10,7 +10,7 @@ it. The installer shows it at the end. You can show it again on the server until
 
 - Starboard is installed and running. Read [Install Starboard with the installer](install-with-the-installer.md) or
   [Install Starboard from the ready-made image](install-from-the-ready-made-image.md).
-- A terminal open on the server. Read [The terminal: typing commands](../basics/the-terminal.md).
+- A terminal open on the server. Read [The terminal: entering commands](../basics/the-terminal.md).
 
 ## Steps if you used the installer
 

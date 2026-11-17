@@ -285,7 +285,7 @@ def _waits(app, part, lines):
     watch = getattr(app, "watch", None)
     if watch:
         try:
-            watch.alert(f"update-waits:{part}:{'|'.join(lines)[:200]}", "An update waits for you", "; ".join(lines) + ". See Settings, Updates.", "warning")
+            watch.alert(f"update-waits:{part}:{'|'.join(lines)[:200]}", "An update waits for you", "; ".join(lines) + ". Go to Settings, Updates.", "warning")
         except Exception as e:  # noqa: BLE001
             logs.error("updates", f"The alert was not sent: {e}", e)
 

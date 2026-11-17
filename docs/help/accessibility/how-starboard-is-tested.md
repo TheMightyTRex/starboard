@@ -8,9 +8,9 @@ walk of the main tasks with the keyboard alone, and a contrast check of every co
 before it is merged, and again before every release. This page says what each check does, and what checks cannot
 catch.
 
-![How Starboard is tested: a scan, the reading order, a keyboard walk and a contrast check on every change; all of them again before every release; and listening with a screen reader, which still needs a person](../images/a11y-test-process.svg)
+![Diagram of the four checks run on every change and before every release, and the screen reader check a person does](../images/a11y-test-process.svg)
 
-The diagram shows the same steps as the sections below, with the latest results. The figures and their dates are in
+The diagram shows the same steps as the sections on this page, with the latest results. The figures and their dates are in
 [Latest test results](latest-test-results.md).
 
 ## When would you use it
@@ -27,7 +27,7 @@ server with made-up data, so nothing real is read.
 | Part | What it checks | How it runs |
 |---|---|---|
 | The scan | Every page against WCAG 2.2 AA with axe-core, in Light, Dark and High contrast; page structure; target size; reflow at 320 pixels wide and at 175% text; Windows' contrast themes; reduced motion; the side menu and header at every text size | `tools/a11y.sh` and `LAYOUT=1 tools/a11y.sh` |
-| Reading order | What a screen reader reads against what is seen, on every page, at computer and phone widths, and in each design of the Apps page | `ORDER=1 tools/a11y.sh` |
+| Reading order | What a screen reader reads against what is shown, on every page, at computer and phone widths, and in each design of the Apps page | `ORDER=1 tools/a11y.sh` |
 | Keyboard walk | The main tasks with keys only, checking where focus is and what is said after every step | `TASKS=1 tools/a11y.sh` |
 | Colour contrast | Every text and control colour pair in every theme and colour palette | The design system's `tools/contrast.py` |
 
@@ -49,13 +49,13 @@ server with made-up data, so nothing real is read.
 - **Menus at large text:** the side menu and the header on eight pages, at 100%, 125%, 150% and 175% text, with and
   without wider spacing, in Light, Dark and High contrast, at 1280 and 1366 pixels wide and at phone width, and in
   windows 600 and 700 pixels tall. It fails if a word breaks in the middle, a name runs past an edge, items overlap,
-  a menu item or the search box is cut off, or the page scrolls sideways. The scan's own reflow rule cannot see a
-  menu that cuts off its own items, so this part looks for exactly that.
+  a menu item or the search box is cut off, or the page scrolls sideways. The scan's own reflow rule cannot find a
+  menu that cuts off its own items, so this part checks for exactly that.
 
 ### Reading order
 
-A screen reader reads, and Tab moves, in the order of the page's code. People see the order on the page. The check
-compares the two on every page, at computer and phone widths: anything read later but shown clearly above, or Tab
+A screen reader reads, and Tab moves, in the order of the page's code. The page shows its own order. The check
+compares the two on every page, at computer and phone widths: anything read later but shown clearly earlier, or Tab
 that jumps back up a column, is a finding. It also checks that the landmarks come in order and that the page's
 level 1 heading is the first thing in the main content.
 
@@ -82,7 +82,7 @@ Plug-ins are checked too, by the plug-in tester, before any plug-in can be added
 out: every style's colours in light and dark, and the labels, hints, card titles and button words people
 read.
 
-![Settings, Plug-ins, Test a plug-in, with a made-up style that fails: Accessibility failed, and each colour pair that is too faint listed with how to fix it](../images/a11y-plugin-test.png)
+![Test a plug-in with a made-up style that fails its accessibility check](../images/a11y-plugin-test.png)
 
 ### The help centre
 
@@ -95,7 +95,7 @@ description, and every diagram says the same thing in words.
   the journeys (every page used as a person would) and the help checks. A finding is fixed, or checked by hand and
   shown to come from the test itself, before the change goes in.
 - **Every change to colours:** the contrast check runs, and must show 0 failures.
-- **Before every release:** all of them run again on the release, with fresh screenshots that a person looks at.
+- **Before every release:** all of them run again on the release, with fresh screenshots that a person checks.
   The results are listed with each release in
   [Security: how Starboard protects you, and how it was tested](https://github.com/TheMightyTRex/starboard/blob/main/docs/SECURITY-AND-TESTS.md#security-checks-for-each-release).
 
@@ -104,7 +104,7 @@ description, and every diagram says the same thing in words.
 Tools find many problems, but not all. They cannot tell:
 
 - whether something makes sense when heard, such as a label that is correct but confusing
-- whether the order of a task is easy to follow, or a message is clear
+- whether people can follow the order of a task, or a message is clear
 - how a particular screen reader, browser and device behave together
 - whether alt text describes a picture well
 - what people who use assistive technology every day find hard

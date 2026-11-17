@@ -42,7 +42,7 @@ startPage().then((session) => {
       // Filled in by the installer's link: read only, with a note, and the cursor goes to the next question.
       form.token.value = given[1];
       form.token.readOnly = true;
-      $("#token-hint").textContent = "Filled in by the installer. Starboard uses it automatically to continue the set-up, so there is nothing to type here.";
+      $("#token-hint").textContent = "Filled in by the installer. Starboard uses it automatically to continue the set-up, so there is nothing to enter here.";
       form.site_name?.focus();
     }
     history.replaceState(null, "", location.pathname + location.search);
@@ -54,7 +54,7 @@ startPage().then((session) => {
       if (!form.token.value.trim()) { showFieldError(form.token, "Enter the setup code. It is in the installer's output or the server log."); return; }
       if (!form.site_name.value.trim()) { showFieldError(form.site_name, "Enter a name for the dashboard"); return; }
       if (form.password.value.length < 10) { showFieldError(form.password, `Use at least 10 characters. This one has ${form.password.value.length}.`); return; }
-      if (form.password.value !== form.confirm.value) { showFieldError(form.confirm, "The two passwords are different. Type it again."); return; }
+      if (form.password.value !== form.confirm.value) { showFieldError(form.confirm, "The two passwords are different. Enter it again."); return; }
     } else if (!form.password.value) {
       showFieldError(form.password, "Enter your password");
       return;

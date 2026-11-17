@@ -5,7 +5,7 @@
 
 When a Live TV channel will not play in Jellyfin, or has no logo, the cause is usually one of four things. Jellyfin
 cannot reach Starboard, Jellyfin's FFmpeg refuses the stream, the channel stopped at its source, or Live TV is not
-running. Find what you see on the chart, then follow its numbered answer.
+running. Find what happens on the chart, then follow its numbered answer.
 
 ```flow
 title: Find your answer

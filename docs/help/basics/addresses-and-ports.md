@@ -10,7 +10,7 @@ number of the flat inside it.
 ## An address finds the computer
 
 Your router, the box that gives you Wi-Fi, gives each device at home its own address. These are called IP (internet
-protocol) addresses, and look like four numbers with dots between them:
+protocol) addresses, and are four numbers with dots between them:
 
 ```
 192.168.1.20

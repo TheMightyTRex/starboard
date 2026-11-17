@@ -37,7 +37,7 @@ class DrivesStepTest(unittest.TestCase):
             self.assertTrue(ts.step_drives(None, term, state))
         finally:
             ts.STEP_FUNCTIONS.remove(ts.step_drives)
-            ts.STEPS.remove("Your drives")
+            ts.STEPS.remove("Your disks")
         return out.getvalue(), state
 
     def test_a_pool_with_a_parity_drive_and_kept_files(self):

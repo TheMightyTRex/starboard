@@ -22,7 +22,7 @@ The word "server" sounds grand, but any computer can be one. It only needs to st
 - **A small, quiet "mini PC".** These use little electricity and fit on a shelf.
 - **A Raspberry Pi.** A credit-card-sized computer that costs little to run. Read
   [Install Starboard on a Raspberry Pi](../guides/install-on-a-raspberry-pi.md).
-- **A NAS (network-attached storage) box.** A box made to hold several drives.
+- **A NAS (network-attached storage) box.** A box made to hold several disks.
 
 How big it needs to be depends on what you run. For Starboard itself, read
 [What you need to run Starboard](../topics/what-you-need.md).
@@ -34,7 +34,7 @@ on older or smaller computers, and is what most media apps are built for. Linux 
 Raspberry Pi OS are all kinds of Linux, and Starboard supports each of them.
 
 You do not need to know Linux well. You mostly use it through a few commands, which
-[The terminal: typing commands](the-terminal.md) explains. To choose one, read
+[The terminal: entering commands](the-terminal.md) explains. To choose one, read
 [Choose which Linux](../topics/install-linux.md#choose-which-linux).
 
 ## Apps on the server

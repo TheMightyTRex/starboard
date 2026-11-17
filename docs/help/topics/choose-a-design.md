@@ -3,7 +3,7 @@
 
 # Choose a design for the Apps page
 
-Starboard has five designs for the Apps page. You can set the design everyone sees, and each person can choose
+Starboard has five designs for the Apps page. You can set the design for everyone, and each person can choose
 their own in the Display panel.
 
 ## The five designs
@@ -16,9 +16,9 @@ their own in the Display panel.
 
 ## Steps
 
-### Set the design everyone sees
+### Set the design for everyone
 
-1. Go to **Settings**, then **General**, then **Appearance**, and activate **Advanced settings**.
+1. Go to **Settings**, then **General**, then **Appearance**, and activate **More settings**.
 2. Find **Default design**.
 3. Choose a design, such as **Tiles**. The change applies at once, and Starboard confirms with **Default
    design: Tiles**.
@@ -29,7 +29,7 @@ their own in the Display panel.
 2. Under **Design**, choose a design. The Apps page changes at once.
 3. Select **Done**.
 
-To go back to the design everyone sees, choose **Use the dashboard's default** under **Design**.
+To go back to the design for everyone, choose **Use the dashboard's default** under **Design**.
 
 ## Things to note
 

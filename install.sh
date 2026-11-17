@@ -108,7 +108,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 [ -t 0 ] || ASK=0
-[ "$TERMINAL" = 0 ] || [ -t 0 ] || { echo "Stopped: --terminal needs a terminal to type in" >&2; err IN-02 >&2; exit 2; }
+[ "$TERMINAL" = 0 ] || [ -t 0 ] || { echo "Stopped: --terminal needs a terminal to enter answers in" >&2; err IN-02 >&2; exit 2; }
 [ "$(id -u)" -ne 0 ] || { echo "Stopped: run this as your normal user, not root" >&2; err IN-04 >&2; exit 1; }
 
 # DASH-416: a first install (no .env yet) from a clone of the main branch gets the newest release, as ./update.sh
@@ -150,7 +150,7 @@ if [ "$MODE" = docker ] && [ -z "${STARBOARD_REGROUPED:-}" ] && command -v docke
     # sudo's own prompt says nothing about why: say it first, wrapped to the window (TERMINAL.md, Questions).
     if ! sudo -n true 2>/dev/null; then
       width="$(tput cols 2>/dev/null || echo 80)"; [ "$width" -gt 20 ] 2>/dev/null || width=80
-      printf '%s\n' "Your user was just allowed to use Docker. To use that now, without signing out, sudo asks for the password you use to sign in to this computer, once (nothing shows as you type)." \
+      printf '%s\n' "Your user is now allowed to use Docker. To use that now, without signing out, sudo asks for the password you use to sign in to this computer, once (nothing shows as you type)." \
         | fold -s -w $(( width - 1 ))
     fi
     # The settings go by name through env: sudo-rs (Ubuntu 26.04) ignores --preserve-env, and without
@@ -419,7 +419,7 @@ start_apps() {
       fail IN-32 "the set-up file has things Starboard did not write, so nothing was started. If you added these yourself, run ./install.sh --start-apps in a terminal to choose"
     fi
   fi
-  JOBS_INTRO="Downloading $SA_TOTAL apps and starting them. On a slow connection this can take 20 minutes or more. Please wait..."
+  JOBS_INTRO="Downloading $SA_TOTAL apps and starting them. On a slow connection this can take 20 minutes or more."
   para "$JOBS_INTRO"
   say ""
   JOB_N=0; JOB_OF=3
@@ -433,7 +433,7 @@ start_apps() {
   JOB_COUNT=""; COUNT_NOW=""
   running="$(docker compose -p media-stack -f "$SA_FILE" --env-file "$SA_ENV" ps -q --status running 2>/dev/null | wc -l)"
   say ""
-  ok "$running of $SA_TOTAL apps are running. Open Starboard to see them."
+  ok "$running of $SA_TOTAL apps are running. Open Starboard to check them."
   finish
 }
 # Docker is a requirement: Starboard's apps always run in it, with --native too. When it or Docker Compose is missing,
@@ -569,7 +569,7 @@ ASK_POOL=0
 if [ -z "$POOL" ]; then
   previous="$(env_value STARBOARD_ALLOW_POOL)"; POOL="${previous:-0}"
   if [ -n "$(env_value STARBOARD_POOL_DIR)" ] && [ -z "$previous" ]; then
-    NOTES+=("Drive pools: you set up the pool helper by hand (STARBOARD_POOL_DIR), so the installer leaves it as it is.")
+    NOTES+=("Disk pools: you set up the pool helper by hand (STARBOARD_POOL_DIR), so the installer leaves it as it is.")
     POOL=skip
   elif [ "$ASK" = 1 ] && { [ "$FIRST" = 0 ] || [ "$(extra_drives)" -ge 2 ]; }; then
     ASK_POOL=1
@@ -587,7 +587,7 @@ step_welcome() {
   hang "  1.  " "" "Checks that Docker (or, with --native, Python and systemd) is installed. It changes nothing."
   hang "  2.  " "" "Asks what Starboard may access on this computer, one question at a time. Each is optional: say no and only that part of Starboard is missing."
   hang "  3.  " "" "Writes your answers to .env and compose.access.yaml in this folder (only you can read .env)."
-  hang "  4.  " "" "Builds and starts Starboard. That needs no sudo. Disk health and Drive pools are the only steps that do, and only if you say yes to them."
+  hang "  4.  " "" "Builds and starts Starboard. That needs no sudo. Disk health and Disk pools are the only steps that do, and only if you say yes to them."
   say ""
   ok "$READY"
   say ""
@@ -665,7 +665,7 @@ step_disks() {
   local def=2 line
   [ "${#DISKS[@]}" -gt 0 ] && def=1
   page "$STEP"
-  para "System, Storage can show how full your folders or drives are. Starboard reads them read-only and does not open the files."
+  para "System, Storage can show how full your folders or disks are. Starboard reads them read-only and does not open the files."
   [ "${#DISKS[@]}" = 0 ] || para "Now: ${DISKS[*]}"
   choose "Choose folders to show?" "$def" \
 "Each folder is a name and a path, such as Media=/mnt/media. No: Storage shows no folders." \
@@ -685,15 +685,15 @@ step_disks() {
 
 step_health() {
   page "$STEP"
-  para "A small script (deploy/starboard-smart.sh) runs smartctl as root every 30 minutes, through a systemd timer, and saves each drive's health report in ./smart. Starboard reads them read-only. It needs smartmontools."
+  para "A small script (deploy/starboard-smart.sh) runs smartctl as root every 30 minutes, through a systemd timer, and saves each disk's health report in ./smart. Starboard reads them read-only. It needs smartmontools."
   yes_no_step "Set up Disk health reports?" "Setting it up runs deploy/install-smart.sh with sudo, so you are asked for this computer's password. No: System, Disk health says reports are not set up." STARBOARD_ALLOW_HEALTH "$HEALTH" "sudo asks for your password." "Disk health says reports are not set up." || return $?
   HEALTH=$YES
 }
 
 step_pool() {
   page "$STEP"
-  para "A pool joins several drives into one folder, /mnt/pool, and a backup drive protects it. The pool helper (deploy/install-pool.sh) does that work as root; Starboard only asks it, and every change needs your Starboard password and is checked first. It needs mergerfs, rsync and gdisk (and snapraid for a parity drive)."
-  yes_no_step "Set up Drive pools?" "Setting it up runs sudo, so you are asked for this computer's password. No: System, Storage, Pool says the helper is not set up." STARBOARD_ALLOW_POOL "$POOL" "sudo asks for your password." "Pool says the helper is not set up." || return $?
+  para "A pool joins several disks into one folder, /mnt/pool, and a backup disk protects it. The pool helper (deploy/install-pool.sh) does that work as root; Starboard only asks it, and every change needs your Starboard password and is checked first. It needs mergerfs, rsync and gdisk (and snapraid for a parity disk)."
+  yes_no_step "Set up Disk pools?" "Setting it up runs sudo, so you are asked for this computer's password. No: System, Storage, Pool says the helper is not set up." STARBOARD_ALLOW_POOL "$POOL" "sudo asks for your password." "Pool says the helper is not set up." || return $?
   POOL=$YES
 }
 
@@ -791,8 +791,8 @@ job_save() {
       echo "      - ./smart/requests:/smart/requests  # the one place Starboard writes: Read disks now"
     fi
     if [ "$POOL" = 1 ]; then
-      echo "      - ./pool/status:/pool/status:ro  # Drive pools: the pool helper's answers"
-      echo "      - ./pool/requests:/pool/requests  # Drive pools: the one place Starboard asks the helper"
+      echo "      - ./pool/status:/pool/status:ro  # Disk pools: the pool helper's answers"
+      echo "      - ./pool/requests:/pool/requests  # Disk pools: the one place Starboard asks the helper"
     fi
   } > compose.access.yaml
   if [ "$DISKS_GIVEN" != skip ]; then
@@ -839,7 +839,7 @@ job_health() {
     fi || stop IN-17 "smartmontools did not install. Install it yourself (for example: sudo apt install smartmontools), then run ./install.sh again"
   fi
   mkdir -p smart/requests
-  sudo -n deploy/install-smart.sh "$PWD/smart" || stop IN-18 "Disk health did not set up. Show the details to see why."
+  sudo -n deploy/install-smart.sh "$PWD/smart" || stop IN-18 "Disk health did not set up. Show the details to find out why."
   echo "Disk health is set up. Starboard reads each disk's report from $PWD/smart."
 }
 job_pool() {
@@ -847,7 +847,7 @@ job_pool() {
     echo "The pool helper is already installed."; return 0
   fi
   mkdir -p pool/requests pool/status
-  sudo -n deploy/install-pool.sh "$PWD/pool" || stop IN-19 "the pool helper did not install. Show the details to see why."
+  sudo -n deploy/install-pool.sh "$PWD/pool" || stop IN-19 "the pool helper did not install. Show the details to find out why."
   echo "The pool helper is installed."
 }
 job_build() {
@@ -870,7 +870,7 @@ job_service() {
   mkdir -p "$unit_dir"
   sed -e "s|@DIR@|$PWD|g" -e "s|@PORT@|$PORT|g" deploy/starboard.service > "$unit_dir/starboard.service"
   systemctl --user daemon-reload && systemctl --user enable --now starboard.service && systemctl --user restart starboard.service \
-    || stop IN-23 "the Starboard service did not start. Show the details to see what systemd said."
+    || stop IN-23 "the Starboard service did not start. Show the details to read what systemd said."
 }
 # The set-up helper (owner, 10 November 2026: nothing to configure outside Starboard): a user service running
 # starter.sh. Not a stop when it cannot be installed: the Run first window, or the command the browser shows, does
@@ -917,7 +917,7 @@ job_wait() {
     python3 -c "import urllib.request,sys; urllib.request.urlopen('http://127.0.0.1:$PORT/healthz', timeout=2)" 2>/dev/null && return 0
     sleep 2
   done
-  stop IN-24 "Starboard did not start. See: docker compose logs starboard (or journalctl --user -u starboard)"
+  stop IN-24 "Starboard did not start. For the reason, run: docker compose logs starboard (or journalctl --user -u starboard)"
 }
 
 # The location and keyboard the set-up chose (DASH-259): the same commands as the Run first script's.
@@ -947,14 +947,14 @@ step_install() {
   local n
   page "$STEP"
   FIRST_BACK=$STEP  # files are written from here: earlier answers are changed by running the installer again
-  JOBS_INTRO="Please wait, this can take some time..."
-  [ "$FIRST" = 1 ] && JOBS_INTRO="Your media folder, the folders Starboard shows, Live TV and disk health come next, in Starboard's set-up. Please wait, this can take some time..."
+  JOBS_INTRO="Setting up Starboard and starting it…"
+  [ "$FIRST" = 1 ] && JOBS_INTRO="Your media folder, the folders Starboard shows, Live TV and disk health come next, in Starboard's set-up. First, setting up Starboard and starting it…"
   for n in "${NOTES[@]+"${NOTES[@]}"}"; do note "$n"; done
   if needs_sudo && ! sudo -n true 2>/dev/null; then
     # A password is not a question of choice: with --yes in a real window (Run first applying the set-up's
     # changes), sudo still asks for it there.
     local pw_in="${IN:-$TTY}"
-    if [ -z "$pw_in" ]; then fail IN-16 "Disk health and Drive pools need sudo, and there is no terminal to type the password in. Run ./install.sh in a terminal"; fi
+    if [ -z "$pw_in" ]; then fail IN-16 "Disk health and Disk pools need sudo, and there is no terminal to enter the password in. Run ./install.sh in a terminal"; fi
     para "sudo asks for the password you use to sign in to this computer, once (nothing shows as you type)."
     say ""
     KEYS="Ctrl+C"; MENU_RIGHT="Enter: send the password"; [ "$FANCY" = 1 ] && menu
@@ -972,7 +972,7 @@ step_install() {
   if [ -n "$TIMEZONE$KEYBOARD" ]; then job "Setting the time zone and keyboard" job_place; fi
   job "Saving your answers" job_save
   if [ "$HEALTH" = 1 ]; then job "Setting up Disk health" job_health; fi
-  if [ "$POOL" = 1 ]; then job "Setting up Drive pools" job_pool; fi
+  if [ "$POOL" = 1 ]; then job "Setting up Disk pools" job_pool; fi
   if [ "$MODE" = docker ]; then
     JOB_DETAIL=build_detail
     job "Building and starting Starboard" job_build
@@ -1044,12 +1044,12 @@ for s in "${LIST[@]}"; do
     livetv) TITLES+=("Live TV") ;;
     disks) TITLES+=("Folders to show") ;;
     health) TITLES+=("Disk health") ;;
-    pool) TITLES+=("Drive pools") ;;
+    pool) TITLES+=("Disk pools") ;;
     install) TITLES+=("Install Starboard") ;;
   esac
 done
 TITLES+=("Done")
-[ "$SMALL" = 1 ] && para "This window is $COLS by $ROWS characters, so the installer shows plain lines. For the boxed look, make it at least 60 by 20 and run this again."
+[ "$SMALL" = 1 ] && para "This window is $COLS by $ROWS characters, so the installer shows plain lines. For the box layout, make it at least 60 columns wide and 20 lines high, and run this again."
 STEP=1
 while [ "$STEP" -le "$STEPS" ]; do
   "step_${LIST[$(( STEP - 1 ))]}"; rc=$?
@@ -1072,7 +1072,7 @@ if [ "$TERMINAL" = 1 ]; then
     python3 -m starboard.terminal_setup --port "$PORT" --data data --address "${LAN:-}" || status=$?
   if [ "$status" != 0 ] && ! grep -qE '^(stopped|[A-Z]{2}-[0-9]{2})$' "$STOP_FILE" 2>/dev/null; then
     echo
-    echo "Stopped: the terminal set-up stopped on a fault of its own. The lines above say what it was."
+    echo "Stopped: the terminal set-up stopped on a fault of its own. The last lines say what it was."
     err IN-38
   fi
   exit "$status"

@@ -14,7 +14,7 @@ PAGE = 50
 def _reelix(all_services):
     found = services.reelix_native(all_services)
     if not found:
-        raise ValueError("Add Reelix in Settings, Manage apps, with its key, to see its history")
+        raise ValueError("Add Reelix in Settings, Manage apps, with its key, to show its history here")
     return found[0]
 
 

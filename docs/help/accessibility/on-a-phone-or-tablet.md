@@ -1,4 +1,4 @@
-[Help centre](../README.md) · Accessibility · reference
+[Help centre](../README.md) · Accessibility · how-to
 <!-- help: a11y / ways -->
 
 # Use Starboard on a phone or tablet
@@ -19,7 +19,7 @@ one column, with the menu under **Menu**.
   and the part you are in starts open. **Close menu** or Escape closes it.
 - **Search:** the search button in the header opens the search field.
 - **Display:** stays in the header, and opens the same **Display and accessibility** choices across the width.
-- **Large targets:** every button and row is at least 44 pixels high, so it is easy to touch.
+- **Large targets:** every button and row is at least 44 pixels high, so it fits a fingertip.
 
 ![The Apps page on a phone, with Display in the header outlined](../images/a11y-phone-apps.png)
 

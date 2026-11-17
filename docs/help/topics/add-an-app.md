@@ -31,14 +31,14 @@ Tip: if the app is on the same computer as Starboard,
    computer as Starboard, use `127.0.0.1`, such as `http://127.0.0.1:8096` for Jellyfin. For an app on another computer,
    use that computer's address, such as `http://192.168.1.20:8096`.
 
-   ![The Add an app panel, with Kind of app set to Jellyfin (step 3), Name (step 4) and Address Starboard uses (step 5) outlined](../images/add-an-app-2-connection.png)
+   ![The Add an app panel, with Kind of app set to Jellyfin (step 3), Name (step 4) and Address Starboard uses (step 5) outlined, with example data](../images/add-an-app-2-connection.png)
 
 6. In **API key**, paste the app's API key. The hint under the field says where that app keeps it.
    **Other app** has no API key field.
 7. Select **Test connection**. Starboard shows **Connected** and the app's version when the address and key
    are right.
 
-   ![The Add an app panel, with API key (step 6) and Test connection (step 7) outlined, and Connected shown under it](../images/add-an-app-3-test.png)
+   ![The Add an app panel, with API key (step 6) and Test connection (step 7) outlined, and Connected shown under it, with example data](../images/add-an-app-3-test.png)
 
 8. Optional: under **On the dashboard**, choose a **Category** and an **Icon**. Read
    [Organise apps into categories](organise-categories.md) and [Change an app's icon](change-an-icon.md).
@@ -53,7 +53,7 @@ Starboard uses these choices when you add a film, series, album or book from the
 1. In **Quality profile**, choose the profile to use. The list comes from the app itself.
 2. In **Folder**, choose the folder new items go in.
 3. For Lidarr and Readarr, choose a **Metadata profile**.
-4. Keep **Search as soon as something is added** active if you want the app to look for it straight away.
+4. Keep **Search as soon as something is added** active if you want the app to search for it straight away.
 5. Select **Save adding options**. To choose later, select **Skip for now**: Starboard then uses the first in
    each list.
 

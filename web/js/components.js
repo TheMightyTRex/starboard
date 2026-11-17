@@ -324,7 +324,7 @@
       button.dataset.ready = "1";
       button.addEventListener("click", async () => {
         const text = button.dataset.copy;
-        if (await copyText(text)) toast(button.dataset.copied || "Copied", { detail: button.dataset.copied ? text : undefined });
+        if (await copyText(text)) toast(button.dataset.copied || "Copied to the clipboard", { detail: button.dataset.copied ? text : undefined });
         else toast("Your browser did not allow copying", { tone: "warning", detail: `Select the text and copy it instead: ${text}` });
       });
     });
@@ -564,8 +564,9 @@
   }
 
   /* A to Z jump list (.az-jump). Letters come from the sort title ("The Expanse" under E, "Émile" under E,
-     "24" under #): azLetter(title). azJump(nav, letters) draws # and A to Z into the nav, with the letters
-     not in the Set shown but not choosable. The row is one Tab stop: Arrow keys, Home and End move between
+     "24" under #): azLetter(title). azJump(nav, letters, noun) draws # and A to Z into the nav, with the letters
+     not in the Set shown but not choosable, named "M, no books" from the noun (or the nav's data-noun), or
+     "M, none" without one. The row is one Tab stop: Arrow keys, Home and End move between
      the letters that have titles, Enter jumps. A jump scrolls to the heading (#letter-a) and moves focus to it.
      When the heading is not on the page yet (a wall that shows 40 at a time), the nav fires a cancelable
      "az-jump" event with detail.letter: the app shows more, then calls azGo(nav, letter). The letter in
@@ -577,7 +578,7 @@
     return first >= "A" && first <= "Z" ? first : "#";
   }
   const azId = (letter) => (letter === "#" ? "letter-num" : `letter-${letter.toLowerCase()}`);
-  function azJump(nav, letters) {
+  function azJump(nav, letters, noun = nav.dataset.noun) {
     const list = nav.querySelector("ol") || nav.appendChild(document.createElement("ol"));
     list.replaceChildren(...AZ.map((letter) => {
       const li = document.createElement("li");
@@ -589,7 +590,7 @@
       else {
         a.setAttribute("aria-disabled", "true");
         a.setAttribute("role", "link");
-        a.setAttribute("aria-label", `${letter === "#" ? "Numbers" : letter}, no titles`);
+        a.setAttribute("aria-label", `${letter === "#" ? "Numbers" : letter}, ${noun ? `no ${noun}` : "none"}`);
       }
       li.append(a);
       return li;
@@ -678,7 +679,7 @@
   function sortableMove(list, row, by) {
     const sibling = by < 0 ? row.previousElementSibling : row.nextElementSibling;
     if (!sibling || !sibling.classList.contains("sortable__row")) {
-      announcer("sortable-status", "status").textContent = `${sortableLabel(row)} is already ${by < 0 ? "at the top" : "at the bottom"}`;
+      announcer("sortable-status", "status").textContent = `${sortableLabel(row)} is already ${by < 0 ? "first" : "last"}`;
       return;
     }
     if (by < 0) sibling.before(row);
@@ -795,8 +796,8 @@
         busy = false;
         paused = true;
         button?.removeAttribute("aria-disabled");
-        show("More could not be loaded. Show more tries again.");
-        tell("More could not be loaded");
+        show(`The next ${size.toLocaleString("en-GB")}${noun} could not be loaded. Select Show more to try again.`);
+        tell(`The next ${size.toLocaleString("en-GB")}${noun} could not be loaded`);
         return 0;
       }
       busy = false;

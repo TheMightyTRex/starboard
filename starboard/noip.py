@@ -62,7 +62,7 @@ def save(data_dir, username, password, hostnames):
         except OSError:
             password = ""
     if not password:
-        raise ValueError("Type the DDNS key's password")
+        raise ValueError("Enter the DDNS key's password")
     os.makedirs(stack.folder(data_dir), mode=0o700, exist_ok=True)
     tmp = path(data_dir) + ".new"
     with os.fdopen(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
@@ -93,7 +93,7 @@ def parse(log_text):
             if found:
                 out["address"] = found.group(1)
         elif "incorrect credentials" in low or "badauth" in low or "unauthorized" in low:
-            out.update(state="refused", said="Type a new DDNS key or password below, then save. The updater starts again with it.")
+            out.update(state="refused", said="Enter a new DDNS key or password, then save. The updater starts again with it.")
         elif ("checking ip again" in low or "attempting to get ip" in low) and out["state"] == "unknown":
             out["state"] = "waiting"
         elif level in ("ERROR", "WARN") and text:

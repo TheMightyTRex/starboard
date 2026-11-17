@@ -33,7 +33,7 @@ page is laid out again to fit, so you do not need to scroll sideways. 100% is th
 
 ![The Apps page with Text size at 100%](../images/a11y-text-100.png)
 
-![The same Apps page with Text size at 175%: every word is larger, the side menu is wider so its names stay whole, and the header's menu shows its icons only, so nothing is cut off](../images/a11y-text-175.png)
+![The same Apps page with Text size at 175%: larger words and a wider side menu](../images/a11y-text-175.png)
 
 ## What wider text spacing changes
 
@@ -62,7 +62,7 @@ screen reader and shown as a tooltip.
   may forget them when it closes.
 - Text size and browser zoom work together. Text size keeps the layout and changes only the text; zoom makes
   everything bigger, pictures included. Read [Zoom and large screens](zoom-and-large-screens.md).
-- Starboard's typeface, Atkinson Hyperlegible Next, is designed to be easy to read, so there is no separate font
+- Starboard's typeface, Atkinson Hyperlegible Next, is designed for clear reading, so there is no separate font
   setting.
 - Every page is checked at 175% text for anything that needs sideways scrolling. Read
   [How Starboard is tested](how-starboard-is-tested.md).

@@ -50,9 +50,9 @@ STATUS = {  # Storyarr's status words: label and tone
     "searching": ("Searching", "info"),
 }
 CHIPS = {  # filter chips for each tab: key, label
-    "films": [("released", "Released"), ("coming", "Coming soon"), ("missing", "Missing")],
-    "tv": [("continuing", "Continuing"), ("ended", "Ended"), ("missing", "Missing episodes")],
-    "music": [("complete", "Complete"), ("missing", "Missing tracks")],
+    "films": [("released", "Released"), ("coming", "Not released"), ("missing", "Not in library")],
+    "tv": [("continuing", "Continuing"), ("ended", "Ended"), ("missing", "Episodes not in library")],
+    "music": [("complete", "Complete"), ("missing", "Tracks not in library")],
     "radio": [("in_library", "Has episodes"), ("wanted", "Wanted"), ("podcast", "Podcasts"), ("radio_show", "Radio shows")],
     "books": [("in_library", "In library"), ("wanted", "Wanted"), ("not_released", "Not released")],
     "audiobooks": [("in_library", "In library"), ("wanted", "Wanted"), ("not_released", "Not released")],
@@ -888,7 +888,7 @@ def item(data_dir, reelix, tab, item_id, cfg=None):
             rows.append(row)
             seasons.setdefault(int(ep.get("season_number") or 0), []).append(row)
         out = {"title": s.get("title"), "meta": [x for x in (s.get("network") or "", e["m"].split(" · ")[-1] if e["m"] else "",
-                                                             {"continuing": "Continuing", "ended": "Ended", "upcoming": "Coming soon"}.get(s.get("status"), ""))
+                                                             {"continuing": "Continuing", "ended": "Ended", "upcoming": "Not released"}.get(s.get("status"), ""))
                                                  if x],
                "overview": s.get("overview") or "", "status": e["w"],
                "progress": {"have": have, "total": total, "text": f"{have:,} of {total:,} episodes in your library"} if total else None,
@@ -1366,9 +1366,9 @@ def lookup(reelix, q, only=""):
             rows = future.result(timeout=25)
         except services.ServiceError as e:
             if e.status == 503:
-                errors.append({"kind": kind, "message": f"Reelix cannot look up {LABELS[kind].lower()} until it has a TMDB key."})
+                errors.append({"kind": kind, "message": f"Reelix cannot find {LABELS[kind].lower()} until it has a TMDB key."})
             elif e.status != 404:
-                errors.append({"kind": kind, "message": f"Reelix could not look up {LABELS[kind].lower()}: {e}"})
+                errors.append({"kind": kind, "message": f"Reelix could not find {LABELS[kind].lower()}: {e}"})
             continue
         except Exception:  # noqa: BLE001 - one kind failing must not hide the others
             errors.append({"kind": kind, "message": f"Reelix did not answer for {LABELS[kind].lower()}."})
@@ -1604,7 +1604,7 @@ def handle(h, method, path):
         return h.send(200, found[0], found[1], {"Cache-Control": "private, max-age=604800"})
     reelix = get_reelix()
     if not reelix:
-        return h.error(409, "Add Reelix in Settings, Manage apps, with its key, to see your library", reelix=False)
+        return h.error(409, "Add Reelix in Settings, Manage apps, with its key, to show your library here", reelix=False)
     tab = q.get("tab", "")
     if path == "/api/library/overview" and method == "GET":
         used(data_dir, "", get_reelix)

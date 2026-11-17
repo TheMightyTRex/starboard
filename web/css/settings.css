@@ -165,7 +165,7 @@ body:not(.show-advanced) :is([data-advanced]:has(:target), [data-advanced]:targe
 .style-pic__rail span { block-size: 6px; background: var(--p-muted); opacity: 0.55; border-radius: 2px; }
 .style-pic__card { margin: 8px; padding: 6px; background: var(--p-card); border: 1px solid var(--p-border); border-radius: var(--p-radius);
   box-shadow: var(--p-shadow); display: grid; gap: 2px; align-content: start; }
-.style-pic__title { font-weight: 700; }
+.style-pic__title { font-weight: var(--weight-heading); }
 .style-pic__muted { color: var(--p-muted); }
 .style-pic__link { color: var(--p-accent); text-decoration: underline; }
 .style-pic__btn { justify-self: start; margin-block-start: 2px; padding: 1px 6px; background: var(--p-accent); color: var(--p-accent-text); border-radius: var(--p-radius); }

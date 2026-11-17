@@ -219,24 +219,24 @@ def _address(value, what):
         return ""
     parts = urllib.parse.urlsplit(value)
     if parts.scheme not in ("http", "https") or not parts.netloc or len(value) > 2000 or any(c.isspace() for c in value):
-        raise ValueError(f"Type the {what} as a full address, starting http:// or https://")
+        raise ValueError(f"Enter the {what} as a full address, starting http:// or https://")
     return value
 
 
 def check_choice(choice):
     """The person's IPTV source, checked: {kind, url, username, password, guide, max_streams}."""
     if not isinstance(choice, dict):
-        raise ValueError("Type your IPTV source")
+        raise ValueError("Enter your IPTV source")
     kind = choice.get("kind") or "m3u"
     if kind not in KINDS:
         raise ValueError("Choose Playlist address or Xtream Codes")
     url = _address(choice.get("url"), "playlist address" if kind == "m3u" else "server address")
     if not url:
-        raise ValueError("Type your playlist address" if kind == "m3u" else "Type your IPTV server's address")
+        raise ValueError("Enter your playlist address" if kind == "m3u" else "Enter your IPTV server's address")
     username = str(choice.get("username") or "").strip()[:200]
     password = str(choice.get("password") or "")[:200]
     if kind == "xc" and not username:
-        raise ValueError("Type the user name your IPTV provider gave you")
+        raise ValueError("Enter the user name your IPTV provider gave you")
     try:
         most = int(choice.get("max_streams") or 0)
     except (TypeError, ValueError):

@@ -11,7 +11,7 @@ requests. Your media files stay where they are, and your old apps are not change
 
 - Reelix is installed and set up. Read [Install apps with Starboard](install-apps.md).
 - Your old apps are running, so Reelix can read them.
-- Reelix sees your media folder at the same path as your old apps do, such as `/data/media/movies`. If the paths
+- Reelix reaches your media folder at the same path as your old apps do, such as `/data/media/movies`. If the paths
   differ, add a **Path rewrite** when you connect each app.
 - A TMDB API key is best but not needed. Add it first in Reelix, **Settings**, **Metadata** (free from
   themoviedb.org). Without it, Reelix uses open data: almost everything comes across, but films have no posters, and
@@ -32,7 +32,7 @@ Starboard can do these steps for you, with the keys filled in: read
 5. Leave **Search for missing items after adding them** off for the first move. Reelix then finds your files
    without downloading anything.
 
-Reelix then links each file in your folders to its film or episode. On a pool of hard drives this takes about 20
+Reelix then links each file in your folders to its film or episode. On a pool of hard disks this takes about 20
 seconds for each series, so over an hour for 200 series. Your library works in Reelix while it runs.
 
 ## What moves

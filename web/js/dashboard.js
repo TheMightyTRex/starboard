@@ -74,14 +74,14 @@ const CARDS = {
   },
   async playing() {
     const r = await ask("/api/jellyfin");
-    if (!r.configured) return empty("Add Jellyfin with its key to see what is playing.", "/settings.html", "Manage apps");
+    if (!r.configured) return empty("Add Jellyfin with its key to show what is playing here.", "/settings.html", "Manage apps");
     return r.playing.length ? el("ul", { class: "rows" }, r.playing.slice(0, 5).map((p) => line(p.title || "Something", [p.user, p.device].filter(Boolean).join(" · "))))
       : empty("Nothing is playing.");
   },
   async downloads() {
     const r = await ask("/api/queue");
     const items = r.items || [];
-    if (!items.length) return empty("Nothing is downloading.", "/wanted-films.html", "See what is wanted");
+    if (!items.length) return empty("Nothing is downloading.", "/wanted-films.html", "Open Wanted");
     return band(["Downloading", "info"], el("ul", { class: "rows" }, items.slice(0, 5).map((q) => line(q.title, [`${Math.round(q.progress || 0)}%`, q.time_left].filter(Boolean).join(" · "), "/downloads.html"))));
   },
   async coming() {
@@ -136,14 +136,14 @@ const CARDS = {
     const names = Object.fromEntries((cfg.services || []).map((x) => [x.id, x.name]));
     const items = (r.items || []).map((i) => ({ ...i, name: names[i.id] || i.id }));
     const down = items.filter((i) => i.state === "down");
-    return band(down.length ? ["Not responding", "danger"] : ["All running", "success"], el("div", { class: "stack-2" },
+    return band(down.length ? STATUS.notResponding : STATUS.running, el("div", { class: "stack-2" },
       // The chip holds no number (DASH-309, R3): how many is in the line under it.
       el("p", { class: "small muted", text: down.length ? `${down.length} of ${items.length} apps not responding` : `${items.length} apps` }),
       down.length ? el("ul", { class: "rows" }, down.slice(0, 4).map((d) => line(d.name || d.id, d.message || "", "/index.html"))) : null));
   },
   async requests() {
     const r = await ask("/api/requests?pending=1");
-    if (!r.configured) return empty("Add Reelix or Seerr to see requests.");
+    if (!r.configured) return empty("Add Reelix or Seerr to show requests here.");
     return r.items.length ? band(["Pending", "neutral"], el("ul", { class: "rows" }, r.items.slice(0, 5).map((q) => line(q.title, q.by ? `asked for by ${q.by}` : "", "/downloads-requests.html"))))
       : empty("Nothing waiting for approval.");
   },
@@ -185,18 +185,18 @@ async function pluginCard(id, given) {
   if (r.type === "stat") return el("p", { class: "dash-stat" }, el("strong", { text: (FORMATS[r.format] || FORMATS.number)(d.value) }),
     d.label ? ` ${d.label}` : null, d.note ? el("span", { class: "small muted", text: ` ${d.note}` }) : null);
   // A status card's state is the band's chip (API 1.14), unless the answer gave its own status as well.
-  if (r.type === "status") return el("div", {}, d.status ? el("p", { class: "small", text: { ok: "OK", warning: "Warning", problem: "Problem" }[d.state] }) : null,
+  if (r.type === "status") return el("div", {}, d.status ? el("p", { class: "small", text: STATE_BAND[d.state]?.[0] }) : null,
     d.text ? el("p", { text: d.text }) : null);
   if (r.type === "guide") return guideCard(d);
   return d.items.length ? el("ul", { class: "rows" }, d.items.map((it) => el("li", { class: "row row--no-lead" }, el("div", {},
-    el("div", { class: "row__title" }, it.link ? el("a", { href: it.link, target: "_blank", rel: "noopener noreferrer", text: it.title }) : it.title),
+    el("div", { class: "row__title" }, it.link ? el("a", { href: it.link, target: "_blank", rel: "noopener noreferrer" }, it.title, el("span", { class: "visually-hidden", text: " (opens in a new tab)" })) : it.title),
     it.detail ? el("div", { class: "row__meta", text: it.detail }) : null)))) : empty("Nothing to show.");
 }
 
 // The card band (plug-in API 1.14, DASH-428, design 2 "band with status"): every plug-in card has a grey band with
 // its logo, the plug-in's name as the heading, and at the right a status chip and when it last updated. The chip and
 // the time each start with hidden words ("Status: ", "Updated "), so each makes sense to a screen reader on its own.
-const STATE_BAND = { ok: ["OK", "success"], warning: ["Warning", "warning"], problem: ["Problem", "danger"] };
+const STATE_BAND = { ok: STATUS.healthy, warning: STATUS.needsAttention, problem: STATUS.notWorking };
 // A title for each size (plug-in API 1.15, DASH-443, owner 15 November 2026): a card that gives one for its size has
 // that title alone as its heading, on one line (the manifest check keeps it short enough); the plug-in's name follows
 // for screen readers when the title does not say it. A size it left out shows the plug-in's name and the card's title.

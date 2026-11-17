@@ -162,18 +162,18 @@ HELP = {
              "computer, another disk or a network share into your media folder, named so Reelix and Jellyfin match them. "
              "Nothing where your media is now is renamed, moved or deleted. When a title is in two places, the one higher "
              "in the list is brought in. Read Bring in media you already have in the help centre.",
-    "pool": "A pool joins several drives into one folder, /mnt/pool, so your media has one place however many "
-            "drives you have. Each drive stays a normal drive that can be read on its own. Keeping a drive's files "
-            "puts them in the pool as they are; erasing prepares an empty drive. Nothing changes until you say yes.",
-    "backup": "A backup drive is not part of the pool: it protects it. Parity (SnapRAID) needs one drive at least "
-              "as big as the biggest pool drive and can rebuild any one failed drive; it is checked every night. A "
+    "pool": "A pool joins several disks into one folder, /mnt/pool, so your media has one place however many "
+            "disks you have. Each disk stays a normal disk that can be read on its own. Keeping a disk's files "
+            "puts them in the pool as they are; erasing prepares an empty disk. Nothing changes until you say yes.",
+    "backup": "A backup disk is not part of the pool: it protects it. Parity (SnapRAID) needs one disk at least "
+              "as big as the biggest pool disk and can rebuild any one failed disk; it is checked every night. A "
               "copy (rsync) is a full, readable copy of your media folder and needs as much space as it. Neither is "
               "a full backup on its own: keep a third copy of what matters somewhere else.",
-    "balance": "Balancing moves whole series, film and book folders from fuller drives to emptier ones, so the "
-               "drives fill evenly and each series stays on one drive. It runs at low priority and can be stopped.",
+    "balance": "Balancing moves whole series, film and book folders from fuller disks to emptier ones, so the "
+               "disks fill evenly and each series stays on one disk. It runs at low priority and can be stopped.",
     "password": "Your password signs you in to Starboard from any device. Use 10 characters or more; a few unrelated "
-                "words are easy to remember and hard to guess. If you forget it, run ./reset-password.sh.",
-    "groups": "Each kind of media installs the apps that look after it. Watching installs Jellyfin, to play everything. "
+                "words make a strong password that you can remember. If you forget it, run ./reset-password.sh.",
+    "groups": "Each kind of media installs the apps that manage it. Watching installs Jellyfin, to play everything. "
               "Downloads installs the download apps and the sites to search. You can add more later in Starboard, "
               "Settings, Install apps.",
     "apps": "These are the apps for what you chose. Apps already running on this computer are left out.",
@@ -187,11 +187,11 @@ HELP = {
                 "Jellystat. You can add or remove apps later in Starboard, Settings, Install apps.",
     "folders": "The media folder holds your films, series, books and downloads, all in one place so files move in an "
                "instant. The settings folder holds each app's own settings. Both are made for you if they are missing.",
-    "vpn": "A VPN sends the torrent app's traffic through your VPN provider, so sites see its address, not yours. "
+    "vpn": "A VPN sends the torrent app's traffic through your VPN provider, so sites get its address, not yours. "
            "Gluetun connects it. WireGuard is faster; OpenVPN works with every provider. Your provider's website shows "
-           "the details to type here. You can continue without a VPN, but other people sharing the same torrents then "
-           "see your home internet address; add one later in Starboard, Settings, Downloads, VPN.",
-    "reelix-edition": "Reelix looks after films, series, books, audiobooks, music and radio. The other version adds "
+           "the details to enter here. You can continue without a VPN, but other people sharing the same torrents then "
+           "get your home internet address; add one later in Starboard, Settings, Downloads, VPN.",
+    "reelix-edition": "Reelix manages films, series, books, audiobooks, music and radio. The other version adds "
                       "downloads straight from YouTube and Spotify, and takes about 600 MB more disk. Both keep the same "
                       "settings, so you can switch either way later in Starboard, Settings, Reelix.",
     "usenet": USENET_HELP,
@@ -571,7 +571,7 @@ POOL_HELPER = "/usr/local/bin/starboard-pool"
 
 
 def num(name):
-    """A step's number, from the list: Your drives is only there when the pool helper is installed."""
+    """A step's number, from the list: Your disks is only there when the pool helper is installed."""
     return STEPS.index(name) + 1
 
 
@@ -816,8 +816,8 @@ class Terminal:
         self.step, self.problem, self.enter = (step, text), None, None
         if not self.fancy:
             self.say(f"\n== Starboard | {text}" + (f" (step {step} of {self.steps_total()})" if step else ""))
-            self.say(("Type b to go back, ? for help, f to send feedback or q to stop." if self.can_back else
-                      "Type ? for help, f to send feedback or q to stop.") if step else "")
+            self.say(("Press b to go back, ? for help, f to send feedback or q to stop." if self.can_back else
+                      "Press ? for help, f to send feedback or q to stop.") if step else "")
             if self.came_back:
                 self._plain("You came back to this step. Your last answers are in [brackets]: press Enter to keep each one.")
             return
@@ -907,7 +907,7 @@ class Terminal:
         answer = ""
         for n, part in enumerate(pages):
             more = n < len(pages) - 1
-            foot = "Enter: more below" if more else close
+            foot = "Enter: show more" if more else close
             title_cut = clip(title, bw - 6)
             box = [edge("╭─ ") + self.accent(title_cut) + edge(" " + "─" * max(bw - 5 - len(title_cut), 0) + "╮")]
             box += [edge("│") + " " + line.ljust(inner) + " " + edge("│") for line in [""] + part + [""]]
@@ -919,7 +919,7 @@ class Terminal:
             box.append(edge("╰" + "─" * (bw - 2) + "╯"))
             top = 3
             self._write("\033[r\033[2J")
-            self._menu(list(keys) if not more else [("Enter", "More")], "")
+            self._menu(list(keys) if not more else [("Enter", "Show more")], "")
             for row, line in enumerate(behind[:self.rows - 2], 1):
                 self._write(f"\033[{row};{getattr(self, 'left', 0) + 1}H" + self._c("2;90", line[:self.width]))
             for i, line in enumerate(box):
@@ -1132,7 +1132,7 @@ class Terminal:
             fits = max(min(len(options), self._region() - len(self._lines()) - 4), 4)
         self._options(options[:fits], set(defaults))
         if fits < len(options):
-            self.say("  " + self.dim(f"{len(options) - fits} more: type m to see them"))
+            self.say("  " + self.dim(f"{len(options) - fits} more: press m to show them"))
         shown = ",".join(str(i + 1) for i in defaults)
         while True:
             answer = self._read(f"Your choice [{shown}]: ", help_key, self._title(question), extra=("m",)) or shown
@@ -1243,7 +1243,7 @@ class Terminal:
             fits = max(min(len(options), self._region() - len(self._lines()) - 4), 4)
         self._options(options[:fits], {default - 1})
         if fits < len(options):
-            self.say("  " + self.dim(f"{len(options) - fits} more: type m to see them"))
+            self.say("  " + self.dim(f"{len(options) - fits} more: press m to show them"))
         extra = tuple(words) + (("m",) if fits < len(options) else ())
         prompt = f"Your choice [{default}]: " if default else "Your choice: "
         while True:
@@ -1256,13 +1256,13 @@ class Terminal:
                 extra = tuple(words)
                 continue
             if not answer:
-                self.refuse(f"Choose one: type a number from 1 to {len(options)}.")
+                self.refuse(f"Choose one: enter a number from 1 to {len(options)}.")
                 continue
             if answer in words:
                 return words[answer]
             if answer.isdigit() and 1 <= int(answer) <= len(options):
                 return int(answer) - 1
-            self.refuse(f"Type a number from 1 to {len(options)}, ? for help or q to stop.")
+            self.refuse(f"Enter a number from 1 to {len(options)}, ? for help or q to stop.")
 
     LIST_KEYS = [("Esc", "Back"), ("?", "Help"), ("Tab", "Feedback"), ("Ctrl+C", "Stop")]
 
@@ -1299,9 +1299,9 @@ class Terminal:
                 out.append(line)
             more = []
             if top:
-                more.append(f"↑ {top} more above")
+                more.append(f"↑ {top} earlier")
             if top + n < len(options):
-                more.append(f"↓ {len(options) - top - n} more below")
+                more.append(f"↓ {len(options) - top - n} more")
             return out + ["  " + self.dim(" · ".join(more))]
 
         self.say("")
@@ -1771,14 +1771,14 @@ class Terminal:
             self.finish()
 
     def waiting(self, text, check, wait, job=None, ok=None):
-        """One line for a job that takes time: a turning mark, what is happening, which job of how many, "Please wait,
-        this can take some time..." and the time taken, drawn in place until check() returns something, which it
+        """One line for a job that takes time: a turning mark, what is happening, which job of how many, "…" (the design
+        system's WIZARD.md: the words name the job, with no "please wait") and the time taken, drawn in place until check() returns something, which it
         returns. ok(result) says whether the job finished: if not, the line stays, marked "did not finish", and the
         problem and its choices go below it (job_failed). Plain lines get a line at the start and one at the end, so
         a screen reader is never silent. Keys pressed meanwhile are not shown and are thrown away, and the menu shows
         only Ctrl+C."""
         of = f"Job {job[0]} of {job[1]}: " if job else ""
-        words = f"{of}{text}. Please wait, this can take some time..."
+        words = f"{of}{text}…"
         if not self.fancy:
             self._plain(words)
         menu = self.fancy and self.drawn and getattr(self, "keys", None)
@@ -1855,7 +1855,7 @@ class Terminal:
                 secs = int(time.time() - began)
                 if secs >= STILL_EVERY * (said + 1):
                     said = secs // STILL_EVERY
-                    self._plain(f"Still working: {text.split('. Please wait')[0]} ({secs // 60} min).")
+                    self._plain(f"Still working: {text.rstrip('…')} ({secs // 60} min).")
             time.sleep(wait)
 
 
@@ -2154,10 +2154,10 @@ def restore_full(api, term, state):
         try:
             found = api.call("GET", "/api/backup/full/found?folder=" + urllib.parse.quote(folder)).get("found", [])
         except Problem as e:
-            term.failed(f"Starboard could not look there: {e}", str(e))
+            term.failed(f"Starboard could not open that folder: {e}", str(e))
             continue
         if not found:
-            term.failed("No full backups in that folder. Type the folder they are in.", "none found")
+            term.failed("No full backups in that folder. Enter the folder they are in.", "none found")
             continue
         options = [f"{b['created'].replace('T', ' ')[:16]}, {b['size'] // 1_000_000} MB, {len(b['apps'])} apps, "
                    f"{'with' if b['pictures'] else 'without'} your pictures" + (" (newest)" if n == 0 else "") for n, b in enumerate(found[:5])]
@@ -2273,8 +2273,8 @@ def pick_folder(api, term, purpose="bring-in", place=None):
             i = term.choose("Choose a place", [(p["name"], p.get("detail") or "") for p in usable] + [("Back", "")], 1, help_key="bring")
             if i == len(usable):
                 if others:
-                    term.note("OneDrive and Google Drive need signing in in a browser, in a later version: copy the files "
-                              "to this computer or a network share first.")
+                    term.note("The terminal set-up does not sign in to OneDrive or Google Drive. Copy the files to this "
+                              "computer or a network share first.")
                 return None
             p = usable[i]
             if p["kind"] == "add-share":
@@ -2384,7 +2384,7 @@ def bring_what(api, term, state):
     head(term, state, "bring-what")
     d = api.call("GET", "/api/bring-in")
     for n, s in enumerate(d["sources"]):
-        term.note(f"Looking inside {n + 1} of {len(d['sources'])}: {s['name']}…")
+        term.note(f"Reading {n + 1} of {len(d['sources'])}: {s['name']}…")
         try:
             s["look"] = api.call("POST", "/api/bring-in/look", {"source": s["id"]}, timeout=600)
         except Problem as e:
@@ -2430,10 +2430,10 @@ def bring_names(api, term, state):
                   "each one before anything is copied, and holds back any it does not agree with.")
     while True:
         c, sp = page["counts"], page["space"]
-        term.card("Check names", [("Matched", str(c["matched"])), ("Needs a look", str(c["look"])),
+        term.card("Check names", [("Matched", str(c["matched"])), ("Needs attention", str(c["look"])),
                                   ("Left where it is", str(c["left"])),
                                   ("Space", f"{_bytes(sp['needed'])} to copy, {_bytes(sp['free']) if sp['free'] is not None else 'free space not known yet'} free")])
-        options = [("Continue", "to the copy"), ("See what is matched", ""), ("Answer the ones that need a look", ""), ("See what is left where it is", "")]
+        options = [("Continue", "to the copy"), ("Show what is matched", ""), ("Answer the ones that need attention", ""), ("Show what is left where it is", "")]
         i = term.choose(question("bring-names"), options, 1, help_key="bring")
         if i == 0:
             if not sp["enough"]:
@@ -2464,8 +2464,8 @@ def bring_copy(api, term, state):
     term.card("Check before copying", [("Sources, in order", "; ".join(s["name"] for s in d["sources"])),
                                        ("To copy", f"{c['matched']} titles, {_bytes(sp['needed'] + sp['linked'])}"),
                                        ("Space", f"{_bytes(sp['needed'])} needed"),
-                                       ("Linking films and series", "On, on the same disk" if d["hardlinks"] else "Off: everything is copied"),
-                                       ("Needs a look", f"{c['look']}: left where they are until you choose" if c["look"] else "None"),
+                                       ("Linking films and series", "Active, on the same disk" if d["hardlinks"] else "Inactive: everything is copied"),
+                                       ("Needs attention", f"{c['look']}: left where they are until you choose" if c["look"] else "None"),
                                        ("Left where it is", str(c["left"]))])
     later = state.get("start", "new") == "new" and not state.get("written")
     term.note(("The copy starts once the apps are running. " if later else "") + "It runs in the background at low priority, so the "
@@ -2914,7 +2914,7 @@ def step_films(api, term, state):
                 term.ok(w["tmdb"]["ok"])
             except ValueError as e:
                 term.refuse(str(e))
-                if term.yes_no("Type the key again?", True, help_key="films"):
+                if term.yes_no("Enter the key again?", True, help_key="films"):
                     continue
         break
     state["tmdb"] = key
@@ -3329,14 +3329,14 @@ def step_drives(api, term, state):
     free = [d for d in listing if d["use"] == "free"]
     if pool:
         state["pool_dir"] = "/mnt/pool"
-        term.ok(f"The pool is at /mnt/pool, with {len(pool)} drives.")
+        term.ok(f"The pool is at /mnt/pool, with {len(pool)} disks.")
     if not free:
-        term.note("There is no other drive to add. Add drives later on System, Storage, Pool.")
+        term.note("There is no other disk to add. Add disks later on System, Storage, Pool.")
         return True
     name = lambda d: f"{d['model'] or d['name']} {_size(d['size'])}, serial ends {d['ends'] or 'unknown'}"  # noqa: E731
-    term.note(f"Starboard found {len(free)} drives besides the system drive and any drive in use. A pool joins "
-              "drives into one folder for your media; each drive stays readable on its own. Type ? for help.")
-    if term.choose("Make a pool from your drives now?" if not pool else "Add drives to the pool now?",
+    term.note(f"Starboard found {len(free)} disks besides the system disk and any disk in use. A pool joins "
+              "disks into one folder for your media; each disk stays readable on its own. Type ? for help.")
+    if term.choose("Make a pool from your disks now?" if not pool else "Add disks to the pool now?",
                    ["Yes (recommended)", "No: later, on System, Storage, Pool"], help_key="pool") == 1:
         return True
     biggest_empty = max((d for d in free if not d.get("files")), key=lambda d: d["size"], default=None)
@@ -3351,11 +3351,11 @@ def step_drives(api, term, state):
     biggest = max([d["size"] for d in chosen + pool] or [0])
     backup = None
     if rest:
-        options = [(f"Parity on {name(d)}", "one drive protects the whole pool") for d in rest if d["size"] >= biggest]
+        options = [(f"Parity on {name(d)}", "one disk protects the whole pool") for d in rest if d["size"] >= biggest]
         parity_ok = [d for d in rest if d["size"] >= biggest]
         options += [(f"Copy on {name(d)}", "a full copy of your media folder") for d in rest]
-        options.append(("No backup drive", "add one later on System, Storage, Pool"))
-        pick = term.choose("Use one of the other drives as a backup drive?", options, 1, help_key="backup")
+        options.append(("No backup disk", "add one later on System, Storage, Pool"))
+        pick = term.choose("Use one of the other disks as a backup disk?", options, 1, help_key="backup")
         if pick < len(parity_ok):
             backup = ("parity", parity_ok[pick])
         elif pick < len(options) - 1:
@@ -3368,17 +3368,17 @@ def step_drives(api, term, state):
         rows.append(("Parity" if backup[0] == "parity" else "Copy", name(backup[1]) + ", checked every night at 02:00"))
     rows.append(("Saved first", "/etc/fstab, in /var/lib/starboard-pool/saved"))
     term.card("Check before anything changes", rows)
-    term.note("Nothing has changed yet. The pool helper checks each drive again just before it changes it.")
+    term.note("Nothing has changed yet. The pool helper checks each disk again immediately before it changes it.")
     confirm = {}
     if erase:
-        term.warn(f"This erases {len(erase)} drive{'s' if len(erase) > 1 else ''}. To confirm, type the end of each serial number.")
+        term.warn(f"This erases {len(erase)} disk{'s' if len(erase) > 1 else ''}. To confirm, enter the end of each serial number.")
         for d in erase:
             while True:
                 typed = term.text(f"Last 4 characters of the serial number of {d['model'] or d['name']} ({d['ends']})")
                 if re.sub(r"[^A-Za-z0-9]", "", typed).upper() == d["ends"]:
                     confirm[d["by_id"]] = d["ends"]
                     break
-                term.note(f"That is not {d['ends']}. Type it as it is on the drive's label, or q to stop.")
+                term.note(f"That is not {d['ends']}. Enter it as it is on the disk's label, or q to stop.")
     if not term.yes_no("Make these changes now? sudo asks for this computer's password", False, help_key="pool"):
         term.note("Nothing was changed. Make the pool later on System, Storage, Pool.")
         return True
@@ -3392,7 +3392,7 @@ def step_drives(api, term, state):
         if role == "copy":
             args += ["--folders", "media"]
         what = (f"Adding {d['model'] or d['name']} to the pool" if role == "pool" else
-                f"Setting up {d['model'] or d['name']} as the backup drive")
+                f"Setting up {d['model'] or d['name']} as the backup disk")
         try:
             plan = run(args)
             apply = ["apply", plan["id"]] + (["--confirm", f"{d['by_id']}={confirm[d['by_id']]}"] if d["by_id"] in confirm else [])
@@ -3400,13 +3400,13 @@ def step_drives(api, term, state):
         except Problem as e:
             if term.job_failed(f"The pool helper stopped: {e}", [str(e)], also=["Carry on without the rest"]) == "again":
                 continue
-            term.note("Drives already done stay done. See System, Storage, Pool.")
+            term.note("Disks already done stay done. Go to System, Storage, Pool.")
             return True
         for s in done.get("steps", []):
             (term.ok if s["state"] == "done" else term.warn)(s["say"])
         k += 1
     state["pool_dir"] = "/mnt/pool"
-    if len(chosen) + len(pool) >= 2 and term.yes_no("Balance the files across the drives now? It can take hours, "
+    if len(chosen) + len(pool) >= 2 and term.yes_no("Balance the files across the disks now? It can take hours, "
                                                     "at low priority", False, help_key="balance"):
         if run is pool_command:
             subprocess.run(["sudo", "-v"])
@@ -3415,7 +3415,7 @@ def step_drives(api, term, state):
                 plan = run(["plan", "balance"])
                 term.note(plan["steps"][0]["say"])
                 if plan.get("moves"):
-                    in_background(term, "Balancing the files across the drives", lambda: run(["apply", plan["id"]]), 0.1, (1, 1))
+                    in_background(term, "Balancing the files across the disks", lambda: run(["apply", plan["id"]]), 0.1, (1, 1))
                     term.ok("Balanced.")
                 break
             except Problem as e:
@@ -3650,7 +3650,7 @@ def step_movehow(api, term, state):
 def _wait_job(api, term, path, words, limit=7200):
     """Shows one line while a Starboard job runs, then returns its last answer."""
     began = time.time()
-    term.note(f"{words}. Please wait, this can take some time...")
+    term.note(f"{words}…")
     while time.time() - began < limit:
         time.sleep(3)
         j = api.call("GET", path)
@@ -3675,7 +3675,7 @@ def step_move(api, term, state, wait=3.0, limit=1800):
     began = time.time()
     m = api.call("GET", "/api/reelix/move")
     if m.get("needs_setup") or not m.get("sources"):
-        term.note(f"{w['waiting']}. Please wait, this can take a few minutes...")
+        term.note(f"{w['waiting']}…")
     while (m.get("needs_setup") or not m.get("sources")) and time.time() - began < limit:
         time.sleep(wait)
         m = api.call("GET", "/api/reelix/move")
@@ -3821,7 +3821,7 @@ STEP_FUNCTIONS = [step_password, step_place, step_keyboard, step_start, step_fin
 
 
 def add_drives_step(available=None):
-    """Your drives goes after Storage when the pool helper is installed and the pool is chosen (DASH-87)."""
+    """Your disks goes after Storage when the pool helper is installed and the pool is chosen (DASH-87)."""
     available = os.path.exists(POOL_HELPER) if available is None else available
     if available and step_drives not in STEP_FUNCTIONS:
         STEP_FUNCTIONS.insert(STEP_FUNCTIONS.index(step_storage) + 1, step_drives)  # straight after Storage, as job_steps counts it
@@ -3934,7 +3934,7 @@ def main(argv=None):
     if args.feedback and sys.stdin.isatty():
         return feedback_only(args.feedback, args.problem, bool(args.plain or os.environ.get("STARBOARD_PLAIN")))
     if not sys.stdin.isatty():
-        print("Stopped: this needs a terminal to type in. Finish set-up in a browser instead.", file=sys.stderr)
+        print("Stopped: this needs a terminal to enter answers in. Finish set-up in a browser instead.", file=sys.stderr)
         return 2
     plain = bool(args.plain or os.environ.get("STARBOARD_PLAIN"))
     term = Terminal(fancy=False if plain else None)

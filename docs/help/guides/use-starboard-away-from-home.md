@@ -18,7 +18,7 @@ sign in. There are two safe ways.
 
 ## The steps at a glance
 
-1. Choose a way: a VPN (simplest and safest) or a reverse proxy with HTTPS (for people with their own domain).
+1. Choose a way: a VPN (the fewest steps, and the safest) or a reverse proxy with HTTPS (for people with their own domain).
 2. Set it up.
 3. Open Starboard from your phone away from home.
 4. Add the outside address for your apps.

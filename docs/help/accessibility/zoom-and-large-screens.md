@@ -33,7 +33,7 @@ As you zoom in, the page needs less width:
 **Text size** in **Display** makes only the text bigger, up to 175%, and keeps the layout. Every page is also
 checked at 175% for anything that needs sideways scrolling. Read [Change text size and spacing](text-size-and-spacing.md).
 
-![The same Apps page with Text size at 175%: every word is larger, the side menu is wider so its names stay whole, and the header's menu shows its icons only, so nothing is cut off](../images/a11y-text-175.png)
+![The same Apps page with Text size at 175%: larger words and a wider side menu](../images/a11y-text-175.png)
 
 ## Large screens and televisions
 
@@ -47,7 +47,7 @@ so your phone and computer keep their own sizes.
 
 - Pinch to zoom on a phone or tablet is never blocked.
 - A magnifier, such as Windows Magnifier or Zoom on a Mac, works as on any web page. Problems are shown beside the
-  field they are about, and saved notes beside the control you used, so they are near where you are looking.
+  field they are about, and saved notes beside the control you used, so they are near the control you used.
 - Zoom in your browser is kept by the browser for each site, and Starboard's text size is kept in the browser too.
 - Zoom up to 400% is checked through the 320 pixel width; it has not yet been tried on its own on every page. Read
   [Limits and known gaps](limits-and-known-gaps.md).

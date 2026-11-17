@@ -20,7 +20,7 @@ made-up data.
 
 | Check | What was checked | Result |
 |---|---|---|
-| The scan (axe-core 4.14.0, WCAG 2.2 AA) | 101 pages, plus Search with its filters open, each in Light, Dark and High contrast; structure, keyboard, target size, reflow, forced colours and reduced motion | 0 problems, after checking System, Backup again on its own (see below) |
+| The scan (axe-core 4.14.0, WCAG 2.2 AA) | 101 pages, plus Search with its filters open, each in Light, Dark and High contrast; structure, keyboard, target size, reflow, forced colours and reduced motion | 0 problems, after checking System, Backup again on its own (read **Results by release**) |
 | Reading order | 93 pages at computer and phone widths, and the Apps page in each of its four card designs | 0 problems |
 | Keyboard walk | The main tasks with keys only: 90 checks of where focus is and what is said | 90 of 90 checks passed |
 | Layout | The side menu and header at every text size and spacing, in each theme, in short windows and at phone width: 1,536 states | 0 problems |
@@ -45,7 +45,7 @@ made-up data.
 | 12 November 2026, the first full check | 48 problems found and fixed; 4 left, checked by hand and shown to come from the test itself | 8 problems found and fixed | 23 checks passed |
 
 On 0.18.0 the scan found one 320 pixel sideways scroll on System, Backup while the computer was busy, the same
-timing effect seen before; the page passed when checked again on its own. The layout check is new in 0.18.0: it
+timing effect found before; the page passed when checked again on its own. The layout check is new in 0.18.0: it
 covers the four problems fixed in this release (the side menu and header at large text, short windows and Reduce
 motion Off) and found none.
 

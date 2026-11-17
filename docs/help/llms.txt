@@ -13,7 +13,7 @@
 - [Write a plug-in that updates safely](developers/update-a-plugin-safely.md): settings migrations, a step before and after an update, the health wait with an automatic Roll back, and What is new before and after (plug-in API 1.14).
 - [Write a plug-in](basics/write-a-plugin.md): the overview, with styles and dashboard cards.
 - [App plug-ins](developers/plugin-manifest-reference.md#app-plug-ins): a whole app made by others, such as Seerr, with its own web page on the home network (network:port, publish, host_port, tmpfs, pids, adopt).
-- [Update a plug-in and roll it back](topics/update-a-plugin.md): what people see when they update a plug-in, the automatic Roll back, and What is new.
+- [Update a plug-in and roll it back](topics/update-a-plugin.md): what happens when people update a plug-in, the automatic Roll back, and What is new.
 - [Built from a zip file](developers/plugin-manifest-reference.md#built-from-a-zip-file): a private plug-in with no registry, its image built by Starboard from the Dockerfile in its zip, with the build's limits (plug-in API 1.15).
 - [Jellyfin libraries](developers/plugin-manifest-reference.md#jellyfin-libraries): libraries Starboard adds to Jellyfin for folders a plug-in fills, with jellyfin:libraries (plug-in API 1.15).
 - [The holding folder in the media folder](developers/plugin-manifest-reference.md#the-holding-folder-in-the-media-folder): library:holding, moving films and series aside and putting them back with Put back, never deleting (plug-in API 1.15).

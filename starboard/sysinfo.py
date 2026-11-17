@@ -378,7 +378,7 @@ def _sct(d):
 
 
 def _devices(folder):
-    """Drives and partitions from lsblk.json, which the SMART job saves: which are mounted, and their file systems."""
+    """Disks and partitions from lsblk.json, which the SMART job saves: which are mounted, and their file systems."""
     import json
     try:
         with open(os.path.join(folder, "lsblk.json"), encoding="utf-8") as f:
@@ -388,7 +388,7 @@ def _devices(folder):
 
 
 def _parse_devices(listing):
-    """lsblk -J output as drives with their partitions."""
+    """lsblk -J output as disks with their partitions."""
     tree = (listing or {}).get("blockdevices") or []
     out = []
     for disk in tree:
@@ -405,7 +405,7 @@ def _parse_devices(listing):
 
 
 def handover_devices(data_dir):
-    """The drive list the Run first script handed over (data/run-first.json), when there is no disk health job."""
+    """The disk list the Run first script handed over (data/run-first.json), when there is no disk health job."""
     import json
     try:
         with open(os.path.join(data_dir, "run-first.json"), encoding="utf-8") as f:

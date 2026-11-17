@@ -10,7 +10,7 @@ It is in **Display**, applies at once, and is kept in the browser you use.
 
 - People who find some colours hard to tell apart, including people with colour vision differences.
 - People with low vision, or using a display with poor contrast.
-- Anyone who wants to see at a glance what is a link.
+- Anyone who wants to tell at a glance what is a link.
 
 ## Steps
 
@@ -27,7 +27,7 @@ choice back to its default. The same switch is in **Settings**, then **General**
 ## What it changes
 
 Links are shown in the accent colour. With **Underline links** active, every link also has a line under it,
-including links that look like buttons, such as **Manage apps**.
+including links styled as buttons, such as **Manage apps**.
 
 ![Settings, General, Appearance with Underline links deactivated: links are shown by their colour](../images/a11y-underline-before.png)
 

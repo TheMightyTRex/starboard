@@ -10,7 +10,7 @@ by hand. It takes about 20 minutes.
 ## Before you begin
 
 - Your apps are in Starboard: [Set up your dashboard after installing](set-up-your-dashboard.md).
-- A way to receive alerts on your phone. ntfy is the simplest: a free app, with nothing to set up on the
+- A way to receive alerts on your phone. ntfy needs the fewest steps: a free app, with nothing to set up on the
   server.
 
 ## The steps at a glance
@@ -29,14 +29,14 @@ flowchart LR
 
 ## Step 1: Activate alerts and send a test message
 
-Choose where alerts go and send a test. Then activate watching, under **Advanced settings**. Follow
+Choose where alerts go and send a test. Then activate watching, under **More settings**. Follow
 [Activate alerts](../topics/activate-alerts.md).
 
 **It worked when** the test message arrives on your phone.
 
 ## Step 2: Activate disk health checks
 
-Disk health reads each drive's own warnings, often weeks before a drive fails. It needs one installer
+Disk health reads each disk's own warnings, often weeks before a disk fails. It needs one installer
 question answered Yes. Follow [Check your disks' health](../topics/check-disk-health.md).
 
 ## Step 3: Get a weekly summary
@@ -47,8 +47,8 @@ A short message once a week says how everything has been, even when nothing went
 ## Step 4: Know where to go when an alert arrives
 
 - An app stopped answering: [An app shows as not responding](../topics/app-not-responding.md).
-- A disk has a problem: [Check your disks' health](../topics/check-disk-health.md). If it is a pool drive, read
-  [A pool drive has failed](../topics/a-pool-drive-has-failed.md).
+- A disk has a problem: [Check your disks' health](../topics/check-disk-health.md). If it is a pool disk, read
+  [A pool disk has failed](../topics/a-pool-drive-has-failed.md).
 - A folder is getting full: [Check free space and what is using it](../topics/check-storage.md).
 - Something else: [Read the log and report a problem](../topics/read-the-log.md).
 

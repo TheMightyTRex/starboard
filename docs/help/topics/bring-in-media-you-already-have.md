@@ -24,19 +24,19 @@ You can do it as you set up Starboard (an optional step, after you choose where 
    media, then select **Use this folder**. Each folder shows its size and what is in it.
 3. Add every place your media is in. Put them in order with **Move up** and **Move down**: when the same title is
    in two places, the one higher in the list is brought in. Select **Continue**.
-4. **What is in each:** Starboard looks inside each place and counts the films, series, music, books and
+4. **What is in each:** Starboard checks inside each place and counts the films, series, music, books and
    audiobooks it finds. If it is wrong about a folder, change it in **Change** beside that folder, or for the whole
    place in **Everything in it is**. Select **Continue**.
 5. **Check names:** each title has its new name and place, checked with Reelix. They are in three lists:
    - **Matched:** ready to copy.
-   - **Needs a look:** choose the right match, or **Leave it where it is**, then select **Save**.
+   - **Needs attention:** choose the right match, or **Leave it where it is**, then select **Save**.
    - **Left where it is:** with why, such as a sample, a second copy, or not media.
    Under them, the space needed and what is free. Select **Continue**.
 6. **Copy:** check the table, then select **Start copying**. (In the set-up, the copy starts once the apps are
    running.)
 7. The copy runs in the background. Its progress is on the dashboard and in **Activity**, **Downloads**. Select
    **Pause** to stop it for now and **Carry on** to go on. When it finishes, the report lists what was copied,
-   what needs a look and what was left where it is, each with what to do. Select **Got it**.
+   what needs attention and what was left where it is, each with what to do. Select **Got it**.
 
 ## How files are named and placed
 
@@ -66,7 +66,7 @@ library and gives every file Reelix's own name.
   books and audiobooks are always copied, so their originals never change. On a pool whose disks are different, a
   link cannot be made and the file is copied instead; the report says so.
 - **OneDrive and Google Drive:** choose one as a place and sign in. Starboard asks only to read your files, and never
-  sees your password. For OneDrive, choose **Complete on the phone** (when it is offered) or **Complete in this
+  receives your password. For OneDrive, choose **Complete on the phone** (when it is offered) or **Complete in this
   browser**. For Google Drive, only **Complete in this browser** works: Google lets apps read the files you already have
   only when you sign in in a browser. The files are copied down to a folder on your media disk first, so they need
   twice their space until you remove that folder. At the end it is moved to `.starboard-holding` in your media folder,
@@ -76,7 +76,7 @@ library and gives every file Reelix's own name.
 
 - [Install apps with Starboard](install-apps.md)
 - [Move from Radarr, Sonarr and the others to Reelix](move-your-apps-to-reelix.md)
-- [Check your storage](check-storage.md)
+- [Check free space and what is using it](check-storage.md)
 
 <!-- footer: download rights -->
 

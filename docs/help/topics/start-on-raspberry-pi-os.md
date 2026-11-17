@@ -9,7 +9,7 @@ Lite, you finish it in the terminal or from a phone or another computer. It take
 
 ## Before you begin
 
-- Raspberry Pi OS (64-bit), the Trixie release or later, on the Pi's card or drive. To write it, follow
+- Raspberry Pi OS (64-bit), the Trixie release or later, on the Pi's card or disk. To write it, follow
   [Prepare a Raspberry Pi](prepare-a-raspberry-pi.md#steps). Starboard's apps need the **64-bit** system.
 - A Raspberry Pi 4 with 4 GB of memory or more, with the official power supply. A Raspberry Pi 5 with 8 GB,
   starting from an SSD, is recommended. Read
@@ -29,7 +29,7 @@ Lite, you finish it in the terminal or from a phone or another computer. It take
    ```
 
 4. Press Enter at each question to take the recommended answer. When it asks for your password, enter it and press
-   Enter. Nothing shows as you type.
+   Enter. Nothing appears as you enter it.
 5. At **How do you want to finish setting up?**:
    - **With the desktop:** press Enter for **In a browser (recommended)**. The Pi's browser opens Starboard's set-up
      page with the setup code filled in.
@@ -44,7 +44,7 @@ does.
 
 - On a Pi with 1 GB of memory or less, choose the **Small server** preset when the set-up asks **How much it does**.
   Read [Make Starboard use less of your server](make-starboard-lighter.md).
-- Keep media on a USB drive, not the microSD card. Cards wear out quickly with constant writing.
+- Keep media on a USB disk, not the microSD card. Cards wear out quickly with constant writing.
 
 ## If it does not work
 
@@ -59,7 +59,7 @@ does.
   `sudo apt install raspberrypi-archive-keyring`, then select **Try again**. If that fails too, write a newer
   Raspberry Pi OS with Raspberry Pi Imager.
 - **The Pi restarts or slows down while Docker downloads, or a lightning bolt shows on the monitor:** the power
-  supply is too weak. Use the official Raspberry Pi power supply, and give a USB drive its own power.
+  supply is too weak. Use the official Raspberry Pi power supply, and give a USB disk its own power.
 - **Downloads are very slow, or files go missing:** the microSD card is too slow or wearing out. Start the Pi from an
   SSD instead.
 - **You cannot find the Pi on the network:** on the Pi, enter `hostname -I` for its address, or use the name you

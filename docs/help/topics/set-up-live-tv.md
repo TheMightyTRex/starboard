@@ -26,9 +26,9 @@ numbered the way Sky numbers them. Live TV is a plug-in built into Starboard, so
    "Live TV added and active".
 4. Live TV's own page opens, under **Settings**, then **Plug-ins**. Select its **Settings** tab and check **Address
    Jellyfin uses to reach Starboard**, such as `http://192.168.1.20:8095`.
-5. Check **Live TV folder as Jellyfin sees it**, such as `/config/iptv`, then select **Save**.
+5. Check **Live TV folder inside Jellyfin**, such as `/config/iptv`, then select **Save**.
 
-   ![Live TV's Settings, with Address Jellyfin uses to reach Starboard (step 4) and Live TV folder as Jellyfin sees it (step 5) outlined](../images/set-up-live-tv-1-settings.png)
+   ![Live TV's Settings, with Address Jellyfin uses to reach Starboard (step 4) and Live TV folder inside Jellyfin (step 5) outlined](../images/set-up-live-tv-1-settings.png)
 
 6. Select the **Actions** tab, then **Run Live TV now**. The first run tests every channel, so it takes a few
    minutes.
@@ -57,7 +57,7 @@ Live TV can also take your own channel lists and guides, by address or as a file
 4. Each list has its own **Deactivate**, so an inactive list is not fetched. **Change guide** gives it a guide, and
    **Test** tests it again. **Test all** tests every list.
 
-   ![Live TV's Your lists and guides with a made-up list, with Add a list or guide (step 2) and the list with its own Deactivate, Change guide and Test (step 4) outlined](../images/set-up-live-tv-3-your-lists.png)
+   ![Live TV's Your lists and guides with a made-up list, with steps 2 and 4 outlined](../images/set-up-live-tv-3-your-lists.png)
 
 ### Choose the channels
 
@@ -82,7 +82,7 @@ Do this only if the **Live TV** card says Jellyfin did not take the channels.
    `guide-pluto.xml`.
 4. Let Jellyfin refresh its guide data.
 
-Use the folder as Jellyfin sees it. If `/srv/jellyfin/config` on the server is `/config` for Jellyfin, the
+Use the folder's path inside Jellyfin's container. If `/srv/jellyfin/config` on the server is `/config` for Jellyfin, the
 first playlist is `/config/iptv/channels.m3u`.
 
 ## Things to note

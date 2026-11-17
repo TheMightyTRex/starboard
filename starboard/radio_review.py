@@ -150,7 +150,7 @@ def add(cfg, link, follow="all"):
         except ValueError:
             pass
     title = show.get("title") or "The show"
-    return {"done": f"{title} added" + (". Reelix is looking for its episodes" if searched else ""), "show_id": show.get("id"), "title": title}
+    return {"done": f"{title} added" + (". Reelix is searching for its episodes" if searched else ""), "show_id": show.get("id"), "title": title}
 
 
 def route(handler, method, path):

@@ -17,7 +17,7 @@ Jellyfin's set-up. **Go through them** takes you through the list one item at a 
 2. Select **Go through them**, at the right of the card's band. A side panel called **Still to set up** opens at
    the first item, such as **Step 1 of 6**.
 
-   ![Still to set up on the dashboard with example data, with Home in the side menu (step 1) and Go through them at the right of the card's band (step 2) outlined](../images/finish-setting-up-1-list.png)
+   ![Still to set up on the dashboard with example data, with Home (step 1) and Go through them (step 2) outlined](../images/finish-setting-up-1-list.png)
 
 3. The panel shows only the part of Starboard that does this item, such as Reelix's **Basic settings** for
    **Add a TMDB key**. Do it there, then choose one of these:
@@ -28,7 +28,7 @@ Jellyfin's set-up. **Go through them** takes you through the list one item at a 
      **Next step** is called **Finish**.
    - **Ignore**: takes it off the list, and Starboard does not ask about it again.
 
-   ![The Still to set up slide-out at Step 1 of 6, Add a TMDB key, showing the part of Reelix's settings that does it, with Open as a page and Next step (step 3) outlined](../images/finish-setting-up-2-step.png)
+   ![The Still to set up slide-out at Add a TMDB key, with Open as a page and Next step (step 3) outlined](../images/finish-setting-up-2-step.png)
 
 4. At the end, the panel says **That is all for now**. Select **Close**.
 

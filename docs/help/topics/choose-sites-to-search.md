@@ -22,21 +22,21 @@ download app. Nothing is added unless you add it. Add, test and remove sites in 
    active**. The line under its name says how many searches it answered, how many downloads Reelix chose from it,
    and how long it takes to answer.
 
-   ![Sites to search, with the list of sites (step 3) and Add a site to search (step 4) outlined](../images/choose-sites-to-search-1-list.png)
+   ![Sites to search, with the list of sites (step 3) and Add a site to search (step 4) outlined, with example data](../images/choose-sites-to-search-1-list.png)
 
 4. Select **Add a site to search**. Enter part of a site's name, or choose **No account needed** to list only
    public sites. **Only sites in English** is ticked to start with. **Suggested** marks the sites Install apps
    offers.
 5. Select a site. Its form opens: select **Test**, then **Save**.
 
-   ![The Add a site to search panel, with the search and No account needed (step 4) and a site (step 5) outlined](../images/choose-sites-to-search-2-add.png)
+   ![The Add a site to search panel, with the search and No account needed (step 4) and a site (step 5) outlined, with example data](../images/choose-sites-to-search-2-add.png)
 
 6. Optional: to add a search site of your own, read [Add your own search site](#add-your-own-search-site). Most
    people do not need one.
 7. Under **How Reelix searches**, keep **Search through the VPN** active if you have the VPN. It is
    recommended.
 
-   ![How Reelix searches, with Search through the VPN (step 7) outlined](../images/choose-sites-to-search-3-vpn.png)
+   ![How Reelix searches, with Search through the VPN (step 7) outlined, with example data](../images/choose-sites-to-search-3-vpn.png)
 
 ## Add your own search site
 
@@ -47,7 +47,7 @@ For your own Jackett or Prowlarr, or a Usenet search site you have an account wi
 
 ## Things to note
 
-- **Search through the VPN** sends only Reelix's searches through Gluetun. Your internet provider sees only the
+- **Search through the VPN** sends only Reelix's searches through Gluetun. Your internet provider can tell only that you use the
   VPN, which matters because some providers block these sites. If the VPN is down, searches wait rather than go
   out without it. Starboard activates it when it installs Reelix with the VPN.
 - **Addresses on your network** lets Reelix reach a site at home, such as your own Jackett. Searching through

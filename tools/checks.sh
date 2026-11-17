@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # The code and writing checks, run in one small image (tools/checks/Dockerfile) so they are the same here and on GitHub.
 #
-#   tools/checks.sh               every quick check, in seconds: Ruff, Biome, Vale, typos, actionlint and zizmor
+#   tools/checks.sh               every quick check, in seconds: Ruff, Biome, Vale, banned words, typos, actionlint
+#                                 and zizmor
 #   tools/checks.sh --file PATH   only the checks that fit one file (the Claude Code hooks use this after each edit)
 #   tools/checks.sh --coverage    the unit tests under coverage.py; fails below the floor in .coveragerc
 #
@@ -9,6 +10,9 @@
 #   Ruff        likely bugs in the Python (ruff.toml): unused names, undefined names, mistakes in loops and tests
 #   Biome       likely bugs in the JavaScript and CSS (biome.jsonc)
 #   Vale        the writing rules (tools/checks/vale): no em dashes, no contractions, British spelling, no Title Case
+#   Words       the banned words of the design system's CONTENT-DESIGN.md (see, look, click, enable, type, above,
+#               below, please, just, easy, advanced, drive for a disk, and more) in the pages, their scripts' strings
+#               and the help (tools/check_words.py); exceptions, each with its reason, in tools/words-allowed.txt
 #   typos       misspellings in code and text (_typos.toml)
 #   actionlint  mistakes in the GitHub workflows
 #   zizmor      security in the GitHub workflows: pinned actions, no stored credentials
@@ -39,10 +43,14 @@ case "${1:-}" in
     [ -n "$f" ] && [ -f "$f" ] || exit 0  # gone, or outside this checkout: nothing to check
     case "$f" in
       *.py) run sh -c 'ruff check --no-cache --quiet "$1" && typos --format brief "$1"' - "$f" ;;
+      web/js/*.js) run sh -c 'biome lint --error-on-warnings --no-errors-on-unmatched --log-level=none "$1" && python3 tools/check_words.py "$1" && typos --format brief "$1"' - "$f" ;;
       *.js | *.css) run sh -c 'biome lint --error-on-warnings --no-errors-on-unmatched --log-level=none "$1" && typos --format brief "$1"' - "$f" ;;
       *.md | *.html)
         case "$f" in
-          CHANGELOG.md | docs/* | web/*) run sh -c 'vale --config tools/checks/vale/vale.ini --output line "$1" && typos --format brief "$1"' - "$f" ;;
+          docs/help/plugins/*) run sh -c 'vale --config tools/checks/vale/vale.ini --output line "$1" && typos --format brief "$1"' - "$f" ;;
+          docs/help/*) run sh -c 'vale --config tools/checks/vale/vale.ini --output line "$1" && python3 tools/check_words.py "$1" && typos --format brief "$1"' - "$f" ;;
+          CHANGELOG.md | docs/*) run sh -c 'vale --config tools/checks/vale/vale.ini --output line "$1" && typos --format brief "$1"' - "$f" ;;
+          web/*) run sh -c 'vale --config tools/checks/vale/vale.ini --output line "$1" && python3 tools/check_words.py "$1" && typos --format brief "$1"' - "$f" ;;
           *) run typos --format brief "$f" ;;
         esac ;;
       .github/workflows/*.yml | .github/dependabot.yml)
@@ -85,6 +93,7 @@ check() {  # check <name> <command...>
 check "Ruff (Python)" ruff check --no-cache .
 check "Biome (JavaScript and CSS)" biome lint --error-on-warnings .
 check "Vale (writing rules)" "${VALE[@]}" "${WORDS[@]}"
+check "Banned words (pages, scripts and help)" python3 tools/check_words.py
 check "typos (spelling)" typos --format brief
 check "actionlint (workflows)" actionlint
 check "zizmor (workflow security)" zizmor --offline --format plain .github

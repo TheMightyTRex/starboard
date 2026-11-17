@@ -137,7 +137,7 @@ def move(data_dir, services=None, name=NAME, project=None, helper=None, wait=Non
     project = project or stack.PROJECT
     host = stack.host_folder(data_dir)
     if not host:
-        raise ValueError("Starboard cannot see where its apps' Compose file is on the computer")
+        raise ValueError("Starboard cannot find where its apps' Compose file is on the computer")
     if _job:
         _step("check", "working")
     st = status(data_dir, name)

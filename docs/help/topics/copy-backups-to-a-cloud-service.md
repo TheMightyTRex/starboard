@@ -61,7 +61,7 @@ that, select **Try again** for a new one.
 4. Copy the whole address from the address bar, go back to Starboard and paste it into **Paste that whole address**.
 5. Select **Continue**.
 
-For Google Drive, Starboard asks only for the files and folders it makes itself. It cannot see your other files,
+For Google Drive, Starboard asks only for the files and folders it makes itself. It cannot read your other files,
 so the folder list shows only Starboard's own folders.
 
 ### Dropbox

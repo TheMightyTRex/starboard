@@ -22,10 +22,10 @@ SPDX = r"^[A-Za-z0-9.+-]{2,40}$"
 
 # What each permission means, in the words people read before install (PS1), and its risk.
 PERMISSIONS = {
-    "apps:read": ("See your apps and whether they answer", "low", "apps"),
-    "downloads:read": ("See what is downloading", "low", "downloads"),
-    "media:read": ("See your films, series and books (the media folder, read only, and the library)", "medium", "media"),
-    "system:read": ("See processor, memory and disks", "low", "system"),
+    "apps:read": ("Your apps and whether they answer", "low", "apps"),
+    "downloads:read": ("What is downloading", "low", "downloads"),
+    "media:read": ("Your films, series and books (the media folder, read only, and the library)", "medium", "media"),
+    "system:read": ("Processor, memory and disks", "low", "system"),
     "network:lan": ("Reach other computers on your home network", "medium", None),
     "network:vpn": ("Run inside your VPN connection", "medium", None),
     "jellyfin:key": ("Use Jellyfin's API key, kept by Starboard", "high", None),
@@ -225,7 +225,7 @@ def check(manifest, dev=False, builtin=False):
             out.append("styles must list one to 32 styles (API 1.2; 16 before)")
         else:
             if "appearance:styles" not in perms:
-                out.append("styles need the permission appearance:styles, so people see it before adding")
+                out.append("styles need the permission appearance:styles, so people are told before adding")
             ids = [st.get("id") for st in styles if isinstance(st, dict)]
             if len(ids) != len(set(ids)):
                 out.append("Each style needs its own id")
@@ -511,7 +511,7 @@ SEES = {"apps:read": "Your apps and whether they answer", "downloads:read": "Wha
 CHANGES = {"jellyfin:key": "Anything in Jellyfin: it gets Jellyfin's API key, which can change users, libraries and settings",
            "reelix:key": "Anything in Reelix: it gets Reelix's API key, which can add, search for and remove what you follow",
            "usenet:servers": "It can download from your news server with your account, using some of its connections",
-           "appearance:styles": "How Starboard looks, through styles in Display (checked for accessibility first)",
+           "appearance:styles": "Starboard's appearance, through styles in Display (checked for accessibility first)",
            # API 1.14 (DASH-432)
            "jellyfin:metadata": "Jellyfin's metadata folder: the posters, photos and details Jellyfin saved. It can change, "
                                 "replace and remove them, and Jellyfin shows what it leaves there",

@@ -25,7 +25,7 @@ finished, Starboard shows only the set-up.
    header and the browser tab.
 4. In **Choose a password**, enter a password of at least 10 characters. A short sentence works well, such as "the
    kettle is always on".
-5. In **Type it again**, enter the same password again.
+5. In **Enter it again**, enter the same password again.
 6. Choose whether to activate **Remember me on this device**. Leave it inactive on a shared computer. Read
    [Things to note](#things-to-note).
 7. Select **Save password and continue**.
@@ -59,7 +59,7 @@ Next time, Starboard shows **Sign in to Starboard**.
 
 - **"The setup code is not right":** copy the code again, exactly. Read [Find the setup code](find-the-setup-code.md).
 - **"Use at least 10 characters":** the password is too short. Add more characters.
-- **"The two passwords are different. Type it again.":** enter the password again in **Type it again**.
+- **"The two passwords are different. Enter it again.":** enter the password again in **Enter it again**.
 - **"That password is not right. Check Caps Lock and try again.":** when signing in, check the Caps Lock key and enter
   it again.
 - **You have forgotten the password:** read [Reset a forgotten password](reset-a-forgotten-password.md).
