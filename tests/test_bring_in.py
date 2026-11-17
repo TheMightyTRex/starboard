@@ -414,10 +414,13 @@ class Cloud(Base):
             with self.assertRaises(cloud_connect.CloudError):
                 cloud_sources.start(self.data, "gdrive", "phone")
         self.assertFalse(any(p["ready"] for p in got.values()))
-        sess = {"service": "drive", "read_only": True}
-        self.assertIn(b"drive.readonly", __import__("base64").b64decode(cloud_connect.authorize_script(sess).split("rclone authorize drive ")[1].split()[0]))
-        sess = {"service": "onedrive", "read_only": True}
-        self.assertIn(b"Files.Read ", __import__("base64").b64decode(cloud_connect.authorize_script(sess).split("rclone authorize onedrive ")[1].split()[0]))
+        import base64
+
+        def blob(sess, kind):  # rclone reads the blob without its padding
+            arg = cloud_connect.authorize_script(sess).split(f"rclone authorize {kind} ")[1].split()[0]
+            return base64.b64decode(arg + "=" * (-len(arg) % 4))
+        self.assertIn(b"drive.readonly", blob({"service": "drive", "read_only": True}, "drive"))
+        self.assertIn(b"Files.Read ", blob({"service": "onedrive", "read_only": True}, "onedrive"))
         self.assertNotIn("drive.readonly", cloud_connect.authorize_script({"service": "drive"}))  # backups keep drive.file
 
     def test_a_kept_sign_in_is_bring_in_s_own_and_never_sent_back(self):
