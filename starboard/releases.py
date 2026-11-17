@@ -1665,6 +1665,80 @@ RELEASES = [
         ],
         "review": [],
         "settings": "Nothing changes in your settings. Updating from 0.18.0 or earlier still uses that version's script: if Update now stops at Backing up your settings, try it again or run ./update.sh on the server. To go back, run ./update.sh --to v0.19.0."
+    },
+    {
+        "version": "0.20.0",
+        "date": "17 November 2026",
+        "added": [
+            [
+                "Bring in media you already have",
+                "An optional step in the set-up, and a Bring in media button in Library, copies films, series, music and books from folders, disks, network shares, OneDrive and Google Drive into your library, named so Reelix and Jellyfin match them. It never changes anything where the media is now."
+            ],
+            [
+                "A new folder picker",
+                "Every page that picks a folder opens on this computer and each disk, then shows each folder's size and what is in it, with a path bar and Back."
+            ],
+            [
+                "Install all updates",
+                "When more than one update is waiting, Settings, Updates installs them all in one go, one at a time and in a safe order, each with its own copy and way back. It says first what will install and what is held back, and why."
+            ],
+            [
+                "Connect a cloud service",
+                "Settings, General, Backup and restore has a wizard that signs in to Google Drive, OneDrive, Dropbox and other services, chooses the folder and tests it, so copies of your backups can go off this computer."
+            ],
+            [
+                "Test connection",
+                "Beside the place your backup copies go, Test connection checks it can be reached and written to, that there is room, and that a cloud sign-in still works."
+            ],
+            [
+                "Monthly backups",
+                "Backups can now be made once a month, on the 1st at 03:00, keeping the newest 6."
+            ],
+            [
+                "Log limits and Delete all logs",
+                "Settings, General, Logs and feedback sets how long Starboard keeps its logs and the most they may take, and Delete all logs removes them after your password."
+            ]
+        ],
+        "changed": [
+            [
+                "Lighter pages and checks",
+                "The plug-ins list, dashboard cards, jobs, styles and the Alerts card do much less work each time they are asked, and the Apps and Updates pages ask Docker about each image once."
+            ]
+        ],
+        "fixed": [
+            [
+                "Escape in a slide-out",
+                "Escape now closes a slide-out even while focus is inside the page shown in it, such as a step of Still to set up."
+            ],
+            [
+                "Clicking in a set-up step",
+                "Clicking a field or button inside a Still to set up step's page no longer sends focus back to the step's heading."
+            ],
+            [
+                "Settings, Radio could stop loading",
+                "The Radio settings could stop with an error when Starboard answered before the page's own script had loaded. Every page now starts once its scripts are ready."
+            ],
+            [
+                "No sideways scroll on narrow phones",
+                "A long folder path in a heading, as on Backup and restore, now wraps instead of pushing the page sideways."
+            ]
+        ],
+        "security": [
+            [
+                "Cloud sign-ins",
+                "The address you paste back after signing in is checked before it is used: only this computer's own address on rclone's port, with this sign-in's own state and code. The sign-in helper publishes no port and is removed when the sign-in ends."
+            ],
+            [
+                "Bring in media reads only",
+                "Every source is opened read only, so nothing where your media is now can be renamed, moved or deleted."
+            ],
+            [
+                "Delete all logs asks for your password",
+                "Removing every log is a danger action, so it needs your Starboard password, as Sign out everywhere does, and the log says which browser did it."
+            ]
+        ],
+        "review": [],
+        "settings": "Your settings stay as they are. Logs keep your number of days, now with a 50 MB limit as well, which you can change in Settings, General, Logs and feedback. Starboard's built-in plug-ins restart once after the update to take the apps' log limit of 3 files of 10 MB. To go back, run ./update.sh --to v0.19.1."
     }
 ]
 

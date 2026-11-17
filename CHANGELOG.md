@@ -7,6 +7,8 @@ add features.
 
 ## [Unreleased]
 
+## [0.20.0] (17 November 2026)
+
 ### Added
 - **Bring in media you already have:** An optional step in the set-up, after Storage, and on its own from Library, Bring in media, and Still to set up. It copies films, series, music, books and audiobooks from folders on this computer, another disk or a network share (SMB or NFS) into your media folder, named and placed so Reelix and Jellyfin match them. Four parts: where your media is (in order, with Move up and Move down: the place higher in the list wins when a title is in two places), what is in each (with a correction for a whole place or one folder), Check names (Matched, Needs a look and Left where it is, with the space needed) and Copy. Nothing at a source is renamed, moved or deleted: shares are mounted read only and folders are only read. Subtitles, artwork and .nfo files travel with their film or episode; samples and leftovers stay; exact copies are brought in once; a file already in the media folder is never written over. The copy runs in the background at the lowest priority, can be paused, carries on after a restart, and shows on the dashboard and in Activity; then Reelix's own library import adds each title and Reelix's rename names each file its own way. Linking films and series on the same disk, instead of copying them, is offered and off to start with. The same step in the terminal set-up. OneDrive and Google Drive too, signed in read only with Connect a cloud service's sign-in (Google Drive in this browser only, as Google allows reading existing files only then), copied down to a staging folder on the media disk that goes to the holding folder at the end.
 - **The folder picker opens on places:** Every page that picks a folder opens on This computer and each disk, then one list of folders with a path bar and Back, each folder with its size and what is in it, and Use this folder (design system 7a3f938).
@@ -27,6 +29,12 @@ add features.
 - **Alerts card:** The log's problems are found without reading every line of every day kept as JSON: 13 ms instead of 250 ms over 60 days, each minute the dashboard is open. (DASH-445)
 - **Apps and Updates pages:** Docker is asked about each image once, not on every visit; Look for updates still reads each image's registry digests fresh. (DASH-445)
 - **Set-up steps:** The set-ups' words are read once for each page instead of at every step. (DASH-445)
+
+### Fixed
+- **Escape in a slide-out:** Escape closes a slide-out even while focus is inside the page shown in it, such as a step of Still to set up.
+- **Clicking in a set-up step:** Clicking a field or button inside a Still to set up step's page no longer sends focus back to the step's heading.
+- **Settings, Radio could stop loading:** Every page now starts once its own scripts are ready, so Settings, Radio no longer stops with "startRadioSettings is not defined".
+- **No sideways scroll on narrow phones:** A long folder path in a heading, as on Backup and restore, wraps instead of pushing the page sideways at 320 pixels (design system).
 
 ### Security
 - **Cloud sign-ins:** The address pasted back is checked before it is used: only this computer's own address on rclone's port, with this sign-in's own state and a code, rebuilt from those two values. The sign-in helper publishes no port, has a 10-minute limit, and is removed when the sign-in ends or the slide-out closes. Passwords and keys are read from a file inside the helper, never put on its command line, and kept as the existing rclone config is: in Starboard's own folder, never in a backup, never sent to the browser.
@@ -1397,7 +1405,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused. Help: [Pause, resume and remove downloads](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/manage-downloads.md).
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.19.1...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.20.0...HEAD
+[0.20.0]: https://github.com/TheMightyTRex/starboard/compare/v0.19.1...v0.20.0
 [0.19.1]: https://github.com/TheMightyTRex/starboard/compare/v0.19.0...v0.19.1
 [0.19.0]: https://github.com/TheMightyTRex/starboard/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/TheMightyTRex/starboard/compare/v0.17.0...v0.18.0
