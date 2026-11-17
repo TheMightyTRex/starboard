@@ -1472,6 +1472,25 @@ await page.waitForFunction(() => document.activeElement?.closest?.('[data-card="
 check("TTL-02", "closing the slide-out gives focus back to Go through them", walkOpened && await page.evaluate(() =>
   document.activeElement?.textContent?.trim() === "Go through them" && !!document.activeElement.closest('[data-card="setup"] .card-band__side')),
   await page.evaluate(() => document.activeElement?.outerHTML?.slice(0, 120)));
+// Escape pressed inside the step's page (the slide-out's frame) closes the slide-out too (16 November 2026).
+const walkAgain = page.locator('[data-card="setup"] .card-band__side button', { hasText: "Go through them" });
+await walkAgain.focus();
+await page.keyboard.press("Enter");
+const escFrame = page.frameLocator("#side-panel iframe");
+await escFrame.locator("body").waitFor({ timeout: 8000 }).catch(() => {});
+// A click on the step's page (its heading, so nothing opens) is the person's own move: focus stays in the page.
+const frames = await page.locator("#side-panel iframe").count();
+let clickErr = "";
+await escFrame.locator("body").click({ position: { x: 24, y: 24 }, timeout: 8000 }).catch((e) => { clickErr = String(e.message || e).split("\n")[0]; });
+await page.waitForTimeout(2500);  // past the wizard's own guard against the page taking focus as it loads
+const focusInFrame = await page.evaluate(() => document.activeElement?.tagName === "IFRAME");
+await page.keyboard.press("Escape");
+await page.waitForFunction(() => !document.querySelector("#side-panel"), null, { timeout: 5000 }).catch(() => {});
+await page.waitForFunction(() => document.activeElement?.closest?.('[data-card="setup"] .card-band__side'), null, { timeout: 5000 }).catch(() => {});
+check("TTL-02", "a click in the step's page keeps focus there, and Escape there closes the slide-out and gives focus back to Go through them",
+  focusInFrame && (await page.locator("#side-panel").count()) === 0
+  && await page.evaluate(() => document.activeElement?.textContent?.trim() === "Go through them"),
+  `frames: ${frames}; click: ${clickErr || "ok"}; in frame: ${focusInFrame}; ${await page.evaluate(() => document.activeElement?.outerHTML?.slice(0, 100))}`);
 const psTitles = (await api("/api/plugins/cards")).cards.find((c) => c.id === "plugin:picture-shrinker:saved")?.titles || {};
 check("TTL-03", "Picture shrinker's card hands the dashboard a title for each size", ["small", "medium", "half", "wide", "full"].every((k) => psTitles[k]), JSON.stringify(psTitles));
 const dashKept = (await api("/api/config")).dashboard;

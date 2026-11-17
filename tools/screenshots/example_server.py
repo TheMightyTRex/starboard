@@ -979,6 +979,10 @@ def _example_picture_shrinker(data_dir):
         return "Shrank 0 pictures. This is example data"
     plugin_cards.answer, plugin_life.run_job = answer, run_job
     plugin_watch._ask = lambda pid, main, path: "ok" if pid == "picture-shrinker" else real_ask(pid, main, path)
+    # Never in quiet hours here, so the automatic updates (plug-ins update by themselves on this server) do not install
+    # Picture shrinker 1.1.0 part way through the journeys when they run at night (17 November 2026).
+    from starboard import auto_updates
+    auto_updates.in_hours = lambda cfg_data, now=None: False
     # A catalogue entry with its logo as catalogue.json carries it (API 1.14): Disk forecast's, as a data address that
     # Starboard cleans like a logo file; Direct play's entry shows it once added, others their initials.
     real_entry = plugins_admin._clean_entry

@@ -575,7 +575,14 @@ function sidePanel({ title, body = [], foot = [], wide = false, opener = documen
       el("div", { class: "panel-header" }, chipNode ? titleChip(heading, chipNode) : heading, close), bodyNode, footNode));
   document.body.append(layer);
   const openedBy = opener instanceof HTMLElement ? FocusKeeper.describe(opener) : null;
+  // Escape pressed in a page inside this slide-out (its frame tells the page around, see IN_PANEL).
+  const fromFrame = (e) => {
+    if (e.origin !== location.origin || e.data?.starboard !== "panel-escape") return;
+    if ([...layer.querySelectorAll("iframe")].some((f) => f.contentWindow === e.source)) shut();
+  };
+  window.addEventListener("message", fromFrame);
   const shut = SharedComponents.openLayer(layer, opener instanceof HTMLElement ? opener : null, () => {
+    window.removeEventListener("message", fromFrame);
     layer.remove();
     onClose?.();
     setTimeout(() => FocusKeeper.recover(openedBy), 0);
@@ -904,6 +911,13 @@ async function appChangeNotices() {
 // without the menus around it, and without its own wizard, Send feedback or upgrade notice (the page around it has them).
 const IN_PANEL = new URLSearchParams(location.search).get("panel") === "1" && window.parent !== window;
 if (IN_PANEL) document.documentElement.classList.add("in-panel");
+// Escape in a page shown inside a slide-out closes the slide-out, as it does outside it: the page around cannot hear a
+// key pressed in the frame (16 November 2026: a keyboard user in a set-up step's page could not leave with Escape).
+// A dialog open in the page keeps Escape for itself.
+if (IN_PANEL) document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape" || e.defaultPrevented || document.querySelector('[aria-modal="true"]')) return;
+  window.parent.postMessage({ starboard: "panel-escape" }, location.origin);
+});
 // A link to a part of a page (#rx-basics-h) whose part is drawn after the page loads: scroll to it once it is there,
 // and put the keyboard there too. Stops looking after 8 seconds; a page with no #part does nothing.
 if (location.hash.length > 1) {
@@ -1194,7 +1208,15 @@ async function setupWizard({ opener = document.activeElement, onChange } = {}) {
       panel.layer.addEventListener("pointerdown", mark, { once: true });
       const keep = () => { if (!acted && document.activeElement === frame && frame.isConnected) heading.focus(); };
       window.addEventListener("blur", () => setTimeout(keep, 0));
-      frame.addEventListener("load", () => { keep(); setTimeout(keep, 800); setTimeout(keep, 2000); });
+      // A click or key press inside the step's page is the person's own move, so focus stays where they put it
+      // (16 November 2026: a field clicked in the page lost focus to the heading at once).
+      frame.addEventListener("load", () => {
+        try {
+          frame.contentDocument.addEventListener("pointerdown", mark, true);
+          frame.contentDocument.addEventListener("keydown", mark, true);
+        } catch { /* another site's page: the window's blur below still guards it */ }
+        keep(); setTimeout(keep, 800); setTimeout(keep, 2000);
+      });
     }
     const doneBtn = item.guided ? el("button", { type: "button", class: "btn" }, "Done") : null;
     doneBtn?.addEventListener("click", async () => {
@@ -1260,7 +1282,7 @@ function chooseNow(upgrade) {
     const frame = el("iframe", { class: "panel-frame", src: "/upgrade.html?panel=1", title: `Upgrade guide for Starboard ${upgrade.to}` });
     const panel = sidePanel({ title: `Starboard ${upgrade.to}: ${upgrade.count} ${upgrade.count === 1 ? "thing" : "things"} to choose`, opener: button, wide: true, body: [frame] });
     const done = (e) => {
-      if (e.origin !== location.origin || !e.data?.starboard) return;
+      if (e.origin !== location.origin || !["upgrade-done", "upgrade-later"].includes(e.data?.starboard)) return;
       window.removeEventListener("message", done);
       panel.close();
       if (e.data.starboard === "upgrade-done") { $("#upgrade-notice")?.remove(); toast(`Starboard ${upgrade.to}: your choices are saved`); }
@@ -1632,6 +1654,9 @@ async function startPage() {
     showVersion(session.version, session.repo, session.latest);
     upgradeNotice(session.upgrade);
     if (session.ux_notes) startFeedback(session).catch(() => { /* the page works without it */ });
+    // The session can answer before the page's later deferred scripts have run (Settings, Radio: "startRadioSettings
+    // is not defined", 17 November 2026); DOMContentLoaded comes after every deferred script, so the page starts then.
+    if (document.readyState === "loading") await new Promise((r) => document.addEventListener("DOMContentLoaded", r, { once: true }));
     return session;
   } catch { return null; }
 }
