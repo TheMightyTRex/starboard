@@ -1,7 +1,6 @@
 """Listening progress into Audiobookshelf: reading, matching, applying with a key that acts as each person."""
 
 import json
-import os
 import tempfile
 import threading
 import unittest

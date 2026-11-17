@@ -17,7 +17,6 @@ Prints one problem a line; exits 1 when there are any.
 """
 import json
 import os
-import re
 import sys
 
 from . import app_logs, stack

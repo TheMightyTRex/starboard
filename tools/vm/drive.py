@@ -97,7 +97,7 @@ def main():
             faults.append({"kind": kind, "detail": detail, "after_answers": answers, "screen": len(shots)})
 
     def check(screen_lines):
-        for i, line in enumerate(screen_lines):
+        for _i, line in enumerate(screen_lines):
             # The details of a failed job are the job's own log, asked for: its lines are not output in the frame.
             if LEAKS.match(line.strip("│ ")) and not (typed and typed[-1] == "Show the details"):
                 fault("other output in the frame", line.strip())

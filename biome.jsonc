@@ -1,0 +1,36 @@
+// Biome checks Starboard's JavaScript and CSS for likely bugs (tools/checks.sh). It does not format.
+{
+	"$schema": "https://biomejs.dev/schemas/2.6.8/schema.json",
+	"vcs": { "enabled": false },
+	"files": {
+		// snaglist.js is a copy of Snaglist, checked in its own repository.
+		"includes": [
+			"web/js/**/*.js",
+			"web/css/**/*.css",
+			"plugins/**/*.js",
+			"plugins/**/*.css",
+			"!web/js/snaglist.js"
+		]
+	},
+	"formatter": { "enabled": false },
+	"assist": { "enabled": false },
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"preset": "none",
+			"correctness": {
+				"preset": "recommended",
+				// The pages share functions as plain scripts: one written in common.js and used by a page looks unused.
+				"noUnusedVariables": "off",
+				"noUnusedFunctionParameters": "off"
+			},
+			"suspicious": {
+				"preset": "recommended",
+				// forEach((x) => x.remove()) returns a value nobody reads; harmless, and used throughout.
+				"useIterableCallbackReturn": "off",
+				// (list[key] ||= []).push(item) is used on purpose.
+				"noAssignInExpressions": "off"
+			}
+		}
+	}
+}

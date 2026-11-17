@@ -832,12 +832,6 @@ RELEASES = [
                 "Send feedback, with Snaglist 0.4.0 and its QR code reports, is now on every page by default; deactivate it in Settings, General."
             ]
         ],
-        "added": [
-            [
-                "Send feedback on every page",
-                "Send feedback is on by default, in the corner of every page, to report a problem or suggest something; deactivate it in Settings, General. It now uses Snaglist 0.4.0, which can show a report as a QR code."
-            ]
-        ],
         "fixed": [
             [
                 "Language and Region in Settings, Reelix",

@@ -1204,7 +1204,7 @@ def adopt(data_dir, pid, helper=None):
     q = containers._quote
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     lines = []
-    for inside, src, to in found:
+    for _inside, src, to in found:
         dst = q(f"data/{a['into']}/{to}")
         # Anything the plug-in made there itself is put beside, not deleted.
         lines.append(f"if [ -d {dst} ] && [ -n \"$(ls -A {dst} 2>/dev/null)\" ]; then mv {dst} {q('data/' + a['into'] + '/' + to + '.before-copy-' + stamp)}; fi")

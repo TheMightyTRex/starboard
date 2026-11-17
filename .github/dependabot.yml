@@ -1,0 +1,9 @@
+# Keeps the GitHub Actions, which are pinned to exact commits (zizmor), up to date with a weekly pull request.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7  # waits a week after a release, so a bad one is usually caught before it reaches here

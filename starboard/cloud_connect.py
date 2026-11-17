@@ -491,7 +491,7 @@ def _phone_start(sess):
 
 def _poll_phone(sess):
     """Asks the service every few seconds whether the person approved, until they do, refuse, or time runs out."""
-    sid, d, c = sess["service"], _device(sess["service"]), client(sess["service"])
+    d, c = _device(sess["service"]), client(sess["service"])
     while sess["state"] == "phone":
         time.sleep(sess["interval"])
         if sess["state"] != "phone":

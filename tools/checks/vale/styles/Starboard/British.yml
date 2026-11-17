@@ -1,0 +1,48 @@
+extends: substitution
+message: "Use British spelling: '%s', not '%s'."
+level: error
+ignorecase: true
+swap:
+  color: colour
+  colors: colours
+  favorite: favourite
+  favorites: favourites
+  behavior: behaviour
+  behaviors: behaviours
+  catalog: catalogue
+  catalogs: catalogues
+  center: centre
+  centers: centres
+  centered: centred
+  organize: organise
+  organized: organised
+  organizes: organises
+  organizing: organising
+  organization: organisation
+  customize: customise
+  customized: customised
+  recognize: recognise
+  recognized: recognised
+  prioritize: prioritise
+  optimize: optimise
+  optimized: optimised
+  analyze: analyse
+  analyzed: analysed
+  summarize: summarise
+  normalize: normalise
+  minimize: minimise
+  maximize: maximise
+  synchronize: synchronise
+  authorize: authorise
+  authorized: authorised
+  canceled: cancelled
+  canceling: cancelling
+  traveled: travelled
+  labeled: labelled
+  labeling: labelling
+  modeled: modelled
+  gray: grey
+  inquiry: enquiry
+  defense: defence
+  license key: licence key
+  dialog box: dialogue box

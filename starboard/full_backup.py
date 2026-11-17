@@ -26,7 +26,6 @@ import struct
 import tarfile
 import threading
 import time
-import urllib.parse
 
 from . import folders
 
@@ -257,7 +256,7 @@ def _starboard_files(data_dir, pictures):
 
 
 def _app_folders(config_dir):
-    code, text = _helper(f"cd /r && for d in */; do [ -d \"$d\" ] && printf '%s\\n' \"${{d%/}}\"; done", [f"{config_dir}:/r:ro"], timeout=60)
+    code, text = _helper("cd /r && for d in */; do [ -d \"$d\" ] && printf '%s\\n' \"${d%/}\"; done", [f"{config_dir}:/r:ro"], timeout=60)
     if code:
         raise BackupError(f"Starboard could not look in {config_dir}")
     return [n for n in text.splitlines() if n and folders.NAME.match(n) and not n.startswith(".")]
@@ -403,7 +402,7 @@ def _make(data_dir, version, password, target, pictures, config_dir, host_data, 
         from . import backup_copies  # DASH-380: a copy off this computer, when one is chosen; never fails the backup
         backup_copies.after_full(data_dir, f"{path}/{name}")
         _say(data_dir, state="done", step="", finished=time.time(), file=f"{path}/{name}", size=size)
-    except Exception as e:  # noqa: BLE001: whatever stops it, the page says what
+    except Exception as e:  # noqa: BLE001 - whatever stops it, the page says what
         _say(data_dir, state="failed", step="", finished=time.time(), error=str(e) or e.__class__.__name__)
     finally:
         shutil.rmtree(work, ignore_errors=True)

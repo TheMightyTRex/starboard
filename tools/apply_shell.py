@@ -12,7 +12,6 @@ side menu is hidden and the menu drawer holds the sections with their level 1 pa
 
 import pathlib
 import re
-import sys
 
 WEB = pathlib.Path(__file__).resolve().parent.parent / "web"
 

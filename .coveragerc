@@ -1,0 +1,10 @@
+# coverage.py, for the unit tests (tools/checks.sh --coverage, and the weekly Code and writing checks on GitHub).
+# The floor is a little under the 71% measured on 17 November 2026, so a change that drops it fails; raise it as tests grow.
+[run]
+branch = True
+source = starboard
+
+[report]
+fail_under = 67
+skip_covered = True
+show_missing = False

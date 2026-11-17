@@ -1,0 +1,23 @@
+# typos checks code and text for misspellings (tools/checks.sh). Vale checks British spelling in the writing.
+[files]
+extend-exclude = ["web/js/snaglist.js", "web/fonts", "docs/help/images", "*.svg", "*.lock"]
+
+[default.extend-words]
+# Each of these is right where it is used.
+fo = "fo"            # the folders module, imported as fo
+fre = "fre"          # ISO 639-2 language code (French)
+wel = "wel"          # ISO 639-2 language code (Welsh)
+nd = "nd"            # "2nd"
+ND = "ND"            # Navidrome's ND_ settings
+whos = "whos"        # the list of "who can" choices
+Superceded = "Superceded"  # a status Jellyfin really sends
+devic = "devic"      # quoting a label cut short in a narrow window
+configur = "configur"  # matches "configure" and "configured"
+rror = "rror"        # matches "Error" and "error"
+ocation = "ocation"  # matches "Location" and "location" in a sed pattern
+serach = "serach"    # a made-up error from Reelix's stand-in
+wha = "wha"          # a test that a word is not split as "wha tever"
+HAX = "HAX"          # rsync -aHAX
+ser = "ser"          # a made-up series id
+Exemple = "Exemple"  # a made-up name in a stand-in
+exportfs = "exportfs"  # the NFS command

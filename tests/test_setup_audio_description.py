@@ -3,7 +3,6 @@ wish only; the Plug-ins pages offer to install it from the catalogue, with its p
 is added or someone chooses Not now."""
 import json
 import os
-import tempfile
 import unittest
 
 from starboard import config as config_mod

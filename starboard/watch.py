@@ -199,7 +199,6 @@ class Watch:
         name = cfg["site_name"]
         now = time.time()
         with self.lock:
-            changed = False
             # Apps: record only changes; alert after two checks in a row without an answer.
             results = services.cached("status", 15, lambda: services.status_all(cfg["services"]))
             names = {s["id"]: s["name"] for s in cfg["services"]}
@@ -214,7 +213,6 @@ class Watch:
                 confirmed = r["state"] == "up" or self.state["down_count"][r["id"]] >= 2
                 if confirmed and (not history or history[-1][1] != r["state"]):
                     history.append([now, r["state"]])
-                    changed = True
                 app_name = names.get(r["id"], r["id"])
                 if on.get("apps_down") and r["state"] == "down" and confirmed:
                     self.alert(f"down:{r['id']}", f"{app_name} is not responding", f"{name}: {r.get('message') or app_name + ' did not answer'}.")
@@ -227,7 +225,6 @@ class Watch:
                 self.state["changes"][app_id] = older[-1:] + kept
                 if app_id not in names:
                     del self.state["changes"][app_id]
-                    changed = True
 
             # Disks: health reports and how full each folder is.
             health = sysinfo.disk_health() if sysinfo.smart_dir() else {}

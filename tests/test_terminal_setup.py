@@ -83,7 +83,7 @@ class TerminalSetupTest(unittest.TestCase):
             self.assertNotIn("Which Reelix", out.getvalue())
 
     def test_whole_set_up_with_the_recommended_answers(self):
-        media, settings = os.path.join(self.tmp.name, "media"), os.path.join(self.tmp.name, "config")
+        media, _settings = os.path.join(self.tmp.name, "media"), os.path.join(self.tmp.name, "config")
         # name, start, storage, folder; Basics (recommended), install these; the VPN (Basics has one):
         # provider, WireGuard, any country, the address; Usenet: no provider yet, Enter; Sites to search: none, no address
         # of your own; Films and series: no TMDB key (hidden), English; then write, extras, hours, Docker access (No),
@@ -155,7 +155,7 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertIn("Signed in.", out.getvalue())
 
     def test_vpn_details_are_asked_and_kept_out_of_the_screen(self):
-        media, settings = os.path.join(self.tmp.name, "media"), os.path.join(self.tmp.name, "config")
+        media, _settings = os.path.join(self.tmp.name, "media"), os.path.join(self.tmp.name, "config")
         # Downloads and VPN only, every default app; Proton VPN over WireGuard.
         typed = ["", "", "", media, "", "4", "9,10", "", "", "5", "1", "", "192.168.1.20/32", "", "", "", "y", "2", "", "", "", ""]
         term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key"])
@@ -212,7 +212,7 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertIn("Media folder: /srv/media", plain.getvalue())
 
     def test_back_returns_with_the_last_answers(self):
-        media, settings = os.path.join(self.tmp.name, "media"), os.path.join(self.tmp.name, "config")
+        media, _settings = os.path.join(self.tmp.name, "media"), os.path.join(self.tmp.name, "config")
         # Step 2 with Downloads and VPN; step 3 with Surfshark over WireGuard; then back from the check to step 3,
         # where Enter keeps every answer, including the hidden key; then on.
         typed = ["", "", "", media, "", "4", "9,10", "",     # name, start, storage and folder, Let me choose, the apps
@@ -349,7 +349,7 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertEqual(term.choose("When should downloads run?", ["Set hours", "Any time"]), 0)
 
     def test_nothing_typed_as_an_answer_is_in_the_report(self):
-        media, settings = os.path.join(self.tmp.name, "my-own-media"), os.path.join(self.tmp.name, "config")
+        media, _settings = os.path.join(self.tmp.name, "my-own-media"), os.path.join(self.tmp.name, "config")
         # Hidden answers (the password and the WireGuard key) are not remembered, so they are not typed in here.
         words = (f"It broke near {media} with 192.168.1.20/32. "
                  "Mail me at sam@example.org, token=abc123def456")

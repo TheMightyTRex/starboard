@@ -304,7 +304,7 @@ class LiveTvPluginTest(unittest.TestCase):
                 out = livetv_plugin.channels_act({"action": "bulk", "id": "lists:own:abc123", "value": "off"})
             self.assertIn("Town lists deactivated", out["said"])
             self.assertIs(livetv_own.sources(d)[0]["on"], False)
-            with mock.patch.object(livetv_plugin, "_quick") as quick:
+            with mock.patch.object(livetv_plugin, "_quick"):
                 out = livetv_plugin.channels_act({"action": "bulk", "id": "lists:own:abc123", "value": "on"})
             self.assertIn("Town lists activated", out["said"])
             self.assertIn("Adding Town lists: reading the list", [n["title"] for n in out["notices"]])

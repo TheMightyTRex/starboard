@@ -40,7 +40,6 @@ class WrongPassword(Exception):
 def base_url(data_dir, services):
     """Reelix's address: the one Install apps gave it, or else the Reelix entry on the dashboard (a Reelix the person
     added by hand). The dialog shows this address, so the person sees where the password goes."""
-    from . import stack
     url = stack.reelix_url(data_dir)
     if url:
         return url
@@ -473,7 +472,6 @@ def _act(app, reelix, base, kind, action, body):
 
 def about(app):
     """What the Settings, Reelix page needs before the password: where Reelix is, and what Starboard could connect."""
-    from . import stack
     base = base_url(app.data_dir, app.config.data["services"])
     host = urllib.parse.urlparse(base).netloc if base else None
     return {"address": host, "installed_here": bool(stack.reelix_url(app.data_dir)),

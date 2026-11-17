@@ -1,7 +1,6 @@
 """Taking over apps someone runs from their own Compose file (takeover.py, DASH-151): what each app keeps, the
 Compose file Starboard writes for it, the rollback point, and the helper's scripts, run for real against temporary
 folders with a stand-in docker command."""
-import json
 import os
 import re
 import stat

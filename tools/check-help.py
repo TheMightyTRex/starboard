@@ -128,7 +128,7 @@ def main():
             if first.rstrip().endswith("troubleshooting") and "```flow" not in md:
                 problems.append(f"{rel}: a troubleshooting topic starts with a flow chart (a flow block)")
         words = text_only(md)
-        for n, line in enumerate(words.splitlines(), 1):
+        for _n, line in enumerate(words.splitlines(), 1):
             for pattern, what in RULES:
                 if re.search(pattern, line, flags=re.I if "I'm" not in pattern else 0):
                     if what.startswith("enable") and re.search(r"\*\*Enable SSH\*\*", line):
