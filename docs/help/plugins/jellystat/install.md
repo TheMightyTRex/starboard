@@ -6,14 +6,14 @@ Add Jellystat from Starboard's **Catalogue**, where it is listed under **Apps yo
 ## Before you begin
 
 - Starboard with plug-in API 1.14 or later. An older Starboard is offered an earlier version: read [Updates](../jellystat/updates.md).
-- Jellyfin added to Starboard, in **Settings**, then **Apps**. Starboard gives Jellystat your Jellyfin's address and key, so you do not type them.
+- Jellyfin added to Starboard, in **Settings**, then **Apps**. Starboard gives Jellystat your Jellyfin's address and key, so you do not enter them.
 - Your Starboard password. Adding and removing a plug-in ask for it.
 
 ## What it may do
 
 Starboard lists these before you add it, each with its risk.
 
-| It asks to | Risk |
+| Permission | Risk |
 |---|---|
 | Use Jellyfin's API key, kept by Starboard (`jellyfin:key`) | High |
 | Reach other computers on your home network, and the internet (`network:lan`) | Medium |
@@ -25,7 +25,7 @@ What it runs:
 - **app:** reaches your home network and the internet, and this computer as `host.docker.internal`. It can use its own folder in Starboard's data (`data/plugins/jellystat`). Its web page is on your home network at port 3000 when that port is free, or the next free one.
 - **db:** reaches only Starboard, on its own network: it cannot reach your home network or the internet. It can use its own folder in Starboard's data (`data/plugins/jellystat`).
 
-Like every plug-in, it runs read only, as a user that is not root, with no extra rights, and its image is pinned by digest, so what you approved is what runs.
+Like every plug-in, it runs read only, as a user that is not root, with no extra rights. Its image is pinned by digest, so what you approved is what runs.
 
 ## Memory and processor
 
@@ -41,13 +41,13 @@ Measured:
 
 1. Go to **Settings**, then **Plug-ins**, then **Catalogue**.
 2. Under **Apps you can add**, find **Jellystat** and select **Install…**.
-3. A slide-out opens with what it can see, change and reach. Read it all.
+3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Jellystat**. To stop, select **Cancel**: nothing is installed.
 5. Jellystat's own tab opens under **Settings**, then **Plug-ins**. Select **Activate**. Its state changes to **Active**.
 
 ### Add it by its address
 
-On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **See what it does** and carry on from step 3:
+On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **What it does** and carry on from step 3:
 
 ```text
 https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/jellystat/starboard-plugin.json
@@ -57,7 +57,7 @@ Or run its installer, `install.py` in its folder, on any computer with Python, a
 
 ### Set it up
 
-1. Wait for its **Jellystat** card or tab to say "Jellystat has your Jellyfin." or "Gave Jellystat your Jellyfin's address and key."
+1. Wait for its **Jellystat** card or tab to say "Jellystat is connected to Jellyfin." or "Gave Jellystat your Jellyfin's address and key."
 2. On Jellystat's tab, select **Open**. Jellystat's own page opens, at its address on your home network.
 3. Make Jellystat's own account. The first account is its admin. Anyone on your home network can open that page, so do this straight away.
 4. Optional: bring in the figures from a Jellystat you had before. Read [Settings](../jellystat/settings.md).

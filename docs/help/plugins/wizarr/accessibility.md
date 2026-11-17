@@ -6,7 +6,7 @@ Starboard draws everything Wizarr shows in Starboard: its tab, its buttons and i
 ## What was checked
 
 - **The plug-in tester:** accessibility passed. Starboard runs it before the plug-in is added, every time. Wizarr has no settings, card or actions in Starboard, so there was little to check.
-- **Its logo** has a text description, "An envelope", for where it is shown without its name.
+- **Its logo**, an envelope, has the text description "Wizarr logo" where it is shown without its name. Beside its name, screen readers skip it, so the name is read once.
 - **Starboard's own parts** (settings, buttons, dialogs and cards) are checked with axe, a keyboard walk and the reading order in each Starboard release. Read [How Starboard is tested](../../accessibility/how-starboard-is-tested.md).
 
 ## Not checked

@@ -1,7 +1,7 @@
 # Direct play: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Direct play adds 2 cards you can put on your dashboard. Each starts with a grey band: Direct play's logo and name and a status in words. A lighter grey footer says when it last changed.
+Direct play adds 2 cards you can put on your dashboard. Each starts with a band: Direct play's logo and name and a status in words. A footer says when it last changed.
 
 ## Direct play
 
@@ -29,9 +29,9 @@ Shows how much space Direct play has saved, with how many files are fixed and ho
 | Status | Means |
 |---|---|
 | **Converting** | A file is being fixed now. |
-| **Waiting** | Nothing is being converted yet: it is outside the hours set in **When it works**, it is looking at the library, it is about to start the next file, or an update is about to start. The **Direct play** card says which, such as "Waiting for the weekend" or "Waiting for quiet hours". |
+| **Waiting** | Nothing is being converted yet: it is outside the hours set in **When it works**, it is checking the library, it is about to start the next file, or an update is about to start. The **Direct play** card says which, such as "Waiting for the weekend" or "Waiting for quiet hours". |
 | **Paused** | Someone selected **Pause fixing**. The **Direct play** card says "Resume it on the plug-in's page in Settings, Plug-ins". |
-| **Done** | Every file is looked at and nothing is left to do. New films and series are looked at when it next runs. |
+| **Done** | Every file is checked and nothing is left to do. New films and series are checked when it next runs. |
 | **Needs setting up** | On the **Direct play** card only: no device is chosen in **Devices**. The card says "No devices chosen". |
 
 The band's time on the **Space saved by Direct play** card is when the last file was fixed. If a pass goes wrong, the cards do not say so: the **Files** page on its tab says "The last pass did not finish" and why.

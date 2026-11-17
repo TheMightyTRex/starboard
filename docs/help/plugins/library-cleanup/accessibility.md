@@ -6,7 +6,7 @@ Starboard draws everything Library clean-up shows in Starboard: its settings, it
 ## What was checked
 
 - **The plug-in tester:** Starboard runs it before the plug-in is added, every time, and it checks the accessibility of its settings, cards and actions.
-- **Its logo** has a text description, "A storage box with an arrow going into it", for where it is shown without its name.
+- **Its logo**, a storage box with an arrow going into it, has the text description "Library clean-up logo" where it is shown without its name. Beside its name, screen readers skip it, so the name is read once.
 - **Its card** says its status in words with an icon, never by colour alone. A screen reader hears the card's heading, then its status and when it last changed. Nothing on the card interrupts a screen reader when it refreshes.
 - **Its words:** every switch has a hint that says what it does, and every setting has a label in sentence case.
 - **Starboard's own parts** (settings, buttons, dialogs and cards) are checked with axe, a keyboard walk and the reading order in each Starboard release. Read [How Starboard is tested](../../accessibility/how-starboard-is-tested.md).

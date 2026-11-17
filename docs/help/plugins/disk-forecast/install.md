@@ -12,27 +12,27 @@ Add Disk forecast from Starboard's **Catalogue**, where it is listed under **Sys
 
 Starboard lists these before you add it, each with its risk.
 
-| It asks to | Risk |
+| Permission | Risk |
 |---|---|
-| See processor, memory and disks (`system:read`) | Low |
+| Processor, memory and disks (`system:read`) | Low |
 
 What it runs:
 
 - **main:** reaches only Starboard, on its own network: it cannot reach your home network or the internet. It can use its own folder in Starboard's data (`data/plugins/disk-forecast`).
 
-Like every plug-in, it runs read only, as a user that is not root, with no extra rights, and its image is pinned by digest, so what you approved is what runs.
+Like every plug-in, it runs read only, as a user that is not root, with no extra rights. Its image is pinned by digest, so what you approved is what runs.
 
 ## Memory and processor
 
 - **main:** 48 MB of memory and 0.1 of a processor core at most.
 
-Measured: not measured yet. The figures above are the most it may use.
+These figures are the most it may use.
 
 ## Add it
 
 1. Go to **Settings**, then **Plug-ins**, then **Catalogue**.
 2. Under **System**, find **Disk forecast** and select **Install…**.
-3. A slide-out opens with what it can see, change and reach. Read it all.
+3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Disk forecast**. To stop, select **Cancel**: nothing is installed.
 5. Disk forecast's own tab opens under **Settings**, then **Plug-ins**. Select **Activate**. Its state changes to **Active**.
 6. Add its card to your dashboard. Read [Dashboard card](../disk-forecast/dashboard-card.md).
@@ -43,7 +43,7 @@ Tip: Disk forecast is marked **Recommended** in the catalogue.
 
 ### Add it by its address
 
-On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **See what it does** and carry on from step 3:
+On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **What it does** and carry on from step 3:
 
 ```text
 https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/disk-forecast/starboard-plugin.json

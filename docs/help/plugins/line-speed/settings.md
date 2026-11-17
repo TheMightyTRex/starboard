@@ -21,7 +21,7 @@ These are on Line speed's tab.
 - Each setting is saved when you leave the box.
 - A setting you change is used straight away; you do not need to deactivate it first.
 - **How it tests:** it downloads a file of **Test size** from Cloudflare's speed test (`speed.cloudflare.com`) and times it. It measures download speed only, not upload.
-- **When it tests:** it looks every 10 minutes, and tests once during the hour you chose, if there is no result for today yet. A **Test now** earlier the same day counts as today's result, so the night's test is skipped.
+- **When it tests:** it checks every 10 minutes, and tests once during the hour you chose, if there is no result for today yet. A **Test now** earlier the same day counts as today's result, so the night's test is skipped.
 - **What it keeps:** the last 14 results, in its own folder. **Line speed this week** shows the newest 7.
 - Every test uses **Test size** of any data allowance you have.
 - Settings are kept when you update or deactivate it, and when you remove it they stay in its folder.

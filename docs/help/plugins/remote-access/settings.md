@@ -22,7 +22,7 @@ Remote access's settings are on its own tab: go to **Settings**, then **Plug-ins
 
 | Setting | What it does | Default |
 |---|---|---|
-| **Cloudflare tunnel token** | From Cloudflare's dashboard, Networks, Tunnels. Point each public hostname at http://localhost:8095, 8096 or 13378. Kept secret by Starboard: it is never shown again. | Empty |
+| **Cloudflare Tunnel token** | From Cloudflare's dashboard, Networks, Tunnels. Point each public hostname at http://localhost:8095, 8096 or 13378. Kept secret by Starboard: it is never shown again. | Empty |
 
 ## What to share
 
@@ -46,7 +46,7 @@ The buttons are in **Actions**, and work only while Remote access is active.
 - **Connect with**, **Sign in with** and the switches are saved as soon as you change them. Select **Save** to keep a key, token or name.
 - When you change how it connects, the key, the token or the name, Remote access stops and starts again with them, within about 10 seconds.
 - Only Starboard, Jellyfin and Audiobookshelf can be shared. qBittorrent, NZBGet, SABnzbd, Reelix and the other apps are never reachable this way.
-- **Share Audiobookshelf** and **Share Jellyfin** work only for apps in Starboard's apps. Remote access looks there for their addresses every 5 minutes.
+- **Share Audiobookshelf** and **Share Jellyfin** work only for apps in Starboard's apps. Remote access reads their addresses from there every 5 minutes.
 - With Cloudflare Tunnel, a route to an app you have not shared stops the tunnel. Share the app or delete the route.
 - Starboard answers only to names it knows. To open Starboard by a Cloudflare name, or by its name on your tailnet, add that name to `STARBOARD_ALLOWED_HOSTS` in Starboard's settings file.
 - Keys and tokens never go on a command line or in the log.

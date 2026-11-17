@@ -10,9 +10,9 @@ q: What does its tab say?
   Not active -> 1
   Not supported -> 2
   Active -> q2
-q2: What do you see?
+q2: What happens?
   No Style in Display -> 3
-  The style does not change the look -> 4
+  The style changes nothing -> 4
   Another device has no style -> 5
 1: Activate it #activate-it
 2: Update it or update Starboard #update-it-or-update-starboard
@@ -33,7 +33,7 @@ Its styles are offered in **Display** only while Styles is active.
 
 Your Starboard's plug-in API is outside what this version of Styles works with, so Starboard stopped it.
 
-1. Select **Look for an update** on its tab.
+1. Select **Check for an update** on its tab.
 2. If there is none, update Starboard. Read [Update Starboard](../../topics/update-starboard.md).
 
 ## Open Display again
@@ -42,17 +42,17 @@ Your Starboard's plug-in API is outside what this version of Styles works with, 
 
 1. Check that Styles says **Active** on its tab.
 2. Reload the page in your browser.
-3. Select **Display** in the header and look for **Style**.
+3. Select **Display** in the header and find **Style**.
 
 ## Check high contrast
 
 **High contrast** in **Display** always wins over a style, and so do text size, wider spacing, underlined links and reduced motion.
 
 1. Select **Display** in the header.
-2. Deactivate **High contrast** to see the style's own colours.
+2. Deactivate **High contrast** to show the style's own colours.
 3. Select **Done**.
 
-If you need high contrast, keep it: it is made for that. **Large and clear** is the style made for easy reading.
+If you need high contrast, keep it: it is made for that. **Large and clear** is the style made for reading with low vision.
 
 ## Choose it in each browser
 

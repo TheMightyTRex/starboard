@@ -10,7 +10,7 @@ q: What does its tab say?
   Failed or Not answering -> 1
   Not supported -> 2
   Active, but a card is wrong -> q2
-q2: What do you see?
+q2: What does the card say?
   Add addresses in the settings -> 3
   Not checked yet -> 4
   Not answering and a name -> 5
@@ -28,13 +28,13 @@ q2: What do you see?
 1. On Outside services' tab, read the message under its state: it says why it stopped.
 2. Select **Try again**.
 3. If it stopped soon after an update, select **Roll back to** and the version you had. Read [Updates](../outside-services/updates.md).
-4. Still failing: go to **System**, then **Logs**, and look for its name.
+4. Still failing: go to **System**, then **Logs**, and find its name.
 
 ## Update it or update Starboard
 
 Your Starboard's plug-in API is outside what this version of Outside services works with, so Starboard stopped it.
 
-1. Select **Look for an update** on its tab.
+1. Select **Check for an update** on its tab.
 2. If there is none, update Starboard. Read [Update Starboard](../../topics/update-starboard.md).
 
 ## Add the addresses

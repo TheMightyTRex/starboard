@@ -1,7 +1,7 @@
 # Styles: Install
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Add Styles from Starboard's **Catalogue**, where it is listed under **Look**. Starboard shows what it may do and tests it before anything is added. At the end, Styles is active.
+Add Styles from Starboard's **Catalogue**, where it is listed under **Appearance**. Starboard shows what it may do and tests it before anything is added. At the end, Styles is active.
 
 ## Before you begin
 
@@ -12,7 +12,7 @@ Add Styles from Starboard's **Catalogue**, where it is listed under **Look**. St
 
 Starboard lists these before you add it, each with its risk.
 
-| It asks to | Risk |
+| Permission | Risk |
 |---|---|
 | Add styles to Display: colours, corners, a font and shadows, checked for accessibility (`appearance:styles`) | Low |
 
@@ -25,8 +25,8 @@ None: it runs no container.
 ## Add it
 
 1. Go to **Settings**, then **Plug-ins**, then **Catalogue**.
-2. Under **Look**, find **Styles** and select **Install…**.
-3. A slide-out opens with what it can see, change and reach. Read it all.
+2. Under **Appearance**, find **Styles** and select **Install…**.
+3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Styles**. To stop, select **Cancel**: nothing is installed.
 5. Styles' own tab opens under **Settings**, then **Plug-ins**. Select **Activate**. Its state changes to **Active**.
 6. Select **Display** in the header.
@@ -35,7 +35,7 @@ None: it runs no container.
 
 ### Add it by its address
 
-On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **See what it does** and carry on from step 3:
+On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **What it does** and carry on from step 3:
 
 ```text
 https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/styles/starboard-plugin.json

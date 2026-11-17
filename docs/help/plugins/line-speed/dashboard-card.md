@@ -1,7 +1,7 @@
 # Line speed: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Line speed adds 2 cards you can put on your dashboard. Each starts with a grey band: Line speed's logo and name and a status in words. A lighter grey footer says when it last changed.
+Line speed adds 2 cards you can put on your dashboard. Each starts with a band: Line speed's logo and name and a status in words. A footer says when it last changed.
 
 ## Line speed
 
@@ -23,7 +23,7 @@ Shows the last 7 tests, newest first: the speed, then the day, date and time of 
 | Status | Means |
 |---|---|
 | **OK** | There is at least one result. The time in the band is when the newest test ran. |
-| **Next test at** and a time | Its status is Scheduled: there is no result yet, and the first test runs at that hour. The card says "Not tested yet". |
+| **Scheduled** | There is no result yet. The card says "Not tested yet" and "Next test at" with the hour of the first test. |
 | **Problem** | Only on the **Line speed** card, before the first result: the last test failed. The card says why. |
 
 ## Add it to your dashboard

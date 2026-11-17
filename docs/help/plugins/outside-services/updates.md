@@ -1,16 +1,39 @@
 # Outside services: Updates
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Outside services 1.1.0 is the latest version. It needs Starboard with plug-in API 1.14 or later.
+Outside services 1.1.3 is the latest version. It needs Starboard with plug-in API 1.14 or later.
 
 ## Versions
 
 | Version | Needs plug-in API | Released |
 |---|---|---|
-| 1.1.0 | 1.14 or later | 2026-11-15 |
-| 1.0.0 | 1.1 or later | 2026-11-12 |
+| 1.1.3 | 1.14 or later | 17 November 2026 |
+| 1.1.2 | 1.14 or later | 17 November 2026 |
+| 1.1.1 | 1.14 or later | 16 November 2026 |
+| 1.1.0 | 1.14 or later | 15 November 2026 |
+| 1.0.0 | 1.1 or later | 12 November 2026 |
 
 The catalogue offers each Starboard the newest version it can run, so an older Starboard keeps an earlier version.
+
+## What is new in 1.1.3
+
+Changed:
+
+- **Clearer words:** the band says **Not answering**, and the card names each one. Its description spells out NAS.
+- **Logo description:** where its logo stands on its own, a screen reader says "Outside services logo", the plug-in's name, instead of a description of the symbol.
+
+## What is new in 1.1.2
+
+Changed:
+
+- **Shared helper:** the helper every example shares sends Jellyfin's key the way Jellyfin 12 asks for it. This plug-in does not ask Jellyfin anything, so it works as before.
+
+## What is new in 1.1.1
+
+Changed:
+
+- **Lighter at rest:** it wakes about once a minute while nothing asks it anything, not twice a second, and writes nothing to its folder when a run goes well.
+- **Starts faster:** its image comes with Python's modules already compiled, so a start takes about a quarter of the processor time.
 
 ## What is new in 1.1.0
 

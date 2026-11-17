@@ -15,7 +15,7 @@ Add Library clean-up from Starboard's **Catalogue**, where it is listed under **
 
 Starboard lists these before you add it, each with its risk. Its risk is high.
 
-| It asks to | Risk |
+| Permission | Risk |
 |---|---|
 | Read and change your media folder, to move films and series into the holding folder there and put them back (`library:holding`) | High |
 | Use Jellyfin's API key, kept by Starboard, to read what each person watched, their favourites, Continue watching and collections, and to tell Jellyfin what moved (`jellyfin:key`) | High |
@@ -46,7 +46,7 @@ Measured:
 
    ![The Catalogue under Jellyfin, with Install… beside Library clean-up (step 2) outlined](../../images/plugins/library-cleanup/install-1-catalogue.png)
 
-3. A slide-out opens with what it can see, change and reach. Read it all. Under **It can change**, the line about your media folder says what it may do there.
+3. A slide-out opens with what it can read, change and reach. Read it all. Under **It can change**, the line about your media folder says what it may do there.
 
    ![The Install Library clean-up? slide-out, High risk, with the line about your media folder under It can change (step 3) outlined](../../images/plugins/library-cleanup/install-2-what-it-may-do.png)
 
@@ -67,7 +67,7 @@ To move items straight away, once **Move items each day** is activated, go to **
 
 ### Add it by its address
 
-On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **See what it does** and carry on from step 3:
+On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **What it does** and carry on from step 3:
 
 ```text
 https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/library-cleanup/starboard-plugin.json

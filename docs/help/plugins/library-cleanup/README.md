@@ -18,7 +18,7 @@ Read [HELP.md](https://github.com/TheMightyTRex/starboard-plugins/blob/main/libr
 | Series that ended, every episode watched | A series Jellyfin says has ended, every episode watched by everyone, the last more than the same days ago | the same |
 | Films and series nobody watches | Nobody has watched it for 12 months, and it was added longer ago than that | **Not watched for**, 1 to 120 months |
 
-Each rule is activated when you add it and can be deactivated. They look at the film and series libraries activated in
+Each rule is activated when you add it and can be deactivated. They check the film and series libraries activated in
 **Libraries** (all of them when you add it). "Everyone" is each Jellyfin user who can sign in, less those in
 **People to leave out**.
 

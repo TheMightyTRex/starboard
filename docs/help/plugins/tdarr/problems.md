@@ -30,7 +30,7 @@ Its tab says **Did not start** when Tdarr did not start, or stopped answering.
 1. On Tdarr's tab, read the message under its state: it says why it stopped.
 2. Select **Try again**.
 3. If it stopped soon after an update, select **Roll back to** and the version you had. Read [Updates](../tdarr/updates.md).
-4. Still failing: go to **System**, then **Logs**, and look for its name.
+4. Still failing: go to **System**, then **Logs**, and find its name.
 
 If your old Tdarr in the main install is still running, it may hold port 8265. The plug-in then takes the next free port, so Starboard's own Tdarr page may not find it until the old one is removed.
 
@@ -38,7 +38,7 @@ If your old Tdarr in the main install is still running, it may hold port 8265. T
 
 Your Starboard's plug-in API is outside what this version of Tdarr works with, so Starboard stopped it.
 
-1. Select **Look for an update** on its tab.
+1. Select **Check for an update** on its tab.
 2. If there is none, update Starboard. Read [Update Starboard](../../topics/update-starboard.md).
 
 ## Open its page
@@ -76,7 +76,7 @@ On its tab, under **Settings**:
 - **Starboard found no Tdarr on this computer (no container called tdarr)**: the main install has no Tdarr to copy. Set the plug-in up as a new Tdarr instead. Read [Install](../tdarr/install.md#set-it-up).
 - **Tdarr keeps /app/server in a Docker volume, which Starboard cannot copy. Copy it by hand**: copy those folders into the plug-in's folder in Starboard's data, `data/plugins/tdarr`, yourself.
 - **Tdarr has none of the folders this plug-in copies**: there is nothing to bring in. Set it up as a new Tdarr.
-- **Starboard could not stop Tdarr for the copy**, or **The copy did not finish**: read the rest of the message, then try again. Look in **System**, then **Logs**, for more.
+- **Starboard could not stop Tdarr for the copy**, or **The copy did not finish**: read the rest of the message, then try again. Go to **System**, then **Logs**, for more.
 
 If the plug-in had made folders of its own already, Starboard puts them beside the copy, named `before-copy` with the date and time, and deletes nothing.
 

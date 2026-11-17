@@ -30,11 +30,11 @@ Each image is pinned by digest in the manifest:
 |---|---|
 | `GET /health` | Health: 200 while it can work |
 | `GET /count` | The Description tracks to check card (stat) |
-| `POST /look` | The Look in the folder now button |
+| `POST /look` | The Check the folder now button |
 | `GET /inbox` | The Description tracks to add page |
 | `POST /inbox` | A choice on that page: the film or episode, or whether it plays in step |
 | `POST /inbox/file` | A file uploaded on that page, streamed to it |
-| `POST /jobs/look` | The job Look for new description tracks |
+| `POST /jobs/look` | The job Check for new description tracks |
 | `POST /update/before` | The update's before step, 60 seconds at most |
 | `POST /update/after` | The update's after step, 10 seconds at most |
 

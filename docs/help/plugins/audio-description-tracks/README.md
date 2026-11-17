@@ -28,7 +28,7 @@ plug-in, whose **Search AudioVault** list links to AudioVault's own search for e
 A description track is made for one cut of a film. A different length, by more than a few seconds, almost always means
 your copy is another cut: an extended edition, a director's cut, a version with different studio logos at the start, or
 a broadcast with its own credits. The plug-in says how much longer or shorter the track is and does not add it.
-Look for a track for your cut, or line the track up yourself with describealign
+Find a track for your cut, or line the track up yourself with describealign
 (<https://pypi.org/project/describealign/>), then put the result in the folder.
 
 ## What it may do
@@ -52,7 +52,7 @@ Look for a track for your cut, or line the track up yourself with describealign
 - **Description tracks to add**: each file in the folder, what it was matched to, and what happened.
 - **Language of the description tracks**: English unless you change it. The track is named after it.
 - **How close the lengths must be**: 5 seconds unless you change it, from 1 to 30.
-- **Look in the folder now**: it also looks when its page opens, and once a night in quiet hours.
+- **Check the folder now**: it also checks when its page opens, and once a night in quiet hours.
 
 ## Add it
 

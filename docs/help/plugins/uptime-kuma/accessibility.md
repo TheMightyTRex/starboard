@@ -6,7 +6,7 @@ Starboard draws everything Uptime Kuma shows in Starboard: its tab, its buttons 
 ## What was checked
 
 - **The plug-in tester:** accessibility passed. Starboard runs it before the plug-in is added, every time. Uptime Kuma has no settings, card or actions in Starboard, so there was little to check.
-- **Its logo** has a text description, "A heartbeat line", for where it is shown without its name.
+- **Its logo**, a heartbeat line, has the text description "Uptime Kuma logo" where it is shown without its name. Beside its name, screen readers skip it, so the name is read once.
 - **Starboard's own parts** (settings, buttons, dialogs and cards) are checked with axe, a keyboard walk and the reading order in each Starboard release. Read [How Starboard is tested](../../accessibility/how-starboard-is-tested.md).
 
 ## Not checked

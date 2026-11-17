@@ -15,7 +15,7 @@ Add Direct play from Starboard's **Catalogue**, where it is listed under **Jelly
 
 Starboard lists these before you add it, each with its risk.
 
-| It asks to | Risk |
+| Permission | Risk |
 |---|---|
 | Use Jellyfin's API key, kept by Starboard (`jellyfin:key`) | High |
 | Use Reelix's API key, kept by Starboard (`reelix:key`) | High |
@@ -25,19 +25,19 @@ What it runs:
 
 - **main:** reaches your home network and the internet, and this computer as `host.docker.internal`. It can use its own folder in Starboard's data (`data/plugins/direct-play`), the `movies` folder in your media folder, to read and change, the `tv` folder in your media folder, to read and change.
 
-Like every plug-in, it runs read only, as a user that is not root, with no extra rights, and its image is pinned by digest, so what you approved is what runs.
+Like every plug-in, it runs read only, as a user that is not root, with no extra rights. Its image is pinned by digest, so what you approved is what runs.
 
 ## Memory and processor
 
 - **main:** 512 MB of memory and one processor core at most. ffmpeg runs only while a file is fixed, at the lowest processor and disk priority, with two threads at most.
 
-Measured: not measured yet. The figures above are the most it may use.
+These figures are the most it may use.
 
 ## Add it
 
 1. Go to **Settings**, then **Plug-ins**, then **Catalogue**.
 2. Under **Jellyfin**, find **Direct play** and select **Install…**.
-3. A slide-out opens with what it can see, change and reach. Read it all.
+3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Direct play**. To stop, select **Cancel**: nothing is installed.
 5. Direct play's own tab opens under **Settings**, then **Plug-ins**. Select **Finish setting up**.
 6. In **Devices**, activate each kind of device anyone in your home watches on, and deactivate any you do not have.
@@ -45,13 +45,13 @@ Measured: not measured yet. The figures above are the most it may use.
 8. Select **Activate**. Its state changes to **Active**.
 9. Add its cards to your dashboard. Read [Dashboard card](../direct-play/dashboard-card.md).
 
-It starts by looking at your library, then fixes one file at a time in the hours you chose.
+It starts by checking your library, then fixes one file at a time in the hours you chose.
 
 Tip: Direct play is marked **Recommended** in the catalogue.
 
 ### Add it by its address
 
-On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **See what it does** and carry on from step 3:
+On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **What it does** and carry on from step 3:
 
 ```text
 https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/direct-play/starboard-plugin.json

@@ -30,7 +30,7 @@ q2: What does the card or test say?
 1. On Notifications' tab, read the message under its state: it says why it stopped.
 2. Select **Try again**.
 3. If it stopped soon after an update, select **Roll back to** and the version you had. Read [Updates](../notifications/updates.md).
-4. Still failing: go to **System**, then **Logs**, and look for its name.
+4. Still failing: go to **System**, then **Logs**, and find its name.
 
 It rests 5 minutes after the last message, and Starboard wakes it for the next event. Resting is not a problem.
 
@@ -38,7 +38,7 @@ It rests 5 minutes after the last message, and Starboard wakes it for the next e
 
 Your Starboard's plug-in API is outside what this version of Notifications works with, so Starboard stopped it.
 
-1. Select **Look for an update** on its tab.
+1. Select **Check for an update** on its tab.
 2. If there is none, update Starboard. Read [Update Starboard](../../topics/update-starboard.md).
 
 ## Activate a channel
@@ -59,7 +59,7 @@ Your Starboard's plug-in API is outside what this version of Notifications works
 - **Pushover:** check **User key** and **Application token**.
 - **ntfy:** check **Access token**, for a server or topic that needs one.
 
-Secret settings are never shown again, so type the whole value again, select **Save**, and select the test button.
+Secret settings are never shown again, so enter the whole value again, select **Save**, and select the test button.
 
 ## Check the address
 
@@ -86,7 +86,7 @@ A test that says "Fill in" and some details, then "first", or "Add" and a settin
 When the card says a message was sent but nobody saw it:
 
 - Check that kind is activated under **What to send**. A deactivated kind is not sent and not listed.
-- For email, look in the junk or spam folder of each address in **Send email to**.
+- For email, check the junk or spam folder of each address in **Send email to**.
 - For the person who asked, check **Tell the person who asked too** is activated, and that their line under **People** uses the name they use in Reelix or Seerr, such as `Sam, sam@example.com` or `Sam, telegram 123456`.
 - For New this week, it is sent at 09:00 on the day in **Send New this week on**. A week with nothing new sends nothing. Select **Send New this week now** to try it.
 

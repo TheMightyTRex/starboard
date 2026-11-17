@@ -1,16 +1,24 @@
 # Styles: Updates
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Styles 1.4.0 is the latest version. It needs Starboard with plug-in API 1.14 or later.
+Styles 1.4.1 is the latest version. It needs Starboard with plug-in API 1.14 or later.
 
 ## Versions
 
 | Version | Needs plug-in API | Released |
 |---|---|---|
-| 1.4.0 | 1.14 or later | 2026-11-15 |
-| 1.3.0 | 1.2 or later | 2026-11-12 |
+| 1.4.1 | 1.14 or later | 17 November 2026 |
+| 1.4.0 | 1.14 or later | 15 November 2026 |
+| 1.3.0 | 1.2 or later | 12 November 2026 |
 
 The catalogue offers each Starboard the newest version it can run, so an older Starboard keeps an earlier version.
+
+## What is new in 1.4.1
+
+Changed:
+
+- **Clearer words:** its description says "21 accessible styles", and the descriptions of Editorial, Large and clear, Studio, Mica, Retro and Bento are plainer.
+- **Logo description:** where its logo stands on its own, a screen reader says "Styles logo", the plug-in's name, instead of a description of the symbol.
 
 ## What is new in 1.4.0
 

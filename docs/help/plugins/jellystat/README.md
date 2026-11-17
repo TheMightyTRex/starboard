@@ -9,17 +9,17 @@ on the plug-in's page with **Open**.
 
 ## Who it is for
 
-People who want every figure Jellystat gives (libraries, people, devices and a long history), and people who had Jellystat in the main install before 13 November 2026. For the usual figures, the Watch statistics plug-in is lighter: no database, and it rests when nobody looks.
+People who want every figure Jellystat gives (libraries, people, devices and a long history), and people who had Jellystat in the main install before 13 November 2026. For the usual figures, the Watch statistics plug-in is lighter: no database, and it rests when nobody has it open.
 
 ## Set it up
 
-1. Activate it. Starboard gives Jellystat your Jellyfin's address and key, so you do not type them.
+1. Activate it. Starboard gives Jellystat your Jellyfin's address and key, so you do not enter them.
 2. Choose **Open Jellystat** and make Jellystat's own account (the first one is its admin).
-3. Optional: **Restore a Jellystat backup**. Put a PostgreSQL backup of Jellystat's database (made with `pg_dump -Fc`) in `data/plugins/jellystat/data/main/restore` in Starboard's data folder, type its name in **Backup file to restore**, then choose **Restore the backup**. It is restored into a new database first; only when that worked is it swapped in, and the database before it is kept beside it, never deleted. Jellystat's own JSON backups are restored in Jellystat itself.
+3. Optional: **Restore a Jellystat backup**. Put a PostgreSQL backup of Jellystat's database (made with `pg_dump -Fc`) in `data/plugins/jellystat/data/main/restore` in Starboard's data folder, enter its name in **Backup file to restore**, then choose **Restore the backup**. It is restored into a new database first; only when that worked is it swapped in, and the database before it is kept beside it, never deleted. Jellystat's own JSON backups are restored in Jellystat itself.
 
 ## What it may do
 
-- It can see: Everything in Jellyfin: your library, the people who use it and what each one watched.
+- It can read: Everything in Jellyfin: your library, the people who use it and what each one watched.
 - It can change: Its own folder in Starboard's data (data/plugins/jellystat).
 - It can change: Anything in Jellyfin: it gets Jellyfin's API key, which can change users, libraries and settings.
 - It can reach: Other computers on your home network, and the internet.
@@ -45,8 +45,8 @@ What it uses when nobody is using it, measured with `tools/app_check.py` (median
 
 **Settings**, **Plug-ins**, Jellystat, **Remove**. Its containers stop and go and its key stops working. You choose
 where its folder goes, with everything it kept (settings, its database):
-kept in `data/plugins/.removed`, or moved to the holding folder in **System**, **Clean up**, from where you can put it
-back or delete it for good. Starboard never deletes it. Your media folder is not touched.
+kept in `data/plugins/.removed`, or moved to the holding folder in **System**, **Clean up**.
+From there you can put it back or delete it permanently. Starboard never deletes it. Your media folder is not touched.
 
 ## Licence
 

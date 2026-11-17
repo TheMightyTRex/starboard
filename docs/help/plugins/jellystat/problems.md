@@ -28,7 +28,7 @@ q2: What does the card say?
 1. On Jellystat's tab, read the message under its state: it says why it stopped.
 2. Select **Try again**.
 3. If it stopped soon after an update, select **Roll back to** and the version you had. Read [Updates](../jellystat/updates.md).
-4. Still failing: go to **System**, then **Logs**, and look for its name.
+4. Still failing: go to **System**, then **Logs**, and find its name.
 
 If the card says **No answer from** and its name, it did not answer in 3 seconds. Check that it is **Active** on its tab, then wait a minute.
 
@@ -36,7 +36,7 @@ If the card says **No answer from** and its name, it did not answer in 3 seconds
 
 Your Starboard's plug-in API is outside what this version of Jellystat works with, so Starboard stopped it.
 
-1. Select **Look for an update** on its tab.
+1. Select **Check for an update** on its tab.
 2. If there is none, update Starboard. Read [Update Starboard](../../topics/update-starboard.md).
 
 ## Add Jellyfin to Starboard
@@ -53,7 +53,7 @@ The card says "Jellystat is not answering yet". Jellystat and its database take 
 
 1. Wait a few minutes. It asks again every 2 minutes.
 2. If it still says so, on Jellystat's tab select **Deactivate**, then **Activate**.
-3. Still not answering: go to **System**, then **Logs**, and look for its name.
+3. Still not answering: go to **System**, then **Logs**, and find its name.
 
 ## Check Jellyfin is running
 
@@ -66,7 +66,7 @@ The card says "Jellystat did not accept Jellyfin's address and key". Jellystat c
 
 1. On Jellystat's tab, open **Restore a Jellystat backup**. **Last restore** says what happened.
 2. "It is not a PostgreSQL backup made with pg_dump -Fc": use a backup made with `pg_dump -Fc`. Jellystat's own JSON backups are restored in Jellystat itself.
-3. "There is no" and the file's name: put the file in `data/plugins/jellystat/data/main/restore` and type its name only in **Backup file to restore**.
+3. "There is no" and the file's name: put the file in `data/plugins/jellystat/data/main/restore` and enter its name only in **Backup file to restore**.
 4. "The backup did not restore, so nothing was changed": your figures are as they were. The words after it say why.
 5. "Jellystat kept its database busy": select **Deactivate** on its tab, then **Activate**, and select **Restore the backup** again.
 

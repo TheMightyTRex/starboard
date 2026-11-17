@@ -1,7 +1,7 @@
 # Watch statistics: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Watch statistics adds 4 cards you can put on your dashboard. Each starts with a grey band: Watch statistics's logo and name and a status in words. A lighter grey footer says when it last changed.
+Watch statistics adds 4 cards you can put on your dashboard. Each starts with a band: Watch statistics's logo and name and a status in words. A footer says when it last changed.
 
 ## Plays this week
 

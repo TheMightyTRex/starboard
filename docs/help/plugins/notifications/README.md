@@ -7,10 +7,10 @@ An example Starboard plug-in by TheMightyTRexUK, MIT licence.
 
 ## What it may do
 
-- It sees your apps and whether they answer.
-- It sees what is downloading.
-- It sees your library.
-- It sees processor, memory and disk use.
+- It reads your apps and whether they answer.
+- It reads what is downloading.
+- It reads your library.
+- It reads processor, memory and disk use.
 - It reaches your home network and the internet.
 - It runs one small container (48 MB of memory at most).
 
@@ -40,7 +40,7 @@ Starboard runs its job **Send New this week on the chosen day** daily at 09:00.
 
 ### Email
 
-- **Send by email**: Activate once the details below are filled in and the test arrives.
+- **Send by email**: Activate once the email details are entered and the test arrives.
 - **Email server**: Such as smtp.example.com
 - **Port**
 - **Security**: How the connection to your email server is protected. Your email service says which to use.
@@ -51,7 +51,7 @@ Starboard runs its job **Send New this week on the chosen day** daily at 09:00.
 
 ### Telegram
 
-- **Send by Telegram**: Activate once the details below are filled in and the test arrives.
+- **Send by Telegram**: Activate once the bot token and chat are entered and the test arrives.
 - **Bot token**: From @BotFather in Telegram.
 - **Telegram chat**: One chat id a line. Send your bot a message first, so it may write to you.
 
@@ -69,7 +69,7 @@ Starboard runs its job **Send New this week on the chosen day** daily at 09:00.
 
 ### Pushover
 
-- **Send by Pushover**: Activate once the keys below are filled in and the test arrives.
+- **Send by Pushover**: Activate once both keys are entered and the test arrives.
 - **User key**
 - **Application token**: Make an application for Starboard on pushover.net.
 
@@ -87,7 +87,7 @@ Starboard runs its job **Send New this week on the chosen day** daily at 09:00.
 
 ### People
 
-- **People**: One person a line: the name they use in Reelix or Seerr, a comma, then their email address or telegram and their chat id.
+- **People**: One person a line: the name they use in Reelix or Seerr, a comma, then their email address, or "telegram" and their chat id.
 
 ## How it stays light
 

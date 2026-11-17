@@ -33,7 +33,7 @@ Each image is pinned by digest in the manifest:
 | `GET /card/top` | The Top titles card (list) |
 | `GET /card/people` | The Who watched most card (list) |
 | `GET /card/source` | The Watch statistics source card (status) |
-| `POST /refresh` | The Read the figures again now button |
+| `POST /refresh` | The Check now button |
 | `GET /screen/plays` | The Recent plays page |
 | `GET /screen/titles` | The Top titles page |
 | `GET /screen/people` | The People page |
@@ -43,7 +43,7 @@ Each image is pinned by digest in the manifest:
 ## How it works
 
 - `app.py` asks Jellyfin for its plug-ins. With Playback Reporting, it sends one query to Playback Reporting's own table through Jellyfin's API (`/user_usage_stats/submit_custom_query`), 5,000 rows at most. Without it, it reads each user's played films, episodes and audio, 200 a user at most.
-- The answer is kept in `/data/plays.json` for 15 minutes, or until **Over the last** changes, and every card and table is worked out from it. **Read the figures again now** (`POST /refresh`) reads it again straight away.
+- The answer is kept in `/data/plays.json` for 15 minutes, or until **Over the last** changes, and every card and table is worked out from it. **Check now** (`POST /refresh`) reads it again straight away.
 - The three tables are read only: a change sent to them answers "These figures are read only".
 - The cards' status comes from `band()`: `ok` with Playback Reporting, `warning` ("Last plays only") without it. The source card sends `ok`, `needs_setup` or `problem`.
 - It starts when needed and stops after 5 minutes with nothing to do.

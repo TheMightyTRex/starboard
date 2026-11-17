@@ -1,16 +1,39 @@
 # Audio description: Updates
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Audio description 1.2.0 is the latest version. It needs Starboard with plug-in API 1.14 or later.
+Audio description 1.2.3 is the latest version. It needs Starboard with plug-in API 1.14 or later.
 
 ## Versions
 
 | Version | Needs plug-in API | Released |
 |---|---|---|
-| 1.2.0 | 1.14 or later | 2026-11-15 |
-| 1.1.0 | 1.12 or later | 2026-11-13 |
+| 1.2.3 | 1.14 or later | 17 November 2026 |
+| 1.2.2 | 1.14 or later | 17 November 2026 |
+| 1.2.1 | 1.14 or later | 16 November 2026 |
+| 1.2.0 | 1.14 or later | 15 November 2026 |
+| 1.1.0 | 1.12 or later | 13 November 2026 |
 
 The catalogue offers each Starboard the newest version it can run, so an older Starboard keeps an earlier version.
+
+## What is new in 1.2.3
+
+Changed:
+
+- **Clearer words:** **Look for described titles now** is now **Check for described titles now**, and its job is **Check for titles with audio description**. Its messages put the settings they name in quotation marks and spell out RNIB.
+- **Logo description:** where its logo stands on its own, a screen reader says "Audio description logo", the plug-in's name, instead of a description of the symbol.
+
+## What is new in 1.2.2
+
+Fixed:
+
+- **Jellyfin 12:** it sends Jellyfin's key the way Jellyfin 12 asks for it, so Jellyfin no longer refuses its requests where legacy authorisation is off. Older Jellyfin still works.
+
+## What is new in 1.2.1
+
+Changed:
+
+- **Lighter at rest:** it wakes about once a minute while nothing asks it anything, not twice a second, and writes nothing to its folder when a run goes well.
+- **Starts faster:** its image comes with Python's modules already compiled, so a start takes about a quarter of the processor time.
 
 ## What is new in 1.2.0
 

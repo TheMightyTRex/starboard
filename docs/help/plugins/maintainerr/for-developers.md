@@ -13,7 +13,7 @@ How Maintainerr is built, for anyone who wants to change it or make one like it.
 ## How it works
 
 - It has no code of its own: Starboard runs the app's own image, pinned by digest, with the limits in `resources`.
-- Its container is on the `lan` network with `publish` set, and `network:port` lets Starboard open its page on the home network. `host_port` is the port Starboard tries first; when it is in use, Starboard takes the next free one and shows it on the tab.
+- Its container is on the `lan` network with `publish` set. `network:port` lets Starboard open its page on the home network. `host_port` is the port Starboard tries first. When it is in use, Starboard takes the next free one and shows it on the tab.
 - It has no `settings`, `cards`, `actions` or `health`, so Starboard waits for its container to start after an update.
 - It runs read only, as a user that is not root, with no extra rights. What it writes goes in its own folder, `data/plugins/maintainerr`.
 - It runs as `1000:1000`, the user its image expects, and keeps its data in `/opt/data`, its folder in Starboard's data.

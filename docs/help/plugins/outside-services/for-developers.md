@@ -35,7 +35,7 @@ Each image is pinned by digest in the manifest:
 
 - `app.py` uses only Python's standard library and the shared helper `sbplugin.py`.
 - A background job (`every()`) checks the first 20 addresses, 2 seconds after it starts and then at **Check every**. The interval is read once, when it starts.
-- Each check is a `GET` with an 8 second time limit that reads at most 1 KB. An HTTP answer below 500 counts as up; a server error, a time-out or no connection counts as not answering.
+- Each check is a `GET` with an 8 second time limit that reads at most 1 KB. An HTTP answer under 500 counts as up; a server error, a time-out or no connection counts as not answering.
 - The results go in `rows.json` in its `data` folder. Both cards answer with `band()`: `ok` or `problem` with when `rows.json` last changed, `waiting` before the first check, and `needs_setup` with no addresses.
 
 ## Find out more

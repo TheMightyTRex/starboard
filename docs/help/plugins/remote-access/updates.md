@@ -1,16 +1,39 @@
 # Remote access: Updates
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Remote access 1.1.0 is the latest version. It needs Starboard with plug-in API 1.14 or later.
+Remote access 1.1.3 is the latest version. It needs Starboard with plug-in API 1.14 or later.
 
 ## Versions
 
 | Version | Needs plug-in API | Released |
 |---|---|---|
-| 1.1.0 | 1.14 or later | 2026-11-15 |
-| 1.0.0 | 1.8 or later | 2026-11-13 |
+| 1.1.3 | 1.14 or later | 17 November 2026 |
+| 1.1.2 | 1.14 or later | 17 November 2026 |
+| 1.1.1 | 1.14 or later | 16 November 2026 |
+| 1.1.0 | 1.14 or later | 15 November 2026 |
+| 1.0.0 | 1.8 or later | 13 November 2026 |
 
 The catalogue offers each Starboard the newest version it can run, so an older Starboard keeps an earlier version.
+
+## What is new in 1.1.3
+
+Changed:
+
+- **Clearer words:** **Cloudflare tunnel token** is now **Cloudflare Tunnel token**, and its messages say "the server" instead of "this computer".
+- **Logo description:** where its logo stands on its own, a screen reader says "Remote access logo", the plug-in's name, instead of a description of the symbol.
+
+## What is new in 1.1.2
+
+Changed:
+
+- **Shared helper:** its shared code sends Jellyfin's key the way Jellyfin 12 asks for it. Remote access does not ask Jellyfin anything, so it works as before.
+
+## What is new in 1.1.1
+
+Changed:
+
+- **Lighter at rest:** it wakes about once a minute while nothing asks it anything, not twice a second.
+- **Starts faster:** its image comes with Python's modules already compiled, so a start takes about a quarter of the processor time.
 
 ## What is new in 1.1.0
 

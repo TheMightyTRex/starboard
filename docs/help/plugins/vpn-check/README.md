@@ -16,7 +16,7 @@ An example Starboard plug-in by TheMightyTRexUK, MIT licence.
 
 ## Settings
 
-- **Your home's public address**: Optional, such as 81.2.69.160. If the VPN ever shows this address, the card turns red.
+- **Your home's public address**: Optional, such as 203.0.113.7. If the VPN ever shows this address, the card says Problem.
 - **Check every**
 
 ## Add it

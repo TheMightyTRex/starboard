@@ -1,7 +1,7 @@
 # Outside services: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Outside services adds 2 cards you can put on your dashboard, both called **Outside services**: one line for everything, or a list with each address. Each starts with a grey band: Outside services' logo and name and a status in words. A lighter grey footer says when it last changed.
+Outside services adds 2 cards you can put on your dashboard, both called **Outside services**: one line for everything, or a list with each address. Each starts with a band: Outside services' logo and name and a status in words. A footer says when it last changed.
 
 ## Outside services, one line
 
@@ -27,7 +27,7 @@ Both cards say the same.
 | **OK** | Every address answered at the last check. The time in the band is when that check ended. |
 | **Waiting** | There are addresses, but the first check has not finished yet. The one-line card says "Not checked yet". |
 | **Needs setting up** | **Addresses to check** is empty. The one-line card says "Add addresses in the plug-in's settings". |
-| **Not answering** with a number | Shown as **Problem**: that many addresses did not answer at the last check, such as **2 not answering**. |
+| **Not answering** | Shown as **Problem**: at least one address did not answer at the last check. The card names each one. |
 
 ## Add it to your dashboard
 

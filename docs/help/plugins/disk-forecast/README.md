@@ -7,7 +7,7 @@ An example Starboard plug-in by TheMightyTRexUK, MIT licence.
 
 ## What it may do
 
-- It sees processor, memory and disk use.
+- It reads processor, memory and disk use.
 - It runs one small container (48 MB of memory at most).
 
 ## On the dashboard

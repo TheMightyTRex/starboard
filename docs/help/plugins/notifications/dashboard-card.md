@@ -1,7 +1,7 @@
 # Notifications: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Notifications adds 2 cards you can put on your dashboard. Each starts with a grey band: Notifications' logo and name and a status in words. A lighter grey footer says when it last changed.
+Notifications adds 2 cards you can put on your dashboard. Each starts with a band: Notifications' logo and name and a status in words. A footer says when it last changed.
 
 ## Notifications
 
@@ -24,7 +24,7 @@ Shows the last 10 messages, tests included, newest first. Each says when, and wh
 |---|---|
 | **OK** | The last message went by every channel it tried. On **Notifications sent**, none of the last 10 failed. |
 | **Ready** | A channel is active, but nothing has been sent yet. The card says "Ready to send by" and the channels. |
-| **Warning** | Only on **Notifications sent**: some of the last 10 were not sent by a channel. The band says how many, such as "2 not sent". |
+| **Warning** | Only on **Notifications sent**: some of the last 10 were not sent by a channel. The band says "Not sent", and the list says which. |
 | **Needs setting up** | Shown as **No channel active** on the **Notifications** card. No channel is active: "No channel is active. Activate one in Settings, Plug-ins, Notifications." |
 | **Problem** | Only on the **Notifications** card, shown as **Last one not sent**: the last message failed by a channel. The card says which and why, such as "Email: the email server refused the user name or password". |
 

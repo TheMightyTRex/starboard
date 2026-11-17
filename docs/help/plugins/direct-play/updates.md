@@ -1,15 +1,39 @@
 # Direct play: Updates
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Direct play 1.0.0 is the latest version. It needs Starboard with plug-in API 1.14 or later.
+Direct play 1.0.3 is the latest version. It needs Starboard with plug-in API 1.14 or later.
 
 ## Versions
 
 | Version | Needs plug-in API | Released |
 |---|---|---|
-| 1.0.0 | 1.14 or later | 2026-11-14 |
+| 1.0.3 | 1.14 or later | 17 November 2026 |
+| 1.0.2 | 1.14 or later | 17 November 2026 |
+| 1.0.1 | 1.14 or later | 16 November 2026 |
+| 1.0.0 | 1.14 or later | 14 November 2026 |
 
 The catalogue offers each Starboard the newest version it can run, so an older Starboard keeps an earlier version.
+
+## What is new in 1.0.3
+
+Changed:
+
+- **Clearer words:** **Look at the library now** is now **Check the library now**, and the size settings are **Shrink 1080p files over**, **Shrink 720p files over** and **Shrink smaller files over**. Its messages put the settings they name in quotation marks.
+- **Logo description:** where its logo stands on its own, a screen reader says "Direct play logo", the plug-in's name, instead of a description of the symbol.
+
+## What is new in 1.0.2
+
+Fixed:
+
+- **Jellyfin 12:** it sends Jellyfin's key the way Jellyfin 12 asks for it, so Jellyfin no longer refuses its library refreshes and other requests where legacy authorisation is off. Older Jellyfin still works.
+
+## What is new in 1.0.1
+
+Changed:
+
+- **Lighter at rest:** it wakes about once a minute while nothing asks it anything, not twice a second, and writes nothing to its folder when a run goes well.
+- **Starts faster:** its image comes with Python's modules already compiled, so a start takes about a quarter of the processor time.
+- **Lighter dashboard card:** the cards and the minute's look for work no longer read every file's details each time; with 50,000 files the card answers in about 4 ms instead of 230 ms, and about 45 MB less memory is held.
 
 ## What is new in 1.0.0
 

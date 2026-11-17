@@ -10,7 +10,7 @@ Maintainerr's tab, in **Settings**, then **Plug-ins**, then **Maintainerr**, has
 - **Open Maintainerr** opens its own page in a new tab. It is there while it is active.
 - **Activate** starts it, and Starboard chooses a free port for its page. **Deactivate** stops it and keeps its folder.
 - **Try again** starts it again when it did not start.
-- **Look for an update** is there when this Starboard is newer than the version was made for.
+- **Check for an update** is there when this Starboard is newer than the version was made for.
 - **Remove Maintainerr** stops it and takes it away. You choose where its folder goes; nothing is deleted.
 
 ## Things to note

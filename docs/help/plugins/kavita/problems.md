@@ -1,7 +1,7 @@
 # Kavita: Problems
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Find what is wrong with Kavita from what its tab says or what you see, then follow the numbered answer.
+Find what is wrong with Kavita from what its tab says or what happens, then follow the numbered answer.
 
 ```flow
 title: Find your answer
@@ -28,13 +28,13 @@ q2: What is wrong?
 1. On Kavita's tab, read the message under its state: it says why it stopped.
 2. Select **Try again**.
 3. If it stopped soon after an update, select **Roll back to** and the version you had. Read [Updates](../kavita/updates.md).
-4. Still failing: go to **System**, then **Logs**, and look for its name.
+4. Still failing: go to **System**, then **Logs**, and find its name.
 
 ## Update it or update Starboard
 
 Your Starboard's plug-in API is outside what this version of Kavita works with, so Starboard stopped it.
 
-1. Select **Look for an update** on its tab.
+1. Select **Check for an update** on its tab.
 2. If there is none, update Starboard. Read [Update Starboard](../../topics/update-starboard.md).
 
 ## Open its web page
@@ -46,7 +46,7 @@ Your Starboard's plug-in API is outside what this version of Kavita works with, 
 
 ## Add the libraries
 
-Kavita sees only `books` and `comics` in your media folder, as `/media/books` and `/media/comics`, and shows nothing until you add a library.
+Kavita can read only `books` and `comics` in your media folder, as `/media/books` and `/media/comics`, and shows nothing until you add a library.
 
 1. Open Kavita and sign in with its admin account.
 2. Add a library for `/media/books`.

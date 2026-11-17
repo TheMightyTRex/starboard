@@ -14,7 +14,7 @@ Add Audio description from Starboard's **Catalogue**, where it is listed under *
 
 Starboard lists these before you add it, each with its risk.
 
-| It asks to | Risk |
+| Permission | Risk |
 |---|---|
 | Use Jellyfin's API key, kept by Starboard (`jellyfin:key`) | High |
 | Use Reelix's API key, kept by Starboard (`reelix:key`) | High |
@@ -24,31 +24,31 @@ What it runs:
 
 - **main:** reaches your home network and the internet, and this computer as `host.docker.internal`, to reach Jellyfin and Reelix. It never downloads from or reads any website. It can use its own folder in Starboard's data (`data/plugins/audio-description`). It rests after 10 minutes with nothing to do, and Starboard wakes it when it is needed.
 
-Like every plug-in, it runs read only, as a user that is not root, with no extra rights, and its image is pinned by digest, so what you approved is what runs.
+Like every plug-in, it runs read only, as a user that is not root, with no extra rights. Its image is pinned by digest, so what you approved is what runs.
 
 ## Memory and processor
 
 - **main:** 64 MB of memory and 0.25 of a processor core at most.
 
-Measured: not measured yet. The figures above are the most it may use.
+These figures are the most it may use.
 
 ## Add it
 
 1. Go to **Settings**, then **Plug-ins**, then **Catalogue**.
 2. Under **Accessibility**, find **Audio description** and select **Install…**.
-3. A slide-out opens with what it can see, change and reach. Read it all.
+3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Audio description**. To stop, select **Cancel**: nothing is installed.
 5. Audio description's own tab opens under **Settings**, then **Plug-ins**. Select **Activate**. Its state changes to **Active**.
 6. Open **People who want audio description** on its tab.
 7. Activate each person who wants audio description.
-8. Optional: select **Look for described titles now**, so you do not wait for tonight's check.
+8. Optional: select **Check for described titles now**, so you do not wait for tonight's check.
 9. Add its cards to your dashboard. Read [Dashboard card](../audio-description/dashboard-card.md).
 
 When Starboard starts, it adds the **Audio description** format to Reelix and prefers it. To stop that, deactivate **Prefer releases with audio description**. Read [Settings](../audio-description/settings.md).
 
 ### Add it by its address
 
-On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **See what it does** and carry on from step 3:
+On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **What it does** and carry on from step 3:
 
 ```text
 https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/audio-description/starboard-plugin.json

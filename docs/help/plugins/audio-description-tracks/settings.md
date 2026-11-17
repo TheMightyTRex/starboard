@@ -20,7 +20,7 @@ Audio description tracks' settings are on its own tab: go to **Settings**, then 
 
 These are on Audio description tracks' tab.
 
-- **Look in the folder now** looks in the audio-description folder straight away, in the background, and checks each new file. It says "Looking in the folder. The list updates in a minute". It also looks when **Description tracks to add** opens and there are new files, and once a night at 04:40, in quiet hours.
+- **Check the folder now** checks the audio-description folder straight away, in the background, and checks each new file. It says "Checking the folder. The list updates in a minute". It also checks when **Description tracks to add** opens and there are new files, and once a night at 04:40, in quiet hours.
 
 ## Things to note
 

@@ -31,7 +31,7 @@ Each image is pinned by digest in the manifest:
 | `GET /health` | Health: 200 while it can work |
 | `GET /count` | The Audio description card (stat) |
 | `GET /recent` | The Recently found with audio description card (list) |
-| `POST /scan` | The Look for described titles now button |
+| `POST /scan` | The Check for described titles now button |
 | `POST /reelix` | The Apply the Reelix choice now button |
 | `GET /people` | The People who want audio description page |
 | `GET /titles` | The Titles with audio description page |
@@ -39,7 +39,7 @@ Each image is pinned by digest in the manifest:
 | `GET /audiovault` | The Search AudioVault page |
 | `GET /youdescribe` | The Search YouDescribe page |
 | `GET /apps` | The MovieReading and Earcatch page |
-| `POST /jobs/scan` | The job Look for titles with audio description |
+| `POST /jobs/scan` | The job Check for titles with audio description |
 | `POST /jobs/reelix` | The job Keep the audio description choice in Reelix |
 | `POST /update/before` | The update's before step, 60 seconds at most |
 | `POST /update/after` | The update's after step, 10 seconds at most |
@@ -56,7 +56,7 @@ Each image is pinned by digest in the manifest:
 - It keeps `/data/result.json` (the described titles), `/data/seen.json` (when each was first found, for the Recently found card) and `/data/without.json` (titles without a described track, for the Sources' links).
 - `reelix` adds a custom format named **Audio description** with one release title pattern, and scores it 100 in every video quality level that does not already score it, or takes the score out when **Prefer releases with audio description** is deactivated.
 - For each person activated, it sets Jellyfin's **RememberAudioSelections** and keeps what they had in `/data/people.json`, to put back when they are deactivated. It tries Jellyfin 10.9's `/Users/Configuration` first, then 10.8's address.
-- **Look for described titles now** runs the scan in the background, because a button must answer in 10 seconds.
+- **Check for described titles now** runs the scan in the background, because a button must answer in 10 seconds.
 - Cards set their status with `band()` from `sbplugin.py`. Its before update step holds new runs and waits for one that is running.
 
 ## Find out more

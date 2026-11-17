@@ -28,13 +28,13 @@ Its tab says **Did not start** when Seerr did not start, or stopped answering.
 1. On Seerr's tab, read the message under its state: it says why it stopped.
 2. Select **Try again**.
 3. If it stopped soon after an update, select **Roll back to** and the version you had. Read [Updates](../seerr/updates.md).
-4. Still failing: go to **System**, then **Logs**, and look for its name.
+4. Still failing: go to **System**, then **Logs**, and find its name.
 
 ## Update it or update Starboard
 
 Your Starboard's plug-in API is outside what this version of Seerr works with, so Starboard stopped it.
 
-1. Select **Look for an update** on its tab.
+1. Select **Check for an update** on its tab.
 2. If there is none, update Starboard. Read [Update Starboard](../../topics/update-starboard.md).
 
 ## Open its page
@@ -52,7 +52,7 @@ Seerr runs in its own container, so it reaches Jellyfin by this computer's name 
 
 1. In Seerr's set-up, enter Jellyfin's address as `http://host.docker.internal:8096`.
 2. Sign in with your Jellyfin account.
-3. Check Jellyfin is running: in Starboard, go to **Apps** and look at Jellyfin.
+3. Check Jellyfin is running: in Starboard, go to **Apps** and check Jellyfin's card.
 
 ## Choose one place for requests
 

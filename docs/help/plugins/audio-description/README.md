@@ -58,7 +58,7 @@ from any of them.
 - Record or copy from BBC iPlayer, ITVX, Channel 4, My5 or any other app.
 - Change a media file.
 
-## What Jellyfin cannot do yet
+## What Jellyfin does not do
 
 Jellyfin does not read the "visual impaired" flag that marks a described track inside a file, and has no setting that
 picks a described track by itself. So the plug-in finds tracks by their names, and each person chooses the described

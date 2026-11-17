@@ -15,7 +15,7 @@ Add Audio description tracks from Starboard's **Catalogue**, where it is listed 
 
 Starboard lists these before you add it, each with its risk.
 
-| It asks to | Risk |
+| Permission | Risk |
 |---|---|
 | Use Jellyfin's API key, kept by Starboard (`jellyfin:key`) | High |
 | Reach other computers on your home network, and the internet (`network:lan`) | Medium |
@@ -24,23 +24,23 @@ What it runs:
 
 - **main:** reaches your home network and the internet, and this computer as `host.docker.internal`. It can use its own folder in Starboard's data (`data/plugins/audio-description-tracks`), the `movies` folder in your media folder, to read and change, the `tv` folder in your media folder, to read and change, the `audio-description` folder in your media folder, to read and change. It runs as the owner of your media folder, so the files it adds are yours. It never downloads from or reads any website. It rests after 10 minutes with nothing to do, and Starboard wakes it when it is needed.
 
-Like every plug-in, it runs read only, as a user that is not root, with no extra rights, and its image is pinned by digest, so what you approved is what runs.
+Like every plug-in, it runs read only, as a user that is not root, with no extra rights. Its image is pinned by digest, so what you approved is what runs.
 
 ## Memory and processor
 
 - **main:** 96 MB of memory and 0.5 of a processor core at most.
 
-Measured: not measured yet. The figures above are the most it may use.
+These figures are the most it may use.
 
 ## Add it
 
 1. Go to **Settings**, then **Plug-ins**, then **Catalogue**.
 2. Under **Accessibility**, find **Audio description tracks** and select **Install…**.
-3. A slide-out opens with what it can see, change and reach. Read it all.
+3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Audio description tracks**. To stop, select **Cancel**: nothing is installed.
 5. Audio description tracks' own tab opens under **Settings**, then **Plug-ins**. Select **Activate**. Starboard makes the audio-description folder in your media folder. Its state changes to **Active**.
 6. Put a description track in the audio-description folder, named as the film and its year, such as `Dune (2021).mp3`. Or open **Description tracks to add** on its tab and select **Upload a description track**.
-7. Select **Look in the folder now**.
+7. Select **Check the folder now**.
 8. When the file shows **Added**, play the film in Jellyfin and choose the **English (Audio Description)** sound track.
 9. On **Description tracks to add**, in **Plays in step?**, choose **Yes: put the original away** or **No: take the track off**.
 
@@ -48,7 +48,7 @@ To add the card, read [Dashboard card](../audio-description-tracks/dashboard-car
 
 ### Add it by its address
 
-On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **See what it does** and carry on from step 3:
+On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **What it does** and carry on from step 3:
 
 ```text
 https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/audio-description-tracks/starboard-plugin.json

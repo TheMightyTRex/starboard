@@ -1,7 +1,7 @@
 # Audio description: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Audio description adds 2 cards you can put on your dashboard. Each starts with a grey band: Audio description's logo and name and a status in words. A lighter grey footer says when it last changed.
+Audio description adds 2 cards you can put on your dashboard. Each starts with a band: Audio description's logo and name and a status in words. A footer says when it last changed.
 
 ## Audio description
 
@@ -26,7 +26,7 @@ Shows the 10 films and series it found most recently with a described sound trac
 | **Scheduled** | Shown as **Checks tonight**. It has not checked the library yet. The number card says "Not checked yet". |
 | **Problem** | Only on the **Audio description** card, before the first check: the last check failed, and the words under the number say why, such as "Starboard has no Jellyfin key to give yet: add Jellyfin in Settings, Apps". |
 
-Both cards change once a night, after the check at 04:20, or a minute or two after you select **Look for described titles now**.
+Both cards change once a night, after the check at 04:20, or a minute or two after you select **Check for described titles now**.
 
 ## Add it to your dashboard
 

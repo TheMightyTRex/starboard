@@ -1,17 +1,40 @@
 # Jellystat: Updates
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Jellystat 1.1.1 is the latest version. It needs Starboard with plug-in API 1.14 or later.
+Jellystat 1.1.4 is the latest version. It needs Starboard with plug-in API 1.14 or later.
 
 ## Versions
 
 | Version | Needs plug-in API | Released |
 |---|---|---|
-| 1.1.1 | 1.14 or later | 2026-11-15 |
-| 1.1.0 | 1.14 or later | 2026-11-15 |
-| 1.0.0 | 1.13 or later | 2026-11-13 |
+| 1.1.4 | 1.14 or later | 17 November 2026 |
+| 1.1.3 | 1.14 or later | 17 November 2026 |
+| 1.1.2 | 1.14 or later | 16 November 2026 |
+| 1.1.1 | 1.14 or later | 15 November 2026 |
+| 1.1.0 | 1.14 or later | 15 November 2026 |
+| 1.0.0 | 1.13 or later | 13 November 2026 |
 
 The catalogue offers each Starboard the newest version it can run, so an older Starboard keeps an earlier version.
+
+## What is new in 1.1.4
+
+Changed:
+
+- **Clearer words:** its messages say to enter a backup's name in 'Backup file to restore', the Restore page says when a restore is done, and the card says "Jellystat is connected to Jellyfin."
+- **Logo description:** where its logo stands on its own, a screen reader says "Jellystat logo", the plug-in's name, instead of a description of the symbol.
+
+## What is new in 1.1.3
+
+Changed:
+
+- **Shared helper:** its helper's shared code sends Jellyfin's key the way Jellyfin 12 asks for it. It hands the key to Jellystat as before.
+
+## What is new in 1.1.2
+
+Changed:
+
+- **Lighter at rest:** its helper wakes about once a minute while nothing asks it anything, not twice a second.
+- **Starts faster:** its helper's image comes with Python's modules already compiled.
 
 ## What is new in 1.1.1
 

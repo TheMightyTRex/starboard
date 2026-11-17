@@ -32,10 +32,10 @@ Direct play's settings are on its own tab: go to **Settings**, then **Plug-ins**
 
 | Setting | What it does | Default |
 |---|---|---|
-| **Shrink very large H.264 files** | Converts H.264 files with a higher bitrate than below again, at the same picture quality. A file is kept as it was when it would not get at least a tenth smaller. Activated or deactivated. | Activated |
-| **Shrink 1080p files above** | A number from 4 to 80 Mbps. | 15 Mbps |
-| **Shrink 720p files above** | A number from 2 to 40 Mbps. | 8 Mbps |
-| **Shrink smaller files above** | A number from 1 to 20 Mbps. | 5 Mbps |
+| **Shrink very large H.264 files** | Converts again any H.264 file with a higher bitrate than its size's limit, at the same picture quality. A file is kept as it was when it would not get at least a tenth smaller. Activated or deactivated. | Activated |
+| **Shrink 1080p files over** | A number from 4 to 80 Mbps. | 15 Mbps |
+| **Shrink 720p files over** | A number from 2 to 40 Mbps. | 8 Mbps |
+| **Shrink smaller files over** | A number from 1 to 20 Mbps. | 5 Mbps |
 
 ## More
 
@@ -51,7 +51,7 @@ These are on Direct play's tab.
 
 - **Pause fixing** stops the file being converted at once, removes its unfinished copy and leaves the original as it was. That file is done again later. Nothing new starts until you resume.
 - **Resume fixing** carries on, straight away when it is inside the hours set in **When it works**, or when they next start.
-- **Look at the library now** looks for new or changed files in your movies and tv folders straight away, at any hour, even while paused. Only new or changed files are read.
+- **Check the library now** finds new or changed files in your movies and tv folders straight away, at any hour, even while paused. Only new or changed files are read.
 
 ## Things to note
 
