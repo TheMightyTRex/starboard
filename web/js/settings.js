@@ -1165,6 +1165,7 @@ async function openFinder(opener) {
 // One wizard step's content: { nodes, save }. Shared by the set-up guide and the upgrade guide.
 async function stepContent(id, root, step = {}) {
   const types = (t) => config.services.filter((s) => s.enabled !== false && t.includes(s.type));
+  if (id.startsWith("bring-") && typeof bringInStep === "function") return bringInStep(id, { inWizard: true, media: guideMemory().media || "", go: step.goTo });
   let nodes = [];
   let save = async () => true;
   if (id === "install") {
@@ -1598,12 +1599,16 @@ function wizardFrame({ root, steps, index, onBack, onSkip, onContinue, continueT
     "data-done": i < index ? "" : null, "aria-current": i === index ? "step" : null }, st.title,
     i < index ? el("span", { class: "visually-hidden", text: ", done" }) : i === index ? el("span", { class: "visually-hidden", text: ", current step" }) : null)));
   const short = el("p", { class: "steps__short", text: `Step ${index + 1} of ${steps.length}: ${step.title}` });
+  // A step in parts (WIZARD.md, section 3): the parts under the step list, done ones ticked, the current outlined.
+  const sub = step.group ? el("ol", { class: "steps steps--sub", "aria-label": `${step.groupTitle}, in ${step.parts.length} parts` }, step.parts.map((name, i) => el("li", {
+    "data-done": i < step.part ? "" : null, "aria-current": i === step.part ? "step" : null }, name,
+    i < step.part ? el("span", { class: "visually-hidden", text: ", done" }) : i === step.part ? el("span", { class: "visually-hidden", text: ", current part" }) : null))) : null;
   const cont = el("button", { type: "button", class: continuePlain ? "btn" : "btn btn--primary", disabled: busy, onclick: onContinue }, continueText);
   const foot = el("div", { class: "wizard__foot" }, cont,
     index > 0 ? el("button", { type: "button", class: "btn", onclick: onBack }, "Back") : null,
     step.skippable === false ? null : el("button", { type: "button", class: "btn btn--quiet", onclick: onSkip }, "Skip this step"));
   const heading = el("h2", { id: "wiz-h", tabindex: "-1", text: step.question });
-  root.replaceChildren(list, short, el("section", { class: "panel", "aria-labelledby": "wiz-h" },
+  root.replaceChildren(list, short, ...(sub ? [sub] : []), el("section", { class: "panel", "aria-labelledby": "wiz-h" },
     el("div", { class: "stack-1" }, heading, step.intro ? el("p", { class: "muted", text: step.intro }) : null),
     ...step.nodes.filter((n) => !n?.classList?.contains("help-links")), stepHelp(step), foot));
   return { heading, cont };
@@ -1704,6 +1709,8 @@ async function startGuide() {
       if (guideMemory().where === "pool" && poolReady) {
         list.push({ id: "drives", ...stepNamed(T, "drives"), intro: "A pool joins drives into one folder for your media; each drive stays readable on its own." });
       }
+      // DASH-455: media you already have, copied into the media folder chosen just before; optional, in four parts.
+      if (typeof bringInSteps === "function" && (!flow || flow.state.apps.has("reelix"))) list.push(...bringInSteps(T));
       if (flow) {
         // The agreed order (DASH-265): what to set up and its questions, How much it does, then Check and Start. No
         // Moving over here (DASH-271): the terminal set-up does not ask it, and the move is its own route.
@@ -1759,15 +1766,20 @@ async function startGuide() {
     index = Math.max(0, Math.min(i, steps.length - 1));
     const step = steps[index];
     step.nodes = [el("p", { class: "muted", text: "Loading…" })];
+    step.goTo = (sid) => go(Math.max(0, build().findIndex((x) => x.id === sid)));  // Change on a check table
     let save = async () => true;
     let loading = true;  // Continue waits until the step has loaded, so a quick click cannot skip it
     const frame = () => wizardFrame({ root, steps, index, busy: loading,
       continueText: step.id === "finish" ? "Go to Apps" : step.id === "review" && flow?.ids().has("review") ? "Write the files" : "Continue",
-      onBack: () => go(index - 1), onSkip: () => after(step.id, index),
+      onBack: () => go(index - 1), onSkip: () => step.group ? after(steps.filter((x) => x.group === step.group).pop().id, index) : after(step.id, index),
       onContinue: async (e) => {
         const button = e.currentTarget;  // the event forgets it once the save has been awaited
         button.disabled = true;
-        try { if (await save()) { if (step.id === "finish") location.href = "/index.html"; else after(step.id, index); } }
+        try {
+          const saved = await save();
+          if (saved === "skip" && step.group) after(steps.filter((x) => x.group === step.group).pop().id, index);  // an optional step left empty
+          else if (saved) { if (step.id === "finish") location.href = "/index.html"; else after(step.id, index); }
+        }
         catch (err) { problem(err.message); }
         finally { if (button.isConnected) button.disabled = false; }
       } });
@@ -4430,6 +4442,7 @@ startPage().then(async (session) => {
   if ($("#guide")) startGuide();
   if ($("#upgrade")) startUpgrade();
   if ($("#install") && typeof startInstall === "function") startInstall();
+  if ($("#bring-in") && typeof startBringIn === "function") startBringIn();  // DASH-455
   if ($("#copy-sections") && typeof startCopy === "function") startCopy();
   if ($("#dispatcharr-sections") && typeof startDispatcharr === "function") startDispatcharr();  // DASH-228
   if ($("#version-notice")) startAbout();

@@ -123,6 +123,13 @@ def items(cfg, data_dir):
                 out.append({"key": f"import-{tab}", "title": f"Bring in {words} already on disk",
                             "why": f"{waiting} {'folder is' if waiting == 1 else 'folders are'} not in your library yet.",
                             "href": f"/library-{tab}.html#lib-import", "done": False})
+    if "reelix" in keys:  # DASH-455: media from other disks, shares or folders, copied in; optional, so Ignore stays
+        from . import bring_in
+        job = bring_in.status(data_dir).get("state")
+        tried = os.path.exists(os.path.join(data_dir, bring_in.STATE, "job.json.last"))
+        out.append({"key": "bring-in", "title": "Bring in media you already have",
+                    "why": "Copy films, series, music and books from another disk, folder or network share, named so they match.",
+                    "href": "/bring-in.html", "done": job == "done" or tried, "optional": True})
     if "reelix" in keys and "audiobookshelf" in keys:  # radio shows already on disk (10 November 2026)
         from . import radio_import
         try:
@@ -180,7 +187,7 @@ def items(cfg, data_dir):
 PANEL_PAGES = frozenset({"/settings-reelix.html", "/settings-jellyfin.html", "/settings-audiobookshelf.html",
                          "/install-apps.html", "/library-films.html", "/library-tv.html", "/library-radio.html",
                          "/library-audiobooks.html", "/library-books.html", "/settings-tdarr.html",
-                         "/settings-dispatcharr.html"})
+                         "/settings-dispatcharr.html", "/bring-in.html"})
 
 
 GUIDED = [
@@ -222,7 +229,8 @@ def left(cfg, data_dir):
         if hit and time.time() - hit[0] < KEEP:
             return hit[1]
     out = items(cfg, data_dir)
-    result = {"items": out, "left": sum(1 for i in out if not i["done"] and not i.get("ignored"))}
+    # An optional item (Bring in media) is listed but not counted, so it never keeps the count up on its own.
+    result = {"items": out, "left": sum(1 for i in out if not i["done"] and not i.get("ignored") and not i.get("optional"))}
     with _lock:
         _cache["left"] = (time.time(), result)
     return result

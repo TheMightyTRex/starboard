@@ -1086,15 +1086,32 @@ function emptyState(title, text, action = null) {
   return el("div", { class: "empty" }, el("p", {}, el("strong", { text: title })), text ? el("p", { text }) : null, action);
 }
 
-async function folderBrowser(start, opener, onChoose) {
+// The folder picker, Idea A (DASH-455, owner, 16 November 2026), used by every page that picks a folder: a first
+// screen of places (This computer, each disk from Storage, and, when bringing media in, each network share and cloud
+// service), then one list of folders with a path bar and Back. Each folder shows its size and what is in it (films,
+// series, music, books, audiobooks), counted after the list shows so it never waits. Use this folder chooses the one
+// you are in. Up and Down move, Enter or Right opens, Left or Backspace goes up a level (to the places at the top),
+// and letters jump to a folder. The same on a phone (the slide-out is full width) and in the terminal set-up.
+// folderBrowser(start, opener, onChoose, { purpose, place }): onChoose(path, place) with the place's id ("computer",
+// "disk:/mnt/disk2", "share:s2"); a place that is not a folder (a cloud service, Another network share) calls
+// onPlace(place) instead, when given.
+const KIND_WORDS = { films: ["film", "films"], series: ["series", "series"], music: ["album", "albums"], books: ["book", "books"], audiobooks: ["audiobook", "audiobooks"] };
+function whatIsIn(kinds) {
+  return Object.entries(kinds || {}).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${n.toLocaleString("en-GB")} ${KIND_WORDS[k]?.[n === 1 ? 0 : 1] || k}`).join(", ");
+}
+const PLACE_ICONS = { computer: "monitor", disk: "hard-drive", share: "network", "add-share": "plus", cloud: "cloud" };
+async function folderBrowser(start, opener, onChoose, { purpose = "", place: startPlace = "computer", onPlace = null } = {}) {
   const list = el("ul", { class: "folder-list", role: "listbox", "aria-label": "Folders", tabindex: "0" });
+  const places = el("ul", { class: "folder-places", "aria-label": "Places" });
+  const back = el("button", { type: "button", class: "btn btn--quiet btn--compact folder-pathbar__back" }, icon("arrow-left"), "Back");
   const crumbs = el("nav", { class: "folder-crumbs", "aria-label": "Where you are" });
+  const pathbar = el("div", { class: "folder-pathbar" }, back, crumbs);
   const info = el("p", { class: "small muted", "aria-live": "polite" });
-  const choose = el("button", { type: "button", class: "btn btn--primary", text: "Choose this folder" });
+  const choose = el("button", { type: "button", class: "btn btn--primary", text: "Use this folder" });
   const cancel = el("button", { type: "button", class: "btn", text: "Cancel" });
-  const panel = sidePanel({ title: "Choose a folder", opener, body: [crumbs, info, list], foot: [choose, cancel] });
+  const panel = sidePanel({ title: "Choose a folder", opener, body: [pathbar, info, places, list], foot: [choose, cancel] });
   cancel.addEventListener("click", () => panel.close());
-  let here = "", active = 0, typed = "", typedAt = 0;
+  let here = "", place = startPlace, placeName = "", active = 0, typed = "", typedAt = 0, ask = 0, known = [];
   const pick = (i) => {
     const items = [...list.children];
     if (!items.length) return;
@@ -1103,39 +1120,118 @@ async function folderBrowser(start, opener, onChoose) {
     list.setAttribute("aria-activedescendant", items[active].id);
     items[active].scrollIntoView({ block: "nearest" });
   };
+  // The first screen: the places, each a button with what it is.
+  const showPlaces = async () => {
+    here = ""; ask += 1;
+    panel.setTitle("Choose a place");
+    pathbar.hidden = true; list.hidden = true; places.hidden = false; choose.hidden = true;
+    info.textContent = "Where is the folder?";
+    if (!known.length) {
+      try { known = (await api(`/api/folders/places?for=${encodeURIComponent(purpose)}`)).places; }
+      catch { known = [{ id: "computer", kind: "computer", name: "This computer", detail: "", ready: true }]; }
+    }
+    places.replaceChildren(...known.map((p) => el("li", {}, el("button", { type: "button", class: "folder-place", "data-place": p.id,
+      onclick: () => { if (["computer", "disk", "share"].includes(p.kind) || (p.kind === "cloud" && p.ready)) openPlace(p); else if (onPlace) { panel.close(); onPlace(p); } } },
+      el("span", { class: "folder-place__icon", "aria-hidden": "true" }, icon(PLACE_ICONS[p.kind] || "folder", 20)),
+      el("span", { class: "folder-place__text" }, el("span", { class: "folder-place__name", text: p.name }),
+        p.detail ? el("span", { class: "folder-place__detail", text: p.detail }) : null)))));
+    places.querySelector("button")?.focus();
+  };
+  const openPlace = (p) => { place = p.id; placeName = p.name; open(p.kind === "disk" ? p.path : ""); };
+  // Sizes and what is in each folder, after the list is drawn; a newer list stops an older count from landing.
+  const count = async (r, mine) => {
+    let got;
+    try { got = (await api(`/api/folders/sizes?path=${encodeURIComponent(r.path)}&place=${encodeURIComponent(place)}`)).folders; } catch { return; }
+    if (mine !== ask) return;
+    for (const node of list.children) {
+      const f = got[node.dataset.name];
+      const meta = node.querySelector(".folder-row__meta");
+      if (!meta) continue;
+      meta.textContent = f ? [formatBytes(f.size) + (f.more ? " or more" : ""), whatIsIn(f.kinds) || (f.files ? "no media found" : "")].filter(Boolean).join(" · ") : "Empty";
+    }
+    announce("Sizes counted");
+  };
   const open = async (path) => {
     let r;
-    try { r = await api(`/api/folders?path=${encodeURIComponent(path || "")}`); }
-    catch (e) { if (path) { info.textContent = `${e.message}. Showing the places to start from.`; return open(""); } info.textContent = e.message; return; }
+    const mine = ++ask;
+    places.hidden = true; pathbar.hidden = false; list.hidden = false; choose.hidden = false;
+    panel.setTitle("Choose a folder");
+    try { r = await api(`/api/folders?path=${encodeURIComponent(path || "")}&place=${encodeURIComponent(place)}`); }
+    catch (e) { if (path) { info.textContent = `${e.message}. Showing the top of this place.`; return open(""); } info.textContent = e.message; return; }
+    if (mine !== ask) return;
     here = r.path;
-    choose.disabled = !here;
-    crumbs.replaceChildren(el("button", { type: "button", class: "btn btn--quiet btn--compact", text: "All places", onclick: () => open("") }),
-      ...r.crumbs.map((c, k) => [el("span", { "aria-hidden": "true", text: "/" }),
-        el("button", { type: "button", class: "btn btn--quiet btn--compact", text: c.name, "aria-current": k === r.crumbs.length - 1 ? "location" : null, onclick: () => open(c.path) })]).flat());
-    info.textContent = r.why || [here ? `In ${r.crumbs.map((c) => c.name).join("/").replace(/^\/\//, "/")}` : "Choose where to start", r.free != null ? `${formatBytes(r.free)} free on its disk` : "",
+    choose.disabled = place === "computer" && !here;
+    const disk = place.startsWith("disk:") ? place.slice(5) : "";
+    // A disk's trail starts at the disk; a share's at the share; This computer's at its usual places.
+    const trail = place.startsWith("share:") ? r.crumbs : disk ? [{ name: placeName, path: disk }, ...r.crumbs.filter((c) => c.path.startsWith(disk + "/"))]
+      : [{ name: placeName || "This computer", path: "" }, ...r.crumbs];
+    crumbs.replaceChildren(...trail.map((c, k) => [k ? el("span", { "aria-hidden": "true", text: "/" }) : null,
+      el("button", { type: "button", class: "btn btn--quiet btn--compact", text: c.name, "aria-current": k === trail.length - 1 ? "location" : null,
+        onclick: () => open(c.path) })]).flat().filter(Boolean));
+    back.querySelector("span.visually-hidden")?.remove();
+    back.append(el("span", { class: "visually-hidden", text: here && r.parent !== null && !(place.startsWith("disk:") && here === place.slice(5)) ? " to the folder above" : " to the places" }));
+    info.textContent = r.why || [here ? `In ${trail.map((c) => c.name).join(" / ")}` : `In ${placeName || "This computer"}`, r.free != null ? `${formatBytes(r.free)} free on its disk` : "",
       r.folders.length ? `${r.folders.length} ${r.folders.length === 1 ? "folder" : "folders"}` : "No folders inside"].filter(Boolean).join(" · ");
-    list.replaceChildren(...r.folders.map((f, k) => el("li", { role: "option", id: `folder-opt-${k}`, "aria-selected": "false", "data-path": f.path,
-      onclick: () => open(f.path) }, icon("folder"), el("span", { text: f.name }))));
+    list.replaceChildren(...r.folders.map((f, k) => el("li", { role: "option", id: `folder-opt-${k}`, "aria-selected": "false", "data-path": f.path, "data-name": f.name,
+      onclick: () => open(f.path) }, icon("folder"), el("span", { class: "folder-row" }, el("span", { class: "folder-row__name", text: f.name }),
+      here ? el("span", { class: "folder-row__meta", text: "Counting…" }) : null))));
     active = 0;
     if (r.folders.length) pick(0);
     list.focus();
+    if (here && r.folders.length) count(r, mine);
   };
-  // Up and Down move, Enter or Right opens, Left or Backspace goes up, letters jump to a folder.
+  const up = () => {
+    const atTop = !here || (place.startsWith("disk:") && here === place.slice(5));
+    if (atTop) return showPlaces();
+    const parent = here.split("/").slice(0, -1).join("/");
+    return open(place === "computer" && !parent ? "" : parent);
+  };
+  back.addEventListener("click", up);
   list.addEventListener("keydown", (e) => {
     const items = [...list.children];
     if (e.key === "ArrowDown") { e.preventDefault(); pick(active + 1); }
     else if (e.key === "ArrowUp") { e.preventDefault(); pick(active - 1); }
     else if ((e.key === "Enter" || e.key === "ArrowRight") && items[active]) { e.preventDefault(); open(items[active].dataset.path); }
-    else if ((e.key === "ArrowLeft" || e.key === "Backspace") && here) { e.preventDefault(); open(here.split("/").slice(0, -1).join("/") || ""); }
+    else if (e.key === "ArrowLeft" || e.key === "Backspace") { e.preventDefault(); up(); }
     else if (e.key.length === 1 && /\S/.test(e.key)) {
       typed = Date.now() - typedAt < 700 ? typed + e.key.toLowerCase() : e.key.toLowerCase();
       typedAt = Date.now();
-      const k = items.findIndex((n) => n.textContent.toLowerCase().startsWith(typed));
+      const k = items.findIndex((n) => (n.dataset.name || "").toLowerCase().startsWith(typed));
       if (k >= 0) pick(k);
     }
   });
-  choose.addEventListener("click", () => { if (here) { panel.close(); onChoose(here); } });
-  open(start);
+  choose.addEventListener("click", () => { if (here || place !== "computer") { panel.close(); onChoose(here, place); } });
+  if (start) open(start); else showPlaces();
+}
+
+// Bringing in media (DASH-455): while a copy runs, is paused or stopped, or has a report waiting, the dashboard and
+// Activity show one line with its bar and a link to it. Asked again every 10 seconds while it runs; nothing otherwise.
+async function bringInBanner(after) {
+  if (!after) return;
+  const PHASES = { reelix: "Waiting for Reelix to start", checking: "Checking names with Reelix", downloading: "Copying down from the cloud", adding: "Adding to Reelix" };
+  let box = null, timer = 0;
+  const draw = async () => {
+    let j;
+    try { j = await api("/api/bring-in/status"); } catch { return; }
+    if (!j?.state || j.state === "none") { box?.remove(); clearInterval(timer); return; }
+    const pct = j.bytes_total ? Math.round((j.bytes_done / j.bytes_total) * 100) : 0;
+    const title = j.state === "done" ? "Your media is in" : j.state === "paused" ? "Bringing in your media: paused" :
+      j.state === "stopped" ? "Bringing in your media: stopped" : `Bringing in your media: ${PHASES[j.phase] || `${pct}%`}`;
+    const words = j.state === "done" ? `${j.report?.copied ?? 0} copied, ${j.report?.look ?? 0} need a look. See the report.` :
+      j.state === "stopped" ? j.error || "Open it to carry on." :
+      `${(j.files_done || 0).toLocaleString("en-GB")} of ${(j.files_total || 0).toLocaleString("en-GB")} files, ${formatBytes(j.bytes_done || 0)} of ${formatBytes(j.bytes_total || 0)}`;
+    const tone = j.state === "stopped" ? "warning" : j.state === "done" ? "success" : null;
+    const node = el("div", { class: "notice bring-banner", "data-tone": tone, role: "status" }, icon(j.state === "done" ? "circle-check" : j.state === "stopped" ? "triangle-alert" : "download"),
+      el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text: words }),
+        ["running", "waiting", "paused"].includes(j.state) ? el("div", { class: "progress", role: "progressbar", "aria-label": "Bringing in your media",
+          "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(pct), "aria-valuetext": words }, (() => { const s = el("span"); s.style.width = `${pct}%`; return s; })()) : null),
+      el("a", { class: "btn btn--compact", href: "/bring-in.html" }, j.state === "done" ? "See the report" : "Open", el("span", { class: "visually-hidden", text: " Bring in media" })));
+    if (box) box.replaceWith(node); else after.after(node);
+    box = node;
+    if (!["running", "waiting"].includes(j.state)) clearInterval(timer);
+  };
+  await draw();
+  if (box) timer = setInterval(draw, 10000);
 }
 
 // Still to set up, one at a time (DASH-289, owner, 10 November 2026): a slide-out that walks through each item left,

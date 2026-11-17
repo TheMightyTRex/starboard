@@ -167,6 +167,8 @@ class App:
             self.watch.start()
             watch.keep_vpn_apps()  # apps on the VPN rejoin it after it restarts (12 November 2026)
         self.jobs = jobs.Jobs(self)
+        from . import bring_in  # a copy of media that was running when Starboard stopped carries on (DASH-455)
+        bring_in.resume_after_restart(self, data_dir)
         from . import plugin_life  # plug-in events and jobs (DASH-330): nothing runs until a plug-in asks
         plugin_life.listen(self.data_dir)
         services.ON_CHANGE = plugin_life.emit
@@ -2876,15 +2878,100 @@ class Handler(BaseHTTPRequestHandler):
                                                              host_defaults=host_defaults, data_dir=app.data_dir))
                 except ValueError as e:
                     return self.error(400, str(e))
-            if path in ("/api/folders", "/api/folders/check") and method == "GET":  # the folder picker (DASH-240)
-                from . import folders
-                where = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("path", [""])[0]
-                if path.endswith("check"):
-                    return self.json(200, folders.check(where))
+            if path in ("/api/folders", "/api/folders/check", "/api/folders/places", "/api/folders/sizes") and method == "GET":
+                # The folder picker (DASH-240; places first, sizes and what is in each folder, DASH-455).
+                from . import bring_in, folders
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                where, place = q.get("path", [""])[0], q.get("place", [""])[0]
                 try:
+                    if path.endswith("check"):
+                        return self.json(200, folders.check(where))
+                    if path.endswith("places"):
+                        return self.json(200, {"places": folders.places(app.data_dir, q.get("for", [""])[0])})
+                    if place.startswith("cloud:"):  # OneDrive or Google Drive, read only (DASH-455)
+                        from . import cloud_sources
+                        if path.endswith("sizes"):
+                            return self.json(200, {"folders": cloud_sources.sizes(app.data_dir, place[6:], where)})
+                        return self.json(200, cloud_sources.browse(app.data_dir, place[6:], where))
+                    if place.startswith("share:"):
+                        if path.endswith("sizes"):
+                            return self.json(200, {"folders": bring_in.share_sizes(app.data_dir, place[6:], where)})
+                        return self.json(200, bring_in.share_browse(app.data_dir, place[6:], where))
+                    if path.endswith("sizes"):
+                        return self.json(200, {"folders": folders.sizes(where)})
                     return self.json(200, folders.browse(where))
                 except LookupError as e:
                     return self.error(404, str(e))
+                except (ValueError, bring_in.BringInError) as e:
+                    return self.error(400, str(e))
+                except Exception as e:  # noqa: BLE001 - a cloud service that cannot be listed says why
+                    from . import cloud_sources
+                    if isinstance(e, cloud_sources.CloudSourceError):
+                        return self.error(400, str(e))
+                    raise
+            if path.startswith("/api/bring-in/cloud"):  # signing in to OneDrive or Google Drive, read only (DASH-455)
+                from . import cloud_connect, cloud_sources
+                try:
+                    if path == "/api/bring-in/cloud/session" and method == "GET":
+                        return self.json(200, cloud_connect.current())
+                    body = self.body(limit=16 * 1024)
+                    if path == "/api/bring-in/cloud/start" and method == "POST":
+                        return self.json(200, cloud_sources.start(app.data_dir, str(body.get("service") or ""), str(body.get("way") or "browser")))
+                    if path == "/api/bring-in/cloud/answer" and method == "POST":
+                        return self.json(200, cloud_connect.answer(str(body.get("id") or ""), str(body.get("address") or "")))
+                    if path == "/api/bring-in/cloud/keep" and method == "POST":
+                        out = cloud_sources.keep(app.data_dir, str(body.get("service") or ""), str(body.get("id") or ""))
+                        logs.event("info", "bring in", f"Signed in to {cloud_sources.WORDS.get(str(body.get('service')), 'a cloud service')}, read only")
+                        return self.json(200, {"places": out})
+                    if path == "/api/bring-in/cloud/cancel" and method == "POST":
+                        return self.json(200, cloud_connect.cancel())
+                    if path == "/api/bring-in/cloud/forget" and method == "POST":
+                        return self.json(200, {"places": cloud_sources.forget(app.data_dir, str(body.get("service") or ""))})
+                except (cloud_connect.CloudError, cloud_sources.CloudSourceError, ValueError) as e:
+                    return self.error(400, str(e))
+                return self.error(404, "Not found")
+            if path.startswith("/api/bring-in"):  # Bring in media you already have (DASH-455)
+                from . import bring_in, setup_left as _setup_left
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                try:
+                    if path == "/api/bring-in" and method == "GET":
+                        return self.json(200, bring_in.public(app.data_dir))
+                    if path == "/api/bring-in/status" and method == "GET":
+                        return self.json(200, bring_in.status(app.data_dir))
+                    if path == "/api/bring-in/plan" and method == "GET":
+                        return self.json(200, bring_in.plan_page(app.data_dir, q.get("state", ["matched"])[0], int(q.get("start", ["0"])[0] or 0)))
+                    if path == "/api/bring-in/report" and method == "GET":
+                        return self.json(200, bring_in.report(app.data_dir, q.get("part", ["copied"])[0], int(q.get("start", ["0"])[0] or 0)))
+                    body = self.body(limit=256 * 1024)
+                    if path == "/api/bring-in/sources" and method == "PUT":
+                        out = bring_in.save_sources(app.data_dir, body.get("sources"), body.get("hardlinks"), body.get("media"))
+                        return self.json(200, out)
+                    if path == "/api/bring-in/look" and method == "POST":
+                        return self.json(200, bring_in.look(app.data_dir, str(body.get("source") or "")))
+                    if path == "/api/bring-in/fix" and method == "PUT":
+                        return self.json(200, bring_in.fix(app.data_dir, str(body.get("source") or ""), body.get("folder"), str(body.get("kind") or "")))
+                    if path == "/api/bring-in/check" and method == "POST":
+                        bring_in.build_plan(app.data_dir)
+                        bring_in.check_names(app.config, app.data_dir)
+                        return self.json(200, bring_in.plan_page(app.data_dir, "matched"))
+                    if path == "/api/bring-in/choose" and method == "PUT":
+                        return self.json(200, bring_in.choose(app.data_dir, str(body.get("key") or ""), body.get("tmdb_id"),
+                                                              bool(body.get("leave")), body.get("title")))
+                    if path == "/api/bring-in/start" and method == "POST":
+                        out = bring_in.start(app, app.data_dir)
+                        logs.event("info", "bring in", "Bringing in media started")
+                        return self.json(202, out)
+                    if path == "/api/bring-in/pause" and method == "POST":
+                        return self.json(200, bring_in.pause(app.data_dir))
+                    if path == "/api/bring-in/carry-on" and method == "POST":
+                        return self.json(200, bring_in.carry_on(app, app.data_dir))
+                    if path == "/api/bring-in/finish" and method == "POST":
+                        out = bring_in.finish(app.data_dir)
+                        _setup_left.forget()
+                        return self.json(200, out)
+                except (bring_in.BringInError, ValueError, TypeError) as e:
+                    return self.error(400, str(e))
+                return self.error(404, "Not found")
             if path == "/api/app-logs" and method == "GET":  # App logs on System, Logs (DASH-223): in place of Dozzle
                 from . import app_logs
                 return self.json(200, app_logs.listing())

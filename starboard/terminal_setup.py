@@ -158,6 +158,10 @@ HELP_PAGES = {
 }
 
 HELP = {
+    "bring": "Bring in media you already have copies films, series, music, books and audiobooks from folders on this "
+             "computer, another disk or a network share into your media folder, named so Reelix and Jellyfin match them. "
+             "Nothing where your media is now is renamed, moved or deleted. When a title is in two places, the one higher "
+             "in the list is brought in. Read Bring in media you already have in the help centre.",
     "pool": "A pool joins several drives into one folder, /mnt/pool, so your media has one place however many "
             "drives you have. Each drive stays a normal drive that can be read on its own. Keeping a drive's files "
             "puts them in the pool as they are; erasing prepares an empty drive. Nothing changes until you say yes.",
@@ -1896,6 +1900,8 @@ def job_steps(state):
         ids.append("storage")
         if step_drives in STEP_FUNCTIONS and state.get("storage", {}).get("key", "pool") == "pool":
             ids.append("drives")
+        if apps is None or "reelix" in apps:  # DASH-455, optional (Skip leaves all four); Reelix adds what is copied
+            ids += ["bring-sources", "bring-what", "bring-names", "bring-copy"]
         ids.append("apps")
         if apps is None or "gluetun" in apps or state.get("no_vpn"):
             ids.append("vpn")
@@ -2233,6 +2239,261 @@ def _graphics():
     """The graphics chip, found the same way as the browser set-up finds it (DASH-82)."""
     from . import stack
     return stack.graphics_chip()
+
+
+# Bring in media you already have (DASH-455): the same four parts, in the same order and words, as the browser's
+# (web/js/bring-in.js). Copies only: nothing at a source is renamed, moved or deleted.
+BRING_WORDS = {"films": ("film", "films"), "series": ("series", "series"), "music": ("album", "albums"),
+               "books": ("book", "books"), "audiobooks": ("audiobook", "audiobooks")}
+BRING_KINDS = ("films", "series", "music", "books", "audiobooks")
+SOURCE_WORDS = {"computer": "Folder on this computer", "disk": "Another disk", "smb": "Network share (SMB)",
+                "nfs": "Network share (NFS)", "onedrive": "OneDrive", "gdrive": "Google Drive"}
+
+
+def _bytes(n):
+    n = n or 0
+    for unit, size in (("TB", 10 ** 12), ("GB", 10 ** 9), ("MB", 10 ** 6), ("KB", 10 ** 3)):
+        if n >= size:
+            return f"{n / size:.1f} {unit}"
+    return f"{n} bytes"
+
+
+def _what_is_in(kinds):
+    return ", ".join(f"{n:,} {BRING_WORDS[k][0 if n == 1 else 1]}" for k, n in sorted((kinds or {}).items(), key=lambda kv: -kv[1]) if k in BRING_WORDS)
+
+
+def pick_folder(api, term, purpose="bring-in", place=None):
+    """The folder picker, Idea A, in the terminal: places first, then a numbered list of folders with the path at the
+    top, each with its size and what is in it. Returns (path, place id), or None for Back from the places."""
+    places = api.call("GET", f"/api/folders/places?for={urllib.parse.quote(purpose)}")["places"]
+    while True:
+        if place is None:
+            usable = [p for p in places if p["kind"] in ("computer", "disk", "share", "add-share")]
+            others = [p for p in places if p not in usable]
+            i = term.choose("Choose a place", [(p["name"], p.get("detail") or "") for p in usable] + [("Back", "")], 1, help_key="bring")
+            if i == len(usable):
+                if others:
+                    term.note("OneDrive and Google Drive need signing in in a browser, in a later version: copy the files "
+                              "to this computer or a network share first.")
+                return None
+            p = usable[i]
+            if p["kind"] == "add-share":
+                return ("", "add-share")
+            place, path, name = p["id"], p["path"] if p["kind"] == "disk" else "", p["name"]
+        else:
+            path, name = "", next((p["name"] for p in places if p["id"] == place), "This computer")
+        top = path
+        while True:
+            got = api.call("GET", f"/api/folders?path={urllib.parse.quote(path)}&place={urllib.parse.quote(place)}")
+            try:
+                sizes = api.call("GET", f"/api/folders/sizes?path={urllib.parse.quote(got['path'])}&place={urllib.parse.quote(place)}", timeout=120)["folders"] if got["path"] else {}
+            except Problem:
+                sizes = {}
+            if place.startswith("disk:"):  # a disk's own folders, below the disk
+                below = got["path"][len(top):].strip("/")
+                trail = " / ".join([name] + ([x for x in below.split("/")] if below else []))
+            else:
+                trail = " / ".join([name] + [c["name"] for c in got["crumbs"]][(1 if place.startswith("share:") else 0):])
+            term.note(f"Where you are: {trail}")
+            rows = []
+            for f in got["folders"]:
+                s = sizes.get(f["name"])
+                rows.append((f["name"], f"{_bytes(s['size'])}{' or more' if s.get('more') else ''}, {_what_is_in(s['kinds']) or 'no media found'}" if s else ""))
+            usable_here = bool(got["path"]) or place != "computer"
+            options = ([("Use this folder", got["path"] or "the whole of it")] if usable_here else []) + rows + [("Back", "up a level")]
+            i = term.choose("Choose a folder", options, 1, help_key="bring")
+            if usable_here and i == 0:
+                return (got["path"], place)
+            i -= 1 if usable_here else 0
+            if i == len(rows):
+                if path == top or not got["path"]:
+                    place = None if not place.startswith("share:") else place
+                    if place is None:
+                        break
+                    return None
+                path = got["path"].rsplit("/", 1)[0] if "/" in got["path"].strip("/") else ("" if place.startswith("share:") or place == "computer" else top)
+                continue
+            path = got["folders"][i]["path"]
+
+
+def _share_answers(term):
+    kind = ["smb", "nfs"][term.choose("Kind of share", [("SMB", "Windows and most NAS boxes"), ("NFS", "Linux")], 1, help_key="bring")]
+    address = term.text("Address, such as //192.0.2.20/media" if kind == "smb" else "Address, such as 192.0.2.20:/export/media", help_key="bring")
+    user = password = ""
+    if kind == "smb":
+        user = term.text("User name (Enter for a share anyone can read)", help_key="bring")
+        if user:
+            password = term.hidden("Password (kept by Starboard only)", help_key="bring")
+    return {"kind": kind, "address": address.strip(), "user": user.strip(), "password": password, "path": ""}
+
+
+def bring_sources(api, term, state):
+    head(term, state, "bring-sources")
+    term.note("Starboard only reads these places: it copies from them and never renames, moves or deletes anything "
+              "there. When the same title is in two places, the one higher in the list is brought in.")
+    d = api.call("PUT", "/api/bring-in/sources", {"sources": api.call("GET", "/api/bring-in")["sources"], "media": state.get("media_dir", "")}) \
+        if state.get("media_dir") else api.call("GET", "/api/bring-in")
+    while True:
+        srcs = d["sources"]
+        if srcs:
+            term.card("Sources, the first one wins", [(str(n + 1), f"{s['name']} ({SOURCE_WORDS[s['kind']]}, read only)") for n, s in enumerate(srcs)])
+        options = [("Continue", "to what is in each")] if srcs else []
+        options += [("Add a source", "a folder, a disk or a network share")]
+        if len(srcs) > 1:
+            options += [("Move one up", "earlier ones win")]
+        if srcs:
+            options += [("Take one off the list", "nothing there is changed")]
+        options += [("Skip this step", "bring media in later from Library, Bring in media")]
+        # Enter carries on when there are sources, and skips the step when there are none, as Keep the defaults does.
+        what = options[term.choose(question("bring-sources"), options, 1 if srcs else len(options), help_key="bring")][0]
+        if what == "Continue":
+            return True
+        if what == "Skip this step":
+            state["bring"] = "skipped"
+            return False
+        if what == "Add a source":
+            got = pick_folder(api, term)
+            if not got:
+                continue
+            path, place = got
+            try:
+                if place == "add-share":
+                    d = api.call("PUT", "/api/bring-in/sources", {"sources": srcs + [_share_answers(term)]})
+                    sid = d["sources"][-1]["id"]
+                    got = pick_folder(api, term, place=f"share:{sid}")
+                    if got:
+                        d = api.call("PUT", "/api/bring-in/sources", {"sources": [{**s, "path": got[0]} if s["id"] == sid else s for s in d["sources"]]})
+                elif place.startswith("share:"):
+                    d = api.call("PUT", "/api/bring-in/sources", {"sources": [{**s, "path": path} if s["id"] == place[6:] else s for s in srcs]})
+                else:
+                    d = api.call("PUT", "/api/bring-in/sources", {"sources": srcs + [{"kind": "disk" if place.startswith("disk:") else "computer", "path": path}]})
+                term.ok(f"Added {d['sources'][-1]['name']}")
+            except Problem as e:
+                term.refuse(str(e))
+        elif what == "Move one up":
+            i = term.choose("Which one moves up?", [s["name"] for s in srcs[1:]], 1, help_key="bring") + 1
+            srcs[i - 1], srcs[i] = srcs[i], srcs[i - 1]
+            d = api.call("PUT", "/api/bring-in/sources", {"sources": srcs})
+        else:
+            i = term.choose("Which one comes off the list?", [s["name"] for s in srcs], 1, help_key="bring")
+            d = api.call("PUT", "/api/bring-in/sources", {"sources": srcs[:i] + srcs[i + 1:]})
+            term.ok("Taken off the list. Nothing was changed there.")
+
+
+def bring_what(api, term, state):
+    head(term, state, "bring-what")
+    d = api.call("GET", "/api/bring-in")
+    for n, s in enumerate(d["sources"]):
+        term.note(f"Looking inside {n + 1} of {len(d['sources'])}: {s['name']}…")
+        try:
+            s["look"] = api.call("POST", "/api/bring-in/look", {"source": s["id"]}, timeout=600)
+        except Problem as e:
+            term.warn(f"{s['name']}: {e}")
+    while True:
+        for s in d["sources"]:
+            look = s.get("look")
+            if not look:
+                continue
+            rows = [(k.title(), f"{_what_is_in({k: v['titles']})}, {_bytes(v['size'])}") for k, v in look["found"].items()]
+            if look["other"]["files"]:
+                rows.append(("Other files", f"{look['other']['files']:,} left where they are, {_bytes(look['other']['size'])}"))
+            term.card(s["name"], rows or [("Found", "No media found here")])
+        options = [("Continue", "to check names"), ("Change what a source or folder is", "if Starboard got it wrong")]
+        if term.choose(question("bring-what"), options, 1, help_key="bring") == 0:
+            break
+        s = d["sources"][term.choose("Which source?", [s["name"] for s in d["sources"]], 1, help_key="bring")]
+        look = s.get("look") or {"folders": []}
+        folders_ = [("Everything in it", "")] + [(f["path"], f"{_bytes(f['size'])}, {_what_is_in(f['kinds']) or 'no media'}") for f in look["folders"][:60]]
+        f = term.choose("Which folder?", folders_, 1, help_key="bring")
+        kinds = [("As found", "")] + [(f"All {k}", "") for k in BRING_KINDS] + [("Leave it where it is", "")]
+        k = term.choose("What is in it?", kinds, 1, help_key="bring")
+        kind = "" if k == 0 else "leave" if k == len(kinds) - 1 else BRING_KINDS[k - 1]
+        s["look"] = api.call("PUT", "/api/bring-in/fix", {"source": s["id"], "folder": "" if f == 0 else look["folders"][f - 1]["path"], "kind": kind})
+    d = api.call("GET", "/api/bring-in")
+    if d.get("link_offered"):
+        term.note("Linking uses no extra space, but the library file is then the same file as the original, so anything "
+                  "that changes the file's contents changes the original too. Music, books and audiobooks are always "
+                  "copied. If a link cannot be made, the file is copied instead.")
+        links = term.choose("Link films and series on the same disk instead of copying them?",
+                            [("No, copy them", "the originals never change"), ("Yes, link them", "no extra space")],
+                            2 if d.get("hardlinks") else 1, help_key="bring") == 1
+        api.call("PUT", "/api/bring-in/sources", {"sources": d["sources"], "hardlinks": links})
+    return True
+
+
+def bring_names(api, term, state):
+    head(term, state, "bring-names")
+    term.note("Checking each name…")
+    page = api.call("POST", "/api/bring-in/check", {}, timeout=1800)
+    if not page["checked"]:
+        term.note("Reelix is not running yet, so these names are read from the files. Once the apps start, Reelix checks "
+                  "each one before anything is copied, and holds back any it does not agree with.")
+    while True:
+        c, sp = page["counts"], page["space"]
+        term.card("Check names", [("Matched", str(c["matched"])), ("Needs a look", str(c["look"])),
+                                  ("Left where it is", str(c["left"])),
+                                  ("Space", f"{_bytes(sp['needed'])} to copy, {_bytes(sp['free']) if sp['free'] is not None else 'free space not known yet'} free")])
+        options = [("Continue", "to the copy"), ("See what is matched", ""), ("Answer the ones that need a look", ""), ("See what is left where it is", "")]
+        i = term.choose(question("bring-names"), options, 1, help_key="bring")
+        if i == 0:
+            if not sp["enough"]:
+                term.refuse("There is not enough space for everything. Leave some titles or a source out first.")
+                continue
+            return True
+        state_name = ["matched", "look", "left"][i - 1]
+        rows = api.call("GET", f"/api/bring-in/plan?state={state_name}")["items"]
+        if not rows:
+            term.note("None.")
+        for r in rows[:50]:
+            if state_name == "look":
+                choices = [(f"{x['title']} ({x['year']})" if x.get("year") else x["title"], "") for x in r["choices"]] + [("Leave it where it is", "")]
+                term.note(f"{r['title']}: {r['why']}. From {r['from']}")
+                k = term.choose("Which is it?", choices, 1, help_key="bring")
+                body = {"key": r["key"], "leave": True} if k == len(choices) - 1 else {"key": r["key"], "tmdb_id": r["choices"][k]["tmdb_id"]}
+                api.call("PUT", "/api/bring-in/choose", body)
+            else:
+                term.say(f"  {r['title']}{' (' + str(r['year']) + ')' if r.get('year') else ''}: {r.get('first') or r.get('why')}")
+        page = api.call("GET", "/api/bring-in/plan?state=matched")
+
+
+def bring_copy(api, term, state):
+    head(term, state, "bring-copy")
+    d = api.call("GET", "/api/bring-in")
+    page = api.call("GET", "/api/bring-in/plan?state=matched")
+    c, sp = page["counts"], page["space"]
+    term.card("Check before copying", [("Sources, in order", "; ".join(s["name"] for s in d["sources"])),
+                                       ("To copy", f"{c['matched']} titles, {_bytes(sp['needed'] + sp['linked'])}"),
+                                       ("Space", f"{_bytes(sp['needed'])} needed"),
+                                       ("Linking films and series", "On, on the same disk" if d["hardlinks"] else "Off: everything is copied"),
+                                       ("Needs a look", f"{c['look']}: left where they are until you choose" if c["look"] else "None"),
+                                       ("Left where it is", str(c["left"]))])
+    later = state.get("start", "new") == "new" and not state.get("written")
+    term.note(("The copy starts once the apps are running. " if later else "") + "It runs in the background at low priority, so the "
+              "server stays quick. You can pause it, and it carries on after a restart. Progress is on the dashboard and in Activity.")
+    if term.choose(question("bring-copy"), [("Start copying" if not later else "Copy once the apps are running", ""), ("Back to check names", "")], 1, help_key="bring") == 1:
+        raise Back()
+    api.call("POST", "/api/bring-in/start", {})
+    term.ok("The copy starts once the apps are running." if later else "Copying started. Follow it on the dashboard or in Activity.")
+    state["bring"] = "started"
+    return True
+
+
+def step_bring(api, term, state):
+    """Bring in media you already have: optional, in four parts, after Storage (new installs) or on its own."""
+    if state.get("start", "new") != "new":
+        return False
+    parts = [bring_sources, bring_what, bring_names, bring_copy]
+    at = 0
+    while at < len(parts):
+        try:
+            if parts[at](api, term, state) is False:
+                return True  # skipped: the summary says where to do it later
+            at += 1
+        except Back:
+            if at == 0:
+                raise
+            at -= 1
+    return True
 
 
 def step_apps(api, term, state):
@@ -3554,7 +3815,7 @@ def step_cleanup(api, term, state):
     return True
 
 
-STEP_FUNCTIONS = [step_password, step_place, step_keyboard, step_start, step_find, step_docker_move, step_movehow, step_storage, step_apps, step_vpn,
+STEP_FUNCTIONS = [step_password, step_place, step_keyboard, step_start, step_find, step_docker_move, step_movehow, step_storage, step_bring, step_apps, step_vpn,
                   step_usenet, step_sites, step_films, step_preset, step_check, step_move, step_keys, step_connect, step_hours, step_updates, step_alerts,
                   step_storage_page, step_docker_end, step_cleanup]
 
