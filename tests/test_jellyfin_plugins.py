@@ -10,6 +10,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from starboard import jellyfin_plugins as jp
 from tests.jellyfin_stand_in import KEY, StandIn
 
+NEW = "https://raw.githubusercontent.com/TheMightyTRex/jellyfin-plugins/main/manifest.json"
+OLD = "https://raw.githubusercontent.com/TheMightyTRex/jellyfin-plugin-picture-shrinker/main/manifest.json"
+
 
 def serve(stand_in):
     class Handler(BaseHTTPRequestHandler):
@@ -90,8 +93,40 @@ class JellyfinPluginsTest(unittest.TestCase):
         on = self.group(self.status(), "pictures")["choices"][0]
         self.assertTrue(on["available"])
         out = jp.choose(self.services, self.dir, "pictures", "on", self.cfg)
-        self.assertIn("Installed Picture shrinker, from the Picture shrinker repository Starboard added", out["done"][0])
-        self.assertIn("https://raw.githubusercontent.com/TheMightyTRex/jellyfin-plugin-picture-shrinker/main/manifest.json", [r["Url"] for r in self.jf.repos])
+        self.assertIn("Installed Picture shrinker, from the TheMightyTRexUK repository Starboard added", out["done"][0])
+        self.assertIn(NEW, [r["Url"] for r in self.jf.repos])
+        self.assertNotIn(OLD, [r["Url"] for r in self.jf.repos])
+
+    def test_old_picture_shrinker_address_is_replaced(self):
+        """17 November 2026: the old Picture shrinker address becomes the one address, in its place in the list, with
+        its Enabled setting; every other repository the person added stays as it is."""
+        other = {"Name": "Someone else", "Url": "https://example.org/manifest.json", "Enabled": False}
+        self.start(repos=[{"Name": "Jellyfin Stable", "Url": jp.OFFICIAL[1], "Enabled": True},
+                          {"Name": "Picture shrinker", "Url": OLD, "Enabled": True}, other])
+        st = self.status()
+        self.assertEqual(self.jf.repos, [{"Name": "Jellyfin Stable", "Url": jp.OFFICIAL[1], "Enabled": True},
+                                         {"Name": "TheMightyTRexUK", "Url": NEW, "Enabled": True}, other])
+        self.assertIn("Replaced the old Picture shrinker repository address", st["finished"][0])
+        calls = len(self.jf.calls)
+        self.assertEqual(self.status()["finished"], [])  # once only
+        self.assertNotIn(("POST", "/Repositories"), self.jf.calls[calls:])
+
+    def test_old_address_removed_when_the_new_one_is_there(self):
+        self.start(repos=[{"Name": "Picture shrinker", "Url": OLD + "/", "Enabled": True},
+                          {"Name": "Mine", "Url": NEW, "Enabled": False}])
+        self.status()
+        self.assertEqual(self.jf.repos, [{"Name": "Mine", "Url": NEW, "Enabled": False}])
+
+    def test_old_address_replaced_when_a_plug_in_is_chosen(self):
+        self.start(repos=[{"Name": "Picture shrinker", "Url": OLD, "Enabled": True}])
+        out = jp.choose(self.services, self.dir, "playback", "on", self.cfg)
+        self.assertIn("Replaced the old Picture shrinker repository address", out["done"][0])
+        self.assertEqual([r["Url"] for r in self.jf.repos], [NEW, jp.OFFICIAL[1]])
+
+    def test_no_old_address_changes_no_repository(self):
+        self.start()
+        self.status()
+        self.assertNotIn(("POST", "/Repositories"), self.jf.calls)
 
     def test_picture_shrinker_waits_for_its_first_release(self):
         """DASH-433: its repository is public with an empty list until the owner releases it, so it is not offered."""
@@ -102,7 +137,7 @@ class JellyfinPluginsTest(unittest.TestCase):
         self.assertIn("Not released yet", on["hint"])
         with self.assertRaises(ValueError):
             jp.choose(self.services, self.dir, "pictures", "on", self.cfg)
-        self.assertFalse(any("picture-shrinker" in r["Url"] for r in self.jf.repos))
+        self.assertNotIn(NEW, [r["Url"] for r in self.jf.repos])
 
     def test_release_check_is_kept_and_survives_a_failed_read(self):
         jp._released.clear()

@@ -8,9 +8,11 @@ saved. It runs on the schedule you choose, at the lowest priority.
 A Starboard plug-in by TheMightyTRexUK, MIT licence. Its rules are those of a one-off shrink of a Jellyfin server's
 pictures on 14 November 2026, now kept in `rules.json` (rules 1.1).
 
-**A version for Jellyfin itself** runs on any Jellyfin 10.11 server, with or without Starboard:
-[TheMightyTRex/jellyfin-plugin-picture-shrinker](https://github.com/TheMightyTRex/jellyfin-plugin-picture-shrinker).
-Both follow the same `rules.json` and shared test pictures; its [SYNC.md](https://github.com/TheMightyTRex/jellyfin-plugin-picture-shrinker/blob/main/SYNC.md)
+**A version for Jellyfin itself** runs on any Jellyfin 10.11 or 12 server, with or without Starboard: it is in
+[TheMightyTRex/jellyfin-plugins](https://github.com/TheMightyTRex/jellyfin-plugins/tree/main/picture-shrinker), the
+one repository for every Jellyfin plug-in by TheMightyTRexUK, whose address is
+`https://raw.githubusercontent.com/TheMightyTRex/jellyfin-plugins/main/manifest.json`.
+Both follow the same `rules.json` and shared test pictures; its [SYNC.md](https://github.com/TheMightyTRex/jellyfin-plugins/blob/main/picture-shrinker/SYNC.md)
 says what must match and how to change a rule (`tools/sync_picture_rules.py` copies the rules here). When the Jellyfin
 version is installed, this one stays idle and says so on its card, so the two never shrink the same pictures.
 
