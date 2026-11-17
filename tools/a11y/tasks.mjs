@@ -745,64 +745,65 @@ const f30c = await focus();
 check("T30", "Escape closes it part way and gives focus back to the button", f30c.id === "copies-connect" && !(await page.locator("#side-panel").count()), `${f30c.tag} ${f30c.id}`);
 check("T30", "and says nothing was saved", /nothing was saved/.test(await page.locator("#announcer").innerText()));
 
-// T30 Bring in media by keyboard alone (DASH-455): the whole step, part by part. After each Continue, focus is on the
+// T31 Bring in media by keyboard alone (DASH-455): the whole step, part by part. After each Continue, focus is on the
 // part's heading; the picker opens on its places with focus on the first place, opens a disk and a folder with Enter,
 // and Escape gives focus back to Add a source; Check names says its counts in a status; Move up says where the row is.
 await page.goto(`${base}/bring-in.html?part=bring-sources`);
 await settle();
 let h29 = await focus();
-check("T30", "the first part opens with focus on its heading", h29.tag === "H2" && /media you already have/.test(h29.text), `${h29.tag} ${h29.text}`);
+check("T31", "the first part opens with focus on its heading", h29.tag === "H2" && /media you already have/.test(h29.text), `${h29.tag} ${h29.text}`);
 const up29 = await tabTo((f) => f.tag === "BUTTON" && /^Move .* up$/.test(f.text), 60) && await tabTo((f) => f.tag === "BUTTON" && /^Move .* up$/.test(f.text), 20);
 if (up29) {
   await page.keyboard.press("Enter");
   await page.waitForTimeout(600);
   const s29 = await page.evaluate(() => document.querySelector("#sortable-status")?.textContent || "");
-  check("T30", "Move up says where the source is now, and keeps focus on the button", /1 of \d/.test(s29) && /^Move .* up$/.test((await focus()).text), s29);
+  check("T31", "Move up says where the source is now, and keeps focus on the button", /1 of \d/.test(s29) && /^Move .* up$/.test((await focus()).text), s29);
   await page.keyboard.press("Enter");  // and back: the order is as it was
   await page.waitForTimeout(400);
 }
 const add29 = await tabTo((f) => f.text === "Add a source", 60);
-check("T30", "Tab reaches Add a source", !!add29);
+check("T31", "Tab reaches Add a source", !!add29);
 await page.keyboard.press("Enter");
-await page.waitForTimeout(1200);
+// The places are read from the server (the disks) before the first gets focus: wait for that, not a fixed time.
+await page.waitForFunction(() => document.activeElement?.classList?.contains("folder-place"), null, { timeout: 8000 }).catch(() => {});
 const place29 = await focus();
-check("T30", "the picker opens on its places, with focus on the first one", place29.inPanel && /This computer/.test(place29.text), place29.text);
+check("T31", "the picker opens on its places, with focus on the first one", place29.inPanel && /This computer/.test(place29.text), place29.text);
 const disk29 = await tabTo((f) => /Drive 2/.test(f.text), 6);
-check("T30", "Tab reaches a disk", !!disk29);
+check("T31", "Tab reaches a disk", !!disk29);
 await page.keyboard.press("Enter");
-await page.waitForTimeout(1200);
+await page.waitForFunction(() => document.activeElement?.getAttribute?.("role") === "listbox", null, { timeout: 8000 }).catch(() => {});
 const list29 = await focus();
-check("T30", "opening a disk puts focus on its list of folders", list29.role === "listbox", `${list29.tag} ${list29.role}`);
+check("T31", "opening a disk puts focus on its list of folders", list29.role === "listbox", `${list29.tag} ${list29.role}`);
 await page.keyboard.press("Enter");
-await page.waitForTimeout(1500);
+await page.waitForFunction(() => /^In /.test(document.querySelector("#side-panel [aria-live]")?.textContent || ""), null, { timeout: 8000 }).catch(() => {});
 const said29 = await page.evaluate(() => document.querySelector("#side-panel [aria-live]")?.textContent || "");
-check("T30", "Enter opens the folder and says where you are", /^In /.test(said29), said29);
+check("T31", "Enter opens the folder and says where you are", /^In /.test(said29), said29);
 await page.keyboard.press("Backspace");
 await page.waitForTimeout(1200);
 await page.keyboard.press("Backspace");
 await page.waitForTimeout(1200);
 const back29 = await focus();
-check("T30", "Backspace goes up, and from the top of the disk back to the places", back29.inPanel && /This computer/.test(back29.text), back29.text);
+check("T31", "Backspace goes up, and from the top of the disk back to the places", back29.inPanel && /This computer/.test(back29.text), back29.text);
 await page.keyboard.press("Escape");
 await page.waitForTimeout(600);
-check("T30", "Escape closes the picker and gives focus back to Add a source", (await focus()).text === "Add a source");
+check("T31", "Escape closes the picker and gives focus back to Add a source", (await focus()).text === "Add a source");
 for (const [part, words] of [["bring-what", /What is in each place/], ["bring-names", /Check the new names/], ["bring-copy", /Copy your media in/]]) {
   const cont = await tabTo((f) => f.tag === "BUTTON" && f.text === "Continue", 200);
-  check("T30", `Tab reaches Continue before ${part}`, !!cont);
+  check("T31", `Tab reaches Continue before ${part}`, !!cont);
   await page.keyboard.press("Enter");
   await settle();
   await page.waitForTimeout(1500);
   const h = await focus();
-  check("T30", `${part}: focus moves to the part's heading`, h.tag === "H2" && words.test(h.text), `${h.tag} ${h.text}`);
+  check("T31", `${part}: focus moves to the part's heading`, h.tag === "H2" && words.test(h.text), `${h.tag} ${h.text}`);
   if (part === "bring-names") {
     const statusText = () => [...document.querySelectorAll("main [role=status]")].map((n) => n.textContent).join(" | ");
     await page.waitForFunction((f) => /\d+ matched/.test(eval(f)()), statusText.toString(), { timeout: 20000 }).catch(() => {});
     const s = await page.evaluate((f) => eval(f)(), statusText.toString());
-    check("T30", "Check names says its counts in a status", /\d+ matched, \d+ need a look, \d+ left where they are/.test(s), s);
+    check("T31", "Check names says its counts in a status", /\d+ matched, \d+ need a look, \d+ left where they are/.test(s), s);
   }
 }
 const start29 = await page.evaluate(() => [...document.querySelectorAll(".wizard__foot .btn")].map((b) => b.textContent));
-check("T30", "the last part's button says what it does", start29.includes("Start copying"), start29.join(", "));
+check("T31", "the last part's button says what it does", start29.includes("Start copying"), start29.join(", "));
 
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);

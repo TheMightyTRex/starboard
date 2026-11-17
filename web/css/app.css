@@ -268,4 +268,9 @@ body > .loading-bar--top { position: fixed; top: 0; bottom: auto; z-index: 100; 
 .bring-banner { margin-block: var(--space-3); }
 .bring-banner .progress { margin-block-start: var(--space-2); max-inline-size: 28rem; }
 @media (max-width: 560px) { .wizard-job__count { white-space: normal; } }
-@media (max-width: 480px) { .bring-sources .bring-source__actions { grid-column: 2 / span 2; grid-row: 2; } }
+/* On a phone, Change folder and Remove go under the source and Move up and Move down after them on the same line, so
+   what is seen keeps the order it is read in (reading order check, 17 November 2026). */
+@media (max-width: 480px) {
+  .bring-sources .bring-source__actions { grid-column: 2; grid-row: 2; }
+  .bring-sources .sortable__moves { grid-column: 3; grid-row: 2; }
+}
