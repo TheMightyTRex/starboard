@@ -168,6 +168,16 @@ HELD = [_held(2, id=31, title="Iron.Valley.1982.1080p.BluRay.x264-SAMPLE", media
               episodes=[], quality={"quality": "WEBDL-2160p"}, indexer="Example Torrents", protocol="torrent", reason="preferred_protocol")]
 
 
+# Bring in media (DASH-455): what the made-up lookup knows of the titles on the example disks (made-up names).
+BRING_IN_TITLES = {f"{t.lower()} {y}" if y else t.lower(): v for t, y, v in (
+    ("Harbour Lights", 2019, [("Harbour Lights", 2019)]), ("The Long Field", 2021, [("The Long Field", 2021)]),
+    ("Paper Planets", 2017, [("Paper Planets", 2017)]), ("Glass Orchard", 2015, [("Glass Orchard", 2015)]),
+    ("Northern Line", 2023, [("Northern Line", 2023)]), ("Quiet Coast", 2010, [("Quiet Coast", 2010)]),
+    ("Tidewater", None, [("Tidewater", 2012), ("Tidewater", 2020)]),
+    ("Copper Valley", 2018, [("Copper Valley", 2018)]), ("Saltmarsh", None, [("Saltmarsh", 2016)]),
+    ("Little Lanterns", None, [("Little Lanterns", 2022)]))}
+
+
 def answer(path, q):
     """The made-up Reelix's answer for one GET, or None when this module does not know the path."""
     if path.startswith("/posters/"):
@@ -321,6 +331,11 @@ def answer(path, q):
                             for n, t in enumerate(names)]}
     if path in ("/movies/lookup", "/series/lookup"):
         term = q.get("term", "")
+        # Bring in media (DASH-455): the made-up titles on the example disks match exactly; Tidewater has two.
+        known = BRING_IN_TITLES.get(term.lower())
+        if known is not None:
+            return [{"tmdb_id": 7000 + n, "title": t, "year": y, "overview": "A made-up result for the preview.", "poster": None,
+                     "in_library": False} for n, (t, y) in enumerate(known)]
         return [{"tmdb_id": 9000 + n, "title": f"{term.title()} {['Rising', 'at Dawn', 'Returns'][n]}", "year": [2019, 2008, 2027][n],
                  "overview": "A made-up result for the preview.", "poster": None, "in_library": False} for n in range(3)]
     if path == "/books/lookup":

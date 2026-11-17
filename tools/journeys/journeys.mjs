@@ -10,7 +10,7 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "upcoming.html", "system.html", "system-storage.html", "system-disks.html", "system-monitor.html", "system-network.html",
   "system-logs.html", "system-backup.html", "settings.html", "settings-general.html", "settings-security.html",
   "settings-alerts.html", "settings-updates.html", "settings-releases.html", "settings-restore.html", "settings-performance.html", "settings-jellyfin.html",
-  "settings-audiobookshelf.html", "copy-settings.html", "install-apps.html", "setup-guide.html", "upgrade.html", "settings-install.html",
+  "settings-audiobookshelf.html", "copy-settings.html", "install-apps.html", "setup-guide.html", "bring-in.html", "upgrade.html", "settings-install.html",
   // The Library, from the made-up Reelix (DASH-163)
   "library-tv.html", "library-tv-networks.html", "library-films.html", "library-films-collections.html", "library-music.html",
   "library-radio.html", "library-radio-stations.html", "library-books.html", "library-books-series.html",
@@ -2105,6 +2105,27 @@ await api("/api/config/general", { method: "PUT", body: { backup_schedule: sched
 // Put the example's copies back as they were (a USB disk).
 await api("/api/backup/copies", { method: "PUT", body: { password, kind: copiesKept.kind, folder: copiesKept.folder, keep: copiesKept.keep } });
 
+console.log("\n== Bring in media (DASH-455)");
+await open("bring-in.html?part=bring-sources");
+await page.waitForSelector(".bring-sources li", { timeout: 10000 }).catch(() => {});
+const rows455 = await page.locator(".bring-sources .sortable__row").count();
+check("BRING-1", "the sources show in order, each said to be read only", rows455 === 3 &&
+  (await page.locator(".bring-sources .bring-source__meta").allTextContents()).every((x) => /read only/.test(x)));
+const pub455 = await page.evaluate(async () => {
+  const now = await (await fetch("/api/bring-in")).json();
+  const put = (sources) => fetch("/api/bring-in/sources", { method: "PUT", headers: { "Content-Type": "application/json", "X-Starboard": "1" }, body: JSON.stringify({ sources }) });
+  await put(now.sources.map((s) => s.kind === "smb" ? { ...s, password: "made-up-share-secret" } : s));
+  const text = await (await fetch("/api/bring-in")).text();
+  return { text, set: JSON.parse(text).sources.find((s) => s.kind === "smb")?.password_set };
+});
+check("BRING-2", "a share's password is kept, and never sent back", pub455.set === true && !pub455.text.includes("made-up-share-secret"));
+await open("bring-in.html?part=bring-names");
+await page.waitForSelector(".bring-name", { timeout: 15000 }).catch(() => {});
+const counts455 = await page.locator("[data-filter=bring-state] label").allTextContents();
+check("BRING-3", "Check names has Matched, Needs a look and Left where it is, with counts", counts455.length === 3 && counts455.every((x) => /\d/.test(x)), counts455.join(" | "));
+await open("bring-in.html?part=bring-copy");
+await page.waitForSelector("main table", { timeout: 10000 }).catch(() => {});
+check("BRING-4", "the copy part shows what will happen before anything is copied", /Sources, in order/.test(await page.locator("main table").first().textContent().catch(() => "")));
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
 const wide = [];

@@ -24,14 +24,14 @@ class SetupLeft(unittest.TestCase):
         with mock.patch.object(setup_left, "_reelix_health", return_value=health), \
                 mock.patch.object(setup_left, "_usenet_server", return_value=False):
             items = {i["key"]: i["done"] for i in setup_left.items(self.cfg(), self.tmp.name)}
-        self.assertEqual(items, {"sites": False, "download": True, "tmdb": False, "usenet": False, "jellyfin": False, "mediaservers": False})
+        self.assertEqual(items, {"sites": False, "download": True, "tmdb": False, "bring-in": False, "usenet": False, "jellyfin": False, "mediaservers": False})
 
     def test_what_cannot_be_asked_is_left_out_and_records_count(self):
         setup_left.record(self.tmp.name, tmdb=True, media_servers=True)
         with mock.patch.object(setup_left, "_reelix_health", return_value=None), \
                 mock.patch.object(setup_left, "_usenet_server", return_value=None):
             out = setup_left.left(self.cfg({"type": "jellyfin", "api_key": "k", "name": "Jellyfin", "url": "http://x"}), self.tmp.name)
-        self.assertEqual({i["key"] for i in out["items"]}, {"tmdb", "jellyfin", "mediaservers"})
+        self.assertEqual({i["key"] for i in out["items"]}, {"tmdb", "bring-in", "jellyfin", "mediaservers"})
         self.assertEqual(out["left"], 0)
 
 

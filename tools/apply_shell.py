@@ -209,6 +209,7 @@ HELP = {
     "setup-guide.html": ("guides/set-up-your-dashboard.md", "setting up your dashboard"),
     "upgrade.html": ("topics/update-starboard.md", "updating Starboard"),
     "copy-settings.html": ("topics/copy-app-settings.md", "copying settings from one app to another"),
+    "bring-in.html": ("topics/bring-in-media-you-already-have.md", "bringing in media you already have"),
 }
 
 
@@ -232,7 +233,8 @@ TAB_OF = {"setup-guide.html": "settings-general.html", "wanted.html": "wanted-fi
           # An item's page shows its Library tab as current.
           "library-film.html": "library-films.html", "library-tv-show.html": "library-tv.html", "library-artist.html": "library-music.html",
           "library-radio-show.html": "library-radio.html", "library-book.html": "library-books.html",
-          "library-audiobook.html": "library-audiobooks.html"}
+          "library-audiobook.html": "library-audiobooks.html",
+          "bring-in.html": "library-films.html"}  # Bring in media (DASH-455): opened from Library and Still to set up
 for page, parent in TAB_OF.items():
     PAGES[page] = PAGES[parent]
 

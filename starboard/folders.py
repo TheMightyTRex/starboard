@@ -218,3 +218,102 @@ def _size(n):
         if n >= size:
             return f"{n / size:.1f} {unit}"
     return f"{n} bytes"
+
+
+# Idea A (DASH-455, owner, 16 November 2026): the picker opens on places first (This computer, each disk from Storage,
+# each network share, each cloud service), then one list of folders with a path bar and Back, each folder with its size
+# and what is in it. Every page that picks a folder uses it; network shares and cloud services are offered only where
+# media is brought in from them.
+
+def _own_mounts():
+    """[(host folder, Starboard's own folder)] from Starboard's own container, or [] outside Docker."""
+    if not _in_docker():
+        return []
+    from . import containers
+    me = os.environ.get("HOSTNAME", "")
+    if not re.match(r"^[0-9a-f]{12,64}$", me):
+        return []
+    try:
+        own = containers.docker("GET", f"/containers/{me}/json")
+    except containers.DockerError:
+        return []
+    return [(m.get("Source", ""), m.get("Destination", "")) for m in own.get("Mounts") or [] if m.get("Source")]
+
+
+def disk_places():
+    """[{name, path}] for each disk Storage shows, as this computer names its folder; ones outside the usual places are
+    left out (the whole system disk, for one)."""
+    from . import sysinfo
+    mounts = _own_mounts()
+    out = []
+    for label, inner in sysinfo.disk_paths_from_env():
+        host = next((src for src, dst in mounts if dst == inner), inner if not mounts else "")
+        if host and allowed(host):
+            out.append({"name": label, "path": host})
+    return out
+
+
+def places(data_dir=None, purpose=""):
+    """The picker's first screen. Each place: {id, kind, name, detail, path, ready}. This computer opens on the usual
+    places; a disk opens on its own folder; a share or a cloud service is offered only when bringing media in."""
+    out = [{"id": "computer", "kind": "computer", "name": "This computer", "detail": "Folders under " + ", ".join(ROOTS),
+            "path": "", "ready": True}]
+    for d in disk_places():
+        out.append({"id": f"disk:{d['path']}", "kind": "disk", "name": d["name"], "detail": d["path"], "path": d["path"], "ready": True})
+    if purpose == "bring-in" and data_dir:
+        from . import bring_in
+        for s in bring_in.settings(data_dir)["sources"]:
+            if s["kind"] in ("smb", "nfs"):
+                out.append({"id": f"share:{s['id']}", "kind": "share", "name": s["address"],
+                            "detail": "Network share, read only" + (f", as {s['user']}" if s.get("user") else ""), "path": "", "ready": True})
+        out.append({"id": "add-share", "kind": "add-share", "name": "Another network share", "detail": "SMB (Windows, a NAS) or NFS",
+                    "path": "", "ready": True})
+        from . import cloud_sources
+        for c in cloud_sources.places(data_dir):
+            out.append(c)
+    return out
+
+
+def sizes(path, run=None, limit=200_000):
+    """{name: {size, kinds, files, more}} for each folder inside path: how big it is and what is in it (films, series,
+    music, books, audiobooks, by title). One listing of the folder, at most limit files, so a very large disk answers
+    quickly; more says the counting stopped early."""
+    from . import bring_in
+    path = tidy(path)
+    if not allowed(path):
+        raise ValueError("Starboard only looks in " + ", ".join(ROOTS))
+    if run is None and not _in_docker():
+        files = bring_in._walk(inside(path), limit)
+    else:
+        from . import containers
+        if run is None and not containers.available():
+            return {}
+        root = _root_of(path)
+        script = bring_in.LIST_SCRIPT.format(where=shlex.quote("/r" + path[len(root):]), limit=limit)
+        if run is not None:
+            text = run(root, script)
+        else:
+            code, text = bring_in._helper(script, [("bind", root, "/r")])
+        files = bring_in._parse_listing(text)
+    return group_sizes(files, limit)
+
+
+def group_sizes(files, limit=200_000):
+    from . import bring_in
+    out = {}
+    for rel, size, *_ in files:
+        if "/" not in rel:
+            continue
+        top = rel.split("/", 1)[0]
+        f = out.setdefault(top, {"size": 0, "files": 0, "kinds": {}, "titles": {}})
+        f["size"] += size
+        f["files"] += 1
+        k = bring_in.kind_of(rel, size)
+        if k in ("films", "series") and bring_in.SAMPLE_RE.search(rel):
+            continue  # a sample is not a title
+        if k in bring_in.KINDS:
+            f["titles"].setdefault(k, set()).add(bring_in._title_key(k, rel.split("/", 1)[1]))
+    for f in out.values():
+        f["kinds"] = {k: len(v) for k, v in f.pop("titles").items()}
+        f["more"] = len(files) >= limit
+    return out

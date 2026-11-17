@@ -62,6 +62,30 @@
    "help": "topics/add-a-drive-to-the-pool.md"
   },
   {
+   "id": "bring-sources",
+   "title": "Where your media is",
+   "question": "Where is the media you already have?",
+   "help": "topics/bring-in-media-you-already-have.md"
+  },
+  {
+   "id": "bring-what",
+   "title": "What is in each",
+   "question": "What is in each place?",
+   "help": "topics/bring-in-media-you-already-have.md"
+  },
+  {
+   "id": "bring-names",
+   "title": "Check names",
+   "question": "Check the new names",
+   "help": "topics/bring-in-media-you-already-have.md"
+  },
+  {
+   "id": "bring-copy",
+   "title": "Copy",
+   "question": "Copy your media in",
+   "help": "topics/bring-in-media-you-already-have.md"
+  },
+  {
    "id": "welcome",
    "title": "Start here",
    "question": "Set up a media server, step by step",
