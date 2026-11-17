@@ -246,6 +246,17 @@ class JellyfinPluginsTest(unittest.TestCase):
         self.assertEqual(self.status()["finished"], [])
         self.assertEqual(task["Triggers"], [{"Type": "DailyTrigger", "TimeOfDayTicks": 0}])
 
+    def test_reading_the_list_changes_nothing_the_owner_installed(self):
+        # DASH-409, issue 147: Intro Skipper and Merge Versions added in Jellyfin itself, not through Starboard
+        guid = jp.PACKAGES["introskipper"]["guid"].replace("-", "")
+        merge = jp.PACKAGES["merge"]["guid"].replace("-", "")
+        self.start(plugins=[{"Name": "Intro Skipper", "Version": "1.10.11.0", "Id": guid, "Status": "Active", "CanUninstall": True},
+                            {"Name": "Merge Versions", "Version": "1.0.0.0", "Id": merge, "Status": "Active", "CanUninstall": True}])
+        st = self.status()
+        self.assertEqual(st["finished"], [])
+        self.assertEqual(self.group(st, "skip")["chosen"], "analysed")
+        self.assertEqual([m for m, _ in self.jf.calls if m != "GET"], [], "reading sends nothing that changes Jellyfin")
+
     def test_merge_versions_moves_to_quiet_hours(self):
         self.start()
         jp.choose(self.services, self.dir, "merge", "on", self.cfg)

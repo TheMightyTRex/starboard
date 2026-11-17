@@ -297,3 +297,53 @@ class Events(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class JobFailureWords(unittest.TestCase):
+    """DASH-448, issue 145: a job's failure keeps the plug-in's own words, not only "HTTP Error 502: Bad Gateway"."""
+
+    def setUp(self):
+        import threading
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+        class Helper(BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def do_POST(self):
+                raw = json.dumps({"error": "HTTP Error 403: Forbidden"}).encode()
+                self.send_response(502)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(raw)))
+                self.end_headers()
+                self.wfile.write(raw)
+
+        self.srv = ThreadingHTTPServer(("127.0.0.1", 0), Helper)
+        threading.Thread(target=self.srv.serve_forever, daemon=True).start()
+        self.addCleanup(self.srv.server_close)
+        self.addCleanup(self.srv.shutdown)
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.dir = self.tmp.name
+        where = pa.folder(self.dir, "describer")
+        os.makedirs(where)
+        m = {"id": "describer", "name": "Describer", "version": "1.0.0",
+             "containers": [{"name": "main", "image": "example", "port": self.srv.server_port}],
+             "jobs": [{"id": "keep", "label": "Keep the choice in Reelix", "path": "/jobs/keep", "at_start": True}]}
+        with open(os.path.join(where, "manifest.json"), "w", encoding="utf-8") as f:
+            json.dump(m, f)
+        with open(os.path.join(where, "state.json"), "w", encoding="utf-8") as f:
+            json.dump({"state": "enabled"}, f)
+        from starboard import plugin_cards
+        p = mock.patch.object(plugin_cards, "_host", return_value="127.0.0.1")
+        p.start()
+        self.addCleanup(p.stop)
+
+    def test_the_answer_error_is_kept_in_the_summary_and_settings(self):
+        said = plugin_life.run_job(self.dir, "describer", "keep")
+        self.assertEqual(said, "It failed: HTTP Error 403: Forbidden (the plug-in answered 502: Bad Gateway)")
+        job = next(j for j in plugin_life.jobs(self.dir) if j["job"] == "keep")
+        self.assertEqual(job["status"], "failed")
+        self.assertIn("HTTP Error 403: Forbidden", job["summary"])
+        self.assertEqual(pa.job_lines(self.dir, "describer", {"jobs": [{"id": "keep", "label": "Keep the choice in Reelix"}]}),
+                         ["Keep the choice in Reelix. Last run failed: HTTP Error 403: Forbidden (the plug-in answered 502: Bad Gateway)"])

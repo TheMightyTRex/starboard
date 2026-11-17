@@ -199,6 +199,7 @@ class App:
         self.backup_schedule = backup_schedule.Scheduler(self)
         if os.environ.get("STARBOARD_SCHEDULE", "1") != "0":
             self.backup_schedule.ensure()
+        threading.Thread(target=_start_backup_leftovers, args=(data_dir,), name="backup-leftovers", daemon=True).start()
         from . import cloud_connect  # DASH-452: a cloud sign-in helper left by a Starboard that stopped part way goes
         threading.Thread(target=cloud_connect.tidy_leftovers, name="cloud-tidy", daemon=True).start()
         self.repo = os.environ.get("STARBOARD_REPO", "")  # "owner/name" for the update check; optional
@@ -752,6 +753,19 @@ def _move_livetv(app):
                 logs.event("info", "plug-ins", f"Started again with this version of Starboard: {', '.join(again)}")
     except Exception as e:  # Live TV carries on inside Starboard
         logs.error("live tv", f"Live TV stays in Starboard for now: {e}", e)
+
+
+def _start_backup_leftovers(data_dir):
+    """Apps a full backup stopped are started again when Starboard stopped part way through it (DASH-382)."""
+    from . import full_backup
+    try:
+        if not containers.available():
+            return
+        started = full_backup.start_left_stopped(data_dir)
+        if started:
+            logs.event("info", "backup", f"Started {len(started)} app containers again that a full backup had stopped")
+    except Exception as e:  # noqa: BLE001 - never stops Starboard starting
+        logs.error("backup", f"Apps a full backup stopped were not started again: {e}", e)
 
 
 def restart_app(service):

@@ -104,5 +104,50 @@ class WhatGoesIn(unittest.TestCase):
         self.assertFalse(fb.NAME_RE.match("../starboard-full-2026-11-12-220000.starboard"))
 
 
+class AppsStartedAgain(unittest.TestCase):
+    """DASH-382, issue 148: apps a full backup stopped are started again when Starboard stopped part way."""
+
+    def setUp(self):
+        from unittest import mock
+        from starboard import containers
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.dir = self.tmp.name
+        self.calls = []
+        p = mock.patch.object(containers, "docker", side_effect=lambda method, path, **kw: self.calls.append((method, path)))
+        p.start()
+        self.addCleanup(p.stop)
+        self.mock = mock
+
+    def test_the_backup_notes_each_app_before_it_stops_it(self):
+        seen = []
+
+        def helper(script, binds, timeout=7200):
+            seen.append(fb.status(self.dir).get("stopped"))
+            raise SystemExit("Starboard stops here")  # as if Starboard's process ended mid-copy
+
+        with self.mock.patch.object(fb, "_app_folders", return_value=["reelix"]), \
+                self.mock.patch.object(fb, "_containers_using", return_value={"reelix": ["abc123"]}), \
+                self.mock.patch.object(fb, "_helper", side_effect=helper), \
+                self.mock.patch.object(fb.shutil, "rmtree"):
+            fb._say(self.dir, state="running")
+            fb._lock.acquire()
+            with self.assertRaises(SystemExit):
+                fb._make(self.dir, "0.0.0", "pw", "/srv/backups", False, "/srv/config", "/srv", "", {})
+        self.assertEqual(seen, [["abc123"]])
+
+    def test_at_start_the_apps_left_stopped_are_started_again(self):
+        fb._say(self.dir, state="running", step="Copying reelix's settings (1 of 2)", stopped=["abc123", "def456"])
+        self.assertEqual(fb.start_left_stopped(self.dir), ["abc123", "def456"])
+        self.assertEqual(self.calls, [("POST", "/containers/abc123/start"), ("POST", "/containers/def456/start")])
+        now = fb.status(self.dir)
+        self.assertEqual(now["stopped"], [])
+        self.assertEqual(now["state"], "failed")
+        self.assertIn("Make it again", now["error"])
+        self.calls.clear()
+        self.assertEqual(fb.start_left_stopped(self.dir), [], "once only")
+        self.assertEqual(self.calls, [])
+
+
 if __name__ == "__main__":
     unittest.main()

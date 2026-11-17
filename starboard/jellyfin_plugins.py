@@ -231,8 +231,9 @@ def _chosen(group, installed):
 
 
 def status(services, data_dir, cfg_data=None, opener=None):
-    """What is installed and chosen, for Settings, Apps, Jellyfin. Finishes the set-up of a plug-in that has
-    become active since it was installed (after Jellyfin's restart), once for each version."""
+    """What is installed and chosen, for Settings, Apps, Jellyfin. Finishes the set-up of a plug-in Starboard
+    installed or activated that has become active since (after Jellyfin's restart), once for each version. A plug-in
+    the owner added in Jellyfin is only read, never changed (DASH-409)."""
     jf = find(services)
     if not jf:
         return {"connected": False, "groups": []}
@@ -379,6 +380,7 @@ def choose(services, data_dir, group, choice, cfg_data=None, opener=None):
             d = _install(jf, want, installed, opener)
             if d:
                 done.append(d)
+                _mark_ours(data_dir, want)
     return {"done": (moved + done) or ["Nothing to change"], "restart": bool(done)}
 
 
@@ -401,15 +403,27 @@ def _set_task(jf, tasks, key, trigger, opener=None):
     return bool(task)
 
 
+def _mark_ours(data_dir, key):
+    """Note that Starboard installed or activated this plug-in, so its set-up may be finished later (DASH-409)."""
+    state = _read(data_dir)
+    ours = state.setdefault("ours", [])
+    if key not in ours:
+        ours.append(key)
+        _write(data_dir, state)
+
+
 def finish_setup(jf, data_dir, installed, cfg_data=None, opener=None):
     """Set up Intro Skipper and Merge Versions once they are active, once for each installed version, so a change
-    the owner makes in Jellyfin afterwards stays. Returns what was done, in words."""
+    the owner makes in Jellyfin afterwards stays. Only for a plug-in Starboard installed or activated: one the owner
+    added in Jellyfin keeps its own settings, so reading the list changes nothing (DASH-409). Returns what was done,
+    in words."""
     state = _read(data_dir)
     set_up = state.setdefault("set_up", {})
+    ours = state.get("ours") or []
     done = []
     for key in ("introskipper", "merge"):
         p = installed.get(key)
-        if not p or p["status"] != "Active" or set_up.get(key) == p["version"]:
+        if key not in ours or not p or p["status"] != "Active" or set_up.get(key) == p["version"]:
             continue
         try:
             tasks = _call(jf["url"], jf["api_key"], "GET", "/ScheduledTasks", opener=opener) or []

@@ -20,6 +20,12 @@ add features.
 - **A check for banned words:** tools/checks.sh now fails on the design system's banned words in the pages, their scripts and the help, with each exception and its reason in tools/words-allowed.txt. The plug-in tester also warns about contractions, "see" and "look", "click", exclamation marks, em dashes and Title Case in a plug-in's labels, hints and confirm texts.
 - **Install all updates shows from one update (DASH-462):** It used to show only when two or more updates were ready; now it shows for one, as Install 1 update, with the same order, holds and confirmation. Jellyfin plug-ins that Check for updates found are named in the list and counted.
 
+### Fixed
+- **Reading the Jellyfin plug-ins list changed Jellyfin (DASH-409, #147):** Opening Settings, Apps, Jellyfin finished the set-up of Intro Skipper and Merge Versions even when you had added them in Jellyfin yourself, which changed their settings and schedules. Starboard now finishes the set-up only for a plug-in it installed or activated for you; one you added in Jellyfin keeps its own settings, and reading the list changes nothing.
+- **A plug-in job's failure said only "HTTP Error 502: Bad Gateway" (DASH-448, #145):** When a plug-in's job failed, System, Jobs and the log kept only the status line of the answer. They now keep the plug-in's own reason as well, for example "HTTP Error 403: Forbidden (the plug-in answered 502: Bad Gateway)", and Settings, Plug-ins shows that reason beside the job whose last run failed.
+- **A built-in plug-in left "failed" was never started again (DASH-449, #146):** If a built-in plug-in such as Live TV failed to start once, for example because its helper image had been tidied away, Starboard left it failed for good, even while its container ran. Starboard now tries a failed built-in plug-in again each time it starts. One you made inactive stays inactive.
+- **Apps a full backup stopped stayed stopped (DASH-382, #148):** A full backup stops each app for the moment it copies its settings. If Starboard itself stopped during that moment, the app was not started again. Starboard now notes each app before it stops it, and starts any app left stopped the next time Starboard starts. The backup that was cut off is marked as stopped, so you can make it again.
+
 ## [0.20.2] (17 November 2026)
 
 ### Fixed
