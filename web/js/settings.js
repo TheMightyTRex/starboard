@@ -2873,7 +2873,7 @@ async function startUpdatesPlace() {
   if (!list) return;
   const summary = $("#up-list-summary"), result = $("#updates-result"), recent = $("#updates-recent"), auto = $("#updates-auto");
   const allBox = $("#updates-all");
-  let data = null, jelly = null, batchShown = null;
+  let data = null, jelly = null, batchShown = null, checked = null, checking = false;
   const load = async () => { data = await api("/api/updates"); };
   try { await load(); } catch (e) { list.removeAttribute("aria-busy"); summary.textContent = `Starboard could not list the updates: ${e.message}`; return; }
 
@@ -2951,22 +2951,36 @@ async function startUpdatesPlace() {
     const b = el("button", { type: "button", class: "btn", "aria-haspopup": "dialog", "aria-describedby": "up-jellyfin-plugins-l" }, icon("circle-arrow-up"), "Check for updates and install them");
     b.addEventListener("click", () => startApp(t, b));
     const own = jelly.own_schedule ? " Jellyfin also updates them by itself on its own schedule." : "";
+    const found = data.jellyfin_waiting || [];
+    const hint = found.length
+      ? `${jelly.count} installed. New versions: ${found.map((j) => `${j.name} ${j.latest}`).join(", ")}.${own}`
+      : `${jelly.count} installed. Jellyfin knows which have new versions: Check for updates asks it.${own}`;
     return el("li", { class: "setting", "data-key": t.id },
       el("div", { class: "setting__text" }, el("span", { class: "setting__label", id: "up-jellyfin-plugins-l", text: t.name }),
-        el("span", { class: "setting__hint", text: `${jelly.count} installed. Jellyfin knows which have new versions, so Starboard asks it when you choose.${own}` })),
+        el("span", { class: "setting__hint", text: hint }),
+        found.length ? el("span", { class: "chips" }, chip("Update available", "info", "circle-arrow-up")) : null),
       el("div", { class: "setting__control" }, b));
   };
   const drawList = () => {
     const items = [...data.items].sort((a, b) => Number(b.update_available) - Number(a.update_available));
-    const ready = items.filter((t) => t.update_available);
-    summary.textContent = ready.length
-      ? `${ready.length} ${ready.length === 1 ? "update is" : "updates are"} ready: ${ready.map((t) => `${t.name} ${t.latest}`.trim()).join(", ")}.`
-      : "Everything Starboard knows about is up to date.";
+    const ready = [...items.filter((t) => t.update_available).map((t) => `${t.name} ${t.latest}`.trim()),
+      ...(data.jellyfin_waiting || []).map((j) => `${j.name} ${j.latest} for Jellyfin`)];
+    if (!checking) summary.textContent = summaryText(ready);
     list.removeAttribute("aria-busy");
     redraw(list, [...items.map(row), jellyRow(),
       el("li", { class: "setting", "data-key": "look" }, el("div", { class: "setting__text" },
-        el("span", { class: "setting__hint" }, "Starboard knows about app updates from the last look at their images. ",
-          el("a", { href: "/apps-updates.html", text: "Look again on Apps, Updates" }), "."))) ].filter(Boolean));
+        el("span", { class: "setting__hint" }, "Check for updates, in Ready to update, checks every part again. Each app's image is on ",
+          el("a", { href: "/apps-updates.html", text: "Apps, Updates" }), "."))) ].filter(Boolean));
+  };
+  // What Ready to update says (a polite live region): what is ready, and after Check for updates when it looked and
+  // what it could not reach.
+  const summaryText = (ready) => {
+    const when = checked ? `Checked at ${new Date(checked.checked_at * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}. ` : "";
+    const what = ready.length
+      ? `${ready.length} ${ready.length === 1 ? "update is" : "updates are"} ready: ${ready.join(", ")}.`
+      : checked ? "Everything is up to date." : "Everything Starboard knows about is up to date.";
+    const missed = (checked?.parts || []).filter((p) => !p.ok).map((p) => `${p.name}: ${p.said}.`);
+    return `${when}${what}${missed.length ? ` Could not check everything. ${missed.join(" ")}` : ""}`;
   };
   const drawRecent = () => {
     const runs = data.recent || [];
@@ -3016,17 +3030,84 @@ async function startUpdatesPlace() {
   // Install all updates (DASH-454): one button when more than one update waits; one password, then the list of
   // what installs (in order) and what is held back; then one panel for the batch that follows it to the end, through
   // Starboard's own restart. Nothing is asked of the internet until the password is given.
+  // Check for updates and What is new (DASH-462): Check for updates asks every part now (nothing is asked on page
+  // load); What is new reads every waiting update's notes only when pressed. Install all updates shows from one update.
   const waitingUpdates = () => data.items.filter((t) => t.update_available);
+  const waitingCount = () => waitingUpdates().length + (data.jellyfin_waiting || []).length;
   const drawAll = () => {
     if (batchShown?.running()) return;
-    const n = waitingUpdates().length;
-    if (n < 2) { if (!batchShown) allBox.replaceChildren(); return; }
-    const b = el("button", { type: "button", class: "btn btn--primary", id: "install-all", "aria-haspopup": "dialog", "aria-describedby": "install-all-hint" },
-      icon("circle-arrow-up"), `Install all ${n} updates`);
-    b.addEventListener("click", () => installAll(b));
-    const row = el("div", { class: "actions" }, b);
-    allBox.replaceChildren(...[row, el("p", { class: "small muted", id: "install-all-hint", text: "One at a time, each with a copy first, a check afterwards and the way back. Starboard updates last." }),
+    const n = waitingCount();
+    const had = document.activeElement?.id;
+    const check = el("button", { type: "button", class: "btn", id: "check-updates-now", "aria-describedby": "install-all-hint" },
+      icon("refresh-cw"), checking ? "Checking…" : "Check for updates");
+    if (checking) check.setAttribute("aria-disabled", "true");
+    check.addEventListener("click", () => checkNow());
+    const buttons = [check];
+    if (n) {
+      const b = el("button", { type: "button", class: "btn btn--primary", id: "install-all", "aria-haspopup": "dialog", "aria-describedby": "install-all-hint" },
+        icon("circle-arrow-up"), n === 1 ? "Install 1 update" : `Install all ${n} updates`);
+      b.addEventListener("click", () => installAll(b));
+      const wn = el("button", { type: "button", class: "btn", id: "whats-new", "aria-haspopup": "dialog" }, icon("sparkles"), "What is new",
+        el("span", { class: "visually-hidden", text: ` in ${n === 1 ? "the update" : `the ${n} updates`}` }));
+      wn.addEventListener("click", () => whatsNew(wn));
+      buttons.unshift(b, wn);
+    }
+    const hint = n ? "One at a time, each with a copy first, a check afterwards and the way back. Starboard updates last."
+      : "Check for updates asks Starboard, the apps, Reelix, the plug-ins and Jellyfin for new versions now.";
+    allBox.replaceChildren(...[el("div", { class: "actions" }, ...buttons), el("p", { class: "small muted", id: "install-all-hint", text: hint }),
       batchShown?.node].filter(Boolean));
+    if (had && ["check-updates-now", "install-all", "whats-new"].includes(had)) (document.getElementById(had) || check).focus();
+  };
+  const checkNow = async () => {
+    if (checking) return;
+    checking = true;
+    summary.textContent = "Checking Starboard, the apps, Reelix, the plug-ins and Jellyfin for updates…";
+    drawAll();
+    try {
+      checked = await api("/api/updates/check", { method: "POST" });
+      await load();
+    } catch (e) {
+      checked = { checked_at: Date.now() / 1000, parts: [{ name: "Starboard", ok: false, said: e.message }] };
+    }
+    checking = false;
+    drawList();
+    drawAll();  // focus stays on Check for updates, which is drawn again in the same place
+  };
+  const whatsNew = async (opener) => {
+    const n = waitingCount();
+    const panel = sidePanel({ title: n === 1 ? "What is new in 1 update" : `What is new in ${n} updates`, opener, wide: true,
+      body: [el("p", { class: "muted", role: "status", text: "Reading the notes…" })] });
+    let r;
+    try { r = await api("/api/updates/whats-new"); } catch (e) {
+      panel.setBody([notice("danger", "Starboard could not read the notes", e.message)]);
+      return;
+    }
+    if (!r.items.length) { panel.setBody([el("p", { text: "Nothing is waiting to update, so there is nothing new to read." })]); return; }
+    const head = (i) => `${i.name} ${i.from && i.to ? `${i.from} to ${i.to}` : i.to}`.trim();
+    const link = (i, words) => (i.link ? el("a", { href: i.link, target: "_blank", rel: "noopener noreferrer" }, words,
+      el("span", { class: "visually-hidden", text: ` for ${i.name} (opens in a new tab)` })) : null);
+    const jump = el("nav", { "aria-label": "Updates in this list" }, el("ul", {}, r.items.map((i, k) => {
+      const a = el("a", { href: `#wn-${k}`, text: head(i) });
+      a.addEventListener("click", (e) => { e.preventDefault(); const h = document.getElementById(`wn-${k}`); h?.scrollIntoView({ block: "start" }); h?.focus(); });
+      return el("li", {}, a);
+    })));
+    const sections = r.items.map((i, k) => {
+      const several = i.versions.length > 1;
+      const about = [i.words, several ? `${i.versions.length} versions: ${i.versions.join(", ")}.` : ""].filter(Boolean).join(" ");
+      const body = i.problem ? [notice("warning", "Notes not read", `${i.problem}.`.replace(/\.\.$/, ".")), i.link ? el("p", {}, link(i, "Its release page"), ".") : null]
+        : i.none ? [el("p", {}, i.none, " ", link(i, "Its release page"), i.link ? "." : "")]
+        : i.sections.flatMap((sec) => [el("h4", { text: sec.type }),
+          el("ul", {}, sec.items.map((x) => el("li", {}, ...changeParts(x.parts),
+            several && x.version ? el("span", { class: "small muted", text: ` (${x.version})` }) : null,
+            x.items?.length ? changeItems(x.items) : null)))]);
+      return el("section", { class: "release-notes", "aria-labelledby": `wn-${k}` },
+        el("h3", { id: `wn-${k}`, tabindex: "-1", text: head(i) }),
+        about || (i.link && !i.none && !i.problem) ? el("p", { class: "small muted" }, about, about && i.link && !i.none && !i.problem ? " " : "",
+          !i.none && !i.problem ? link(i, "Release page") : null) : null,
+        ...body.filter(Boolean));
+    });
+    panel.setBody([el("p", { text: "Everything new from the version you have to the one ready, for each update. Each kind of change lists the newest first." }),
+      r.items.length > 1 ? jump : null, ...sections].filter(Boolean));
   };
   const planLine = (i) => (i.kind === "jellyfin-plugins" ? `${i.name}: ${i.note || "Jellyfin installs any new versions it has"}, and restarts once at the end, when nobody is watching`
     : i.from && i.to ? `${i.name} ${i.from} to ${i.to}` : `${i.name} ${i.to}`.trim());

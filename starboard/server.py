@@ -2607,6 +2607,13 @@ class Handler(BaseHTTPRequestHandler):
                         return self.error(409, str(e))
                     return self.json(200, {"said": "Started", "batch": update_batch.view(app, run["id"]), "follow": f"/api/updates/all/{run['id']}"})
                 return self.error(404, "Not found")
+            if path in ("/api/updates/check", "/api/updates/whats-new"):  # Check for updates and What is new (DASH-462)
+                from . import update_check
+                if path == "/api/updates/check" and method == "POST":  # asks GitHub, the registries, the catalogues and Jellyfin now
+                    return self.json(200, update_check.check(app))
+                if path == "/api/updates/whats-new" and method == "GET":  # every waiting update's notes, fetched now
+                    return self.json(200, update_check.whats_new(app))
+                return self.error(405, "Method not allowed")
             if path in ("/api/updates", "/api/updates/start", "/api/updates/jellyfin"):  # Settings, Updates (DASH-420, DASH-422)
                 from . import auto_updates, update_runs
                 if path == "/api/updates" and method == "GET":
@@ -2618,9 +2625,11 @@ class Handler(BaseHTTPRequestHandler):
                              for t in update_runs.targets(app)]
                     runs = [update_runs.public(r) for r in update_runs.recent(app)]
                     from . import update_batch
+                    from . import update_check
                     return self.json(200, {"items": items, "auto": auto, "recent": runs,
                                            "running": next((r for r in runs if r["state"] == "running"), None),
-                                           "batch": update_batch.latest(app)})
+                                           "batch": update_batch.latest(app),
+                                           "jellyfin_waiting": [{k: j[k] for k in ("id", "name", "current", "latest")} for j in update_check.jellyfin_waiting()]})
                 if path == "/api/updates/jellyfin" and method == "GET":  # asks Jellyfin, so only when the page shows it
                     return self.json(200, auto_updates.jellyfin_status(app))
                 if path == "/api/updates/start" and method == "POST":

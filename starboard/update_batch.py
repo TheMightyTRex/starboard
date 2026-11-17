@@ -108,8 +108,16 @@ def plan(app):
         (held if why else items).append({**item, "why": why} if why else item)
     count = len(items)
     if auto_updates._jf(app.config.data.get("services") or []):
+        # Check for updates may have asked Jellyfin which of its plug-ins have new versions: then they are named and
+        # counted, so Install all updates is offered for them alone too.
+        from . import update_check
+        found = update_check.jellyfin_waiting()
+        names = ", ".join(f"{j['name']} {j['latest']}" for j in found[:8])
+        note = (f"Jellyfin installs the new versions of {names}" if found
+                else "Jellyfin installs any new versions it has")
         items.append({"target": "jellyfin-plugins", "kind": "jellyfin-plugins", "name": "Jellyfin's plug-ins", "from": "", "to": "",
-                      "order": ORDER["jellyfin-plugins"], "note": "Jellyfin installs any new versions it has"})
+                      "order": ORDER["jellyfin-plugins"], "note": note})
+        count += len(found)
     items.sort(key=lambda i: (i["order"], i["name"].lower()))
     return {"items": items, "held": held, "count": count}
 

@@ -158,6 +158,26 @@ def _example_self_update():
         self._latest.update(tag=newer, checked=time.time())
         return newer
     server_mod.App.latest_release = latest_release
+    # What is new for the made-up release (DASH-462): its changelog at its tag, without reaching GitHub.
+    from starboard import changes as changes_mod
+    real_fetch = changes_mod._fetch
+    made_up = f"""# Changelog
+
+## [{newer[1:]}] (18 November 2026)
+
+### Added
+- **Check for updates:** Settings, Updates asks every part for new versions when you choose.
+
+### Changed
+- **Install all updates:** Shown when one update or more is ready.
+
+### Fixed
+- **Release notes:** Dates are written out in full.
+
+### Security
+- **Checks:** Every scanner ran and found nothing to fix.
+"""
+    changes_mod._fetch = lambda url: changes_mod.parse(made_up) if url.endswith(f"/{newer}/CHANGELOG.md") else real_fetch(url)
     self_update.plan = lambda data_dir, root: {"how": "native", "folder": str(REPO)}
 
     def launch(p, to):

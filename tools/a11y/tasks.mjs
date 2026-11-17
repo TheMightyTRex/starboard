@@ -480,6 +480,40 @@ if (often20) {
   check("T20", "Day is next in the Tab order once it shows", day20.id === "pl-picture-shrinker-when-day", day20.id);
   await page.evaluate(async () => { await api("/api/plugins/picture-shrinker/settings", { method: "PUT", body: { settings: { when: { every: "month", date: 31, time: "03:30" } } } }); });
 }
+// T32 Check for updates and What is new by keyboard (DASH-462): Tab reaches Check for updates; Enter keeps focus on it
+// and the result is said in Ready to update's polite live region; Tab reaches What is new; Enter opens the slide-out
+// with focus inside it; Tab reaches the first jump link and Enter takes focus to that item's heading; Escape closes
+// it and focus returns to What is new.
+await page.goto(`${base}/settings-updates.html`);
+await settle();
+const go32 = await tabTo((f) => f.tag === "BUTTON" && f.id === "check-updates-now", 80);
+check("T32", "Tab reaches Check for updates", !!go32, "not reached");
+if (go32) {
+  await page.keyboard.press("Enter");
+  await page.locator("#up-list-summary", { hasText: "Checked at" }).waitFor({ timeout: 30000 }).catch(() => {});
+  const f32 = await focus();
+  check("T32", "focus stays on Check for updates", f32.id === "check-updates-now", `${f32.id} ${f32.text}`);
+  check("T32", "what it found is said in a polite live region", /Checked at \d\d:\d\d\./.test(await page.locator("#up-list-summary[role=status][aria-live=polite]").textContent()));
+  await page.keyboard.down("Shift"); await page.keyboard.press("Tab"); await page.keyboard.up("Shift");
+  const wn32 = await focus();
+  check("T32", "What is new is just before it in the Tab order", wn32.id === "whats-new", `${wn32.id} ${wn32.text}`);
+  await page.keyboard.press("Enter");
+  await page.locator("#side-panel section.release-notes").first().waitFor({ timeout: 15000 }).catch(() => {});
+  const in32 = await focus();
+  check("T32", "Enter opens What is new with focus inside it", in32.inPanel, in32.text);
+  const link32 = await tabTo((f) => f.tag === "A" && f.inPanel, 10);
+  check("T32", "Tab reaches the first jump link", !!link32, "not reached");
+  if (link32) {
+    await page.keyboard.press("Enter");
+    const h32 = await focus();
+    check("T32", "Enter takes focus to that item's heading", h32.tag === "H3" && h32.inPanel && h32.text === link32.text, `${h32.tag} ${h32.text}`);
+  }
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(500);
+  const back32 = await focus();
+  check("T32", "Escape closes it and focus returns to What is new", back32.id === "whats-new", `${back32.id} ${back32.text}`);
+}
+
 // T29 Install all updates by keyboard (DASH-454): Tab reaches Install all updates, which says how many; Enter asks for
 // the password with focus in the field; Enter then lists what installs with focus on the main button; Enter starts it,
 // and focus goes to the batch's panel heading; each change is said in its polite live region; at the end the result
