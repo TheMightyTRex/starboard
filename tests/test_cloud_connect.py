@@ -324,7 +324,7 @@ class PhoneSignIn(Base):
 
     def test_a_refusal_on_the_phone(self):
         self.svc.mode = "deny"
-        s = cc.start(self.data, "drive", "phone")
+        cc.start(self.data, "drive", "phone")
         for d in self.svc.devices.values():
             d["denied"] = True
         self.assertTrue(wait_for(lambda: cc.current()["state"] == "failed", 10))

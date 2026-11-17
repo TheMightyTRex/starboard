@@ -33,6 +33,7 @@ costs.
 | API and plug-ins | `bash tools/check-api.sh` | The API description and reference are up to date, the API contract tests, the plug-in tests, and each example plug-in run against this build (needs Docker and the starboard-plugins repository) | 2 minutes |
 | Help centre | `python3 tools/check-help.py` | Links, layout and writing rules of `docs/help` | 1 second |
 | Security scans | `tools/security-scan.sh` (`--full` adds ZAP's active scan) | Trivy, ZAP, Gitleaks, Bandit, ShellCheck, Hadolint ([Security](SECURITY-AND-TESTS.md)) | 10 minutes, or about an hour with `--full` |
+| Code and writing checks | `tools/checks.sh` (`--file PATH` for one file, `--coverage` for the unit tests under coverage.py) | Ruff and Biome for likely bugs in the Python, JavaScript and CSS; Vale for the writing rules (no em dashes, no contractions, British spelling, no Title Case headings); typos for misspellings; actionlint and zizmor for the GitHub workflows. All in one small image (`tools/checks/Dockerfile`), with no network | 15 seconds, or about 10 minutes with `--coverage`. Runs weekly on GitHub, not on every release |
 | Private details | `tools/check-private.sh` | Addresses, keys, email addresses and private words in tracked files | 1 second |
 | Screenshots | `tools/screenshots.sh` | Retakes the README pictures and fails if a page scrolls sideways | 2 minutes |
 

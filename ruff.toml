@@ -1,0 +1,11 @@
+# Ruff checks Starboard's Python for likely bugs only, not for style (tools/checks.sh).
+target-version = "py312"
+extend-exclude = ["plugins/*/vendor"]
+
+[lint]
+select = ["F", "B", "E9", "PLE"]
+ignore = [
+  "B023",  # Closures that use a loop variable: every one in Starboard is called inside the same loop turn, so these are false alarms.
+  "B905",  # zip() without strict=: the lists are built to the same length.
+  "B008",  # Calls in default arguments: used on purpose for constant values.
+]

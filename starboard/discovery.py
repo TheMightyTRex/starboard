@@ -123,7 +123,7 @@ def _probe(port):
     title = (re.search(r"<title>([^<]*)</title>", page, re.I) or [None, ""])[1].lower()
     body = page.lower()
     found = []
-    for key, (name, kind, ports, rule, needs_key, background) in CATALOGUE.items():
+    for key, (_name, _kind, ports, rule, _needs_key, _background) in CATALOGUE.items():
         if port not in ports and rule[0] != "title":
             continue  # body and JSON checks only on the app's own ports, to keep guesses honest
         if rule[0] == "title" and rule[1] in title:

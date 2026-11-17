@@ -8,7 +8,6 @@ import pathlib
 import pty
 import select
 import struct
-import subprocess
 import tempfile
 import termios
 import time

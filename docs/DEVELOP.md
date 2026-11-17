@@ -14,6 +14,7 @@ DNS names, email addresses, keys and the words you list in `.private-words` (als
 STARBOARD_DATA=./data python3 -m starboard     # http://127.0.0.1:8095
 python3 -m unittest discover -s tests
 bash tools/check-api.sh                        # after any change: the API contract, plug-in tests and smoke test
+tools/checks.sh                                # likely bugs, the writing rules, spelling and the workflows (15 seconds)
 python3 tools/apply_shell.py                   # after changing the header or menu
 tools/screenshots.sh                           # retake the README screenshots from example data
 tools/journeys.sh                              # browser journeys against example data
@@ -22,6 +23,11 @@ tools/vm/vm.sh test ubuntu                     # a fresh install on a clean syst
 ```
 
 What each test covers, and the latest results, are in [docs/TESTING.md](TESTING.md).
+
+These checks run once a week on GitHub (Actions, Code and writing checks), with the unit tests under coverage.py, and
+can be run there by hand at any time; they do not run on every push or release. Claude Code also checks each file it
+edits in this repository with `tools/checks.sh --file` (`.claude/settings.json`), which takes about 2 seconds.
+The rules are in `ruff.toml`, `biome.jsonc`, `_typos.toml` and `tools/checks/vale`; each rule that is switched off says why.
 
 The header and Display panel are written into every page by `tools/apply_shell.py`. Design tokens are in
 `web/css/tokens.css`; the five designs in `web/css/designs.css`.

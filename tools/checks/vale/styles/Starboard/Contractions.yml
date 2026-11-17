@@ -1,0 +1,7 @@
+extends: existence
+message: "Write '%s' in full: no contractions."
+level: error
+ignorecase: true
+tokens:
+  - "\\w+n['’]t"
+  - "(?:you|we|they|it|that|there|what|who|here|let|I)['’](?:s|re|ll|ve|d|m)"

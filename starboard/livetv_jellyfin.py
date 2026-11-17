@@ -103,7 +103,6 @@ def connect(services, extras, data_dir, local_folder=None, opener=None, host_pat
     try:
         options = _call(jf["url"], jf["api_key"], "GET", "/System/Configuration/livetv", opener=opener) or {}
         tuners = {t.get("Url") for t in options.get("TunerHosts") or []}
-        guides = {g.get("Path") for g in options.get("ListingProviders") or []}
         added = 0
         for name, label in PLAYLISTS:
             path = f"{inside}/{name}"

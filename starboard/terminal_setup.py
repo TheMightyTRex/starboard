@@ -787,7 +787,7 @@ class Terminal:
         """Clears the screen and draws the step's heading box and progress bar at the top and the menu on the last
         two lines. Only the lines between them scroll, so the heading, the bar and the menu are always in view."""
         top = len(self.header) + 1
-        self._write(f"\033[r\033[2J")
+        self._write("\033[r\033[2J")
         for i, line in enumerate(self.header, 1):
             self._write(f"\033[{i};{getattr(self, 'left', 0) + 1}H{line}")
         self._write(f"\033[{top};{self.rows - 2}r")

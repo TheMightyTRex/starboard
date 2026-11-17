@@ -1,6 +1,5 @@
 """Storage: sorting by media type, pools, the daily record and the settings that control them."""
 
-import json
 import os
 import tempfile
 import unittest

@@ -381,7 +381,7 @@ class ListeningFromPlexTest(unittest.TestCase):
             self.assertEqual(listening.apply(d, services), "Wrote 1 book; kept 0 that already had progress; 1 not found in Audiobookshelf")
             self.assertEqual(abs_server.written["u-sam"][0]["currentTime"], 18750)  # scaled: Audiobookshelf's copy is longer
             self.assertEqual(listening.status(d, services)["last"]["unmatched"], [{"account": "sam", "title": "Unscanned Book", "author": "Anne Example"}])
-            with self.assertRaises(Exception):
+            with self.assertRaises((listening.ServiceError, ValueError)):
                 listening.read_plex(plex_url, "wrong-token")
         finally:
             for s in (plex, abs_server):

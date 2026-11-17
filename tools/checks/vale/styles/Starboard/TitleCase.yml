@@ -1,0 +1,8 @@
+extends: existence
+message: "Write the heading in sentence case: '%s' looks like Title Case."
+level: error
+scope: heading
+ignorecase: false
+nonword: true
+tokens:
+  - '\b(?:[A-Z][a-z]+ ){2,}[A-Z][a-z]+\b'

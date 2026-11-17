@@ -598,7 +598,7 @@ def parse_film(rel):
     for text in (stem, parts[-2] if len(parts) > 1 else ""):
         words = _words(text)
         m = None
-        for m in YEAR_RE.finditer(words):
+        for m in YEAR_RE.finditer(words):  # noqa: B007 - keeps the last year in the name
             pass
         if m and m.start() > 0:
             title = _clean_title(words[:m.start()])
@@ -775,7 +775,7 @@ def build_plan(data_dir, run=None):
         here = {}
         for rel, size, *_ in files:
             here.setdefault(os.path.dirname(rel), []).append((rel, size))
-        for rel, size, mtime, dev, ino in files:
+        for rel, size, _mtime, dev, _ino in files:
             k = kind_of(rel, size)
             fixed = _fix_for(s.get("fix"), rel)
             if k in KINDS and fixed:
@@ -1311,14 +1311,14 @@ def _copy_all(data_dir, run=None):
             total += f["size"]
         s = sources.get(sid)
         if not s:
-            for i, f in batch:
+            for _i, f in batch:
                 f["done"], f["result"] = True, "GONE"
             pending = [p for p in pending if p not in batch]
             continue
         _say(data_dir, current=batch[0][0]["title"])
         results = _copy_batch(data_dir, s, media, media_dev, st, batch, run,
                               lambda n, b: _say(data_dir, files_done=done_files + n, bytes_done=done_bytes + b))
-        for i, f in batch:
+        for _i, f in batch:
             r = results.get(f["dst"])
             if r in ("DONE", "LINK", "HAVE"):
                 f["done"], f["result"] = True, r

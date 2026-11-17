@@ -85,7 +85,7 @@ def now_card(now=None):
     got = _read(os.path.join(DATA, livetv.NOW), {})
     want = str(_read(SETTINGS, {}).get("now_section") or "")
     items = []
-    for cid, c in sorted((got.get("channels") or {}).items(), key=lambda kv: int(kv[1].get("number") or 0)):
+    for _cid, c in sorted((got.get("channels") or {}).items(), key=lambda kv: int(kv[1].get("number") or 0)):
         if want and c.get("section") != want:
             continue
         progs = c.get("programmes") or []
@@ -488,7 +488,7 @@ def _added(item):
         threading.Thread(target=_quick, args=(item["id"],), name="livetv-add", daemon=True).start()
         return sources_screen(f"Channel list added: {item['said']}. Testing them now; this page shows how far it has got")
     _guides_now()
-    return sources_screen(f"Guide added: its programmes arrive in a few minutes")
+    return sources_screen("Guide added: its programmes arrive in a few minutes")
 
 
 _build_lock = threading.Lock()  # one build at a time: the hourly run, a list just added, a guide just added

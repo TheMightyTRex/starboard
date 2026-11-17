@@ -7,6 +7,12 @@ add features.
 
 ## [Unreleased]
 
+### Fixed
+- **Release notes for 0.15.2:** Starboard's own release notes had the 0.15.2 Added entry twice, in two wordings, and showed only the second. They now have the one in this changelog.
+
+### Security
+- **Code and writing checks:** Once a week, and by hand whenever wanted, GitHub checks the code for likely bugs (Ruff and Biome), the writing rules (Vale), misspellings (typos) and the safety of the workflows (actionlint and zizmor), and runs the unit tests under coverage.py, which fails if they run less of the code than before. The workflows' actions are pinned to exact versions, and Dependabot keeps them up to date. The first run found and fixed unused code in 33 files.
+
 ## [0.20.0] (17 November 2026)
 
 ### Added

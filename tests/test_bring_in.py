@@ -6,7 +6,6 @@ import json
 import os
 import shutil
 import tempfile
-import time
 import unittest
 from unittest import mock
 
@@ -441,7 +440,7 @@ class Cloud(Base):
         run = lambda script, binds, **k: scripts.append((script, binds)) or (0, "[]")  # noqa: E731
         cloud_sources.browse(self.data, "gdrive", "/Films", run=run)
         cloud_sources.copy_down(self.data, {"kind": "gdrive", "path": "/Films"}, os.path.join(self.media, ".starboard-bring-in", "s1"), run=run)
-        for script, binds in scripts:
+        for script, _binds in scripts:
             for word in (" sync ", " move ", " delete", " purge", " rmdir", " deletefile", " moveto", " mkdir "):
                 self.assertNotIn(word, script)
         self.assertIn("copy --transfers 2", scripts[1][0])

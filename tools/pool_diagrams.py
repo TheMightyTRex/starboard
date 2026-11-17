@@ -47,7 +47,7 @@ def balance():
     body = [text(20, 30, "Before balancing", 18, 700), text(660, 30, "After balancing", 18, 700)]
     for n, (name, size, blocks) in enumerate(before):
         body.append(drive(20 + n * 150, 60, name, size, blocks))
-    for n, (name, size, blocks) in enumerate(after):
+    for n, (name, _size, blocks) in enumerate(after):
         body.append(drive(660 + n * 150, 60, name, 4, blocks))
     body.append(f'<path d="M 625 135 l 25 0 m -8 -8 l 8 8 l -8 8" stroke="{INK}" stroke-width="3" fill="none"/>')
     body.append(text(20, 280, "Each letter is one whole folder, such as a series. Folders with a dashed outline were moved. "

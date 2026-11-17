@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/checks/claude-hook.sh\" edited",
+            "timeout": 120,
+            "statusMessage": "Checking the edited file"
+          }
+        ]
+      }
+    ]
+  }
+}

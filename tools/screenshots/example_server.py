@@ -448,7 +448,7 @@ def _example_bring_in(data, root):
     bring_in.describe = lambda s: real_describe(s).replace(str(root), "")
     fo.places = lambda data_dir=None, purpose="": [{**p, "detail": p["detail"].replace(str(root), "")} for p in real_places(data_dir, purpose)]
     share = root / "srv/share-example"
-    real_listing, real_browse = bring_in.listing, fo.browse
+    real_listing = bring_in.listing
 
     def listing(data_dir, s, run=None):
         if s["kind"] in ("smb", "nfs"):

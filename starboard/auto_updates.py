@@ -269,7 +269,7 @@ def plugins(app, now=None, force=False):
         return why
     found, waiting = _plugin_candidates(app)
     runs = []
-    for pid, name, current, manifest, address in found:
+    for pid, name, _current, manifest, address in found:
         target = f"plugin:{pid}"
         if skipped(app.data_dir, target, manifest.get("version")):
             continue
