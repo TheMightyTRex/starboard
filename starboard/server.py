@@ -2978,7 +2978,7 @@ class Handler(BaseHTTPRequestHandler):
         from . import plugin_life
         if path == "/api/plugins" and method == "GET":
             from . import livetv_move
-            added = {p["id"] for p in pa.listing(app.data_dir)}
+            added = {p["id"] for p in pa.basics(app.data_dir)}
             built = [{**pa.summary(m, []), "added": m["id"] in added, "logo": pa.builtin_logo(m),
                       "why_not": livetv_move.can_run(app.data_dir) if m["id"] == livetv_move.PID else ""}
                      for m in pa.builtins().values()]
@@ -3011,7 +3011,7 @@ class Handler(BaseHTTPRequestHandler):
             # (before, settings, install, health, after), followed with GET /api/updates/runs/<id>/job.
             from . import plugin_update, update_runs
             pid, what = mu.groups()
-            if not any(p["id"] == pid for p in pa.listing(app.data_dir)):
+            if not any(p["id"] == pid for p in pa.basics(app.data_dir)):
                 return self.error(404, "No plug-in with that id")
             body = self.body()
             try:
@@ -3041,7 +3041,7 @@ class Handler(BaseHTTPRequestHandler):
         mw = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/whats-new-seen$", path)
         if mw and method == "POST":
             # Got it on What is new (DASH-393): kept on the server, so it is not shown again on any device.
-            if not any(p["id"] == mw.group(1) for p in pa.listing(app.data_dir)):
+            if not any(p["id"] == mw.group(1) for p in pa.basics(app.data_dir)):
                 return self.error(404, "No plug-in with that id")
             plugin_life.whats_new_seen(app.data_dir, mw.group(1))
             return self.json(200, {"said": "Marked as seen"})
@@ -3266,7 +3266,7 @@ class Handler(BaseHTTPRequestHandler):
             logs.event("info", "plug-ins", f"{mad.group(1)}: {said}")
             return self.json(200, {"said": said, "plugins": pa.listing(app.data_dir)})
         m = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/(enable|disable|remove|settings)$", path)
-        if not m or not any(p["id"] == m.group(1) for p in pa.listing(app.data_dir)):
+        if not m or not any(p["id"] == m.group(1) for p in pa.basics(app.data_dir)):
             return self.error(404, "No plug-in with that id")
         pid, what = m.groups()
         if what == "settings" and method == "PUT":

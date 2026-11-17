@@ -653,11 +653,20 @@ function confirmDialog({ title, message, confirm = "Continue", cancel = "Cancel"
   });
 }
 
+// The set-ups' words (web/setup-answers.json, the file the terminal set-up reads too), read once for each page:
+// several steps and dialogs on one page use them, and each asked for the file again (optimisation review,
+// 16 November 2026). A read that fails is not kept, so the next use asks again.
+let setupWordsRead = null;
+function setupWords() {
+  setupWordsRead ||= fetch("/setup-answers.json", { cache: "no-cache" }).then((r) => r.json());
+  return setupWordsRead.catch((e) => { setupWordsRead = null; throw e; });
+}
+
 // Downloading without a VPN (DASH-440): the warning both set-ups and Settings, Downloads, VPN show before going on
 // without one, in the words the terminal set-up reads too (web/setup-answers.json, novpn). Resolves true only when
 // the person chose the clearly labelled button; Cancel, the default, and Escape resolve false.
 async function noVpnWarning({ title, confirm } = {}) {
-  const w = (await (await fetch("/setup-answers.json", { cache: "no-cache" })).json()).novpn;
+  const w = (await setupWords()).novpn;
   return confirmDialog({ title: title || w.warning_title, alert: true, confirm: confirm || w.confirm, cancel: w.cancel,
     message: w.warning.map((t) => el("p", { text: t })) });
 }

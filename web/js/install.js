@@ -24,7 +24,7 @@ let reelixSites = null;
 // The TMDB key, language and Usenet server questions: the same words as the terminal set-up (web/setup-answers.json).
 let setupAnswers = null;
 async function loadSetupAnswers() {
-  if (!setupAnswers) setupAnswers = await (await fetch("/setup-answers.json", { cache: "no-cache" })).json();
+  if (!setupAnswers) setupAnswers = await setupWords();
   return setupAnswers;
 }
 

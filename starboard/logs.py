@@ -104,6 +104,25 @@ def redact(text, words=()):
     return text
 
 
+# The words a line of a level must hold (see Log.read).
+_LEVEL_WORDS = {"problems": ('"error"', '"warning"'), "detail": ('"detail"',)}
+
+
+def _lines_with(text, words):
+    """The lines of text that hold any of words, in order: found with str.find, so the other lines are never looked at
+    one by one."""
+    spans = set()
+    for w in words:
+        i = text.find(w)
+        while i != -1:
+            start = text.rfind("\n", 0, i) + 1
+            end = text.find("\n", i)
+            end = len(text) if end == -1 else end
+            spans.add((start, end))
+            i = text.find(w, end)
+    return [text[a:b] for a, b in sorted(spans)]
+
+
 def size_words(n):
     """Bytes in words for the log and the pages' status: 352 KB, 1.2 MB."""
     n = int(n or 0)
@@ -297,12 +316,17 @@ class Log:
         """Newest first. level: all, problems (warnings and errors) or detail. before: a time, for the next page."""
         out = []
         query = query.strip().lower()
+        # A line can only be of a level if that word is in it, so other lines are passed over before they are read as
+        # JSON. The dashboard's Alerts card asks for problems every minute, and with few problems every day kept (60
+        # by default) was read line by line: 250 ms each time over 60 days (optimisation review, 16 November 2026).
+        wanted = _LEVEL_WORDS.get(level)
         for name in self.files():
             try:
                 with open(os.path.join(self.dir, name), encoding="utf-8") as f:
-                    lines = f.readlines()
+                    text = f.read()
             except OSError:
                 continue
+            lines = _lines_with(text, wanted) if wanted else text.split("\n")
             for line in reversed(lines):
                 try:
                     e = json.loads(line)

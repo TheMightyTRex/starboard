@@ -173,22 +173,41 @@ def version_of(labels, env=None):
     return ""
 
 
-def containers(light=False):
-    """Every container. light=True: names and IDs only, with no request per image (for Monitor's names)."""
+# What Docker says of each image, by image ID: the Apps and Updates pages asked Docker about every container's image
+# on each visit, one request each (optimisation review, 16 November 2026). An image ID is the hash of the image's
+# settings, so its labels, environment and date never change; only its registry digests can (a pull of the same
+# image under another name), so the update check reads them fresh (fresh=True). Kept only for images in use.
+_images = {}
+
+
+def _image(image_id, fresh=False):
+    hit = None if fresh else _images.get(image_id)
+    if hit is None:
+        try:
+            hit = docker("GET", f"/images/{urllib.parse.quote(image_id, safe='')}/json")
+        except DockerError:
+            return {}  # asked again next time
+        _images[image_id] = hit = {"Config": {k: (hit.get("Config") or {}).get(k) for k in ("Labels", "Env")},
+                                   "Created": hit.get("Created"), "RepoDigests": hit.get("RepoDigests")}
+    return hit
+
+
+def containers(light=False, fresh=False):
+    """Every container. light=True: names and IDs only, with no request per image (for Monitor's names). fresh=True:
+    each image's registry digests read from Docker again, for the update check."""
     out = []
     listed = docker("GET", "/containers/json?all=1")
     if light:
         return [{"id": c["Id"], "name": c["Names"][0].lstrip("/")} for c in listed]
+    for gone in set(_images) - {c.get("ImageID") for c in listed}:
+        _images.pop(gone, None)
     for c in listed:
         labels = c.get("Labels") or {}
         image = c["Image"]
         if image.startswith("sha256:"):
             continue  # no tag to compare with
         ref = image if ":" in image.split("/")[-1] or "@" in image else image + ":latest"
-        try:
-            info = docker("GET", f"/images/{urllib.parse.quote(c['ImageID'], safe='')}/json")
-        except DockerError:
-            info = {}
+        info = _image(c["ImageID"], fresh)
         conf = info.get("Config") or {}
 
         def own(key):
@@ -444,6 +463,7 @@ def apps(services):
 
 
 def check(services):
+    _images.clear()  # Look for updates: each image's registry digests read from Docker again
     found = {c["name"]: c for c in containers()}
     wanted = [match(s, found.values()) for s in services if s.get("enabled", True)]
     targets = {c["name"]: c for c in wanted if c}

@@ -510,7 +510,7 @@ async function loadVpnReminder() {
   try { st = await api("/api/downloads/vpn-state"); } catch { return; }
   $("#vpn-reminder")?.remove();
   if (!st.reminder) return;
-  const w = (await (await fetch("/setup-answers.json", { cache: "no-cache" })).json()).novpn;
+  const w = (await setupWords()).novpn;
   const hide = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, w.hide);
   const box = el("div", { id: "vpn-reminder", class: "notice", "data-tone": "muted" }, icon("info"),
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: w.reminder_title }), el("p", { text: w.reminder }),

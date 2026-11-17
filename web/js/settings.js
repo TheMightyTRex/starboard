@@ -1388,7 +1388,7 @@ async function stepContent(id, root, step = {}) {
   } else if (id === "storage") {
     // The Storage page: the same words and answers as the terminal set-up (web/setup-answers.json, DASH-271).
     const p = config.performance;
-    const w = (await (await fetch("/setup-answers.json", { cache: "no-cache" })).json()).storage_page;
+    const w = (await setupWords()).storage_page;
     const radios = w.usage.map((c) => ({ v: c.value, input: el("input", { type: "radio", name: "usage-every", value: c.value, checked: p.usage_every === c.value }), t: c.label }));
     const refresh = el("select", { class: "select", id: "guide-st-refresh" }, w.refresh.map((c) => el("option", { value: String(c.value), text: c.label, selected: Number(c.value) === p.storage_refresh })));
     const daily = el("input", { type: "checkbox", checked: p.space_log !== false });
@@ -1440,7 +1440,7 @@ async function stepContent(id, root, step = {}) {
       box("import_keep", "Bring in watch history", "From Plex, Emby or another Jellyfin. You choose where from in Settings, Apps, Jellyfin."),
       box("defaults", "Defaults for every user", "Live TV opens on the Guide for everyone who has not chosen otherwise.")];
     // DASH-399: Audio description, unticked, in the same words as the terminal set-up (web/setup-answers.json).
-    const ad = (await (await fetch("/setup-answers.json", { cache: "no-cache" })).json()).audio_description;
+    const ad = (await setupWords()).audio_description;
     picks.push(box("audio_description", ad.label, ad.hint));
     nodes = [el("div", { class: "switch-list" }, picks.map((x) => x.node))];
     save = async () => {
@@ -1464,7 +1464,7 @@ async function stepContent(id, root, step = {}) {
     // DASH-417, DASH-422: which parts may update by themselves: Reelix only when it is being installed, Jellyfin's
     // plug-ins only with Jellyfin. Each deactivated unless chosen; the same words and order as the terminal set-up
     // (web/setup-answers.json, terminal_setup.update_parts).
-    const w = (await (await fetch("/setup-answers.json", { cache: "no-cache" })).json()).updates;
+    const w = (await setupWords()).updates;
     const box = (key, label, hint) => {
       const input = el("input", { type: "checkbox", checked: !!config[key] });
       return { key, input, node: el("label", { class: "check" }, input, el("span", { class: "check__text" }, el("strong", { text: label }), el("span", { class: "check__hint", text: hint }))) };
@@ -1500,7 +1500,7 @@ async function stepContent(id, root, step = {}) {
     };
   } else if (id === "movehow") {
     // DASH-266: the same words as the terminal set-up (web/setup-answers.json).
-    const w = (await (await fetch("/setup-answers.json", { cache: "no-cache" })).json()).move;
+    const w = (await setupWords()).move;
     const name = `movehow-${Date.now()}`;
     const into = guideMemory().moveInto !== false;
     nodes = [el("fieldset", {}, el("legend", { class: "visually-hidden", text: "What happens to them" }), el("div", { class: "option-cards" },
@@ -1513,7 +1513,7 @@ async function stepContent(id, root, step = {}) {
   } else if (id === "docker") {
     // DASH-139, DASH-267: the same words as the terminal set-up (web/setup-answers.json). For a move, Yes is
     // recommended, because the move needs it; for a new install, No, with what that means.
-    const w = (await (await fetch("/setup-answers.json", { cache: "no-cache" })).json()).docker;
+    const w = (await setupWords()).docker;
     const move = (guideMemory().start || "new") !== "new";
     const name = `docker-${Date.now()}`;
     const chosen = guideMemory().docker;
@@ -1800,7 +1800,7 @@ async function startGuide() {
       await saveGeneral({ setup_guide_done: true });
       const apps = config.services.filter((s) => !s.background).length;
       const keyless = types(Object.keys(KEY_PLACE)).filter((s) => !s.has_api_key).map((s) => s.name);
-      const uw = (await (await fetch("/setup-answers.json", { cache: "no-cache" })).json()).updates;  // DASH-417, as the terminal says it
+      const uw = (await setupWords()).updates;  // DASH-417, as the terminal says it
       const facts = [
         ["Apps", `${apps} ${apps === 1 ? "app" : "apps"}${keyless.length ? `; still without a key: ${keyless.join(", ")}` : ""}`, "/settings.html"],
         ["Jellyfin extras", ["livetv", "import_keep", "defaults", "audio_description"].filter((k) => config.extras[k]).map((k) => ({ livetv: "Live TV", import_keep: "history import", defaults: "user defaults", audio_description: "audio description (to install in Settings, Plug-ins)" })[k]).join(", ") || "None", "/settings-jellyfin.html"],
@@ -4237,7 +4237,7 @@ async function startDownloadsSettings() {
   }
   let d;
   try { d = await api("/api/downloads/settings"); } catch (e) { root.replaceChildren(notice("danger", "Could not look", e.message)); root.removeAttribute("aria-busy"); return; }
-  const words = await (await fetch("/setup-answers.json", { cache: "no-cache" })).json();
+  const words = await setupWords();
   const parts = [];
   if (d.vpn.on) {
     const provider = el("input", { class: "input", value: d.vpn.provider, spellcheck: "false", autocomplete: "off", id: "dl-vpn-provider" });
@@ -4321,7 +4321,7 @@ async function startDownloadsSettings() {
 // DASH-440: an install without a VPN adds one here, with the details the set-ups ask for and the same checks. Starboard
 // adds Gluetun, moves the download apps behind it, and points Reelix at them; nothing is sent until Add the VPN.
 async function vpnAddSection(d) {
-  const w = (await (await fetch("/setup-answers.json", { cache: "no-cache" })).json()).novpn;
+  const w = (await setupWords()).novpn;
   let providers = [];
   try { providers = (await (await fetch("/vpn-providers.json", { cache: "no-cache" })).json()).providers || []; } catch { /* typed instead */ }
   const provider = el("select", { class: "select", id: "dl-vpn-add-provider" }, el("option", { value: "", text: "Choose your VPN provider" }),
@@ -4394,7 +4394,7 @@ function vpnRemoveBlock() {
   remove.addEventListener("click", async () => {
     setError(password, "");
     if (!password.value) { setError(password, "Enter your Starboard password"); password.focus(); return; }
-    const w = (await (await fetch("/setup-answers.json", { cache: "no-cache" })).json()).novpn;
+    const w = (await setupWords()).novpn;
     if (!(await noVpnWarning({ title: w.remove_title, confirm: w.remove_confirm }))) return;
     remove.disabled = true;
     try {

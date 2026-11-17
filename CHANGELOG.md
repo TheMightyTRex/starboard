@@ -20,6 +20,12 @@ add features.
 - **Monthly backups:** When backups are made has Monthly, on the 1st of each month at 03:00, keeping the newest 6. A server that was off on the 1st makes that month's backup once when it starts again.
 - **API 1.6.0:** `GET /api/v1/backup/copies` and `POST /api/v1/backup/copies/test`, with the system scope.
 
+### Changed
+- **Lighter plug-in pages and checks:** The plug-ins list no longer reads and hashes every plug-in's logo on each call, and the styles, dashboard cards, System jobs, events and the idle-stop check (every minute) read only each plug-in's manifest and state. The plug-ins routes answer 1.6 to 2.8 times faster. (DASH-445)
+- **Alerts card:** The log's problems are found without reading every line of every day kept as JSON: 13 ms instead of 250 ms over 60 days, each minute the dashboard is open. (DASH-445)
+- **Apps and Updates pages:** Docker is asked about each image once, not on every visit; Look for updates still reads each image's registry digests fresh. (DASH-445)
+- **Set-up steps:** The set-ups' words are read once for each page instead of at every step. (DASH-445)
+
 ### Security
 - **Cloud sign-ins:** The address pasted back is checked before it is used: only this computer's own address on rclone's port, with this sign-in's own state and a code, rebuilt from those two values. The sign-in helper publishes no port, has a 10-minute limit, and is removed when the sign-in ends or the slide-out closes. Passwords and keys are read from a file inside the helper, never put on its command line, and kept as the existing rclone config is: in Starboard's own folder, never in a backup, never sent to the browser.
 
