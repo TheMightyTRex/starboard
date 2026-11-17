@@ -397,7 +397,88 @@ def _example_folders(data):
     for d in ("mnt/disk1/media/movies", "mnt/disk1/media/tv", "mnt/disk1/media/books", "mnt/disk2/backups", "mnt/pool/media",
               "srv/media/downloads", "srv/apps/config", "home/sam/media"):
         (root / d).mkdir(parents=True, exist_ok=True)
-    folders.ROOTS = tuple(str(root / r) for r in ("mnt", "srv", "home"))
+    folders.ROOTS = tuple(str(root / r) for r in ("mnt", "media", "srv", "home"))
+    _example_bring_in(data, root)
+
+
+GB_ = 10 ** 9
+# Bring in media (DASH-455): made-up media on an old disk, in a home folder and on a pretend network share. The files
+# are sparse (no space used), so sizes look real. The share is read from a folder here; nothing is mounted.
+BRING_IN_FILES = {
+    "mnt/disk2/Old media/Films/Harbour.Lights.2019.1080p.BluRay.x264/Harbour.Lights.2019.1080p.BluRay.x264.mkv": 9.2,
+    "mnt/disk2/Old media/Films/Harbour.Lights.2019.1080p.BluRay.x264/Harbour.Lights.2019.1080p.BluRay.x264.en.srt": 0.0001,
+    "mnt/disk2/Old media/Films/Harbour.Lights.2019.1080p.BluRay.x264/Sample/sample.mkv": 0.05,
+    "mnt/disk2/Old media/Films/Harbour.Lights.2019.1080p.BluRay.x264/RARBG.txt": 0.000001,
+    "mnt/disk2/Old media/Films/The Long Field (2021)/The Long Field (2021).mkv": 14.1,
+    "mnt/disk2/Old media/Films/The Long Field (2021)/poster.jpg": 0.0004,
+    "mnt/disk2/Old media/Films/Paper.Planets.2017.720p.WEB-DL.mp4": 3.4,
+    "mnt/disk2/Old media/Films/Tidewater.mkv": 7.7,
+    "mnt/disk2/Old media/TV/Copper Valley (2018)/Season 1/Copper.Valley.S01E01.1080p.mkv": 2.1,
+    "mnt/disk2/Old media/TV/Copper Valley (2018)/Season 1/Copper.Valley.S01E02.1080p.mkv": 2.2,
+    "mnt/disk2/Old media/TV/Copper Valley (2018)/Season 1/Copper.Valley.S01E03.1080p.mkv": 2.0,
+    "mnt/disk2/Old media/TV/Saltmarsh/Season 2/Saltmarsh - 2x01.mkv": 1.4,
+    "mnt/disk2/Old media/TV/Saltmarsh/Season 2/Saltmarsh - 2x02.mkv": 1.5,
+    "mnt/disk2/Old media/Music/Midnight Garden/First Light/01 Morning.flac": 0.04,
+    "mnt/disk2/Old media/Music/Midnight Garden/First Light/02 Harbour Wall.flac": 0.05,
+    "mnt/disk2/Old media/Music/Midnight Garden/First Light/cover.jpg": 0.0003,
+    "mnt/disk2/Old media/Thumbs.db": 0.00001,
+    "home/sam/Videos/Glass Orchard 2015.mkv": 6.3,
+    "home/sam/Videos/Northern.Line.2023.2160p.mkv": 21.5,
+    "home/sam/Videos/Paper Planets (2017).mkv": 3.4,
+    "home/sam/Books/Alex Rivers/The Quiet Coast.epub": 0.002,
+    "home/sam/Audiobooks/Sam Harper/Winter Map/Winter Map.m4b": 0.4,
+    "srv/share-example/Kids/Little Lanterns/Season 1/Little.Lanterns.S01E01.mkv": 0.9,
+    "srv/share-example/Kids/Little Lanterns/Season 1/Little.Lanterns.S01E02.mkv": 0.9,
+    "srv/share-example/Films/Quiet.Coast.2010.1080p.mkv": 8.8,
+    "media/usb/Backup of phone/IMG_0001.jpg": 0.003,
+}
+
+
+def _example_bring_in(data, root):
+    from starboard import bring_in, folders as fo
+    for rel, gb in BRING_IN_FILES.items():
+        p = root / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with open(p, "wb") as f:
+            f.truncate(int(gb * GB_))  # sparse: the size shows, no space is used
+    (root / "srv/media/media/movies").mkdir(parents=True, exist_ok=True)
+    fo.disk_places = lambda: [{"name": "Drive 2", "path": str(root / "mnt/disk2")}, {"name": "USB disk", "path": str(root / "media/usb")}]
+    # The example tree lives in a throwaway folder: names show as this computer would show them (/mnt/disk2...).
+    real_describe, real_places = bring_in.describe, fo.places
+    bring_in.describe = lambda s: real_describe(s).replace(str(root), "")
+    fo.places = lambda data_dir=None, purpose="": [{**p, "detail": p["detail"].replace(str(root), "")} for p in real_places(data_dir, purpose)]
+    share = root / "srv/share-example"
+    real_listing, real_browse = bring_in.listing, fo.browse
+
+    def listing(data_dir, s, run=None):
+        if s["kind"] in ("smb", "nfs"):
+            return bring_in._walk(str(share) + s["path"])
+        return real_listing(data_dir, s, run)
+
+    def share_browse(data_dir, sid, rel, run=None):
+        rel = bring_in._rel(rel)
+        here = share / rel.strip("/")
+        names = sorted(n.name for n in here.iterdir() if n.is_dir()) if here.is_dir() else []
+        parts = [x for x in rel.split("/") if x]
+        return {"path": rel, "place": f"share:{sid}", "parent": "/".join(rel.split("/")[:-1]) if rel else None,
+                "crumbs": [{"name": "//192.0.2.20/media", "path": ""}] + [{"name": x, "path": "/" + "/".join(parts[:i + 1])} for i, x in enumerate(parts)],
+                "folders": [{"name": n, "path": f"{rel}/{n}"} for n in names], "free": None, "total": None, "why": ""}
+    bring_in.listing = listing
+    real_prints = bring_in._prints
+
+    def prints(data_dir, s, rels, run=None):
+        if s["kind"] in ("smb", "nfs"):
+            return {r: bring_in._quick_print(str(share) + s["path"] + "/" + r) for r in rels}
+        return real_prints(data_dir, s, rels, run)
+    bring_in._prints = prints
+    bring_in._free = lambda media: int(9.8 * 10 ** 12)  # the made-up media pool's free space, as Storage shows it
+    bring_in.share_browse = share_browse
+    bring_in.share_sizes = lambda data_dir, sid, rel, run=None: fo.group_sizes(bring_in._walk(str(share / bring_in._rel(rel).strip("/"))))
+    if os.environ.get("EXAMPLE_BRING_IN_EMPTY") != "1":
+        bring_in.save_sources(str(data), [{"kind": "disk", "path": str(root / "mnt/disk2/Old media")},
+                                          {"kind": "computer", "path": str(root / "home/sam")},
+                                          {"kind": "smb", "address": "//192.0.2.20/media", "user": "sam", "path": ""}],
+                              media=str(root / "srv/media"))
 
 
 _STYLES_CHANGES = [

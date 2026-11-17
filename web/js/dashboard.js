@@ -425,6 +425,7 @@ startPage().then(async (session) => {
   } catch { /* no plug-in cards */ }
   $("#dash-summary").textContent = `${LAYOUTS[dash.layout]?.name || "At a glance"}. Change it with Edit dashboard.`;
   draw();
+  bringInBanner($(".page-head"));  // DASH-455: a copy of media you already have, while it runs
   // Once a minute while the page is in view; nothing while the tab is hidden.
   const tick = () => { if (!document.hidden && !editing) draw(); };
   timer = setInterval(tick, 60000);

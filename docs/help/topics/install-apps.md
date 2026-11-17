@@ -130,6 +130,8 @@ Read [Basics, Full install and Everything](install-types.md#at-a-glance) to comp
   runs them keeps them: read [Move from Radarr, Sonarr and the others to Reelix](move-your-apps-to-reelix.md).
 - Starboard keeps looking for new apps for 30 minutes, even if you carry on with the set-up or it restarts.
 - To change the install later, read [Change your install](change-your-install.md).
+- Media you already have, on this computer, another disk or a network share, can be copied in as you set up, or
+  later: read [Bring in media you already have](bring-in-media-you-already-have.md).
 
 ## If it does not work
 
@@ -152,6 +154,7 @@ Read [Basics, Full install and Everything](install-types.md#at-a-glance) to comp
 
 ## Find out more
 
+- [Bring in media you already have](bring-in-media-you-already-have.md)
 - [Basics, Full install and Everything: what each one has](install-types.md)
 - [Change your install](change-your-install.md)
 - [Choose a Usenet provider and add it](choose-a-usenet-provider.md)

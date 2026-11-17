@@ -59,6 +59,9 @@ DEVICE = {
                  "scope": "Files.ReadWrite offline_access", "pages": ("microsoft.com", "www.microsoft.com", "login.microsoft.com")},
 }
 GRAPH_DRIVE = "https://graph.microsoft.com/v1.0/me/drive"
+# Read only (Bring in media, DASH-455): reading files already in a Drive needs drive.readonly, which Google does not
+# allow with the device flow, so Google Drive is Complete in this browser only; OneDrive asks only to read.
+READ_ONLY = {"drive": "drive.readonly", "onedrive": "Files.Read Files.Read.All offline_access"}
 # Starboard's own registered sign-in at Google ("TVs and Limited Input devices", drive.file) and Microsoft (public client
 # flows allowed, personal and work accounts). Empty until TheMightyTRexUK registers them (DECISIONS-WAITING.md).
 CLIENTS = {"drive": {"id": "", "secret": ""}, "onedrive": {"id": "", "secret": ""}}
@@ -267,17 +270,19 @@ def cancel():
     return {"state": "none"}
 
 
-def start(data_dir, sid, way="browser"):
-    """Starts signing in to a service: the link (browser), the code (phone), or nothing to wait for (keys, paste)."""
+def start(data_dir, sid, way="browser", read_only=False):
+    """Starts signing in to a service: the link (browser), the code (phone), or nothing to wait for (keys, paste). read_only asks the service only to read files (Bring in media)."""
     global _session
     s = service(sid)
     if way not in ("browser", "phone"):
         raise CloudError("Choose how to sign in")
+    if read_only and way == "phone" and sid == "drive":
+        raise CloudError("Google only lets Starboard read the files you already have when you sign in in a browser. Choose Complete in this browser")
     if way == "phone" and not (s.get("phone") and client(sid)):
         raise CloudError("Complete on the phone is not offered for this service. Choose Complete in this browser")
     cancel()
     sess = {"id": secrets.token_hex(8), "service": sid, "way": way if s["signin"] == "oauth" else s["signin"], "state": "starting",
-            "data_dir": data_dir, "started": time.time(), "deadline": time.time() + SIGNIN_LIMIT}
+            "data_dir": data_dir, "started": time.time(), "deadline": time.time() + SIGNIN_LIMIT, "read_only": bool(read_only)}
     with _lock:
         _session = sess
     if s["signin"] != "oauth":
@@ -312,6 +317,8 @@ def authorize_script(sess):
     localhost). Every step has a time limit; the script ends with rclone."""
     sid = sess["service"]
     blob = {"scope": "drive.file"} if sid == "drive" else {}
+    if sess.get("read_only"):
+        blob = {"scope": READ_ONLY["drive"]} if sid == "drive" else {"access_scopes": READ_ONLY["onedrive"]} if sid == "onedrive" else blob
     blob.update((TEST_HOOK or {}).get("authorize", {}).get(sid, {}))
     arg = base64.b64encode(json.dumps(blob).encode()).decode().rstrip("=") if blob else ""  # rclone reads it without padding
     rtype = RCLONE_TYPE[sid]
@@ -465,7 +472,7 @@ def _device(sid):
 
 def _phone_start(sess):
     sid, d, c = sess["service"], _device(sess["service"]), client(sess["service"])
-    form = {"client_id": c["id"], "scope": d["scope"]}
+    form = {"client_id": c["id"], "scope": READ_ONLY["onedrive"] if sess.get("read_only") and sid == "onedrive" else d["scope"]}
     status, got = HTTP(d["code"], form)
     if status != 200 or not got.get("device_code") or not got.get("user_code"):
         raise CloudError(f"The service did not give Starboard a code ({got.get('error_description') or got.get('error') or status}). Choose Complete in this browser")
@@ -552,7 +559,9 @@ def _signed_in(sess, got, own_client=None):
     if own_client:
         lines += [("client_id", own_client["id"]), ("client_secret", own_client.get("secret", ""))]
     if sid == "drive":
-        lines.append(("scope", "drive.file"))
+        lines.append(("scope", READ_ONLY["drive"] if sess.get("read_only") else "drive.file"))
+    if sid == "onedrive" and sess.get("read_only"):
+        lines.append(("access_scopes", READ_ONLY["onedrive"]))
     if sid == "onedrive":
         status, drive = HTTP((TEST_HOOK or {}).get("graph", GRAPH_DRIVE), None, {"Authorization": f"Bearer {json.loads(token)['access_token']}"})
         if status != 200 or not re.match(r"^[A-Za-z0-9!._-]{1,200}$", str(drive.get("id") or "")):

@@ -236,3 +236,36 @@ body > .loading-bar--top { position: fixed; top: 0; bottom: auto; z-index: 100; 
 /* Copy issues for an AI helper (DASH-434): what was copied, in a box of its own height that scrolls */
 #issues-export { margin-bottom: var(--space-4); }
 #issues-export .code-block { max-height: 24rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Bring in media you already have (DASH-455). The sources in order, with their number beside each; the correction for
+   a whole source; Check names' rows (from and to); a Needs a look choice; the copy's job and its line on the dashboard. */
+.bring-source svg { flex: none; margin-block-start: 4px; }
+.bring-source { display: flex; align-items: flex-start; gap: var(--space-2); min-inline-size: 0; }
+.bring-source__text { display: grid; gap: 2px; min-inline-size: 0; }
+.bring-source__name { font-weight: var(--weight-strong); overflow-wrap: anywhere; }
+.bring-source__meta { color: var(--color-text-muted); font-size: var(--text-sm); }
+.bring-source__order { display: grid; place-items: center; inline-size: 28px; block-size: 28px; flex: none; border: 1px solid var(--color-border);
+  font-weight: var(--weight-strong); font-variant-numeric: tabular-nums; }
+.bring-source__actions { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.bring-links { align-items: flex-start; max-inline-size: 48rem; }
+.bring-whole { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.bring-whole .input { inline-size: auto; max-inline-size: 100%; }
+.bring-folder { display: flex; gap: var(--space-2); align-items: center; overflow-wrap: anywhere; font-weight: var(--weight-normal, 400); }
+.bring-folders .input { inline-size: auto; max-inline-size: 100%; }
+.bring-name .row__meta { display: flex; gap: var(--space-1); align-items: baseline; overflow-wrap: anywhere; min-inline-size: 0; }
+.bring-name .row__meta svg { flex: none; align-self: center; }
+.bring-name__to { color: var(--color-text); }
+.bring-name { flex-wrap: wrap; }
+.bring-choices { flex: 1 1 100%; display: grid; gap: var(--space-1); margin: var(--space-2) 0 0; padding: var(--space-3); border: 1px solid var(--color-divider);
+  background: var(--color-surface-sunken); }
+.bring-space { max-inline-size: 40rem; }
+.wizard-job__head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-1) var(--space-3); align-items: baseline; }
+.wizard-job__words { margin: 0; min-inline-size: 0; }
+.wizard-job__count { font-size: var(--text-sm); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bring-report__part[data-tone="warning"] > h3 { border-inline-start: 4px solid var(--status-warning-fg); padding-inline-start: var(--space-2); }
+.bring-report__part[data-tone="success"] > h3 { border-inline-start: 4px solid var(--status-success-fg); padding-inline-start: var(--space-2); }
+.plain-list { margin: 0; padding-inline-start: 1.2em; }
+.bring-banner { margin-block: var(--space-3); }
+.bring-banner .progress { margin-block-start: var(--space-2); max-inline-size: 28rem; }
+@media (max-width: 560px) { .wizard-job__count { white-space: normal; } }
+@media (max-width: 480px) { .bring-sources .bring-source__actions { grid-column: 2 / span 2; grid-row: 2; } }

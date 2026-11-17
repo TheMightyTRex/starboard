@@ -658,6 +658,7 @@ function setPaused(on) {
 }
 
 startPage().then(async () => {
+  bringInBanner($(".page-head"));  // DASH-455: a copy of media you already have, while it runs
   $("#refresh").addEventListener("click", () => { load({ announceIt: true }); loadTransfer(true); loadHeld(); });
   $("#copy-issues").addEventListener("click", (e) => issuesExport("copy", e.currentTarget));
   $("#download-issues").addEventListener("click", (e) => issuesExport("download", e.currentTarget));
