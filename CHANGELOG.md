@@ -7,12 +7,15 @@ add features.
 
 ## [Unreleased]
 
+## [0.20.1] (17 November 2026)
+
 ### Fixed
 - **Jellyfin 12 refused two of Starboard's calls (DASH-458):** Jellyfin 12 with legacy authorisation off answers 401 when the key comes only in X-Emby-Token. Adding a plug-in's libraries to Jellyfin and the poster check on the Library health page now send the key in Authorization too, as Live TV and Moving in already did, and keep X-Emby-Token for older Jellyfin and Emby.
 - **Release notes for 0.15.2:** Starboard's own release notes had the 0.15.2 Added entry twice, in two wordings, and showed only the second. They now have the one in this changelog.
 
 ### Security
 - **Code and writing checks:** Once a week, and by hand whenever wanted, GitHub checks the code for likely bugs (Ruff and Biome), the writing rules (Vale), misspellings (typos) and the safety of the workflows (actionlint and zizmor), and runs the unit tests under coverage.py, which fails if they run less of the code than before. The workflows' actions are pinned to exact versions, and Dependabot keeps them up to date. The first run found and fixed unused code in 33 files.
+- **The key check reads the whole history again:** Since 10 November, the security scan's check for keys and passwords in the git history read no commits when run from a second working copy of the code (a git worktree), and passed. It now reads them all; the 7 it found are made-up keys in tests and a placeholder in the help, now listed in `.gitleaksignore`. The checks image also runs as a user that is not root.
 
 ## [0.20.0] (17 November 2026)
 
@@ -1412,7 +1415,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused. Help: [Pause, resume and remove downloads](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/manage-downloads.md).
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.20.0...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.20.1...HEAD
+[0.20.1]: https://github.com/TheMightyTRex/starboard/compare/v0.20.0...v0.20.1
 [0.20.0]: https://github.com/TheMightyTRex/starboard/compare/v0.19.1...v0.20.0
 [0.19.1]: https://github.com/TheMightyTRex/starboard/compare/v0.19.0...v0.19.1
 [0.19.0]: https://github.com/TheMightyTRex/starboard/compare/v0.18.0...v0.19.0

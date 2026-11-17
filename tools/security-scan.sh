@@ -44,7 +44,10 @@ docker run --rm -v "$PWD:/src:ro" -v "$HOME/.cache/trivy:/root/.cache" "$TRIVY" 
 result $? "Trivy configuration"
 
 say "Gitleaks: the whole git history"
-docker run --rm -v "$PWD:/repo:ro" zricethezav/gitleaks:v8.28.0 git /repo --no-banner --redact
+# In a git worktree, .git is a file naming a folder in the main checkout's .git: that is mounted too, at the same
+# path, or Gitleaks scans no commits at all and still passes (found 17 November 2026).
+GIT_COMMON=$(git rev-parse --path-format=absolute --git-common-dir)
+docker run --rm -v "$PWD:/repo:ro" -v "$GIT_COMMON:$GIT_COMMON:ro" zricethezav/gitleaks:v8.28.0 git /repo --no-banner --redact
 result $? "Gitleaks"
 
 say "Bandit: medium and high"

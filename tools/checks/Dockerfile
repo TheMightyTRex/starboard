@@ -9,3 +9,6 @@ COPY --from=actionlint /usr/local/bin/actionlint /usr/local/bin/actionlint
 COPY --from=vale /bin/vale /usr/local/bin/vale
 COPY --from=biome /usr/local/bin/biome /usr/local/bin/biome
 WORKDIR /src
+# Never root, and a one-off tool with nothing to check the health of (tools/checks.sh runs it as your own user anyway).
+USER 10001:10001
+HEALTHCHECK NONE

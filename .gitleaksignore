@@ -10,3 +10,17 @@ cd3fb88af79c1a0607d77dc614a6f5d6102b52e8:tools/vm/drive.py:generic-api-key:36
 be218dae026f5384441af09dad06c8b1dd513d59:tests/test_reelix_admin.py:jwt:380
 # The same made-up TMDB token in the set-up answers tests.
 cd91b60518911ddd505886ad1871f11527dcd220:tests/test_setup_answers.py:jwt:12
+
+# Found 17 November 2026, when the scan first read the history from a worktree (tools/security-scan.sh).
+# A made-up Sonarr key in the test that checks the activity log hides keys, not a real one.
+d26b25b3b09322a733a032bc994e65d76188fe77:tests/test_api_v1.py:generic-api-key:311
+# A made-up Reelix first-run token in the test that reads it from Reelix's log, not a real one.
+94dd5d4369e93575e66dd4801573974ee3a2a599:tests/test_reelix_setup.py:generic-api-key:322
+# Made-up SABnzbd and NZBGet keys in the tests that read them, not real ones.
+8037ba72ab36e6111dd897f9de56056f3c3d79fc:tests/test_hidden_keys.py:generic-api-key:122
+8037ba72ab36e6111dd897f9de56056f3c3d79fc:tests/test_hidden_keys.py:generic-api-key:129
+8037ba72ab36e6111dd897f9de56056f3c3d79fc:tests/test_hidden_keys.py:generic-api-key:139
+# A made-up key in the test that reads the apps' settings files, not a real one.
+872a5d629824639ac971490e78015ce2e1df99a6:tests/test_read_keys.py:generic-api-key:53
+# A placeholder (sb_read_...) in the help's example command, not a key.
+9363c9a7ec959e0ca342ee91eb5a688d95ca9f7f:docs/help/topics/use-starboards-api.md:curl-auth-header:32
