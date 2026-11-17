@@ -21,10 +21,13 @@ The choices (research, 13 November 2026, from each project's manifest and source
   Its two merge tasks move from every 24 hours to the start of quiet hours.
 - Trakt (Jellyfin's own repository): records what is watched on trakt.tv. Each person links their own account in
   Jellyfin, so Starboard only installs it.
-- Picture shrinker (DASH-433, TheMightyTRex's repository, Jellyfin 10.11 and 12): shrinks posters and photos of
+- Picture shrinker (DASH-433, TheMightyTRexUK's one repository for its Jellyfin plug-ins, Jellyfin 10.11 and 12): shrinks posters and photos of
   people inside Jellyfin, with a backup of each original, on a task in Jellyfin's Scheduled Tasks. It follows the same rules as
   Starboard's own Picture shrinker plug-in, which stays idle while this one is installed. Starboard leaves its schedule
-  as it comes (every Sunday at 03:30).
+  as it comes (every Sunday at 03:30). Its repository moved on 17 November 2026 from its own address to
+  TheMightyTRex/jellyfin-plugins, one address for every Jellyfin plug-in by TheMightyTRexUK: when Starboard next offers
+  Jellyfin plug-ins, it replaces the old address in Jellyfin with the new one (MOVED), and leaves every other
+  repository as it is.
 """
 import json
 import os
@@ -38,6 +41,9 @@ from .livetv_jellyfin import _call
 
 OFFICIAL = ("Jellyfin Stable", "https://repo.jellyfin.org/files/plugin/manifest.json")
 INTRO_SKIPPER = ("Intro Skipper", "https://intro-skipper.org/manifest.json")
+TREX = ("TheMightyTRexUK", "https://raw.githubusercontent.com/TheMightyTRex/jellyfin-plugins/main/manifest.json")
+# Repository addresses that have moved: the old address -> the repository that replaces it in Jellyfin.
+MOVED = {"https://raw.githubusercontent.com/TheMightyTRex/jellyfin-plugin-picture-shrinker/main/manifest.json": TREX}
 
 PACKAGES = {
     "theintrodb": {"name": "TheIntroDB", "guid": "c9e41b95-63e4-45e2-9db6-b83df21ae5e7", "min": (12, 0),
@@ -49,7 +55,7 @@ PACKAGES = {
               "repo": ("Merge Versions", "https://raw.githubusercontent.com/danieladov/JellyfinPluginManifest/master/manifest.json")},
     "trakt": {"name": "Trakt", "guid": "4fe3201e-d6ae-4f2e-8917-e12bda571281", "min": (10, 11), "repo": OFFICIAL},
     "pictures": {"name": "Picture shrinker", "guid": "80bf9325-d299-4e24-ac74-c087aeec3011", "min": (10, 11), "below": (13,),
-                 "needs": "Needs Jellyfin 10.11 or 12.", "released_only": True, "repo": ("Picture shrinker", "https://raw.githubusercontent.com/TheMightyTRex/jellyfin-plugin-picture-shrinker/main/manifest.json")},
+                 "needs": "Needs Jellyfin 10.11 or 12.", "released_only": True, "repo": TREX},
 }
 
 SKIP = ("theintrodb", "skipmedb", "introskipper")
@@ -237,7 +243,7 @@ def status(services, data_dir, cfg_data=None, opener=None):
     except (urllib.error.URLError, OSError, ValueError) as e:
         return {"connected": False, "problem": f"Jellyfin did not answer: {getattr(e, 'reason', e)}", "groups": []}
     version = str(info.get("Version") or "")
-    finished = finish_setup(jf, data_dir, installed, cfg_data, opener)
+    finished = move_repos(jf, opener) + finish_setup(jf, data_dir, installed, cfg_data, opener)
     start, length = quiet_hours(cfg_data)
     groups = []
     for g in GROUPS:
@@ -277,6 +283,30 @@ def status(services, data_dir, cfg_data=None, opener=None):
     return {"connected": True, "name": jf.get("name") or "Jellyfin", "version": version,
             "restart": bool(info.get("HasPendingRestart")), "can_restart": info.get("CanSelfRestart", True) is not False,
             "finished": finished, "groups": groups}
+
+
+def move_repos(jf, opener=None):
+    """Replaces each moved repository address in Jellyfin with its new one (MOVED), in the same place in the list and
+    with its Enabled setting kept, or removes it when the new one is already there. Every other repository stays as it
+    is. Returns what was done, in words; nothing when no old address is listed or Jellyfin does not answer."""
+    try:
+        repos = _call(jf["url"], jf["api_key"], "GET", "/Repositories", opener=opener) or []
+        urls = {str(r.get("Url") or "").rstrip("/") for r in repos}
+        moved = [r for r in repos if str(r.get("Url") or "").rstrip("/") in MOVED]
+        if not moved:
+            return []
+        kept = []
+        for r in repos:
+            new = MOVED.get(str(r.get("Url") or "").rstrip("/"))
+            if not new:
+                kept.append(r)
+            elif new[1] not in urls:
+                kept.append(dict(r, Name=new[0], Url=new[1]))
+                urls.add(new[1])
+        _call(jf["url"], jf["api_key"], "POST", "/Repositories", kept, opener=opener)
+    except (urllib.error.URLError, OSError, ValueError):
+        return []
+    return [f"Replaced the old Picture shrinker repository address with the {TREX[0]} one, which lists every version"]
 
 
 def _ensure_repo(jf, repo, opener=None):
@@ -330,6 +360,7 @@ def choose(services, data_dir, group, choice, cfg_data=None, opener=None):
     with _lock:
         info = _call(jf["url"], jf["api_key"], "GET", "/System/Info", opener=opener) or {}
         installed = _installed(jf, opener)
+        moved = move_repos(jf, opener)
         if group == "skip":
             want = {"downloaded": downloaded_choice(info.get("Version")), "analysed": "introskipper", "none": None}[choice]
             if choice == "downloaded" and not want:
@@ -350,7 +381,7 @@ def choose(services, data_dir, group, choice, cfg_data=None, opener=None):
             if d:
                 done.append(d)
                 _mark_ours(data_dir, want)
-    return {"done": done or ["Nothing to change"], "restart": bool(done)}
+    return {"done": (moved + done) or ["Nothing to change"], "restart": bool(done)}
 
 
 def restart(services, opener=None):
