@@ -61,6 +61,8 @@ JUNK_NAMES = {"thumbs.db", "desktop.ini", ".ds_store", "folder.ini", "rarbg.txt"
 GENERIC = {"movies", "movie", "films", "film", "tv", "tv shows", "tvshows", "shows", "series", "music", "audio", "mp3",
            "flac", "books", "ebooks", "e-books", "audiobooks", "audio books", "audiobook", "media", "downloads", "video",
            "videos", "complete", "completed", "library", "share", "public", "data", "my videos", "my music", "documents"}
+# Only the first 512 characters of a name are matched: no real file name is longer, and it bounds the patterns' work.
+NAME_MAX = 512
 SAMPLE_RE = re.compile(r"(^|[\s._\-\[(/])sample([\s._\-\])/]|$)", re.I)
 EPISODE_RES = (re.compile(r"(?i)^(?P<show>.*?)[\s._\-\[(]*s(?P<s>\d{1,2})[\s._-]*e(?P<e>\d{1,3})(?:[-_ ]?e?(?P<e2>\d{1,3}))?(?!\d)"),
                re.compile(r"(?i)^(?P<show>.*?)[\s._\-\[(]*(?P<s>\d{1,2})x(?P<e>\d{2,3})(?!\d)"))
@@ -467,7 +469,7 @@ def kind_of(rel, size=0):
     if name.lower() in JUNK_NAMES or name.startswith("._"):
         return "junk"
     if ext in VIDEO:
-        stem = _words(os.path.splitext(name)[0])
+        stem = _words(os.path.splitext(name)[0])[:NAME_MAX]
         if EPISODE_RES[0].match(stem) or EPISODE_RES[1].match(stem):
             return "series"
         if any(SEASON_RE.match(p) for p in parts) or any(p in ("tv", "tv shows", "tvshows", "series", "shows") for p in parts):
@@ -613,7 +615,7 @@ def parse_episode(rel):
     """{show, year, season, episode, last} for an episode, or None. The show is taken from the file name, else from
     the folder above its season folder."""
     parts = rel.split("/")
-    stem = _words(os.path.splitext(parts[-1])[0])
+    stem = _words(os.path.splitext(parts[-1])[0])[:NAME_MAX]
     m = EPISODE_RES[0].match(stem) or EPISODE_RES[1].match(stem)
     if not m:
         return None
