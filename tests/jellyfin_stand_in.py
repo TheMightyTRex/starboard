@@ -53,6 +53,18 @@ class StandIn:
                 return 200, {"Version": self.version, "ServerName": "Harbour", "HasPendingRestart": self.pending, "CanSelfRestart": True}
             if method == "GET" and route == "/Plugins":
                 return 200, [dict(p) for p in self.plugins]
+            if method == "GET" and route == "/Packages":  # what the enabled repositories offer, as Jellyfin lists it
+                out = []
+                for r in self.repos:
+                    if not r.get("Enabled", True):
+                        continue
+                    for name, (guid, version) in (self.OFFERS.get(r["Url"]) or {}).items():
+                        newer = self.updates.get(guid.replace("-", ""))
+                        versions = ([{"version": newer, "changelog": f"- Works with Jellyfin {self.version}\n- Fixed a crash when a library is empty",
+                                      "sourceUrl": f"https://example.org/{guid}/{newer}.zip"}] if newer else [])
+                        versions.append({"version": version, "changelog": "", "sourceUrl": f"https://example.org/{guid}/{version}.zip"})
+                        out.append({"name": name, "guid": guid, "versions": versions})
+                return 200, out
             if method == "GET" and route == "/Repositories":
                 return 200, [dict(r) for r in self.repos]
             if method == "POST" and route == "/Repositories":

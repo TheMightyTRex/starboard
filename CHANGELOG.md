@@ -7,6 +7,13 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Check for updates (DASH-462):** Settings, Updates, Ready to update has a Check for updates button. It asks now, instead of waiting for the next scheduled check: GitHub for Starboard's newest release, each app's and Reelix's image registry, every plug-in catalogue, and Jellyfin for new versions of its plug-ins. Ready to update then says when it checked, what is ready and anything it could not reach, and focus stays on the button. Nothing is asked when the page opens.
+- **What is new for every waiting update (DASH-462):** A What is new button beside Install all updates opens one slide-out with the release notes of every update ready, from the version you have to the new one: Starboard, Reelix, each plug-in, Jellyfin's plug-ins and the apps, each item's changes under Added, Changed, Fixed and Security, the version of each change in brackets when there are several, a list at the top to jump to each item, and each item's release page. An item with no notes says so and links its release page. The notes are read only when you press the button.
+
+### Changed
+- **Install all updates shows from one update (DASH-462):** It used to show only when two or more updates were ready; now it shows for one, as Install 1 update, with the same order, holds and confirmation. Jellyfin plug-ins that Check for updates found are named in the list and counted.
+
 ## [0.20.2] (17 November 2026)
 
 ### Fixed

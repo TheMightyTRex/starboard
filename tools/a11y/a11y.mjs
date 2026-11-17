@@ -218,6 +218,35 @@ if (!pages.length || pages.some((p) => p.includes("picture-shrinker"))) {
   } catch (e) { add("settings-plugin.html?id=picture-shrinker, Update", "page", "error", e.message.split("\n")[0]); }
 }
 
+// Check for updates and What is new (DASH-462): Ready to update after a check, and the What is new slide-out with
+// every waiting update's notes, in Light, Dark and High contrast, with its structure.
+if (!pages.length || pages.some((p) => p.includes("settings-updates"))) {
+  const scan = async (name) => {
+    await axe(name, "light");
+    await structure(name);
+    await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+    await page.waitForTimeout(150);
+    await axe(name, "dark");
+    await page.evaluate(() => { document.documentElement.removeAttribute("data-theme"); document.documentElement.classList.add("pref-contrast"); });
+    await page.waitForTimeout(150);
+    await axe(name, "high contrast");
+    await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
+  };
+  try {
+    await page.goto(`${base}/settings-updates.html`);
+    await settle();
+    await page.locator("#check-updates-now").click();
+    await page.locator("#up-list-summary", { hasText: "Checked at" }).waitFor({ timeout: 30000 });
+    await scan("settings-updates.html, after Check for updates");
+    await page.locator("#whats-new").click();
+    await page.locator("#side-panel section.release-notes").first().waitFor({ timeout: 15000 });
+    await page.waitForTimeout(300);
+    await scan("settings-updates.html, What is new");
+    await page.keyboard.press("Escape");
+    console.log("checked Check for updates and What is new");
+  } catch (e) { add("settings-updates.html, What is new", "page", "error", e.message.split("\n")[0]); }
+}
+
 // Downloading without a VPN (DASH-440): the set-up's VPN step with Continue without a VPN chosen, and its warning,
 // an alert dialog, in Light, Dark and High contrast; then Settings, Downloads, VPN with Remove the VPN's warning.
 if (!pages.length || pages.some((p) => p.includes("install-apps") || p.includes("settings-downloads"))) {
