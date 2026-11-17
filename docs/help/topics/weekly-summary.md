@@ -14,7 +14,7 @@ health of your disks and how full your folders are. It goes to the same place as
 ## Steps
 
 1. Go to **Settings**, then **Alerts**.
-2. Activate **Advanced settings**, if it is not active already.
+2. Activate **More settings**, if it is not active already.
 3. Under **Weekly summary**, activate **Weekly summary**. Starboard shows "Weekly summary activated".
 
 The first summary comes on the next Monday, after 09:00 by the server's clock.
@@ -22,7 +22,7 @@ The first summary comes on the next Monday, after 09:00 by the server's clock.
 ## What the summary says
 
 - **Apps:** how many apps answered all week, and for each one that did not, how often it was not answering.
-- **Disks:** how many drives are healthy, and which ones to check. This needs Disk health set up. Read
+- **Disks:** how many disks are healthy, and which ones to check. This needs Disk health set up. Read
   [Check your disks' health](check-disk-health.md).
 - **Folders:** how full each folder on System, Storage is. Read
   [Check free space and what is using it](check-storage.md).
@@ -38,7 +38,7 @@ The first summary comes on the next Monday, after 09:00 by the server's clock.
 ## If it does not work
 
 - **No summary on Monday:** check that **Watch in the background** is active in **Settings**, **Alerts**, under
-  **Advanced settings**, and that **Send a test alert** reaches you. If both are fine, Starboard's log says why
+  **More settings**, and that **Send a test alert** reaches you. If both are fine, Starboard's log says why
   the summary was not sent. Read [Read the log and report a problem](read-the-log.md).
 - **The summary says no history yet:** watching has not been on long enough. Wait a week.
 

@@ -14,7 +14,7 @@ used here is in the [Plug-in manifest reference](plugin-manifest-reference.md).
 
 - A Starboard you can sign in to, with access to Docker. Read
   [Change what Starboard can access](../topics/change-what-starboard-can-access.md) if it has none.
-- A terminal on the server, with Docker and Python 3. Read [The terminal: typing commands](../basics/the-terminal.md).
+- A terminal on the server, with Docker and Python 3. Read [The terminal: entering commands](../basics/the-terminal.md).
 - A text editor.
 
 ## 1. Make the folder
@@ -78,7 +78,7 @@ In a second terminal:
 curl -s http://127.0.0.1:8080/card
 ```
 
-It worked when you see an answer such as `{"value": 12, "label": "running", "note": "Since the plug-in last started"}`.
+It worked when the answer is, for example, `{"value": 12, "label": "running", "note": "Since the plug-in last started"}`.
 Press Ctrl+C in the first terminal to stop it.
 
 ## 3. Describe its container
@@ -175,7 +175,7 @@ When you share the plug-in, push the image to a public registry instead and pin 
 
 1. Go to **Settings**, then **Plug-ins**, then **Catalogue**.
 2. Under **Add one from elsewhere**, choose your `starboard-plugin.json` in **Or its manifest file**.
-3. Select **See what it does**. Read what it may do: for Hello card, it reaches only Starboard.
+3. Select **What it does**. Read what it may do: for Hello card, it reaches only Starboard.
 4. Select **Install** and its name, and enter your Starboard password.
 5. In **Settings**, then **Plug-ins**, then **Manage**, select **Activate** next to Hello card.
 6. On the dashboard, select **Edit dashboard** and add the Hello card card.

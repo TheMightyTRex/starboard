@@ -258,7 +258,7 @@ const AppDetails = (() => {
       button.addEventListener("click", async () => {
         const input = el("input", { class: "input", type: "password", id: `signin-pw-${s.id}`, autocomplete: "current-password" });
         const error = el("p", { class: "field__error", role: "alert" });
-        if (!await confirmDialog({ title: `Show ${s.name}'s sign-in`, message: `Starboard made up ${s.name}'s sign-in when it installed it. Type your Starboard password to see it.`,
+        if (!await confirmDialog({ title: `Show ${s.name}'s sign-in`, message: `Starboard made up ${s.name}'s sign-in when it installed it. Enter your Starboard password to show it.`,
           confirm: "Show", fields: [el("div", { class: "field" }, el("label", { for: input.id, text: "Your Starboard password" }), input, error)] })) return;
         try {
           const r = await api("/api/services/sign-in", { method: "POST", body: { id: s.id, password: input.value } });
@@ -298,7 +298,7 @@ const AppDetails = (() => {
       el("thead", {}, el("tr", {}, ["Time", "Result", "Answered in"].map((t) => el("th", { scope: "col", text: t })))),
       el("tbody", {}, rows.map((r) => el("tr", {},
         el("td", { "data-label": "Time", class: "numeric", text: clockOrDay(r.t) }),
-        el("td", { "data-label": "Result" }, r.state === "up" ? chip("Running", "success") : chip("Not responding", "danger"),
+        el("td", { "data-label": "Result" }, r.state === "up" ? chip(...STATUS.running) : chip(...STATUS.notResponding),
           r.message ? el("div", { class: "small muted", text: r.message }) : null),
         el("td", { "data-label": "Answered in", class: "numeric", text: r.ms != null ? `${r.ms} ms` : "" }))))));
   }

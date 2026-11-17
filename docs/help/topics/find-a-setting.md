@@ -21,20 +21,20 @@ where a setting lives.
 
    ![Settings, Updates with example data, with the topic tabs under the heading (step 4) outlined](../images/find-a-setting-2-tabs.png)
 
-5. Each page opens on its basic settings. To show the rest, activate the small **Advanced settings** switch at the
+5. Each page opens on its basic settings. To show the rest, activate the small **More settings** switch at the
    right of the heading. More sections and tabs appear. Your choice is saved for every Settings page.
 
-   ![Settings, General, Names and apps with only its basic settings, with Advanced settings inactive (step 5) outlined](../images/find-a-setting-3-basic.png)
+   ![Settings, General, Names and apps with only its basic settings, with More settings inactive (step 5) outlined](../images/find-a-setting-3-basic.png)
 
-   ![Settings, General, Names and apps with Advanced settings active (step 5): its tabs now include Categories, App cards and Set-up guide, both outlined](../images/find-a-setting-4-advanced.png)
+   ![Settings, General, Names and apps with More settings active (step 5): its tabs now include Categories, App cards and Set-up guide, both outlined](../images/find-a-setting-4-advanced.png)
 
 ## General
 
-- **Names and apps:** the server and dashboard names. With **Advanced settings**: categories, what app cards show
+- **Names and apps:** the server and dashboard names. With **More settings**: categories, what app cards show
   and the set-up guide. Read [Organise apps into categories](organise-categories.md).
 - **Appearance:** Starboard's own style and its colours, the default design and the accessibility choices for this
   browser. Read [Choose a design for the Apps page](choose-a-design.md).
-- **Pages and lists:** long lists and Library views. With **Advanced settings**: Coming up. Read
+- **Pages and lists:** long lists and Library views. With **More settings**: Coming up. Read
   [Find out what is coming up](coming-up.md).
 - **Discover rows:** which rows each Discover page shows.
 - **Download hours:** when downloads run. Read [Download only at certain hours](set-download-hours.md).
@@ -51,11 +51,11 @@ where a setting lives.
   [Change your install](change-your-install.md) and [Switch between the two versions of Reelix](switch-reelix-version.md).
 - **Reelix:** Reelix's version, its sites to search, download apps, media servers and its own settings. Read
   [Change Reelix's settings in Starboard](change-reelix-settings.md).
-- **Jellyfin:** a link to the Live TV plug-in's settings. With **Advanced settings**: watch history from another
+- **Jellyfin:** a link to the Live TV plug-in's settings. With **More settings**: watch history from another
   server and the same defaults for every user. Read [Set up free Live TV in Jellyfin](set-up-live-tv.md),
   [Import watch history into Jellyfin](import-watch-history.md) and
   [Give every Jellyfin user the same defaults](jellyfin-user-defaults.md).
-- **Audiobookshelf:** with **Advanced settings**, where everyone is in each audiobook, copied from another
+- **Audiobookshelf:** with **More settings**, where everyone is in each audiobook, copied from another
   server. Read [Copy listening progress into Audiobookshelf](copy-listening-progress.md).
 - **Tdarr** and **Dispatcharr:** connect each one, when it is in your install. Read
   [Set up free Live TV in Jellyfin](set-up-live-tv.md) for Dispatcharr.
@@ -67,9 +67,9 @@ where a setting lives.
   [Download without a VPN](download-without-a-vpn.md) and [Download only at certain hours](set-download-hours.md).
 - **Radio:** **Sources**, **Add a show from a link**, **Your podcast library** and **Station logos**. Read
   [Follow radio shows and podcasts](follow-radio-shows.md).
-- **Alerts:** where alerts go. With **Advanced settings**: what to alert on, a weekly summary and watching. Read
+- **Alerts:** where alerts go. With **More settings**: what to alert on, a weekly summary and watching. Read
   [Activate alerts](activate-alerts.md) and [Get a weekly summary](weekly-summary.md).
-- **Performance:** **Preset**, for how much Starboard does, and **Pictures**. With **Advanced settings**: each part
+- **Performance:** **Preset**, for how much Starboard does, and **Pictures**. With **More settings**: each part
   of the background work, and how often pages update. Read [Make Starboard use less of your server](make-starboard-lighter.md).
 - **Security:** four pages: **Who can open the dashboard**, **Password**, **API keys** and **Sign out everywhere**.
   Read [Choose who can open Starboard](choose-who-can-open-starboard.md),

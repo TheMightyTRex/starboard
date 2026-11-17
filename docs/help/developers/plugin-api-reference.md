@@ -16,7 +16,7 @@ return. This page matches plug-in API 1.14.0. The fields that ask for each of th
   Read [App plug-ins](plugin-manifest-reference.md#app-plug-ins). Put a small helper first in `containers` if
   Starboard should show cards or buttons for the app.
 - Every request has `User-Agent: Starboard` and asks for JSON. Answer with `Content-Type: application/json`.
-- Starboard never puts what a plug-in sends into a page as HTML. It keeps only the fields below, cuts each text to
+- Starboard never puts what a plug-in sends into a page as HTML. It keeps only the fields in this section, cuts each text to
   its length, and draws everything itself.
 
 | What | Method and path | Time limit | Largest answer read |
@@ -30,7 +30,7 @@ return. This page matches plug-in API 1.14.0. The fields that ask for each of th
 ## Card answers
 
 Starboard asks a card's path only while someone has a dashboard with the card open, and at most once a minute, or
-once every `refresh_minutes`, or at the card's own `refresh_seconds` (API 1.14, read below). Answer with one JSON object in the shape for the card's type.
+once every `refresh_minutes`, or at the card's own `refresh_seconds` (API 1.14, read **How often a card is asked**). Answer with one JSON object in the shape for the card's type.
 
 | Type | Answer | Rules |
 |---|---|---|
@@ -50,7 +50,7 @@ view. It overrides the `refresh_seconds` in the manifest, so a plug-in can let p
 ```
 
 - It is held to 10 to 3600 seconds: a value under 10 is asked every 10 seconds, so no card can be asked more often.
-- Starboard keeps the answer for that long, so many people looking at once still ask the plug-in once.
+- Starboard keeps the answer for that long, so many people using it at once still ask the plug-in once.
 - Nothing is asked while the browser tab is hidden. Cards due at the same time are asked in one request.
 - With no `refresh_seconds` anywhere, the card is asked as before: once a minute, or every `refresh_minutes`.
 - Keep the answer cheap. Read a small file your plug-in keeps up to date rather than doing the work when asked.
@@ -60,7 +60,7 @@ view. It overrides the `refresh_seconds` in the manifest, so a plug-in can let p
 From API 1.14 Starboard draws every plug-in card the same way (design 2, "band with status"): a grey band across
 the top that starts with the plug-in's logo (its [logo](plugin-manifest-reference.md#logo), or its initials on a
 plain tile), then the plug-in's name as the card's heading (the card's `title` under it, smaller, when it differs),
-and ends with a status chip. The body below shows the answer as before, and a lighter grey footer says when the
+and ends with a status chip. The body shows the answer as before, and a lighter grey footer says when the
 card last updated (from Starboard 0.19.1; before, the time sat in the band).
 From API 1.15 a card may give its own title for each size (`titles` in the manifest); the title for the card's size
 is then the heading on its own, on one line. On a small card the chip shows only its icon, and its words are still
@@ -70,7 +70,7 @@ Any card's answer may add these, all optional:
 
 | Field | What it is | Rules |
 |---|---|---|
-| `status` | The card's state, shown as a chip in the band | One of the values below. An unknown value is left out, and the tester reports it |
+| `status` | The card's state, shown as a chip in the band | One of the values in **States**. An unknown value is left out, and the tester reports it |
 | `status_label` | Your own words on the chip, such as `Waiting for 03:30` | Up to 24 characters, cut beyond. Needs a `status`, which sets the chip's colour and shape |
 | `updated` | When what the card shows last changed, in seconds since 1970 | Not in the future. Left out, the footer says when Starboard last asked the plug-in |
 
@@ -115,7 +115,7 @@ Starboard shows `said` to the person, cut to 160 characters. With no `said`, it 
 "started". When the plug-in does not answer, it shows the plug-in's name and "did not answer". Do long work in the
 background and answer at once.
 
-## Custom screens
+## Custom pages
 
 A setting of type `custom` lets the plug-in describe a list, such as a list of channels or sources, and Starboard
 draws it with its own controls. The setting's `choices` is a path on the plug-in. Starboard calls it with the
@@ -184,7 +184,7 @@ and name a menu in each item's and switch's `menu`:
 
 Starboard draws each level's menus as rows that open, with their state (**Active**, **Partly active** or
 **Inactive**) and how many of their items are active, counting the items in their sub menus too. An opened menu
-shows a back link above its heading, its own switches, sub menus and items, and the All, Active and Inactive
+shows a back link before its heading, its own switches, sub menus and items, and the All, Active and Inactive
 filter. Focus goes to the opened menu's heading, and back to its row on the way back. **Test all** and the add box
 are on the first level only. With menus, `bulk` can have up to 400 switches.
 
@@ -274,11 +274,11 @@ on its first container. Your plug-in must answer that path.
 | `app.up` | `app` (its name), `type` | When an app that was down answers again |
 | `request.available` | `title`, `year`, `kind` (`Film` or `Series`), `by` (who asked) | Reelix's or Seerr's newest 30 requests, checked every 5 minutes: one that becomes Available or Completed. API 1.11 |
 | `download.failed` | `title`, `app`, `reason` | The download queue, checked every 5 minutes: an item that shows a problem. API 1.11 |
-| `disk.nearly_full` | `disk` (its name), `percent`, `free` (bytes) | The disks on **System**, checked every 5 minutes: one that reaches the alerts' **Disk nearly full** limit, or 90% when it is not set. Sent again only after it drops 2 points below. API 1.11 |
+| `disk.nearly_full` | `disk` (its name), `percent`, `free` (bytes) | The disks on **System**, checked every 5 minutes: one that reaches the alerts' **Disk nearly full** limit, or 90% when it is not set. Sent again only after it drops 2 points under that limit. API 1.11 |
 | `update.available` | `app`, `current`, `latest` | What Starboard already knows, checked every 5 minutes: a new Starboard release (its own check, at most every 6 hours), an app image from the last check on **Apps**, **Updates**, and a plug-in version from a catalogue. Nothing extra is fetched. API 1.11 |
 
 For the events checked every 5 minutes, the first check after Starboard starts only sets a starting point,
-so nothing old is sent, and something that comes and goes between two checks is not seen.
+so nothing old is sent, and something that comes and goes between two checks is not found.
 
 ## Jobs
 
@@ -383,7 +383,7 @@ Starboard keeps one state for each plug-in, and shows each with one sentence and
 | `disabled` | Deactivated: stopped, with its settings and data kept | **Activate** |
 | `failed` | It did not start, or stopped answering. The message says why | **Try again**, or **Roll back** to the version before within 10 minutes of an update |
 | `needs-setup` | A required setting is empty, or `setup_required` and it has never been set up | **Finish setting up** |
-| `not-supported` | This Starboard's plug-in API is outside the plug-in's `starboard_api`, so it is stopped | **Look for an update** |
+| `not-supported` | This Starboard's plug-in API is outside the plug-in's `starboard_api`, so it is stopped | **Check for an update** |
 
 The first four are stored in the plug-in's `state.json`. Starboard works out `needs-setup` and `not-supported` each
 time, and a plug-in in either cannot be activated. **Deactivate all plug-ins** stops every active plug-in at once.
@@ -475,7 +475,7 @@ catalogues besides its own.
 | `id` | The plug-in's `id`. An entry with a wrong id is left out |
 | `name`, `description`, `kind`, `author` | Up to 40, 240, 30 and 60 characters. `kind` groups the plug-ins, `Other` when left out |
 | `permissions`, `notices` | Shown before anyone opens the plug-in. Unknown ones are left out |
-| `published` | `false` shows it as **Coming soon**, with no way to add it |
+| `published` | `false` shows it as **Not published**, with no way to add it |
 | `versions` | Up to 50, in any order |
 | `version` | The plug-in's version |
 | `starboard_api` | The range it needs, as in the manifest. Left out, it fits any Starboard |

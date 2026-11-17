@@ -275,7 +275,7 @@ def _finish(app, run):
     watch = getattr(app, "watch", None)
     if watch:
         try:
-            watch.alert(f"update-all:{run['id']}", "Install all updates finished", f"{said}. See Settings, Updates.",
+            watch.alert(f"update-all:{run['id']}", "Install all updates finished", f"{said}. Go to Settings, Updates.",
                         "info" if state == "updated" else "warning")
         except Exception as e:  # noqa: BLE001  the alert is a help, never a stop
             logs.error("updates", f"The alert was not sent: {e}", e)

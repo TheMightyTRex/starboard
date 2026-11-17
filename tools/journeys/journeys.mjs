@@ -429,7 +429,7 @@ await open("settings-radio.html#radio-link-h");
 await page.locator("#radio-link").fill("https://www.bbc.co.uk/programmes/example");
 await page.locator("#radio-link").press("Enter");
 await page.locator("button", { hasText: "Follow this show" }).waitFor({ timeout: 5000 }).catch(() => {});
-check("RAD-12", "Look it up shows the show behind the link", await page.locator("#radio-link-title").textContent().catch(() => "") === "The Lighthouse Keepers");
+check("RAD-12", "Find it shows the show behind the link", await page.locator("#radio-link-title").textContent().catch(() => "") === "The Lighthouse Keepers");
 await page.locator("button", { hasText: "Follow this show" }).click();
 await page.locator("section[aria-labelledby=radio-link-h] .notice", { hasText: "added" }).waitFor({ timeout: 5000 }).catch(() => {});
 check("RAD-12", "Follow this show adds it and says so", await page.locator("section[aria-labelledby=radio-link-h] .notice", { hasText: "added" }).count() === 1);
@@ -753,7 +753,7 @@ const upgradeText = (latest) => page.evaluate((l) => {
   showVersion("0.16.5", "TheMightyTRex/starboard", l);
   return document.querySelector("[data-footer-updates]").textContent;
 }, latest);
-check("FOOT-02", "About and updates says Upgrade available when a newer release is out", /About and updates, ?Upgrade available/.test(await upgradeText("99.0.0")));
+check("FOOT-02", "About and updates says Update available when a newer release is out", /About and updates, ?Update available/.test(await upgradeText("99.0.0")));
 check("FOOT-02", "and says nothing more when Starboard is up to date", (await upgradeText("0.16.5")).trim() === "About and updates");
 const signedOut = await (await browser.newContext()).newPage();
 await signedOut.goto(`${base}/login.html`, { waitUntil: "networkidle" });
@@ -1429,7 +1429,7 @@ check("BAND-08", "Starboard's own cards show a design system icon on the tile",
   ["disk", "load", "alerts", "health", "setup"].filter((k) => byId[k]).every((k) => byId[k].own && byId[k].app === "starboard" && !byId[k].img), JSON.stringify(builtIn.map((c) => [c.id, c.own, c.app])));
 const healthChip = (await page.locator('[data-card="health"] .card-band .chip').textContent()) || "";
 check("BAND-09", "Service health's state is a chip in the band, in words with no number, and the footer says when it was updated",
-  /^Status: (All running|Not responding)$/.test(healthChip) && /^Updated /.test(await page.locator('[data-card="health"] > .card-foot time').textContent()), healthChip);
+  /^Status: (Running|Not responding)$/.test(healthChip) && /^Updated /.test(await page.locator('[data-card="health"] > .card-foot time').textContent()), healthChip);
 check("BAND-09", "a card with nothing to say has no chip and no time (Recently added, kept by the server for 5 minutes)",
   (await page.locator('[data-card="recent"] .card-band__side > *').count()) === 0
   && (await page.locator('[data-card="recent"] > .card-foot').count()) === 0);
@@ -1780,7 +1780,7 @@ await page.waitForTimeout(800);
 check("ZIP-07", "then its own page opens, offering Update from a zip file", /id=zip-hello/.test(page.url())
   && (await page.getByRole("heading", { name: "Update from a zip file" }).count()) === 1);
 await page.getByLabel("The new version's zip file").setInputFiles(zipFile("1.0.1"));
-await page.getByRole("button", { name: "See what is new" }).click();
+await page.getByRole("button", { name: "What is new" }).click();
 const zipUp = page.getByRole("dialog", { name: "Update Zip hello to 1.0.1?" });
 await zipUp.waitFor({ timeout: 8000 }).catch(() => {});
 check("ZIP-08", "a newer zip opens the update warning", (await zipUp.count()) === 1);
@@ -2122,7 +2122,7 @@ check("BRING-2", "a share's password is kept, and never sent back", pub455.set =
 await open("bring-in.html?part=bring-names");
 await page.waitForSelector(".bring-name", { timeout: 15000 }).catch(() => {});
 const counts455 = await page.locator("[data-filter=bring-state] label").allTextContents();
-check("BRING-3", "Check names has Matched, Needs a look and Left where it is, with counts", counts455.length === 3 && counts455.every((x) => /\d/.test(x)), counts455.join(" | "));
+check("BRING-3", "Check names has Matched, Needs attention and Left where it is, with counts", counts455.length === 3 && counts455.every((x) => /\d/.test(x)), counts455.join(" | "));
 await open("bring-in.html?part=bring-copy");
 await page.waitForSelector("main table", { timeout: 10000 }).catch(() => {});
 check("BRING-4", "the copy part shows what will happen before anything is copied", /Sources, in order/.test(await page.locator("main table").first().textContent().catch(() => "")));

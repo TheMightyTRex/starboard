@@ -31,7 +31,7 @@ function addPanel(r, button) {
       r.kind === "books" ? el("fieldset", {}, el("legend", { text: "Get it as" }),
         el("label", { class: "check", for: ids.fe }, ebook, el("span", { class: "check__text", text: "Ebook" })),
         el("label", { class: "check", for: ids.fa }, audio, el("span", { class: "check__text", text: "Audiobook" }))) : null,
-      el("label", { class: "check", for: ids.s }, search, el("span", { class: "check__text", text: "Start looking for it now" }))];
+      el("label", { class: "check", for: ids.s }, search, el("span", { class: "check__text", text: "Start searching for it now" }))];
   const form = el("form", { id: "add-form", class: "media-panel-section", novalidate: true }, ...fields.filter(Boolean), error);
   const panel = sidePanel({
     title: `${verb} ${r.title}`, opener: button,

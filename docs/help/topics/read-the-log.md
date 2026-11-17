@@ -55,7 +55,7 @@ Starboard keeps its logs for 30 days and lets them take no more than 50 MB, unle
 limit comes first removes the oldest days.
 
 1. Go to **Settings**, then **General**, then **Logs and feedback**.
-2. Activate **Advanced settings**, at the right of the page's heading.
+2. Activate **More settings**, at the right of the page's heading.
 3. In **Logs**, choose in **Keep logs for**: 7, 14, 30, 60, 90 or 180 days, or a year.
 4. Choose in **No more than**: 10, 25, 50, 100, 250 or 500 MB.
 
@@ -71,7 +71,7 @@ each in their own set-up, so they stay small even without that setting.
 
 ## Delete all logs
 
-1. Go to **Settings**, then **General**, then **Logs and feedback**, and activate **Advanced settings**. Or go to
+1. Go to **Settings**, then **General**, then **Logs and feedback**, and activate **More settings**. Or go to
    **System**, then **Logs**.
 2. Select **Delete all logs**. It is in its own section at the end of the page, or at the top of System, Logs.
 3. Starboard asks **Delete all logs?** and says how much goes. Enter your Starboard password.

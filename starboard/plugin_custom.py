@@ -158,7 +158,7 @@ def _file(f):
 def clean(data):
     """Only the fields Starboard draws, every text cut to size; anything else is dropped."""
     if not isinstance(data, dict) or data.get("type") != "list" or not isinstance(data.get("items"), list):
-        raise ValueError("The plug-in's screen is not a list Starboard can draw")
+        raise ValueError("The plug-in's page is not a list Starboard can draw")
     add = data.get("add") if isinstance(data.get("add"), dict) else None
     menus = _menus(data.get("menus"))
     known = frozenset(m["id"] for m in menus)
@@ -200,7 +200,7 @@ def _setting(data_dir, pid, key):
     m = plugins_admin._read(f"{plugins_admin.folder(data_dir, pid)}/manifest.json", {}) or {}
     s = next((x for x in m.get("settings") or [] if x.get("key") == key and x.get("type") == "custom"), None)
     if not s or not m.get("containers"):
-        raise LookupError("No such screen")
+        raise LookupError("No such page")
     return m, s
 
 
@@ -262,7 +262,7 @@ def call(data_dir, pid, key, body=None, opener=None):
     m, s = _setting(data_dir, pid, key)
     if body is not None:
         if body.get("action") not in ACTIONS:
-            raise ValueError("Not something this screen does")
+            raise ValueError("Not something this page does")
         ids = body.get("ids") if body["action"] == "bulk_ids" else None
         body = {"action": body["action"], "id": _text(body.get("id"), 600), "value": _text(body.get("value"), 500),
                 **({"ids": [_text(i, 600) for i in ids[:MAX_IDS] if isinstance(i, str)]} if isinstance(ids, list) else {})}

@@ -40,7 +40,7 @@ async function chooseDownload(extra, what, opener = document.activeElement) {
   const params = new URLSearchParams({ tab: ITEM_TAB, id: String(current.id), ...Object.fromEntries(Object.entries(extra).map(([k, v]) => [k, String(v)])) });
   try {
     const r = await api(`/api/library/releases?${params}`);
-    if (!r.releases.length) { box.replaceChildren(el("p", { text: "No site has it at the moment. Reelix keeps looking while it follows it." })); return panel; }
+    if (!r.releases.length) { box.replaceChildren(el("p", { text: "No site has it at the moment. Reelix keeps searching while it follows it." })); return panel; }
     box.replaceChildren(el("ul", { class: "rows" }, r.releases.map((x) => {
       const meta = [x.quality, x.size ? formatBytes(x.size) : "", x.seeders != null ? `${x.seeders} seeders` : "", x.site,
         x.age_minutes != null ? (x.age_minutes < 1440 ? "today" : Math.round(x.age_minutes / 1440) === 1 ? "1 day old" : `${Math.round(x.age_minutes / 1440)} days old`) : "", x.languages.join(", ")].filter(Boolean).join(" · ");
@@ -58,7 +58,7 @@ async function chooseDownload(extra, what, opener = document.activeElement) {
       return el("li", { class: "row row--no-lead" }, el("div", {},
         el("div", { class: "row__title", text: x.title }), el("div", { class: "row__meta", text: meta }),
         x.why_not.length ? el("div", { class: "row__meta", text: `Reelix would not take it: ${x.why_not.join("; ")}` }) : null),
-        el("div", { class: "row__side" }, x.accepted ? null : chip("Turned down", "warning"), take));
+        el("div", { class: "row__side" }, x.accepted ? null : chip("Not accepted", "warning"), take));
     })));
   } catch (e) {
     box.replaceChildren(el("div", { class: "notice", "data-tone": "danger", role: "alert" }, icon("circle-x"),
@@ -170,10 +170,10 @@ async function qualityAndFolder(item, opener) {
   const field = (label, control, hint) => el("div", { class: "field" }, el("label", { for: control.id, text: label }),
     hint ? el("span", { class: "hint", text: hint }) : null, control);
   const form = el("form", { class: "form-stack", id: "qf-form", novalidate: true },
-    field("Quality", profile, "What Reelix looks for and when it stops upgrading."),
+    field("Quality", profile, "What Reelix searches for, and when it stops upgrading."),
     field("Folder", folder, c.path ? `Now in ${c.path}.` : ""),
     el("label", { class: "check" }, move, el("span", { class: "check__text" }, el("strong", { text: "Move its files to the new folder" }),
-      el("span", { class: "check__hint", text: "Otherwise the files stay where they are and Reelix looks in the new folder from now on." }))));
+      el("span", { class: "check__hint", text: "Otherwise the files stay where they are and Reelix uses the new folder from now on." }))));
   const start = { profile: profile.value, folder: folder.value };  // only what the person changes is sent
   const panel = sidePanel({ title: `${item.title}: quality and folder`, opener, body: [form], foot: [save, cancel] });
   setTimeout(() => profile.focus(), 0);
@@ -222,7 +222,7 @@ function extras(item) {
           onclick: async (e) => {
             const button = e.currentTarget;  // read before the dialog: currentTarget is empty after an await
             const ok = await confirmDialog({ title: "Delete this file?", danger: true, confirm: "Delete",
-              message: `${f.name} is deleted from the disk. Reelix keeps the ${ITEM_TAB === "films" ? "film" : "series"} and looks for it again only if you follow it.` });
+              message: `${f.name} is deleted from the disk. Reelix keeps the ${ITEM_TAB === "films" ? "film" : "series"} and searches for it again only if you follow it.` });
             if (ok && await run("delete-file", button, { file_id: f.id })) { await loadFiles(); $("#extras-files-heading").focus(); }
           } }, icon("trash-2"), "Delete")))))
         : el("p", { class: "muted", text: "No files on disk yet." }));
@@ -244,7 +244,7 @@ function extras(item) {
     el("button", { type: "button", class: "btn", onclick: (e) => run("rescan", e.currentTarget).then((ok) => ok && loadFiles()) }, icon("hard-drive"), "Rescan the files"),
     el("button", { type: "button", class: "btn", onclick: (e) => renameFiles(item, e.currentTarget, loadFiles) }, icon("pencil"), "Rename the files")) : null;
   const body = el("div", { class: "stack-4" },
-    buttons ? el("p", { class: "muted", text: "Refresh reads its details again. Rescan only looks at the files on disk." }) : null, buttons,
+    buttons ? el("p", { class: "muted", text: "Refresh reads its details again. Rescan only checks the files on disk." }) : null, buttons,
     video ? el("section", { class: "stack-2", "aria-labelledby": "extras-files-heading" },
       el("h2", { class: "lib-panel-heading", id: "extras-files-heading", tabindex: "-1", text: "Files" }), filesBox) : null,
     el("section", { class: "stack-2", "aria-labelledby": "extras-history-heading" },

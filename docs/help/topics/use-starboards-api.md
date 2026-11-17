@@ -20,11 +20,11 @@ key can change Starboard's settings. Make one key for each app that uses it.
 2. Select **Make a key**. A slide-out opens.
 3. In **Name it after what will use it**, enter a name, such as `Home Assistant`.
 4. In **What it may do**, choose **Read only**, or **Read and manage** if it must act, such as approving requests.
-5. In **What it may see**, tick only the areas it needs. Leave them all empty for everything except **Logs** and
+5. In **What it may read**, tick only the areas it needs. Leave them all empty for everything except **Logs** and
    **Updates**, which a key has only when they are ticked. **Updates** with **Read and manage** lets it update
    Starboard, Reelix, your apps and plug-ins, and roll a plug-in back, as the pages do.
 
-   ![The Make a key slide-out, with What it may do set to Read only (step 4), and What it may see with Apps and System ticked and Updates unticked (step 5) outlined](../images/use-starboards-api-1-make.png)
+   ![The Make a key slide-out with example data, with What it may do (step 4) and What it may read (step 5) outlined](../images/use-starboards-api-1-make.png)
 
 6. In **Ends**, choose **In 90 days**, **In a year** or **Never**.
 7. In **Your Starboard password**, enter the password.
@@ -56,10 +56,10 @@ processor, memory and disks, within the areas you ticked.
 
    ![Settings, Security, API keys with example keys, with Edit beside the Home Assistant key (step 2) outlined](../images/use-starboards-api-3-list.png)
 
-3. The slide-out shows what the key **May** do, what it **Sees** and when it ends. Select **Revoke**, then **Revoke**
+3. The slide-out shows what the key **May** do, what it **Reads** and when it ends. Select **Revoke**, then **Revoke**
    again to confirm. Anything using the key stops working at once.
 
-   ![The Home Assistant key's slide-out, with what it may do and see, and Revoke (step 3) outlined](../images/use-starboards-api-4-revoke.png)
+   ![The Home Assistant key's slide-out, with May, Reads and Revoke (step 3) outlined, with example data](../images/use-starboards-api-4-revoke.png)
 
 ## Things to note
 

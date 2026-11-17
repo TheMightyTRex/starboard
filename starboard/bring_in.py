@@ -965,7 +965,7 @@ def check_names(cfg, data_dir, say=None):
     read from the files, and the copy checks each with Reelix before it copies anything."""
     plan = _read(data_dir, "plan.json", {})
     if not plan:
-        raise BringInError("Look inside your sources first")
+        raise BringInError("Check your sources first")
     if not _reelix_ready(cfg):
         plan["checked"] = False
         _write(data_dir, "plan.json", plan)
@@ -979,7 +979,7 @@ def check_names(cfg, data_dir, say=None):
         try:
             got = judge(item, _lookup(cfg, item["kind"], item["title"], item["year"]))
         except Exception as e:  # noqa: BLE001 - one title that cannot be looked up waits for a person
-            got = {"state": "look", "choices": [], "why": f"Reelix could not look it up: {e}"}
+            got = {"state": "look", "choices": [], "why": f"Reelix could not find it: {e}"}
         item.update({k: v for k, v in got.items() if k != "match"})
         if got.get("match"):
             rename_to(item, got["match"]["title"] or item["title"], got["match"]["year"] or item["year"])
@@ -1025,7 +1025,7 @@ def plan_page(data_dir, state="matched", start=0, size=50):
     """One page of Check names: the titles in one state (matched, look, left), with the counts and the space."""
     plan = _read(data_dir, "plan.json", {})
     if not plan:
-        raise BringInError("Look inside your sources first")
+        raise BringInError("Check your sources first")
     st = settings(data_dir)
     names = {s["id"]: s["name"] for s in st["sources"]}
     counts = {"matched": 0, "look": 0, "left": len(plan["left"])}

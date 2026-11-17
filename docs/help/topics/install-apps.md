@@ -13,7 +13,7 @@ and other choices are in [Other installs and choices](#other-installs-and-choice
 
 - Docker is installed on the server. Read [Install Docker](install-docker.md), and
   [What Docker is](../basics/what-is-docker.md) if it is new to you.
-- You have a folder or drive with room for your media, such as `/srv/media`.
+- You have a folder or disk with room for your media, such as `/srv/media`.
 - An account with a VPN (virtual private network) provider is recommended. The default install sends downloads
   through it, to keep them private. You can continue without one: read
   [Download without a VPN](download-without-a-vpn.md).
@@ -104,14 +104,14 @@ The default install is complete on its own. These are for when you want more, or
   Jellystat, FlareSolverr and Tdarr. About 2 GB of memory. Under **Usenet app**, keep **NZBGet** or choose
   **SABnzbd**.
 - **Everything:** every app Starboard offers. About 2.9 GB. The same Usenet choice.
-- **Choose myself:** tick each group, and with **Advanced settings** each app and folder. Changing a group makes it
+- **Choose myself:** tick each group, and with **More settings** each app and folder. Changing a group makes it
   your own choice. An app also brings what it needs: Jellystat brings Jellyfin, and Reelix brings a download app.
 - **Add-ons:** Wizarr, Dispatcharr and Dozzle can be ticked with any install, or added later with **Add** under
   'You can add'.
 - **Which Reelix?:** Reelix, or Reelix with YouTube and Spotify downloads. Read
   [Switch between the two versions of Reelix](switch-reelix-version.md).
-- **Several drives:** on **Folders**, select **Join several drives into one** to make a pool. Starboard gives you
-  commands to run on the server first. Nothing on the drives is erased.
+- **Several disks:** on **Folders**, select **Join several disks into one** to make a pool. Starboard gives you
+  commands to run on the server first. Nothing on the disks is erased.
 
 Read [Basics, Full install and Everything](install-types.md#at-a-glance) to compare the installs, and
 [Change your install](change-your-install.md) to change it later.
@@ -128,7 +128,7 @@ Read [Basics, Full install and Everything](install-types.md#at-a-glance) to comp
 - NZBGet signs in as `starboard`, with a password Starboard makes up (`NZBGET_PASS` in `data/stack/.env`).
 - Reelix replaces Radarr, Sonarr, Lidarr, Bookshelf, Prowlarr and Seerr for new installs. A server that already
   runs them keeps them: read [Move from Radarr, Sonarr and the others to Reelix](move-your-apps-to-reelix.md).
-- Starboard keeps looking for new apps for 30 minutes, even if you carry on with the set-up or it restarts.
+- Starboard keeps searching for new apps for 30 minutes, even if you carry on with the set-up or it restarts.
 - To change the install later, read [Change your install](change-your-install.md).
 - Media you already have, on this computer, another disk or a network share, can be copied in as you set up, or
   later: read [Bring in media you already have](bring-in-media-you-already-have.md).
@@ -162,7 +162,7 @@ Read [Basics, Full install and Everything](install-types.md#at-a-glance) to comp
 - [Build a media server from nothing](../guides/build-a-media-server-from-nothing.md)
 - [Switch between the two versions of Reelix](switch-reelix-version.md)
 - [Update your apps](update-your-apps.md)
-- [The terminal: typing commands](../basics/the-terminal.md)
+- [The terminal: entering commands](../basics/the-terminal.md)
 
 <!-- footer: download rights -->
 

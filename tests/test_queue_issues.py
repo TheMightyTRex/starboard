@@ -132,7 +132,7 @@ class GatherTest(unittest.TestCase):
         by = {i["ids"]["queue"]: i["tried"] for i in out["items"]}
         self.assertEqual([t["what"] for t in by[34]], ["Asked Reelix to try the import again, from the Downloads page"])
         self.assertEqual([t["what"] for t in by[33]], ["Chose the episode by hand"])
-        self.assertIn("The watch has seen it needing attention", by[3][0]["what"])
+        self.assertIn("The watch has found it needing attention", by[3][0]["what"])
         self.assertEqual(by[4], [])
         with open(os.path.join(self.tmp.name, queue_issues.TRIED_FILE)) as f:
             self.assertEqual(len(json.load(f)["items"]), 2)

@@ -51,10 +51,10 @@ people read every one, and the plug-in's API key gets only the read permissions 
 
 | Permission | What people read | Risk | Key scope |
 |---|---|---|---|
-| `apps:read` | See your apps and whether they answer | low | `apps` |
-| `downloads:read` | See what is downloading | low | `downloads` |
-| `media:read` | See your films, series and books (the media folder, read only, and the library) | medium | `media` |
-| `system:read` | See processor, memory and disks | low | `system` |
+| `apps:read` | Your apps and whether they answer | low | `apps` |
+| `downloads:read` | What is downloading | low | `downloads` |
+| `media:read` | Your films, series and books (the media folder, read only, and the library) | medium | `media` |
+| `system:read` | Processor, memory and disks | low | `system` |
 | `network:lan` | Reach other computers on your home network | medium | none |
 | `network:vpn` | Run inside your VPN connection | medium | none |
 | `jellyfin:key` | Use Jellyfin's API key, kept by Starboard | high | none |
@@ -67,7 +67,7 @@ people read every one, and the plug-in's API key gets only the read permissions 
 | `library:holding` | Move films and series from your library into the holding folder in your media folder, and put them back (API 1.15) | high | none |
 
 The plug-in's risk is its highest permission's risk. Read [What a plug-in can change](../basics/what-plugins-can-change.md)
-for how people see this.
+for how this is shown to people.
 
 ## Containers
 
@@ -103,12 +103,12 @@ The container's name on the server is `plugin-<id>-<name>`, such as `plugin-hell
 
 ### Volumes
 
-| Value | Where the plug-in sees it | Permission needed |
+| Value | Path inside the plug-in | Permission needed |
 |---|---|---|
 | `data` | `/data`, read and write: its own folder, `data/plugins/<id>/data/<container name>` | none |
 | `media:ro` | `/media`, read only: the whole media folder | `media:read` |
-| `media/<one folder>` | `/media/<one folder>`, read and write: one folder in the media folder, such as `media/music` | none, but people see it as something it can change |
-| `media/<one folder>:ro` | `/media/<one folder>`, read only (API 1.13) | none; people see it as something it can see |
+| `media/<one folder>` | `/media/<one folder>`, read and write: one folder in the media folder, such as `media/music` | none, but it is listed as something it can change |
+| `media/<one folder>:ro` | `/media/<one folder>`, read only (API 1.13) | none; it is listed as something it can read |
 | `data:<path>` | Its own folder, at the path the app expects, such as `data:/config` (API 1.13) | none |
 | `data/<folder>:<path>` | A folder inside its own folder, at a path, for an app with several, such as `data/server:/app/server` (API 1.13) | none |
 | `jellyfin-metadata` | `/metadata`, read and write: Jellyfin's metadata folder, its posters, photos and details (API 1.14). Read [Jellyfin's metadata folder](#jellyfins-metadata-folder) | `jellyfin:metadata` |
@@ -226,7 +226,7 @@ what it writes. Each rule is there for one reason.
   what people approved is what runs. The tester's development box allows a tag only while you test.
 - **No Docker socket, no privileged mode, no devices, no host network.** Any of these would give the plug-in
   control of the whole computer. No manifest field can ask for them.
-- **Only the volumes above.** A plug-in sees its own folder and, if allowed, the media folder. It never sees other
+- **Only these volumes.** A plug-in reaches its own folder and, if allowed, the media folder. It never reaches other
   apps' settings or Starboard's own data.
 - **Never root.** `user` must not be uid 0. A program running as root inside a container is one mistake away from
   root on the server.
@@ -249,19 +249,19 @@ what it writes. Each rule is there for one reason.
 | `cpus` | Processor cores | 0.25 | 1.0 |
 | `pids` | Processes and threads, for an app such as Kavita or Tdarr (API 1.13) | 64 | 1024 |
 
-The ceilings keep Starboard light on small servers, such as a Raspberry Pi. People see each container's limits
+The ceilings keep Starboard light on small servers, such as a Raspberry Pi. Each container's limits are shown to people
 before they add the plug-in.
 
 ## App plug-ins
 
 From API 1.13 (DASH-411) a plug-in can be a whole app that is kept out of the main install, such as Jellystat with
-its PostgreSQL database, or Navidrome. Starboard still writes its Compose file and every security rule above still
+its PostgreSQL database, or Navidrome. Starboard still writes its Compose file and every security rule on this page still
 applies: the app runs read only, as a user that is not root, with no capabilities.
 
 - **An app and its database.** Up to four containers share the plug-in's own network, which reaches nothing else.
   Each reaches the others by its container name, `plugin-<id>-<name>`, such as `plugin-jellystat-db`.
 - **Its web page.** A container on `lan` with `publish: true` and a `port` is opened on the home network. It needs
-  `network:port`, which people see before they add it. Starboard chooses the port on this computer: `host_port` if it
+  `network:port`, which is shown to people before they add it. Starboard chooses the port on this computer: `host_port` if it
   is free, otherwise the next free one, avoiding ports other containers, other plug-ins and Starboard's own apps use.
   If something outside Docker holds it, the start fails and Starboard takes the next port and tries again. The port is
   kept, so it stays the same after an update or a Roll back. Starboard shows the address on the plug-in's page,
@@ -322,7 +322,7 @@ plug-in is activated, and checks them again on every activation, so after each i
 
 - **Real-time monitoring is deactivated unless you set it.** Jellyfin watching a folder costs one of the computer's
   folder watches for every folder in it, and a large library can use them all up before the person's own Films and
-  TV. A plug-in that adds files itself tells Jellyfin to look (a library refresh) instead.
+  TV. A plug-in that adds files itself tells Jellyfin to check (a library refresh) instead.
 - **Starboard keeps it as you set it.** Someone who activates monitoring in Jellyfin finds it deactivated again on the
   next activation of the plug-in. Nothing else about the library is changed.
 - **Found by its folder, then by its name.** A library Jellyfin already has, from an older version or made by hand,
@@ -346,7 +346,7 @@ them in the plug-in's `settings.json`. Read [Settings and key files](plugin-api-
 |---|---|
 | `key` | Its name in `settings.json`: lower case letters, numbers and underscores, starting with a letter, up to 41 characters. Required |
 | `label` | What people read. Required. Keep it under 60 characters, in sentence case, with no colon |
-| `type` | One of the types below. Required |
+| `type` | One of the types listed in this section. Required |
 | `hint` | One sentence under the field |
 | `default` | Its value when the plug-in is added, or when an update adds the setting |
 | `min`, `max`, `unit` | For `number` |
@@ -365,7 +365,7 @@ them in the plug-in's `settings.json`. Read [Settings and key files](plugin-api-
 | `secret` | A password box | Never sent back to the browser; shown as set or not set. Up to 2000 characters |
 | `folder` | Browse, inside what the plug-in mounts | A folder inside `/media` or `/media/<one folder>`. Needs a container that mounts `media:ro` or `media/<one folder>`. API 1.3 |
 | `list` | A box with one value a line | Saved as a list of strings, blank lines left out. Up to 200, each up to 500 characters |
-| `custom` | A list the plug-in describes, drawn by Starboard | `choices` is a path on the plug-in. Read [Custom screens](plugin-api-reference.md#custom-screens) |
+| `custom` | A list the plug-in describes, drawn by Starboard | `choices` is a path on the plug-in. Read [Custom pages](plugin-api-reference.md#custom-pages) |
 | `schedule` | How often (every day, every week or every month), the day or the date, and a time, side by side | Every day, week or month; a day of the week for a week; a date from 1 to 31 for a month; a time such as `03:30`. A month without the date runs on its last day. API 1.14. Read [A job on a schedule from its settings](#a-job-on-a-schedule-from-its-settings) |
 
 ### Setting up before it starts
@@ -385,7 +385,7 @@ Starboard draws every plug-in's settings the same way, as Starboard's own Settin
   come first, under **Settings**. Use groups once a plug-in has more than about six settings.
 - Switches, choices, numbers and folders save as soon as they change, with **Saved at** and the time beside them.
 - Text, addresses, secrets, lists and required numbers are one form per section with one **Save** at its foot.
-- The plug-in's `actions` are buttons in an **Actions** section, after its settings and screens.
+- The plug-in's `actions` are buttons in an **Actions** section, after its settings and pages.
 
 ## Cards
 
@@ -565,7 +565,7 @@ name its `key` in the job's `schedule`:
 
 From API 1.14 a plug-in may have a small logo: an SVG or PNG file next to `starboard-plugin.json`. Starboard shows it
 in **Settings**, **Plug-ins** (**Manage** and the **Catalogue**), on the plug-in's own page, and in the grey band of
-each of its dashboard cards. A plug-in without one gets its initials on a plain tile, so every card looks the same.
+each of its dashboard cards. A plug-in without one gets its initials on a plain tile, so every card has the same layout.
 
 ```json
 "logo": {"file": "logo.svg", "alt": "A play symbol on a screen"}
@@ -574,7 +574,7 @@ each of its dashboard cards. A plug-in without one gets its initials on a plain 
 | Field | What it is | Check |
 |---|---|---|
 | `file` | The file's name, next to the manifest or in one folder under it, such as `logo.svg` or `images/logo.png` | Ends in `.svg` or `.png`; no `..` |
-| `alt` | What the logo shows, in words, for people who cannot see it | 3 to 80 characters, such as "A play symbol on a screen". Not the plug-in's name: that is always beside it |
+| `alt` | What the logo shows, in words, for people who cannot view it | 3 to 80 characters, such as "A play symbol on a screen". Not the plug-in's name: that is always beside it |
 
 How Starboard reads it:
 
@@ -586,7 +586,7 @@ How Starboard reads it:
   links outside the file or `url()` other than `url(#id)`, and no DOCTYPE or entities. Starboard draws the SVG again
   from what it allows.
 - **PNG**: up to 32 KB, square, from 32 to 256 pixels a side.
-- It is shown at 32 and 40 pixels: keep it simple, with a solid shape that reads at that size in light and dark.
+- It is shown at 32 and 40 pixels: use one solid shape that reads at that size in light and dark.
 - A logo that fails a check is not used: the plug-in is still added, with its initials, and the plug-in tester
   reports it as a warning with what to change.
 - Roll back brings back the logo of the version before.
@@ -604,7 +604,7 @@ A catalogue entry can carry the same logo for the Catalogue, before anything is 
 | `before` | A step Starboard calls on the version that is installed, before anything changes: finish or pause work | `{"path": "/update/before", "time_limit_seconds": 60}`. The path starts with `/`; the time limit is 5 to 300 seconds, 60 when left out. Needs a container |
 | `after` | A step Starboard calls on the version running at the end: tidy up or start work again | The same as `before` |
 | `health_wait_seconds` | How long Starboard waits for the new version's `health` path to answer 200 | 10 to 600, 60 when left out. Needs `health` |
-| `migrations` | How saved settings move from older versions | 1 to 20 steps, each below |
+| `migrations` | How saved settings move from older versions | 1 to 20 steps, each in this section |
 
 Each step of `migrations`:
 
@@ -622,7 +622,7 @@ What Starboard does, in order:
 1. **Before.** If the plug-in is active and the installed version has `before`, Starboard sends it `POST` with
    `{"from": "1.0.0", "to": "2.0.0"}`. An answer other than 2xx, `{"ok": false, "said": "..."}`, or no answer within
    the time limit stops the update, and nothing is changed. The words in `said` are shown.
-2. **Settings.** Each migration step whose `version` is above the installed version and at or below the new one is
+2. **Settings.** Each migration step whose `version` is later than the installed version and no later than the new one is
    applied, oldest first. `rename` moves a value to its new key (a value already under the new key wins). `remove`
    drops a key. `defaults` sets a new value only where the saved value is still the installed version's default, or
    there is none, so a value someone chose is kept. A new setting then gets its `default`.

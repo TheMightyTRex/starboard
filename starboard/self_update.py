@@ -365,7 +365,7 @@ WORDS = {
     "up-to-date": ("Starboard is up to date", "You already have {to}."),
     "went-back": ("The update did not work, so Starboard went back", "Starboard went back to {back_to}, with your settings as they were. {reason}."),
     "refused": ("Starboard was not updated", "{reason}."),
-    "failed": ("The update stopped", "{reason}. See System, Logs, or run ./update.sh on the server."),
+    "failed": ("The update stopped", "{reason}. Go to System, Logs, or run ./update.sh on the server."),
 }
 
 

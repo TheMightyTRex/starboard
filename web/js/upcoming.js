@@ -252,7 +252,7 @@ function renderDays() {
   const ahead = days === 7 ? "this week" : `the next ${days} days`;
   if (!list.length) {
     const empty = el("p", { class: "empty", text: items.length
-      ? "Nothing matches these filters. Deactivate a filter to see more."
+      ? "Nothing matches these filters. Deactivate a filter to show more."
       : `Nothing is due in ${ahead}. New episodes, films, albums and books from your apps appear here.` });
     if (view === "calendar") root.prepend(empty); else root.append(empty);
   }

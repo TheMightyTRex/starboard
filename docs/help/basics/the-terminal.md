@@ -1,7 +1,7 @@
 [Help centre](../README.md) · The basics
 <!-- help: start / computer -->
 
-# The terminal: typing commands
+# The terminal: entering commands
 
 The terminal is a window where you type instructions to your computer instead of choosing them from menus. It
 is like sending a written note to the computer rather than pointing at things: you write exactly what you want,
@@ -26,7 +26,7 @@ If your server has no monitor, you can use its terminal from another computer. R
 
 ## The prompt
 
-The line that ends in `$` is the prompt. It means "ready, type a command". It usually shows your user name, the
+The line that ends in `$` is the prompt. It means "ready for a command". It usually shows your user name, the
 computer's name and the folder you are in, like this:
 
 ```
@@ -59,15 +59,15 @@ address often cannot: in `https://raw.githubusercontent.com/TheMightyTRex/starbo
 
 ## Symbols that are in different places on different keyboards
 
-Copying and pasting a command avoids this altogether. If you type a command, some symbols are not where the key
+Copying and pasting a command avoids this altogether. If you enter a command by hand, some symbols are not where the key
 says, and they move between keyboards. These are the ones Starboard's commands use. **AltGr** is the key to the
 right of the space bar.
 
 | Symbol | Name | US | UK and Ireland | German | French | Spanish |
 |---|---|---|---|---|---|---|
-| `\|` | Vertical bar, or pipe | **Shift** and `\` (above or beside **Enter**) | **Shift** and `\` (the key between the left **Shift** and **Z**) | **AltGr** and `<` (the key between the left **Shift** and **Y**) | **AltGr** and **6** | **AltGr** and **1** |
+| `\|` | Vertical bar, or pipe | **Shift** and `\` (over or beside **Enter**) | **Shift** and `\` (the key between the left **Shift** and **Z**) | **AltGr** and `<` (the key between the left **Shift** and **Y**) | **AltGr** and **6** | **AltGr** and **1** |
 | `~` | Tilde | **Shift** and the key to the left of **1** | **Shift** and `#` (the key to the left of **Enter**) | **AltGr** and `+` | **AltGr** and **2**, then **Space** | **AltGr** and **4** |
-| `\` | Backslash | The key above or beside **Enter** | The key between the left **Shift** and **Z** | **AltGr** and `ß` | **AltGr** and **8** | **AltGr** and the key to the left of **1** |
+| `\` | Backslash | The key over or beside **Enter** | The key between the left **Shift** and **Z** | **AltGr** and `ß` | **AltGr** and **8** | **AltGr** and the key to the left of **1** |
 | `"` | Double quote | **Shift** and `'` | **Shift** and **2** | **Shift** and **2** | The **3** key, without **Shift** | **Shift** and **2** |
 | `@` | At sign | **Shift** and **2** | **Shift** and `'` (next to the `#` key) | **AltGr** and **Q** | **AltGr** and **0** | **AltGr** and **2** |
 | `$` | Dollar | **Shift** and **4** | **Shift** and **4** | **Shift** and **4** | Its own key, to the left of **Enter** | **Shift** and **4** |
@@ -79,7 +79,7 @@ Things to note:
   command with it in does not work. The vertical bar is **Shift** and the `\` key next to the left **Shift**.
 - **When the symbol does not appear,** your computer may be set to a different keyboard from the one in front of
   you. Check the keyboard layout in the computer's settings, or copy and paste the command instead.
-- **Over SSH,** the keyboard that counts is the one on the computer you are typing on, not the server's.
+- **Over SSH,** the keyboard that counts is the one on the computer you are using, not the server's.
 
 ## When a command asks for your password
 
@@ -90,14 +90,14 @@ first time, the terminal asks for your password:
 [sudo] password for sam:
 ```
 
-On Ubuntu 26.04, it looks like this instead:
+On Ubuntu 26.04, it is this instead:
 
 ```
 [sudo: authenticate] Password:
 ```
 
-Type the password you use to sign in to the computer, then press Enter. On most systems **nothing appears while
-you type**, not even dots or stars. That is normal: the terminal hides it so nobody can count the letters. On
+Enter the password you use to sign in to the computer, then press Enter. On most systems **nothing appears as
+you enter it**, not even dots or stars. That is normal: the terminal hides it so nobody can count the letters. On
 Ubuntu 26.04, a star appears for each letter instead. If you make a mistake, it says so ("Sorry, try again", or on
 Ubuntu 26.04 "Authentication failed, try again") and asks once more.
 
@@ -129,7 +129,7 @@ directory", you are probably in the wrong folder: run `cd ~/starboard` first.
 ## How to tell a command has finished
 
 A command has finished when the prompt, ending in `$`, comes back on a new line. While a command is still
-working, there is no prompt, and you may see progress messages scrolling past.
+working, there is no prompt, and progress messages may scroll past.
 
 Some commands take a few minutes, especially ones that download things. Wait for the prompt before you run the
 next command.
@@ -137,7 +137,7 @@ next command.
 If a command seems stuck for a long time, press **Ctrl** and **C** to stop it. Then read the last few lines it
 printed: they usually say what went wrong.
 
-## Messages that look alarming
+## Messages that seem alarming
 
 Commands often print a lot of text. Most of it is progress, and you can ignore it. What matters is the last few
 lines. Words such as "Stopped", "error" or "permission denied" mean something went wrong. An error number such as

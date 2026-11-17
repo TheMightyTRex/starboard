@@ -88,7 +88,7 @@ def main():
     heading = here = text = ""
     ended = "timeout"
     seen_faults = set()
-    wait_screen, wait_since = None, 0.0  # plain mode: the screen while a job's "Please wait" line is the last
+    wait_screen, wait_since = None, 0.0  # plain mode: the screen while a job's waiting line ("…") is the last
 
     def fault(kind, detail):
         key = (kind, detail[:60])
@@ -126,8 +126,10 @@ def main():
     def send(text, label=None):
         nonlocal answers, repeats, last_same, sent_screen, sent_time, output_since_send, last_keys
         same = (heading, here.strip(), label or repr(text))
-        # Enter pressed while a job runs (the menu says Please wait) is a person being impatient, not a stuck question.
-        repeats = repeats + 1 if same == last_same and "Please wait" not in screen_text else 0
+        # Enter pressed while a job runs (the menu shows only Ctrl+C Stop; before 17 November 2026 it said Please wait)
+        # is a person being impatient, not a stuck question.
+        waiting = "Please wait" in screen_text or ("Ctrl+C" in screen_text and "Stop" in screen_text and "? Help" not in screen_text)
+        repeats = repeats + 1 if same == last_same and not waiting else 0
         last_same = same
         sent_screen, sent_time = screen_text, time.time()
         output_since_send, last_keys = False, text
@@ -213,10 +215,11 @@ def main():
             last_out = time.time()
             continue
 
-        # In plain mode a job prints one line, "Please wait, this can take some time...", and then nothing until it
+        # In plain mode a job prints one line ending "…" (before 17 November 2026 "Please wait, this can take some
+        # time..."), and then nothing until it
         # ends: the last words on the screen. A person waits there too (Enter would only add a blank line).
         tail = " ".join(l.strip() for l in lines if l.strip())[-200:].lower()
-        plain_wait = a.plain and tail.endswith("please wait, this can take some time...")
+        plain_wait = a.plain and (tail.endswith("please wait, this can take some time...") or tail.endswith("…"))
         if plain_wait:
             if text != wait_screen:
                 wait_screen, wait_since = text, time.time()
@@ -250,7 +253,7 @@ def main():
             keys, label = tick_all(lines)
             send(keys, label)
         elif a.apps == "all" and many_open(lines) and re.search(r"(?i)apps|what do you want", text):
-            more = next((int(m.group(1)) for l in lines for m in [re.search(r"(\d+) more: type m", l)] if m), 0)
+            more = next((int(m.group(1)) for l in lines for m in [re.search(r"(\d+) more: (?:type|press) m", l)] if m), 0)
             if more and not shown_more:
                 shown_more = True
                 send("m\r", "m (see the rest of the list)")

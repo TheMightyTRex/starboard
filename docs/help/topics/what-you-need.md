@@ -16,7 +16,7 @@ media server with the default install: Starboard, Reelix Lite, Jellyfin, Audiobo
 | Ubuntu Server 26.04 LTS | A server with no screen, with 5 years of updates | 2 cores, 3 GB, 20 GB | 4 cores, 8 GB, an SSD of 64 GB or more | [Start Starboard on Ubuntu Server](start-on-ubuntu-server.md) |
 | Raspberry Pi OS (64-bit), Trixie | A small, quiet server on a Raspberry Pi | Raspberry Pi 4 with 4 GB, a 32 GB card | Raspberry Pi 5 with 8 GB, starting from an SSD | [Start Starboard on Raspberry Pi OS](start-on-raspberry-pi-os.md) |
 
-Every system needs a 64-bit processor. Keep your media on a separate drive of 1 TB or more. To convert video for
+Every system needs a 64-bit processor. Keep your media on a separate disk of 1 TB or more. To convert video for
 phones and browsers, choose an Intel processor from 2018 or later, which has video hardware (Quick Sync).
 
 Downloads:

@@ -768,7 +768,7 @@ await page.keyboard.press("Enter");
 await page.waitForFunction(() => document.activeElement?.classList?.contains("folder-place"), null, { timeout: 8000 }).catch(() => {});
 const place29 = await focus();
 check("T31", "the picker opens on its places, with focus on the first one", place29.inPanel && /This computer/.test(place29.text), place29.text);
-const disk29 = await tabTo((f) => /Drive 2/.test(f.text), 6);
+const disk29 = await tabTo((f) => /Disk 2/.test(f.text), 6);
 check("T31", "Tab reaches a disk", !!disk29);
 await page.keyboard.press("Enter");
 await page.waitForFunction(() => document.activeElement?.getAttribute?.("role") === "listbox", null, { timeout: 8000 }).catch(() => {});
@@ -799,7 +799,7 @@ for (const [part, words] of [["bring-what", /What is in each place/], ["bring-na
     const statusText = () => [...document.querySelectorAll("main [role=status]")].map((n) => n.textContent).join(" | ");
     await page.waitForFunction((f) => /\d+ matched/.test(eval(f)()), statusText.toString(), { timeout: 20000 }).catch(() => {});
     const s = await page.evaluate((f) => eval(f)(), statusText.toString());
-    check("T31", "Check names says its counts in a status", /\d+ matched, \d+ need a look, \d+ left where they are/.test(s), s);
+    check("T31", "Check names says its counts in a status", /\d+ matched, \d+ need attention, \d+ left where they are/.test(s), s);
   }
 }
 const start29 = await page.evaluate(() => [...document.querySelectorAll(".wizard__foot .btn")].map((b) => b.textContent));

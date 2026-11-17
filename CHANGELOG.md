@@ -7,6 +7,13 @@ add features.
 
 ## [Unreleased]
 
+### Changed
+- **Words that follow the design system (design audit, 17 November 2026):** Starboard's pages, messages, terminal set-up and help no longer tell you to "see" or "look", and say "enter" rather than "type", and "disk" rather than "drive"; the switch that shows the rest of a Settings page is now More settings. Buttons are renamed to match: What it does, Check for an update, What is new, Show what it holds, Show the files, Find it, Find releases, Open Wanted and Open the report. A plug-in's install slide-out now says It can read, and its permissions are named Your apps and whether they answer, What is downloading, Your films, series and books, and Processor, memory and disks. API keys say What it may read and Reads. Messages no longer point at a place on the page ("below", "above"), and a waiting line names its job and nothing more.
+- **One set of status words:** every chip, band and row takes its word and colour from one list, the design system's: Running and Not responding for apps, Healthy, Needs attention and Not working for plug-in cards, In progress, Done, Failed and Not started for jobs, Active and Inactive for settings, and Check before updating for a big change. Wanted's first tab and the Library's filter are now Not in library, and a title not out yet is Not released.
+- **Square library cards:** the network and collection cards, the logo tiles and the dashboard's edit box now use the design system's square corners, its focus ring width and its type weights. The tiles behind light and dark logos take the browser's own colours instead of written-out ones.
+- **What Starboard does not do:** the help article that listed plans is now the facts only, checked against Starboard 0.20.2. Its address is the same.
+- **A check for banned words:** tools/checks.sh now fails on the design system's banned words in the pages, their scripts and the help, with each exception and its reason in tools/words-allowed.txt. The plug-in tester also warns about contractions, "see" and "look", "click", exclamation marks, em dashes and Title Case in a plug-in's labels, hints and confirm texts.
+
 ## [0.20.2] (17 November 2026)
 
 ### Fixed

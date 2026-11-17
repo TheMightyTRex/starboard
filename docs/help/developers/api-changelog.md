@@ -203,7 +203,7 @@ the next major version.
   [Containers](plugin-manifest-reference.md#containers).
 - **Added:** `link` on a custom setting's item, `{"url", "label"}`: a link that opens in a new tab, such as a search for
   the title on another site. Only `http` and `https` addresses are kept. Read
-  [Custom screens](plugin-api-reference.md#custom-screens).
+  [Custom pages](plugin-api-reference.md#custom-pages).
 - **Added:** `state_label` on a custom setting's item: the plug-in's own words for its state, such as `Added`, in
   place of **Works** or **Not answering**, in the state's colour.
 - **Added:** `file_only` on a custom setting's `add`: only the file picker is shown, for a plug-in that takes files and

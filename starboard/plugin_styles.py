@@ -130,7 +130,7 @@ def check_style(style, where="style"):
         out.append({"severity": severity, "where": at, "what": what, "fix": fix})
 
     if not isinstance(style, dict):
-        return [{"severity": "error", "where": where, "what": "A style must be an object", "fix": "See the manifest reference"}]
+        return [{"severity": "error", "where": where, "what": "A style must be an object", "fix": "Read the manifest reference in the help centre"}]
     allowed = {"id", "name", "description", "light", "dark", "radius", "font", "shadow", "heading_font", "heading_weight", "focus_width",
                "gradient", "gradient_angle", "texture", "glass", "rounded_controls", "primary_gradient", *PARTS}
     for k, values in PARTS.items():
@@ -153,16 +153,16 @@ def check_style(style, where="style"):
     if style.get("heading_font") is not None and style["heading_font"] not in FONTS:
         add("error", f"heading_font must be one of {', '.join(FONTS)}", "Starboard never downloads a font")
     elif style.get("heading_font") == "mono":
-        add("warning", "Monospace headings are harder to read", "Use it for a retro look only")
+        add("warning", "Monospace headings are harder to read", "Use it for a retro style only")
     if style.get("heading_weight") is not None and style["heading_weight"] not in HEADING_WEIGHTS:
         add("error", "heading_weight must be 600, 700 or 800", "Lighter headings do not stand out from the text")
     fw = style.get("focus_width")
     if fw is not None and (not isinstance(fw, int) or isinstance(fw, bool) or not 3 <= fw <= 5):
-        add("error", "focus_width must be 3, 4 or 5 (pixels)", "A thinner focus ring is hard to see (WCAG 2.2 focus appearance)")
+        add("error", "focus_width must be 3, 4 or 5 (pixels)", "A thinner focus ring fails WCAG 2.2 focus appearance")
     if not re.match(r"^[a-z0-9][a-z0-9-]{1,30}$", str(style.get("id", ""))):
         add("error", "id must be 2 to 31 lower case letters, numbers and hyphens", "Give the style a short id such as midnight")
     if not (isinstance(style.get("name"), str) and 0 < len(style["name"]) <= 30):
-        add("error", "name must be text of up to 30 characters", "Name it as people will see it in Display")
+        add("error", "name must be text of up to 30 characters", "Name it as it appears in Display")
     if style.get("description") is not None and not (isinstance(style["description"], str) and len(style["description"]) <= 120):
         add("error", "description must be up to 120 characters", "Keep it to one short sentence")
     radius = style.get("radius", 0)
@@ -171,7 +171,7 @@ def check_style(style, where="style"):
     if style.get("font", "hyperlegible") not in FONTS:
         add("error", f"font must be one of {', '.join(FONTS)}", "Starboard never downloads a font")
     elif style.get("font") == "mono":
-        add("warning", "A monospace font is harder to read in long text", "Use it for a retro look only; people can still choose bigger text")
+        add("warning", "A monospace font is harder to read in long text", "Use it for a retro style only; people can still choose bigger text")
     if style.get("shadow", "none") not in SHADOWS:
         add("error", f"shadow must be one of {', '.join(SHADOWS)}", "Pick a shadow from the list")
     for mode in ("light", "dark"):
@@ -187,7 +187,7 @@ def check_style(style, where="style"):
             add("error", f"Missing colours: {', '.join(missing)}", "Set every colour, so nothing falls back to a clash", at)
         bad = [k for k in list(TOKENS) + list(EXTRA) + sorted(PAGE_COLOURS) if k in colours and not (isinstance(colours[k], str) and HEX.match(colours[k]))]
         if bad:
-            add("error", f"Not a solid colour: {', '.join(bad)}", "Use #rrggbb. See-through colours change contrast with whatever is behind them", at)
+            add("error", f"Not a solid colour: {', '.join(bad)}", "Use #rrggbb. Transparent colours change contrast with whatever is behind them", at)
         if missing or bad:
             continue
         for fg, backs, need, why in PAIRS:

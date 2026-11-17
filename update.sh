@@ -245,6 +245,6 @@ restart "$CURRENT_NAME"
 if healthy; then
   echo "Back on $CURRENT_NAME with your settings restored. The failed version's data is in data.failed-update."
 else
-  echo "Starboard is still not starting. See: docker compose logs starboard (or journalctl --user -u starboard)"
+  echo "Starboard is still not starting. For the reason, run: docker compose logs starboard (or journalctl --user -u starboard)"
 fi
 exit 1

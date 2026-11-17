@@ -14,7 +14,7 @@
 @media (max-width: 720px) { .site-header__brand span { white-space: nowrap; } }
 .version-label { color: var(--color-text-muted); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
 .address { display: flex; align-items: center; gap: var(--space-2); min-width: 0; font-size: var(--text-sm); }
-.address__label { flex: none; min-width: 4.5em; color: var(--color-text-muted); font-weight: 600; }
+.address__label { flex: none; min-width: 4.5em; color: var(--color-text-muted); font-weight: var(--weight-strong); }
 .address__value { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 
 
@@ -65,11 +65,11 @@ code { background: var(--color-surface-sunken); padding: 0 var(--space-1); font-
 .chart__tooltip-row { display: flex; align-items: center; gap: var(--space-2); }
 .swatch--line { width: 14px; height: 2px; }
 .swatch--limit { width: 2px; height: 12px; background: var(--color-text); }
-.chart__table summary { cursor: pointer; color: var(--color-accent); font-size: var(--text-sm); font-weight: 600; min-height: var(--control-h); display: flex; align-items: center; }
+.chart__table summary { cursor: pointer; color: var(--color-accent); font-size: var(--text-sm); font-weight: var(--weight-strong); min-height: var(--control-h); display: flex; align-items: center; }
 .chart__table .table td { text-align: right; }
 .bars { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
 .bar { display: grid; grid-template-columns: minmax(0, 12em) minmax(0, 1fr) 6.5em; gap: var(--space-3); align-items: center; font-size: var(--text-sm); }
-.bar:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+.bar:focus-visible { outline: var(--focus-w) solid var(--color-focus); outline-offset: 2px; }
 .bar__label { overflow-wrap: anywhere; }
 .bar__track { position: relative; height: 16px; }
 .bar__fill { display: block; height: 100%; background: var(--chart-1); border-radius: 0 4px 4px 0; }
@@ -239,7 +239,7 @@ body > .loading-bar--top { position: fixed; top: 0; bottom: auto; z-index: 100; 
 
 /* Bring in media you already have (DASH-455). The sources in order, with their number beside each; the correction for
    a whole source; Check names' rows (from and to); a Needs a look choice; the copy's job and its line on the dashboard. */
-.bring-source svg { flex: none; margin-block-start: 4px; }
+.bring-source svg { flex: none; margin-block-start: var(--space-1); }
 .bring-source { display: flex; align-items: flex-start; gap: var(--space-2); min-inline-size: 0; }
 .bring-source__text { display: grid; gap: 2px; min-inline-size: 0; }
 .bring-source__name { font-weight: var(--weight-strong); overflow-wrap: anywhere; }
@@ -250,7 +250,7 @@ body > .loading-bar--top { position: fixed; top: 0; bottom: auto; z-index: 100; 
 .bring-links { align-items: flex-start; max-inline-size: 48rem; }
 .bring-whole { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
 .bring-whole .input { inline-size: auto; max-inline-size: 100%; }
-.bring-folder { display: flex; gap: var(--space-2); align-items: center; overflow-wrap: anywhere; font-weight: var(--weight-normal, 400); }
+.bring-folder { display: flex; gap: var(--space-2); align-items: center; overflow-wrap: anywhere; font-weight: var(--weight-regular); }
 .bring-folders .input { inline-size: auto; max-inline-size: 100%; }
 .bring-name .row__meta { display: flex; gap: var(--space-1); align-items: baseline; overflow-wrap: anywhere; min-inline-size: 0; }
 .bring-name .row__meta svg { flex: none; align-self: center; }

@@ -64,7 +64,7 @@ class QualityTest(unittest.TestCase):
         order = self.order(self.hd)
         order.remove("stop")
         order.append("stop")
-        with self.assertRaisesRegex(ValueError, "Stop upgrading here above"):
+        with self.assertRaisesRegex(ValueError, "Stop upgrading here before"):
             rq.change(self.hd, {"order": order})
 
     def test_at_least_one_quality_is_ticked(self):

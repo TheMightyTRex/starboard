@@ -11,7 +11,7 @@ function odRow(it) {
   const when = it.last ? `Last watched ${new Date(it.last.replace(" ", "T")).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}` : "";
   const meta = [it.kind === "movie" ? "Film" : "Series", it.year, it.episode ? `up to ${it.episode}` : "", when].filter(Boolean).join(" · ");
   const want = it.in_library
-    ? (it.href ? el("a", { class: "btn btn--quiet btn--compact", href: it.href }, icon("library"), "In your library") : chip("In your library", "success"))
+    ? (it.href ? el("a", { class: "btn btn--quiet btn--compact", href: it.href }, icon("library"), STATUS.inLibrary[0]) : chip(...STATUS.inLibrary))
     : el("button", { type: "button", class: "btn btn--compact", onclick: (e) => odWant(it, e.currentTarget), disabled: !it.key },
       icon("plus"), "Add to wanted", el("span", { class: "visually-hidden", text: ` ${it.title}` }));
   const forget = el("button", { type: "button", class: "btn btn--quiet btn--compact btn--danger", onclick: (e) => odForget(it, e.currentTarget) },

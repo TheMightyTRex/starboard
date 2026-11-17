@@ -3,7 +3,7 @@
 
 # Start Starboard on Linux Mint
 
-Linux Mint is the recommended system for Starboard: its desktop looks familiar, and the set-up opens in its browser
+Linux Mint is the recommended system for Starboard: its desktop is familiar, and the set-up opens in its browser
 by itself. This page takes you from Linux Mint 22.3 on a computer to Starboard's set-up page. It takes about 20
 minutes, most of it waiting for downloads.
 
@@ -28,7 +28,7 @@ minutes, most of it waiting for downloads.
    ```
 
 4. Press Enter at each question to take the recommended answer. When it asks for your password, enter it and press
-   Enter. Nothing shows as you type.
+   Enter. Nothing appears as you enter it.
 5. At **How do you want to finish setting up?**, press Enter for **In a browser (recommended)**. Firefox opens
    Starboard's set-up page with the setup code filled in. Read
    [Create your password and sign in](create-your-password.md).

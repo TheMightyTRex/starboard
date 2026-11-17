@@ -142,7 +142,7 @@ class TerminalSetupTest(unittest.TestCase):
         term, out = self.term(["", "", "", "", "", "9", "?", "q"], [SIGN_IN_WORDS, SIGN_IN_WORDS])
         with self.assertRaises(terminal_setup.Stop):
             terminal_setup.run(self.api, term, self.tmp.name, self.port)
-        self.assertIn("Type a number from 1 to 4", out.getvalue())
+        self.assertIn("Enter a number from 1 to 4", out.getvalue())
         self.assertIn("Basics is Starboard with Reelix Lite", out.getvalue())
 
     def test_signs_in_when_a_password_is_set(self):
@@ -504,7 +504,7 @@ class StillWorking(unittest.TestCase):
             _plain = out.append
         with mock.patch.object(ts, "STILL_EVERY", 1):
             start = time.time()
-            ts.Terminal._waiting(Plain(), "Starting the apps. Please wait, this can take some time...",
+            ts.Terminal._waiting(Plain(), "Starting the apps…",
                                  lambda: "ok" if time.time() > start + 2.3 else None, 0.1, start)
         self.assertGreaterEqual(len(out), 2)
         self.assertEqual(out[0], "Still working: Starting the apps (0 min).")

@@ -58,7 +58,7 @@ q2: What do you want to do?
 
 ## Things to note
 
-- A report never holds your password, your API keys, cookies or anything typed into the page's fields. Email
+- A report never holds your password, your API keys, cookies or anything entered in the page's fields. Email
   addresses, long numbers and keys are replaced. The page title and the text on the page are copied as they are,
   so check the report before you send it.
 - Reports saved in Starboard are kept on the server in `data/ux-notes.json`, which only Starboard's user can

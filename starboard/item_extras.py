@@ -20,7 +20,7 @@ def refresh(reelix, tab, item_id, rescan=False):
     """Refresh reads the details again (and rescans); Rescan only looks at the files on disk."""
     base, _, _ = _kind(tab)
     services._api(reelix, f"/{base}/{int(item_id)}/{'rescan' if rescan else 'refresh'}", method="POST", body={})
-    return "Reelix is looking at its files again" if rescan else "Reelix is reading its details again"
+    return "Reelix is checking its files again" if rescan else "Reelix is reading its details again"
 
 
 def files(reelix, tab, item_id):
@@ -46,7 +46,7 @@ def files(reelix, tab, item_id):
 def delete_file(reelix, tab, file_id):
     _kind(tab)
     services._api(reelix, f"/{'moviefiles' if tab == 'films' else 'episodefiles'}/{int(file_id)}", method="DELETE")
-    return "The file is deleted; Reelix looks for it again only if you follow it"
+    return "The file is deleted; Reelix searches for it again only if you follow it"
 
 
 def rename_preview(reelix, tab, item_id):

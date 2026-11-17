@@ -53,7 +53,7 @@ function showSettingsMessage(tone, title, text) {
 
 // The whole server --------------------------------------------------------------
 
-const STATUS_WORDS = { running: ["Backing up now", "info"], waiting: ["Starting", "info"], done: ["Complete", "success"], failed: ["Failed", "danger"] };
+const STATUS_WORDS = { running: STATUS.backingUp, waiting: STATUS.waiting, done: STATUS.done, failed: STATUS.failed };
 
 function runTime(s) { return s.finished ? when(s.finished) : s.started ? when(s.started) : "Waiting to start"; }
 
@@ -359,7 +359,7 @@ async function loadFull() {
           el("div", { class: "row__meta", text: [formatBytes(b.size), `${b.apps.length} apps`, b.version ? `Starboard ${b.version}` : ""].filter(Boolean).join(" · ") })),
         el("div", { class: "row__side" }, chip(b.pictures ? "With your pictures" : "Without pictures", "muted")))) :
         [el("li", {}, emptyState("No full backups here yet", "Make one, and it appears here."))]));
-    } catch (e) { list.replaceChildren(el("li", {}, notice("danger", "Could not look in the folder", e.message))); }
+    } catch (e) { list.replaceChildren(el("li", {}, notice("danger", "Could not read the folder", e.message))); }
   };
   showState(f.status);
   showList();
@@ -637,7 +637,7 @@ function scheduleState(s, canFull) {
     canFull ? el("button", { type: "button", class: "btn btn--compact", id: "keep-key", onclick: (e) => openKeepKey(e.currentTarget) }, "Keep the backup password") : null));
   } else if (s.remind) {
     parts.push(notice("warning", s.newest ? "Your newest backup is more than 30 days old" : "No backup has been made yet",
-      s.newest ? `It was made ${formatDate(s.newest * 1000, true)}. Make one below.` : "Make one below."));
+      s.newest ? `It was made ${formatDate(s.newest * 1000, true)}. Make a backup now.` : "Make a backup now."));
   }
   if (s.key) {
     const forget = el("button", { type: "button", class: "btn btn--quiet btn--compact", id: "forget-key" }, "Forget it");

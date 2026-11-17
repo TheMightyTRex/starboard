@@ -175,7 +175,7 @@ spec["paths"].update({
                                 "responses": needs_reelix(ok({"type": "object", "required": ["recent", "tabs"],
                                                               "properties": {"recent": {"type": "array", "items": ANY}, "tabs": {"type": "array", "items": ANY}}}))}},
     "/api/v1/library/search": {"get": {"operationId": "searchLibrary", "summary": "Search the Library: matches on each tab, best first", "tags": ["Library"],
-                                       "parameters": P + [query("q", {"type": "string", "minLength": 1, "maxLength": 120}, "What to look for.", True)],
+                                       "parameters": P + [query("q", {"type": "string", "minLength": 1, "maxLength": 120}, "What to search for.", True)],
                                        "responses": needs_reelix({**ok(listing(ANY)), "400": {"$ref": "#/components/responses/Problem"}})}},
     "/api/v1/library/status": {"get": {"operationId": "getLibraryStatus", "summary": "How big each tab's index is, when it was built, and any error", "tags": ["Library"],
                                        "responses": ok({"type": "object", "required": ["tabs", "errors"],
@@ -193,8 +193,8 @@ spec["paths"].update({
                                 "parameters": P, "responses": ok(listing(ANY))}},
     "/api/v1/containers": {"get": {"operationId": "listContainers", "summary": "Each app's container, its version and whether a newer image is out", "tags": ["Apps"],
                                    "parameters": P, "responses": ok(CONTAINERS)}},
-    "/api/v1/containers/check": {"post": write(CONTAINERS, "Look for newer images of the apps' containers now", "checkContainers", "Apps")},
-    "/api/v1/version": {"get": {"operationId": "getVersion", "summary": "Starboard's version, and the newest release when looking for new versions is active", "tags": ["System"],
+    "/api/v1/containers/check": {"post": write(CONTAINERS, "Check for newer images of the apps' containers now", "checkContainers", "Apps")},
+    "/api/v1/version": {"get": {"operationId": "getVersion", "summary": "Starboard's version, and the newest release when checking for new versions is active", "tags": ["System"],
                                 "responses": ok({"type": "object", "required": ["current"],
                                                  "properties": {"current": {"type": "string"}, "latest": {"type": ["string", "null"]},
                                                                 "repo": {"type": ["string", "null"]}, "since": {"type": ["number", "null"]}}})}},
@@ -261,7 +261,7 @@ UPDATES_NOTE = "Only for keys that ticked Updates: a key with no scopes does not
 spec["paths"].update({
     "/api/v1/updates": {
         "get": {"operationId": "listUpdates", "summary": "What can be updated: Starboard, Reelix, the other apps and the plug-ins", "tags": ["Updates"],
-                "description": UPDATES_NOTE + " From what Starboard already knows (its release check, the last look for app updates and the "
+                "description": UPDATES_NOTE + " From what Starboard already knows (its release check, the last check for app updates and the "
                                "catalogues it has read): nothing is fetched to answer. running is the update running now, if any.",
                 "parameters": P, "responses": ok(listing({"$ref": "#/components/schemas/UpdateTarget"}, {"running": {"oneOf": [RUN, {"type": "null"}]}}))},
         "post": write(STARTED, "Start an update to the newest version Starboard knows", "startUpdate", "Updates", status="202",

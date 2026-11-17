@@ -114,11 +114,11 @@ Each guide is a journey through several topics, in order.
 
 - [Check free space and what is using it](topics/check-storage.md)
 - [Check your disks' health](topics/check-disk-health.md)
-- [Add a drive to the pool](topics/add-a-drive-to-the-pool.md)
+- [Add a disk to the pool](topics/add-a-drive-to-the-pool.md)
 - [Balance the files](topics/balance-the-files.md)
-- [Use a drive as a backup drive](topics/use-a-drive-as-a-backup-drive.md)
-- [Take a drive out of the pool](topics/take-a-drive-out-of-the-pool.md)
-- [A pool drive has failed](topics/a-pool-drive-has-failed.md)
+- [Use a disk as a backup disk](topics/use-a-drive-as-a-backup-drive.md)
+- [Take a disk out of the pool](topics/take-a-drive-out-of-the-pool.md)
+- [A pool disk has failed](topics/a-pool-drive-has-failed.md)
 - [Find out what each app is using](topics/monitor-apps.md)
 - [Run a server job](topics/run-a-server-job.md)
 - [Make Starboard use less of your server](topics/make-starboard-lighter.md)
@@ -180,7 +180,7 @@ How Starboard works for everyone, how to change it for you, and how it is checke
 - [Zoom and large screens](accessibility/zoom-and-large-screens.md)
 - [Use Starboard on a phone or tablet](accessibility/on-a-phone-or-tablet.md)
 
-### How we check it
+### How it is tested
 
 - [How Starboard is tested for accessibility](accessibility/how-starboard-is-tested.md)
 - [Latest accessibility test results](accessibility/latest-test-results.md)
@@ -194,7 +194,7 @@ How Starboard and its apps compare with other media server stacks, measured on 1
 - [How Starboard compares with other media server stacks](comparisons/how-starboard-compares.md)
 - [Memory and processor: Starboard against other stacks](comparisons/memory-and-processor.md)
 - [How the tests were run, and how to repeat them](comparisons/how-the-tests-were-run.md)
-- [What Starboard does not do yet, and what is planned](comparisons/what-starboard-does-not-do-yet.md)
+- [What Starboard does not do](comparisons/what-starboard-does-not-do-yet.md)
 
 ## The basics: ideas explained from the start
 
@@ -202,9 +202,9 @@ How Starboard and its apps compare with other media server stacks, measured on 1
 - [What Reelix is](basics/what-is-reelix.md)
 - [How Starboard keeps your server safe](basics/how-starboard-keeps-you-safe.md)
 - [What a home server is](basics/what-is-a-home-server.md)
-- [The terminal: typing commands](basics/the-terminal.md)
+- [The terminal: entering commands](basics/the-terminal.md)
 - [What Docker is](basics/what-is-docker.md)
-- [What a drive pool is](basics/what-is-a-drive-pool.md)
+- [What a disk pool is](basics/what-is-a-drive-pool.md)
 - [Addresses and ports](basics/addresses-and-ports.md)
 - [What an API key is](basics/what-is-an-api-key.md)
 - [The apps Starboard works with](basics/the-apps.md)

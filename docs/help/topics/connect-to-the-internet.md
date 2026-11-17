@@ -11,7 +11,7 @@ and you are ready to run the Run first script.
 
 - Linux is installed on the server. Read [Install Linux on a computer](install-linux.md).
 - A monitor and keyboard on the server. With no desktop, a terminal open on it: read
-  [The terminal: typing commands](../basics/the-terminal.md).
+  [The terminal: entering commands](../basics/the-terminal.md).
 - For Wi-Fi: your Wi-Fi network's name and password.
 - Some commands in this article have quotes `"` and other symbols in them. If a symbol is not where you expect on your
   keyboard, read
@@ -89,7 +89,7 @@ These use a program called NetworkManager, which you control with the `nmcli` co
    nmcli --ask device wifi connect "My network"
    ```
 
-3. When it asks for the password, enter it and press Enter. Nothing shows as you type.
+3. When it asks for the password, enter it and press Enter. Nothing appears as you enter it.
 4. Check again with the `ping` command. The server connects by itself every time it starts.
 
 ## Connect with Wi-Fi in the terminal on Ubuntu Server
@@ -158,7 +158,7 @@ Keep the cable plugged in until Wi-Fi works.
 
 ## If it does not work
 
-- **`ping` works with `1.1.1.1` but not with `debian.org`:** the server is online but cannot look up names. Restart
+- **`ping` works with `1.1.1.1` but not with `debian.org`:** the server is online but cannot find the addresses for names. Restart
   it and try again; if it still fails, check the DNS setting on your router.
 - **`nmcli: command not found`:** this Linux does not use NetworkManager. Use the section for your Linux in this article.
 - **"No Wi-Fi device found" or no name starting with `wl`:** the server has no Wi-Fi, or its Wi-Fi needs extra files.

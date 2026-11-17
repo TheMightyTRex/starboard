@@ -33,7 +33,7 @@ all downloads, remove one download, or ask an app to find a different copy.
 1. Select the download's name. A side panel opens with its details and any messages from the app.
 2. Select **Remove**. Starboard asks **Remove this download?**
 
-   ![A download's details, with the messages from Reelix, Find another, and Remove (step 2) outlined](../images/manage-downloads-2-remove.png)
+   ![A download's details, with the messages from Reelix, Find another, and Remove (step 2) outlined, with example data](../images/manage-downloads-2-remove.png)
 
 3. Optional: tick **Block this release** so the app never downloads this copy again.
 4. Select **Remove download**. The app removes it from the queue and from the download app, with what it has
@@ -65,7 +65,7 @@ pass**, and when it goes to the download app by itself.
 A Reelix download can finish but not move into your library. It then shows **Needs attention** or **Failed**.
 
 1. Select the download's name and read the messages from Reelix.
-2. Select **Try the import again**, then **Try again**. Reelix looks at the finished files again.
+2. Select **Try the import again**, then **Try again**. Reelix checks the finished files again.
 3. Or select **Ignore**, then **Ignore** again. Reelix stops warning about it and leaves the files in the
    download app's folder. Nothing is deleted.
 
@@ -84,7 +84,7 @@ This needs the full version of Reelix. Read [Switch between the two versions of 
 1. Go to **Activity**, then **Downloads**, then **From a link**.
 2. In **Link**, paste a link from youtube.com, youtu.be or open.spotify.com.
 3. In **What to keep**, choose **Sound only (music, podcasts)** or **Video**.
-4. Optional: select **See what it holds** to list what the link has.
+4. Optional: select **Show what it holds** to list what the link has.
 5. Select **Download**. If Starboard asks, enter Reelix's admin password.
 
 **Downloads from links** lists each one, newest first, with **Cancel** or **Try again**.
@@ -93,11 +93,11 @@ This needs the full version of Reelix. Read [Switch between the two versions of 
 
 - The page updates itself while it is open. Select **Pause updates** to stop that while you read, and select it
   again to carry on. **Check again** asks the apps straight away. To change how often it updates, go to
-  **Settings**, then **Performance**, activate **Advanced settings**, and change **Downloads page updates**.
+  **Settings**, then **Performance**, activate **More settings**, and change **Downloads page updates**.
 - **Open the queue in** and the app's name opens the app's own queue in a new tab, for anything Starboard
   cannot do.
 - The tiles show each download app's speed. With a VPN (Gluetun), a tile shows whether it is connected. Without
-  one, **Downloading without a VPN** shows above the tiles, with **Add a VPN**. Select **Hide for 90 days** to hide
+  one, **Downloading without a VPN** appears on the Downloads page, with **Add a VPN**. Select **Hide for 90 days** to hide
   it. Read [Download without a VPN](download-without-a-vpn.md).
 - **Finished this week** on the Queue page lists what your apps imported in the last 7 days.
   **Recently finished** in the menu does not list anything yet.

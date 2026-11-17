@@ -49,7 +49,7 @@ them on System, Overview, shows how each one went, and lets you start one with *
 - [Back up the whole server](back-up-the-server.md)
 - [Activate alerts](activate-alerts.md)
 - [Read the log and report a problem](read-the-log.md)
-- [The terminal: typing commands](../basics/the-terminal.md)
+- [The terminal: entering commands](../basics/the-terminal.md)
 
 <!-- footer: download rights -->
 

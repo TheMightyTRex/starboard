@@ -22,10 +22,10 @@ is ready to use.
 2. Find the plug-in and select **Install…**. For a plug-in built into Starboard, select **Add** and its name.
    A plug-in that is not in any catalogue can be added by its address: read
    [Add a plug-in by its address](#add-a-plug-in-by-its-address).
-3. A slide-out opens. It says the plug-in is installed at your own risk, then lists what it **can see**, what it
+3. A slide-out opens. It says the plug-in is installed at your own risk, then lists what it **can read**, what it
    **can change**, what it **can reach**, what it runs and what it can never reach. Read it all.
 
-   ![Settings, Plug-ins, Catalogue, with the install slide-out for a made-up plug-in open: the warning, and It can see (step 3) outlined](../images/add-a-plugin-1-preview.png)
+   ![Settings, Plug-ins, Catalogue, with the install slide-out for a made-up plug-in open: the warning, and It can read (step 3) outlined](../images/add-a-plugin-1-preview.png)
 
 4. To go ahead, enter your Starboard password and select **Install** and the plug-in's name. To stop, select
    **Cancel**: nothing is installed.
@@ -58,7 +58,7 @@ nothing: each plug-in still shows its warning before it is installed.
 2. Go to **Settings**, then **Plug-ins**, then **Catalogue**.
 3. Under **Catalogue sources**, paste the address into **Catalogue address**, then select **Add catalogue**.
    Starboard reads it and says how many plug-ins it lists.
-4. Its plug-ins show above, in their own section, named after the catalogue.
+4. Its plug-ins appear in their own section of the Catalogue, named after the catalogue.
 
 Starboard reads each catalogue at most once a day. To take one off, select **Remove** next to it under
 **Catalogue sources**. Plug-ins you already installed from it stay. The Starboard plug-ins collection is always
@@ -70,7 +70,7 @@ Only add catalogues from people you trust. Starboard did not make the plug-ins i
 
 On the **Catalogue** page, under **Add one from elsewhere**, paste the address of the plug-in's
 `starboard-plugin.json` into **The plug-in's manifest address**, or choose the file in **Or its manifest file**.
-Select **See what it does**, read the test results, then select **Install** and its name. Carry on from step 3.
+Select **What it does**, read the test results, then select **Install** and its name. Carry on from step 3.
 
 ### From a zip file
 

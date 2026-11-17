@@ -42,7 +42,7 @@ def change(reelix, action, body):
     if action == "add":
         folder = str(body.get("path", "")).strip().rstrip("/")
         if not re.match(r"^/[A-Za-z0-9 ._/()'&+-]{1,250}$", folder) or ".." in folder:
-            raise ValueError("Type the folder as Reelix sees it, starting with /, such as /data/media/films-4k")
+            raise ValueError("Enter the folder inside Reelix, starting with /, such as /data/media/films-4k")
         reelix.call("POST", path, {"path": folder, **extra})
         done = f"Added {folder} for {KINDS[group].lower()}"
     else:

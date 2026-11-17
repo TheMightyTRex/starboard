@@ -661,7 +661,7 @@ def _run(names, keep_old=False):
                 for n in group:
                     ok = code == 0 and now.get(n, {}).get("state") == "running"
                     job["items"][n].update(phase="done" if ok else "failed", version=now.get(n, {}).get("version", ""),
-                                           **({} if ok else {"error": "The restart did not finish. The log below says why."}))
+                                           **({} if ok else {"error": "The restart did not finish. The log says why."}))
         with _lock:
             job["log"] = "\n".join(log)[-4000:]
             done = [n for n, i in job["items"].items() if i.get("phase") == "done"]

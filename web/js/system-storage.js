@@ -123,13 +123,13 @@ async function load() {
     stats.replaceChildren(...[
       stat(formatBytes(total), "Total space"),
       stat(formatBytes(used), `Used (${total ? Math.round((used / total) * 100) : 0}%)`),
-      stat(String(full), members.size ? "Drives or folders over 90% full" : "Folders over 90% full", full ? ["warning", "Nearly full"] : null),
+      stat(String(full), members.size ? "Disks or folders over 90% full" : "Folders over 90% full", full ? ["warning", "Nearly full"] : null),
       missing ? stat(String(missing), missing === 1 ? "Folder not found" : "Folders not found", ["warning", "Not found"]) : null].filter(Boolean));
     const sorted = [...disks].filter((d) => !members.has(d.label)).sort((a, b) => (b.missing ? 101 : pctUsed(b)) - (a.missing ? 101 : pctUsed(a)));
     let list = $("ul.rows", box);
     if (!list) { list = el("ul", { class: "rows", "aria-label": "Folders, fullest first" }); box.replaceChildren(list); }
     renderKeyed(list, sorted, (d) => d.label, (d) => row(d));
-    const parts = members.size ? [plural(disks.length - members.size, "folder", "folders"), plural(members.size, "drive in a pool", "drives in a pool")]
+    const parts = members.size ? [plural(disks.length - members.size, "folder", "folders"), plural(members.size, "disk in a pool", "disks in a pool")]
       : [plural(disks.length, "folder", "folders")];
     if (full) parts.push(`${full} nearly full`);
     if (missing) parts.push(`${missing} not found`);
@@ -204,7 +204,7 @@ function renderCharts() {
   const drives = Object.values(poolsFound).flat().map((l) => disks.find((d) => d.label === l && !d.missing)).filter(Boolean);
   $("#drives-panel").hidden = !drives.length;
   if (drives.length) {
-    $("#drives-note").textContent = `${drives.length} drives, fullest first`;
+    $("#drives-note").textContent = `${drives.length} disks, fullest first`;
     $("#drives").replaceChildren(...drivesChart(drives, (label, opener) => openFolder(disks.find((d) => d.label === label), opener)));
   }
   // Biggest
@@ -239,15 +239,15 @@ async function loadDevices() {
     if (!p.mounted.length) notes.push(chip("Not mounted", "muted"));
     if (fs === "ntfs" || fs === "exfat" || fs === "vfat") notes.push(chip("Windows file system: slower on Linux", "warning"));
     return el("tr", {},
-      el("td", { "data-label": "Drive" }, el("strong", { text: disk.model || disk.name }), el("span", { class: "small muted", text: ` ${p.name}` })),
+      el("td", { "data-label": "Disk" }, el("strong", { text: disk.model || disk.name }), el("span", { class: "small muted", text: ` ${p.name}` })),
       el("td", { "data-label": "Size", class: "numeric", text: p.size ? formatBytes(p.size) : "" }),
       el("td", { "data-label": "File system", text: p.fs || "None" }),
       el("td", { "data-label": "Mounted at" }, p.mounted.length ? el("code", { text: p.mounted.join(", ") }) : "Nowhere"),
       el("td", { "data-label": "Notes" }, ...notes));
   }));
   $("#devices").replaceChildren(el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" },
-    el("caption", { class: "visually-hidden", text: "Drives and partitions" }),
-    el("thead", {}, el("tr", {}, ["Drive", "Size", "File system", "Mounted at", "Notes"].map((h) => el("th", { scope: "col", text: h })))),
+    el("caption", { class: "visually-hidden", text: "Disks and partitions" }),
+    el("thead", {}, el("tr", {}, ["Disk", "Size", "File system", "Mounted at", "Notes"].map((h) => el("th", { scope: "col", text: h })))),
     el("tbody", {}, rows))));
 }
 

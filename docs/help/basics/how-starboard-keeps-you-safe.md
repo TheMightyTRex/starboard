@@ -14,7 +14,7 @@ is what protects you, what Starboard can and cannot do on your computer, and the
   can claim a new server before you.
 - Five wrong attempts lock that address out for 15 minutes.
 - Without **Remember me**, you are signed out when the browser closes, or after a day.
-- Changes that affect the computer itself, such as starting apps, changing your install or erasing a drive, ask
+- Changes that affect the computer itself, such as starting apps, changing your install or erasing a disk, ask
   for the password again. So does [Sign out everywhere](../topics/sign-out-everywhere.md).
 
 ## Your keys and settings
@@ -39,8 +39,8 @@ is what protects you, what Starboard can and cannot do on your computer, and the
 - **Install apps** starts only the apps on its own list, with folders it has checked (never a system folder or a
   whole home folder). Before the apps start, the Run first window and the installer check the set-up file again
   with the same rules, so a changed file cannot start anything else.
-- Drives are changed only by a small helper you install yourself, which accepts a fixed list of actions, checks
-  every change first and asks for the last characters of a drive's serial number before erasing it.
+- Disks are changed only by a small helper you install yourself, which accepts a fixed list of actions, checks
+  every change first and asks for the last characters of a disk's serial number before erasing it.
 
 ## In the browser
 
@@ -56,7 +56,7 @@ is what protects you, what Starboard can and cannot do on your computer, and the
 - **Away from home.** Never forward Starboard's port straight to the internet. Use a VPN or a reverse proxy with
   HTTPS. Read [Use Starboard away from home safely](../guides/use-starboard-away-from-home.md).
 - **Downloads through a VPN.** Every install sends torrents and Usenet through a VPN, Gluetun, so your internet
-  provider sees only the VPN. You can choose to go without one, after a warning: read
+  provider can tell only that you use a VPN. You can choose to go without one, after a warning: read
   [Download without a VPN](../topics/download-without-a-vpn.md).
 
 ## How it is tested

@@ -16,7 +16,7 @@ or carries on in the terminal. It takes about 15 minutes.
 - The computer is connected to the internet. Read
   [Connect to the internet, by cable or Wi-Fi](connect-to-the-internet.md).
 - The password you use to sign in to that computer. It is asked for when something needs installing.
-- A terminal open on that computer, or connected to it. Read [The terminal: typing commands](../basics/the-terminal.md).
+- A terminal open on that computer, or connected to it. Read [The terminal: entering commands](../basics/the-terminal.md).
 
 ## Steps
 
@@ -39,7 +39,7 @@ or carries on in the terminal. It takes about 15 minutes.
    bash run-first.sh
    ```
 
-2. The first question is about how it looks. Press Enter for the standard look. For **accessible mode**, enter `a`
+2. The first question is about its display. Press Enter for the standard display. For **accessible mode**, enter `a`
    and press Enter: plain lines with no boxes or colour, for software that reads text aloud. Your choice is kept for
    the whole installation.
 3. **Welcome:** choose how to finish setting up. **In a browser** is recommended when the computer has a desktop.
@@ -61,7 +61,7 @@ or carries on in the terminal. It takes about 15 minutes.
 7. **Ready to install:** check the summary and press Enter to start Starboard's installer.
 8. **Install Starboard:** answer the installer's questions. If you are unsure, press Enter for the recommended answer.
    Read [What the installer asks](what-the-installer-asks.md#the-access-it-asks-for). The script tells the set-up
-   what it found on this computer, such as drives and apps already running, so it can recommend the right answers.
+   what it found on this computer, such as disks and apps already running, so it can recommend the right answers.
 9. Finish setting up:
    - **In a browser, on a computer with a desktop:** the set-up page opens by itself with the setup code filled in.
      Read [Create your password and sign in](create-your-password.md), then

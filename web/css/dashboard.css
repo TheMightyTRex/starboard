@@ -14,7 +14,7 @@
   padding: var(--space-4, 16px);
   background: var(--color-surface);
   border: 1px solid var(--color-divider);
-  border-radius: var(--radius-3, 8px);
+  border-radius: var(--radius);
 }
 .dash-card--small { grid-column: span 3; }
 .dash-card--medium { grid-column: span 4; }
@@ -26,7 +26,7 @@
 .dash-card__tools { display: flex; align-items: center; gap: var(--space-1, 4px); flex-wrap: wrap; }
 .dash-card .rows .row { padding-block: var(--space-2, 8px); }
 .dash-links { display: flex; flex-wrap: wrap; gap: var(--space-2, 8px); }
-.dash-edit { padding: var(--space-4, 16px); border: 1px dashed var(--color-divider); border-radius: var(--radius-3, 8px); margin-bottom: var(--space-4, 16px); }
+.dash-edit { padding: var(--space-4, 16px); border: 1px dashed var(--color-divider); border-radius: var(--radius); margin-bottom: var(--space-4, 16px); }
 .dash-edit__row { display: flex; flex-wrap: wrap; gap: var(--space-4, 16px); }
 @media (max-width: 1100px) {
   .dash-card--small { grid-column: span 6; }

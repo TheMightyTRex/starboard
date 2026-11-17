@@ -561,7 +561,7 @@ def after_takeover(app, password, p, sab_ini):
             try:
                 jellyfin_metadata.start(app.data_dir, app.config.data["services"])
                 notes.append("Starboard is moving Jellyfin's pictures and details out of its settings folder, so Jellyfin "
-                             "watches fewer folders. Jellyfin stops for a few minutes; see Settings, Jellyfin")
+                             "watches fewer folders. Jellyfin stops for a few minutes; go to Settings, Jellyfin")
             except ValueError as e:
                 notes.append(f"Jellyfin's pictures and details were not moved ({e}). Move them in Settings, Jellyfin")
         logs.event("info", "take over", "; ".join(notes) or "Took over your apps")
@@ -2212,7 +2212,7 @@ class Handler(BaseHTTPRequestHandler):
                 def after(ok):
                     services.forget()
                     return ["Your old apps run again as they were before the takeover"] if ok else \
-                        ["Rolling back did not finish. See the log below, and the help topic Take over the apps you already run"]
+                        ["Rolling back did not finish. The log has the reason. Read Take over the apps you already run in the help"]
                 return self.json(200, takeover.roll_back(app.data_dir, host, after))
             if path == "/api/takeover/clear" and method == "POST":
                 body = self.body()
@@ -3113,7 +3113,7 @@ class Handler(BaseHTTPRequestHandler):
                         elif known:
                             manifest = pa.fetch_manifest(known["manifest"], sha256=known.get("sha256", ""))
                         else:
-                            return self.error(404, "No newer version is known. Open the Catalogue to look again, or give an address")
+                            return self.error(404, "No newer version is known. Open the Catalogue to check again, or give an address")
                         old = pa._read(os.path.join(pa.folder(app.data_dir, pid), "manifest.json"), {}) or {}
                         return self.json(200, {**pa.summary(manifest), "new_permissions": plugin_life.new_permissions(old, manifest),
                                                "changelog": (known or {}).get("changelog", "") if not body.get("address") else "",
@@ -3131,7 +3131,7 @@ class Handler(BaseHTTPRequestHandler):
             if not any(p["id"] == mw.group(1) for p in pa.basics(app.data_dir)):
                 return self.error(404, "No plug-in with that id")
             plugin_life.whats_new_seen(app.data_dir, mw.group(1))
-            return self.json(200, {"said": "Marked as seen"})
+            return self.json(200, {"said": "Marked as read"})
         if path == "/api/plugins/catalogue" and method == "GET":
             # The Catalogue page (DASH-318): the Starboard plug-ins collection, each marked when already added.
             have = {p["id"] for p in pa.added(app.data_dir)}
@@ -3257,7 +3257,7 @@ class Handler(BaseHTTPRequestHandler):
                                        "logo": {"url": plugin_logo.as_data(*logo), "alt": manifest["logo"]["alt"]} if logo else None})
             self.check_password(body)
             if not plugin_tester.report(manifest)["ok"]:
-                raise ValueError("This plug-in has errors. Test it to see them")
+                raise ValueError("This plug-in has errors. Test it to list them")
             item = pa.install(app.data_dir, manifest, media)
             if where_from and not listed:  # added from its own address: its automatic update looks there (DASH-422)
                 from . import auto_updates

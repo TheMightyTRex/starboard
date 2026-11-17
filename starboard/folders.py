@@ -47,9 +47,9 @@ def inside(path):
     real = os.path.realpath(path)
     roots = tuple(os.path.realpath(r) for r in ROOTS)
     if not real.startswith(roots):
-        raise ValueError("Starboard only looks in " + ", ".join(ROOTS))
+        raise ValueError("Starboard only opens folders in " + ", ".join(ROOTS))
     if not any(real == r or real.startswith(r + os.sep) for r in roots):  # /mntx is not inside /mnt
-        raise ValueError("Starboard only looks in " + ", ".join(ROOTS))
+        raise ValueError("Starboard only opens folders in " + ", ".join(ROOTS))
     return real
 
 
@@ -118,7 +118,7 @@ def _via_helper(path, run=None):
     try:
         cid = containers.docker("POST", f"/containers/create?name=starboard-updater-look-{os.getpid()}-{abs(hash(path)) % 10 ** 8}", body)["Id"]
     except containers.DockerError:
-        return {"exists": None, "folders": [], "why": f"Starboard cannot look in {root} on this computer."}
+        return {"exists": None, "folders": [], "why": f"Starboard cannot open {root} on this computer."}
     try:
         containers.docker("POST", f"/containers/{cid}/start")
         containers.docker("POST", f"/containers/{cid}/wait", timeout=30)
@@ -157,7 +157,7 @@ def _read(path, run=None):
         return got
     from . import containers
     if run is None and not containers.available():
-        return {"exists": None, "folders": [], "why": "Starboard cannot look at this computer's folders without Docker access. Type the folder instead."}
+        return {"exists": None, "folders": [], "why": "Starboard cannot open this computer's folders without Docker access. Enter the folder instead."}
     return _via_helper(path, run)
 
 
@@ -168,7 +168,7 @@ def browse(path, run=None):
                 "free": None, "total": None}
     path = tidy(path)
     if not allowed(path):
-        raise ValueError("Starboard only looks in " + ", ".join(ROOTS))
+        raise ValueError("Starboard only opens folders in " + ", ".join(ROOTS))
     got = _read(path, run)
     if got.get("exists") is False:
         raise LookupError("There is no folder there")
@@ -281,7 +281,7 @@ def sizes(path, run=None, limit=200_000):
     from . import bring_in
     path = tidy(path)
     if not allowed(path):
-        raise ValueError("Starboard only looks in " + ", ".join(ROOTS))
+        raise ValueError("Starboard only opens folders in " + ", ".join(ROOTS))
     if run is None and not _in_docker():
         files = bring_in._walk(inside(path), limit)
     else:

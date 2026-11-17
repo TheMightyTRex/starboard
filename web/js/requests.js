@@ -27,7 +27,7 @@ function render(d) {
   if (!d.configured) {
     $("#requests-summary").textContent = "No Reelix or Seerr app with an API key yet.";
     $("#requests-notice").replaceChildren(el("div", { class: "notice", role: "status" }, icon("info"), el("div", { class: "notice__body" },
-      el("span", { class: "notice__title", text: "Add Reelix or Seerr to see requests here" }),
+      el("span", { class: "notice__title", text: "Add Reelix or Seerr to show requests here" }),
       el("p", {}, "In ", el("a", { href: "/settings.html", text: "Manage apps" }), ", add Reelix, or your Seerr, Jellyseerr or Overseerr app, with its API key."))));
     $("#requests").replaceChildren();
     return;
@@ -57,9 +57,9 @@ async function act(r, action, button) {
   let reason = "";
   if (action === "decline") {
     const why = el("input", { class: "input", id: "decline-why", maxlength: "500" });
-    const ok = await confirmDialog({ title: `Decline ${r.title}?`, message: `${r.by || "The person who asked"} sees that it was declined. This cannot be undone here.`,
+    const ok = await confirmDialog({ title: `Decline ${r.title}?`, message: `${r.by || "The person who asked"} is told that it was declined. This cannot be undone here.`,
       confirm: "Decline", danger: true, fields: source === "reelix" ? [el("div", { class: "field" }, el("label", { class: "field__label", for: "decline-why", text: "Why (optional)" }),
-        el("p", { class: "hint", text: "They see this with the answer." }), why)] : [] });
+        el("p", { class: "hint", text: "They get this with the answer." }), why)] : [] });
     if (!ok) return;
     reason = why.value.trim();
   }

@@ -180,7 +180,7 @@ async function cloudWizard({ opener = document.activeElement, startAt = "service
     const parts = [];
     let foot = [backButton(() => { cancelSession(); stepService(); })];
     if (s.signin === "oauth") {
-      parts.push(el("p", { text: `Sign in with ${s.name}'s own page. Starboard never sees your password: ${s.name} gives it a key for your files, which it keeps on this computer only.` }));
+      parts.push(el("p", { text: `Sign in with ${s.name}'s own page. Starboard never receives your password: ${s.name} gives it a key for your files, which it keeps on this computer only.` }));
       if (phoneOffered()) parts.push(wayCards());
       if (sess.state === "starting") parts.push(waiting("Getting the sign-in ready…", sess.seconds_left));
       else if (sess.state === "link") { const [card, go] = linkCard(sess); parts.push(card); foot = [go, ...foot]; }
@@ -359,7 +359,7 @@ async function cloudWizard({ opener = document.activeElement, startAt = "service
       st.folders = got.folders;
       listBox.replaceChildren(...(got.folders.length ? [el("p", { class: "small muted", text: `Or use a folder that is there already (${got.folders.length}):` }),
         ...got.folders.map((f) => el("label", { class: "check" }, el("input", { type: "radio", name: "cloud-folder", value: f, checked: st.folderChoice === "existing" && st.folder === f }),
-          el("span", { class: "check__text", text: f })))] : [el("p", { class: "small muted", text: `${s.name} has no folders Starboard can see yet.` })]));
+          el("span", { class: "check__text", text: f })))] : [el("p", { class: "small muted", text: `${s.name} has no folders Starboard can open.` })]));
     } catch (e) {
       const w = testWords(e.message);
       listBox.replaceChildren(el("p", { class: "small muted", text: `Starboard could not list the folders: ${w.text}. A new folder still works.` }),

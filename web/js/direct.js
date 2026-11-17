@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const link = el("input", { class: "input", id: "direct-link", type: "url", placeholder: "https://", autocomplete: "off", spellcheck: "false" });
   const mode = el("select", { class: "select", id: "direct-mode" }, [["audio", "Sound only (music, podcasts)"], ["video", "Video"]].map(([v, t]) => el("option", { value: v, text: t })));
   const seen = el("div", { "aria-live": "polite" });
-  const look = el("button", { type: "button", class: "btn" }, "See what it holds");
+  const look = el("button", { type: "button", class: "btn" }, "Show what it holds");
   const get = el("button", { type: "button", class: "btn btn--primary" }, icon("download"), "Download");
   const list = el("ul", { class: "rows" });
   const body = () => ({ url: link.value.trim(), mode: mode.value, playlist: true });
@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }) : [el("li", { class: "empty", text: "Nothing downloaded from a link yet." })]));
   look.addEventListener("click", async () => {
     setError(link, "");
-    try { const r = await rxCall("direct", "preview", body(), "look at the link"); if (r) seen.replaceChildren(el("p", {}, el("strong", { text: r.title || "Found" })),
+    try { const r = await rxCall("direct", "preview", body(), "read the link"); if (r) seen.replaceChildren(el("p", {}, el("strong", { text: r.title || "Found" })),
       el("ul", {}, r.items.slice(0, 20).map((t) => el("li", { text: t }))), r.more ? el("p", { class: "small muted", text: "And more." }) : null); }
     catch (e) { setError(link, e.message); link.focus(); }
   });

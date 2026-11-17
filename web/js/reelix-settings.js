@@ -219,10 +219,10 @@ function rxRestingUntil(i) {
 }
 function rxState(i) {
   if (i.error) return chip("Cannot start", "danger");
-  if (!i.enabled) return chip("Not active", "muted");
+  if (!i.enabled) return chip(...STATUS.inactive);
   if (rxRestingUntil(i)) return chip("Resting", "warning");
   if (i.status?.failure_count) return chip("Failed last time", "warning");
-  return chip("Working", "success");
+  return chip(...STATUS.running);
 }
 
 function rxResults(i) {
@@ -235,11 +235,11 @@ function rxResults(i) {
 }
 
 const RX_WORDS = {
-  indexers: { title: "Sites to search", one: "site", a: "a site to search", many: "sites", show: "see and change the sites Reelix searches" },
-  downloadclients: { title: "Download apps", one: "download app", a: "a download app", many: "download apps", show: "see and change Reelix's download apps" },
-  mediaservers: { title: "Media servers", one: "media server", a: "a media server", many: "media servers", show: "see and change Reelix's media servers" },
-  notifications: { title: "Notifications", one: "notification", a: "a notification", many: "notifications", show: "see and change Reelix's notifications" },
-  importlists: { title: "Lists", one: "list", a: "a list", many: "lists", show: "see and change the lists Reelix follows" },
+  indexers: { title: "Sites to search", one: "site", a: "a site to search", many: "sites", show: "show and change the sites Reelix searches" },
+  downloadclients: { title: "Download apps", one: "download app", a: "a download app", many: "download apps", show: "show and change Reelix's download apps" },
+  mediaservers: { title: "Media servers", one: "media server", a: "a media server", many: "media servers", show: "show and change Reelix's media servers" },
+  notifications: { title: "Notifications", one: "notification", a: "a notification", many: "notifications", show: "show and change Reelix's notifications" },
+  importlists: { title: "Lists", one: "list", a: "a list", many: "lists", show: "show and change the lists Reelix follows" },
 };
 
 // One section for a kind: locked until the password is given, then the list with Add, Change, Test and Remove.
@@ -258,7 +258,7 @@ function rxKindSection(kind, description) {
       const r = await rxCall(kind, "open", {}, words.show);
       if (!r) { locked(); return; }
       data = r;
-      if (kind === "indexers") search = await rxCall("search", "open", {}, "see how Reelix searches");
+      if (kind === "indexers") search = await rxCall("search", "open", {}, "show how Reelix searches");
       draw();
     } catch (e) { body.replaceChildren(notice("danger", "Reelix could not be asked", e.message), unlockButton()); }
   };
@@ -299,7 +299,7 @@ function rxKindSection(kind, description) {
         if (!r) { vpn.checked = !vpn.checked; return; }
         search = r; draw(); settingSaved();
       }));
-      rows.push(switchRow("Search through the VPN", "Reelix's searches go out through Gluetun, as Prowlarr's did, so your internet provider sees only the VPN. If the VPN is down, searches wait rather than go out without it. Recommended.", vpn));
+      rows.push(switchRow("Search through the VPN", "Reelix's searches go out through Gluetun, as Prowlarr's did, so your internet provider can tell only that you use a VPN. If the VPN is down, searches wait rather than go out without it. Recommended.", vpn));
     } else {
       rows.push(el("p", { class: "small muted", text: "Reelix searches from this computer's own address. Add a VPN in Settings, Downloads, VPN to search through it." }));
     }
@@ -330,7 +330,7 @@ function rxKindSection(kind, description) {
         el("div", { class: "row__side" }, rxState(i), edit));
     });
     const table = items.length ? el("ul", { class: "rows", "aria-label": words.title }, rows)
-      : emptyState(`No ${words.many} yet`, kind === "indexers" ? "Reelix cannot find anything to download until it has a site to search." : `Add ${words.a} below when you need one.`);
+      : emptyState(`No ${words.many} yet`, kind === "indexers" ? "Reelix cannot find anything to download until it has a site to search." : `Add ${words.a} when you need one.`);
     const buttons = el("div", { class: "actions" },
       el("button", { type: "button", class: "btn", onclick: () => rxAddPanel(kind, words,
         kind === "indexers" ? data.catalogue.filter((c) => c.source === "definition") : data.catalogue, add,
@@ -342,7 +342,7 @@ function rxKindSection(kind, description) {
     const offers = kind === "mediaservers" ? rxOffers(data.offers || [], (r) => { data = { ...data, ...r }; draw(); }) : null;
     // DASH-257: a download app whose address or user differs from what Starboard set up, with Repair.
     const repair = kind === "downloadclients" && data.repair?.length ? notice("warning", "Reelix cannot reach some download apps the way Starboard set them up",
-      `Repair puts back what Starboard set up for ${data.repair.join(", ")}, so you need not look up a password.`,
+      `Repair puts back what Starboard set up for ${data.repair.join(", ")}, so you need no other password.`,
       el("button", { type: "button", class: "btn", onclick: (e) => reopen(async () => {
         e.currentTarget.disabled = true;
         const r = await rxCall("downloadclients", "repair", {}, "repair Reelix's download apps");
@@ -457,7 +457,7 @@ function rxRadioSection() {
     body.replaceChildren(
       el("p", { class: "small muted", text: s.connected
         ? `Reelix reads Audiobookshelf's Radio library. ${s.waiting ? `${s.waiting} ${s.waiting === 1 ? "show there is" : "shows there are"} not in your library yet: bring ${s.waiting === 1 ? "it" : "them"} in on Library, Radio.` : "Every show there is in your library."}`
-        : "Reelix cannot see the radio shows you already have until it reads Audiobookshelf's Radio library." }),
+        : "Reelix cannot find the radio shows you already have until it reads Audiobookshelf's Radio library." }),
       el("div", { class: "actions" }, go), said);
   }).catch((e) => body.replaceChildren(notice("info", "Reelix could not be asked", e.message)));
   return section("rx-radio", "Radio", "Where Reelix finds the radio shows you already have.", body);
@@ -605,7 +605,7 @@ function rxBasicsSection() {
       field("Who can ask", who, { hint: "For people who get a Reelix account from now on. Settings, Reelix, People changes those who have one." }));
   };
   locked();
-  return section("rx-basics", "Basic settings", "What Reelix looks for, and how good it should be.", body);
+  return section("rx-basics", "Basic settings", "What Reelix searches for, and how good it should be.", body);
 }
 
 // A section that opens behind the Reelix password (the same pattern as the others), drawn by `draw(answer, body)`.
@@ -684,7 +684,7 @@ function rxFoldersSection() {
     const editFolder = (f, opener) => {
       const out = el("button", { type: "button", class: "btn btn--danger" }, icon("trash-2"), "Take out of Reelix");
       const panel = sidePanel({ title: `${f.kind_name} folder`, opener, body: [
-        el("dl", { class: "facts" }, el("dt", { text: "Folder, as Reelix sees it" }), el("dd", { text: f.path }),
+        el("dl", { class: "facts" }, el("dt", { text: "Folder inside Reelix" }), el("dd", { text: f.path }),
           el("dt", { text: "For" }), el("dd", { text: f.kind_name }),
           el("dt", { text: "Free" }), el("dd", { text: f.free != null ? formatBytes(f.free) : "Not known" })),
         f.ok ? null : notice("danger", "Reelix cannot reach it", "Check the folder is there and Reelix can write to it.")], foot: [out] });
@@ -855,13 +855,13 @@ function rxMappingsSection() {
       const host = el("input", { class: "input", id: "rx-map-host", autocomplete: "off", spellcheck: "false", value: m?.host || hostList[0] || "", list: "rx-map-hosts" });
       const hosts = el("datalist", { id: "rx-map-hosts" }, hostList.map((h) => el("option", { value: h })));
       const remote = el("input", { class: "input", id: "rx-map-remote", autocomplete: "off", spellcheck: "false", value: m?.remote || "", placeholder: "/downloads/" });
-      const local = locationPicker({ id: "rx-map-local", label: "The same folder, as Reelix sees it", app: "reelix", value: m?.local || "",
+      const local = locationPicker({ id: "rx-map-local", label: "The same folder, inside Reelix", app: "reelix", value: m?.local || "",
         hint: "Browse to the folder Reelix can read the finished downloads in." });
       const save = el("button", { type: "button", class: "btn btn--primary" }, "Save");
       const status = el("div", { "aria-live": "polite" });
       const foot = [save];
       const panel = sidePanel({ title: editing ? `Path mapping for ${m.host}` : "Add a path mapping", opener, wide: true, body: [
-        el("p", { class: "small", text: "Only needed when a download app reports a folder that Reelix sees under another name, such as an app on another computer. Apps Starboard set up share one folder and need none." }),
+        el("p", { class: "small", text: "Only needed when a download app reports a folder that Reelix knows by another name, such as an app on another computer. Apps Starboard set up share one folder and need none." }),
         el("div", { class: "form-stack" },
           field("Download app's host", el("span", {}, host, hosts), { required: true, hint: "As in Reelix's Download apps, such as gluetun or 192.168.1.20." }),
           field("The folder the download app reports", remote, { required: true, hint: "As the download app shows it, such as /downloads/ or D:\\Downloads\\." }),
@@ -870,7 +870,7 @@ function rxMappingsSection() {
         const remove = el("button", { type: "button", class: "btn btn--danger" }, icon("trash-2"), "Remove");
         remove.addEventListener("click", async () => {
           if (!await confirmDialog({ title: `Remove the path mapping for ${m.host}?`, confirm: "Remove", danger: true,
-            message: `Reelix looks for ${m.host}'s finished downloads where the app says they are. Nothing on disk changes.` })) return;
+            message: `Reelix finds ${m.host}'s finished downloads where the app says they are. Nothing on disk changes.` })) return;
           try { const o = await rxCall("extras", "mapping-remove", { id: m.id }, "change Reelix's path mappings"); if (o) { panel.close(); after(o); } }
           catch (e) { problem(e.message, remove); }
         });
@@ -885,7 +885,7 @@ function rxMappingsSection() {
         for (const [input, words] of [[host, "Give the download app's host"], [remote, "Give the folder the download app reports"]]) setError(input, input.value.trim() ? "" : words);
         const empty = [host, remote].find((i) => !i.value.trim());
         if (empty) { empty.focus(); return; }
-        if (!local.input.value.trim()) { setError(local.input, "Choose the folder Reelix sees"); local.input.focus(); return; }
+        if (!local.input.value.trim()) { setError(local.input, "Choose the folder inside Reelix"); local.input.focus(); return; }
         save.disabled = true;
         status.replaceChildren();
         try {
@@ -907,10 +907,10 @@ function rxMappingsSection() {
       : emptyState("No path mappings", "Reelix finds finished downloads where each download app says they are. That is right for apps Starboard set up."),
       el("div", { class: "actions" }, add, savedNote("rx-mappings-saved"))]);
   };
-  return rxLockedSection("rx-mappings", "Path mappings", "When a download app and Reelix see the same folder under different names.", "extras", {}, draw, "show Reelix's path mappings", "mappings");
+  return rxLockedSection("rx-mappings", "Path mappings", "When a download app and Reelix name the same folder differently.", "extras", {}, draw, "show Reelix's path mappings", "mappings");
 }
 
-const RX_LIST_STATE = { ok: ["Up to date", "success"], updating: ["Updating", "info"], failed: ["Update failed", "danger"], never: ["Never updated", "warning"] };
+const RX_LIST_STATE = { ok: STATUS.upToDate, updating: STATUS.updating, failed: STATUS.failed, never: STATUS.neverUpdated };
 function rxSiteListSection() {
   const draw = (r, body) => {
     const sectionNode = body.closest("section");
@@ -940,7 +940,7 @@ function rxSiteListSection() {
     const again = r.syncing ? el("button", { type: "button", class: "btn btn--quiet", "data-check-again": true }, "Check again") : null;
     again?.addEventListener("click", async () => {
       try {
-        const o = await rxCall("extras", "site-list", {}, "see the site list");
+        const o = await rxCall("extras", "site-list", {}, "show the site list");
         if (o) { draw(o, body); ($("[data-check-again]", body) || $("button", body))?.focus(); announce(RX_LIST_STATE[o.state]?.[0] || ""); }
       }
       catch (e) { problem(e.message, again); }
@@ -954,7 +954,7 @@ function rxSiteListSection() {
       el("div", { class: "disclosure__body" }, el("ul", { class: "small" }, r.failed.map((f) => el("li", { text: `${f.id}: ${f.error}` }))))) : null;
     body.replaceChildren(...[
       r.state === "failed" ? notice("danger", "The last update failed", `${r.error} Reelix keeps the list it has. Try Update now later.`) : null,
-      r.syncing ? notice("info", "Reelix is updating the site list", "It takes a minute or so. Press Check again to see how it went.", again) : null,
+      r.syncing ? notice("info", "Reelix is updating the site list", "It takes a minute or so. Select Check again to find out how it went.", again) : null,
       el("ul", { class: "settings-rows" },
         settingRow("Update the site list automatically", "Reelix fetches the newest list of sites and how to search each one. Your sites and their settings stay as they are. Recommended.", el("label", { class: "switch" }, on), "rx-list-on-l"),
         settingRow("How often", "", every, "rx-list-every-l")),
@@ -995,6 +995,6 @@ function reelixAdminSections() {
       rxPeopleSection(),
       rxFormSection("books", "Books", "How Reelix handles books and audiobooks."),
       rxFormSection("music", "Music", "How Reelix handles albums."));
-  }).catch((e) => holder.replaceChildren(notice("danger", "Could not look", e.message)));
+  }).catch((e) => holder.replaceChildren(notice("danger", "Could not read Reelix's sites", e.message)));
   return holder;
 }

@@ -1,0 +1,10 @@
+# Genuine exceptions to tools/check_words.py: the file, a tab, a regular expression for the line, a tab, the reason.
+web/wanted-quality.html	Below the quality wanted	"Below" compares a quality with the one wanted; it is not a direction on the page (Wanted's own tab name)
+web/js/wanted.js	Below the quality wanted	"Below" compares a quality with the one wanted; it is not a direction on the page (Wanted's own tab name)
+web/js/library-search.js	Below the quality wanted	"Below" compares a quality with the one wanted; it is not a direction on the page (the Library's status filter)
+web/js/components.js	:not\(\[disabled\]\)	A CSS selector in the design system's copy, not words people read
+web/js/settings.js	£ above 3	A key's place on a physical keyboard, not a direction on the page
+web/js/settings.js	last look at their images|Look again on Apps, Updates	Branch dash-check-updates-whats-new rewrites these two lines (Check for updates, DASH-462); left so that merge stays clean
+docs/help/topics/get-what-is-missing.md	\*\*Below the quality wanted\*\*	Wanted's own tab name, quoted as the label; "below" compares a quality, it is not a direction
+docs/help/topics/prepare-a-raspberry-pi.md	\*\*Enable SSH\*\*	Raspberry Pi Imager's own label, quoted exactly
+docs/help/topics/start-on-debian.md	please insert the disc labeled	Debian's own message, quoted exactly

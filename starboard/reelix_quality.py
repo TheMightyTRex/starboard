@@ -124,7 +124,7 @@ def change(profile, changes):
         at = order.index("stop") if "stop" in order else 0
         below = [r for r, k in zip(best_first, keys) if order.index(k) > at and r["allowed"]]
         if not below:
-            raise ValueError("Move Stop upgrading here above at least one ticked quality")
+            raise ValueError("Move Stop upgrading here before at least one ticked quality")
         out["items"] = list(reversed(best_first))
         out["cutoff"] = _stop_id(below[0])
     if "upgrades" in changes:

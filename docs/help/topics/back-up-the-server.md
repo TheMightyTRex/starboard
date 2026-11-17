@@ -14,13 +14,13 @@ with [Back up and restore Starboard's settings](back-up-settings.md), which need
 - You installed Starboard with the installer, and you can use `sudo` on the server.
 - You know what you want to back up, such as each app's settings folder, and where to keep the backups.
 - You know the basics in [What Docker is](../basics/what-is-docker.md) and
-  [The terminal: typing commands](../basics/the-terminal.md).
+  [The terminal: entering commands](../basics/the-terminal.md).
 
 ## How it works
 
 Starboard and the job talk through two folders on the server:
 
-| Setting | What the folder is for | How Starboard sees it |
+| Setting | What the folder is for | Path inside Starboard |
 |---|---|---|
 | `STARBOARD_JOBS_DIR` | Holds a `requests` folder and the job's result files | Read-only, except `requests`, which it can write to |
 | `STARBOARD_BACKUP_DIR` | Where the job saves its backup files | Read-only |
@@ -31,7 +31,7 @@ Starboard and the job talk through two folders on the server:
 3. While it works and when it finishes, the job writes `backup.json` (or `backup-with-prompt.json`) in the
    jobs folder. Starboard reads it to show the result.
 
-The result file is JSON (a simple text format for data) with these fields:
+The result file is JSON (a text format for data) with these fields:
 
 | Field | What to put in it |
 |---|---|
@@ -158,7 +158,7 @@ Starboard lists the files in the backup folder that end in `.zip`, `.tar`, `.tar
          - /srv/backups:/backups:ro
    ```
 
-9. Open the `.env` file in the same folder and set the two folders as Starboard sees them:
+9. Open the `.env` file in the same folder and set the two folders as paths inside Starboard:
 
    ```
    STARBOARD_JOBS_DIR=/jobs

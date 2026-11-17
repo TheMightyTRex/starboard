@@ -72,7 +72,7 @@ Here is the journey of one film, from a request to your television:
 2. Reelix searches the sites you chose and picks the best copy.
 3. Reelix sends the download to qBittorrent, which runs through Gluetun's VPN.
 4. When the download finishes, Reelix moves the film into your films folder.
-5. Jellyfin sees the new film and shows it on your television.
+5. Jellyfin finds the new film and shows it on your television.
 
 ```flow
 title: How a film reaches you

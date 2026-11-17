@@ -1518,7 +1518,7 @@
        "minLength": 1,
        "maxLength": 120
       },
-      "description": "What to look for."
+      "description": "What to search for."
      }
     ],
     "responses": {
@@ -2014,7 +2014,7 @@
   "/api/v1/containers/check": {
    "post": {
     "operationId": "checkContainers",
-    "summary": "Look for newer images of the apps' containers now",
+    "summary": "Check for newer images of the apps' containers now",
     "tags": [
      "Apps"
     ],
@@ -2103,7 +2103,7 @@
   "/api/v1/version": {
    "get": {
     "operationId": "getVersion",
-    "summary": "Starboard's version, and the newest release when looking for new versions is active",
+    "summary": "Starboard's version, and the newest release when checking for new versions is active",
     "tags": [
      "System"
     ],
@@ -2616,7 +2616,7 @@
      "Updates"
     ],
     "x-scope": "updates",
-    "description": "Only for keys that ticked Updates: a key with no scopes does not have them. From what Starboard already knows (its release check, the last look for app updates and the catalogues it has read): nothing is fetched to answer. running is the update running now, if any.",
+    "description": "Only for keys that ticked Updates: a key with no scopes does not have them. From what Starboard already knows (its release check, the last check for app updates and the catalogues it has read): nothing is fetched to answer. running is the update running now, if any.",
     "parameters": [
      {
       "$ref": "#/components/parameters/limit"

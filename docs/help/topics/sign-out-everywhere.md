@@ -9,7 +9,7 @@ after you lose a phone, or when you signed in on someone else's computer.
 ## Steps
 
 1. Go to **Settings**, then **Security**.
-2. Activate **Advanced settings**, if it is not active already.
+2. Activate **More settings**, if it is not active already.
 3. Under **Sessions**, find **Sign out**, then select **Sign out everywhere**.
 4. Starboard asks **Sign out everywhere?** In **Your Starboard password**, enter the password.
 5. Select **Sign out everywhere** to confirm.

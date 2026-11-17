@@ -17,7 +17,7 @@ If that is new to you, use a VPN (virtual private network) instead. Read
 - A reverse proxy runs on the server, or on another computer on your home network, and it gets HTTPS
   certificates for your domain.
 - You can enter commands on the server and edit a file there. Read
-  [The terminal: typing commands](../basics/the-terminal.md).
+  [The terminal: entering commands](../basics/the-terminal.md).
 
 ## Steps
 
@@ -69,7 +69,7 @@ If that is new to you, use a VPN (virtual private network) instead. Read
 
 7. Open `https://starboard.example.com` and sign in.
 8. When every address you use for Starboard starts with `https`, go to **Settings**, then **Security**.
-   Activate **Advanced settings**. Then, under **Sessions**, activate **Only send the sign-in cookie over HTTPS**.
+   Activate **More settings**. Then, under **Sessions**, activate **Only send the sign-in cookie over HTTPS**.
 
 ## Things to note
 
@@ -89,8 +89,8 @@ If that is new to you, use a VPN (virtual private network) instead. Read
   exactly as it appears in the browser, without `https://`, then repeat step 5.
 - **You sign in but are sent back to the sign-in page:** **Only send the sign-in cookie over HTTPS** is active
   and the address starts with `http`. Sign in at your `https` address instead. If you still need the plain
-  address, deactivate the switch in **Settings**, **Security**, under **Advanced settings**.
-- **A few wrong passwords lock everyone out, not only one device:** Starboard sees every visit as coming
+  address, deactivate the switch in **Settings**, **Security**, under **More settings**.
+- **A few wrong passwords lock everyone out, not only one device:** Starboard treats every visit as coming
   from the proxy, because it does not trust it yet. Add the proxy's address to `STARBOARD_PROXY_ADDRESSES`,
   then repeat step 5.
 

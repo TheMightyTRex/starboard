@@ -24,7 +24,7 @@
         4,
         5
       ],
-      "alt": "The Make a key slide-out, with What it may do set to Read only (step 4), and What it may see with Apps and System ticked and Updates unticked (step 5) outlined"
+      "alt": "The Make a key slide-out, with What it may do set to Read only (step 4), and What it may read with Apps and System ticked and Updates unticked (step 5) outlined"
     },
     {
       "topic": "use-starboards-api",
@@ -81,7 +81,7 @@
       "steps": [
         3
       ],
-      "alt": "The Home Assistant key's slide-out, with what it may do and see, and Revoke (step 3) outlined"
+      "alt": "The Home Assistant key's slide-out, with May, Reads and Revoke (step 3) outlined"
     }
   ]
 }

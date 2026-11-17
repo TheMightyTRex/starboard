@@ -258,7 +258,7 @@ def _starboard_files(data_dir, pictures):
 def _app_folders(config_dir):
     code, text = _helper("cd /r && for d in */; do [ -d \"$d\" ] && printf '%s\\n' \"${d%/}\"; done", [f"{config_dir}:/r:ro"], timeout=60)
     if code:
-        raise BackupError(f"Starboard could not look in {config_dir}")
+        raise BackupError(f"Starboard could not open {config_dir}")
     return [n for n in text.splitlines() if n and folders.NAME.match(n) and not n.startswith(".")]
 
 
@@ -502,7 +502,7 @@ POOL = "/mnt/pool"  # the drive pool's one folder (start.storage): its disks are
 
 
 def _drives(data_dir):
-    """The mounted drives that are not the system disk (sysinfo.pool_candidates), or None with no drive list."""
+    """The mounted disks that are not the system disk (sysinfo.pool_candidates), or None with no disk list."""
     from . import sysinfo
     return sysinfo.pool_candidates(data_dir)
 
@@ -520,7 +520,7 @@ def disk_of(data_dir, folder, drives=False):
     except ValueError:
         return None
     if path == POOL or path.startswith(POOL + "/"):
-        return {"system": False, "name": "the drive pool", "mount": POOL, "others": len(drives)}
+        return {"system": False, "name": "the disk pool", "mount": POOL, "others": len(drives)}
     best = None
     for d in drives:
         m = (d.get("mount") or "").rstrip("/") or "/"

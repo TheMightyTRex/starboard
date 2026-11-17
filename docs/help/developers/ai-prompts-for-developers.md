@@ -121,7 +121,7 @@ The pages:
 ### An app plug-in
 
 For a whole app made by others, such as Seerr or Kavita, run by Starboard with its own web page on the home network.
-Paste in [Plug-in manifest reference](plugin-manifest-reference.md) (above all [App plug-ins](plugin-manifest-reference.md#app-plug-ins)
+Paste in [Plug-in manifest reference](plugin-manifest-reference.md) (in particular [App plug-ins](plugin-manifest-reference.md#app-plug-ins)
 and [Resources](plugin-manifest-reference.md#resources)) and [Test and publish a plug-in](test-and-publish-a-plugin.md).
 
 ```text
@@ -163,7 +163,7 @@ The pages:
 ### A plug-in that converts files
 
 For a plug-in that changes files in the media folder or Jellyfin's pictures, one at a time, such as Direct play or
-Picture shrinker. Paste in [Plug-in manifest reference](plugin-manifest-reference.md) (above all
+Picture shrinker. Paste in [Plug-in manifest reference](plugin-manifest-reference.md) (in particular
 [Adding files to the media folder](plugin-manifest-reference.md#adding-files-to-the-media-folder),
 [Jellyfin's metadata folder](plugin-manifest-reference.md#jellyfins-metadata-folder) and [Updates](plugin-manifest-reference.md#updates)),
 [Plug-in API reference](plugin-api-reference.md) and [Write a plug-in that updates safely](update-a-plugin-safely.md).

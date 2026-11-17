@@ -313,7 +313,7 @@ def follow(admin, seconds=4 * 3600, wait=3.0, sleep=time.sleep, on_progress=None
         if on_progress:
             on_progress(run)
         if time.time() - began > seconds:
-            raise reelix_setup.ReelixError("Reelix's move is taking longer than four hours. It carries on: see Reelix, System, Migrate")
+            raise reelix_setup.ReelixError("Reelix's move is taking longer than four hours. It carries on: go to Reelix, System, Migrate")
         sleep(wait)
 
 

@@ -17,7 +17,7 @@ follow [Install Starboard on a Raspberry Pi](install-on-a-raspberry-pi.md).
   [The four systems](../topics/what-you-need.md#the-four-systems).
 - The computer is connected to your home network, by cable or Wi-Fi.
 - You know the password you use to sign in to that computer. The terminal asks for it.
-- If the terminal is new to you, read [The terminal: typing commands](../basics/the-terminal.md) first.
+- If the terminal is new to you, read [The terminal: entering commands](../basics/the-terminal.md) first.
 
 ## The steps at a glance
 

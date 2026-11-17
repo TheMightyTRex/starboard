@@ -35,7 +35,7 @@ def clean_tmdb(value):
     parts = v.split(".") if len(v) <= 4096 and v.startswith("eyJ") else []  # three parts, each checked on its own
     if len(parts) == 3 and all(re.fullmatch(r"[A-Za-z0-9_-]+", p) for p in parts):
         return v
-    raise ValueError("That does not look like a TMDB key. Paste the API Read Access Token or the API key from themoviedb.org, Settings, API")
+    raise ValueError("That is not in the form of a TMDB key. Paste the API Read Access Token or the API key from themoviedb.org, Settings, API")
 
 
 def test_tmdb(value, opener=None):
@@ -104,7 +104,7 @@ def clean_usenet(server):
     if not host:
         return None
     if not HOST_RE.match(host):
-        raise ValueError("Type the server's address, such as news.example.com")
+        raise ValueError("Enter the server's address, such as news.example.com")
     use_ssl = bool(s.get("ssl", True))
     try:
         port = int(s.get("port") or (563 if use_ssl else 119))
@@ -133,7 +133,7 @@ def test_usenet(server, timeout=10):
     """Signs in to the news server the way a Usenet app would (NNTP AUTHINFO). Returns True, or raises ValueError."""
     s = clean_usenet(server)
     if not s:
-        raise ValueError("Type the server's address first")
+        raise ValueError("Enter the server's address first")
     try:
         raw = socket.create_connection((s["host"], s["port"]), timeout=timeout)
     except OSError:
