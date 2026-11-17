@@ -23,5 +23,6 @@ docker run --rm --memory 3g --memory-swap 3g --cpus 4 --network host -u "$(id -u
   "mcr.microsoft.com/playwright:v$PLAYWRIGHT-noble" \
   sh -c "mkdir -p /tmp/a && cp /j/a11y.mjs /j/order.mjs /j/tasks.mjs /j/layout.mjs /tmp/a/ && cd /tmp/a && npm init -y >/dev/null && npm i --silent playwright@$PLAYWRIGHT axe-core@$AXE_VERSION >/dev/null && if [ -n \"\$LAYOUT\" ]; then node layout.mjs; elif [ -n \"\$TASKS\" ]; then node tasks.mjs; elif [ -n \"\$ORDER\" ]; then OUT=/work/order.json node order.mjs; else node a11y.mjs; fi" || status=$?
 cp "$work"/a11y.json "$work"/order.json "$work"/layout.json tools/a11y/ 2>/dev/null || true
+cp "$work"/server.log tools/a11y/server.log 2>/dev/null || true  # the example server's log, to find what a failed check hit
 if [ -d "$work/shots" ]; then mkdir -p tools/a11y/shots && cp "$work"/shots/*.png tools/a11y/shots/; fi
 exit $status

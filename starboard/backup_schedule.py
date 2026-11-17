@@ -2,6 +2,8 @@
 
 - Off (the default): Starboard makes no backup by itself.
 - Manual: backups are made only by hand; the page reminds you when the newest is more than 30 days old.
+- Monthly (owner, 16 November 2026: "I also want monthly backups as a choice"): on the 1st of each month at 03:00,
+  keeping the newest 6.
 - Weekly: every Sunday at 03:00, keeping the newest 4.
 - Nightly: every night at 03:00, keeping the newest 7.
 
@@ -9,9 +11,10 @@ At the time, Starboard makes a Full without media copy when it set up the apps a
 key (full_backup.save_key), then asks the server's own backup job (STARBOARD_JOBS_DIR) when one is set up, telling it
 how many to keep. Either can run alone.
 
-Lightweight: with Off or Manual there is no thread at all. With Weekly or Nightly one thread sleeps until the next run
+Lightweight: with Off or Manual there is no thread at all. With Monthly, Weekly or Nightly one thread sleeps until the next run
 (waking at most every 6 hours to allow for the clock changing), so it uses no processor time in between. A run missed
-while Starboard was stopped is made once when it starts again, if it is less than a day late.
+while Starboard was stopped is made once when it starts again, if it is less than a day late; a monthly one is made
+once at any time before the next 1st, so a server that was off on the 1st still gets that month's backup.
 """
 
 import json
@@ -22,8 +25,8 @@ from datetime import datetime, timedelta
 
 from . import backup, full_backup, logs
 
-MODES = ("off", "manual", "weekly", "nightly")
-KEEP = {"weekly": 4, "nightly": 7}
+MODES = ("off", "manual", "monthly", "weekly", "nightly")  # least to most often, as the page lists them
+KEEP = {"monthly": 6, "weekly": 4, "nightly": 7}
 HOUR = 3
 REMIND_DAYS = 30
 STATE = "backup-schedule.json"
@@ -34,11 +37,18 @@ def keep_for(mode):
     return KEEP.get(mode, full_backup.KEEP)
 
 
+def _first_of_next_month(t):
+    return (t.replace(day=1) + timedelta(days=32)).replace(day=1)
+
+
 def next_run(mode, now):
     """The next run after now (a datetime), or None when nothing is scheduled."""
     if mode not in KEEP:
         return None
     t = now.replace(hour=HOUR, minute=0, second=0, microsecond=0)
+    if mode == "monthly":  # the 1st of the month: day=1 first, so a 29th, 30th or 31st never makes a date that is not there
+        t = t.replace(day=1)
+        return t if t > now else _first_of_next_month(t)
     if mode == "weekly":
         t += timedelta(days=(6 - t.weekday()) % 7)  # Sunday is 6
         return t if t > now else t + timedelta(days=7)
@@ -48,7 +58,16 @@ def next_run(mode, now):
 def previous_run(mode, now):
     """The last scheduled time at or before now, or None."""
     nxt = next_run(mode, now)
-    return None if nxt is None else nxt - timedelta(days=7 if mode == "weekly" else 1)
+    if nxt is None:
+        return None
+    if mode == "monthly":
+        return (nxt - timedelta(days=1)).replace(day=1)  # the 1st of the month before the next run
+    return nxt - timedelta(days=7 if mode == "weekly" else 1)
+
+
+def late_limit(mode):
+    """How late a missed run may still be made once when Starboard starts: a day, or a whole month for Monthly."""
+    return 31 * 86400 if mode == "monthly" else 86400
 
 
 class Scheduler:
@@ -82,7 +101,7 @@ class Scheduler:
     # The thread -------------------------------------------------------------------------------------------------
 
     def ensure(self):
-        """Call after the setting changes: starts the thread for Weekly or Nightly, or lets it end."""
+        """Call after the setting changes: starts the thread for Monthly, Weekly or Nightly, or lets it end."""
         with self.lock:
             state = self.load()
             mode = self.mode()
@@ -116,13 +135,15 @@ class Scheduler:
             self.run()
             time.sleep(1)
 
-    def _missed(self):
+    def _missed(self, now=None):
+        """True when a scheduled run was missed while Starboard was stopped and should be made once now."""
         mode, state = self.mode(), self.load()
-        prev = previous_run(mode, datetime.now())
+        now = now or datetime.now()
+        prev = previous_run(mode, now)
         if prev is None:
             return False
-        at = prev.timestamp()
-        return at > (state.get("since") or time.time()) and at > (state.get("last_run") or 0) and time.time() - at < 86400
+        at, then = prev.timestamp(), now.timestamp()
+        return at > (state.get("since") or then) and at > (state.get("last_run") or 0) and then - at < late_limit(mode)
 
     # One run ------------------------------------------------------------------------------------------------------
 

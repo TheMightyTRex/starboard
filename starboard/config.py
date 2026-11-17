@@ -9,7 +9,7 @@ import threading
 import time
 
 SCHEMA = 2
-BACKUP_SCHEDULES = ("off", "manual", "weekly", "nightly")
+BACKUP_SCHEDULES = ("off", "manual", "monthly", "weekly", "nightly")
 KEEP_VERSIONS = (5, 10, 20)
 
 SERVICE_TYPES = {
@@ -95,7 +95,8 @@ DEFAULTS = {
     # logging for reporting a problem. A Starboard from before 0.20 keeps the 60 days it had.
     "logs": {"keep_days": 30, "max_mb": 50, "detail": "off", "detail_until": 0},
     # Scheduled backups (DASH-17, owner, 9 November 2026): off, manual (by hand only, with a reminder when the newest
-    # is a month old), weekly (Sunday 03:00, keeping 4) or nightly (03:00, keeping 7). Settings, General, Backup and restore.
+    # is a month old), monthly (the 1st at 03:00, keeping 6; owner, 16 November 2026), weekly (Sunday 03:00, keeping 4) or
+    # nightly (03:00, keeping 7). Settings, General, Backup and restore.
     "backup_schedule": "off",
     # Settings copies Starboard saves by itself (DASH-109): those of the newest this many versions stay, older go.
     "backup_keep_versions": 5,

@@ -41,7 +41,9 @@ def main(scratch):
     ok = True
     with mock.patch.object(stack, "env_values", lambda d: env), mock.patch.object(stack, "host_folder", lambda d: os.path.join(data, "stack")):
         bc.save(data, {**bc.settings(data), "kind": "disk", "folder": os.path.join(scratch, "usb"), "keep": 3}, bc.secrets(data))
-        print("disk test:", bc.test(data))
+        got = bc.test(data)
+        print("disk test:", got)
+        ok &= bool(got and got["ok"])
         for n in names:
             said = bc._run(data, os.path.join(scratch, "backups", n))
         print("disk copy:", said)
@@ -60,7 +62,9 @@ def main(scratch):
             conf = f"[standin]\ntype = webdav\nurl = http://{GATEWAY}:{PORT}\nvendor = other\n"
             new, sec = bc.check(data, {"kind": "rclone", "remote": "standin:starboard", "rclone_config": conf, "keep": 2})
             bc.save(data, new, sec)
-            print("rclone test:", bc.test(data))
+            got = bc.test(data)
+            print("rclone test:", got)
+            ok &= bool(got and got["ok"])
             for n in names[-3:]:
                 said = bc._run(data, os.path.join(scratch, "backups", n))
             print("rclone copy:", said)
@@ -72,11 +76,9 @@ def main(scratch):
             subprocess.run(["docker", "stop", "sb-copies-standin"], capture_output=True)
         new, sec = bc.check(data, {"kind": "rclone", "remote": "standin:starboard", "rclone_config": conf.replace(str(PORT), "1"), "keep": 2})
         bc.save(data, new, sec)
-        try:
-            bc.test(data)
-            ok = False
-        except bc.CopyError as e:
-            print("a remote that does not answer:", e)
+        got = bc.test(data)  # Test connection (DASH-452): a result in words, kept, never an exception
+        ok &= not got["ok"]
+        print("a remote that does not answer:", got.get("error"))
     print("PASS" if ok else "FAIL")
     return 0 if ok else 1
 

@@ -8,6 +8,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 PORT="${JOURNEYS_PORT:-18794}"
 PLAYWRIGHT="1.63.0"
+# Playwright's node modules from a cache folder when there is one (PLAYWRIGHT_NPM_CACHE), as tools/screenshots.sh does.
+cache="${PLAYWRIGHT_NPM_CACHE:-/mnt/pool/build-cache/npm-playwright-1.63}"
+[ -d "$cache/node_modules/playwright" ] || cache=""
 work="$(mktemp -d)"
 trap 'kill "$server" 2>/dev/null || true; rm -rf "$work"' EXIT
 
@@ -19,5 +22,5 @@ grep -q READY "$work/server.log" || { cat "$work/server.log"; echo "The example 
 docker run --rm --memory 3g --memory-swap 3g --cpus 4 --network host -u "$(id -u):$(id -g)" -e HOME=/tmp \
   -e BASE="http://127.0.0.1:$PORT" -e PASSWORD_FILE=/work/data/password \
   -v "$work:/work" -v "$PWD/tools/journeys/journeys.mjs:/j/journeys.mjs:ro" -v "$PWD/web/js:/web-js:ro" \
-  "mcr.microsoft.com/playwright:v$PLAYWRIGHT-noble" \
-  sh -c "for f in /web-js/*.js; do node --check \$f || exit 1; done && echo 'PASS every page script parses' && mkdir -p /tmp/j && cp /j/journeys.mjs /tmp/j/ && cd /tmp/j && npm init -y >/dev/null && npm i --silent playwright@$PLAYWRIGHT >/dev/null && node journeys.mjs"
+  ${cache:+-v "$cache:/cache:ro"} "mcr.microsoft.com/playwright:v$PLAYWRIGHT-noble" \
+  sh -c "for f in /web-js/*.js; do node --check \$f || exit 1; done && echo 'PASS every page script parses' && mkdir -p /tmp/j && cp /j/journeys.mjs /tmp/j/ && cd /tmp/j && if [ -d /cache/node_modules/playwright ]; then ln -s /cache/node_modules node_modules; else npm init -y >/dev/null && npm i --silent playwright@$PLAYWRIGHT >/dev/null; fi && node journeys.mjs"

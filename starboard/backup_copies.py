@@ -20,6 +20,7 @@ never in a backup (full_backup.STARBOARD_SKIP) or sent back to the browser.
 import json
 import os
 import re
+import secrets as _random  # this module has its own secrets(): the share's password and rclone's config
 import socket
 import threading
 import time
@@ -30,9 +31,11 @@ KINDS = ("off", "disk", "smb", "nfs", "rclone")
 SETTINGS = "backup-copies.json"
 SECRET = "backup-copies-secret.json"
 STATUS = "backup-copies-status.json"
+TESTED = "backup-copies-test.json"  # the last Test connection, so the page shows it when opened again
 WORK = "backup-copy-work"
 RCLONE_IMAGE = "rclone/rclone:1.75.2@sha256:2687085f718d3c628f7fdfb77c52a1d344332aed543110bb88088f2c70d43eb5"
 KEEP_DEFAULT = 5
+TEST_LIMIT = 120  # Test connection: 2 minutes at most
 SMB_RE = re.compile(r"^//([A-Za-z0-9.-]{1,253}|\[[0-9A-Fa-f:]+\])/([^/\s\\,]{1,80})((?:/[^/\s\\,]{1,255}){0,20})$")
 NFS_RE = re.compile(r"^([A-Za-z0-9.-]{1,253}):(/[^\s,\\]{0,500})$")
 REMOTE_RE = re.compile(r"^([A-Za-z0-9_.][A-Za-z0-9_. -]{0,62}):([^\s\x00]{0,500})$")
@@ -72,7 +75,10 @@ def settings(data_dir):
     kind = s.get("kind") if s.get("kind") in KINDS else "off"
     return {"kind": kind, "folder": str(s.get("folder") or ""), "smb": str(s.get("smb") or ""), "smb_user": str(s.get("smb_user") or ""),
             "nfs": str(s.get("nfs") or ""), "remote": str(s.get("remote") or ""),
-            "keep": max(1, min(int(s.get("keep") or KEEP_DEFAULT), 50))}
+            "keep": max(1, min(int(s.get("keep") or KEEP_DEFAULT), 50)),
+            # Connect a cloud service (DASH-452): which service the wizard connected ("" for a remote pasted by hand),
+            # and how the person last signed in (browser or phone), offered first next time.
+            "service": str(s.get("service") or "") if kind == "rclone" else "", "signin_way": str(s.get("signin_way") or "")}
 
 
 def secrets(data_dir):
@@ -83,8 +89,28 @@ def secrets(data_dir):
 def public(data_dir):
     """What the page shows: the settings, whether each secret is set (never the secret), and the last copy."""
     sec = secrets(data_dir)
-    return {**settings(data_dir), "smb_password_set": bool(sec["smb_password"]), "rclone_config_set": bool(sec["rclone_config"]),
-            "status": status(data_dir), "where": where(settings(data_dir)), "kinds": list(KINDS)}
+    s = settings(data_dir)
+    return {**s, "smb_password_set": bool(sec["smb_password"]), "rclone_config_set": bool(sec["rclone_config"]),
+            "status": status(data_dir), "where": where(s), "where_words": where_words(s), "service_name": _service_name(s),
+            "kinds": list(KINDS), "tested": tested(data_dir)}
+
+
+def _service_name(s):
+    if s["kind"] != "rclone" or not s["service"]:
+        return ""
+    from . import cloud_connect
+    try:
+        return cloud_connect.service(s["service"])["name"]
+    except cloud_connect.CloudError:
+        return ""
+
+
+def where_words(s):
+    """The other place for people: "Google Drive, starboard-backups" for a service the wizard connected."""
+    name = _service_name(s)
+    if name and s["remote"].startswith("starboard-cloud:"):
+        return f"{name}, {s['remote'].split(':', 1)[1] or 'the top folder'}"
+    return where(s)
 
 
 def where(s):
@@ -145,10 +171,15 @@ def check(data_dir, incoming):
         if m.group(1) not in remote_names(sec["rclone_config"]):
             raise ValueError(f"Paste the part of your rclone.conf that starts with [{m.group(1)}]: rclone config file shows where it is")
         new["remote"] = remote
+        if remote != old["remote"] or config:
+            new["service"] = ""  # pasted by hand: no longer the wizard's service
     return new, sec
 
 
 def save(data_dir, new, sec):
+    before = settings(data_dir)
+    if (before["kind"], where(before)) != (new.get("kind"), where({**before, **new})):
+        _write(os.path.join(data_dir, STATUS), {"state": "none"})  # the last copy was to the other place (DASH-452)
     _write(os.path.join(data_dir, SETTINGS), new)
     _write(os.path.join(data_dir, SECRET), sec, private=True)
 
@@ -157,6 +188,17 @@ def save(data_dir, new, sec):
 
 def status(data_dir):
     return _read(os.path.join(data_dir, STATUS), {"state": "none"})
+
+
+def tested(data_dir):
+    """The last Test connection for the place set up now, or None (a test of another place does not count)."""
+    t = _read(os.path.join(data_dir, TESTED), {})
+    return t if t and t.get("where") == where(settings(data_dir)) and t.get("kind") == settings(data_dir)["kind"] else None
+
+
+def save_test(data_dir, result):
+    s = settings(data_dir)
+    _write(os.path.join(data_dir, TESTED), {**result, "where": where(s), "kind": s["kind"], "at": result.get("at") or time.time()})
 
 
 def _say(data_dir, **kw):
@@ -176,17 +218,14 @@ def _backup_folder(data_dir):
         return ""
 
 
-def _helper(script, binds, image=None, network="none", volumes=(), timeout=7200):
+def _helper(script, binds, image=None, network="none", volumes=(), timeout=7200):  # noqa: C901
     """A short-lived helper container (the backup helper, or rclone's image for a cloud remote): (exit code, output)."""
     from . import containers
     image = image or containers.HELPER_IMAGE
     if image == containers.HELPER_IMAGE:
         containers.ensure_image()  # DASH-438: downloaded first if it is missing
     elif image == RCLONE_IMAGE:
-        try:
-            containers.docker("POST", f"/images/create?fromImage={RCLONE_IMAGE.split('@')[0].split(':')[0]}&tag={RCLONE_IMAGE.split('@')[1]}", raw=True, timeout=600)
-        except containers.DockerError:
-            pass  # it may be here already; the create below says if it is not
+        _pull(RCLONE_IMAGE)
     body = {"Image": image, "Entrypoint": ["sh", "-c"], "Cmd": [script], "Labels": {"starboard.updater": "1"},
             "HostConfig": {"Binds": list(binds) + [f"{v}:/t" for v in volumes], "NetworkMode": network}}
     cid = containers.docker("POST", f"/containers/create?name=starboard-copy-{int(time.time() * 1000)}", body)["Id"]
@@ -205,6 +244,20 @@ def _helper(script, binds, image=None, network="none", volumes=(), timeout=7200)
         text += raw[i + 8:i + 8 + n]
         i += 8 + n
     return code, text.decode("utf-8", "replace")
+
+
+def _pull(image):
+    """rclone's pinned image, downloaded when it is not here yet."""
+    from . import containers
+    try:
+        containers.docker("GET", f"/images/{image}/json")
+        return
+    except containers.DockerError:
+        pass
+    try:
+        containers.docker("POST", f"/images/create?fromImage={image.split('@')[0].split(':')[0]}&tag={image.split('@')[1]}", raw=True, timeout=600)
+    except containers.DockerError:
+        pass  # the create that follows says if it is not here
 
 
 def _address(host):
@@ -283,8 +336,12 @@ def _run(data_dir, source, test=False):
             volumes = [_share_volume(s, sec, env)]
         own = f" && chown {int(env.get('PUID') or 1000)}:{int(env.get('PGID') or 1000)} {_q(inner)}/{_q(name)}" if s["kind"] == "disk" else ""
         if test:
-            script = (f"mkdir -p {_q(inner)} && touch {_q(inner)}/.starboard-test && rm -f {_q(inner)}/.starboard-test && "
-                      + count.format(inner=_q(inner)))
+            # Test connection (DASH-452): reach the folder, write a small file, read it back, remove it, then the room left.
+            mark = _random.token_hex(6)
+            t = f"{_q(inner)}/.starboard-test-{mark}"
+            script = (f"mkdir -p {_q(inner)} && echo STEP-FOLDER && echo starboard-{mark} > {t} && echo STEP-WRITE && "
+                      f"[ \"$(cat {t})\" = starboard-{mark} ] && echo STEP-READ && rm -f {t} && echo STEP-REMOVE && "
+                      f"echo FREE $(( $(df -Pk {_q(inner)} | awk 'NR==2 {{print $4}}') * 1024 )) && " + count.format(inner=_q(inner)))
         else:
             # A .part is never a backup: one left by a copy that was cut off goes first, as in the backup folder.
             script = (f"mkdir -p {_q(inner)} && find {_q(inner)} -maxdepth 1 -name 'starboard-full-*.starboard.part' -delete && "
@@ -293,12 +350,15 @@ def _run(data_dir, source, test=False):
                       f"mv {_q(inner)}/{_q(name + '.part')} {_q(inner)}/{_q(name)} && chmod 600 {_q(inner)}/{_q(name)}{own} && "
                       + _prune_script(inner, s["keep"]) + " && " + count.format(inner=_q(inner)))
         try:
-            code, said = _helper(script, binds, volumes=volumes)
+            code, said = _helper(f"timeout {TEST_LIMIT} sh -c {_q(script)}" if test else script, binds, volumes=volumes,
+                                 timeout=TEST_LIMIT + 30 if test else 7200)
         finally:
             for v in volumes:
                 _let_go(v)
     else:
         code, said = _rclone(data_dir, s, sec, binds, src if source else "", name, test)
+    if test:
+        return code, said
     if code:
         raise CopyError(_plain(said, s))
     m = re.search(r"COUNT (\d+)", said)
@@ -333,12 +393,14 @@ def _rclone(data_dir, s, sec, binds, src, name, test):
              f"while read -r old; do {rc} deletefile {_q(base)}\"$old\" || exit 5; done")
     count = f"echo COUNT $({rc} lsf --files-only {_q(remote)} | grep -cE {_q(BACKUP_GLOB)})"
     if test:
-        script = f"{rc} mkdir {_q(remote)} && {rc} lsf --max-depth 1 {_q(remote)} >/dev/null && {count}"
+        from . import cloud_connect
+        script = f"timeout {TEST_LIMIT} sh -c {_q(cloud_connect.test_script(remote, _random.token_hex(6)))}"
     else:
         script = f"{rc} copyto {_q(src)} {_q(base + name)} && {prune} && {count}"
     script = f"{script}; code=$?; chown {owner} /c/rclone.conf 2>/dev/null; chmod 600 /c/rclone.conf 2>/dev/null; exit $code"
     try:
-        code, said = _helper(script, binds + [f"{os.path.dirname(host)}/{WORK}:/c"], image=RCLONE_IMAGE, network="bridge")
+        code, said = _helper(script, binds + [f"{os.path.dirname(host)}/{WORK}:/c"], image=RCLONE_IMAGE, network="bridge",
+                             timeout=TEST_LIMIT + 30 if test else 7200)
         try:
             with open(conf, encoding="utf-8") as f:
                 after = f.read()
@@ -429,18 +491,47 @@ def copy_now(data_dir):
     return status(data_dir)
 
 
+def newest_size(data_dir):
+    """The size of the newest full backup, for the room check, or None."""
+    path = newest(data_dir)
+    try:
+        return os.path.getsize(path) if path else None
+    except OSError:
+        return None
+
+
 def test(data_dir):
-    from . import containers
+    """Test connection (DASH-452, owner, 16 November 2026: "Can you add a test button to items to check they are connected
+    ok?"): reach the place, write a small file, read it back, remove it, check there is room for the newest backup and,
+    for a cloud service, that the sign-in still works. The result is kept, so the page shows it when opened again."""
+    from . import cloud_connect, containers
     if not containers.available():
         raise CopyError("Starboard needs Docker access to make copies")
+    s = settings(data_dir)
+    if s["kind"] == "off":
+        raise CopyError("Choose where the copies go first")
     if not _lock.acquire(blocking=False):
         raise CopyError("A test is running already")
     try:
-        return _run(data_dir, "", test=True)
+        try:
+            code, said = _run(data_dir, "", test=True)
+        except CopyError as e:
+            code, said = 1, str(e)
+        signin = "oauth" if s["kind"] == "rclone" and s["service"] in ("drive", "onedrive", "dropbox") else ""
+        result = cloud_connect.read_test(said, code, None, newest_size(data_dir), signin=signin)
+        if result["ok"]:
+            m = re.search(r"COUNT (\d+)", said)
+            result["count"] = int(m.group(1)) if m else None
+        save_test(data_dir, result)
+        return tested(data_dir)
     finally:
         _lock.release()
 
 
 def forget(data_dir):
     """Copies stop: the settings go back to Off and the kept passwords go. Copies already made stay where they are."""
-    save(data_dir, {**settings(data_dir), "kind": "off"}, {"smb_password": "", "rclone_config": ""})
+    save(data_dir, {**settings(data_dir), "kind": "off", "service": ""}, {"smb_password": "", "rclone_config": ""})
+    try:
+        os.remove(os.path.join(data_dir, TESTED))
+    except OSError:
+        pass

@@ -193,10 +193,12 @@ class App:
             self.schedule.start()
         from .config import prune_saved
         prune_saved(os.path.join(data_dir, "backups"), self.config.data.get("backup_keep_versions", 5))  # DASH-109
-        from . import backup_schedule  # DASH-17: a thread only while Weekly or Nightly is chosen
+        from . import backup_schedule  # DASH-17: a thread only while Monthly, Weekly or Nightly is chosen
         self.backup_schedule = backup_schedule.Scheduler(self)
         if os.environ.get("STARBOARD_SCHEDULE", "1") != "0":
             self.backup_schedule.ensure()
+        from . import cloud_connect  # DASH-452: a cloud sign-in helper left by a Starboard that stopped part way goes
+        threading.Thread(target=cloud_connect.tidy_leftovers, name="cloud-tidy", daemon=True).start()
         self.repo = os.environ.get("STARBOARD_REPO", "")  # "owner/name" for the update check; optional
         from . import self_update  # an update from the page that was running when Starboard restarted (DASH-417)
         self_update.resume(self)
@@ -2701,7 +2703,12 @@ class Handler(BaseHTTPRequestHandler):
                         logs.event("info", "backup", f"Copies off this computer: {new['kind']} {backup_copies.where(new)}".strip())
                         return self.json(200, backup_copies.public(app.data_dir))
                     if path == "/api/backup/copies/test" and method == "POST":
-                        return self.json(200, {**backup_copies.public(app.data_dir), "said": backup_copies.test(app.data_dir)})
+                        # Test connection (DASH-452): write, read back, remove, room and sign-in; the result is kept.
+                        result = backup_copies.test(app.data_dir)
+                        logs.event("info" if result and result.get("ok") else "warning", "backup",
+                                   f"Test connection, {backup_copies.where(backup_copies.settings(app.data_dir))}: "
+                                   + ("connected" if result and result.get("ok") else (result or {}).get("error", "did not work").split("|")[-1]))
+                        return self.json(200, {**backup_copies.public(app.data_dir), "tested": result})
                     if path == "/api/backup/copies/now" and method == "POST":
                         backup_copies.copy_now(app.data_dir)
                         logs.event("info", "backup", "Copy off this computer started by hand")
@@ -2715,6 +2722,43 @@ class Handler(BaseHTTPRequestHandler):
                     return self.error(400, str(e))
                 except containers.DockerError as e:
                     return self.error(400, f"Docker did not do it: {e}")
+            if path.startswith("/api/backup/cloud"):  # Connect a cloud service (DASH-452): the wizard's steps
+                from . import cloud_connect
+                data = self.body(limit=64 * 1024) if method == "POST" else {}
+                try:
+                    if path == "/api/backup/cloud/services" and method == "GET":
+                        from . import backup_copies
+                        s = backup_copies.settings(app.data_dir)
+                        return self.json(200, {"services": cloud_connect.offered(), "last_way": s.get("signin_way") or "browser", "keep": s["keep"],
+                                               "session": cloud_connect.current()})
+                    if path == "/api/backup/cloud/session" and method == "GET":
+                        return self.json(200, cloud_connect.current())
+                    if path == "/api/backup/cloud/start" and method == "POST":
+                        return self.json(200, cloud_connect.start(app.data_dir, str(data.get("service") or ""), str(data.get("way") or "browser")))
+                    if path == "/api/backup/cloud/answer" and method == "POST":
+                        return self.json(200, cloud_connect.answer(str(data.get("id") or ""), data.get("address")))
+                    if path == "/api/backup/cloud/details" and method == "POST":
+                        return self.json(200, cloud_connect.details(str(data.get("id") or ""), data.get("values") or {}))
+                    if path == "/api/backup/cloud/folders" and method == "POST":
+                        return self.json(200, cloud_connect.folders(str(data.get("id") or "")))
+                    if path == "/api/backup/cloud/test" and method == "POST":
+                        return self.json(200, cloud_connect.test(str(data.get("id") or ""), data.get("folder")))
+                    if path == "/api/backup/cloud/save" and method == "POST":
+                        self.check_password(data)  # as every change to where the copies go
+                        new = cloud_connect.save(app.data_dir, str(data.get("id") or ""), data.get("keep"))
+                        logs.event("info", "backup", f"Copies off this computer: connected {new['service']}, {new['remote']}")
+                        from . import backup_copies
+                        return self.json(200, backup_copies.public(app.data_dir))
+                    if path == "/api/backup/cloud/cancel" and method == "POST":
+                        return self.json(200, cloud_connect.cancel())
+                except ValueError as e:
+                    field, _, text = str(e).rpartition("|")
+                    return self.json(400, {"error": text, "field": field or None})
+                except cloud_connect.CloudError as e:
+                    return self.error(400, str(e))
+                except containers.DockerError as e:
+                    return self.error(400, f"Docker did not do it: {e}")
+                return self.error(404, "Not found")
             if path.startswith("/api/backup/full"):  # Full without media (DASH-260)
                 from . import backup_schedule, full_backup
                 q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
