@@ -221,7 +221,7 @@ class SetUpHelperTest(unittest.TestCase):
             helper = subprocess.Popen(["bash", os.path.join(d, "starter.sh")], cwd=d, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             try:
                 progress = os.path.join(d, "data", "stack", "host-progress.json")
-                for _ in range(40):
+                for _ in range(120):  # up to 30 s: a busy runner once took over 10 s
                     if os.path.exists(progress) and json.loads(Path(progress).read_text())["state"] != "running":
                         break
                     time.sleep(0.25)

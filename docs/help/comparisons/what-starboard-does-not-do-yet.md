@@ -11,8 +11,8 @@ lists them as they are in Starboard 0.20.2.
 - **Subtitles from Reelix.** Reelix does not get subtitles itself. Bazarr gets them, and every install includes it.
 - **Subtitles for items that have none.** Starboard does not make subtitles, for example by speech recognition.
 - **One file for each audiobook.** Starboard does not join an audiobook's parts into one file.
-- **A calendar feed.** Coming up is a page in Starboard. Starboard does not offer it as a feed for a phone's
-  calendar.
+- **A calendar feed.** Coming up is a page in Starboard, and it does not give an address for a phone's calendar.
+  Reelix has a calendar feed of its own, but Starboard does not show its address yet.
 - **Unmanic.** Starboard does not offer Unmanic. To convert films and series to save space, add the Tdarr plug-in.
 
 ## Apps Starboard does not include
