@@ -1291,6 +1291,12 @@ async function setupWizard({ opener = document.activeElement, onChange } = {}) {
       const keep = () => { if (!acted && document.activeElement === frame && frame.isConnected) heading.focus(); };
       window.addEventListener("blur", () => setTimeout(keep, 0));
       frame.addEventListener("load", () => { keep(); setTimeout(keep, 800); setTimeout(keep, 2000); });
+      // Escape inside the step's page closes the slide-out too, as it does everywhere else in it (the page is
+      // Starboard's own, so its keys can be heard here); focus then goes back to Go through them.
+      const escape = (e) => { if (e.key === "Escape" && panel.layer.isConnected) { e.preventDefault(); panel.close(); } };
+      const listen = () => { try { frame.contentWindow.addEventListener("keydown", escape); } catch { /* not ours to hear */ } };
+      frame.addEventListener("load", listen);
+      listen();
     }
     const doneBtn = item.guided ? el("button", { type: "button", class: "btn" }, "Done") : null;
     doneBtn?.addEventListener("click", async () => {
