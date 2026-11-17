@@ -19,6 +19,9 @@ add features.
 - **A check for banned words:** tools/checks.sh now fails on the design system's banned words in the pages, their scripts and the help, with each exception and its reason in tools/words-allowed.txt. The plug-in tester also warns about contractions, "see" and "look", "click", exclamation marks, em dashes and Title Case in a plug-in's labels, hints and confirm texts.
 - **Install all updates shows from one update (DASH-462):** It used to show only when two or more updates were ready; now it shows for one, as Install 1 update, with the same order, holds and confirmation. Jellyfin plug-ins that Check for updates found are named in the list and counted.
 
+### Fixed
+- **Reading the Jellyfin plug-ins list changed Jellyfin (DASH-409, #147):** Opening Settings, Apps, Jellyfin finished the set-up of Intro Skipper and Merge Versions even when you had added them in Jellyfin yourself, which changed their settings and schedules. Starboard now finishes the set-up only for a plug-in it installed or activated for you; one you added in Jellyfin keeps its own settings, and reading the list changes nothing.
+
 ## [0.20.2] (17 November 2026)
 
 ### Fixed
