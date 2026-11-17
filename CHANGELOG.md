@@ -7,6 +7,11 @@ add features.
 
 ## [Unreleased]
 
+## [0.20.2] (17 November 2026)
+
+### Fixed
+- **Update now could stop at the backup:** Update now on the page could stop with "tar: data/self-update.log.new: No such file or directory" while backing up your settings. The page's update helper rewrites its progress log after every line, and its BusyBox tar looks each file up before it checks what to leave out, so the log being renamed away mid-read stopped it. The helper now writes the half-made log beside the data folder, not in it, and a backup that fails is tried again, up to three times. Updating from 0.20.1 or earlier still uses the installed helper: if it stops, choose Update now again, or run ./update.sh on the server.
+
 ## [0.20.1] (17 November 2026)
 
 ### Fixed
@@ -1415,7 +1420,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused. Help: [Pause, resume and remove downloads](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/manage-downloads.md).
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.20.1...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.20.2...HEAD
+[0.20.2]: https://github.com/TheMightyTRex/starboard/compare/v0.20.1...v0.20.2
 [0.20.1]: https://github.com/TheMightyTRex/starboard/compare/v0.20.0...v0.20.1
 [0.20.0]: https://github.com/TheMightyTRex/starboard/compare/v0.19.1...v0.20.0
 [0.19.1]: https://github.com/TheMightyTRex/starboard/compare/v0.19.0...v0.19.1

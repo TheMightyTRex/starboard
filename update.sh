@@ -158,8 +158,19 @@ backup_data() {  # backup_data <file>
     gnu=1
     opts=(--warning=no-file-changed --warning=no-file-removed "${opts[@]}")
   fi
-  (umask 077 && tar -czf "$1" "${opts[@]}" data) || code=$?  # private backup
-  if [ "$gnu" = 1 ]; then [ "$code" -le 1 ] || return 1; else [ "$code" -eq 0 ] || return 1; fi
+  local tries=1
+  while :; do
+    code=0
+    (umask 077 && tar -czf "$1" "${opts[@]}" data) || code=$?  # private backup
+    if [ "$gnu" = 1 ]; then [ "$code" -le 1 ] && break; else [ "$code" -eq 0 ] && break; fi
+    # BusyBox tar (in the page's update helper) looks each file up before its --exclude list, so a file renamed away
+    # while it reads the folder stops it even when it is left out. Such a race passes on the next try (17 November
+    # 2026: Update now to 0.20.1 stopped on data/self-update.log.new).
+    [ "$tries" -lt 3 ] || return 1
+    echo "A file changed while it was backed up; trying again ($tries of 3)." >&2
+    tries=$((tries + 1))
+    sleep 1
+  done
   [ -s "$1" ] && tar -tzf "$1" >/dev/null || { echo "The backup $1 could not be read back."; return 1; }
 }
 

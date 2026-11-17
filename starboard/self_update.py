@@ -58,7 +58,8 @@ WRAPPER = r"""set -u
 cd "$STARBOARD_FOLDER" || exit 1
 log=data/self-update.log
 tmp="$(mktemp)"
-write() { cp "$tmp" "$log.new" 2>/dev/null && mv -f "$log.new" "$log" 2>/dev/null; return 0; }
+next=.self-update.log.new  # beside data, not in it, so the backup of data never meets it half-renamed (17 November 2026)
+write() { cp "$tmp" "$next" 2>/dev/null && mv -f "$next" "$log" 2>/dev/null; return 0; }
 say() { printf '%s\n' "$1" >> "$tmp"; write; }
 run() {
   if [ ! -f update.sh ] || [ ! -d .git ]; then
@@ -73,7 +74,7 @@ say "== Preparing the update"
 run 2>&1 | while IFS= read -r line; do say "$line"; done
 code=${PIPESTATUS[0]}
 say "@@ finished $code"
-rm -f "$tmp"
+rm -f "$tmp" "$next"
 exit "$code"
 """
 

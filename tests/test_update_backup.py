@@ -161,3 +161,71 @@ class BusyBoxTarTest(unittest.TestCase):
         done = self.run_backup()
         self.assertNotEqual(done.returncode, 0)
         self.assertIn("could not be read back", done.stdout)
+
+
+class RaceWithThePageHelperTest(unittest.TestCase):
+    """17 November 2026: Update now to 0.20.1 stopped at the backup with "tar: data/self-update.log.new: No such file
+    or directory" once more. The page's helper has BusyBox tar, which looks each file up before its --exclude list, so
+    leaving the log out did not help when the helper renamed it away mid-read. The helper now writes its half-made
+    log beside data, not in it, and a backup that fails is tried again, up to three times."""
+
+    setUp = BusyBoxTarTest.setUp
+    tearDown = BusyBoxTarTest.tearDown
+    fake_tar = BusyBoxTarTest.fake_tar
+    run_backup = BusyBoxTarTest.run_backup
+
+    def busybox_failing(self, times):
+        real = subprocess.run(["bash", "-c", "command -v tar"], capture_output=True, text=True).stdout.strip()
+        self.fake_tar(f'[ "${{1:-}}" = --version ] && {{ echo "tar (busybox) 1.37.0"; exit 0; }}\n'
+                      f'case "$*" in *-tzf*) exec {real} "$@";; esac\n'
+                      f'n=$(cat {self.dir}/calls 2>/dev/null || echo 0); echo $((n + 1)) > {self.dir}/calls\n'
+                      f'if [ "$n" -lt {times} ]; then echo "tar: data/self-update.log.new: No such file or directory" >&2; '
+                      f'echo "tar: error exit delayed from previous errors" >&2; exit 1; fi\n'
+                      f'exec {real} "$@"\n')
+
+    def calls(self):
+        return int((self.dir / "calls").read_text())
+
+    def test_a_file_renamed_away_is_tried_again(self):
+        self.busybox_failing(1)
+        done = self.run_backup()
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        self.assertEqual(self.calls(), 2)
+        self.assertIn("trying again (1 of 3)", done.stderr)
+        with tarfile.open(self.dir / "backup.tar.gz") as t:
+            self.assertIn("data/config.json", t.getnames())
+
+    def test_three_failures_stop_the_update(self):
+        self.busybox_failing(99)
+        done = self.run_backup()
+        self.assertNotEqual(done.returncode, 0)
+        self.assertEqual(self.calls(), 3)
+        self.assertIn("No such file or directory", done.stderr)
+
+    def test_the_helper_writes_its_half_made_log_outside_data(self):
+        from starboard import self_update
+        self.assertIn("next=.self-update.log.new", self_update.WRAPPER)
+        self.assertNotIn('"$log.new"', self_update.WRAPPER)
+        self.assertIn(".self-update.log.new", (ROOT / ".gitignore").read_text(encoding="utf-8").split())
+
+    def test_real_busybox_tar_beside_a_racing_log(self):
+        """With the page helper's own image, when it is on this computer: the old helper's renames inside data, as fast
+        as they come, while the backup runs ten times. Every backup must be made."""
+        import shutil
+        if not shutil.which("docker"):
+            self.skipTest("Docker is not here")
+        images = subprocess.run(["docker", "images", "--format", "{{.Repository}}:{{.Tag}}", "starboard-updater"],
+                                capture_output=True, text=True).stdout.split()
+        if not images:
+            self.skipTest("the page helper's image is not on this computer")
+        for i in range(300):
+            (self.dir / "data" / f"f{i}").write_text("x")
+        (self.dir / "functions.sh").write_text(functions())
+        script = ('set -u\n. ./functions.sh\n'
+                  '(while :; do echo l >> t; cp t data/self-update.log.new && mv -f data/self-update.log.new data/self-update.log; done) &\n'
+                  'w=$!; ok=0\nfor i in 1 2 3 4 5 6 7 8 9 10; do backup_data b.tgz 2>>err && ok=$((ok + 1)); done\n'
+                  'kill $w; echo "made $ok"\n')
+        done = subprocess.run(["docker", "run", "--rm", "--network", "none", "--memory", "256m", "-u", f"{os.getuid()}:{os.getgid()}",
+                               "-v", f"{self.dir}:/w", "-w", "/w", "--entrypoint", "bash", images[0], "-c", script],
+                              capture_output=True, text=True, timeout=300)
+        self.assertIn("made 10", done.stdout, done.stdout + done.stderr + (self.dir / "err").read_text() if (self.dir / "err").exists() else done.stderr)

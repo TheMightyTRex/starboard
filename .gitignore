@@ -31,3 +31,4 @@ tools/a11y/shots/
 
 # Claude Code: personal settings stay out of the repository (.claude/settings.json is shared)
 .claude/settings.local.json
+.self-update.log.new
