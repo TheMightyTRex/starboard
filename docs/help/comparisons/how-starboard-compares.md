@@ -50,7 +50,7 @@ dashboard and runs everything else, so everything is in one place.
 <tr><th scope="row">Subtitles</th><td>With Bazarr, for now</td><td>With Bazarr</td><td>With Bazarr</td><td>Built into Plex</td></tr>
 <tr><th scope="row">Watch statistics</th><td>With Jellystat (Full install)</td><td>With an add-on, such as Jellystat</td><td>With Jellystat</td><td>Built in, or Tautulli</td></tr>
 <tr><th scope="row">Skip intros and credits</th><td>Not yet</td><td>With a Jellyfin plug-in</td><td>With a Jellyfin plug-in</td><td>Built into Plex</td></tr>
-<tr><th scope="row">Library clean-up rules</th><td>Not yet</td><td>With an add-on, such as Maintainerr</td><td>With an add-on</td><td>With an add-on</td></tr>
+<tr><th scope="row">Library clean-up rules</th><td>With the Library clean-up plug-in</td><td>With an add-on, such as Maintainerr</td><td>With an add-on</td><td>With an add-on</td></tr>
 <tr><th scope="row">Notifications by email, Telegram or Discord</th><td>Not yet in Starboard; Reelix has some</td><td>In each app, or an add-on</td><td>In each app, or an add-on</td><td>In each app, or an add-on</td></tr>
 <tr><th scope="row">Use from away from home without opening your router</th><td>Not yet; a guide covers other ways</td><td>With an add-on</td><td>With an add-on</td><td>Plex Relay, now paid for remote play</td></tr>
 </tbody>
