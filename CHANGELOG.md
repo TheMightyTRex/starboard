@@ -21,6 +21,7 @@ add features.
 
 ### Fixed
 - **Reading the Jellyfin plug-ins list changed Jellyfin (DASH-409, #147):** Opening Settings, Apps, Jellyfin finished the set-up of Intro Skipper and Merge Versions even when you had added them in Jellyfin yourself, which changed their settings and schedules. Starboard now finishes the set-up only for a plug-in it installed or activated for you; one you added in Jellyfin keeps its own settings, and reading the list changes nothing.
+- **A plug-in job's failure said only "HTTP Error 502: Bad Gateway" (DASH-448, #145):** When a plug-in's job failed, System, Jobs and the log kept only the status line of the answer. They now keep the plug-in's own reason as well, for example "HTTP Error 403: Forbidden (the plug-in answered 502: Bad Gateway)", and Settings, Plug-ins shows that reason beside the job whose last run failed.
 
 ## [0.20.2] (17 November 2026)
 

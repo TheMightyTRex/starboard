@@ -441,7 +441,7 @@ def listing(data_dir):
                      for x in m.get("styles") or [] if isinstance(x, dict)]
             from . import plugin_life
             out.append({**summary(m, []), "logo": logo_info(data_dir, pid, m), "looks": looks, "builtin": bool(st.get("builtin")), "state": st.get("state", "installed"), "installed_at": st.get("installed_at"),
-                        "status": plugin_life.status(data_dir, pid, m, st), "whats_new": plugin_life.whats_new(data_dir, pid, m, st), "jobs": [j.get("label") for j in m.get("jobs") or []],
+                        "status": plugin_life.status(data_dir, pid, m, st), "whats_new": plugin_life.whats_new(data_dir, pid, m, st), "jobs": job_lines(data_dir, pid, m),
                         "message": st.get("message", ""), "settings": public_settings(data_dir, pid, m),
                         "web": web_pages(data_dir, pid, m, st), "publishes": bool(plugins.published_lan(m)),
                         "adopt": adopt_info(m), "adopted": st.get("adopted"),
@@ -449,6 +449,14 @@ def listing(data_dir):
                         "from_zip": bool(plugins.builds(m)) or os.path.isdir(os.path.join(where, "zips")),
                         "libraries": st.get("libraries")})
     return out
+
+
+def job_lines(data_dir, pid, m):
+    """Each job's label for Settings, Plug-ins, with why its last run failed when it did (DASH-448)."""
+    from . import plugin_life
+    failed = plugin_life.last_failure(data_dir, pid)
+    return [f"{j.get('label')}. Last run failed: {failed[j.get('id')]}" if failed.get(j.get("id")) else j.get("label")
+            for j in m.get("jobs") or []]
 
 
 # Plug-ins the set-up offers (DASH-399): the extras key the tick saves, and the plug-in it asks for. Ticking saves a
