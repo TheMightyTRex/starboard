@@ -229,6 +229,13 @@ class JellyfinPlugins(unittest.TestCase):
     def test_up_to_date(self):
         self.assertEqual(self.run_now()["state"], "up-to-date")
 
+    def test_status_says_when_a_restart_is_needed(self):
+        """Settings, Updates shows Restart Jellyfin when new versions wait for a restart (DASH-470)."""
+        st = au.jellyfin_status(self.app)
+        self.assertEqual((st["restart"], st["can_restart"]), (False, True))
+        self.jf.pending = True
+        self.assertTrue(au.jellyfin_status(self.app)["restart"])
+
     def test_jellyfins_own_schedule_moves_aside_once_when_activated(self):
         task = next(t for t in self.jf.tasks if t["Key"] == "PluginUpdates")
         self.assertTrue(task["Triggers"])

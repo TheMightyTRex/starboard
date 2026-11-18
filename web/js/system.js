@@ -167,10 +167,11 @@ function renderJellyfin(j) {
   $("#jellyfin-title").textContent = j.name;
   $("#jellyfin-sub").textContent = `Version ${j.version}`;
   const state = [];
-  if (j.restart) state.push(chip("Restart needed", "warning"));
+  if (j.restart) state.push(chip(...STATUS.restartNeeded));
   if (j.update) state.push(chip(...STATUS.updateAvailable));
   if (!j.restart && !j.update) state.push(chip(...STATUS.upToDate));
   $("#jellyfin-state").replaceChildren(...state);  // beside the name, on the heading's line
+  renderJellyfinRestart(j);
   const facts = [];
   if (j.channels != null) facts.push(el("dt", { text: "Live TV" }), el("dd", { text: `${j.channels} ${j.channels === 1 ? "channel" : "channels"}` }));
   if (j.guide) facts.push(el("dt", { text: "TV guide" }), el("dd", { text: j.guide.state === "Running" ? "Updating now" : j.guide.finished ? `Updated ${ago(j.guide.finished)}${j.guide.result && j.guide.result !== "Completed" ? ` (${j.guide.result.toLowerCase()})` : ""}` : "Never updated" }));
@@ -189,6 +190,23 @@ function renderJellyfin(j) {
     el("h3", { text: `Playing now${j.playing.length ? `, ${j.playing.length}` : ""}` }), playing,
     j.playing.some((p) => p.transcoding) ? el("p", { class: "small muted", text: "Converting uses the processor; direct play does not." }) : null,
     el("h3", { text: "Recently added" }), j.added.length ? added : el("p", { class: "muted", text: "Nothing added yet." })].filter(Boolean));
+}
+
+// Restart needed: Restart Jellyfin under the heading, only while Jellyfin says so and can restart itself (DASH-470).
+// A restart in progress, or its result, is kept when the panel is drawn again, so focus and the status stay.
+function renderJellyfinRestart(j) {
+  const slot = $("#jellyfin-restart");
+  const kept = $("[data-restart]", slot);
+  if (kept?.dataset.state === "working") return;
+  if (j.restart && j.can_restart) {
+    if (!kept || kept.dataset.state === "done") {
+      slot.replaceChildren(restartNotice({ title: `${j.name} needs a restart`, text: JELLYFIN_RESTART_WHY.replace(/^Jellyfin/, j.name),
+        ...jellyfinRestart(j.name, async () => { await loadJellyfin(true); return null; }) }));
+    }
+  } else if (kept?.dataset.state !== "done") {
+    slot.replaceChildren();
+  }
+  slot.hidden = !slot.children.length;  // no empty row in the panel's grid
 }
 
 async function loadJellyfin(fresh = false) {

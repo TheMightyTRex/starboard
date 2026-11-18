@@ -284,6 +284,14 @@ class RouteTest(StandInTest):
         conn.close()
         return resp, json.loads(raw or b"null")
 
+    def test_backups_name_the_reelix_to_restart(self):
+        """Restart Reelix beside a restore that waits (DASH-470) restarts the Reelix app in Manage apps."""
+        resp, out = self.request("POST", "/api/reelix/admin/system/backups", {"password": PASSWORD})
+        self.assertEqual(resp.status, 200)
+        self.assertIn("restore_waiting", out)
+        reelix = next(s for s in self.app.config.data["services"] if s.get("icon") == "reelix")
+        self.assertEqual(out["service"], reelix["id"])
+
     def test_about_needs_no_password(self):
         resp, about = self.request("GET", "/api/reelix/admin/about")
         self.assertEqual(resp.status, 200)
@@ -439,6 +447,17 @@ class SystemTest(StandInTest):
             with self.assertRaises(ValueError):
                 rs.restore(reelix, "../x")
         self.assertEqual(self.state.tasks_run, ["refresh_library"])
+
+
+class RestartTargetTest(unittest.TestCase):
+    """The Reelix app Restart Reelix restarts: its web page entry first, as base_url chooses (DASH-470)."""
+
+    def test_service_id(self):
+        services = [{"id": "jf", "type": "jellyfin"}, {"id": "rx-tv", "type": "sonarr", "icon": "reelix"},
+                    {"id": "rx", "type": "link", "icon": "reelix"}, {"id": "old", "type": "link", "icon": "reelix", "enabled": False}]
+        self.assertEqual(reelix_admin.service_id(services), "rx")
+        self.assertEqual(reelix_admin.service_id(services[:2]), "rx-tv")
+        self.assertEqual(reelix_admin.service_id(services[:1]), "")
 
 
 class DirectTest(StandInTest):
