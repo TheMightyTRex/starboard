@@ -1001,6 +1001,7 @@ def jellyfin(services):
     info = _jf(s, "/System/Info")
     out = {"configured": True, "name": s["name"], "version": info.get("Version", ""),
            "update": bool(info.get("HasUpdateAvailable")), "restart": bool(info.get("HasPendingRestart")),
+           "can_restart": info.get("CanSelfRestart", True) is not False,
            "playing": [], "added": [], "channels": None, "guide": None}
     try:
         out["channels"] = (_jf(s, "/LiveTv/Channels?limit=0") or {}).get("TotalRecordCount")

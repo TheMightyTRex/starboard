@@ -247,6 +247,7 @@ const STATUS = Object.freeze({
   checkFirst: ["Check before updating", "warning"],
   upToDate: ["Up to date", "success"],
   neverUpdated: ["Never updated", "warning"],
+  restartNeeded: ["Restart needed", "warning"],
   wanted: ["Wanted", "neutral"],
 });
 
@@ -688,6 +689,94 @@ function confirmDialog({ title, message, confirm = "Continue", cancel = "Cancel"
     start?.focus();
   });
 }
+
+// Restart where it is needed (DASH-470; design system: "Restart where it is needed"). Drawn only while an app says
+// it needs a restart, in the place that says so. The button says what it does beside it, asks first, then follows
+// the app until it answers again, in words in a polite status under the button. While it works the button keeps
+// focus (aria-disabled, as Show more does); when the app is back the button goes and focus moves to the result.
+// A failure is said beside the button, which can be pressed again.
+//   restart(): starts the restart (throws an Error in words);
+//   back(): true once the app answers and needs no restart (false, or a throw, while it is away);
+//   done(): draws the place again; it may return the element focus should go to.
+// It asks every 3 seconds, one small request each time, for up to 3 minutes, and only after the button is pressed.
+let restartCount = 0;
+function restartButton({ name, what, restart, back, done = null, every = 3000, limit = 180000 }) {
+  const n = ++restartCount;
+  const hint = el("p", { class: "small", id: `restart-${n}-what`, text: what });
+  const status = el("p", { class: "small", role: "status", id: `restart-${n}-status`, tabindex: "-1" });
+  const busy = el("div", { class: "progress progress--busy", hidden: true }, el("span"));
+  const button = el("button", { type: "button", class: "btn btn--primary", "aria-describedby": hint.id }, icon("rotate-ccw"), `Restart ${name}`);
+  const box = el("div", { class: "stack-2", "data-restart": "" }, el("div", { class: "actions" }, button), hint, busy, status);
+  const working = (on) => {
+    box.dataset.state = on ? "working" : "";
+    busy.hidden = !on;
+    if (on) button.setAttribute("aria-disabled", "true"); else button.removeAttribute("aria-disabled");
+  };
+  const fail = (message) => { working(false); status.textContent = ""; inlineError(button, message); };
+  button.addEventListener("click", async () => {
+    if (button.getAttribute("aria-disabled") === "true") return;
+    if (!await confirmDialog({ title: `Restart ${name}?`, message: what, confirm: `Restart ${name}`, careful: true })) return;
+    working(true);
+    status.textContent = `Asking ${name} to restart.`;
+    try { await restart(); } catch (e) { fail(e.message || `${name} did not restart`); return; }
+    const started = Date.now();
+    let said = 0;
+    status.textContent = `${name} is restarting. This checks every few seconds and says when it answers again.`;
+    for (;;) {
+      await new Promise((r) => setTimeout(r, every));
+      // Each check gives up after 8 seconds, so a request that hangs while the app is away never stalls the wait.
+      const ok = await Promise.race([Promise.resolve().then(back).catch(() => false), new Promise((r) => setTimeout(() => r(false), 8000))]);
+      if (ok) break;
+      const seconds = Math.round((Date.now() - started) / 1000);
+      if (Date.now() - started >= limit) {
+        fail(`${name} has not answered for ${Math.round(limit / 60000)} minutes. Check it is running in Apps, then try again`);
+        return;
+      }
+      if (seconds - said >= 20) { said = seconds; status.textContent = `Still waiting for ${name} to answer: ${seconds} seconds so far.`; }
+    }
+    const hadFocus = document.activeElement === button || document.activeElement === document.body;
+    working(false);
+    box.dataset.state = "done";
+    button.closest(".actions").remove();
+    hint.remove();
+    status.textContent = `${name} restarted and answers again.`;
+    const target = done ? await done() : null;
+    if (hadFocus) (target?.isConnected ? target : status.isConnected ? status : null)?.focus();
+  });
+  return box;
+}
+
+// The warning notice a Restart button sits in: why the app needs a restart, then the button (options as
+// restartButton). Drawn with the page, so it is not a live region itself; the button's status is. Once the app is
+// back it becomes a success notice, "<name> restarted".
+function restartNotice({ title, text, ...options }) {
+  const titleEl = el("span", { class: "notice__title", text: title });
+  const textEl = el("p", { text });
+  const mark = icon("triangle-alert");
+  const box = restartButton({ ...options, done: async () => {
+    note.dataset.tone = "success";
+    mark.replaceWith(icon("circle-check"));
+    titleEl.textContent = `${options.name} restarted`;
+    textEl.remove();
+    return options.done ? options.done() : null;
+  } });
+  const note = el("div", { class: "notice", "data-tone": "warning", "data-restart-notice": "" }, mark, el("div", { class: "notice__body" }, titleEl, textEl, box));
+  return note;
+}
+
+// Jellyfin's restart, for restartButton and restartNotice: Jellyfin restarts itself (POST /System/Restart through
+// Starboard) and is followed with one /System/Info call at a time (GET /api/jellyfin/restart). On the owner's server
+// Jellyfin answered again 5 seconds after a restart and its plug-ins were ready after 17 (17 November 2026);
+// playback stops either way.
+function jellyfinRestart(name = "Jellyfin", done = null) {
+  return { name, done,
+    what: `Anyone watching or listening is stopped and has to press play again. ${name} is back in under a minute.`,
+    restart: () => api("/api/jellyfin/restart", { method: "POST" }),
+    back: async () => { const s = await api("/api/jellyfin/restart"); return s.answering && !s.restart; } };
+}
+
+// The same for a restart Jellyfin waits for, in words for each place it is shown.
+const JELLYFIN_RESTART_WHY = "Jellyfin starts using new plug-ins, new versions of them and some changed settings only after it restarts.";
 
 // The set-ups' words (web/setup-answers.json, the file the terminal set-up reads too), read once for each page:
 // several steps and dialogs on one page use them, and each asked for the file again (optimisation review,

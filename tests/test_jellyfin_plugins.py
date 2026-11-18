@@ -318,6 +318,21 @@ class JellyfinPluginsTest(unittest.TestCase):
         self.assertFalse(st["connected"])
         self.assertIn("Jellyfin did not answer", st["problem"])
 
+    def test_restart_state_follows_a_restart(self):
+        """What Restart Jellyfin follows (DASH-470): needed, then answering and not needed after the restart."""
+        self.start()
+        jp.choose(self.services, self.dir, "merge", "on", self.cfg)
+        self.assertEqual(jp.restart_state(self.services), {"answering": True, "restart": True})
+        jp.restart(self.services)
+        self.assertEqual(jp.restart_state(self.services), {"answering": True, "restart": False})
+        self.assertEqual(self.jf.calls[-1], ("GET", "/System/Info"), "one small call each time")
+
+    def test_restart_state_while_jellyfin_is_away(self):
+        services = [{"type": "jellyfin", "name": "Jellyfin", "url": "http://127.0.0.1:9", "api_key": KEY}]
+        self.assertEqual(jp.restart_state(services), {"answering": False, "restart": None})
+        with self.assertRaises(ValueError):
+            jp.restart_state([])
+
     def test_state_file_in_data_dir(self):
         self.start()
         jp.choose(self.services, self.dir, "merge", "on", self.cfg)

@@ -839,6 +839,44 @@ for (const [part, words] of [["bring-what", /What is in each place/], ["bring-na
 const start29 = await page.evaluate(() => [...document.querySelectorAll(".wizard__foot .btn")].map((b) => b.textContent));
 check("T31", "the last part's button says what it does", start29.includes("Start copying"), start29.join(", "));
 
+// T33 Restart Jellyfin where it is needed (DASH-470), by keyboard alone: on System, Overview, Tab from the Jellyfin
+// heading reaches Restart Jellyfin; Enter asks first with focus on Cancel; Shift+Tab and Enter restart; focus stays on
+// the button while it works, progress is said in the status, and once Jellyfin answers the result has focus and says
+// so. Restart needed is a page route; the restart reaches only the example server's stand-in Jellyfin.
+{
+  let pending = true;
+  const overview = async (route) => {
+    const b = await (await route.fetch()).json().catch(() => ({}));
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify({ ...b, configured: true, name: "Jellyfin", version: b.version || "10.11.2",
+      restart: pending, can_restart: true, playing: b.playing || [], added: b.added || [] }) });
+  };
+  const asked = [];
+  const restart = (route) => { asked.push(route.request().method()); if (route.request().method() === "POST") pending = false; return route.continue(); };
+  await page.route(/\/api\/jellyfin(\?fresh=1)?$/, overview);
+  await page.route(/\/api\/jellyfin\/restart$/, restart);
+  await page.goto(`${base}/system.html`);
+  await settle();
+  await page.locator("#jellyfin-title").evaluate((h) => { h.tabIndex = -1; h.focus(); });
+  const b32 = await tabTo((f) => f.tag === "BUTTON" && f.text === "Restart Jellyfin", 6);
+  check("T33", "Tab from the Jellyfin heading reaches Restart Jellyfin", !!b32, b32 ? b32.text : "not reached");
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  const c32 = await focus();
+  check("T33", "Enter asks first, with focus on Cancel", c32.inPanel && c32.text === "Cancel", `${c32.tag} ${c32.text}`);
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  const w32 = await focus(), sw32 = await said();
+  check("T33", "while it works, focus stays on Restart Jellyfin and the progress is said", w32.text === "Restart Jellyfin" && /Jellyfin is restarting|Asking Jellyfin/.test(sw32), `${w32.text} / ${sw32}`);
+  // "restarted and answers again": the words while it works also end in "answers again".
+  await page.locator("#jellyfin-panel [data-restart] [role=status]", { hasText: "restarted and answers again" }).waitFor({ timeout: 30000 }).catch(() => {});
+  await page.waitForTimeout(300);
+  const d32 = await focus(), sd32 = await said();
+  check("T33", "when Jellyfin answers, focus is on the result and it is said", !d32.lost && /restarted and answers again/.test(d32.text) && /restarted and answers again/.test(sd32), `${d32.tag} ${d32.text} (asked: ${asked.join(" ")})`);
+  await page.unroute(/\/api\/jellyfin(\?fresh=1)?$/, overview);
+  await page.unroute(/\/api\/jellyfin\/restart$/, restart);
+}
+
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

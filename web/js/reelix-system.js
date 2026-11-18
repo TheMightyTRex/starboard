@@ -55,7 +55,7 @@ function rsFailed(body, retry, e) {
 
 // Backups (DASH-201)
 async function rsBackups(body, locked) {
-  const draw = (r) => {
+  const draw = (r, said = null) => {
     const every = el("input", { class: "input", inputmode: "numeric", value: String(r.every), id: "rs-every" });
     const keep = el("input", { class: "input", inputmode: "numeric", value: String(r.keep), id: "rs-keep" });
     const saveSched = el("button", { type: "button", class: "btn", id: "rs-save-sched" }, "Save the schedule");
@@ -76,14 +76,31 @@ async function rsBackups(body, locked) {
         el("div", { class: "row__meta", text: [b.kind === "manual" ? "Made by hand" : "Scheduled", formatBytes(b.size), b.version ? `Reelix ${b.version}` : ""].filter(Boolean).join(" · ") })),
         el("div", { class: "row__side" }, back));
     });
-    body.replaceChildren(
-      r.restore_waiting ? el("p", { class: "small", text: "A restore is waiting for Reelix to start again." }) : null,
+    // Restart where it is needed (DASH-470): a restore waits for Reelix to start again, so Restart Reelix is here.
+    // It restarts Reelix's container (as Manage apps, Restart) and follows Reelix until it answers again.
+    const restore = !r.restore_waiting ? null : r.service
+      ? restartNotice({ title: "A restore is waiting for Reelix to start again", name: "Reelix",
+        text: "Reelix goes back to the backup you chose when it starts again.",
+        what: "Reelix stops, then restores the backup as it starts again. Searches, requests and downloads it was handling carry on once it is back.",
+        restart: () => api(`/api/services/${encodeURIComponent(r.service)}/restart`, { method: "POST" }),
+        back: async () => (await api(`/api/status?id=${encodeURIComponent(r.service)}`)).items?.[0]?.state === "up",
+        done: async () => {
+          const o = await rsCall("backups", {}, "show Reelix's backups");
+          if (!o) return null;
+          draw(o, o.restore_waiting ? { tone: "warning", title: "Restore still waiting", text: "Reelix answers again, and still lists the restore as waiting. Check Reelix's log in Logs." }
+            : { tone: "success", title: "Done", text: "Reelix restarted and restored the backup." });
+          return $("#rs-restored");
+        } })
+      : el("p", { class: "small", text: "A restore is waiting for Reelix to start again. Add Reelix in Manage apps to restart it from here." });
+    const note = said ? el("div", { class: "notice", "data-tone": said.tone, id: "rs-restored", tabindex: "-1" }, icon(said.tone === "success" ? "circle-check" : "triangle-alert"),
+      el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: said.title }), el("p", { text: said.text }))) : null;
+    body.replaceChildren(...[note, restore,
       el("ul", { class: "rows" }, rows.length ? rows : [el("li", { class: "empty", text: "No backups yet." })]),
       el("div", { class: "form-grid" },
         el("div", { class: "field" }, el("label", { class: "field__label", for: "rs-every", text: "Days between backups" }), el("p", { class: "hint", text: "0 deactivates scheduled backups." }), every),
         el("div", { class: "field" }, el("label", { class: "field__label", for: "rs-keep", text: "Backups to keep" }), el("p", { class: "hint", text: "Ones made by hand are always kept." }), keep)),
       el("div", { class: "actions" }, now, saveSched),
-      r.folder ? el("p", { class: "small muted", text: `Inside Reelix they are in ${r.folder}, next to its settings. Starboard's Full without media copies Reelix's library and settings itself, so these are extra copies on the same disk.` }) : null);
+      r.folder ? el("p", { class: "small muted", text: `Inside Reelix they are in ${r.folder}, next to its settings. Starboard's Full without media copies Reelix's library and settings itself, so these are extra copies on the same disk.` }) : null].filter(Boolean));  // replaceChildren writes a null as the word "null"
   };
   try { const r = await rsCall("backups", {}, "show Reelix's backups"); if (r) draw(r); else locked(); } catch (e) { rsFailed(body, locked, e); }
 }
