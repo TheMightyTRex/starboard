@@ -9,6 +9,8 @@ import mimetypes
 import os
 import posixpath
 import ipaddress
+import http.client
+import select
 import re
 import secrets
 import socket
@@ -29,6 +31,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WEB = os.path.join(ROOT, "web")
 COOKIE = "starboard_session"
 MAX_BODY = 64 * 1024
+MAX_HEADER_BYTES = 64 * 1024
+REQUEST_TIMEOUT = 30  # absolute time to receive one request, not an inactivity timeout
 
 PUBLIC_PAGES = {"/login.html", "/setup.html"}
 PUBLIC_PREFIXES = ("/css/", "/js/", "/fonts/", "/icons/")
@@ -790,12 +794,107 @@ def restart_app(service):
     return said
 
 
+class _DeadlineReader:
+    """Small socket reader that applies one absolute deadline to request lines, headers and bodies."""
+
+    def __init__(self, connection, handler):
+        self.connection = connection
+        self.handler = handler
+        self.buffer = bytearray()
+        self.eof = False
+        self.in_headers = False
+        self.first_line = True
+        self.header_bytes = 0
+
+    def begin_request(self):
+        self.in_headers = False
+        self.first_line = True
+        self.header_bytes = 0
+
+    def _fill(self):
+        deadlines = [d for d in (self.handler._request_deadline, self.handler._idle_deadline) if d is not None]
+        if deadlines:
+            remaining = min(deadlines) - time.monotonic()
+            if remaining <= 0 or not select.select([self.connection], [], [], max(0, remaining))[0]:
+                raise TimeoutError("The request took too long")
+        chunk = self.connection.recv(65536)
+        if not chunk:
+            self.eof = True
+            return
+        self.handler._idle_deadline = None
+        self.buffer.extend(chunk)
+
+    def readline(self, limit=-1):
+        while True:
+            end = self.buffer.find(b"\n")
+            if end >= 0:
+                end += 1
+                if limit >= 0:
+                    end = min(end, limit)
+                line = bytes(self.buffer[:end])
+                del self.buffer[:end]
+                break
+            if limit >= 0 and len(self.buffer) >= limit:
+                line = bytes(self.buffer[:limit])
+                del self.buffer[:limit]
+                break
+            if self.eof:
+                line = bytes(self.buffer)
+                self.buffer.clear()
+                break
+            self._fill()
+        if self.first_line:
+            self.first_line = False
+            self.in_headers = True
+        elif self.in_headers:
+            self.header_bytes += len(line)
+            if self.header_bytes > MAX_HEADER_BYTES:
+                raise http.client.LineTooLong("request headers")
+            if line in (b"\r\n", b"\n", b""):
+                self.in_headers = False
+        return line
+
+    def close(self):
+        # The connection lifecycle is owned by BaseHTTPRequestHandler.finish().
+        pass
+
+    def read(self, size=-1):
+        if size is None or size < 0:
+            chunks = [bytes(self.buffer)]
+            self.buffer.clear()
+            while not self.eof:
+                self._fill()
+                chunks.append(bytes(self.buffer))
+                self.buffer.clear()
+            return b"".join(chunks)
+        while len(self.buffer) < size and not self.eof:
+            self._fill()
+        data = bytes(self.buffer[:size])
+        del self.buffer[:size]
+        return data
+
+
 class Handler(BaseHTTPRequestHandler):
     # HTTP/1.1 keeps the connection open for the page's styles, scripts and API calls, so a page costs one
     # connection and one thread instead of about 15 (a page took a third of the processor time in testing).
     protocol_version = "HTTP/1.1"
     disable_nagle_algorithm = True  # without it, small answers on a kept-alive connection wait 40 ms
     timeout = 30  # an idle or slow connection is closed after 30 seconds, so it cannot hold a thread for ever
+
+    def setup(self):
+        super().setup()
+        self._request_deadline = None
+        self._idle_deadline = None
+        self.rfile.close()
+        self.rfile = _DeadlineReader(self.connection, self)
+
+    def handle_one_request(self):
+        self._request_deadline = time.monotonic() + REQUEST_TIMEOUT
+        self.rfile.begin_request()
+        try:
+            super().handle_one_request()
+        finally:
+            self._request_deadline = None
 
     def send_error(self, code, message=None, explain=None):
         """Python's own error answers (a method Starboard does not handle, a broken request) carry the same
@@ -816,9 +915,11 @@ class Handler(BaseHTTPRequestHandler):
         """One request, then more on the same connection while the browser keeps it open. Between requests the
         connection waits only KEEP_ALIVE_IDLE seconds, so idle connections do not hold threads."""
         self.close_connection = True
+        self._idle_deadline = None
         self.handle_one_request()
         while not self.close_connection:
             self.connection.settimeout(KEEP_ALIVE_IDLE)
+            self._idle_deadline = time.monotonic() + KEEP_ALIVE_IDLE
             self.handle_one_request()
     server_version = "Starboard"
     sys_version = ""
