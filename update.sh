@@ -5,6 +5,7 @@
 #   --to v0.2.0      Install a particular release (also how you go back to an older one)
 #   --main           Follow the main branch instead of releases (for testing). An install made with
 #                    ./install.sh --main follows it without this (STARBOARD_CHANNEL in .env, DASH-416)
+#   --allow-unsigned  Explicitly allow an unsigned or unverified release tag (recovery only)
 #
 # Before updating it backs up ./data to ./backups, except each plug-in's own data folder, which belongs to the
 # plug-in's user and stays where it is. If the new version does not start, it goes back to the version you had and
@@ -23,6 +24,7 @@ trap 'rm -f "$0"' EXIT
 cd "$STARBOARD_UPDATE_DIR"
 TARGET=""
 CHECK=0
+ALLOW_UNSIGNED=0
 CHANNEL=release
 
 while [ $# -gt 0 ]; do
@@ -30,6 +32,7 @@ while [ $# -gt 0 ]; do
     --check) CHECK=1 ;;
     --to) TARGET="${2:?--to needs a version, for example v0.2.0}"; shift ;;
     --main) CHANNEL=main ;;
+    --allow-unsigned) ALLOW_UNSIGNED=1 ;;
     -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
@@ -68,6 +71,15 @@ else
   WANT_NAME="$(git tag -l 'v[0-9]*' --sort=-v:refname | { grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true; } | head -n 1)"  # never a test build
   [ -n "$WANT_NAME" ] || fail "no releases yet. Use --main to follow the main branch"
   WANT="$(git rev-parse "refs/tags/$WANT_NAME^{commit}")"
+fi
+
+# Release tags must be signed annotated tags. GitHub's verification result is checked over HTTPS and the tag target
+# must match the commit fetched locally. A handover has already passed this check in the updater that launched it.
+if [ "$CHANNEL" = release ] && [ "$ALLOW_UNSIGNED" = 0 ] && [ -z "${STARBOARD_UPDATE_HANDED:-}" ]; then
+  command -v python3 >/dev/null 2>&1 || fail "Python 3 is needed to verify signed release tags. Install Python 3, or use --allow-unsigned only for recovery."
+  TAG_OBJECT="$(git rev-parse "refs/tags/$WANT_NAME")"
+  [ "$(git cat-file -t "$TAG_OBJECT")" = tag ] || fail "$WANT_NAME is not a signed annotated release tag"
+  python3 tools/verify_release_tag.py "$TAG_OBJECT" "$WANT" || fail "The release tag could not be trusted. Nothing has been changed."
 fi
 
 echo "You have:  $CURRENT_NAME"
