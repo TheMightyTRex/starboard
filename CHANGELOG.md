@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Play in Jellyfin (DASH-480):** films and episodes in the Library have a Play button that opens them in Jellyfin's web app in a new tab, ready to play: on the Films wall (covers and list), at the top of a film's page, and on each episode's row in a series. It uses the address you gave Jellyfin for your browser in Settings, Manage apps (Address to open in your browser, or Outside address when you open Starboard away from home), never the address Starboard itself uses. Something Jellyfin has not added yet has no Play button and says Not in Jellyfin yet. With no address for your browser yet, the Library says where to add it. Starboard finds Jellyfin's films while it builds the Films list, in one list, and an item's page uses the lookup it makes already for Watched, so no row asks Jellyfin anything.
+
 ## [0.21.0] (17 November 2026)
 
 ### Added

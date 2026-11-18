@@ -213,3 +213,6 @@
 .shelf-scroller:has(.discover-shelf) { --shelf-cover-w: 140px; }
 /* Discover: Wanted and In your library sit where the Add button does, centred on its height (owner, 12 November 2026). */
 .discover-card__action { min-height: var(--control-h-compact, 32px); display: flex; align-items: center; }
+/* Play in Jellyfin (DASH-480): above the card's stretched title link, so it is its own target; 44px, never compact. */
+.lib-card > .play-link { position: relative; z-index: 1; justify-self: start; }
+.series-head__actions + .small, .series-head__actions + .notice { margin-top: var(--space-3, 12px); }

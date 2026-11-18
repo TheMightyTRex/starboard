@@ -256,6 +256,57 @@ await open("library-books-series.html");
 await page.locator("#groups .row__title a, #groups .collection-card__link").first().click();
 await page.waitForLoadState("networkidle");
 check("LIB-01", "a series opens the wall with only its books", /group=/.test(page.url()) && await page.locator("#lib-wall .media-card").count() > 0);
+// LIB-04: Play in Jellyfin (DASH-480): a real link styled as a 44px button on the Films wall, a film's page and each
+// episode row, to Jellyfin's address for browsers (never the address Starboard uses), opening a new tab, with the item
+// in its name; nothing where Jellyfin does not have it, and words saying why; with no address, where to add it.
+console.log("\n== LIB-04 Play in Jellyfin");
+await open("library-films.html");
+await page.locator("#lib-wall .play-link").first().waitFor({ timeout: 10000 }).catch(() => {});
+const plays = page.locator("#lib-wall .play-link");
+check("LIB-04", "films Jellyfin has show Play on the wall", await plays.count() > 5);
+const first = await plays.first().evaluate((a) => ({ tag: a.tagName, href: a.getAttribute("href"), target: a.target, rel: a.rel,
+  name: a.textContent.replace(/\s+/g, " ").trim(), h: a.offsetHeight, w: a.offsetWidth,
+  title: a.closest(".media-card").querySelector(".media-card__title").textContent.trim() }));
+check("LIB-04", "Play is a link to Jellyfin's item page at its address for browsers",
+  first.tag === "A" && /^http:\/\/192\.168\.1\.20:8096\/web\/#\/details\?id=[0-9a-f]{32}$/.test(first.href), first.href);
+check("LIB-04", "it opens a new tab, safely", first.target === "_blank" && /noopener/.test(first.rel) && /noreferrer/.test(first.rel));
+check("LIB-04", "its name says what, where and the new tab", first.name === `Play ${first.title} in Jellyfin (opens in a new tab)`, first.name);
+check("LIB-04", "it is a 44px target", first.h >= 44 && first.w >= 44, `${first.w}x${first.h}`);
+check("LIB-04", "a film Jellyfin does not have has no Play",
+  await page.locator("#lib-wall .media-card").filter({ hasText: "31 Planets" }).locator(".play-link").count() === 0);
+// Reading order: the title link, then its Play link.
+await page.locator("#lib-wall .media-card__title a").first().focus();
+await page.keyboard.press("Tab");
+check("LIB-04", "Play follows the title in the Tab order",
+  await page.evaluate(() => document.activeElement.classList.contains("play-link")));
+check("LIB-04", "with a visible focus outline", await page.evaluate(() => getComputedStyle(document.activeElement).outlineStyle !== "none"));
+const [popup] = await Promise.all([page.context().waitForEvent("page", { timeout: 5000 }).catch(() => null),
+  page.keyboard.press("Enter")]);
+check("LIB-04", "Enter opens it in a new tab", Boolean(popup) && /192\.168\.1\.20:8096\/web\/#\/details\?id=/.test(popup?.url() || ""), popup?.url());
+await popup?.close();
+await open("library-film.html?id=1");
+const head = page.locator(".series-head .play-link");
+check("LIB-04", "a film's page has Play as its main action", await head.count() === 1 && /btn--primary/.test(await head.getAttribute("class")));
+await open("library-film.html?id=7");
+check("LIB-04", "a film Jellyfin has not added says so, with no Play",
+  await page.locator(".series-head .play-link").count() === 0 && /Not in Jellyfin yet/.test(await page.locator(".series-head").textContent()));
+await open("library-tv-show.html?id=4");
+await page.locator("#panel-episodes .play-link").first().waitFor({ timeout: 8000 }).catch(() => {});
+const epName = await page.locator("#panel-episodes .play-link").first().evaluate((a) => a.textContent.replace(/\s+/g, " ").trim());
+check("LIB-04", "each episode Jellyfin has shows Play, named with its season and number",
+  await page.locator("#panel-episodes .play-link").count() === 4 && /^Play .+ \(Season 1, episode 1\) in Jellyfin \(opens in a new tab\)$/.test(epName), epName);
+check("LIB-04", "an episode with its file that Jellyfin has not added says so in words",
+  /Not in Jellyfin yet/.test(await page.locator("#panel-episodes").textContent()));
+// With no address for browsers: no Play links, and where to add one.
+const jfApp = (await api("/api/config")).services.find((x) => x.type === "jellyfin");
+const { has_api_key: _k, ...jfSaved } = jfApp;
+await api("/api/services", { method: "POST", body: { ...jfSaved, link: "" } });
+await open("library-film.html?id=1");
+check("LIB-04", "without Jellyfin's address for browsers there is no Play",
+  await page.locator(".play-link").count() === 0);
+const addLink = page.locator(".series-head .notice a", { hasText: "Add Jellyfin's address" });
+check("LIB-04", "and the page says where to add it", await addLink.count() === 1 && (await addLink.getAttribute("href")) === `/settings.html?edit=${encodeURIComponent(jfApp.id)}`);
+await api("/api/services", { method: "POST", body: jfSaved });
 // DASH-261: narrator pages, and Narrated by on an audiobook's summary links to them.
 await open("library-audiobooks-narrators.html");
 check("LIB-02", "Narrators lists each narrator", await page.locator("#groups .collection-card__link").count() >= 3);

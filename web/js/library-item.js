@@ -75,13 +75,20 @@ function watchedButton(w, label, compact = true) {
     el("span", { class: "visually-hidden", text: ` ${label}. ${w.watched ? "Select to mark as not watched" : "Select to mark as watched"}` }));
 }
 
-function rowList(rows) {
+// An episode's name for screen readers, for Play (DASH-480): "Copper Hours (Season 1, episode 3)".
+const episodeName = (r, heading) => `${r.title} (${[heading, r.number ? `episode ${String(r.number).replace(/^E/, "")}` : ""].filter(Boolean).join(", ")})`;
+
+function rowList(rows, heading = "") {
+  const play = current?.play;
+  // An episode with its file that Jellyfin has not added yet says so, in words, where Play would be (DASH-480).
+  const notYet = (r) => (play && jellyfinBase(play) && r.has_file && !r.jf ? "Not in Jellyfin yet" : "");
   return el("ul", { class: "rows lib-order" }, ...rows.map((r) => el("li", { class: `row${r.number ? "" : " row--no-lead"}` },
     r.number ? el("span", { class: "lib-order__number", text: r.number }) : null,
     el("div", {},
       el("h3", { class: "row__title" }, r.href ? el("a", { href: r.href, text: r.title }) : r.title),
-      el("div", { class: "row__meta", text: [r.date, r.note].filter(Boolean).join(" · ") })),
+      el("div", { class: "row__meta", text: [r.date, r.note, notYet(r)].filter(Boolean).join(" · ") })),
     el("div", { class: "row__side" }, r.status ? chip(r.status, r.tone) : null,
+      r.jf ? playLink(play, r.jf, episodeName(r, heading)) : null,
       r.jf ? watchedButton({ watched: r.watched, ids: [r.jf] }, `${r.number} ${r.title}`) : null,
       r.can_get && r.id ? el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => act("get", { scope: "episode", episode: r.id }, e.currentTarget) },
         "Get it", el("span", { class: "visually-hidden", text: ` ${r.number} ${r.title}` })) : null))));
@@ -99,7 +106,7 @@ function groupList(list) {
         g.missing ? el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: () => chooseDownload({ scope: "season", season: g.season }, g.heading) },
           "Choose a download", el("span", { class: "visually-hidden", text: ` for ${g.heading}` })) : null,
         watchedButton(g.watched, g.heading)) : null,
-      rowList(g.rows)))));
+      rowList(g.rows, g.heading)))));
 }
 
 function about(item) {
@@ -332,6 +339,18 @@ async function changeMatch(item, button) {
   });
 }
 
+// Play in Jellyfin (DASH-480), in words: a film with its file that Jellyfin has not added yet, or Jellyfin with no
+// address for browsers while it has something here to play.
+function playNote(item) {
+  if (!item.play) return null;
+  const has = item.jf || item.lists.some((l) => l.rows.some((r) => r.jf));
+  if (has) return playAddressNote(item.play);
+  if (ITEM_TAB === "films" && item.can?.has_file && jellyfinBase(item.play)) {
+    return el("p", { class: "small muted", text: "Not in Jellyfin yet, so there is nothing to play there. Jellyfin adds it when it next scans its library." });
+  }
+  return null;
+}
+
 function head(item) {
   const fan = item.poster ? el("div", { class: "cover-fan lib-fan", "aria-hidden": "true" },
     el("img", { src: item.poster, alt: "", decoding: "async", onerror: (e) => e.target.closest(".cover-fan")?.remove() })) : null;
@@ -359,7 +378,10 @@ function head(item) {
       const chosen = radios.find((r) => r.checked)?.value;
       if (ok && chosen && chosen !== String(item.keep.value)) act("keep", { scope: chosen }, button);
     } }, "Keep: ", keepLabel(item.keep.value)) : null;
+  // Play in Jellyfin (DASH-480): a film Jellyfin has, as the main action when there is nothing to get.
+  const play = ITEM_TAB === "films" ? playLink(item.play, item.jf, item.title, { primary: !can.get }) : null;
   const actions = [
+    play,
     can.get ? el("button", { type: "button", class: "btn btn--primary", onclick: (e) => act("get", {}, e.currentTarget) },
       icon("download"), ITEM_TAB === "tv" ? "Get the missing episodes" : "Get it") : null,
     item.listen ? newTabLink(item.listen.href, item.listen.label, { className: can.get ? "btn" : "btn btn--primary" }) : null,  // one primary (DASH-309, R9)
@@ -389,7 +411,8 @@ function head(item) {
       item.progress ? el("div", { class: "series-head__progress" }, el("span", { text: item.progress.text }),
         el("div", { class: "progress", role: "progressbar", "aria-label": item.progress.text, "aria-valuenow": String(Math.round(100 * item.progress.have / Math.max(1, item.progress.total))),
           "aria-valuemin": "0", "aria-valuemax": "100" }, bar(item.progress))) : null,
-      actions.length ? el("div", { class: "series-head__actions" }, ...actions) : null),
+      actions.length ? el("div", { class: "series-head__actions" }, ...actions) : null,
+      playNote(item)),
     fan);
 }
 
