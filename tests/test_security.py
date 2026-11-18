@@ -79,8 +79,11 @@ class SecurityTest(unittest.TestCase):
         try:
             base = f"http://127.0.0.1:{server.server_address[1]}"
             opened = []
-            real = urllib.request.urlopen
-            with unittest.mock.patch.object(urllib.request, "urlopen", lambda req, **k: opened.append(getattr(req, "full_url", req)) or real(req, **k)):
+            real = livetv._open_url
+            def record(url, headers=None, timeout=120):
+                opened.append(url)
+                return real(url, headers, timeout)
+            with unittest.mock.patch.object(livetv, "_open_url", record):
                 self.assertFalse(livetv.plays(f"{base}/main.m3u8", "test"))
                 self.assertFalse(livetv.plays(f"{base}/seg.m3u8", "test"))
             self.assertFalse([u for u in opened if str(u).startswith("file:")])
