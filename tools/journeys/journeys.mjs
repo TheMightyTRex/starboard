@@ -2292,6 +2292,7 @@ if (await restartRx.count()) {
   await page.getByRole("dialog", { name: "Restart Reelix?" }).getByRole("button", { name: "Restart Reelix", exact: true }).click();
   await page.waitForSelector("#rs-restored", { timeout: 30000 }).catch(() => {});
   await page.waitForTimeout(300);
+  check("RESTART-01", "the backups show no stray word null", !/\bnull\b/.test(await page.locator("section[aria-labelledby=rs-backups-h]").innerText()));
   check("RESTART-01", "after Reelix answers, the backups are drawn again and focus is on the result",
     await page.evaluate(() => document.activeElement?.id === "rs-restored") && await restartRx.count() === 0);
 }
