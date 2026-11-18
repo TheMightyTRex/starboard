@@ -532,6 +532,16 @@ class ConfigTest(unittest.TestCase):
             h._save()
             self.assertEqual(os.stat(h.path).st_mode & 0o777, 0o600)
 
+    def test_system_diagnostics_include_key_free_cache_metrics(self):
+        self.sign_in()
+        response, data = self.request("GET", "/api/system")
+        self.assertEqual(response.status, 200)
+        self.assertIn("cache", data)
+        self.assertEqual(data["cache"]["capacity"], 200)
+        self.assertIn("hits", data["cache"])
+        self.assertIn("evictions", data["cache"])
+        self.assertNotIn("keys", data["cache"])
+
     def test_filesystem_is_named(self):
         from starboard import sysinfo
         self.assertTrue(sysinfo.filesystem("/"))
