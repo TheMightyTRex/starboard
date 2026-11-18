@@ -247,6 +247,58 @@ if (!pages.length || pages.some((p) => p.includes("settings-updates"))) {
   } catch (e) { add("settings-updates.html, What is new", "page", "error", e.message.split("\n")[0]); }
 }
 
+// Restart where it is needed (DASH-470): Restart Jellyfin on System, Overview, Settings, Updates and Settings, Apps,
+// Jellyfin, while Jellyfin says Restart needed (made up with page routes), and while it works, in Light, Dark and
+// High contrast, with its structure. Nothing is restarted: the restart itself is a made-up answer that never ends.
+if (!pages.length || pages.some((p) => /^system\.html|settings-updates|settings-jellyfin/.test(p))) {
+  const scan = async (name) => {
+    await axe(name, "light");
+    await structure(name);
+    await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+    await page.waitForTimeout(150);
+    await axe(name, "dark");
+    await page.evaluate(() => { document.documentElement.removeAttribute("data-theme"); document.documentElement.classList.add("pref-contrast"); });
+    await page.waitForTimeout(150);
+    await axe(name, "high contrast");
+    await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
+  };
+  const needed = (extra) => async (route) => {
+    if (route.request().method() !== "GET") return route.continue();
+    const b = await (await route.fetch()).json().catch(() => ({}));
+    await route.fulfill({ contentType: "application/json", body: JSON.stringify({ ...b, ...extra(b), restart: true, can_restart: true }) });
+  };
+  const overview = needed((b) => ({ configured: true, name: "Jellyfin", version: b.version || "10.11.2", playing: b.playing || [], added: b.added || [] }));
+  const updates = needed((b) => ({ connected: true, count: b.count || 1 }));
+  const plugins = needed(() => ({}));
+  const away = (route) => route.request().method() === "POST" ? route.fulfill({ contentType: "application/json", body: "{}" })
+    : route.fulfill({ contentType: "application/json", body: JSON.stringify({ answering: false, restart: null }) });
+  try {
+    await page.route(/\/api\/jellyfin(\?fresh=1)?$/, overview);
+    await page.route(/\/api\/updates\/jellyfin$/, updates);
+    await page.route(/\/api\/jellyfin\/plugins$/, plugins);
+    await page.route(/\/api\/jellyfin\/restart$/, away);
+    await page.goto(`${base}/system.html`);
+    await settle();
+    await scan("system.html, Restart Jellyfin");
+    await page.locator("#jellyfin-panel [data-restart] button").click();
+    await page.getByRole("dialog").getByRole("button", { name: "Restart Jellyfin", exact: true }).click();
+    await page.waitForTimeout(500);
+    await scan("system.html, Restart Jellyfin while it works");
+    await page.goto(`${base}/settings-updates.html`);
+    await settle();
+    await page.locator("[data-key=jellyfin-plugins] [data-restart]").waitFor({ timeout: 10000 });
+    await scan("settings-updates.html, Restart Jellyfin");
+    await page.goto(`${base}/settings-jellyfin.html`);
+    await settle();
+    await scan("settings-jellyfin.html, Restart Jellyfin");
+    console.log("checked Restart where it is needed");
+  } catch (e) { add("Restart where it is needed", "page", "error", e.message.split("\n")[0]); }
+  await page.unroute(/\/api\/jellyfin(\?fresh=1)?$/, overview);
+  await page.unroute(/\/api\/updates\/jellyfin$/, updates);
+  await page.unroute(/\/api\/jellyfin\/plugins$/, plugins);
+  await page.unroute(/\/api\/jellyfin\/restart$/, away);
+}
+
 // Downloading without a VPN (DASH-440): the set-up's VPN step with Continue without a VPN chosen, and its warning,
 // an alert dialog, in Light, Dark and High contrast; then Settings, Downloads, VPN with Remove the VPN's warning.
 if (!pages.length || pages.some((p) => p.includes("install-apps") || p.includes("settings-downloads"))) {

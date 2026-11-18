@@ -315,9 +315,11 @@ def jellyfin_status(app):
     try:
         plugins = _jf_call(jf, "GET", "/Plugins") or []
         task = next((t for t in _jf_call(jf, "GET", "/ScheduledTasks") or [] if t.get("Key") == JF_TASK), None)
+        info = _jf_call(jf, "GET", "/System/Info") or {}  # new plug-in versions wait for a restart (DASH-470)
     except (urllib.error.URLError, OSError, ValueError) as e:
         return {"connected": False, "problem": f"Jellyfin did not answer: {getattr(e, 'reason', e)}"}
-    return {"connected": True, "count": len(plugins),
+    return {"connected": True, "count": len(plugins), "name": jf.get("name") or "Jellyfin",
+            "restart": bool(info.get("HasPendingRestart")), "can_restart": info.get("CanSelfRestart", True) is not False,
             "plugins": [{"name": p.get("Name"), "version": str(p.get("Version") or ""), "status": p.get("Status")} for p in plugins][:60],
             "own_schedule": bool(task and task.get("Triggers")), "has_task": bool(task)}
 
