@@ -269,7 +269,7 @@ def _why(url):
     import urllib.error
     import urllib.request
     try:
-        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA}), timeout=10) as r:  # an http(s) address from the list  # nosec B310
+        with livetv._open_url(url, {"User-Agent": UA}, timeout=10) as r:  # an http(s) address from the list  # nosec B310
             r.read(1024)
         return "answer but do not play"
     except urllib.error.HTTPError as e:
