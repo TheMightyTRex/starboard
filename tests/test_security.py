@@ -6,6 +6,7 @@ import os
 import socket
 import tempfile
 import threading
+import time
 import unittest
 import unittest.mock
 import urllib.error
@@ -116,6 +117,42 @@ class SecurityTest(unittest.TestCase):
         from starboard import watch
         with open(watch.__file__, encoding="utf-8") as f:
             self.assertIn("minimum_version = ssl.TLSVersion.TLSv1_2", f.read())
+
+    def test_request_headers_have_a_total_size_limit(self):
+        from starboard import server as server_module
+        sock = socket.create_connection(("127.0.0.1", self.port), timeout=3)
+        sock.settimeout(3)
+        try:
+            sock.sendall(b"GET /healthz HTTP/1.1\r\nHost: localhost\r\nX-Pad: " + b"x" * (server_module.MAX_HEADER_BYTES + 1) + b"\r\n\r\n")
+            chunks = []
+            while True:
+                chunk = sock.recv(4096)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+            self.assertIn(b" 431 ", b"".join(chunks))
+        finally:
+            sock.close()
+
+    def test_slow_headers_are_limited_by_an_absolute_request_deadline(self):
+        from starboard import server as server_module
+        original = server_module.REQUEST_TIMEOUT
+        server_module.REQUEST_TIMEOUT = 0.35
+        sock = socket.create_connection(("127.0.0.1", self.port), timeout=2)
+        sock.settimeout(2)
+        try:
+            sock.sendall(b"GET /healthz HTTP/1.1\r\nHost: localhost\r\nX-Slow: ")
+            time.sleep(0.18)
+            sock.sendall(b"one\r\n")
+            time.sleep(0.18)
+            try:
+                sock.sendall(b"two\r\n\r\n")
+            except OSError:
+                pass  # the server may already have closed the slow connection
+            self.assertEqual(sock.recv(200), b"")
+        finally:
+            sock.close()
+            server_module.REQUEST_TIMEOUT = original
 
     def test_negative_content_length_is_refused(self):
         s = socket.create_connection(("127.0.0.1", self.port), timeout=5)
