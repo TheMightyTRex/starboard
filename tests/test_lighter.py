@@ -176,6 +176,7 @@ class SharedAnswersTest(unittest.TestCase):
         self.s = services
         services.forget()
         services._flight.clear()
+        services.cache_stats(reset=True)
 
     def test_many_names_are_capped(self):
         for i in range(self.s.CACHE_MAX + 150):
@@ -184,6 +185,22 @@ class SharedAnswersTest(unittest.TestCase):
         self.assertIn(f"library-item-films-{self.s.CACHE_MAX + 149}", self.s._cache)  # the newest stays
         self.assertNotIn("library-item-films-0", self.s._cache)  # the oldest goes
         self.assertLessEqual(len(self.s._flight), self.s.CACHE_MAX)
+
+    def test_cache_metrics_report_hits_misses_refreshes_and_evictions(self):
+        self.assertEqual(self.s.cached("metrics", 60, lambda: "first"), "first")
+        self.assertEqual(self.s.cached("metrics", 60, lambda: "unused"), "first")
+        self.s._cache["metrics"] = (self.s.time.monotonic() - 1, "first", 60)
+        self.assertEqual(self.s.cached("metrics", 60, lambda: "fresh", fresh=True), "fresh")
+        for i in range(self.s.CACHE_MAX + 1):
+            self.s.cached(f"metric-item-{i}", 600, lambda: i)
+        stats = self.s.cache_stats()
+        self.assertEqual(stats["misses"], self.s.CACHE_MAX + 2)
+        self.assertEqual(stats["hits"], 1)
+        self.assertEqual(stats["refresh_requests"], 1)
+        self.assertEqual(stats["refreshes"], 1)
+        self.assertGreaterEqual(stats["evictions"], 1)
+        self.assertLessEqual(stats["entries"], stats["capacity"])
+        self.assertNotIn("metrics", stats)  # cache keys and search terms never enter diagnostics
 
     def test_out_of_date_answers_are_dropped_and_fresh_ones_kept(self):
         from unittest import mock

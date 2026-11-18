@@ -19,6 +19,11 @@ class Serve(http.server.BaseHTTPRequestHandler):
     files = {"/guide.xml.gz": gzip.compress(GUIDE), "/bomb.xml.gz": gzip.compress(BOMB)}
 
     def do_GET(self):
+        if self.path == "/redirect-metadata":
+            self.send_response(302)
+            self.send_header("Location", "http://169.254.169.254/latest/meta-data/")
+            self.end_headers()
+            return
         body = self.files[self.path]
         self.send_response(200)
         self.send_header("Content-Length", str(len(body)))
@@ -57,6 +62,10 @@ class GuideStreamTest(unittest.TestCase):
     def test_only_web_addresses(self):
         with self.assertRaises(ValueError):
             list(livetv._guide_events("file:///etc/passwd"))
+
+    def test_redirects_cannot_reach_link_local_metadata(self):
+        with self.assertRaisesRegex(ValueError, "link-local"):
+            livetv.fetch(f"{self.base}/redirect-metadata")
 
 
 if __name__ == "__main__":

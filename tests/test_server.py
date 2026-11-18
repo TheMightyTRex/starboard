@@ -453,6 +453,16 @@ class ServerTest(unittest.TestCase):
         resp, _ = self.request("GET", "/js/common.js", headers={"If-None-Match": tag}, cookie=False)
         self.assertEqual(resp.status, 304)
 
+    def test_system_diagnostics_include_key_free_cache_metrics(self):
+        self.sign_in()
+        response, data = self.request("GET", "/api/system")
+        self.assertEqual(response.status, 200)
+        self.assertIn("cache", data)
+        self.assertEqual(data["cache"]["capacity"], 200)
+        self.assertIn("hits", data["cache"])
+        self.assertIn("evictions", data["cache"])
+        self.assertNotIn("keys", data["cache"])
+
 
 class ConfigTest(unittest.TestCase):
     def test_rejects_bad_addresses(self):

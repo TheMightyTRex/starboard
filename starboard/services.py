@@ -82,34 +82,60 @@ _flight = {}
 # Answers are forgotten once out of date, and at most CACHE_MAX are kept (DASH-298: many are named by what was asked,
 # such as each search or item page, and were kept until a restart, so memory grew with use).
 CACHE_MAX = 200
+_cache_stats = {"hits": 0, "misses": 0, "refresh_requests": 0, "refreshes": 0, "waiters": 0,
+                "expired": 0, "evictions": 0, "invalidations": 0}
 
 
 def _sweep(now):
-    """Drops answers past their time, then the oldest beyond CACHE_MAX, and the locks of names no longer asked.
-    Called with _cache_lock held."""
-    for k in [k for k, (at, _, seconds) in _cache.items() if now - at >= max(seconds, 1)]:
+    """Drops expired answers and the oldest beyond CACHE_MAX. Called with _cache_lock held."""
+    expired = [k for k, (at, _, seconds) in _cache.items() if now - at >= max(seconds, 1)]
+    for k in expired:
         del _cache[k]
+    _cache_stats["expired"] += len(expired)
     if len(_cache) > CACHE_MAX:
-        for k in sorted(_cache, key=lambda k: _cache[k][0])[:len(_cache) - CACHE_MAX]:
+        oldest = sorted(_cache, key=lambda k: _cache[k][0])[:len(_cache) - CACHE_MAX]
+        for k in oldest:
             del _cache[k]
+        _cache_stats["evictions"] += len(oldest)
     for k in [k for k, lock in _flight.items() if k not in _cache and not lock.locked()]:
         del _flight[k]
+
+
+def cache_stats(reset=False):
+    """A key-free snapshot of cache activity and size, safe to log or show in diagnostics."""
+    with _cache_lock:
+        result = {**_cache_stats, "entries": len(_cache), "inflight": sum(lock.locked() for lock in _flight.values()),
+                  "capacity": CACHE_MAX}
+        if reset:
+            for key in _cache_stats:
+                _cache_stats[key] = 0
+        return result
 
 
 def cached(key, seconds, fn, fresh=False):
     with _cache_lock:
         hit = _cache.get(key)
         if hit and not fresh and time.monotonic() - hit[0] < seconds:
+            _cache_stats["hits"] += 1
             return hit[1]
+        if fresh:
+            _cache_stats["refresh_requests"] += 1
+        else:
+            _cache_stats["misses"] += 1
         flight = _flight.setdefault(key, threading.Lock())
+        if flight.locked():
+            _cache_stats["waiters"] += 1
     with flight:  # a second caller waits for the first one's answer instead of asking again
         with _cache_lock:
             hit = _cache.get(key)
             if hit and time.monotonic() - hit[0] < (0.5 if fresh else seconds):
+                _cache_stats["hits"] += 1
                 return hit[1]
         value = fn()
         with _cache_lock:
             now = time.monotonic()
+            if fresh:
+                _cache_stats["refreshes"] += 1
             _cache[key] = (now, value, seconds)
             _sweep(now)
         return value
@@ -118,8 +144,10 @@ def cached(key, seconds, fn, fresh=False):
 def forget(*keys):
     """Drops the shared answers named, or all of them."""
     with _cache_lock:
+        removed = 0
         for k in keys or list(_cache):
-            _cache.pop(k, None)
+            removed += _cache.pop(k, None) is not None
+        _cache_stats["invalidations"] += removed
 
 
 def _api(service, path, params=None, method="GET", body=None, timeout=TIMEOUT):

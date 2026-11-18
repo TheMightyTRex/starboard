@@ -2563,6 +2563,7 @@ class Handler(BaseHTTPRequestHandler):
                 snap = sysinfo.snapshot(app.disks)
                 app.record_space(snap)
                 snap["pools"] = sysinfo.pools([dict(d, path=p) for (_, p), d in zip(app.disks, snap["disks"])])
+                snap["cache"] = services.cache_stats()  # key-free diagnostics: no search terms or cache keys
                 return self.json(200, snap)
             if path == "/api/system/recovery" and method == "GET":  # after an unexpected shutdown (DASH-88)
                 from . import recovery

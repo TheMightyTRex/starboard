@@ -451,6 +451,8 @@ def apps(services):
         if not s.get("enabled", True):
             continue
         c = match(s, found)
+        if not c and s.get("icon") == "reelix" and not s.get("container"):
+            continue  # Reelix's films, series, books and music run in Reelix's own container, listed once as Reelix
         row = {"id": s["id"], "name": s["name"], "group": s.get("group", ""), "background": bool(s.get("background")),
                "container": None}
         if c:
