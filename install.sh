@@ -692,7 +692,7 @@ step_health() {
 
 step_pool() {
   page "$STEP"
-  para "A pool joins several disks into one folder, /mnt/pool, and a backup disk protects it. The pool helper (deploy/install-pool.sh) does that work as root; Starboard only asks it, and every change needs your Starboard password and is checked first. It needs mergerfs, rsync and gdisk (and snapraid for a parity disk)."
+  para "A pool joins several disks into one folder, /mnt/pool, and a backup disk protects it. The pool helper (deploy/install-pool.sh) does that work as root; Starboard only asks it, and every change needs your Starboard password and a separate pool approval password checked by the helper. It needs mergerfs, rsync and gdisk (and snapraid for a parity disk)."
   yes_no_step "Set up Disk pools?" "Setting it up runs sudo, so you are asked for this computer's password. No: System, Storage, Pool says the helper is not set up." STARBOARD_ALLOW_POOL "$POOL" "sudo asks for your password." "Pool says the helper is not set up." || return $?
   POOL=$YES
 }
@@ -844,11 +844,14 @@ job_health() {
 }
 job_pool() {
   if [ -f /etc/systemd/system/starboard-pool.path ] && cmp -s starboard/pool_helper.py /usr/local/bin/starboard-pool; then
-    echo "The pool helper is already installed."; return 0
+    echo "The pool helper is already installed."
+    echo "Set its separate approval password before using the Pool page: sudo starboard-pool set-password"
+    return 0
   fi
   mkdir -p pool/requests pool/status
   sudo -n deploy/install-pool.sh "$PWD/pool" || stop IN-19 "the pool helper did not install. Show the details to find out why."
   echo "The pool helper is installed."
+  echo "Set its separate approval password before using the Pool page: sudo starboard-pool set-password"
 }
 job_build() {
   docker compose up -d --build && return 0

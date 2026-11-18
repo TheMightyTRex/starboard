@@ -5,7 +5,8 @@
 #   sudo deploy/install-pool.sh --remove
 # The helper (/usr/local/bin/starboard-pool) runs as root. Starboard never does: it drops a request in
 # FOLDER/requests, the one place it may write, and reads the answers in FOLDER/status. The helper accepts only a
-# fixed list of actions, plans every change first, and erases a drive only with the end of its serial number.
+# fixed list of actions, independently checks its root-owned approval password for changes, plans every change
+# first, and erases a drive only with the end of its serial number.
 set -eu
 [ "$(id -u)" -eq 0 ] || { echo "Run with sudo"; exit 1; }
 UNITS="starboard-pool.path starboard-pool.service starboard-pool-nightly.timer starboard-pool-nightly.service"
@@ -75,3 +76,4 @@ systemctl daemon-reload
 systemctl enable --now starboard-pool.path
 systemctl start starboard-pool.service
 echo "Installed the pool helper. Starboard reads its answers from $OUT/status (STARBOARD_POOL_DIR)."
+echo "Before changing disks in Starboard, set a separate approval password: sudo starboard-pool set-password"

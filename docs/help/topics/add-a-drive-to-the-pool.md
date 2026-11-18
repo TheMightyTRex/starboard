@@ -18,7 +18,9 @@ new, read [What a disk pool is](../basics/what-is-a-drive-pool.md).
   ```
 
 - The new disk is plugged in. Note the last 4 characters of its serial number, from the label on the disk.
-- Have your Starboard password ready. Every change to the disks asks for it again.
+- Set a separate pool approval password in a terminal with `sudo starboard-pool set-password`. The root helper
+  checks this itself; it is separate from the Starboard password.
+- Have both passwords ready. Every change to the disks asks for them again.
 - If the disk has files you want and you are going to erase it, copy them somewhere else first.
 
 ## Steps
@@ -38,8 +40,9 @@ new, read [What a disk pool is](../basics/what-is-a-drive-pool.md).
 9. Select **Continue to Confirm**.
 10. If the disk is being erased, enter the last 4 characters of its serial number.
 11. In **Enter your password**, enter your Starboard password.
-12. Select **Add the disk**, or **Erase and add to the pool**.
-13. Wait while each step is ticked off. When it says **Finished**, select **Back to Pool**.
+12. Enter your **Pool approval password**.
+13. Select **Add the disk**, or **Erase and add to the pool**.
+14. Wait while each step is ticked off. When it says **Finished**, select **Back to Pool**.
 
 ![The check before a disk is added, listing each change in order](../../screenshots/pool-add-3-check.png)
 
@@ -60,6 +63,7 @@ new, read [What a disk pool is](../basics/what-is-a-drive-pool.md).
 ## If it does not work
 
 - **The pool helper is not set up:** answer Yes to **Set up Disk pools?** in `./install.sh`.
+- **The pool approval password is not set:** run `sudo starboard-pool set-password` in a terminal.
 - **My disk is not listed:** **Other disks** on the Pool page says why each disk is not offered. Starboard
   never offers the system disk, a disk in another pool, RAID or LVM, or a disk with no stable name in
   `/dev/disk/by-id`. Some USB cases do not give one.

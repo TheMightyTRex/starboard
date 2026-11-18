@@ -3,7 +3,8 @@
 Starboard never runs as root and never touches a drive itself. The pool helper (deploy/install-pool.sh installs
 starboard/pool_helper.py as /usr/local/bin/starboard-pool) does the work as root. Starboard drops a small JSON
 request in STARBOARD_POOL_DIR/requests, the one place it may write, and reads the helper's answers, plans,
-progress and the pool's state from STARBOARD_POOL_DIR/status, read only. Nothing is shown when it is not set.
+progress and the pool's state from STARBOARD_POOL_DIR/status, read only. The helper independently checks a
+root-owned approval password before it accepts a change request. Nothing is shown when it is not set.
 """
 import json
 import os
@@ -93,5 +94,8 @@ def apply_request(data):
     plan = str(data.get("plan", ""))
     if not re.fullmatch(r"[0-9a-f]{12}", plan):
         raise ValueError("That is not a plan")
+    approval = str(data.get("approval") or "")
+    if not 1 <= len(approval) <= 256:
+        raise ValueError("Enter the pool approval password (up to 256 characters)")
     confirm = {str(k)[:200]: re.sub(r"[^A-Za-z0-9]", "", str(v))[:8] for k, v in (data.get("confirm") or {}).items()}
-    return {"plan": plan, "confirm": confirm}
+    return {"plan": plan, "confirm": confirm, "approval": approval}

@@ -288,12 +288,29 @@ class RequestTest(unittest.TestCase):
         self.put("a1b2c3d4.json", {"action": "plan", "id": "a1b2c3d4", "kind": "add", "drive": "sdb", "as": "pool", "erase": True})
         ph.serve(self.c.host)
         plan = self.answer("a1b2c3d4")["result"]["id"]
-        self.put("e1e2e3e4.json", {"action": "apply", "id": "e1e2e3e4", "plan": plan})
+        confirm = {self.c.byid("sdb"): "9KX1"}
+        self.put("e1e2e3e4.json", {"action": "apply", "id": "e1e2e3e4", "plan": plan, "confirm": confirm})
         ph.serve(self.c.host)
-        self.assertIn("9KX1", self.answer("e1e2e3e4")["error"])
-        self.put("f1f2f3f4.json", {"action": "apply", "id": "f1f2f3f4", "plan": plan, "confirm": {self.c.byid("sdb"): "9KX1"}})
+        self.assertIn("Set the pool approval password", self.answer("e1e2e3e4")["error"])
+        self.assertEqual(self.c.host.log, [])
+
+        ph.set_approval_password(self.c.host, "separate approval phrase")
+        self.put("f1f2f3f4.json", {"action": "apply", "id": "f1f2f3f4", "plan": plan,
+                                   "confirm": confirm, "approval": "wrong phrase"})
         ph.serve(self.c.host)
-        self.assertTrue(self.answer("f1f2f3f4")["ok"])
+        self.assertIn("approval password was not correct", self.answer("f1f2f3f4")["error"])
+        self.assertEqual(self.c.host.log, [])
+
+        self.put("a5a6a7a8.json", {"action": "apply", "id": "a5a6a7a8", "plan": plan,
+                                   "approval": "separate approval phrase"})
+        ph.serve(self.c.host)
+        self.assertIn("9KX1", self.answer("a5a6a7a8")["error"])
+        self.assertEqual(self.c.host.log, [])
+
+        self.put("b5b6b7b8.json", {"action": "apply", "id": "b5b6b7b8", "plan": plan,
+                                   "confirm": confirm, "approval": "separate approval phrase"})
+        ph.serve(self.c.host)
+        self.assertTrue(self.answer("b5b6b7b8")["ok"])
         self.assertIn("mkfs.ext4", [c[0] for c in self.c.host.log])
 
 

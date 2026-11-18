@@ -1,6 +1,6 @@
 // System, Storage, Pool (DASH-87): the drives in the pool, the backup drives and the other drives, from the pool
 // helper; and three jobs done in steps: Add a drive, Balance the files and Take out of the pool. Every job is
-// checked first (a dry run on the server), and nothing changes until the password is typed again; erasing a drive
+// checked first (a dry run on the server), and nothing changes until both passwords are entered again; erasing a drive
 // also needs the end of its serial number. Starboard only asks: the helper, as root, does the work.
 
 let state = null;
@@ -283,16 +283,21 @@ function confirmView() {
     el("div", { class: "field" }, el("label", { for: "pool-password", text: "Your Starboard password" }),
       el("span", { class: "hint", id: "pool-password-hint", text: "Asked again for every change to the disks." }),
       sized(el("input", { class: "input", id: "pool-password", type: "password", autocomplete: "current-password", "aria-describedby": "pool-password-hint" }), { maxWidth: "28ch" })),
+    el("div", { class: "field" }, el("label", { for: "pool-approval", text: "Pool approval password" }),
+      el("span", { class: "hint", id: "pool-approval-hint", text: "Set separately in a terminal with sudo starboard-pool set-password. The root helper checks it before changing disks." }),
+      sized(el("input", { class: "input", id: "pool-approval", type: "password", autocomplete: "off", maxlength: 256, "aria-describedby": "pool-approval-hint" }), { maxWidth: "28ch" })),
   ];
   const go = async (e) => {
     const confirm = Object.fromEntries($$("[data-drive]").map((i) => [i.dataset.drive, i.value.trim()]));
     const password = $("#pool-password").value;
     if (!password) return inlineError($("#pool-password"), "Enter your password");
+    const approval = $("#pool-approval").value;
+    if (!approval) return inlineError($("#pool-approval"), "Enter the pool approval password");
     const bad = drives.find((d, n) => $(`#serial-${n}`).value.replace(/[^a-z0-9]/gi, "").toUpperCase() !== d.ends);
     if (bad) return inlineError($(`#serial-${drives.indexOf(bad)}`), `Type ${bad.ends}, the last 4 characters of the serial number`);
     e.target.disabled = true;
     try {
-      const { request } = await api("/api/pool/apply", { method: "POST", body: { plan: plan.id, password, confirm } });
+      const { request } = await api("/api/pool/apply", { method: "POST", body: { plan: plan.id, password, approval, confirm } });
       await waitFor(request);
       show(flow.step + 1);
     } catch (err) {

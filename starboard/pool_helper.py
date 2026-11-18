@@ -4,6 +4,7 @@
 Starboard never runs as root. This one file, standard library only, is installed by deploy/install-pool.sh as
 /usr/local/bin/starboard-pool and runs as root: from a systemd .path unit when Starboard drops a request in
 FOLDER/requests (the only place Starboard may write), from a nightly timer, or from the terminal with sudo.
+Requests that change disks need a separate approval password checked by this root helper.
 
   starboard-pool drives                        list the drives and what each is used for
   starboard-pool plan add DRIVE --as pool|parity|copy [--erase] [--folders a,b]
@@ -14,17 +15,20 @@ FOLDER/requests (the only place Starboard may write), from a nightly timer, or f
   starboard-pool status                        the pool, its drives, backup drives and the last job
   starboard-pool nightly                       the backup drives' check (SnapRAID) and copy (rsync)
   starboard-pool serve FOLDER                  answer Starboard's requests (run by the .path unit)
+  starboard-pool set-password                  set the separate password checked for Starboard's change requests
 
 Rules it never breaks: it never offers or touches the system drive or a drive in RAID, LVM or ZFS; it erases a
 drive only when the request carries the end of that drive's serial number; it changes only the lines between its
 own markers in /etc/fstab and only a snapraid.conf it wrote; a pool it did not make is shown, never changed; every
-change is planned first (a dry run) and the plan is refused if a drive changed since. Starboard asks for the
-person's password before it sends anything that changes a drive.
+change is planned first (a dry run) and the plan is refused if a drive changed since. The helper independently
+checks the pool approval password before accepting a change request from Starboard.
 """
 import argparse
 import datetime
 import fcntl
+import getpass
 import hashlib
+import hmac
 import json
 import os
 import re
@@ -40,6 +44,12 @@ BEGIN = "# starboard-pool begin: written by Starboard's pool helper; change thes
 END = "# starboard-pool end"
 SNAP_HEAD = "# Written by Starboard's pool helper (starboard-pool). Change it on System, Storage, Pool."
 PLAN_MINUTES = 15
+APPROVAL_ITERATIONS = 600_000
+APPROVAL_MIN = 12
+APPROVAL_MAX = 256
+APPROVAL_TRIES = 5
+APPROVAL_WINDOW = 900
+APPROVAL_FILE = "approval.json"
 SYSTEM_MOUNTS = ("/", "/boot", "/boot/efi", "/home", "/var", "/usr", "/srv", "/opt")
 MEMBER_FS = {"linux_raid_member": "RAID", "LVM2_member": "LVM", "zfs_member": "ZFS", "crypto_LUKS": "encryption",
              "bcache": "bcache", "ceph": "Ceph"}
@@ -91,6 +101,52 @@ def read_json(path, default=None):
             return json.load(f)
     except (OSError, ValueError):
         return default
+
+
+def set_approval_password(host, password):
+    """Set the root-only password the request service checks before applying a plan."""
+    if not isinstance(password, str) or not APPROVAL_MIN <= len(password) <= APPROVAL_MAX:
+        raise Refused(f"Use a pool approval password from {APPROVAL_MIN} to {APPROVAL_MAX} characters")
+    salt = secrets.token_bytes(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, APPROVAL_ITERATIONS)
+    write_json(os.path.join(host.state, APPROVAL_FILE), {
+        "password": f"pbkdf2_sha256${APPROVAL_ITERATIONS}${salt.hex()}${digest.hex()}",
+        "failures": [],
+    }, 0o600)
+
+
+def verify_approval(host, password):
+    """Verify approval at the privileged boundary, independently of Starboard's web process."""
+    path = os.path.join(host.state, APPROVAL_FILE)
+    record = read_json(path)
+    stored = record.get("password") if isinstance(record, dict) else None
+    if not isinstance(stored, str):
+        raise Refused("Set the pool approval password first: run `sudo starboard-pool set-password`")
+    try:
+        algorithm, rounds, salt, expected = stored.split("$")
+        if (algorithm != "pbkdf2_sha256" or int(rounds) != APPROVAL_ITERATIONS or
+                len(bytes.fromhex(salt)) != 16 or len(bytes.fromhex(expected)) != 32):
+            raise ValueError
+    except (ValueError, TypeError):
+        raise Refused("The pool approval password is not set up correctly; run `sudo starboard-pool set-password`") from None
+
+    now_ = now()
+    failures = record.get("failures", [])
+    if not isinstance(failures, list):
+        raise Refused("The pool approval password is not set up correctly; run `sudo starboard-pool set-password`")
+    failures = [t for t in failures if isinstance(t, (int, float)) and 0 <= now_ - t < APPROVAL_WINDOW]
+    if len(failures) >= APPROVAL_TRIES:
+        wait = max(1, int(APPROVAL_WINDOW - (now_ - failures[0])))
+        raise Refused(f"Too many incorrect pool approval passwords. Try again in {wait} seconds")
+
+    password = password if isinstance(password, str) and len(password) <= APPROVAL_MAX else ""
+    actual = hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), APPROVAL_ITERATIONS)
+    if not hmac.compare_digest(actual.hex(), expected):
+        failures.append(now_)
+        write_json(path, {"password": stored, "failures": failures}, 0o600)
+        raise Refused("The pool approval password was not correct")
+    if failures:
+        write_json(path, {"password": stored, "failures": []}, 0o600)
 
 
 class Host:
@@ -1066,6 +1122,7 @@ def handle(host, req):
             return plan_balance(host, pause, "mergerfs.balance" if req.get("engine") == "mergerfs.balance" else "starboard")
         raise Refused("Starboard asked for a plan the pool helper does not make")
     if act == "apply":
+        verify_approval(host, req.get("approval", ""))
         plan = load_plan(host, str(req.get("plan", "")))
         confirm = {str(k): str(v) for k, v in (req.get("confirm") or {}).items()}
         verify(host, plan, confirm)  # refuse at once, before starting a job in the background
@@ -1122,6 +1179,17 @@ def print_plan(plan, out=sys.stdout):
         print(f"       and {len(plan['moves']) - 20} more", file=out)
 
 
+def prompt_approval_password(host):
+    if not sys.stdin.isatty():
+        raise Refused("Run `sudo starboard-pool set-password` from a terminal")
+    first = getpass.getpass("New pool approval password: ")
+    second = getpass.getpass("Type it again: ")
+    if first != second:
+        raise Refused("The passwords did not match")
+    set_approval_password(host, first)
+    print("Pool approval password set. Keep it separate from Starboard's password.")
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="starboard-pool", description="Starboard's disk pool helper (runs as root).")
     p.add_argument("--json", action="store_true", help="answer in JSON, for Starboard's terminal set-up")
@@ -1142,6 +1210,7 @@ def main(argv=None):
     rj.add_argument("plan")
     sub.add_parser("stop")
     sub.add_parser("nightly")
+    sub.add_parser("set-password", help="set the root-checked password for changes requested in Starboard")
     sv = sub.add_parser("serve")
     sv.add_argument("folder")
     a = p.parse_args(argv)
@@ -1178,6 +1247,8 @@ def main(argv=None):
             print("Stopping after the folder being moved now")
         elif a.cmd == "nightly":
             nightly(host)
+        elif a.cmd == "set-password":
+            prompt_approval_password(host)
         elif a.cmd == "serve":
             serve(host)
     except Refused as e:

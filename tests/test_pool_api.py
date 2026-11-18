@@ -13,6 +13,7 @@ from starboard.server import make_server
 from tests.test_pool_helper import Computer, standard
 
 PASSWORD = "correct horse battery"
+POOL_APPROVAL = "separate pool approval phrase"
 
 
 class PoolApiTest(unittest.TestCase):
@@ -38,6 +39,7 @@ class PoolApiTest(unittest.TestCase):
     def setUp(self):
         self.c = Computer(standard())
         os.environ["STARBOARD_POOL_DIR"] = self.c.exchange
+        ph.set_approval_password(self.c.host, POOL_APPROVAL)
         ph.publish_status(self.c.host)
         self.app.limits.clear("127.0.0.1")
 
@@ -73,13 +75,22 @@ class PoolApiTest(unittest.TestCase):
         resp, data = self.request("POST", "/api/pool/apply", {"plan": pid, "password": "wrong password"})
         self.assertEqual(resp.status, 401)
         self.assertEqual(os.listdir(os.path.join(self.c.exchange, "requests")), [])
-        resp, data = self.request("POST", "/api/pool/apply", {"plan": pid, "password": PASSWORD})
+        resp, data = self.request("POST", "/api/pool/apply", {"plan": pid, "password": PASSWORD,
+                                                              "approval": "wrong pool approval phrase"})
+        self.assertEqual(resp.status, 200)
+        ph.serve(self.c.host)
+        _, answer = self.request("GET", "/api/pool/answer?id=" + data["request"])
+        self.assertFalse(answer["ok"])
+        self.assertIn("approval password was not correct", answer["error"])
+        resp, data = self.request("POST", "/api/pool/apply", {"plan": pid, "password": PASSWORD,
+                                                              "approval": POOL_APPROVAL})
         self.assertEqual(resp.status, 200)
         ph.serve(self.c.host)
         _, answer = self.request("GET", "/api/pool/answer?id=" + data["request"])
         self.assertFalse(answer["ok"])
         self.assertIn("9KX1", answer["error"])
         resp, data = self.request("POST", "/api/pool/apply", {"plan": pid, "password": PASSWORD,
+                                                              "approval": POOL_APPROVAL,
                                                               "confirm": {self.c.byid("sdb"): "9kx1"}})
         ph.serve(self.c.host)
         _, answer = self.request("GET", "/api/pool/answer?id=" + data["request"])
