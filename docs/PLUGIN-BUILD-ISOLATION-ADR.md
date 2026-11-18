@@ -9,18 +9,18 @@
 
 Use a **disposable BuildKit builder created with Buildx's `docker-container` driver**, not the Docker Engine's legacy `POST /build` endpoint. Each build gets a unique workspace and builder instance. The builder is removed after the result is imported or the build fails. Do not share a persistent global BuildKit cache between untrusted plug-ins.
 
-BuildKit is the appropriate builder because the container driver gives Starboard a separately configurable daemon, driver-level CPU and memory limits, a configurable network, and a dedicated state volume. The default Docker driver is bound to the daemon and is not manually configurable. See [Docker's driver comparison](https://docs.docker.com/build/builders/drivers/) and [container driver options](https://docs.docker.com/build/builders/drivers/docker-container/).
+BuildKit is the appropriate builder because the container driver gives Starboard a separately configurable daemon, driver-level CPU and memory limits, a configurable network, and a dedicated state volume. The default Docker driver is bound to the daemon and is not manually configurable. Source: [Docker's driver comparison](https://docs.docker.com/build/builders/drivers/) and [container driver options](https://docs.docker.com/build/builders/drivers/docker-container/).
 
 ### 1. Hard disk boundary
 
-BuildKit's garbage-collection `maxUsedSpace` is **not** a hard quota: it reclaims cache after a threshold is exceeded and cannot prevent one active build from filling the filesystem. See [Docker BuildKit garbage collection](https://docs.docker.com/build/cache/garbage-collection/) and [BuildKit configuration](https://docs.docker.com/build/buildkit/toml-configuration).
+BuildKit's garbage-collection `maxUsedSpace` is **not** a hard quota: it reclaims cache after a threshold is exceeded and cannot prevent one active build from filling the filesystem. Source: [Docker BuildKit garbage collection](https://docs.docker.com/build/cache/garbage-collection/) and [BuildKit configuration](https://docs.docker.com/build/buildkit/toml-configuration).
 
 Therefore the host must provision a dedicated **8 GiB XFS project-quota-backed directory** for build workspaces and expose it to Starboard as `/var/lib/starboard-builds`. The quota is applied on the host, not from the Starboard container. It covers the disposable BuildKit state, intermediate layers, cache and exported image archive. Starboard remains unprivileged and must not be granted `CAP_SYS_ADMIN`, mount access, or the ability to change host quotas.
 
-- The installer provisions and verifies the XFS mount and project quota before enabling zip-based image builds.
-- On hosts without the required quota-backed mount, Starboard refuses to build a zip Dockerfile and explains how to enable the feature. It must not silently fall back to the daemon's shared storage.
+- The installer provisions and verifies the XFS mount and project quota before it allows zip-based image builds.
+- On hosts without the required quota-backed mount, Starboard refuses to build a zip Dockerfile and explains how to allow the feature. It must not silently fall back to the daemon's shared storage.
 - Only one untrusted zip build runs at a time, as today.
-- Configure BuildKit GC below the hard quota (6 GiB target) as early cleanup, not as the enforcement boundary.
+- Configure BuildKit GC under the hard quota (6 GiB target) as early cleanup, not as the enforcement boundary.
 - Export a Docker-compatible archive inside the quota-backed workspace. Before loading it into the host daemon, inspect every layer and sum the **uncompressed layer sizes**; refuse an image over the existing 3 GiB limit before it consumes shared daemon image storage. Remove the workspace and builder on success, failure, timeout, cancellation and restart recovery.
 
 ### 2. Network boundary
@@ -36,7 +36,7 @@ The proxy is the sole permitted egress path. It must:
 
 The proxy container is disposable per build, has no Docker socket, and is removed with the builder. Do not use host networking for the builder or the proxy. Build steps retain package downloads through the proxy; direct outbound connections are denied by routing/firewall policy rather than relying on Dockerfile convention or proxy environment variables alone.
 
-Docker documents the Buildx container driver's configurable network and BuildKit's CNI bridge mode; the final implementation must add an explicit deny-by-default CNI/firewall policy and prove it with integration tests. See [container driver custom networks](https://docs.docker.com/build/builders/drivers/docker-container/) and [BuildKit network configuration](https://docs.docker.com/build/buildkit/configure/).
+Docker documents the Buildx container driver's configurable network and BuildKit's CNI bridge mode; the final implementation must add an explicit deny-by-default CNI/firewall policy and prove it with integration tests. Source: [container driver custom networks](https://docs.docker.com/build/builders/drivers/docker-container/) and [BuildKit network configuration](https://docs.docker.com/build/buildkit/configure/).
 
 ### 3. Resource limits and image handoff
 
@@ -59,7 +59,7 @@ Rollout order:
 2. Starboard verifies Buildx/BuildKit and the workspace mount before accepting a build;
 3. add the disposable builder, archive verification and proxy;
 4. run adversarial integration tests on a real Linux Docker host;
-5. enable the feature by default only after the tests pass.
+5. Make the feature the default only after the tests pass.
 
 ## Acceptance tests
 
