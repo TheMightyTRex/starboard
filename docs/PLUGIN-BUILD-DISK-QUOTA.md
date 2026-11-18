@@ -1,6 +1,10 @@
 # Plug-in build disk isolation: implementation requirements
 
-Status: design decision required. This note records why the current post-build image-size check is not a disk quota.
+Status: architecture selected; implementation pending. See [the accepted architecture decision](PLUGIN-BUILD-ISOLATION-ADR.md) in PR #194.
+
+The selected design is a disposable Buildx `docker-container` BuildKit instance with its state, intermediate layers and exported archive stored under an 8 GiB host-provisioned XFS project quota. BuildKit GC is a secondary cleanup mechanism only. The host quota is the hard boundary. The exported image archive is checked by expanded layer size before import into the shared Docker daemon.
+
+The installer must provision and verify the quota-backed mount at `/var/lib/starboard-builds`. Hosts without the supported mount refuse zip builds safely; there is no fallback to the daemon's shared data root.
 
 ## Current boundary
 
