@@ -29,6 +29,8 @@ import urllib.parse
 import urllib.request
 import uuid
 
+from . import outside
+
 RAW = "https://raw.githubusercontent.com/matthuisman/i.mjh.nz/master"
 GUIDES = [
     "https://epgshare01.online/epgshare01/epg_ripper_UK1.xml.gz",
@@ -76,11 +78,26 @@ MAX_DOWNLOAD = 200 * 1024 * 1024  # a guide is about 30 MB; anything far bigger 
 MAX_UNPACKED = 600 * 1024 * 1024
 
 
+class _SafeRedirect(urllib.request.HTTPRedirectHandler):
+    """Keep Live TV downloads inside the same outbound-address policy as configured apps."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        outside.check_url(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def _open_url(url, headers=None, timeout=120):
+    """Open a web URL only after checking its resolved address and every HTTP redirect."""
+    outside.check_url(url)
+    request = urllib.request.Request(url, headers=headers or {})
+    return urllib.request.build_opener(_SafeRedirect()).open(request, timeout=timeout)
+
+
 def fetch(url, ua="Starboard", timeout=120, limit=MAX_DOWNLOAD):
-    """Downloads an http(s) address, refusing anything else or anything larger than the limit."""
+    """Downloads an http(s) address, refusing unsafe destinations, redirects and oversized responses."""
     if not url.lower().startswith(("https://", "http://")):
         raise ValueError("Only http and https addresses")
-    with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": ua}), timeout=timeout) as r:  # checked to be http(s) above  # nosec B310
+    with _open_url(url, {"User-Agent": ua}, timeout=timeout) as r:  # checked above and on redirects  # nosec B310
         data = r.read(limit + 1)
     if len(data) > limit:
         raise ValueError("The download is too large")
@@ -143,7 +160,7 @@ def _guide_events(url, timeout=300):
     tmp = open(url, "rb") if local else tempfile.TemporaryFile()  # noqa: SIM115  (closed below)
     try:
         if not local:
-            with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "Starboard"}), timeout=timeout) as r:  # checked to be http(s) above  # nosec B310
+            with _open_url(url, {"User-Agent": "Starboard"}, timeout=timeout) as r:  # checked to be http(s) above  # nosec B310
                 copied = 0
                 while True:
                     chunk = r.read(1024 * 1024)
@@ -240,7 +257,7 @@ def plays(url, ua):
     if not str(url).lower().startswith(("https://", "http://")):
         return False
     try:
-        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": ua}), timeout=15) as r:  # checked to be http(s) above  # nosec B310
+        with _open_url(url, {"User-Agent": ua}, timeout=15) as r:  # checked to be http(s) above  # nosec B310
             base, text = r.url, r.read(200000).decode("utf-8", "replace")
         if "#EXTM3U" not in text:
             return False
@@ -251,7 +268,7 @@ def plays(url, ua):
                 v = urllib.parse.urljoin(base, v)
                 if not v.lower().startswith(("https://", "http://")):  # a playlist line from the internet: never a file
                     return False
-                with urllib.request.urlopen(urllib.request.Request(v, headers={"User-Agent": ua}), timeout=15) as r:  # checked to be http(s) above  # nosec B310
+                with _open_url(v, {"User-Agent": ua}, timeout=15) as r:  # checked to be http(s) above  # nosec B310
                     vbase, vtext = r.url, r.read(200000).decode("utf-8", "replace")
             else:
                 vbase, vtext = base, text
@@ -261,8 +278,7 @@ def plays(url, ua):
             segment = urllib.parse.urljoin(vbase, segments[-1])
             if not segment.lower().startswith(("https://", "http://")):
                 return False
-            req = urllib.request.Request(segment, headers={"User-Agent": ua, "Range": "bytes=0-2047"})
-            with urllib.request.urlopen(req, timeout=15) as r:  # checked to be http(s) above  # nosec B310
+            with _open_url(segment, {"User-Agent": ua, "Range": "bytes=0-2047"}, timeout=15) as r:  # checked to be http(s) above  # nosec B310
                 if r.status in (200, 206) and r.read(2048):
                     return True
         return False
