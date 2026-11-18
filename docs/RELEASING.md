@@ -71,7 +71,10 @@ guide and the notes on GitHub, so they always say the same thing.
 8. **Security record.** List every security fix in the release's `security` entry (the notes show it under
    Security). Check CodeQL on GitHub has no open alerts that are not explained. Add a row for the release to
    "Security checks for each release" in `docs/SECURITY-AND-TESTS.md`: which checks ran and what they found.
-9. **Commit and tag** on `main`: `git tag vX.Y.Z`.
+9. **Commit and sign the tag** on `main`: `git tag -s vX.Y.Z -m "Starboard vX.Y.Z"`. The signing key must be registered with the maintainer's GitHub account so GitHub reports the annotated tag as verified. `./update.sh` checks GitHub's verification result and confirms the tag points to the fetched commit. For recovery only, `./update.sh --allow-unsigned` bypasses this check.
+
+The first signed release is a bootstrap point: installations running an older updater cannot check signatures until that release is installed. Before publishing it, the owner must confirm its tag is marked **Verified** on GitHub. From the next update onward, the new updater enforces the check. Release-channel updates require Python 3 for the GitHub verification request; `--main` is unchanged.
+
 10. **Publish** (the owner, TheMightyTRexUK, runs this after giving the OK to push):
 
    ```bash
