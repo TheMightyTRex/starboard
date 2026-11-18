@@ -1,6 +1,6 @@
 # Architecture decision: isolate plug-in image builds
 
-- Status: **Accepted design; implementation pending**
+- Status: **Proposed; not accepted by the owner yet**
 - Date: 18 November 2026
 - Scope: zip-installed plug-ins whose Dockerfiles Starboard builds
 - Supersedes: the open design-only proposals in PRs #192 and #193
@@ -25,7 +25,7 @@ Therefore the host must provision a dedicated **8 GiB XFS project-quota-backed d
 
 ### 2. Network boundary
 
-Run the BuildKit container on a dedicated internal-only Docker network. Configure the BuildKit OCI worker with a dedicated CNI network that has no direct Internet or LAN route. Its only default route is a Starboard-managed egress proxy attached to both the isolated build network and a separate outbound network.
+Run the BuildKit container on a dedicated internal-only Docker network. Configure the BuildKit OCI worker with a dedicated CNI network that has no direct internet or home network route. Its only default route is a Starboard-managed egress proxy attached to both the isolated build network and a separate outbound network.
 
 The proxy is the sole permitted egress path. It must:
 - accept HTTP proxy requests and HTTPS CONNECT only;
@@ -81,4 +81,16 @@ Rollout order:
 
 ### Resource limits
 - CPU, memory and wall-clock limits apply to the whole disposable builder, not merely one build step.
-- Concurrent zip builds remain serialized.
+- Concurrent zip builds still run one at a time.
+
+## Cost on small servers (to weigh before accepting)
+
+Starboard's main design rule is low memory and processor use on small servers, such as a Raspberry Pi with 2 GB.
+This design adds a BuildKit container and an egress proxy for each zip build, which takes memory and time on such a
+computer. XFS project quotas are rare there: most Raspberry Pi and small Linux installs use ext4. Alternatives to
+measure before accepting:
+
+- a fixed-size loop-file filesystem (for example 8 GiB, made once) as the build workspace, which gives a hard
+  limit on any filesystem;
+- one long-lived, idle builder instead of a new one for each build;
+- keeping zip builds off by default, as they are rare, and switching this isolation on only where they are used.
