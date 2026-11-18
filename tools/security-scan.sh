@@ -19,7 +19,7 @@ TARGET="http://starboard-scan:8095"
 FULL=0
 [ "${1:-}" = "--full" ] && FULL=1
 TRIVY=aquasec/trivy:0.69.1
-ZAP=ghcr.io/zaproxy/zaproxy:stable
+ZAP=zaproxy/zap-stable:2.17.0
 # ZAP (Java and its headless Firefox, about 5 GB in all) is capped at 6 GB, so a scan cannot run the server out of memory (14 November 2026: an uncapped active scan grew
 # to 4 GB beside other work and the computer ran out of memory; 3 GB was too little for its browser). Run nothing else heavy beside it.
 ZAP_LIMITS="--memory ${ZAP_MEMORY:-6g} --memory-swap ${ZAP_MEMORY:-6g} --cpus ${ZAP_CPUS:-4}"
@@ -51,8 +51,8 @@ docker run --rm -v "$PWD:/repo:ro" -v "$GIT_COMMON:$GIT_COMMON:ro" zricethezav/g
 result $? "Gitleaks"
 
 say "Bandit: medium and high"
-docker run --rm -v "$PWD:/src:ro" python:3.12-alpine sh -c \
-  "pip install -q bandit >/dev/null 2>&1 && bandit -q -r /src/starboard -ll 2>/dev/null"
+docker run --rm -v "$PWD:/src:ro" python:3.12.16-alpine3.24 sh -c \
+  "pip install -q bandit==1.9.4 >/dev/null 2>&1 && bandit -q -r /src/starboard -ll 2>/dev/null"
 result $? "Bandit"
 
 say "ShellCheck"
