@@ -280,10 +280,13 @@ await page.keyboard.press("Tab");
 check("LIB-04", "Play follows the title in the Tab order",
   await page.evaluate(() => document.activeElement.classList.contains("play-link")));
 check("LIB-04", "with a visible focus outline", await page.evaluate(() => getComputedStyle(document.activeElement).outlineStyle !== "none"));
+// The made-up Jellyfin address answers with a stand-in page, so the new tab keeps its address.
+await page.context().route("http://192.168.1.20:8096/**", (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<title>Jellyfin</title>" }));
 const [popup] = await Promise.all([page.context().waitForEvent("page", { timeout: 5000 }).catch(() => null),
   page.keyboard.press("Enter")]);
 check("LIB-04", "Enter opens it in a new tab", Boolean(popup) && /192\.168\.1\.20:8096\/web\/#\/details\?id=/.test(popup?.url() || ""), popup?.url());
 await popup?.close();
+await page.context().unroute("http://192.168.1.20:8096/**");
 await open("library-film.html?id=1");
 const head = page.locator(".series-head .play-link");
 check("LIB-04", "a film's page has Play as its main action", await head.count() === 1 && /btn--primary/.test(await head.getAttribute("class")));
