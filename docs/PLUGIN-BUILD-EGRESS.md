@@ -1,7 +1,8 @@
 # Plug-in build network isolation: implementation requirements
 
-Status: design decision required. This note records the security boundary needed before changing the current build
-network mode.
+Status: architecture selected; implementation pending. See [the accepted architecture decision](PLUGIN-BUILD-ISOLATION-ADR.md) in PR #194.
+
+The selected design is a disposable BuildKit builder on a dedicated internal-only Docker network. Its OCI worker uses an isolated CNI network with no direct LAN or Internet route; the only permitted egress path is a disposable Starboard-managed proxy attached to a separate outbound network. The proxy resolves and pins each public destination and re-checks redirects and CONNECT requests. Direct egress is denied by routing/firewall policy, not merely by proxy environment variables.
 
 ## Current boundary
 
