@@ -8,6 +8,7 @@ is kept in data/jobs.json, for System, Apps, Other services and Settings.
 
 import json
 import os
+import queue
 import threading
 import time
 
@@ -40,6 +41,10 @@ class Jobs:
         self.lock = threading.Lock()
         self.file_lock = threading.Lock()
         self.running = set()
+        self.pending = set()
+        self.work = queue.Queue(maxsize=len(JOBS))
+        self.workers = []
+        self.workers_lock = threading.Lock()
         self.wake = threading.Event()
         self.thread = None
 
@@ -87,10 +92,19 @@ class Jobs:
     # Running ------------------------------------------------------------------------------
 
     def run(self, key, force=False):
-        with self.lock:  # one run of each job at a time, however many clicks
-            if key in self.running:
+        """Run a job now unless it is already queued or running."""
+        with self.lock:
+            if key in self.running or key in self.pending:
                 return
             self.running.add(key)
+        try:
+            self._execute(key, force)
+        finally:
+            with self.lock:
+                self.running.discard(key)
+
+    def _execute(self, key, force=False):
+        """Run the job body after its per-job slot has been claimed."""
         self._record(key, started=time.time(), state="running")
         services = self.app.config.data["services"]
         try:
@@ -121,11 +135,49 @@ class Jobs:
         except Exception as e:  # recorded for the pages; the next run tries again
             self._record(key, finished=time.time(), state="failed", summary=str(e)[:300])
             logs.error("jobs", f"{key} failed: {e}", e)
-        finally:
-            self.running.discard(key)
+
+    def _start_workers(self):
+        """Start a small, fixed worker pool on the first queued job."""
+        with self.workers_lock:
+            if self.workers:
+                return
+            for i in range(2):
+                worker = threading.Thread(target=self._work, name=f"starboard-job-worker-{i + 1}", daemon=True)
+                worker.start()
+                self.workers.append(worker)
+
+    def _work(self):
+        while True:
+            key, force = self.work.get()
+            try:
+                # Claim the job before dropping it from pending, so a concurrent enqueue cannot duplicate it.
+                with self.lock:
+                    self.pending.discard(key)
+                    if key in self.running:
+                        continue
+                    self.running.add(key)
+                try:
+                    self._execute(key, force)
+                finally:
+                    with self.lock:
+                        self.running.discard(key)
+            finally:
+                self.work.task_done()
 
     def run_soon(self, key, force=False):
-        threading.Thread(target=self.run, args=(key, force), name=f"job-{key}", daemon=True).start()
+        """Queue a job without creating a thread per request; duplicate queued/running jobs are ignored."""
+        if key not in JOBS:
+            return
+        with self.lock:
+            if key in self.running or key in self.pending:
+                return
+            self.pending.add(key)
+            try:
+                self.work.put_nowait((key, force))
+            except queue.Full:
+                self.pending.discard(key)
+                return
+        self._start_workers()
 
     def _loop(self):
         while True:
@@ -134,7 +186,7 @@ class Jobs:
                 if key == "reelixupdate" and not self.quiet_now():
                     continue  # DASH-417: Reelix's automatic update waits for the quiet hours, as Starboard's does
                 if self.enabled(key) and time.time() - (last.get(key, {}).get("started") or 0) >= job["every"]:
-                    self.run(key)
+                    self.run_soon(key)
             if not any(self.enabled(k) for k in JOBS):
                 self.thread = None
                 return  # nothing on: the thread ends, and starts again when a job is turned on
