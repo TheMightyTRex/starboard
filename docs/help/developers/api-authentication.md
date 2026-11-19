@@ -114,6 +114,20 @@ and removed are written there too. The log never holds a key or a password. It k
 Settings, General, Logs and feedback: its older files go with the oldest days, and Delete all logs empties it (the
 delete itself is its next line).
 
+## The calendar address is not a key
+
+The Coming up page makes an address for calendar apps, `/calendar.ics?token=sbcal_...`, because a calendar app
+cannot send a header. Its token is not an API key:
+
+- It opens that one iCalendar file and nothing else. The API, the pages and the sign-in never accept it, and an API
+  key or a signed-in browser cannot open the file.
+- There is one at a time. Starboard keeps only its SHA-256 fingerprint and shows it once; a new one stops the old
+  one at once.
+- A refused token counts towards the same lockout per address as a refused key. A good one shares the limit of 120
+  a minute, and the file is kept for 15 minutes, so asking more often reads nothing new.
+- Making or stopping it is written to the audit log as `calendar_address_made` or `calendar_address_stopped`, and a
+  refused one as `calendar_refused`.
+
 ## Keep keys safe
 
 - Treat a key like a password. Keep it in an environment variable or a file only you can read, not in your code.

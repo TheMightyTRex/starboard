@@ -325,7 +325,85 @@ function openItem(i, opener) {
   });
 }
 
+// Calendar address (DASH-67) -------------------------------------------------------------------------------
+
+// A phone or calendar app subscribes to /calendar.ics with a token that opens that file and nothing else. Starboard
+// keeps only a scrambled copy of the token, so the address shows once, when it is made; a new one stops the old one.
+const madeOn = (iso) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+
+function feedLead(state) {
+  const weeks = Math.round(state.ahead_days / 7);
+  return el("p", { text: `Your calendar shows the films, episodes, albums, books and radio from Coming up, from ${state.back_days} days ago to ${weeks} weeks ahead. It checks for changes about once an hour.` });
+}
+
+function feedAddress(path) {
+  const address = `${location.origin}${path}`;
+  const input = el("input", { class: "input", id: "calendar-feed-address", readonly: true, value: address, spellcheck: "false", "aria-describedby": "calendar-feed-hint" });
+  const copy = el("button", { type: "button", class: "btn btn--primary" }, icon("copy"), "Copy the address");
+  copy.addEventListener("click", async () => {
+    if (await copyText(address)) toast("Calendar address copied");
+    else { input.focus(); input.select(); problem("Could not copy. Select the address and copy it yourself."); }
+  });
+  return { input, copy, node: el("div", { class: "field" },
+    el("label", { for: input.id, text: "Calendar address" }),
+    el("span", { class: "hint", id: "calendar-feed-hint", text: "In your calendar app, add a calendar from an address (sometimes called subscribe), then paste this. It works wherever this page works: to use it away from home, make it while you use Starboard's outside address." }),
+    input) };
+}
+
+async function openFeed(opener) {
+  let state;
+  try { state = await api("/api/calendar-feed"); } catch (e) { problem(e.message); return; }
+  const panel = sidePanel({ title: "Add Coming up to your calendar", opener });
+  const make = async (button) => {
+    if (state.made_at && !await confirmDialog({ title: "Make a new calendar address?", confirm: "Make a new address",
+      message: "The address you have now stops working. Any calendar that uses it stops updating until you give it the new one." })) return;
+    try {
+      const r = await api("/api/calendar-feed", { method: "POST", body: {} });
+      state = r;
+      const { input, copy, node } = feedAddress(r.path);
+      const done = el("button", { type: "button", class: "btn", text: "Done" });
+      done.addEventListener("click", () => panel.close());
+      panel.setBody([notice("success", "Copy the address now", "Starboard shows it only this once. Anyone with the address can read this calendar, so share it only with your own devices."),
+        feedLead(r), node]);
+      panel.setFoot([copy, done]);
+      input.focus();
+      input.select();
+      announce("Calendar address made");
+    } catch (e) { problem(e.message, button); }
+  };
+  const stop = async (button) => {
+    if (!await confirmDialog({ title: "Stop the calendar address?", confirm: "Stop the address", danger: true,
+      message: "Calendars that use it stop updating. You can make a new address at any time." })) return;
+    try {
+      state = await api("/api/calendar-feed", { method: "DELETE" });
+      draw();
+      announce("Calendar address stopped");
+      panel.foot.querySelector("button")?.focus();
+    } catch (e) { problem(e.message, button); }
+  };
+  function draw() {
+    const makeBtn = el("button", { type: "button", class: "btn btn--primary" }, icon(state.made_at ? "refresh-cw" : "calendar-clock"),
+      state.made_at ? "Make a new address" : "Make an address");
+    makeBtn.addEventListener("click", () => make(makeBtn));
+    const foot = [makeBtn];
+    const body = [feedLead(state)];
+    if (state.made_at) {
+      body.push(el("p", { text: `You made a calendar address on ${madeOn(state.made_at)}. ${state.last_used_at ? `A calendar last read it on ${madeOn(state.last_used_at)}.` : "No calendar has read it yet."} Starboard cannot show it again. To add another calendar, make a new address and give it to every calendar that uses the old one.` }));
+      const stopBtn = el("button", { type: "button", class: "btn" }, icon("ban"), "Stop the address");
+      stopBtn.addEventListener("click", () => stop(stopBtn));
+      foot.push(stopBtn);
+    } else {
+      body.push(el("p", { text: "The address opens this calendar and nothing else in Starboard." }));
+    }
+    panel.setBody(body);
+    panel.setFoot(foot);
+  }
+  draw();
+}
+
 startPage().then(async () => {
+  const feedButton = $("#calendar-feed");
+  feedButton?.addEventListener("click", () => openFeed(feedButton));
   try {
     const [data, cfg] = await Promise.all([api("/api/calendar"), api("/api/config").catch(() => ({ services: [] }))]);
     services = new Map(cfg.services.map((s) => [s.name, s]));

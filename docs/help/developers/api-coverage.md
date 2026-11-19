@@ -36,6 +36,7 @@ Every address starts with `/api/v1`. The [API reference](api-reference.md) gives
 | Read download hours; resume, pause or follow them | `GET /download-hours`; `POST /download-hours` | read and manage, `downloads` |
 | Read requests; approve or decline | `GET /requests`; `POST /requests/{id}/approve`, `/decline` | read and manage, `requests` |
 | Read Coming up, as a list or a month | `GET /calendar`, `?month=` | read, `media` |
+| Subscribe to Coming up from a calendar app | Not in the API: `/calendar.ics?token=`, made on the Coming up page. Read [Authentication and keys](api-authentication.md) | The calendar address's own token, which opens that file only |
 | Search the apps and add to one | Not yet | |
 
 ## Library and media
