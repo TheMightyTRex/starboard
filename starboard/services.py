@@ -12,6 +12,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 
 from . import logs, posters
@@ -711,8 +712,15 @@ def _gather(services, fn):
     for service, future in futures:
         try:
             rows.extend(future.result(timeout=TIMEOUT + 2))
-        except Exception as e:
-            errors.append({"service": service["id"], "message": str(e) if isinstance(e, ServiceError) else f"Cannot reach {service['name']}"})
+        except Exception as e:  # noqa: BLE001  one app's fault never stops the others
+            if isinstance(e, ServiceError):
+                said = str(e)
+            elif isinstance(e, (OSError, TimeoutError, concurrent.futures.TimeoutError)):
+                said = f"Cannot reach {service['name']}"
+            else:  # it answered, but Starboard could not read the answer: say so, and keep the detail in the log
+                said = f"Starboard could not read {service['name']}'s answer"
+                logs.event("warning", "apps", f"{said}: {type(e).__name__}: {str(e)[:200]}")
+            errors.append({"service": service["id"], "message": said})
     return rows, errors
 
 

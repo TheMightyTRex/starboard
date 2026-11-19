@@ -12,6 +12,7 @@ add features.
 
 ### Fixed
 - **A plug-in's Versions had no upload button:** Update from a zip file now has **Upload and check**, which uploads the zip, checks it and shows What is new before anything changes; it said What is new before.
+- **Copy issues for an AI helper found nothing from Reelix (owner, 19 November 2026):** Reelix gives a download's quality as plain text, which Starboard could not read, so every Reelix download was left out and the page said Reelix did not answer. It now reads both forms, adds Reelix's custom formats and score (for "Not an upgrade for the existing file"), and says "Starboard could not read Reelix's answer" when an answer cannot be read, with the detail in the log, instead of "Cannot reach".
 
 ## [0.23.0] (19 November 2026)
 

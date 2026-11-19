@@ -48,6 +48,15 @@ REELIX_QUEUE = {"items": [
     {"id": 34, "title": "Some.Series.S01E02", "state": "failed_pending", "client_state": "failed", "progress": 0.2, "size": 1000,
      "messages": ["Episodes are not part of the series"], "media": {"kind": "series", "id": 8, "title": "Some Series"},
      "episodes": [{"id": 81, "season_number": 1, "episode_number": 2}], "added": "2026-11-15T11:00:00Z"},
+    # As Reelix answers on a real server (19 November 2026): quality is {"quality": "<name>", "revision": {...}}, with
+    # custom formats and a score. This shape stopped Copy issues for every Reelix download.
+    {"id": 35, "title": "Some.Series.S01E09.BluRay.1080p.REMUX", "state": "import_pending", "client_state": "completed", "progress": 1.0,
+     "size": 7_500_000_000, "download_client": "NZBGet", "protocol": "usenet", "can_manual_import": True,
+     "quality": {"quality": "Remux-1080p", "revision": {"version": 1, "real": 0, "is_repack": False}},
+     "custom_formats": [], "format_score": 0,
+     "messages": ["Some.Series.S01E09.BluRay.1080p.REMUX.mkv: Not an upgrade for the existing file (Bluray-1080p, score 0)"],
+     "media": {"kind": "series", "id": 8, "title": "Some Series"}, "episodes": [{"id": 89, "season_number": 1, "episode_number": 9}],
+     "added": "2026-11-15T10:00:00Z"},
 ]}
 
 
@@ -74,7 +83,7 @@ class GatherTest(unittest.TestCase):
 
     def test_only_downloads_that_need_attention_or_failed(self):
         out = self.gather()
-        self.assertEqual(out["count"], 4)
+        self.assertEqual(out["count"], 5)
         self.assertEqual(out["apps_asked"], 2)  # Example TV and Reelix's own queue, not Reelix TV as well
         titles = [i["title"] for i in out["items"]]
         self.assertNotIn("Fine.Show.S01E01", titles)
@@ -93,6 +102,18 @@ class GatherTest(unittest.TestCase):
         self.assertEqual(old["ids"], {"queue": 3, "series": 1, "episode": 501, "season number": 5})
         self.assertEqual(old["age"], "1 day 3 hours")
         self.assertEqual(old["progress"], 100)
+
+    def test_reelix_quality_as_text_custom_formats_and_score(self):
+        item = next(i for i in self.gather()["items"] if i["ids"]["queue"] == 35)
+        self.assertEqual((item["status"], item["quality"], item["format_score"], item["custom_formats"]), ("Needs attention", "Remux-1080p", 0, []))
+        self.assertIn("**Custom formats:** none (score 0)", queue_issues.markdown(self.gather()))
+
+    def test_a_reading_fault_is_not_called_cannot_reach(self):
+        from starboard import services
+        with mock.patch.object(services, "_api", side_effect=lambda s, p, params=None, **kw: {"items": [{"id": 1, "state": "failed", "quality": 5}]} if s.get("type") == "link" else ARR_QUEUE), \
+                mock.patch.object(queue_issues, "_quality_name", side_effect=AttributeError("odd shape")):
+            r = queue_issues.gather([SONARR, NZBGET] + REELIX, self.tmp.name, {}, NOW)
+        self.assertEqual([e["message"] for e in r["errors"]], ["Starboard could not read Reelix's answer"])
 
     def test_reelix_ids_and_paths(self):
         radio = next(i for i in self.gather()["items"] if i["ids"]["queue"] == 33)
@@ -149,8 +170,8 @@ class GatherTest(unittest.TestCase):
         self.assertTrue(md.startswith("# Download issues from Starboard\n"))
         for words in ("Diagnose the issue", "most likely cause", "fix to try first", "what to check", "Ask me before suggesting anything that deletes files"):
             self.assertIn(words, md)
-        self.assertIn("4 downloads from 2 apps", md)
-        self.assertEqual(md.count("\n## "), 4)
+        self.assertIn("5 downloads from 2 apps", md)
+        self.assertEqual(md.count("\n## "), 5)
         self.assertIn("- **Reelix ids:** queue 33, radio episode 203, radio show 2", md)
         self.assertIn("- **Ids in Example TV:** queue 3, series 1, episode 501, season number 5", md)
         self.assertIn("**Paths, inside the container:** output `/data/downloads/complete/Old.Show.S05E01`", md)
