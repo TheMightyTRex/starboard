@@ -33,6 +33,80 @@ class Plugin(http.server.BaseHTTPRequestHandler):
     do_GET = do_POST = answer
 
 
+class PickerPlugin(http.server.BaseHTTPRequestHandler):
+    """Answers like Create your own TV channel 0.2.0: a page of its library for browse, one channel for the rest."""
+    seen = []
+
+    def log_message(self, *a):
+        pass
+
+    def do_POST(self):  # noqa: N802
+        body = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
+        PickerPlugin.seen.append((self.headers.get("X-Starboard-Can"), body))
+        if body.get("action") == "browse":
+            out = {"type": "picker", "items": [{"id": "series:abc", "title": "Show", "detail": "Series, 2001", "on": True, "evil": 1},
+                                               {"title": "no id"}], "total": 250, "start": 0, "more": True, "filter": "series"}
+        else:
+            out = {"type": "list", "title": "Channels", "partial": {"menus": ["c1"]}, "menus": [{"id": "c1", "title": "1 Comedy"}],
+                   "items": [{"id": "c1:pick", "title": "Choose", "menu": "c1", "actions": ["pick"],
+                              "picker": {"label": "Choose from your library", "title": "Add to Comedy", "filters": [["series", "Series"], ["x"]]}},
+                             {"id": "c1:nopick", "title": "x", "menu": "c1", "actions": [], "picker": {"label": "Not drawn"}}],
+                   "said": "Added 2 to Comedy"}
+        raw = json.dumps(out).encode()
+        self.send_response(200)
+        self.send_header("Content-Length", str(len(raw)))
+        self.end_headers()
+        self.wfile.write(raw)
+
+
+class Api116(unittest.TestCase):
+    """Plug-in API 1.16 (19 November 2026): answers for one menu, the picker slide-out, cards and pictures on rows."""
+
+    def setUp(self):
+        srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), PickerPlugin)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        self.addCleanup(srv.shutdown)
+        self.d = tempfile.mkdtemp()
+        folder = plugins_admin.folder(self.d, "tv-test")
+        os.makedirs(folder)
+        plugins_admin._write(f"{folder}/manifest.json", {"id": "tv-test", "name": "TV", "containers": [{"name": "main", "port": srv.server_address[1]}],
+                                                       "settings": [{"key": "channels", "label": "Channels", "type": "custom", "choices": "/channels"}]})
+        plugins_admin._write(f"{folder}/key", "k")
+
+    def call(self, body):
+        with mock.patch.object(plugin_cards, "_host", return_value="127.0.0.1"):
+            return plugin_custom.call(self.d, "tv-test", "channels", body)
+
+    def test_browse_and_pick_reach_the_plugin_and_are_cleaned(self):
+        page = self.call({"action": "browse", "id": "c1:pick", "value": "sho", "filter": "series", "start": "40", "ids": ["dropped"]})
+        self.assertEqual(PickerPlugin.seen[-1], ("partial,picker,cards", {"action": "browse", "id": "c1:pick", "value": "sho", "filter": "series", "start": 40}))
+        self.assertEqual(page, {"type": "picker", "items": [{"id": "series:abc", "title": "Show", "detail": "Series, 2001", "on": True}],
+                                "total": 250, "start": 0, "more": True, "filter": "series"})
+        out = self.call({"action": "pick", "id": "c1:pick", "ids": ["series:abc", "film:def", 7]})
+        self.assertEqual(PickerPlugin.seen[-1][1]["ids"], ["series:abc", "film:def"])
+        self.assertEqual(out["partial"], {"menus": ["c1"]})
+        self.assertEqual(out["items"][0]["picker"], {"label": "Choose from your library", "title": "Add to Comedy", "search": "Search",
+                                                     "filters": [["series", "Series"]], "submit": "Add the ticked ones"})
+        self.assertNotIn("picker", out["items"][1], "a picker needs pick in the row's actions")
+
+    def test_cards_hints_and_pictures(self):
+        png = "data:image/png;base64," + "iVBORw0KGgo" + "A" * 40
+        out = plugin_custom.clean({"type": "list", "layout": "cards", "hints": {"Breaks": "What plays between programmes.", "": "dropped"},
+                                   "items": [{"id": "a", "title": "Logo", "image": {"src": png, "alt": "Comedy's logo"}},
+                                             {"id": "b", "title": "x", "image": {"src": "data:image/svg+xml;base64,PHN2Zz4=", "alt": "an SVG"}},
+                                             {"id": "c", "title": "x", "image": {"src": png}},
+                                             {"id": "d", "title": "x", "image": {"src": "http://192.0.2.1/a.png", "alt": "far"}},
+                                             {"id": "e", "title": "x", "image": {"src": "data:image/png;base64," + "A" * 70000, "alt": "big"}}]})
+        self.assertEqual(out["layout"], "cards")
+        self.assertEqual(out["hints"], {"Breaks": "What plays between programmes."})
+        self.assertEqual(out["items"][0]["image"], {"src": png, "alt": "Comedy's logo"})
+        self.assertEqual([("image" in it) for it in out["items"]], [True, False, False, False, False], "PNG or JPEG data only, with words, small")
+        self.assertNotIn("layout", plugin_custom.clean({"type": "list", "layout": "anything", "items": []}))
+        self.assertNotIn("partial", plugin_custom.clean({"type": "list", "partial": "all", "items": []}))
+        with self.assertRaises(ValueError):
+            plugin_custom.clean_picker({"type": "list", "items": []})
+
+
 class PluginCustomTest(unittest.TestCase):
     def setUp(self):
         srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Plugin)

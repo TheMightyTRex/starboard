@@ -5781,6 +5781,13 @@ body:has(.side-panel-layer:not([hidden]), dialog[open]) snag-list { display: non
      phone (owner, 16 November 2026). Each column is at least 16rem and at least a third of the row. */
   .plugin-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, max(16rem, calc((100% - 2 * var(--space-3)) / 3))), 1fr)); gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
   .plugin-cards > li { display: flex; }
+  /* A plug-in's own screen in cards (Starboard plug-in API 1.16, TheMightyTRexUK, 19 November 2026: "break the channels
+     section into smaller cards"): each group of rows on a card with the grey band, its sentence under the band, and
+     a picture on a row, such as an uploaded logo, kept small. Markup: section.card.has-band.plugin-screen-card >
+     .card-band (h4.card-band__title) + p + ul.rows; img.row__image in a row's text. */
+  .plugin-screen-card > p { margin: 0; }
+  .row__image { display: block; max-width: 10rem; max-height: 4rem; margin-block: var(--space-1); object-fit: contain;
+    border: 1px solid var(--color-divider); background: var(--color-surface-sunken); }
   .plugin-cards > li > .plugin-card { flex: 1; }
   .plugin-card p { margin: 0; color: var(--color-text-muted); font-size: var(--text-sm); }
   .plugin-card .card-band__title a { color: var(--color-text); text-decoration: none; }

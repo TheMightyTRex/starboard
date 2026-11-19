@@ -4,7 +4,7 @@
 # Plug-in API reference
 
 What Starboard calls on a plug-in, what it sends and what it expects back, and what a plug-in finds and may call in
-return. This page matches plug-in API 1.14.0. The fields that ask for each of these are in the
+return. This page matches plug-in API 1.16.0. The fields that ask for each of these are in the
 [Plug-in manifest reference](plugin-manifest-reference.md).
 
 ## How Starboard reaches a plug-in
@@ -230,7 +230,7 @@ the table as before.
 ```
 
 `action` is one of `add`, `test`, `test_all`, `toggle`, `remove`, `up`, `down`, `choose`, `bulk` and, from API 1.8,
-`bulk_ids`, `attach`, `detach` and `dismiss`, and from API 1.15 `restore`. `id` is the row,
+`bulk_ids`, `attach`, `detach` and `dismiss`, from API 1.15 `restore`, and from API 1.16 `browse` and `pick`. `id` is the row,
 and `value` is what the person entered or chose. For `bulk`, `id` is the set and `value` is `on` to activate every item
 in it or `off` to deactivate them. Answer with the whole list again, in the same shape, with `said`
 added: one sentence, up to 200 characters, that Starboard shows. To refuse, answer with an HTTP error status and
@@ -241,6 +241,25 @@ plus `/file`, such as `/sources/file?name=channels.m3u`, with `Content-Type: app
 in `Content-Length` and the file's name in `name`. Files can be up to 60 MB. Read the body a piece at a time and answer
 with the whole list, in the same shape, with `said` added; to refuse, answer with an HTTP error status and `{"error": ...}`.
 A plug-in without this path answers 404, and Starboard says the plug-in does not take files.
+
+### Save in place, choose several, cards and pictures (API 1.16)
+
+Starboard 0.23.0 sends `X-Starboard-Can: partial,picker,cards` with every GET, POST and file it sends to a custom page.
+Use these only when the header names them; an older Starboard sends no header, and gets the page as before.
+
+| Field or action | What it does |
+|---|---|
+| `"partial": {"menus": ["c1"]}`, in an answer to an action | Answer with only those menus and the items in them, and `said`. Starboard puts them in place of the ones it has, so the open menu, the scroll position and focus stay, and the changed control stays where it was on the page. `said` is shown beside the control that was changed, as a status a screen reader reads once. Answer with the whole list when a change moves other menus, such as a channel's number |
+| `picker`, on an item with `pick` in its `actions` | `{"label", "title", "search", "filters": [[value, words]], "submit"}`: a button that opens a slide-out with a search box, a radio button for each filter (up to 8), and a tick box for each thing. Focus starts in the search box and goes back to the button when it closes |
+| `{"action": "browse", "id", "value", "filter", "start"}` | Sent for each page of the slide-out: `value` is the search words, `filter` the filter chosen and `start` where the page starts. Answer `{"type": "picker", "items": [{"id", "title", "detail", "on"}], "total", "more"}`, up to 200 items; `on: true` shows one as added already, ticked and unchangeable. Starboard asks once for each filter and search while the slide-out is open, and again for **Show more** |
+| `{"action": "pick", "id", "ids": [...]}` | Sent by the slide-out's Add button with every ticked id, up to 1000. Answer as for any action, with `said` |
+| `"layout": "cards"` and `"hints": {"group": "sentence"}` | Each first-level menu is drawn as a small card with its title, its state and its detail, and each `group` of items as a card with the grey band, its heading and its sentence from `hints` (up to 200 characters). The All, Active and Inactive filter is left out, as each card shows its state |
+| `image`, on an item | `{"src", "alt"}`: a small picture on the row, such as an uploaded logo. `src` is a PNG or JPEG data address, `data:image/png;base64,...`, of up to 64 KB, so the page never loads anything from the plug-in; `alt` says what it shows, up to 120 characters. Without `alt` it is left out |
+| `detach_label`, in an item's `attach` | The words for `detach` in the row's More menu, up to 40 characters, such as `Remove the logo`, in place of **Remove guide** |
+
+A link on an item that goes to the plug-in's own published port, such as a page on its own web server, opens at the
+address the person opened Starboard with, at that port, as **Its web page** does. The plug-in only knows the
+server's home network address (`STARBOARD_HOME_ADDRESS`), which a browser that reaches Starboard another way may not.
 
 ## Health
 

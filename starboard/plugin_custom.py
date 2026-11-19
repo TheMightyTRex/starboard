@@ -23,6 +23,15 @@ known "menu" stay on the first level, so a screen without menus is drawn as befo
 boxes, no State column, no Activate buttons and no Active or Inactive filter, for figures such as watch statistics.
 An item's "restore" action (plug-in API 1.15, DASH-406) is drawn as a Put back button on its row, for something the
 plug-in moved aside, such as a film Library clean-up moved to the holding folder; it POSTs {"action": "restore", "id"}.
+Plug-in API 1.16 (19 November 2026, owner: "changes save without refreshing the whole page", "searches open up the
+slider with the catalogue", "break the channels section into smaller cards"): Starboard sends X-Starboard-Can:
+partial,picker,cards on every call, and a plug-in may then answer an action with "partial": {"menus": [ids]} and only
+those menus and their items, which Starboard puts in place of the ones it has; give an item a "picker" with "pick" in
+its actions, a slide-out with search, filters and tick boxes, which POSTs {"action": "browse", "id", "value": words,
+"filter", "start"} for each page (answered {"type": "picker", "items", "total", "more"}) and {"action": "pick", "id",
+"ids"} for the ticked ones; give an item an "image" ({"src": a PNG or JPEG data address of up to 64 KB, "alt"});
+and send "layout": "cards" with "hints" ({group: sentence}) to draw each menu as a card
+and each group of items as a card with its sentence. An older plug-in sends none of these and is drawn as before.
 Starboard keeps only these fields, cuts every text, and calls the plug-in with its own key."""
 import json
 import re
@@ -31,7 +40,8 @@ import urllib.request
 
 MAX_BYTES = 2 * 1024 * 1024  # Live TV on the owner's server: 1,616 channels, about 420 KB (13 November 2026)
 ACTIONS = ("add", "test", "test_all", "toggle", "remove", "up", "down", "choose", "bulk", "bulk_ids", "attach", "detach", "dismiss",
-           "restore")  # restore: API 1.15 (DASH-406), drawn as Put back
+           "restore", "browse", "pick")  # restore: API 1.15 (DASH-406), drawn as Put back; browse and pick: API 1.16, the picker
+CAN = "partial,picker,cards"  # what this Starboard draws (API 1.16), sent to the plug-in in X-Starboard-Can
 TONES = ("info", "success", "warning", "danger")
 MAX_IDS = 1000
 MAX_ITEMS = 4000
@@ -136,7 +146,9 @@ def _attach(a):
         return None
     f = _file({"accept": a.get("accept"), "label": "x"})
     return {"label": _text(a["label"], 40), "field": _text(a.get("field"), 80) or _text(a["label"], 40), "hint": _text(a.get("hint"), 200),
-            "placeholder": _text(a.get("placeholder"), 120), "value": _text(a.get("value"), 500), "accept": f["accept"] if f else ""}
+            "placeholder": _text(a.get("placeholder"), 120), "value": _text(a.get("value"), 500), "accept": f["accept"] if f else "",
+            # API 1.16: the words for detach in the row's More menu, such as "Remove the logo", in place of "Remove guide"
+            **({"detach_label": _text(a["detach_label"], 40)} if a.get("detach_label") else {})}
 
 
 def _link(k):
@@ -145,6 +157,36 @@ def _link(k):
     if not isinstance(k, dict) or not isinstance(k.get("url"), str) or not re.match(r"^https?://[^\s<>\"]{1,490}$", k["url"]):
         return None
     return {"url": k["url"][:500], "label": _text(k.get("label"), 80) or "Open"}
+
+
+def _picker(k):
+    """A slide-out to choose several things (API 1.16), such as series and films from a library: its button's label, the
+    slide-out's title, the search box's label, up to 8 filters ([value, words]) and the words on its Add button."""
+    if not isinstance(k, dict) or not k.get("label"):
+        return None
+    filters = [[_text(f[0], 40), _text(f[1], 40)] for f in (k.get("filters") or [])[:8] if isinstance(f, (list, tuple)) and len(f) == 2 and f[0]]
+    return {"label": _text(k["label"], 40), "title": _text(k.get("title"), 80) or _text(k["label"], 40), "search": _text(k.get("search"), 60) or "Search",
+            "filters": filters, "submit": _text(k.get("submit"), 40) or "Add the ticked ones"}
+
+
+def _image(k):
+    """A small picture on one item (API 1.16), such as a channel's logo once uploaded: a PNG or JPEG as a data address
+    of up to 64 KB, with its text alternative. Data only, so the page's policy never needs to reach the plug-in."""
+    if not isinstance(k, dict) or not isinstance(k.get("src"), str) or not k.get("alt"):
+        return None
+    if len(k["src"]) > 64 * 1024 or not re.fullmatch(r"data:image/(png|jpeg);base64,[A-Za-z0-9+/]+={0,2}", k["src"]):
+        return None
+    return {"src": k["src"], "alt": _text(k["alt"], 120)}
+
+
+def clean_picker(data):
+    """A page of a picker (API 1.16): up to 200 rows, each {id, title, detail, on}; on is something already added."""
+    if not isinstance(data, dict) or data.get("type") != "picker" or not isinstance(data.get("items"), list):
+        raise ValueError("The plug-in's answer is not a list Starboard can show")
+    items = [{"id": _text(it["id"], 600), "title": _text(it.get("title"), 120), "detail": _text(it.get("detail"), 200), "on": it.get("on") is True}
+             for it in data["items"][:200] if isinstance(it, dict) and it.get("id")]
+    return {"type": "picker", "items": items, "total": _count(data.get("total")), "start": _count(data.get("start")),
+            "more": data.get("more") is True, "filter": _text(data.get("filter"), 40)}
 
 
 def _file(f):
@@ -176,7 +218,9 @@ def clean(data):
                       **_in_menu(it, known),
                       **({"cells": {c["key"]: _text((it.get("cells") or {}).get(c["key"]), 80) for c in columns}} if columns else {}),
                       **({"attach": _attach(it["attach"])} if _attach(it.get("attach")) else {}),
-                      **({"link": _link(it["link"])} if _link(it.get("link")) else {})})
+                      **({"link": _link(it["link"])} if _link(it.get("link")) else {}),
+                      **({"image": _image(it["image"])} if _image(it.get("image")) else {}),
+                      **({"picker": _picker(it["picker"])} if _picker(it.get("picker")) and "pick" in (it.get("actions") or []) else {})})
     out = {"type": "list", "title": _text(data.get("title"), 80), "intro": _text(data.get("intro"), 400), "items": items,
            "add": {**{k: _text(add.get(k), 120) for k in ("label", "hint", "placeholder")}, "file": _file(add.get("file")),
                    # API 1.12 (DASH-410): only the file picker, for a plug-in that takes files and never addresses
@@ -184,6 +228,14 @@ def clean(data):
            "bulk": _bulk(data.get("bulk"), known)}
     if menus:
         out["menus"] = menus
+    # An answer for some menus only (API 1.16): Starboard puts these menus and their items in place of its own.
+    part = data.get("partial")
+    if isinstance(part, dict) and isinstance(part.get("menus"), list):
+        out["partial"] = {"menus": [_text(m, 120) for m in part["menus"][:MAX_MENUS] if m]}
+    if data.get("layout") == "cards":  # API 1.16: each menu and each group of items on a card of its own
+        out["layout"] = "cards"
+    if isinstance(data.get("hints"), dict):
+        out["hints"] = {_text(k, 40): _text(v, 200) for k, v in list(data["hints"].items())[:40] if k and v}
     if columns:
         out.update(layout="folds", columns=columns, filters=_filters(data.get("filters"), columns))
         if data.get("readonly") is True:  # API 1.11 (DASH-402): figures to read, with no ticks, states or buttons
@@ -227,7 +279,7 @@ def upload(data_dir, pid, key, name, length, stream, item=""):
         to = f"&id={urllib.parse.quote(_text(item, 120))}" if item else ""  # a file for one item, such as a list's guide (API 1.8)
         conn.putrequest("POST", f"{s['choices']}/file?name={urllib.parse.quote(_text(name, 120))}{to}")
         for h, v in (("Content-Type", "application/octet-stream"), ("Content-Length", str(length)), ("Accept", "application/json"),
-                     ("User-Agent", "Starboard"), ("X-Api-Key", key_text)):
+                     ("User-Agent", "Starboard"), ("X-Api-Key", key_text), ("X-Starboard-Can", CAN)):
             conn.putheader(h, v)
         conn.endheaders()
         left = length
@@ -263,8 +315,9 @@ def call(data_dir, pid, key, body=None, opener=None):
     if body is not None:
         if body.get("action") not in ACTIONS:
             raise ValueError("Not something this page does")
-        ids = body.get("ids") if body["action"] == "bulk_ids" else None
-        body = {"action": body["action"], "id": _text(body.get("id"), 600), "value": _text(body.get("value"), 500),
+        ids = body.get("ids") if body["action"] in ("bulk_ids", "pick") else None
+        browse = {"filter": _text(body.get("filter"), 40), "start": _count(body.get("start"))} if body["action"] == "browse" else {}
+        body = {"action": body["action"], "id": _text(body.get("id"), 600), "value": _text(body.get("value"), 500), **browse,
                 **({"ids": [_text(i, 600) for i in ids[:MAX_IDS] if isinstance(i, str)]} if isinstance(ids, list) else {})}
     main = m["containers"][0]
     try:
@@ -275,7 +328,7 @@ def call(data_dir, pid, key, body=None, opener=None):
     req = urllib.request.Request(f"http://{plugin_cards._host(pid, main)}:{int(main.get('port') or 80)}{s['choices']}",
                                  data=json.dumps(body).encode() if body is not None else None, method="POST" if body is not None else "GET",
                                  headers={"Accept": "application/json", "Content-Type": "application/json", "User-Agent": "Starboard",
-                                          "X-Api-Key": key_text})
+                                          "X-Api-Key": key_text, "X-Starboard-Can": CAN})
     try:
         with (opener or urllib.request.build_opener()).open(req, timeout=60) as r:  # the plug-in's own container  # nosec B310
             raw = r.read(MAX_BYTES + 1)
@@ -291,4 +344,5 @@ def call(data_dir, pid, key, body=None, opener=None):
                          f"Starboard could not reach {m.get('name', pid)}. Check that it is active on State") from None
     if len(raw) > MAX_BYTES:
         raise ValueError("The answer is too large")
-    return clean(json.loads(raw))
+    got = json.loads(raw)
+    return clean_picker(got) if body is not None and body.get("action") == "browse" else clean(got)

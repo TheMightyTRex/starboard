@@ -28,6 +28,16 @@ the next major version.
 
 ## Plug-in API 1.16.0 (Starboard 0.23.0, not released yet)
 
+- **Added:** custom pages that save in place, choose several and come in cards (19 November 2026). Starboard sends
+  `X-Starboard-Can: partial,picker,cards` with every call to a custom page. A plug-in may then answer an action with
+  `"partial": {"menus": [ids]}` and only those menus and their items; give an item a `picker` and `pick` in its
+  `actions` for a slide-out that sends `browse` for each page and `pick` with the ticked `ids`; send
+  `"layout": "cards"` and `hints`; and give an item an `image` and its `attach` a `detach_label`. Read
+  [Save in place, choose several, cards and pictures](plugin-api-reference.md#save-in-place-choose-several-cards-and-pictures-api-116).
+  An older Starboard sends no header, and a plug-in that gets none answers as before.
+- **Changed:** a link on a custom page's item that goes to the plug-in's own published port opens at the address the
+  page was opened with, as Its web page does.
+
 - **Added:** the `disk.changed` event, with the `system:read` permission: a pool job the root helper finished
   (`action`, `state`, `disk`, `erased`, `result`), however it was asked for, so a notifications plug-in can say when a
   disk is erased, added to the pool or taken out of it. Name `>=1.16` in `starboard_api` to use it.
