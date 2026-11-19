@@ -1682,7 +1682,7 @@ def example_pool(data):
     for name, role in (("sdb", "pool"), ("sdc", "pool"), ("sdd", "pool"), ("sde", "parity")):
         d = next(x for x in ph.drives(host) if x["name"] == name)
         plan = ph.plan_add(host, name, role, erase=True)
-        ph.apply(host, plan["id"], {d["by_id"]: d["ends"]})
+        ph.apply(host, plan["id"], {d["by_id"]: d["ends"]}, by_request=False)
         cfg = host.config()
         sizes[next(x["mount"] for x in cfg["drives"] if x["by_id"] == d["by_id"])] = d["size"]
     sizes[host.pool] = sum(v for k, v in sizes.items() if k.startswith("/mnt/disks"))

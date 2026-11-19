@@ -268,6 +268,14 @@ async function runCheck(body) {
   }
 }
 
+// The pool helper erases a disk with anything on it only when a person asks in a terminal on the server, where sudo
+// checks the computer's password: Starboard's own password is no proof, as anything running as Starboard can ask.
+function terminalOnly(plan) {
+  return notice("warning", "Erase this disk in a terminal", "This disk has a partition table or files, so the pool helper erases it only when you ask in a terminal on the server. Copy anything you want to keep first. Then, within 15 minutes, run this command and enter the computer's password when sudo asks:",
+    [el("pre", { class: "code-block", text: plan.terminal }),
+      el("p", { class: "help-links" }, helpLink("Why it needs a terminal", "topics/add-a-drive-to-the-pool.md#erase-a-disk-that-has-files"))]);
+}
+
 function confirmView() {
   const plan = flow.plan;
   const drives = state.drives.filter((d) => plan.erases.includes(d.by_id));
@@ -373,8 +381,11 @@ const VIEWS = {
         runCheck({ kind: "add", drive: d.by_id, as: flow.role, erase: flow.erase, folders: flow.folders || [] });
       }, "btn btn--primary"), back(), cancel()]];
     },
-    () => [[heading("Check before anything changes"), ...checkView(flow.plan)],
-      [btn("Continue to Confirm", () => show(3), flow.plan.erases.length ? "btn btn--primary btn--danger" : "btn btn--primary"), back(), cancel()]],
+    // A disk that is not blank is erased only from a terminal with sudo (issue #187): the page shows the command.
+    () => flow.plan.terminal
+      ? [[heading("Check before anything changes"), ...checkView(flow.plan), terminalOnly(flow.plan)], [back(), cancel()]]
+      : [[heading("Check before anything changes"), ...checkView(flow.plan)],
+        [btn("Continue to Confirm", () => show(3), flow.plan.erases.length ? "btn btn--primary btn--danger" : "btn btn--primary"), back(), cancel()]],
     confirmView,
     doneView,
   ],

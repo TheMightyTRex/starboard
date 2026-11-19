@@ -6,6 +6,8 @@
 # The helper (/usr/local/bin/starboard-pool) runs as root. Starboard never does: it drops a request in
 # FOLDER/requests, the one place it may write, and reads the answers in FOLDER/status. The helper accepts only a
 # fixed list of actions, plans every change first, and erases a drive only with the end of its serial number.
+# Anything running as Starboard's user can write a request, so through FOLDER/requests the helper erases only a disk
+# it finds blank itself; a disk with anything on it is erased only with sudo in a terminal (issue #187).
 set -eu
 [ "$(id -u)" -eq 0 ] || { echo "Run with sudo"; exit 1; }
 UNITS="starboard-pool.path starboard-pool.service starboard-pool-nightly.timer starboard-pool-nightly.service"

@@ -39,7 +39,14 @@ class Computer:
         self.host = ph.Host(root=self.root, exchange=self.exchange, run=self.command,
                             lsblk=lambda: {"blockdevices": self.devices}, mounts=mounts or {})
 
+    signatures = {}  # by-id name: what wipefs finds on that disk, such as "gpt" or an error
+
     def command(self, cmd):
+        if cmd[:2] == ["wipefs", "--no-act"]:
+            found = self.signatures.get(os.path.basename(cmd[-1]), "")
+            if isinstance(found, Exception):
+                raise found
+            return found
         return ""
 
     def fstab(self):
@@ -103,16 +110,16 @@ class PlanTest(unittest.TestCase):
     def test_an_erase_needs_the_serial_ending(self):
         plan = ph.plan_add(self.h, "sdb", "pool", erase=True)
         with self.assertRaisesRegex(ph.Refused, "last 4 characters of its serial number, 9KX1"):
-            ph.apply(self.h, plan["id"], {})
+            ph.apply(self.h, plan["id"], {}, by_request=False)
         with self.assertRaisesRegex(ph.Refused, "9KX1"):
-            ph.apply(self.h, plan["id"], {self.c.byid("sdb"): "1234"})
+            ph.apply(self.h, plan["id"], {self.c.byid("sdb"): "1234"}, by_request=False)
         self.assertEqual(self.h.log, [])
 
     def test_a_drive_that_changed_since_the_check_is_refused(self):
         plan = ph.plan_add(self.h, "sdb", "pool", erase=True)
         self.c.devices[1]["children"] = [{"name": "sdb1", "type": "part", "size": TB, "fstype": "ntfs", "mountpoints": [None]}]
         with self.assertRaisesRegex(ph.Refused, "changed since the check"):
-            ph.apply(self.h, plan["id"], {self.c.byid("sdb"): "9kx1"})
+            ph.apply(self.h, plan["id"], {self.c.byid("sdb"): "9kx1"}, by_request=False)
 
     def test_an_old_check_is_refused(self):
         plan = ph.plan_add(self.h, "sdb", "pool", erase=True)
@@ -121,11 +128,11 @@ class PlanTest(unittest.TestCase):
         data["expires"] = time.time() - 1
         json.dump(data, open(path, "w"))
         with self.assertRaisesRegex(ph.Refused, "more than 15 minutes old"):
-            ph.apply(self.h, plan["id"], {self.c.byid("sdb"): "9KX1"})
+            ph.apply(self.h, plan["id"], {self.c.byid("sdb"): "9KX1"}, by_request=False)
 
     def test_adding_writes_only_its_own_block(self):
         plan = ph.plan_add(self.h, "sdb", "pool", erase=True)
-        ph.apply(self.h, plan["id"], {self.c.byid("sdb"): "9KX1"})
+        ph.apply(self.h, plan["id"], {self.c.byid("sdb"): "9KX1"}, by_request=False)
         text = self.c.fstab()
         self.assertTrue(text.startswith("UUID=root / ext4 defaults 0 1\n"))
         block = text.split(ph.BEGIN)[1].split(ph.END)[0]
@@ -144,7 +151,7 @@ class PlanTest(unittest.TestCase):
             ph.plan_add(self.h, "sdb", "pool", erase=True)
         plan = ph.plan_add(self.h, "sdc", "pool")
         self.assertEqual(plan["erases"], [])
-        ph.apply(self.h, plan["id"], {})
+        ph.apply(self.h, plan["id"], {}, by_request=False)
         self.assertIn("/mnt/disks/disk1:/mnt/disks/disk2 ", self.c.fstab())
         self.assertEqual(self.c.fstab().count(ph.BEGIN), 1)
 
@@ -153,23 +160,23 @@ class PlanTest(unittest.TestCase):
             ph.plan_add(self.h, "sdb", "pool", erase=False)
 
     def test_parity_must_be_as_big_as_the_biggest_pool_drive(self):
-        ph.apply(self.h, ph.plan_add(self.h, "sdb", "pool", erase=True)["id"], {self.c.byid("sdb"): "9KX1"})
+        ph.apply(self.h, ph.plan_add(self.h, "sdb", "pool", erase=True)["id"], {self.c.byid("sdb"): "9KX1"}, by_request=False)
         with self.assertRaisesRegex(ph.Refused, "at least as big"):
             ph.plan_add(self.h, "sdc", "parity", erase=True)
         plan = ph.plan_add(self.h, "sdd", "parity", erase=True)
-        ph.apply(self.h, plan["id"], {self.c.byid("sdd"): "55B0"})
+        ph.apply(self.h, plan["id"], {self.c.byid("sdd"): "55B0"}, by_request=False)
         conf = open(self.h.snapraid_conf).read()
         self.assertTrue(conf.startswith(ph.SNAP_HEAD))
         self.assertIn("/mnt/parity/parity1/snapraid.parity", conf)
         self.assertIn("data disk1 ", conf)
 
     def test_a_snapraid_conf_written_by_hand_is_left_alone(self):
-        ph.apply(self.h, ph.plan_add(self.h, "sdb", "pool", erase=True)["id"], {self.c.byid("sdb"): "9KX1"})
+        ph.apply(self.h, ph.plan_add(self.h, "sdb", "pool", erase=True)["id"], {self.c.byid("sdb"): "9KX1"}, by_request=False)
         with open(self.h.snapraid_conf, "w") as f:
             f.write("parity /somewhere\n")
         plan = ph.plan_add(self.h, "sdd", "parity", erase=True)
         with self.assertRaisesRegex(ph.Refused, "not written by Starboard"):
-            ph.apply(self.h, plan["id"], {self.c.byid("sdd"): "55B0"})
+            ph.apply(self.h, plan["id"], {self.c.byid("sdd"): "55B0"}, by_request=False)
         self.assertEqual(open(self.h.snapraid_conf).read(), "parity /somewhere\n")
 
     def test_erasing_a_drive_already_in_fstab_is_refused(self):
@@ -295,6 +302,89 @@ class RequestTest(unittest.TestCase):
         ph.serve(self.c.host)
         self.assertTrue(self.answer("f1f2f3f4")["ok"])
         self.assertIn("mkfs.ext4", [c[0] for c in self.c.host.log])
+
+
+class RequestTrustTest(unittest.TestCase):
+    """Issue #187: anything running as Starboard's user can write a request, with the right serial ending, without the
+    password. Through the requests folder the helper erases only a disk it finds blank itself."""
+
+    def setUp(self):
+        self.c = Computer(standard())
+        self.c.signatures = {}
+
+    def put(self, name, data):
+        with open(os.path.join(self.c.exchange, "requests", name), "w") as f:
+            json.dump(data, f)
+
+    def answer(self, rid):
+        return json.load(open(os.path.join(self.c.exchange, "status/answers", rid + ".json")))
+
+    def ask(self, rid, **fields):
+        self.put(f"{rid}.json", dict(fields, id=rid))
+        ph.serve(self.c.host)
+        return self.answer(rid)
+
+    def destructive(self):
+        return [c for c in self.c.host.log if c[0] in ("sgdisk", "mkfs.ext4", "umount") or c[:2] == ["wipefs", "-a"]]
+
+    def test_a_forged_request_cannot_erase_a_disk_with_files(self):
+        plan = self.ask("a1a1a1a1", action="plan", kind="add", drive="sdc", **{"as": "pool"}, erase=True)["result"]
+        self.assertIn("sudo starboard-pool apply " + plan["id"], plan["terminal"])
+        self.assertIn("page cannot erase it", " ".join(s["say"] for s in plan["steps"]))
+        a = self.ask("b1b1b1b1", action="apply", plan=plan["id"], confirm={self.c.byid("sdc"): "0C3D"})
+        self.assertFalse(a["ok"])
+        self.assertIn("not blank", a["error"])
+        self.assertIn("sudo starboard-pool apply", a["error"])
+        self.assertEqual(self.destructive(), [])
+        self.assertFalse(os.path.exists(os.path.join(self.c.host.state, "jobs", "current.json")))
+
+    def test_a_disk_with_a_signature_that_lsblk_missed_is_not_erased(self):
+        self.c.signatures = {os.path.basename(self.c.byid("sdd")): "gpt\nPMBR\n"}
+        plan = self.ask("a2a2a2a2", action="plan", kind="add", drive="sdd", **{"as": "pool"}, erase=True)["result"]
+        a = self.ask("b2b2b2b2", action="apply", plan=plan["id"], confirm={self.c.byid("sdd"): "55B0"})
+        self.assertFalse(a["ok"])
+        self.assertIn("not blank", a["error"])
+        self.assertEqual(self.destructive(), [])
+
+    def test_when_wipefs_cannot_read_the_disk_nothing_is_erased(self):
+        self.c.signatures = {os.path.basename(self.c.byid("sdb")): ph.Refused("wipefs stopped with an error")}
+        plan = self.ask("a3a3a3a3", action="plan", kind="add", drive="sdb", **{"as": "pool"}, erase=True)["result"]
+        a = self.ask("b3b3b3b3", action="apply", plan=plan["id"], confirm={self.c.byid("sdb"): "9KX1"})
+        self.assertFalse(a["ok"])
+        self.assertEqual(self.destructive(), [])
+
+    def test_a_blank_disk_is_checked_by_the_helper_and_then_erased(self):
+        plan = self.ask("a4a4a4a4", action="plan", kind="add", drive="sdb", **{"as": "pool"}, erase=True)["result"]
+        self.assertEqual(plan["terminal"], "")
+        a = self.ask("b4b4b4b4", action="apply", plan=plan["id"], confirm={self.c.byid("sdb"): "9KX1"})
+        self.assertTrue(a["ok"], a)
+        log = self.c.host.log
+        probe = log.index(["wipefs", "--no-act", "--noheadings", "--output", "TYPE", self.c.byid("sdb")])
+        self.assertLess(probe, log.index(["wipefs", "-a", self.c.byid("sdb")]))
+        saved = json.load(open(os.path.join(self.c.host.state, "confirm", plan["id"] + ".json")))
+        self.assertTrue(saved["by_request"])
+
+    def test_the_serial_check_still_applies_to_a_blank_disk(self):
+        plan = self.ask("a5a5a5a5", action="plan", kind="add", drive="sdb", **{"as": "pool"}, erase=True)["result"]
+        a = self.ask("b5b5b5b5", action="apply", plan=plan["id"], confirm={self.c.byid("sdb"): "0000"})
+        self.assertIn("9KX1", a["error"])
+        self.assertEqual(self.destructive(), [])
+
+    def test_the_terminal_with_sudo_can_erase_a_disk_with_files(self):
+        plan = ph.plan_add(self.c.host, "sdc", "pool", erase=True)
+        ph.apply(self.c.host, plan["id"], {self.c.byid("sdc"): "0C3D"}, by_request=False)
+        self.assertIn(["wipefs", "-a", self.c.byid("sdc")], self.c.host.log)
+
+    def test_keeping_the_files_still_works_through_a_request(self):
+        plan = self.ask("a6a6a6a6", action="plan", kind="add", drive="sdc", **{"as": "pool"})["result"]
+        self.assertEqual(plan["erases"], [])
+        self.assertTrue(self.ask("b6b6b6b6", action="apply", plan=plan["id"])["ok"])
+        self.assertEqual(self.destructive(), [])
+
+    def test_every_caller_says_where_the_request_came_from(self):
+        plan = ph.plan_add(self.c.host, "sdb", "pool", erase=True)
+        with self.assertRaises(TypeError):
+            ph.apply(self.c.host, plan["id"], {self.c.byid("sdb"): "9KX1"})  # pylint: disable=missing-kwoa
 
 
 if __name__ == "__main__":

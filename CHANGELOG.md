@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Security
+- **The pool helper checks who asked before it erases (issue #187):** the pool helper runs as root and answers requests that Starboard leaves in a folder its own user can write, so any program running as that user could have asked it to erase a disk without Starboard's password. Requests from that folder now erase only a disk the helper finds blank itself, with no partition table, no file system and nothing mounted, checked again with wipefs just before it erases. A disk with anything on it is erased only from a terminal on the server with sudo; the check on System, Storage, Pool shows the command to run. The serial number check stays for every erase. Adding a disk and keeping its files, taking a disk out and balancing work from the page as before, since they move files and never erase them. Run `./install.sh` again (or `sudo deploy/install-pool.sh FOLDER`) to install the new helper.
+
 ## [0.22.0] (19 November 2026)
 
 ### Added

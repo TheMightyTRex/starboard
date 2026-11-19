@@ -28,6 +28,8 @@ matters somewhere else. Read [Pools are not backups](../basics/what-is-a-drive-p
   ```
 
 - Note the last 4 characters of the disk's serial number. A parity disk is always erased first.
+- The page erases only a blank disk. If the disk has a partition table or files, you finish in a terminal on the
+  server: read [Erase a disk that has files](add-a-drive-to-the-pool.md#erase-a-disk-that-has-files).
 - Have your Starboard password ready.
 
 ## Steps

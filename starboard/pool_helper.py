@@ -16,10 +16,23 @@ FOLDER/requests (the only place Starboard may write), from a nightly timer, or f
   starboard-pool serve FOLDER                  answer Starboard's requests (run by the .path unit)
 
 Rules it never breaks: it never offers or touches the system drive or a drive in RAID, LVM or ZFS; it erases a
-drive only when the request carries the end of that drive's serial number; it changes only the lines between its
+drive only when the request carries the end of that drive's serial number; through the requests folder it erases
+only a disk it finds blank itself (no partition table, no file system, nothing mounted), and a disk with anything on
+it is erased only from a terminal with sudo (issue #187, below); it changes only the lines between its
 own markers in /etc/fstab and only a snapraid.conf it wrote; a pool it did not make is shown, never changed; every
 change is planned first (a dry run) and the plan is refused if a drive changed since. Starboard asks for the
 person's password before it sends anything that changes a drive.
+
+Who may ask for what (issue #187). Starboard runs as an ordinary user, and FOLDER/requests is writable by that user.
+So anything that runs as that user, including a program that has taken it over, can write the same requests the web
+page writes, and can read everything Starboard can: its password check, the plans and the serial numbers are no proof
+that a person asked. No secret given to Starboard can be, either. The helper therefore treats every request from the
+folder as untrusted for anything that cannot be undone: through the folder it erases only a disk it checks is blank
+itself, right before erasing (nothing to lose), and refuses to erase a disk with a partition table, a file system
+or a mount. Erasing such a disk needs a terminal on the server, `sudo starboard-pool apply PLAN --confirm ...`, where
+sudo, not Starboard, checks that a person with the computer's password asked. Adding a disk and keeping its files,
+taking a disk out and balancing only move files (copy, check, then remove) and never erase them, so they stay
+available from the page.
 """
 import argparse
 import datetime
@@ -269,6 +282,28 @@ def fingerprint(d):
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 
+def looks_blank(d):
+    """From the disk listing only: no partitions, no file system on the whole disk and nothing mounted."""
+    return not d["parts"] and not d["mounted"]
+
+
+def blank(host, d):
+    """The helper's own check, right before an erase that came through the requests folder: the listing shows nothing
+    on the disk and wipefs, which reads the disk itself, finds no signature on it (a partition table, a file system,
+    RAID or LVM). Any doubt counts as not blank."""
+    if not looks_blank(d) or not d.get("by_id"):
+        return False
+    try:
+        found = host.run("wipefs", "--no-act", "--noheadings", "--output", "TYPE", d["by_id"])
+    except (Refused, OSError, subprocess.SubprocessError):
+        return False
+    return isinstance(found, str) and not found.strip()
+
+
+def terminal_command(plan_id, d):
+    return f"sudo starboard-pool apply {plan_id} --confirm {d['by_id']}={d['ends'] or 'SERIAL'}"
+
+
 def find(host, ident, listing=None):
     for d in listing if listing is not None else drives(host):
         if ident in (d["by_id"], d["name"], d["path"], d.get("label")) or (d["by_id"] and ident == os.path.basename(d["by_id"])):
@@ -465,6 +500,12 @@ def plan_add(host, ident, role, erase=False, folders=()):
     steps, entry = [], {"by_id": d["by_id"], "serial": d["serial"], "role": role, "label": label, "size": d["size"],
                         "model": d["model"]}
     name = f"{d['model'] or 'Disk'} {human(d['size'])}, serial ends {d['ends']}"
+    plan_id = secrets.token_hex(6)
+    terminal = ""
+    if erase and not looks_blank(d):
+        terminal = terminal_command(plan_id, d)
+        steps.append({"do": "note", "say": "This disk is not blank, so Starboard's page cannot erase it. To erase it, "
+                      f"run this in a terminal on the server: {terminal}"})
     if erase:
         part = d["by_id"] + "-part1"
         if d["mounted"]:
@@ -514,8 +555,8 @@ def plan_add(host, ident, role, erase=False, folders=()):
                       f"{cfg['check_at']}; files deleted in the pool move to a dated .removed folder on it, never erased"})
     steps.append({"do": "note", "say": "Save a copy of /etc/fstab (and /etc/snapraid.conf) first, in "
                                       "/var/lib/starboard-pool/saved"})
-    return save_plan(host, {"action": "add", "drive": d, "entry": entry, "erase": erase, "steps": steps,
-                            "fingerprints": {d["by_id"]: fingerprint(d)}})
+    return save_plan(host, {"id": plan_id, "action": "add", "drive": d, "entry": entry, "erase": erase, "steps": steps,
+                            "terminal": terminal, "fingerprints": {d["by_id"]: fingerprint(d)}})
 
 
 def fstab_has(host, part):
@@ -530,7 +571,8 @@ def fstab_has(host, part):
 
 
 def save_plan(host, plan):
-    plan.update(id=secrets.token_hex(6), made=now(), expires=now() + PLAN_MINUTES * 60,
+    plan.setdefault("id", secrets.token_hex(6))
+    plan.update(made=now(), expires=now() + PLAN_MINUTES * 60,
                 erases=[s["by_id"] for s in plan["steps"] if s["do"] == "erase"])
     write_json(os.path.join(host.state, "plans", plan["id"] + ".json"), plan, 0o600)
     public = {k: v for k, v in plan.items() if k not in ("fingerprints",)}
@@ -690,8 +732,10 @@ def load_plan(host, plan_id):
     return plan
 
 
-def verify(host, plan, confirm):
-    """Before anything is written: the disks are as they were in the check, and every erase is confirmed."""
+def verify(host, plan, confirm, *, by_request):
+    """Before anything is written: the disks are as they were in the check, and every erase is confirmed. by_request
+    is True for anything that came through the requests folder, which any program running as Starboard's user can
+    write (issue #187): then an erase goes ahead only on a disk the helper itself finds blank."""
     listing = drives(host)
     for bid, fp in plan["fingerprints"].items():
         d = next((x for x in listing if x["by_id"] == bid), None)
@@ -702,6 +746,9 @@ def verify(host, plan, confirm):
         typed = re.sub(r"[^A-Za-z0-9]", "", str((confirm or {}).get(bid, ""))).upper()
         if not typed or typed != d["ends"]:
             raise Refused(f"To erase {d['model'] or d['name']}, enter the last 4 characters of its serial number, {d['ends']}")
+        if by_request and not blank(host, d):
+            raise Refused(f"{d['model'] or d['name']} is not blank, so Starboard's page cannot erase it and nothing was "
+                          f"done. To erase it, run this in a terminal on the server: {terminal_command(plan['id'], d)}")
 
 
 class Job:
@@ -733,7 +780,7 @@ def stop_requested(host):
     return os.path.exists(os.path.join(host.state, "stop"))
 
 
-def apply(host, plan_id, confirm=None, out=None):
+def apply(host, plan_id, confirm=None, out=None, *, by_request):
     os.makedirs(host.state, mode=0o700, exist_ok=True)
     lock = open(os.path.join(host.state, "lock"), "w")
     try:
@@ -741,7 +788,7 @@ def apply(host, plan_id, confirm=None, out=None):
     except OSError:
         raise Refused("Another pool job is running. Wait for it to finish, or stop it") from None
     plan = load_plan(host, plan_id)
-    verify(host, plan, confirm)
+    verify(host, plan, confirm, by_request=by_request)
     plan["done"] = now()
     write_json(os.path.join(host.state, "plans", plan_id + ".json"), plan, 0o600)
     try:
@@ -1068,7 +1115,7 @@ def handle(host, req):
     if act == "apply":
         plan = load_plan(host, str(req.get("plan", "")))
         confirm = {str(k): str(v) for k, v in (req.get("confirm") or {}).items()}
-        verify(host, plan, confirm)  # refuse at once, before starting a job in the background
+        verify(host, plan, confirm, by_request=True)  # refuse at once, before starting a job in the background
         start_job(host, plan["id"], confirm)
         return {"started": plan["id"]}
     if act == "stop":
@@ -1079,9 +1126,10 @@ def handle(host, req):
 
 def start_job(host, plan_id, confirm):
     """Long jobs run in their own systemd unit at low priority, so the request is answered straight away."""
-    write_json(os.path.join(host.state, "confirm", plan_id + ".json"), confirm, 0o600)
+    # The job checks again when it starts, as a request: run-job reads this file, which only root can write.
+    write_json(os.path.join(host.state, "confirm", plan_id + ".json"), {"confirm": confirm, "by_request": True}, 0o600)
     if host.root != "/":
-        return apply(host, plan_id, confirm)
+        return apply(host, plan_id, confirm, by_request=True)
     subprocess.run(["systemd-run", f"--unit=starboard-pool-job-{plan_id}", "--collect", "--quiet",
                     "-p", "Nice=19", "-p", "IOSchedulingClass=idle", sys.executable, os.path.abspath(__file__),
                     "run-job", plan_id], check=True)
@@ -1166,11 +1214,13 @@ def main(argv=None):
             print(json.dumps(plan)) if a.json else print_plan(plan)
         elif a.cmd in ("apply", "run-job"):
             confirm = dict(c.split("=", 1) for c in a.confirm if "=" in c)
+            by_request = a.cmd == "run-job"  # apply is typed in a terminal with sudo; run-job comes from a request
             if a.cmd == "run-job":
-                confirm = read_json(os.path.join(host.state, "confirm", a.plan + ".json"), {})
+                saved = read_json(os.path.join(host.state, "confirm", a.plan + ".json"), {})
+                confirm = saved.get("confirm", {}) if "by_request" in saved else saved
             listing = drives(host)
             confirm = {find(host, k, listing)["by_id"] if not k.startswith("/dev/disk/by-id/") else k: v for k, v in confirm.items()}
-            result = apply(host, a.plan, confirm, None if a.json or a.cmd == "run-job" else sys.stdout)
+            result = apply(host, a.plan, confirm, None if a.json or a.cmd == "run-job" else sys.stdout, by_request=by_request)
             if a.json:
                 print(json.dumps(result))
         elif a.cmd == "stop":
