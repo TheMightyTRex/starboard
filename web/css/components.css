@@ -1727,6 +1727,28 @@
       animation: none;
     }
   }
+  /* Running: a job whose end is known and still going (a count such as 4 of 5). The filled part keeps its width and
+     soft stripes move across it, so the bar shows the work is live between counts. With less motion asked for, the
+     stripes stay still; the words beside the bar say it is running either way. Take the class off when it ends. */
+  .progress--running > span {
+    background-image: linear-gradient(-45deg, color-mix(in srgb, var(--color-surface) 28%, transparent) 25%, transparent 25%,
+      transparent 50%, color-mix(in srgb, var(--color-surface) 28%, transparent) 50%, color-mix(in srgb, var(--color-surface) 28%, transparent) 75%,
+      transparent 75%, transparent);
+    background-size: 16px 16px;
+    animation: progress-running 0.9s linear infinite;
+  }
+  @keyframes progress-running {
+    from { background-position: 0 0; }
+    to { background-position: 16px 0; }
+  }
+  :root.pref-motion .progress--running > span {
+    animation: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :root:not(.pref-motion-off) .progress--running > span {
+      animation: none;
+    }
+  }
   .meter {
     display: grid;
     gap: var(--space-1);

@@ -338,6 +338,30 @@ class BatchTest(unittest.TestCase):
             update_runs._active.pop(run["id"], None)
 
 
+    def test_close_takes_a_finished_batch_off_the_page_for_good(self):
+        """DASH-473: Close on the finished panel; it stays in Recent updates, and a running batch cannot be closed."""
+        run = update_runs._new(self.tmp.name, "all", "batch", "All updates", "update", "", "1 update", "you",
+                               [("app:sonarr", "Sonarr")], extra={"items": []})
+        with update_runs._lock:
+            update_runs._active[run["id"]] = threading.current_thread()
+        try:
+            with self.assertRaises(update_runs.Busy):
+                update_batch.close(self.app, run["id"])
+            self.assertEqual(update_batch.latest(self.app)["id"], run["id"])
+        finally:
+            update_runs._active.pop(run["id"], None)
+        update_runs._step(self.tmp.name, run, "app:sonarr", "done")
+        update_runs._end(self.tmp.name, run, "updated", "1 of 1 updated")
+        self.assertEqual(update_batch.latest(self.app)["id"], run["id"])  # shown again for a day after it ended
+        self.assertEqual(update_batch.close(self.app, run["id"]), {"closed": True})
+        self.assertIsNone(update_batch.latest(self.app))
+        update_runs._loaded.discard(self.tmp.name)  # read back from the file, as after Starboard restarts
+        update_runs._runs.clear()
+        self.assertIsNone(update_batch.latest(self.app))
+        self.assertEqual(update_runs.get(self.app, run["id"])["state"], "updated")
+        with self.assertRaises(LookupError):
+            update_batch.close(self.app, "000000000000")
+
 
 class LastLookTest(unittest.TestCase):
     def test_an_app_update_forgets_only_its_own_last_look(self):
@@ -356,3 +380,26 @@ class LastLookTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PanelPage(unittest.TestCase):
+    """The panel's words and Close in settings.js (#161, DASH-473), checked as text: no browser in the unit tests."""
+    def setUp(self):
+        import pathlib
+        js = (pathlib.Path(__file__).resolve().parent.parent / "web" / "js" / "settings.js").read_text(encoding="utf-8")
+        self.js = js[js.index("const showBatch"):js.index("updatesRefresh = refresh;")]
+
+    def test_the_words_say_whether_it_is_still_working(self):
+        self.assertNotIn('"Updates finished"', self.js)
+        self.assertIn('"Installing updates"', self.js)
+        self.assertIn("of ${v.count} done", self.js)
+        self.assertIn('bar.classList.toggle("progress--running", !v.finished)', self.js)
+        self.assertIn('bar.classList.remove("progress--running")', self.js)
+
+    def test_close_removes_the_panel_moves_focus_and_announces(self):
+        self.assertIn('"Close"', self.js)
+        self.assertIn("/api/updates/all/${id}/close", self.js)
+        close = self.js[self.js.index("const closeBatch"):]
+        self.assertIn("batchShown = null", close)
+        self.assertIn('document.getElementById("up-list-h")', close)
+        self.assertIn("announce(", close)

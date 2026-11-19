@@ -2607,6 +2607,17 @@ class Handler(BaseHTTPRequestHandler):
                     return self.json(200, update_runs.job(app, mr.group(1)) if mr.group(2) else update_runs.public(update_runs.get(app, mr.group(1))))
                 except LookupError as e:
                     return self.error(404, str(e))
+            mr = re.match(r"^/api/updates/all/([0-9a-f]{12})/close$", path)
+            if mr:  # Close on Install all updates' finished panel (DASH-473): it is not shown again
+                from . import update_batch, update_runs
+                if method != "POST":
+                    return self.error(405, "Method not allowed")
+                try:
+                    return self.json(200, update_batch.close(app, mr.group(1)))
+                except LookupError as e:
+                    return self.error(404, str(e))
+                except update_runs.Busy as e:
+                    return self.error(409, str(e))
             mr = re.match(r"^/api/updates/all(?:/(plan|start|[0-9a-f]{12}))?$", path)
             if mr:  # Install all updates (DASH-454): the plan and the start with the password, then the batch's progress
                 from . import update_batch, update_runs

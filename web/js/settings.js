@@ -2978,9 +2978,10 @@ async function startUpdatesPlace() {
     if (!checking) summary.textContent = summaryText(ready);
     list.removeAttribute("aria-busy");
     redraw(list, [...items.map(row), jellyRow(),
+      // The place is said in the words as well as the link (DASH-474: read as text it said "Each app's image is on .").
       el("li", { class: "setting", "data-key": "look" }, el("div", { class: "setting__text" },
-        el("span", { class: "setting__hint" }, "Check for updates, in Ready to update, checks every part again. Each app's image is on ",
-          el("a", { href: "/apps-updates.html", text: "Apps, Updates" }), "."))) ].filter(Boolean));
+        el("span", { class: "setting__hint", text: "Check for updates, in Ready to update, checks every part again. Each app's image and its versions are in Apps, Updates." })),
+        el("div", { class: "setting__control" }, el("a", { class: "btn btn--quiet", href: "/apps-updates.html" }, "Open Apps, Updates"))) ].filter(Boolean));
   };
   // What Ready to update says (a polite live region): what is ready, and after Check for updates when it looked and
   // what it could not reach.
@@ -3110,8 +3111,11 @@ async function startUpdatesPlace() {
           el("ul", {}, sec.items.map((x) => el("li", {}, ...changeParts(x.parts),
             several && x.version ? el("span", { class: "small muted", text: ` (${x.version})` }) : null,
             x.items?.length ? changeItems(x.items) : null)))]);
+      // Its own picture beside its name (DASH-475), as on its card: decorative, since the name is beside it.
+      const pic = i.icon ? appIcon({ id: i.icon.service, icon: i.icon.v, name: i.name }, "app-icon app-icon--compact")
+        : "logo" in i ? pluginLogo({ name: i.name, logo: i.logo }, { compact: true }) : null;
       return el("section", { class: "release-notes", "aria-labelledby": `wn-${k}` },
-        el("h3", { id: `wn-${k}`, tabindex: "-1", text: head(i) }),
+        el("div", { class: "release-notes__head" }, pic, el("h3", { id: `wn-${k}`, tabindex: "-1", text: head(i) })),
         about || (i.link && !i.none && !i.problem) ? el("p", { class: "small muted" }, about, about && i.link && !i.none && !i.problem ? " " : "",
           !i.none && !i.problem ? link(i, "Release page") : null) : null,
         ...body.filter(Boolean));
@@ -3174,12 +3178,15 @@ async function startUpdatesPlace() {
   };
   // The batch's panel: each update with its state in words and an icon, the count, what is happening now, a polite
   // live region for each change, and the result at the end. It asks every 2 seconds while the batch runs, and keeps
-  // asking while Starboard restarts (no answer for about a minute), then shows how it ended.
+  // asking while Starboard restarts (no answer for about a minute), then shows how it ended. The words say whether it
+  // is still working (#161): "Installing updates" and "4 of 5 done" over a moving bar, then how it ended, with Close.
+  const batchEnd = (v) => (v.state === "updated" ? "All updates finished" : v.state === "failed" ? "The updates stopped" : "Some updates did not install");
   const showBatch = (b, focus = false) => {
     const head = el("h3", { id: "update-all-h", tabindex: "-1", text: b.finished ? "Install all updates finished" : "Installing all updates" });
     const count = el("span", { class: "numeric" });
-    const bar = el("div", { class: "progress", role: "progressbar", "aria-labelledby": "update-all-count", "aria-valuemin": "0" }, el("span"));
-    const meter = el("div", { class: "meter" }, el("div", { class: "meter__label", id: "update-all-count" }, el("span", { text: "Updates finished" }), count), bar);
+    const label = el("span", { text: b.finished ? batchEnd(b) : "Installing updates" });
+    const bar = el("div", { class: `progress${b.finished ? "" : " progress--running"}`, role: "progressbar", "aria-labelledby": "update-all-count", "aria-valuemin": "0" }, el("span"));
+    const meter = el("div", { class: "meter" }, el("div", { class: "meter__label", id: "update-all-count" }, label, count), bar);
     const now = el("p", { class: "task-now small", role: "status" });
     const list = el("ul", { class: "task-list", "aria-label": "Each update" });
     const res = el("div", { class: "stack-2" });
@@ -3188,10 +3195,12 @@ async function startUpdatesPlace() {
     const states = new Map();
     let running = !b.finished, misses = 0;
     const draw = (v) => {
-      count.textContent = `${v.ended} of ${v.count}`;
+      count.textContent = `${v.ended} of ${v.count} done`;
+      label.textContent = v.finished ? batchEnd(v) : "Installing updates";
+      bar.classList.toggle("progress--running", !v.finished);
       bar.setAttribute("aria-valuemax", String(v.count || 1));
       bar.setAttribute("aria-valuenow", String(v.ended));
-      bar.setAttribute("aria-valuetext", `${v.ended} of ${v.count} updates finished`);
+      bar.setAttribute("aria-valuetext", `${v.finished ? batchEnd(v) : "Installing updates"}, ${v.ended} of ${v.count} done`);
       bar.firstChild.style.width = `${v.count ? Math.round((100 * v.ended) / v.count) : 100}%`;
       const changes = [];
       list.replaceChildren(...v.items.map((i) => {
@@ -3212,11 +3221,17 @@ async function startUpdatesPlace() {
     const end = async (v, followed = true) => {
       running = false;
       head.textContent = "Install all updates finished";
+      label.textContent = batchEnd(v);
+      bar.classList.remove("progress--running");
       const tone = v.state === "updated" ? "success" : v.state === "failed" ? "danger" : "warning";
-      const title = v.state === "updated" ? "All updates finished" : v.state === "failed" ? "The updates stopped" : "Some updates did not install";
+      const title = batchEnd(v);
       const box = notice(tone, title, v.said);
       box.setAttribute("tabindex", "-1");
-      res.replaceChildren(box);
+      // Close (DASH-473): takes the finished panel away for good, and focus goes to Ready to update's heading.
+      const close = el("button", { type: "button", class: "btn", id: "update-all-close" }, icon("x"), "Close",
+        el("span", { class: "visually-hidden", text: " Install all updates" }));
+      close.addEventListener("click", () => closeBatch(b.id));
+      res.replaceChildren(box, el("div", { class: "actions" }, close));
       if (!followed) { drawAll(); return; }  // ended before the page opened: shown with the button, nothing announced or moved
       live.textContent = `${title}. ${v.said}`;
       const there = document.activeElement === document.body || node.contains(document.activeElement);
@@ -3231,12 +3246,24 @@ async function startUpdatesPlace() {
       setTimeout(look, v ? 2000 : 3000);
     };
     draw(b);
-    batchShown = { node, running: () => running };
+    batchShown = { id: b.id, node, running: () => running };
     allBox.replaceChildren(node);
     if (focus) head.focus();
     if (b.finished) end(b, false); else setTimeout(look, 2000);
   };
 
+  // Close on the finished panel: Starboard is told, so the panel does not come back when the page opens again; it
+  // goes from the page even when that cannot be saved. Focus moves to Ready to update, and the change is announced.
+  const closeBatch = async (id) => {
+    try { await api(`/api/updates/all/${id}/close`, { method: "POST" }); } catch { /* closed on this page only */ }
+    batchShown = null;
+    if (data.batch?.id === id) data.batch = null;
+    drawAll();
+    const h = document.getElementById("up-list-h");
+    h.setAttribute("tabindex", "-1");
+    h.focus();
+    announce("Install all updates closed. Ready to update.");
+  };
   const refresh = async () => { try { await load(); } catch { return; } drawList(); drawRecent(); drawAll(); };
   updatesRefresh = refresh;
   drawList();
@@ -3317,7 +3344,8 @@ async function startSelfUpdate() {
       else if (s.skip === s.latest) nodes.push(notice("warning", `${latest} did not install last time`, "It does not update by itself to this version again. Update now tries again."));
     }
     // The last update's result, for a day after it ended (an update in the night is still there in the morning).
-    if (u && u.finished && Date.now() / 1000 - u.finished < 86400) ended(u, false);
+    // Not once Starboard has moved on to a newer version by another way (DASH-474).
+    if (u && u.finished && !u.superseded && Date.now() / 1000 - u.finished < 86400) ended(u, false);
     box.replaceChildren(...nodes, result);
   };
   draw();

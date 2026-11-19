@@ -347,3 +347,27 @@ class JobFailureWords(unittest.TestCase):
         self.assertIn("HTTP Error 403: Forbidden", job["summary"])
         self.assertEqual(pa.job_lines(self.dir, "describer", {"jobs": [{"id": "keep", "label": "Keep the choice in Reelix"}]}),
                          ["Keep the choice in Reelix. Last run failed: HTTP Error 403: Forbidden (the plug-in answered 502: Bad Gateway)"])
+
+
+class WholeWords(unittest.TestCase):
+    """DASH-474: a catalogue's What is new summary never stops mid-word."""
+    CUT = ("Find and tag: each film gets the tag Audio description. Every Jellyfin app can filter by it. Play the described "
+           "track: for each person you activate on its page, inactive until chosen. When they start a title with a described track an")
+
+    def test_text_cut_before_it_arrived_goes_back_to_its_last_sentence(self):
+        got = plugin_life.whole_words(self.CUT)
+        self.assertTrue(got.endswith("inactive until chosen…"), got)
+
+    def test_long_text_is_cut_at_a_word_with_an_ellipsis(self):
+        got = plugin_life.whole_words("word " * 200, 600)
+        self.assertLessEqual(len(got), 600)
+        self.assertTrue(got.endswith("word…"), got[-20:])
+
+    def test_whole_text_and_one_short_line_are_kept(self):
+        self.assertEqual(plugin_life.whole_words("Fixes the poster size"), "Fixes the poster size")
+        self.assertEqual(plugin_life.whole_words("Faster.  Smaller."), "Faster. Smaller.")
+        self.assertEqual(plugin_life.whole_words(None), "")
+
+    def test_catalogue_versions_use_it(self):
+        got = plugin_life.clean_versions({"versions": [{"version": "1.3.0", "manifest": "https://example.invalid/m.json", "changelog": self.CUT}]})
+        self.assertTrue(got[0]["changelog"].endswith("…"))
