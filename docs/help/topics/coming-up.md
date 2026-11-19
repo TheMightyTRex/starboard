@@ -48,6 +48,23 @@ to return.
 
    ![Settings, General, Pages and lists with More settings active, with How far ahead (step 2) and View (step 3) outlined in the Coming up section](../images/coming-up-4-how-far.png)
 
+### Add Coming up to your calendar
+
+Your phone or computer calendar can show what is coming up, and update by itself.
+
+1. On the Coming up page, select **Add to your calendar**.
+2. Select **Make an address**. If you made one before, select **Make a new address**, then **Make a new address**
+   again to confirm: the old address stops working.
+3. Select **Copy the address**. Starboard shows the address only this once.
+4. In your calendar app, add a calendar from an address. Apps call this **Subscribe**, **From URL** or
+   **Add by URL**. Paste the address.
+
+The calendar shows the films, episodes, albums, books and radio from Coming up, from a week ago to about 8 weeks
+ahead. Films, albums and books are all-day events on their release date; episodes and radio are at the time they
+air. Your calendar app checks for changes about once an hour.
+
+To stop every calendar that uses the address, select **Add to your calendar**, then **Stop the address**.
+
 ### Show or hide posters
 
 1. Go to **Settings**, then **Performance**, and activate **More settings**.
@@ -62,6 +79,11 @@ to return.
   Starboard, so no image site receives them.
 - The **Small server** preset deactivates posters. Read
   [Make Starboard use less of your server](make-starboard-lighter.md).
+- The calendar address opens Coming up as a calendar and nothing else in Starboard. Anyone with the address can
+  read it, so give it only to your own devices. If it gets out, make a new address.
+- The calendar address works where this page works. To use it away from home, Starboard must be reachable from
+  outside your home: make the address while you use Starboard's outside address. Read
+  [Use Starboard away from home safely](../guides/use-starboard-away-from-home.md).
 - To get something wanted now, use **Activity**, then **Wanted**. Read
   [Find and get what is missing](get-what-is-missing.md).
 - A wanted item that has already come out says the app has not found it yet. An item still to come says the
@@ -73,6 +95,8 @@ to return.
 - **Nothing matches these filters:** select the filter you chose again to clear it.
 - **A warning about one app:** that app did not answer, so its releases are missing. Read
   [An app shows as not responding](app-not-responding.md).
+- **The calendar stopped updating:** the address was replaced or stopped, or Starboard is not reachable from where
+  the calendar app is. Make a new address and give it to the calendar app again.
 - **The view changed here but was not saved:** the page shows your choice, but Starboard could not save it.
   Choose it again.
 

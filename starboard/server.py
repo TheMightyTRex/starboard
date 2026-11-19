@@ -1002,11 +1002,55 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/api/v1/") or path == "/api/v1":  # the public API, with its own keys (DASH-274)
             from . import api_v1
             return api_v1.handle(self, "GET", path)
+        if path == "/calendar.ics":  # Coming up for calendar apps, with its own token (DASH-67)
+            return self.calendar_feed()
         if path.startswith("/api/"):
             return self.api("GET", path)
         if path.startswith("/iptv/"):
             return self.iptv(path)
         return self.static(path)
+
+    def calendar_feed(self):
+        """/calendar.ics?token=sbcal_...: the one thing the calendar token opens. No session, no cookies; the token
+        is checked in constant time, a refused one counts towards the lockout for this address, a good one shares the
+        API's token bucket. The same host and network rules as every other address apply (do_GET), so a calendar
+        app away from home reaches it only where Starboard is reachable."""
+        from . import api_v1, calendar_feed
+        app = self.app
+        plain = "text/plain; charset=utf-8"
+        token = (urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("token") or [""])[0]
+        if not calendar_feed.valid(app.data_dir, token):
+            address = self.client_address_text()
+            if not app.limits.attempt(address):
+                return self.send(429, b"Too many refused calendar addresses from here. Wait 15 minutes", plain,
+                                 {"Retry-After": "900", "Cache-Control": "no-store"})
+            api_v1.audit(app.data_dir, "calendar_refused", address=address)
+            return self.send(404, b"Not found", plain, {"Cache-Control": "no-store"})
+        ok, wait, _ = api_v1.take_token("calendar-feed")
+        if not ok:
+            return self.send(429, b"Too many requests. Try again shortly", plain, {"Retry-After": str(wait), "Cache-Control": "no-store"})
+        calendar_feed.note_use(app.data_dir)
+        cfg = app.config.data
+        name = cfg.get("site_name") or "Starboard"
+
+        def build():
+            start, end = calendar_feed.window()
+            found = services.calendar(cfg["services"], start=start, end=end)
+            if found["errors"] and not found["items"]:  # never an empty calendar kept for 15 minutes: it would empty theirs
+                raise services.ServiceError(found["errors"][0]["message"])
+            types = {s["id"]: s["type"] for s in cfg["services"]}
+            return calendar_feed.ics(found["items"], types, name)
+
+        try:
+            raw = services.cached(f"calendar-feed-{name}", calendar_feed.KEEP_SECONDS, build)
+        except Exception:  # noqa: BLE001 - every app failing is a 503 the calendar app tries again after
+            return self.send(503, b"The apps did not answer. Try again later", plain, {"Retry-After": "900", "Cache-Control": "no-store"})
+        tag = 'W/"' + hashlib.sha256(raw).hexdigest()[:20] + '"'
+        extra = {"Cache-Control": f"private, max-age={calendar_feed.KEEP_SECONDS}", "ETag": tag,
+                 "Content-Disposition": 'inline; filename="coming-up.ics"', "X-Robots-Tag": "noindex"}
+        if tag in [t.strip() for t in (self.headers.get("If-None-Match") or "").split(",")]:
+            return self.send(304, b"", "text/calendar; charset=utf-8", extra)
+        return self.send(200, raw, "text/calendar; charset=utf-8", extra)
 
     def iptv(self, path):
         """For Jellyfin, with no sign-in, only while Live TV is on: channel logos and Pluto stream links."""
@@ -2443,6 +2487,22 @@ class Handler(BaseHTTPRequestHandler):
                     for item in result["items"]:
                         item["image"] = ""
                 return self.json(200, result)
+            if path == "/api/calendar-feed":  # the calendar address on Coming up (DASH-67): its token is shown once
+                from . import calendar_feed
+                if method == "GET":
+                    return self.json(200, calendar_feed.status(app.data_dir))
+                if method == "POST":
+                    token = calendar_feed.make(app.data_dir)
+                    from . import api_v1
+                    api_v1.audit(app.data_dir, "calendar_address_made", session=self.session_label())
+                    logs.event("info", "security", "Calendar address made; any earlier one stopped working")
+                    return self.json(200, {**calendar_feed.status(app.data_dir), "path": f"/calendar.ics?token={token}"})
+                if method == "DELETE":
+                    calendar_feed.stop(app.data_dir)
+                    from . import api_v1
+                    api_v1.audit(app.data_dir, "calendar_address_stopped", session=self.session_label())
+                    logs.event("info", "security", "Calendar address stopped")
+                    return self.json(200, calendar_feed.status(app.data_dir))
             if path == "/api/access" and method == "GET":
                 return self.json(200, {"items": access.summary(app)})
             if path == "/api/queue/episodes" and method in ("GET", "POST"):  # Choose the episode (12 November 2026)
