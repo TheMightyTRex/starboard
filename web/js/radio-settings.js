@@ -83,7 +83,7 @@ function radioLogosSection() {
     const file = el("input", { type: "file", id: "radio-logo-zip", accept: ".zip,application/zip", class: "input" });
     const add = el("button", { type: "submit", class: "btn" }, icon("upload"), "Add logos");
     const form = el("form", { class: "form-stack", novalidate: true },
-      field("A zip of station logos", file, { hint: "PNG, JPEG or WebP pictures named after their stations, such as BBC-Radio-4.png. A file with the same name replaces the one you have." }),
+      field("A zip of station logos", filePicker(file), { hint: "PNG, JPEG or WebP pictures named after their stations, such as BBC-Radio-4.png. A file with the same name replaces the one you have." }),
       el("div", { class: "actions" }, add, savedNote("radio-logos-saved")));
     form.addEventListener("submit", async (e) => {
       e.preventDefault();

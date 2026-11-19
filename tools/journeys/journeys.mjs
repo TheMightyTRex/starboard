@@ -1943,7 +1943,7 @@ await page.waitForTimeout(800);
 check("ZIP-07", "then its own page opens, offering Update from a zip file", /id=zip-hello/.test(page.url())
   && (await page.getByRole("heading", { name: "Update from a zip file" }).count()) === 1);
 await page.getByLabel("The new version's zip file").setInputFiles(zipFile("1.0.1"));
-await page.getByRole("button", { name: "What is new" }).click();
+await page.getByRole("button", { name: "Upload and check" }).click();
 const zipUp = page.getByRole("dialog", { name: "Update Zip hello to 1.0.1?" });
 await zipUp.waitFor({ timeout: 8000 }).catch(() => {});
 check("ZIP-08", "a newer zip opens the update warning", (await zipUp.count()) === 1);

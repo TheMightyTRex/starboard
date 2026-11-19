@@ -875,7 +875,7 @@ function customScreen(p, s) {
     form.addEventListener("submit", (e) => { e.preventDefault(); if (url.value.trim()) { opened.delete(it.id); run({ action: "attach", id: it.id, value: url.value.trim() }, save); } });
     const file = el("input", { class: "input", type: "file", accept: a.accept || "", "aria-label": `Or choose a file: ${a.field}` });
     const send = el("button", { type: "submit", class: "btn" }, icon("upload"), "Upload");
-    const fileForm = el("form", { class: "actions" }, file, send);
+    const fileForm = el("form", { class: "actions" }, filePicker(file), send);
     fileForm.addEventListener("submit", (e) => { e.preventDefault(); upload(file, send, it.id, () => opened.delete(it.id)); });
     return el("li", { class: "attach-form", id: base, role: "group", "aria-labelledby": `${base}-l` },
       el("label", { class: "field__label", id: `${base}-l`, for: url.id, text: a.field }),
@@ -978,7 +978,7 @@ function customScreen(p, s) {
       const file = el("input", { class: "input", id: fileId, type: "file", accept: f.accept || "", ...(f.hint ? { "aria-describedby": `${fileId}-h` } : {}) });
       const send = el("button", { type: "submit", class: "btn" }, icon("upload"), "Upload");
       const fileForm = el("form", { class: "stack-2" }, el("label", { class: "field__label", for: fileId, text: f.label }),
-        f.hint ? el("p", { class: "hint", id: `${fileId}-h`, text: f.hint }) : null, el("div", { class: "actions" }, file, send));
+        f.hint ? el("p", { class: "hint", id: `${fileId}-h`, text: f.hint }) : null, el("div", { class: "actions" }, filePicker(file), send));
       fileForm.addEventListener("submit", (e) => { e.preventDefault(); upload(file, send, ""); });
       // Only the file picker (plug-in API 1.12), for a plug-in that takes files and never an address.
       if (data.add.file_only) return fileForm;
@@ -1187,7 +1187,7 @@ function testerSection() {
   const dev = el("input", { type: "checkbox", id: "pl-test-dev" });
   const out = el("div", { "aria-live": "polite" });
   const form = el("form", { class: "form-stack", novalidate: true },
-    field("Manifest file to test", file, { hint: "starboard-plugin.json. Accessibility is always tested." }),
+    field("Manifest file to test", filePicker(file), { hint: "starboard-plugin.json. Accessibility is always tested." }),
     el("label", { class: "check", for: dev.id }, dev, el("span", { text: "Allow images without a digest (testing only: adding a plug-in always needs one)" })),
     el("div", { class: "actions" }, el("button", { type: "submit", class: "btn", text: "Test it" })));
   form.addEventListener("submit", async (e) => {
@@ -1226,7 +1226,7 @@ function addPluginSection(redraw) {
   const file = el("input", { type: "file", id: "pl-file", accept: ".json,application/json", class: "input" });
   const form = el("form", { class: "form-stack", novalidate: true },
     field("The plug-in's manifest address", address, { hint: "The https address of its starboard-plugin.json, from the plug-in's own page." }),
-    field("Or its manifest file", file, { hint: "starboard-plugin.json from the plug-in's folder. A plug-in's own installer fills this in for you." }),
+    field("Or its manifest file", filePicker(file), { hint: "starboard-plugin.json from the plug-in's folder. A plug-in's own installer fills this in for you." }),
     el("div", { class: "actions" }, look));
   let given = null; // a manifest from a file, or from a plug-in's installer link (#manifest=...)
   file.addEventListener("change", async () => { given = file.files[0] ? await file.files[0].text() : null; });
@@ -1283,7 +1283,7 @@ function zipSection() {
   const look = el("button", { type: "submit", class: "btn btn--primary", text: "Check the zip" });
   const seen = el("div", { class: "stack-4", "aria-live": "polite" });
   const form = el("form", { class: "form-stack", novalidate: true },
-    field("The plug-in's zip file", file, { hint: "From the plug-in's own page, such as its Releases page. Up to 50 MB, with starboard-plugin.json at the top." }),
+    field("The plug-in's zip file", filePicker(file), { hint: "From the plug-in's own page, such as its Releases page. Up to 50 MB, with starboard-plugin.json at the top." }),
     el("div", { class: "actions" }, look));
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -1326,10 +1326,12 @@ function zipSection() {
 // any update, with a build step first; Roll back needs nothing more.
 function updateFromZip(p, redraw) {
   const file = el("input", { type: "file", id: `pl-${p.id}-update-zip`, accept: ".zip,application/zip", class: "input" });
-  const go = el("button", { type: "submit", class: "btn" }, "What is new");
+  // Upload and check (owner, 19 November 2026: there was no button that said it uploads): it uploads the zip, checks it
+  // and shows What is new before anything changes.
+  const go = el("button", { type: "submit", class: "btn btn--primary" }, icon("upload"), "Upload and check");
   const form = el("form", { class: "form-stack", novalidate: true, "aria-labelledby": `pl-${p.id}-update-zip-h` },
     el("h3", { id: `pl-${p.id}-update-zip-h`, text: "Update from a zip file" }),
-    field("The new version's zip file", file, { hint: "From the plug-in's own page. Starboard checks it before anything changes." }),
+    field("The new version's zip file", filePicker(file), { hint: "From the plug-in's own page. Starboard checks it before anything changes." }),
     el("div", { class: "actions" }, go));
   form.addEventListener("submit", async (e) => {
     e.preventDefault();

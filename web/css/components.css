@@ -923,6 +923,49 @@
   }
 
   /* 4. Inputs --------------------------------------------------------------------------------- */
+  /* File picker (owner, 19 November 2026: "look at the choose file button and make sure it matches the rest of the
+     site"): a real file input, kept for keyboards and screen readers but drawn invisibly over a button in the site's
+     style, with the chosen file's name beside it. Markup:
+     <div class="file-field"><span class="btn file-field__button"><svg class="i">upload</svg>Choose a file
+       <input type="file" id="x" aria-describedby="x-name"></span><span class="file-field__name" id="x-name">No file chosen</span></div>
+     The field's label names it (label for="x"). The button takes the focus ring while the input has the focus. */
+  .file-field {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    min-width: 0;
+  }
+  .file-field__button {
+    position: relative;
+    overflow: hidden;
+  }
+  .file-field__button > input[type="file"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .file-field__button:has(> input:focus-visible) {
+    outline: var(--focus-w) solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  .file-field__button:has(> input:disabled) {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .file-field__name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+  .file-field__name.is-chosen {
+    color: var(--color-text);
+    font-weight: var(--weight-strong);
+  }
   .field {
     display: grid;
     gap: var(--space-1);
