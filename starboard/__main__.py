@@ -45,8 +45,14 @@ def main():
     # Heavy jobs (the watch history import, listening progress, the built-in Live TV job and Library indexes) run in
     # a short-lived process, so this one's memory stays low (DASH-79). STARBOARD_CHILD_JOBS=0 runs them here instead.
     child.ENABLED = os.environ.get("STARBOARD_CHILD_JOBS", "1") != "0"
-    runner = Runner(App(data_dir))
+    app = App(data_dir)
+    runner = Runner(app)
     runner.start()
+    try:
+        from . import plugin_socket
+        plugin_socket.start(app)  # each active plug-in's API socket in its run folder (DASH-482)
+    except Exception as e:  # noqa: BLE001 - Starboard itself still starts
+        logs.event("warning", "plugins", f"Could not open the plug-ins' API sockets ({e})")
     stop = threading.Event()
 
     def stop_cleanly(_signum, _frame):

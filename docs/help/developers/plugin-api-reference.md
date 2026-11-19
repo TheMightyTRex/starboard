@@ -314,15 +314,24 @@ only, so any user a container runs as can read these files:
 | `/run/starboard/jellyfin.json` | Only with `jellyfin:key`: `{"url": ..., "api_key": ...}`. An address on the server itself is given as `host.docker.internal` |
 | `/run/starboard/reelix.json` | Only with `reelix:key` (API 1.6): `{"url": ..., "api_key": ...}`, Reelix's address and key |
 | `/run/starboard/usenet.json` | Only with `usenet:servers` (API 1.6): `{"servers": [{"name", "host", "port", "ssl", "user", "password", "connections", "level"}]}`, the active news servers from NZBGet (or SABnzbd), first choice first. Use fewer connections than `connections`: the download app uses the same account |
+| `/run/starboard/api.sock` | Starboard's API, for a plug-in on its own network or the VPN, which has no other way to reach it. Only while the plug-in is active |
 | `/data` | Only with the `data` volume: its own folder, read and write |
 
 And these environment variables, with the `env` from the manifest:
 
 | Name | Value |
 |---|---|
-| `STARBOARD_API` | Starboard's API: `http://starboard:8095/api/v1/` on the plug-in's own network, or `http://host.docker.internal:<Starboard's port>/api/v1/` on the `lan` network (Starboard 0.22.0 and later) |
+| `STARBOARD_API` | On the `lan` network, `http://host.docker.internal:<Starboard's port>/api/v1/`. On the `default` network or the VPN, `http://starboard:8095/api/v1/`: use only its path, and send the request to `STARBOARD_API_SOCKET` |
 | `STARBOARD_API_KEY_FILE` | `/run/starboard/key` |
+| `STARBOARD_API_SOCKET` | `/run/starboard/api.sock`, on every network |
 | `STARBOARD_HOME_ADDRESS` | Only for a container with `publish` on the `lan` network (Starboard 0.23.0 and later): its own address on the home network, such as `http://192.168.1.20:8790`, the server's address and the port Starboard chose. Give it to Jellyfin or a device that needs to reach the plug-in, rather than asking the person to open its page first |
+
+Starboard runs on the server's own network, so it cannot join a plug-in's own network, which stays internal: a
+plug-in on the `default` network can reach nothing outside it, Starboard's port included. Starboard listens for it
+on a Unix socket in its run folder instead, `STARBOARD_API_SOCKET`. Send the same HTTP requests to that socket, with
+the path from `STARBOARD_API`, any `Host` and the plug-in's own key. The socket answers only `/api/v1`, and only to
+that plug-in's key: another key is refused with `401`. A plug-in on the `lan` network may use either. The helper
+`sbplugin.py` in the example plug-ins uses the socket whenever `STARBOARD_API_SOCKET` names one that is there.
 
 Starboard writes `reelix.json` and `usenet.json` again each time it starts and each time the plug-in is activated,
 so a changed password reaches the plug-in without a reinstall.
@@ -359,17 +368,25 @@ Every plug-in with a container gets its own key to [Starboard's API](api-referen
 - It does not expire. It stops working when the plug-in is removed.
 - When an update or **Roll back** changes the read permissions, Starboard revokes the key and writes a new one to
   the same file. Read the file again when a call answers `401`.
-- With the `default` network, Starboard's API is the only thing the plug-in can reach.
+- With the `default` network, Starboard's API, through `STARBOARD_API_SOCKET`, is the only thing the plug-in can
+  reach.
 
-Send it as for any key:
+Send it as for any key, through the socket when there is one:
 
 ```python
-import json, os, urllib.request
+import http.client, json, os, socket, urllib.parse
+
+class Starboard(http.client.HTTPConnection):
+    def connect(self):
+        self.sock = socket.socket(socket.AF_UNIX)
+        self.sock.settimeout(10)
+        self.sock.connect(os.environ["STARBOARD_API_SOCKET"])
 
 key = open(os.environ["STARBOARD_API_KEY_FILE"]).read().strip()
-req = urllib.request.Request(os.environ["STARBOARD_API"] + "downloads", headers={"Authorization": "Bearer " + key})
-with urllib.request.urlopen(req, timeout=10) as r:
-    print(json.load(r)["items"])
+path = urllib.parse.urlsplit(os.environ["STARBOARD_API"]).path + "downloads"
+c = Starboard("localhost", timeout=10)
+c.request("GET", path, headers={"Authorization": "Bearer " + key})
+print(json.load(c.getresponse())["items"])
 ```
 
 The rules for every key, such as 120 requests a minute, are in [Authentication and keys](api-authentication.md).

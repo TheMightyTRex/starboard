@@ -795,14 +795,18 @@ def compose(manifest, plugin_dir, media_dir, host=None, media_user=None, extra=N
         vols.append(f"{plugin_dir}/run:/run/starboard:ro")
         lines += ["    volumes:"] + [f"      - {json.dumps(v)}" for v in vols]
         env = {**({"TZ": host["tz"]} if host.get("tz") else {}), **{k: str(_fill(v, extra)) for k, v in (c.get("env") or {}).items()}, "STARBOARD_API": api_address(c.get("network", "default")),
-               "STARBOARD_API_KEY_FILE": "/run/starboard/key"}
+               "STARBOARD_API_KEY_FILE": "/run/starboard/key",
+               # DASH-482: on its own internal network a plug-in has no route to Starboard's port, so it calls the API
+               # through the socket Starboard keeps in its run folder (plugin_socket); STARBOARD_API gives the paths
+               "STARBOARD_API_SOCKET": API_SOCKET}
         # Its own address on the home network (owner, 19 November 2026): a plug-in that gives Jellyfin or a device an
         # address, such as Create your own TV channel, needs no one to open its page first to learn it.
         if net == "lan" and c.get("publish") and port_out and extra.get("home_ip"):
             env["STARBOARD_HOME_ADDRESS"] = f"http://{extra['home_ip']}:{int(port_out)}"
         lines += ["    environment:"] + [f"      {k}: {json.dumps(v)}" for k, v in sorted(env.items())]
     if networks:
-        # Its own network, which reaches nothing outside; Starboard joins it so the plug-in can call the API (PS5).
+        # Its own network, which reaches nothing outside (PS5). Starboard runs on the computer's own network and
+        # cannot join it, so the plug-in calls the API through STARBOARD_API_SOCKET instead (DASH-482).
         lines += ["networks:", f"  plugin-{pid}:", f"    name: plugin-{pid}", "    internal: true"]
         if "lan" in networks:
             lines += ["  lan:", "    driver: bridge"]
@@ -810,10 +814,15 @@ def compose(manifest, plugin_dir, media_dir, host=None, media_user=None, extra=N
 
 
 
+API_SOCKET = "/run/starboard/api.sock"  # DASH-482: Starboard's API for every plug-in container, whatever its network
+
+
 def api_address(network):
-    """Where a plug-in reaches Starboard's API. Starboard runs on the computer's own network, so it cannot join a
-    plug-in's network: a plug-in on the home network (network:lan) reaches it as host.docker.internal at Starboard's
-    own port (STARBOARD_PORT, 8095 unless the owner chose another). Others keep the address on their own network."""
+    """Where a plug-in reaches Starboard's API over HTTP. Starboard runs on the computer's own network, so it cannot
+    join a plug-in's network: a plug-in on the home network (network:lan) reaches it as host.docker.internal at
+    Starboard's own port (STARBOARD_PORT, 8095 unless the owner chose another). On its own internal network or the VPN
+    there is no route to Starboard, so the plug-in sends its requests to STARBOARD_API_SOCKET (DASH-482) and takes
+    only the path from this address, which stays as it was for older plug-ins."""
     if network == "lan":
         return f"http://host.docker.internal:{int(os.environ.get('STARBOARD_PORT') or 8095)}/api/v1/"
     return "http://starboard:8095/api/v1/"

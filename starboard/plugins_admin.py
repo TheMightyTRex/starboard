@@ -653,9 +653,6 @@ def _compose_run(data_dir, pid, command, helper=None):
               (f"{media_prep} || {{ echo 'Could not make its folder in the media folder'; exit 1; }}; " if media_prep else "") +
               f"out=$(docker compose -p {q('plugin-' + pid)} -f compose.yaml {command} 2>&1); code=$?; "
               "printf '%s\n' \"$out\" | tail -n 40")
-    if command.startswith("up"):
-        # Starboard joins the plug-in's own network, so the plug-in can reach Starboard's API and nothing else.
-        script += f"; [ $code -eq 0 ] && docker network connect {q('plugin-' + pid)} starboard 2>/dev/null"
     script += "; exit $code"
     try:
         # The media folder is shown to the helper only when a folder in it must be made (API 1.12).
@@ -842,9 +839,15 @@ def write_compose(data_dir, pid, media_dir=None, refused=()):
         return False
     extra = {"ports": choose_ports(data_dir, pid, m, refused), "secrets": secrets_for(data_dir, pid, m),
              "jellyfin": _read(os.path.join(where, "jellyfin.json"), {}) or {}, "home_ip": home_ip(), **base_extra(data_dir, m)}
-    if not (extra["ports"] or extra["secrets"] or extra.get("jellyfin_metadata")
+    try:
+        with open(os.path.join(where, "compose.yaml"), encoding="utf-8") as f:
+            has_socket = "STARBOARD_API_SOCKET" in f.read()
+    except OSError:
+        has_socket = False
+    if not (extra["ports"] or extra["secrets"] or extra.get("jellyfin_metadata") or not has_socket
             or any(plugins.FILLED.search(str(v)) for c in m["containers"] for v in (c.get("env") or {}).values())):
         return False  # nothing of API 1.13 or 1.14: the Compose file written at install stays as it is
+    # (one written before DASH-482 is written again, so the plug-in is told where its API socket is)
     media = media_dir or _media_dir_from(where)
     _write(os.path.join(where, "compose.yaml"), plugins.compose(m, host_path(data_dir, pid), media, None,
                                                                  media_owner(data_dir), extra), 0o644)
@@ -959,6 +962,8 @@ def enable(data_dir, pid, helper=None, services=None):
             raise ValueError(f"It did not start: {e}") from None
     upgrade_mounts(where)
     share(where)  # also after Roll back, which moves files rather than writing them
+    from . import plugin_socket
+    plugin_socket.serve(data_dir, pid)  # DASH-482: its API socket, there before its containers start
     write_compose(data_dir, pid)  # API 1.13: its port, secrets and Jellyfin's details, as they are now
     ok, text = _compose_run(data_dir, pid, "up -d --remove-orphans", helper)
     refused = []
@@ -991,6 +996,8 @@ def disable(data_dir, pid, helper=None):
         api_v1.audit(data_dir, "plugin_disabled", plugin=pid)
         return
     ok, text = _compose_run(data_dir, pid, "stop", helper)
+    from . import plugin_socket
+    plugin_socket.stop(pid)
     set_state(data_dir, pid, "disabled", "" if ok else text[-300:])
     api_v1.audit(data_dir, "plugin_disabled", plugin=pid)
 
@@ -1040,6 +1047,8 @@ def uninstall(data_dir, pid, helper=None, to_holding=False, config=None):
             _compose_run(data_dir, pid, "down", helper)
     except Exception:  # Docker may be unreachable; the folder still moves and the key still goes
         pass
+    from . import plugin_socket
+    plugin_socket.stop(pid)
     if st.get("key_id"):
         api_v1.revoke_key(data_dir, st["key_id"])
     aside = os.path.join(root(data_dir), ".removed")
