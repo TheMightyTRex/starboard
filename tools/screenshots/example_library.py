@@ -66,7 +66,7 @@ FILMS = []
 for i, t in enumerate(_titles(64, 1), 1):
     year = 2027 if i in (13, 41) else 1975 + (i * 7) % 52  # two coming soon
     status = "announced" if year > 2026 else "released"
-    FILMS.append({"id": i, "title": t, "sort_title": "", "year": year, "status": status, "has_file": status == "released" and i % 5 != 0,
+    FILMS.append({"id": i, "tmdb_id": 7000 + i, "title": t, "sort_title": "", "year": year, "status": status, "has_file": status == "released" and i % 5 != 0,
                   "monitored": i % 11 != 0, "runtime_minutes": 85 + i % 70, "certification": ["U", "PG", "12A", "15"][i % 4],
                   "images": {"poster": _poster(i)}, "added": _added(i), "overview": "A made-up film for the preview.",
                   "studio": "Example Pictures", "genres": [GENRES[i % 6]] + ([GENRES[(i + 2) % 6]] if i % 3 == 0 else []),
@@ -76,7 +76,7 @@ for i, t in enumerate(_titles(64, 1), 1):
 SERIES = []
 for i, t in enumerate(_titles(30, 2), 1):
     total = 6 + i % 20
-    SERIES.append({"id": i, "title": t, "sort_title": "", "year": 2000 + i % 25, "status": "upcoming" if i == 7 else "continuing" if i % 3 else "ended",
+    SERIES.append({"id": i, "tmdb_id": 7100 + i, "title": t, "sort_title": "", "year": 2000 + i % 25, "status": "upcoming" if i == 7 else "continuing" if i % 3 else "ended",
                    "network": ["BBC One", "Channel 4", "ITV1", "Sky Atlantic"][i % 4], "last_aired": f"{2001 + i % 25}-03-01",
                    "images": {"poster": _poster(i + 100)}, "added": _added(i + 3), "overview": "A made-up series for the preview.",
                    "statistics": {"episode_file_count": total if i % 4 else total // 2, "episode_count": total, "season_count": 2},
@@ -379,6 +379,36 @@ ISSUES = [{"id": 1, "kind": "series", "title": "43 Planets", "year": 2019, "issu
           {"id": 2, "kind": "movie", "title": "Iron Valley", "year": 1982, "issue_type": "subtitles", "status": "open",
            "message": "The subtitles are a few seconds late.", "reported_by": {"display_name": "Jo"}, "comment_count": 0, "comments": [],
            "created_at": "2026-11-09T08:00:00Z"}]
+
+
+def _jf_id(n):
+    return f"{n:032x}"
+
+
+def jellyfin_items(q):
+    """A made-up Jellyfin's films and series, for Watched and Play in Jellyfin (DASH-276, DASH-480): every film with its
+    file except every seventh (Lantern Marsh is not in Jellyfin yet), and every series with episodes."""
+    films = [{"Id": _jf_id(f["tmdb_id"]), "Name": f["title"], "Type": "Movie", "ProviderIds": {"Tmdb": str(f["tmdb_id"])},
+              "UserData": {"Played": f["id"] % 3 == 0}} for f in FILMS if f["has_file"] and f["id"] % 7]
+    series = [{"Id": _jf_id(s["tmdb_id"]), "Name": s["title"], "Type": "Series", "ProviderIds": {"Tmdb": str(s["tmdb_id"])}}
+              for s in SERIES if s["statistics"]["episode_file_count"]]
+    want = q.get("AnyProviderIdEquals", "")
+    if want.startswith("Tmdb."):
+        found = [x for x in films + series if x["ProviderIds"]["Tmdb"] == want[5:] and x["Type"] == q.get("IncludeItemTypes", x["Type"])]
+        return {"Items": found, "TotalRecordCount": len(found)}
+    start, limit = int(q.get("StartIndex", 0)), int(q.get("Limit", 1000))
+    return {"Items": films[start:start + limit], "TotalRecordCount": len(films)}
+
+
+def jellyfin_episodes(series_jf_id):
+    """The episodes Jellyfin has of a made-up series: those with their files, except the newest file of A Distant
+    Field (series 4), which Jellyfin has not added yet."""
+    s = next((x for x in SERIES if _jf_id(x["tmdb_id"]) == series_jf_id), None)
+    if not s:
+        return {"Items": []}
+    have = s["statistics"]["episode_file_count"] - (1 if s["id"] == 4 else 0)
+    return {"Items": [{"Id": _jf_id(s["tmdb_id"] * 1000 + n), "ParentIndexNumber": 1 + n // 8, "IndexNumber": 1 + n % 8,
+                       "UserData": {"Played": n < 2}} for n in range(have)]}
 
 
 def change(method, path, body, q):

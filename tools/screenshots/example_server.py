@@ -1271,6 +1271,13 @@ def example_default_app(path):
             return [{"UserName": "Sam", "DeviceName": "Living room TV", "Client": "Jellyfin Android TV",
                      "NowPlayingItem": {"Name": film["title"], "Type": "Movie", "RunTimeTicks": 72_000_000_000},
                      "PlayState": {"PositionTicks": 30_000_000_000, "IsPaused": False}}]
+        q = dict(urllib.parse.parse_qsl(path.split("?", 1)[1])) if "?" in path else {}
+        if route == "/Users":  # Watched and Play in Jellyfin (DASH-276, DASH-480): one made-up admin
+            return [{"Id": "e" * 32, "Name": "Sam", "Policy": {"IsAdministrator": True}}]
+        if route == "/Items" and (q.get("AnyProviderIdEquals") or q.get("Fields") == "ProviderIds"):
+            return example_library.jellyfin_items(q)
+        if route.startswith("/Shows/") and route.endswith("/Episodes"):
+            return example_library.jellyfin_episodes(route.split("/")[2])
         if route == "/Items":
             now = dt.datetime.now(dt.timezone.utc)
             return {"Items": [{"Name": f["title"], "Type": "Movie", "ProductionYear": f["year"],
@@ -1988,8 +1995,13 @@ def main():
             {"id": "disk", "size": "small"}, {"id": "load", "size": "small"}, {"id": "vpn", "size": "small"}, {"id": "alerts", "size": "small"}]}}, cookie)
         for name, kind, group, path, icon in APPS:
             key = {"nzbget": "starboard:made-up", "gluetun": ""}.get(kind, KEY)
+            more = {}
+            if kind == "jellyfin":  # its address for browsers (Play in Jellyfin, DASH-480); a real test Jellyfin when given
+                more = {"link": os.environ.get("EXAMPLE_JELLYFIN_LINK", "http://192.168.1.20:8096")}
+                if os.environ.get("EXAMPLE_JELLYFIN_URL"):
+                    more.update(url=os.environ["EXAMPLE_JELLYFIN_URL"], api_key=os.environ.get("EXAMPLE_JELLYFIN_KEY", ""))
             call("POST", "/api/services", {"name": name, "type": kind, "group": group, "url": f"http://127.0.0.1:{FAKE_PORT}/{path}",
-                                           "api_key": key, "icon": icon}, cookie)
+                                           "api_key": key, "icon": icon, **more}, cookie)
         # Reelix, as Install apps adds it: a link with the manager key, so radio shows in Coming up and Downloads.
         call("POST", "/api/services", {"name": "Reelix", "type": "link", "group": FIND, "icon": "reelix",
                                        "url": f"http://127.0.0.1:{FAKE_PORT}/reelix", "api_key": KEY}, cookie)

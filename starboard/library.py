@@ -35,7 +35,7 @@ REFRESH = 1800  # while in use, every 30 minutes
 IN_USE = 3600  # the Library counts as in use for an hour after it was last opened
 ITEM_SECONDS = 60
 WALL_MAX = 200  # at most this many covers in one answer
-INDEX_VERSION = 3  # 2: the facts Search filters by (DASH-301); 3: audiobook narrators (DASH-261)
+INDEX_VERSION = 4  # 2: the facts Search filters by (DASH-301); 3: audiobook narrators (DASH-261); 4: films' Jellyfin ids (DASH-480)
 SEARCH_MAX = 500  # Search sends at most this many of each kind, with their facts, so the browser can filter them
 LABELS = {"films": "Films", "tv": "TV", "music": "Music", "radio": "Radio", "books": "Books", "audiobooks": "Audiobooks"}
 NOUNS = {"films": ("film", "films"), "tv": ("series", "series"), "music": ("artist", "artists"),
@@ -485,14 +485,21 @@ def _series_below(reelix):
         return set()
 
 
-def build(reelix, tab):
-    """Reads one tab from Reelix and returns its slim entries, sorted A to Z."""
+def build(reelix, tab, jellyfin_ids=None):
+    """Reads one tab from Reelix and returns its slim entries, sorted A to Z. jellyfin_ids (films): Jellyfin's films
+    from jellyfin_play.film_ids(), so each film Jellyfin has keeps its Jellyfin id for Play (DASH-480)."""
+    from . import jellyfin_play
     out = []
     today = dt.date.today().isoformat()
     base = reelix["url"].rsplit("/api/v1", 1)[0]
     if tab == "films":
         for page in _pages(reelix, "/movies", {"sort": "title"}):
-            out.extend(_film(m) for m in page)
+            for m in page:
+                e = _film(m)
+                jid = jellyfin_play.match(jellyfin_ids or {}, m.get("tmdb_id"), m.get("imdb_id"))
+                if jid:
+                    e["jf"] = jid
+                out.append(e)
     elif tab == "tv":
         for page in _pages(reelix, "/series", {"sort": "title"}):
             out.extend(_series(s) for s in page)
@@ -578,7 +585,8 @@ def warm(data_dir, reelix, tab, urls, pause=0.3):
 def build_and_write(data_dir, reelix, tab):
     """Reads one tab from Reelix and writes its index file: {"count", "posters"}. The running server does this in a
     short-lived process (child.py, DASH-79), so the memory used reading Reelix's lists is given back when it ends."""
-    entries = build(reelix, tab)
+    from . import jellyfin_play
+    entries = build(reelix, tab, jellyfin_play.film_ids_for_index(data_dir) if tab == "films" else None)
     _write(data_dir, tab, entries)
     return {"count": len(entries), "posters": [e["p"] for e in entries if isinstance(e, dict) and e.get("p")]}
 
@@ -689,7 +697,7 @@ def _card(tab, e):
     word = STATUS.get(e["w"], ("", "muted"))
     return {"id": e["i"], "title": e["t"], "meta": e.get("m", ""), "count": e.get("c", ""), "letter": e["l"],
             "status": word[0], "tone": word[1], "have": e["w"] in ("in_library", "partly"),  # not had: a faded cover
-            "poster": f"/api/library/poster?tab={tab}&id={e['i']}" if e.get("p") else ""}
+            "poster": f"/api/library/poster?tab={tab}&id={e['i']}" if e.get("p") else "", **({"jf": e["jf"]} if e.get("jf") else {})}
 
 
 def wall(index, tab, q="", chip="", sort="az", group="", offset=0, limit=40, until="", by="", arrived=None):
@@ -856,6 +864,7 @@ def item(data_dir, reelix, tab, item_id, cfg=None):
                        "has_file": bool(m.get("has_file"))}}
         w = _watched.film(cfg, m.get("tmdb_id")) if cfg else None
         out["watched"] = {"watched": w["watched"], "ids": [w["id"]], "user": w["user"]} if w else None
+        out["jf"] = w["id"] if w else ""  # Play in Jellyfin (DASH-480): the same lookup gives its Jellyfin id
         lists = []
         coll = m.get("collection") or {}
         if coll.get("id"):
@@ -884,7 +893,8 @@ def item(data_dir, reelix, tab, item_id, cfg=None):
             jf = seen.get((int(ep.get("season_number") or 0), int(ep.get("episode_number") or 0)))
             row = _row(f"E{ep.get('episode_number', 0)}", ep.get("title"), aired, status, id=ep.get("id"),
                        can_get=status in ("wanted", "not_monitored"),
-                       watched=jf["watched"] if jf else None, jf=jf["id"] if jf else None)
+                       watched=jf["watched"] if jf else None, jf=jf["id"] if jf else None,
+                       has_file=bool(ep.get("has_file")))
             rows.append(row)
             seasons.setdefault(int(ep.get("season_number") or 0), []).append(row)
         out = {"title": s.get("title"), "meta": [x for x in (s.get("network") or "", e["m"].split(" · ")[-1] if e["m"] else "",
@@ -996,6 +1006,9 @@ def item(data_dir, reelix, tab, item_id, cfg=None):
     out.update({"id": item_id, "tab": tab, "status": word[0], "tone": word[1], "poster": poster if e.get("p") else "",
                 "facts": [_fact(k, v) for k, v in facts if v not in (None, "", 0)], "lists": lists})
     out.setdefault("listen", None)
+    if tab in ("films", "tv") and cfg:  # Play in Jellyfin (DASH-480): where Play links go, or that no address is set yet
+        from . import jellyfin_play
+        out["play"] = jellyfin_play.address(cfg.data["services"])
     return out
 
 
@@ -1665,6 +1678,9 @@ def handle(h, method, path):
             out["error"] = _state["errors"].get(tab, "")
             out["refreshing"] = tab in _building
         out["view"] = views(data_dir).get(tab, {})
+        if tab == "films":  # Play in Jellyfin (DASH-480): where Play links go, or that no address is set yet
+            from . import jellyfin_play
+            out["play"] = jellyfin_play.address(cfg.data["services"])
         return h.json(200, out)
     if path == "/api/library/network-logo/tone" and method == "POST":
         # A browser measured a logo (12 November 2026): kept for everyone, so no logo is measured twice. Networks and

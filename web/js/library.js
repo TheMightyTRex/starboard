@@ -50,7 +50,8 @@ function coverCard(card) {
     posterBox(card),
     el("span", { class: "media-card__title" }, el("a", { href: itemHref(card.id), text: card.title })),
     el("span", { class: "media-card__meta", text: [card.meta, card.count].filter(Boolean).join(" · ") }),
-    el("span", { class: "lib-card__status" }, statusChip(card)));
+    el("span", { class: "lib-card__status" }, statusChip(card)),
+    playLink(state.play, card.jf, card.title));
 }
 
 function listRow(card) {
@@ -60,7 +61,7 @@ function listRow(card) {
     el("div", {},
       el("h3", { class: "row__title" }, el("a", { href: itemHref(card.id), text: card.title })),
       el("div", { class: "row__meta", text: [card.meta, card.count].filter(Boolean).join(" · ") })),
-    el("div", { class: "row__side" }, statusChip(card)));
+    el("div", { class: "row__side" }, statusChip(card), playLink(state.play, card.jf, card.title)));
 }
 
 const letterId = (letter) => (letter === "#" ? "letter-num" : `letter-${letter.toLowerCase()}`);
@@ -135,6 +136,9 @@ function showNotice(data) {
       el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "Showing what Starboard read last time" }),
         el("p", { text: `${data.error}. Starboard tries again in a few minutes.` }))));
   }
+  // Play in Jellyfin (DASH-480): films Jellyfin has, but no address for browsers yet.
+  const note = data.items.some((c) => c.jf) ? playAddressNote(data.play) : null;
+  if (note) box.append(note);
 }
 
 function empty(text, extra = null) {
@@ -147,6 +151,7 @@ async function load(extra = {}) {
   try {
     const fresh = state.offset === 0 || Boolean(extra.until);
     const data = await api(query(extra));
+    state.play = data.play || null;  // Play in Jellyfin (DASH-480), films only
     state.shown = data.shown;
     state.total = data.total;
     if (fresh) {

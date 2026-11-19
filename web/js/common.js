@@ -16,6 +16,45 @@ function newTabLink(href, text, { about = "", className = "" } = {}) {
     el("span", { class: "visually-hidden", text: ` (${about ? `${about}, ` : ""}opens in a new tab)` }), icon("external-link", 16));
 }
 
+// Play in Jellyfin (DASH-480): a link styled as a button that opens a film or episode in Jellyfin's web app in a new
+// tab, where its Play button starts it. play is the server's {app, home, outside}: Jellyfin's addresses for browsers,
+// at home and away (never the address Starboard uses). Away from home (Starboard opened by a name that is not on the
+// home network) the outside address; otherwise the home one, or the outside one when it is the only one. When the
+// only address is local to the server (play.local: http://127.0.0.1:8096 as Install apps saves it), the host this
+// page was opened with and Jellyfin's port, as reachableUrl does for Starboard's other Open buttons.
+function onHomeNetwork(host) {
+  const h = String(host || "").toLowerCase().replace(/^\[|\]$/g, "");
+  if (!h.includes(".") && !h.includes(":")) return true;  // a name with no dots: the home network's own
+  if (/\.(local|lan|home|internal|localdomain|home\.arpa)$/.test(h)) return true;
+  if (/^(10|127)\.|^192\.168\.|^169\.254\.|^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
+  return /^(::1$|f[cd][0-9a-f]{2}:|fe80:)/.test(h);
+}
+function jellyfinBase(play) {
+  if (!play) return "";
+  if (play.outside && ((!play.home && !play.local) || !onHomeNetwork(location.hostname))) return play.outside;
+  if (play.home) return play.home;
+  if (play.local) return `${play.local.scheme}://${location.hostname}:${play.local.port}${play.local.path || ""}`;
+  return "";
+}
+// The link: "Play", the new-tab icon, and for screen readers "Play <what> in Jellyfin (opens in a new tab)". Always the
+// full 44px button, never the compact one, as it can be the only way to play.
+function playLink(play, jfId, what, { primary = false } = {}) {
+  const base = jellyfinBase(play);
+  if (!base || !jfId) return null;
+  return el("a", { class: `btn${primary ? " btn--primary" : ""} play-link`, href: `${base}/web/#/details?id=${encodeURIComponent(jfId)}`,
+    target: "_blank", rel: "noopener noreferrer" },
+  icon("play"), "Play", el("span", { class: "visually-hidden", text: ` ${what} in Jellyfin (opens in a new tab)` }), icon("external-link", 16));
+}
+// With Jellyfin but no address for browsers: where to add one, in place of links that would not open.
+function playAddressNote(play) {
+  if (!play || jellyfinBase(play)) return null;
+  return el("div", { class: "notice", "data-tone": "info", role: "note" }, icon("info"),
+    el("div", { class: "notice__body" },
+      el("span", { class: "notice__title", text: "To play films and episodes in Jellyfin, add Jellyfin's address" }),
+      el("p", { text: "Starboard needs the address that opens Jellyfin in your browser. In Settings, Manage apps, Jellyfin, fill in Address to open in your browser, or Outside address for away from home." }),
+      el("p", {}, el("a", { href: `/settings.html?edit=${encodeURIComponent(play.app || "")}`, text: "Add Jellyfin's address" }))));
+}
+
 // Required fields (LIBRARY.md, Fields): a * after the label. The key, "* = Required", is in the help slide-out, not
 // in the form: most people know the star, and the help is where it is explained.
 function requiredMark() {
