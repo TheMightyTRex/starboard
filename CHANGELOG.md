@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Restart where it is needed (DASH-470):** when Jellyfin says Restart needed, Restart Jellyfin is right there: on System, Overview, under Jellyfin's heading; on Settings, Updates, beside Jellyfin's plug-ins; and on Settings, Apps, Jellyfin, Recommended plug-ins. Beside a Reelix restore that waits for Reelix to start again, on Backup, Restart Reelix does it now. Each button shows only while a restart is needed and says what it does: anyone watching or listening is stopped and has to press play again, and Jellyfin is back in under a minute. It asks first, then follows the app until it answers again, saying how it is going, and the status updates by itself. Focus stays on the button while it works and moves to the result; a failure is said beside the button, which can be pressed again. It asks one small question every 3 seconds, only after you press it, for at most 3 minutes.
+
 ### Changed
 - **Mica is Starboard's own style (DASH-479):** calm neutral greys, 6px corners on buttons, fields, cards, panels, menus and dialogs, a light lift on cards, and a Blue accent. The dashboard card is the model for the rest: System panels, Settings sections, tables, slide-outs and dialogs wear its grey band across the top. Card edges and rules are one colour, a little darker than before. The design before it is the Classic style in the Styles plug-in (1.5.0).
 - **Light unless you choose:** Starboard opens in Light for everyone who has not chosen a theme in Display; Dark and Match device stay as choices, and a choice already made is kept.

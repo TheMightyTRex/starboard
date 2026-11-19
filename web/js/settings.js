@@ -2249,19 +2249,17 @@ async function drawJellyfinPlugins(holder, result = null) {
   const status = el("div", { class: "stack-2" },
     result ? notice(result.ok ? "success" : "danger", result.ok ? "Done" : "Jellyfin did not do it", result.text) : null,
     d.finished?.length ? notice("success", "Set up after the restart", d.finished.join(". ") + ".") : null);
-  const restartButton = el("button", { type: "button", class: "btn btn--primary", onclick: async (e) => {
-    const button = e.currentTarget;  // null once the dialog has been awaited
-    const ok = await confirmDialog({ title: "Restart Jellyfin?", message: "Anyone watching is stopped for about a minute while Jellyfin starts again.", confirm: "Restart Jellyfin" });
-    if (!ok) return;
-    button.disabled = true;
-    try {
-      await api("/api/jellyfin/restart", { method: "POST" });
-      holder.replaceChildren(el("p", { role: "status", class: "muted", text: "Jellyfin is restarting. This page checks again in 30 seconds." }));
-      setTimeout(() => drawJellyfinPlugins(holder, { ok: true, text: "Jellyfin restarted." }), 30000);
-    } catch (err) { problem(err.message); button.disabled = false; }
-  } }, icon("refresh-cw"), "Restart Jellyfin now");
-  const restart = d.restart ? notice("warning", "Jellyfin needs a restart", "Plug-ins are added and removed when Jellyfin starts. Starboard finishes their set-up after the restart.",
-    d.can_restart ? restartButton : null) : null;
+  // Restart where it is needed (DASH-470): followed until Jellyfin answers again, then the section is drawn again
+  // with what Starboard finished after the restart, and focus goes to that result.
+  const why = "Plug-ins are added and removed when Jellyfin starts. Starboard finishes their set-up after the restart.";
+  const restart = !d.restart ? null : d.can_restart
+    ? restartNotice({ title: "Jellyfin needs a restart", text: why, ...jellyfinRestart(d.name, async () => {
+      await drawJellyfinPlugins(holder, { ok: true, text: `${d.name} restarted.` });
+      const result = $(".notice", holder);
+      result?.setAttribute("tabindex", "-1");
+      return result;
+    }) })
+    : notice("warning", "Jellyfin needs a restart", `${why} Jellyfin cannot restart itself here: use Restart in its More actions menu in Manage apps.`);
   const groups = d.groups.map((g) => {
     const name = `jf-plugin-${g.id}`;
     const radios = g.choices.map((c) => ({ c, input: el("input", { type: "radio", name, value: c.id, checked: c.id === g.chosen, disabled: !c.available }) }));
@@ -2873,7 +2871,7 @@ async function startUpdatesPlace() {
   if (!list) return;
   const summary = $("#up-list-summary"), result = $("#updates-result"), recent = $("#updates-recent"), auto = $("#updates-auto");
   const allBox = $("#updates-all");
-  let data = null, jelly = null, batchShown = null, checked = null, checking = false;
+  let data = null, jelly = null, batchShown = null, checked = null, checking = false, jellyRestart = null;
   const load = async () => { data = await api("/api/updates"); };
   try { await load(); } catch (e) { list.removeAttribute("aria-busy"); summary.textContent = `Starboard could not list the updates: ${e.message}`; return; }
 
@@ -2955,10 +2953,22 @@ async function startUpdatesPlace() {
     const hint = found.length
       ? `${jelly.count} installed. New versions: ${found.map((j) => `${j.name} ${j.latest}`).join(", ")}.${own}`
       : `${jelly.count} installed. Jellyfin knows which have new versions: Check for updates asks it.${own}`;
+    // Restart needed (DASH-470): new plug-in versions wait for Jellyfin's restart when someone was watching. The
+    // same Restart Jellyfin stays while it works and after, so a redraw of the list keeps its status.
+    if (jelly.restart && jelly.can_restart && !jellyRestart) {
+      jellyRestart = restartButton(jellyfinRestart(jelly.name || "Jellyfin", async () => {
+        try { jelly = await api("/api/updates/jellyfin"); } catch { /* the list stays as it was */ }
+        drawList();
+        return null;
+      }));
+    }
+    const restarting = jellyRestart && (jelly.restart || jellyRestart.dataset.state) ? jellyRestart : null;
+    if (!restarting) jellyRestart = null;
+    const chips = [found.length ? chip("Update available", "info", "circle-arrow-up") : null, jelly.restart ? chip(...STATUS.restartNeeded) : null].filter(Boolean);
     return el("li", { class: "setting", "data-key": t.id },
       el("div", { class: "setting__text" }, el("span", { class: "setting__label", id: "up-jellyfin-plugins-l", text: t.name }),
-        el("span", { class: "setting__hint", text: hint }),
-        found.length ? el("span", { class: "chips" }, chip("Update available", "info", "circle-arrow-up")) : null),
+        el("span", { class: "setting__hint", text: jelly.restart ? `${hint} New versions start when Jellyfin restarts.` : hint }),
+        chips.length ? el("span", { class: "chips" }, chips) : null, restarting),
       el("div", { class: "setting__control" }, b));
   };
   const drawList = () => {

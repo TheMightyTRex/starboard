@@ -1731,6 +1731,12 @@ class Handler(BaseHTTPRequestHandler):
                     return self.error(400, str(e))
                 except OSError as e:
                     return self.error(502, f"Jellyfin did not do it: {getattr(e, 'reason', e)}")
+            if path == "/api/jellyfin/restart" and method == "GET":  # followed by a Restart Jellyfin button (DASH-470)
+                from . import jellyfin_plugins
+                try:
+                    return self.json(200, jellyfin_plugins.restart_state(cfg.data["services"]))
+                except ValueError as e:
+                    return self.error(400, str(e))
             if path == "/api/jellyfin/restart" and method == "POST":
                 from . import jellyfin_plugins
                 try:
