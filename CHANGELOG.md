@@ -7,11 +7,16 @@ add features.
 
 ## [Unreleased]
 
+## [0.23.0] (19 November 2026)
+
 ### Added
 - **Plug-ins activate when installed (owner, 19 November 2026):** a plug-in from the catalogue, an address or a zip file is activated as soon as it is installed. One that needs settings first says what to enter and waits, as before, and so does an app plug-in such as Tdarr while the same app is on this computer, so you can bring it in first. Activate and Deactivate stay in General, State.
 - **Plug-ins know their home address:** a plug-in with a page on your home network is given its own address there (`STARBOARD_HOME_ADDRESS`), so Create your own TV channel gives Jellyfin its channel list without anyone opening its page first.
 - **AI assistants over MCP (DASH-464):** an AI assistant that speaks MCP, the Model Context Protocol, can ask Starboard about the media server: search the Library, what was added and is coming up, what is playing, downloads and their problems, requests, how each app is, and disk space. It is off until you activate Let AI assistants connect in Settings, Security, API keys, which says what it shares and gives the address to copy. Each assistant needs a Read only key, reads only what that key's scopes cover, and cannot change anything; each question is written to the audit log and counts towards the key's 120 requests a minute. Starboard speaks the protocol itself, with no new dependency, and nothing runs until an assistant asks. API 1.7.0 adds POST /api/v1/mcp. Changes from an assistant, each approved in Starboard's page first, are left for later. What Starboard can access lists AI assistants too.
 - **An alert when a disk changes (issue #187):** every pool job the helper finishes, however it was asked for, is written to the log, as a warning when a disk was erased, and sent as the new `disk.changed` event (plug-in API 1.16), which the Notifications plug-in turns into an alert. The security notes explain why Starboard's user counts as root, so a check on the pool helper alone would not help.
+- **Close on Install all updates (DASH-473):** when Install all updates finishes, Close takes its panel away. Focus goes to Ready to update, a screen reader hears that it closed, and the panel does not come back when the page opens again; Recent updates keeps the batch.
+- **Pictures in What is new (DASH-475):** in Settings, Updates, What is new, each plug-in's own logo (or its initials), each app's and Reelix's icon and Starboard's mark sit beside its notes, as on its card.
+- **Add Coming up to your calendar (DASH-67, #180):** the Coming up page has Add to your calendar, which makes an address a phone or computer calendar can subscribe to. The calendar shows the films, episodes, albums, books and radio from Coming up, from a week ago to about 8 weeks ahead: films, albums and books as all-day events on their release date, episodes and radio at the time they air. The address carries a token that opens this calendar and nothing else, never an API key or a Reelix key. Starboard keeps only its fingerprint and shows it once; Make a new address stops the old one at once, and Stop the address stops it. A refused token counts towards the lockout for that address, a good one is limited like an API key, and the calendar is kept for 15 minutes, so a calendar app that asks often costs nothing more.
 
 ### Changed
 - **General on every plug-in's page (owner, 19 November 2026):** the first tab is General, with a card each for State, Versions, Jobs, What it may do and Remove. The plug-in's settings, its own pages, styles and actions keep their tabs, and a plug-in's page shows tabs from two parts. Design system: section groups.
@@ -22,10 +27,11 @@ add features.
 - **Plug-in boxes take plain text:** a plug-in's Add box and the boxes under its rows, such as a TV channel's name, Rename and Change number, no longer refuse anything that is not a web address. Each plug-in checks what it is given.
 - **Live TV's address message** says Enter rather than Type.
 - **Plug-ins on their own network reach Starboard (DASH-482):** a plug-in on its own network, such as Disk forecast or Download summary, or on the VPN, now reaches Starboard's API through a socket in its own run folder, /run/starboard/api.sock, given to it as STARBOARD_API_SOCKET. Starboard runs on the server's own network, so it could not join the plug-in's network, and the plug-in could not read its figures. The plug-in's network stays closed to everything else, and the socket answers only Starboard's API and only to that plug-in's own key. There is no extra container: one waiting thread in Starboard serves every plug-in's socket. Starboard no longer tries to join each plug-in's network.
-- **Close on Install all updates (DASH-473):** when Install all updates finishes, Close takes its panel away. Focus goes to Ready to update, a screen reader hears that it closed, and the panel does not come back when the page opens again; Recent updates keeps the batch.
-- **Pictures in What is new (DASH-475):** in Settings, Updates, What is new, each plug-in's own logo (or its initials), each app's and Reelix's icon and Starboard's mark sit beside its notes, as on its card.
 - **Three slips on the Updates and plug-in pages (DASH-474):** Settings, Updates names Apps, Updates in its words and gives Open Apps, Updates beside them, instead of "Each app's image is on ." when the link is not read; Starboard's last update result, such as "Starboard v0.20.1 is installed and answering", is no longer shown once Starboard runs a newer version; and a plug-in's What is new summary from its catalogue, on its Versions card and in Ready to update, ends at its last whole sentence or word with an ellipsis instead of stopping mid-word.
-- **Add Coming up to your calendar (DASH-67, #180):** the Coming up page has Add to your calendar, which makes an address a phone or computer calendar can subscribe to. The calendar shows the films, episodes, albums, books and radio from Coming up, from a week ago to about 8 weeks ahead: films, albums and books as all-day events on their release date, episodes and radio at the time they air. The address carries a token that opens this calendar and nothing else, never an API key or a Reelix key. Starboard keeps only its fingerprint and shows it once; Make a new address stops the old one at once, and Stop the address stops it. A refused token counts towards the lockout for that address, a good one is limited like an API key, and the calendar is kept for 15 minutes, so a calendar app that asks often costs nothing more.
+
+### Security
+- **The disk pool helper's risk, written down (#187):** the security notes explain why Starboard's user counts as root, so a check on the helper alone would not help; every disk change is now logged and alerted instead.
+- **A calendar address that can only read the calendar:** stored hashed, compared in constant time, rate limited with the API's limits, and refused by every other route.
 
 ## [0.22.0] (19 November 2026)
 
@@ -1487,7 +1493,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused. Help: [Pause, resume and remove downloads](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/manage-downloads.md).
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.22.0...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.23.0...HEAD
+[0.23.0]: https://github.com/TheMightyTRex/starboard/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/TheMightyTRex/starboard/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/TheMightyTRex/starboard/compare/v0.20.2...v0.21.0
 [0.20.2]: https://github.com/TheMightyTRex/starboard/compare/v0.20.1...v0.20.2

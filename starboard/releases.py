@@ -1829,6 +1829,36 @@ RELEASES = [
         ],
         "review": [],
         "settings": "Your settings stay as they are. People with no theme chosen see Light. A server on Teal, the old default colour, moves to Blue once; choose Teal again in Settings, General, Appearance to keep it. To go back, run ./update.sh --to v0.21.0."
+    },
+    {
+        "version": "0.23.0",
+        "date": "19 November 2026",
+        "added": [
+            ["Add Coming up to your calendar", "Coming up has Add to your calendar: an address a phone or computer calendar can subscribe to, which can read the calendar and nothing else."],
+            ["AI assistants over MCP", "An AI assistant that speaks the Model Context Protocol can ask Starboard about your library, downloads, requests and apps, with a read-only key, once you switch it on in Settings, Security, API keys."],
+            ["Plug-ins activate when installed", "A plug-in is activated as soon as it is installed, unless it needs settings first or an app it brings in is already on the computer."],
+            ["Close on Install all updates", "When Install all updates finishes, Close takes its panel away, and it does not come back."],
+            ["Pictures in What is new", "Each plug-in's logo, each app's icon and Starboard's mark sit beside their notes in What is new."],
+            ["Plug-ins know their home address", "A plug-in with a page on your home network is given its address there, so Create your own TV channel connects to Jellyfin by itself."],
+            ["An alert when a disk changes", "Every job of the disk pool helper is logged, as a warning when a disk was erased, and sent to plug-ins such as Notifications."]
+        ],
+        "changed": [
+            ["General on every plug-in's page", "The first tab is General, with a card each for State, Versions, Jobs, What it may do and Remove."],
+            ["Install all updates says whether it is still working", "While it works, the panel says Installing updates with how many are done, and a bar moves; at the end it says how it ended."]
+        ],
+        "fixed": [
+            ["Plug-ins on their own network reach Starboard", "A plug-in on its own closed network, such as Disk forecast or Download summary, reaches Starboard through a socket in its own folder."],
+            ["Plug-in boxes take plain text", "A plug-in's Add box and row boxes, such as a TV channel's name, no longer refuse anything that is not a web address."],
+            ["Settings, Radio sometimes stopped loading", "Every page now waits until all its scripts have run."],
+            ["Three slips on the Updates and plug-in pages", "Clear words where a place was missing, no old Starboard message after an update, and summaries that end at a whole sentence."],
+            ["Live TV's address message", "It says Enter rather than Type."]
+        ],
+        "security": [
+            ["The disk pool helper's risk, written down", "The security notes explain why Starboard's user counts as root, and every disk change is now logged and alerted."],
+            ["A calendar address that can only read the calendar", "It is stored hashed, compared in constant time, rate limited, and refused everywhere else."]
+        ],
+        "review": [],
+        "settings": "Your settings stay as they are. AI assistants stay off until you switch them on. To go back, run ./update.sh --to v0.22.0."
     }
 ]
 
