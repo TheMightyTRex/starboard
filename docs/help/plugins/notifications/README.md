@@ -21,7 +21,7 @@ An example Starboard plug-in by TheMightyTRexUK, MIT licence.
 
 ## What wakes it
 
-Starboard sends it these events: `request.available`, `download.failed`, `app.down`, `app.up`, `disk.nearly_full`, `update.available`, `item.added`.
+Starboard sends it these events: `request.available`, `download.failed`, `app.down`, `app.up`, `disk.nearly_full`, `disk.changed`, `update.available`, `item.added`.
 Starboard runs its job **Send New this week on the chosen day** daily at 09:00.
 
 ## Settings
@@ -33,6 +33,7 @@ Starboard runs its job **Send New this week on the chosen day** daily at 09:00.
 - **A download failed**: A download that stops with a problem.
 - **An app stops answering, and when it is back**: After two checks in a row with no answer.
 - **A disk is nearly full**: At the limit set for alerts in Settings, Alerts, or 90%.
+- **A disk is erased, added or taken out**: Every change Starboard's disk pool helper makes, however it was asked for.
 - **An update is ready**: For Starboard, your apps and your plug-ins.
 - **New this week**: Films, series and more that arrived in the last 7 days, once a week at 09:00.
 - **Send New this week on**: The day New this week is sent, at 09:00.
@@ -117,7 +118,7 @@ Before an update, it finishes any check or message it is part way through and st
 
 ## Add it
 
-Needs Starboard with plug-in API 1.14 or later; a Starboard with an older plug-in API is offered the version before. In Starboard, go to **Settings**, then **Plug-ins**, then **Catalogue**, and find it under **System**. Or, under **Add one from elsewhere**, give this address:
+Needs Starboard with plug-in API 1.16 or later; a Starboard with an older plug-in API is offered the version before. In Starboard, go to **Settings**, then **Plug-ins**, then **Catalogue**, and find it under **System**. Or, under **Add one from elsewhere**, give this address:
 
 `https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/notifications/starboard-plugin.json`
 
