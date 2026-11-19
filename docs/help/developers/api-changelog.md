@@ -21,6 +21,15 @@ the next major version.
   (`action`, `state`, `disk`, `erased`, `result`), however it was asked for, so a notifications plug-in can say when a
   disk is erased, added to the pool or taken out of it. Name `>=1.16` in `starboard_api` to use it.
 
+- **Fixed:** a plug-in on its own network (`default`) or the VPN can reach Starboard's API again (DASH-482). Starboard
+  runs on the server's own network, so it could never join the plug-in's network, and `http://starboard:8095` did not
+  answer there.
+- **Added:** `STARBOARD_API_SOCKET`, `/run/starboard/api.sock`, in every plug-in container: a Unix socket Starboard
+  keeps in the plug-in's run folder while the plug-in is active. Send the usual HTTP requests to it, with the path
+  from `STARBOARD_API` and the plug-in's own key; it answers only `/api/v1`, and refuses any other key with `401`.
+  The plug-in's own network stays internal. Read
+  [Settings and key files](plugin-api-reference.md#settings-and-key-files).
+- **Changed:** Starboard no longer tries to join each plug-in's network when it starts one.
 - **Added:** `STARBOARD_HOME_ADDRESS` for a container with `publish` on the `lan` network: its own address on the
   home network, such as `http://192.168.1.20:8790`. Create your own TV channel gives it to Jellyfin's Live TV.
 - **Changed:** a custom page's `add` box and an item's `attach` form take plain text, not only a web address, so a
@@ -28,7 +37,7 @@ the next major version.
 - **Changed:** Starboard activates a plug-in once it is installed, from a catalogue, an address or a zip file. One
   with `setup_required` or required settings stays waiting until they are saved, as before. Plan for your first
   start to come straight after the install.
-- Nothing was taken away: every 1.15 plug-in works as before.
+- Nothing was taken away: every 1.15 plug-in works as before, and `STARBOARD_API` is as before.
 
 ## Starboard API 1.6.0 (Starboard 0.20.0), 16 November 2026
 

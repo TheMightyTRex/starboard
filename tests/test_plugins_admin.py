@@ -96,7 +96,7 @@ class PluginsAdminTest(unittest.TestCase):
         pa.install(self.tmp.name, ON_DEMAND, "/srv/media")
         pa.enable(self.tmp.name, "on-demand", self.helper())
         self.assertIn("up -d", self.runs[-1][1])
-        self.assertIn("docker network connect", self.runs[-1][1])
+        self.assertNotIn("docker network connect", self.runs[-1][1])  # Starboard cannot join it (DASH-482)
         self.assertEqual(pa.listing(self.tmp.name)[0]["state"], "enabled")
         self.assertEqual(pa.stop_all(self.tmp.name, self.helper()), ["On demand"])
         self.assertEqual(pa.listing(self.tmp.name)[0]["state"], "disabled")

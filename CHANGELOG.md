@@ -19,6 +19,7 @@ add features.
 ### Fixed
 - **Plug-in boxes take plain text:** a plug-in's Add box and the boxes under its rows, such as a TV channel's name, Rename and Change number, no longer refuse anything that is not a web address. Each plug-in checks what it is given.
 - **Live TV's address message** says Enter rather than Type.
+- **Plug-ins on their own network reach Starboard (DASH-482):** a plug-in on its own network, such as Disk forecast or Download summary, or on the VPN, now reaches Starboard's API through a socket in its own run folder, /run/starboard/api.sock, given to it as STARBOARD_API_SOCKET. Starboard runs on the server's own network, so it could not join the plug-in's network, and the plug-in could not read its figures. The plug-in's network stays closed to everything else, and the socket answers only Starboard's API and only to that plug-in's own key. There is no extra container: one waiting thread in Starboard serves every plug-in's socket. Starboard no longer tries to join each plug-in's network.
 
 ## [0.22.0] (19 November 2026)
 
