@@ -143,8 +143,8 @@ class PluginCustomTest(unittest.TestCase):
             out = plugin_custom.upload(self.d, "made-up", "sources", "my list.m3u", len(data), io.BytesIO(data))
             self.assertEqual(out["said"], "Done")
             self.assertEqual(Plugin.seen[-1], ("POST", "plugin-key", ("/api/sources/file?name=my%20list.m3u", data)))
-            with self.assertRaisesRegex(ValueError, "60 MB"):
-                plugin_custom.upload(self.d, "made-up", "sources", "big.xml", 61 * 1024 * 1024, io.BytesIO(b""))
+            with self.assertRaisesRegex(ValueError, "100 MB"):  # 100 MB from 0.24.1 (a TV channel's 90 MB holding slide)
+                plugin_custom.upload(self.d, "made-up", "sources", "big.xml", 101 * 1024 * 1024, io.BytesIO(b""))
             with self.assertRaisesRegex(ValueError, "stopped before the end"):
                 plugin_custom.upload(self.d, "made-up", "sources", "short.m3u", 100, io.BytesIO(b"only this"))
         self.assertEqual(plugin_custom._file({"label": "Or choose a file", "accept": ".m3u,.json,evil;js,.xml.gz,.gz", "hint": "Up to 60 MB"}),

@@ -26,6 +26,11 @@ the next major version.
 - **Added:** `links.mcp` in `GET /api/v1/`.
 - Nothing was taken away: every earlier address answers as before.
 
+## Plug-in API 1.16.0, Starboard 0.24.1, 19 November 2026
+
+- **Changed:** a file streamed to a plug-in's `choices` path plus `/file` may be up to 100 MB, not 60 MB, so a
+  plug-in can take larger files such as a TV channel's holding slide. A plug-in still refuses what is too big for it.
+
 ## Plug-in API 1.16.0 (Starboard 0.23.0 and 0.24.0), 19 November 2026
 
 - **Added (Starboard 0.24.0):** custom pages that save in place, choose several and come in cards (19 November 2026). Starboard sends
