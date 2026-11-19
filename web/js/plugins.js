@@ -710,6 +710,17 @@ const CUSTOM_STATE = { ok: STATUS.running, warning: STATUS.needsAttention, probl
   off: STATUS.inactive, unknown: STATUS.notChecked };
 function customScreen(p, s) {
   const box = el("div", { class: "stack-4" }, el("p", { class: "muted", text: "Loading…" }));
+  // A link to the plug-in's own web page (such as Create your own TV channel's schedule grid) goes to the address this
+  // page was opened with, at the plug-in's port, as Its web page does: the plug-in only knows the server's home network
+  // address, which a browser on another address of the server (a name, or a private network) may not reach.
+  const ownAddress = (url) => {
+    try {
+      const u = new URL(url);
+      if (!(p.web || []).some((w) => String(w.port) === u.port) || u.hostname === location.hostname) return url;
+      u.hostname = location.hostname;
+      return u.href;
+    } catch { return url; }
+  };
   const said = el("p", { class: "small", role: "status" });
   const path = `/api/plugins/${p.id}/custom/${s.key}`;
   // `after`: a bulk switch says what it did in a saved note beside itself (Settings pattern 2), not in the line above.
@@ -720,12 +731,11 @@ function customScreen(p, s) {
     // Put back (plug-in API 1.15) takes its row off the list: focus goes to the next row's Put back, or the heading.
     const backs = () => [...box.querySelectorAll("[data-key$=':restore']")];
     const place = body.action === "restore" ? backs().indexOf(button) : -1;
+    const top = button?.isConnected ? button.getBoundingClientRect().top : null;  // where the control is on screen now
     try {
       const out = await api(path, { method: "POST", body });
-      if (out.said && !after) said.textContent = out.said;
-      draw(out);
-      const again = key && [...box.querySelectorAll("[data-key]")].find((x) => x.dataset.key === key);
-      if (again) again.focus();
+      const again = drawInPlace(out, key, top, !after);
+      if (again) { /* focus and the saved note are on it */ }
       else if (place >= 0) {
         const next = backs()[Math.min(place, backs().length - 1)];
         const head = document.getElementById(`pl-${p.id}-${s.key}-h`);
@@ -775,7 +785,8 @@ function customScreen(p, s) {
   let show = "all";
   let last = null;
   const showFilter = (data, pool) => {
-    if (!pool.some((it) => it.actions.includes("toggle"))) return null;
+    // Cards (API 1.16) show each menu's state on its card; the filter counts rows, which there are not what is seen.
+    if (data.layout === "cards" || !pool.some((it) => it.actions.includes("toggle"))) return null;
     const noun = (data.title || "items").toLowerCase();
     const count = { all: pool.length, on: pool.filter((it) => it.on).length };
     count.off = count.all - count.on;
@@ -812,13 +823,20 @@ function customScreen(p, s) {
   const itemRows = (data, shown) => {
     const groups = new Map();
     for (const it of shown) { if (!groups.has(it.group)) groups.set(it.group, []); groups.get(it.group).push(it); }
-    return [...groups].map(([g, rows]) => el("section", { class: "stack-2", "aria-label": g || data.title },
-      g ? el("h4", { text: g }) : null,
+    // Cards (plug-in API 1.16, owner, 19 November 2026: "break the channels section into smaller cards"): each group on
+    // a card with the grey band, its heading and the plug-in's sentence on what the card is for.
+    const cards = data.layout === "cards";
+    return [...groups].map(([g, rows]) => el("section", cards ? { class: "card has-band plugin-screen-card", "aria-labelledby": slugId(g) }
+      : { class: "stack-2", "aria-label": g || data.title },
+      cards ? el("div", { class: "card-band" }, el("h4", { class: "card-band__title", id: slugId(g), text: g || data.title })) : g ? el("h4", { text: g }) : null,
+      cards && (data.hints || {})[g] ? el("p", { class: "small muted", text: data.hints[g] }) : null,
       el("ul", { class: "rows" }, rows.flatMap((it) => [el("li", { class: "row row--no-lead" },
         el("div", {}, el("h5", { class: "row__title", text: it.title }),
+          // A picture on the row (plug-in API 1.16), such as a channel's logo once uploaded, with its words.
+          it.image ? el("img", { class: "row__image", src: it.image.src, alt: it.image.alt, loading: "lazy" }) : null,
           el("div", { class: "row__meta", text: [it.detail, it.address].filter(Boolean).join(" · ") }),
           // A link on the row (plug-in API 1.12), such as a search for the title on another site: its own words, in a new tab.
-          it.link ? el("div", { class: "row__meta" }, newTabLink(it.link.url, it.link.label)) : null),
+          it.link ? el("div", { class: "row__meta" }, newTabLink(ownAddress(it.link.url), it.link.label)) : null),
         // The plug-in's own words for the state (plug-in API 1.12), such as "Added", in the state's colour.
         el("div", { class: "row__side" }, it.state_label ? chip(it.state_label, (CUSTOM_STATE[it.state] || CUSTOM_STATE.unknown)[1])
           : chip(...(CUSTOM_STATE[it.state] || CUSTOM_STATE.unknown)),
@@ -831,6 +849,7 @@ function customScreen(p, s) {
           // Test and Activate or Deactivate as buttons; Move up, Move down and Remove in a More menu, so a row has
           // at most two buttons after its state (DASH-309, section 10).
           it.attach && it.actions.includes("attach") ? attachButton(it) : null,
+          it.picker && it.actions.includes("pick") ? pickerButton(it) : null,
           // Put back (plug-in API 1.15, DASH-406) is a button too: it is what a row of moved items is for.
           ...it.actions.filter((a) => a === "test" || a === "toggle" || a === "restore").map((a) => {
             const [label, ic] = a === "toggle" ? [it.on ? "Deactivate" : "Activate", it.on ? "pause" : "play"] : ACTION_WORDS[a];
@@ -840,10 +859,10 @@ function customScreen(p, s) {
             return b;
           }),
           (() => {
-            const more = it.actions.filter((a) => a !== "test" && a !== "toggle" && a !== "attach" && a !== "restore");
+            const more = it.actions.filter((a) => ACTION_WORDS[a] && a !== "test" && a !== "toggle" && a !== "restore");  // attach and pick have buttons of their own
             if (!more.length) return null;
             let menu = null;
-            menu = menuButton(`More for ${it.title}`, more.map((a) => ({ label: ACTION_WORDS[a][0], icon: ACTION_WORDS[a][1], danger: a === "remove",
+            menu = menuButton(`More for ${it.title}`, more.map((a) => ({ label: (a === "detach" && it.attach?.detach_label) || ACTION_WORDS[a][0], icon: ACTION_WORDS[a][1], danger: a === "remove",
               onSelect: async () => {
                 const opener = menu.querySelector("button");
                 if (a === "remove" && !(await confirmDialog({ title: `Remove ${it.title}?`, confirm: "Remove", danger: true, message: "You can add it again by its address." }))) return;
@@ -851,6 +870,130 @@ function customScreen(p, s) {
               } })));
             return menu;
           })())), it.attach && opened.has(it.id) ? attachForm(it) : null].filter(Boolean)))));
+  };
+  // A change saved in place (plug-in API 1.16, owner, 19 November 2026: "I want changes to save without refreshing
+  // the whole page"): an answer for some menus only takes the place of theirs; the open menu, the scroll position and
+  // focus stay; the control changed stays where it was on screen, and what was saved is said beside it, in a status
+  // that screen readers read out. Returns the control, drawn again, or null.
+  const merged = (out) => {
+    if (!out.partial || !last || last.layout === "folds") return out;
+    const ids = new Set(out.partial.menus || []);
+    const fresh = new Map((out.menus || []).map((m) => [m.id, m]));
+    const items = [];
+    let placed = false;
+    for (const it of last.items) {
+      if (ids.has(it.menu || "")) { if (!placed) { items.push(...out.items); placed = true; } }
+      else items.push(it);
+    }
+    if (!placed) items.push(...out.items);
+    return { ...last, menus: (last.menus || []).map((m) => fresh.get(m.id) || m), items, notices: out.notices || last.notices, said: out.said };
+  };
+  const drawInPlace = (out, key, top, sayIt = true) => {
+    const data = merged(out);
+    draw(data);
+    const again = key && [...box.querySelectorAll("[data-key]")].find((x) => x.dataset.key === key);
+    if (!again) {
+      if (out.said && sayIt) { said.textContent = out.said; announce(out.said); }
+      return null;
+    }
+    again.focus({ preventScroll: true });
+    if (out.said && sayIt) {
+      const row = again.closest("li");
+      const holder = row?.querySelector(":scope > div:first-child");
+      if (holder) {
+        const note = el("span", { class: "saved-note" });
+        holder.append(el("div", { class: "row__meta" }, note));
+        window.SharedComponents.savedNote(note, out.said);  // a status: read out once, beside what changed
+      } else { said.textContent = out.said; announce(out.said); }
+    }
+    if (top !== null && top !== undefined) window.scrollBy(0, again.getBoundingClientRect().top - top);  // after the note, so nothing moves
+    return again;
+  };
+  const slugId = (g) => `card-${p.id}-${s.key}-${at}-${String(g || "list").toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  // Choose several (plug-in API 1.16, owner, 19 November 2026: "have the searches open up the slider with the catalogue
+  // and you can select multiple"; "see all the options for collections, playlists, genres, decades"): a slide-out with
+  // a search, a filter for each kind, and a tick box for each, a page at a time. Ticks are kept across kinds and
+  // searches; what is added already shows ticked and cannot be ticked again. Each list is read once per opening.
+  const pickerButton = (it) => {
+    const b = el("button", { type: "button", class: "btn btn--compact", "data-key": `${it.id}:pick` }, icon("list-checks"), it.picker.label,
+      el("span", { class: "visually-hidden", text: ` for ${it.title}` }));
+    b.addEventListener("click", () => openPicker(it, b));
+    return b;
+  };
+  const openPicker = (it, opener) => {
+    const pk = it.picker;
+    const base = `pick-${p.id}-${s.key}`;
+    const st = { filter: pk.filters[0]?.[0] || "", q: "", pages: new Map(), picked: new Map() };
+    const search = el("input", { class: "input", type: "search", id: `${base}-q`, autocomplete: "off", spellcheck: "false" });
+    const filters = pk.filters.length > 1 ? el("fieldset", { class: "segmented" }, el("legend", { class: "visually-hidden", text: "Show" }),
+      pk.filters.map(([value, words]) => {
+        const r = el("input", { type: "radio", name: `${base}-f`, id: `${base}-f-${value}`, value, checked: value === st.filter });
+        r.addEventListener("change", () => { st.filter = value; load(true); });
+        return el("label", { for: r.id }, r, el("span", { text: words }));
+      })) : null;
+    const list = el("ul", { class: "settings-rows", id: `${base}-list`, "aria-label": pk.title });
+    const status = el("p", { class: "small muted", role: "status" });
+    const more = el("button", { type: "button", class: "btn", hidden: true }, "Show more");
+    const addWords = el("span", { text: pk.submit });
+    const add = el("button", { type: "button", class: "btn btn--primary" }, icon("plus"), addWords);
+    const cancel = el("button", { type: "button", class: "btn" }, "Cancel");
+    const count = () => {
+      add.disabled = !st.picked.size;
+      addWords.textContent = st.picked.size ? `${pk.submit} (${st.picked.size})` : pk.submit;
+    };
+    const row = (x) => {
+      const id = `${base}-${x.id.replace(/[^A-Za-z0-9_-]/g, "-")}`;
+      const box2 = el("input", { type: "checkbox", id, checked: x.on || st.picked.has(x.id), disabled: x.on, "aria-describedby": `${id}-h` });
+      box2.addEventListener("change", () => { if (box2.checked) st.picked.set(x.id, x.title); else st.picked.delete(x.id); count(); tell(); });
+      return el("li", { class: "setting" }, el("div", { class: "setting__text" }, el("label", { class: "setting__label", for: id, text: x.title }),
+        el("span", { class: "setting__hint", id: `${id}-h`, text: [x.detail, x.on ? "Added already" : ""].filter(Boolean).join(". ") })),
+        el("div", { class: "setting__control" }, box2));
+    };
+    let shownKey = "";
+    const tell = () => {
+      const got = st.pages.get(shownKey);
+      if (got) status.textContent = got.items.length ? `${got.items.length} of ${got.total} shown${st.picked.size ? `, ${st.picked.size} ticked` : ""}` : "None found";
+    };
+    const show = (key) => {
+      shownKey = key;
+      const got = st.pages.get(key);
+      list.replaceChildren(...got.items.map(row));
+      more.hidden = !got.more;
+      tell();
+    };
+    let asked = 0;
+    const load = async (reset) => {
+      const key = `${st.filter}|${st.q}`;
+      if (reset && st.pages.has(key)) { show(key); return; }  // read once per opening
+      const have = st.pages.get(key);
+      const mine = ++asked;
+      more.disabled = true;
+      try {
+        const got = await api(path, { method: "POST", body: { action: "browse", id: it.id, value: st.q, filter: st.filter, start: reset || !have ? 0 : have.items.length } });
+        if (mine !== asked) return;  // a newer search answered first
+        st.pages.set(key, !reset && have ? { ...got, items: [...have.items, ...got.items] } : got);
+        show(key);
+      } catch (err) { status.textContent = err.message; }
+      finally { more.disabled = false; }
+    };
+    let timer = null;
+    search.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(() => { st.q = search.value.trim(); load(true); }, 300); });
+    more.addEventListener("click", () => {
+      const n = list.children.length;
+      load(false).then(() => list.children[n]?.querySelector("input")?.focus());
+    });
+    const panel = sidePanel({ title: pk.title, wide: true, opener,
+      body: [el("div", { class: "field" }, el("label", { class: "field__label", for: search.id, text: pk.search }), search), filters, status, list, more],
+      foot: [add, cancel] });
+    cancel.addEventListener("click", () => panel.close());
+    add.addEventListener("click", () => {
+      const ids = [...st.picked.keys()];
+      panel.close();
+      run({ action: "pick", id: it.id, ids }, opener);
+    });
+    count();
+    load(true);
+    search.focus();
   };
   // Something added to one item (plug-in API 1.8), such as a guide for a channel list (owner, 13 November 2026): the
   // button opens a small form under the row, an address or a file, and focus goes into it.
@@ -894,9 +1037,8 @@ function customScreen(p, s) {
       try { out = await res.json(); } catch { /* empty */ }
       if (!res.ok) throw new Error(out.error || `Something went wrong (error ${res.status})`);
       if (done) done();
-      if (out.said) said.textContent = out.said;
-      draw(out);
-      (item ? [...box.querySelectorAll("[data-key]")].find((x) => x.dataset.key === `${item}:attach`) : document.getElementById(file.id))?.focus();
+      if (item) drawInPlace(out, `${item}:attach`, null);
+      else { if (out.said) said.textContent = out.said; draw(merged(out)); document.getElementById(file.id)?.focus(); }
     } catch (err) { problem(err.message, send); }
     finally { send.disabled = false; loading.stop(); }
   };
@@ -930,6 +1072,19 @@ function customScreen(p, s) {
     const noun = (data.title || "items").toLowerCase();
     const groups = new Map();
     for (const m of kids) { if (!groups.has(m.group)) groups.set(m.group, []); groups.get(m.group).push(m); }
+    // Cards (plug-in API 1.16): each menu, such as a channel, is a small card with the grey band, as the plug-in cards
+    // in Settings, Plug-ins are: its name opens it, its state on the band, its detail under it.
+    if (data.layout === "cards") {
+      return [...groups].map(([g, list]) => el("section", { class: "stack-2", "aria-label": g || data.title }, g ? el("h4", { text: g }) : null,
+        el("ul", { class: "plugin-cards" }, list.map((m) => {
+          const open = el("button", { type: "button", "data-menu": m.id }, m.title);
+          open.addEventListener("click", () => go(m.id, false));
+          return el("li", {}, el("article", { class: "card has-band plugin-card" },
+            el("div", { class: "card-band" }, el("h5", { class: "card-band__title card__title" }, open),
+              el("div", { class: "card-band__side" }, m.active === false ? chip("Inactive", "muted") : chip("Active", "success"), icon("chevron-right"))),
+            m.detail ? el("p", { text: m.detail }) : null));
+        }))));
+    }
     return [...groups].map(([g, list]) => el("section", { class: "stack-2", "aria-label": g || data.title },
       g ? el("h4", { text: g }) : null,
       el("ul", { class: "rows" }, list.map((m) => {
