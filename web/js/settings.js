@@ -4255,7 +4255,9 @@ function topicTabs() {
   const topics = holders.flatMap((h) => $$("section.settings-section", h)).filter((s) => !s.parentElement.closest("section.settings-section")
     && !(s.hasAttribute("data-advanced") && !document.body.classList.contains("show-advanced")) && $("h2", s));
   let nav = $("#topic-tabs");
-  if (off || topics.length < 4) {
+  // A page may ask for tabs from fewer sections (data-topic-min): a plug-in's page has General and its own parts.
+  const least = Math.max(2, parseInt(holder.dataset.topicMin || "4", 10) || 4);
+  if (off || topics.length < least) {
     nav?.remove();
     topics.forEach((s) => s.classList.remove("topic-off"));
     return;

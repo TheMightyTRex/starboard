@@ -15,6 +15,17 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Plug-in API 1.15.0, additions in Starboard 0.23.0 (not released yet)
+
+- **Added:** `STARBOARD_HOME_ADDRESS` for a container with `publish` on the `lan` network: its own address on the
+  home network, such as `http://192.168.1.20:8790`. Create your own TV channel gives it to Jellyfin's Live TV.
+- **Changed:** a custom page's `add` box and an item's `attach` form take plain text, not only a web address, so a
+  plug-in can ask for a name or a number. Check what you are sent: the browser no longer checks it is an address.
+- **Changed:** Starboard activates a plug-in once it is installed, from a catalogue, an address or a zip file. One
+  with `setup_required` or required settings stays waiting until they are saved, as before. Plan for your first
+  start to come straight after the install.
+- Nothing was taken away: the plug-in API version stays 1.15.0.
+
 ## Starboard API 1.6.0 (Starboard 0.20.0), 16 November 2026
 
 - **Added:** `GET /backup/copies`, with the `system` scope and a read key: where copies of full backups go off this

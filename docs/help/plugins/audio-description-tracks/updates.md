@@ -1,12 +1,13 @@
 # Audio description tracks: Updates
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Audio description tracks 1.1.4 is the latest version. It needs Starboard with plug-in API 1.14 or later.
+Audio description tracks 1.2.0 is the latest version. It needs Starboard with plug-in API 1.14 or later.
 
 ## Versions
 
 | Version | Needs plug-in API | Released |
 |---|---|---|
+| 1.2.0 | 1.14 or later | 17 November 2026 |
 | 1.1.4 | 1.14 or later | 17 November 2026 |
 | 1.1.3 | 1.14 or later | 17 November 2026 |
 | 1.1.2 | 1.14 or later | 16 November 2026 |
@@ -15,6 +16,13 @@ Audio description tracks 1.1.4 is the latest version. It needs Starboard with pl
 | 1.0.0 | 1.12 or later | 13 November 2026 |
 
 The catalogue offers each Starboard the newest version it can run, so an older Starboard keeps an earlier version.
+
+## What is new in 1.2.0
+
+Changed:
+
+- **Rules 1.0:** the track words, how a file name is read, how close the lengths must be (5 seconds by default), the languages and the new track's name and title come from the same rules file as Jellyfin's own Audio description plug-in, so the two add tracks in the same way.
+- **Idle beside the Jellyfin version:** when Jellyfin's own Audio description plug-in is installed, this one adds nothing and its card says **Idle**, so the two never add the same track. Add tracks in Jellyfin instead.
 
 ## What is new in 1.1.4
 

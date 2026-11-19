@@ -10,6 +10,7 @@ q: What does its tab say?
   Failed or Not answering -> 1
   Not supported -> 2
   Active, but a file is not added -> q2
+  Idle -> 7
 q2: What does the file say?
   Lengths differ -> 3
   No match or Choose the title -> 4
@@ -21,6 +22,7 @@ q2: What does the file say?
 4: Rename the file or choose the title #rename-the-file-or-choose-the-title
 5: Move the film into the media folder #move-the-film-into-the-media-folder
 6: Check the file plays #check-the-file-plays
+7: Add tracks in Jellyfin #add-tracks-in-jellyfin
 ```
 
 ## Start it again
@@ -72,6 +74,10 @@ Your Starboard's plug-in API is outside what this version of Audio description t
 - "No audio-description folder yet" means the folder is missing. Select **Deactivate**, then **Activate**: Starboard makes it.
 
 An upload must be up to 60 MB. For a larger file, put it in the audio-description folder in your media folder.
+
+## Add tracks in Jellyfin
+
+**Idle** means Jellyfin's own Audio description plug-in is installed. It adds tracks in the same way, so this one adds nothing and the two never add the same track. In Jellyfin, open **Dashboard**, **Plugins**, **Audio description**, then **Add a track you have**, and put your tracks in the folder it names or upload them there. To use this one again, uninstall the Jellyfin plug-in; this one notices within 10 minutes.
 
 ## Report a problem
 

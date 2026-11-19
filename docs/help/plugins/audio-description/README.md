@@ -12,10 +12,13 @@ A Starboard plug-in by TheMightyTRexUK, MIT licence. Starboard's first set-up of
 - **Your library:** once a night, in quiet hours, it reads the sound tracks of every film and episode in Jellyfin and
   lists those with a track named as audio description, such as "English (Audio Description)", "AD" or "Descriptive
   audio". Commentary tracks never count.
-- **Reelix searches:** it adds an **Audio description** format to Reelix that matches release names such as
-  `WiTH.AD`, `ENG.AD`, `BSL.and.AD`, `Audio.Description` and `DVS`, and prefers it in every video quality level.
-  Reelix still takes a release without it when there is no other. Deactivate **Prefer releases with audio
-  description** to put the scores back to neutral.
+- **Titles with audio description:** a page that lists every film and every described episode, by series, with its
+  year, its described track and its status in words, under **Films** and **Series** with their counts. Each title opens
+  its page in Jellyfin. It is drawn from what the nightly check keeps, and is the same page as in Jellyfin's own
+  Audio description plug-in.
+- **Reelix searches:** it checks how Reelix treats releases with audio description, using Reelix's own
+  **Audio description** format, and says where to prefer them: **Settings**, **Reelix**, **Picture quality**. It never
+  changes Reelix itself, as only an admin key may (issue #144).
 - **People:** for each person you activate, Jellyfin remembers the sound track they choose, so choosing the
   described track once is enough for each film and series.
 - **Elsewhere:** a list of places with audio description in their own apps, such as BBC iPlayer and ITVX, each a link
@@ -43,11 +46,24 @@ from any of them.
   collecting its content with automated tools for AI), so Starboard cannot say which of your films they have. RNIB
   says neither is offered in the UK yet; MovieReading is mostly Italian, Earcatch mostly Dutch and Flemish.
 
+## Find and tag, and Play the described track
+
+- **Find and tag:** at each nightly check, every film and episode with a described track, and each series with one,
+  gets the tag **Audio description** in Jellyfin; the tag comes off when the track goes. While **Add them to the Audio
+  description collection** is activated (the default), they are also in one collection called **Audio description**.
+- **Play the described track:** for each person activated on its page (nobody until you choose), when they start a
+  title with a described track while another plays, Starboard asks their app to change to it, with Jellyfin's own
+  command. Not every Jellyfin app accepts this; the page says when one did not.
+- **The rules** (the words, the tag, the collection) are in `rules.json`, shared with Jellyfin's own Audio description
+  plug-in. When that plug-in is installed, this one leaves the tag, the collection and Play the described track to it,
+  and its card says **Idle**.
+
 ## What it may do
 
-- It uses Jellyfin's key, which Starboard keeps: to read sound tracks and to change one setting (remember my audio
-  track) for the people you activate.
-- It uses Reelix's key, which Starboard keeps: to add the Audio description format and score it.
+- It uses Jellyfin's key, which Starboard keeps: to read sound tracks, to change one setting (remember my audio
+  track) for the people you activate, to tag titles and keep the collection, and to ask an app to change the sound track.
+- It hears when someone starts playing something (media:read), for Play the described track. It reads no files.
+- It uses Reelix's key, which Starboard keeps: to read Reelix's Audio description format and quality levels. It never changes them.
 - It reaches your home network, where Jellyfin and Reelix are.
 - It runs one small container (64 MB of memory at most) that rests when it is not needed. Starboard wakes it for the
   nightly check, when Starboard starts, and when you open its pages or select its buttons.
@@ -71,10 +87,15 @@ track once per film or series. Both are listed in Starboard's accessibility rese
 
 ## Settings
 
-- **Prefer releases with audio description**: Adds an Audio description format to Reelix and prefers it in every
-  quality level. Reelix still takes a release without it when there is no other.
+- **Prefer releases with audio description**: reminds you to set Reelix's own Audio description format to Prefer in
+  Settings, Reelix, Picture quality, when Reelix does not prefer it.
 - **People who want audio description**: activate each person.
-- **Titles with audio description**: the list, by films and series.
+- **Titles with audio description**: every film and described episode, by films and series, each linking to its page
+  in Jellyfin.
+- **Films to list** and **Series to list**: how many of each the page lists, All or the last 10, 20, 50, 100 or 500
+  added to Jellyfin, newest first; Last 20 by default.
+- **Jellyfin address for links**: the address you open Jellyfin at, for those links, when Starboard reaches Jellyfin at
+  an address a browser cannot open.
 - **Audio description elsewhere**: places with audio description in their own apps.
 - **Sources**: AudioVault search links, YouDescribe search links, MovieReading and Earcatch.
 - **Search AudioVault**: the links, by films and series, opening by first letter when the list is long.

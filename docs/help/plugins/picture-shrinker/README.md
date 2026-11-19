@@ -54,8 +54,10 @@ would have less than 100 MB free, the picture is not shrunk and the run says why
 - **Delete backup** in its actions removes the backup for good, after asking. Restore can then no longer put those
   pictures back; the shrunk pictures stay. It removes only the pictures in the backup folder and is refused while a
   run is going.
-- **Space saved** shows the pictures now, the backup and the space saved, measured when the page opens; the card shows
+- **Space saved** shows the pictures now, the backup and the space saved, measured when the page opens; the cards show
   the figures kept after the last run or action.
+- **Saved by type** and the **Space saved by type** card show the space each type of picture saved, counted as each
+  run goes, so nothing is scanned to show them.
 
 The first run may need almost as much free space as the pictures take now.
 

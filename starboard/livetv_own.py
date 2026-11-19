@@ -176,7 +176,7 @@ def read(url, fetch=None, data_dir=None, skipped=None, sizes=None):
 def add(data_dir, url, fetch=None):
     url = url.strip()
     if not livetv._clean_url(url) or url != livetv._clean_url(url):
-        raise ValueError("Type a web address starting http:// or https://")
+        raise ValueError("Enter a web address starting http:// or https://")
     have = sources(data_dir)
     if any(s["url"] == url for s in have):
         raise ValueError("That address is already added")
@@ -434,7 +434,7 @@ def set_guide(data_dir, sid, url, fetch=None):
     EPG feed for it"): an address, checked to be a guide."""
     url = url.strip()
     if not url.startswith("file:") and (not livetv._clean_url(url) or url != livetv._clean_url(url)):
-        raise ValueError("Type a web address starting http:// or https://")
+        raise ValueError("Enter a web address starting http:// or https://")
     x = next((x for x in sources(data_dir) if x["id"] == sid and x.get("kind") == "list"), None)
     if not x:
         raise ValueError("Not one of your channel lists")

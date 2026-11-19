@@ -39,7 +39,7 @@ Measured:
 2. Under **Apps you can add**, find **Tdarr** and select **Install…**.
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Tdarr**. To stop, select **Cancel**: nothing is installed.
-5. Tdarr's own tab opens under **Settings**, then **Plug-ins**. Select **Activate**. Its state changes to **Active**.
+5. Tdarr's own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Activate**.
 
 ### Add it by its address
 
@@ -55,19 +55,19 @@ Or run its installer, `install.py` in its folder, on any computer with Python, a
 
 ### If the main install already runs Tdarr
 
-Do this before you activate the plug-in.
+When Tdarr is already on this computer, Starboard leaves the plug-in inactive after the install, so you can bring your Tdarr in first.
 
 1. On Tdarr's tab, under **Your Tdarr**, select **Bring in the Tdarr you already have…**.
 2. Read which folders Starboard copies: Tdarr's `server`, `configs` and `logs` folders.
 3. Enter your Starboard password and select **Copy**.
-4. Select **Activate**. Its page is on your home network at port 8265 when that is free, as it is once your old Tdarr is stopped.
+4. Select **Activate** in **General**, **State**. Its page is on your home network at port 8265 when that is free, as it is once your old Tdarr is stopped.
 5. Check the plug-in shows your libraries, then remove Tdarr from the main install: go to **Settings**, then **Install apps**, untick Tdarr and apply.
 
 Starboard stops your Tdarr to copy its files whole. It does not remove it, and its own folders are never moved, changed or deleted. Its cache, the files part way through converting, is not copied. Its old folders (`config/tdarr`, beside the other apps' settings) stay until you move them to the holding folder in **System**, **Clean up**.
 
 ### A new Tdarr
 
-1. Select **Activate** on Tdarr's tab.
+1. Starboard activates Tdarr when it is installed, as there is no Tdarr to bring in. If its state is not **Active**, select **Activate** in **General**, **State**.
 2. Go to **Settings**, then **Apps**, and select **Search for new apps**, so Starboard finds Tdarr and gives it a key.
 3. If its tab says **Tdarr is not connected yet** under **Settings**, select **Connect Tdarr**. Tdarr restarts once.
 4. Choose its libraries, what it does and when. Read [Settings](../tdarr/settings.md).

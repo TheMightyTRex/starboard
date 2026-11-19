@@ -54,7 +54,7 @@ Measured:
 
    ![The foot of the install slide-out, with Your Starboard password filled in and Install Library clean-up (step 4) outlined](../../images/plugins/library-cleanup/install-3-password.png)
 
-5. Library clean-up's own tab opens under **Settings**, then **Plug-ins**. Select **Activate**. Its state changes to **Active**.
+5. Library clean-up's own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Activate**.
 
    ![Library clean-up's own tab on State, with Activate (step 5) outlined](../../images/plugins/library-cleanup/install-4-activate.png)
 

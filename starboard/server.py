@@ -3202,7 +3202,11 @@ class Handler(BaseHTTPRequestHandler):
                 item = pa.install(app.data_dir, pa.builtins()[pid], media, builtin=True)
             pa.keep_logo(app.data_dir, pid, pa.fetch_logo(pa.builtins()[pid], "builtin")[0])  # API 1.14
             logs.event("info", "plug-ins", f"Added {item['name']}, built into Starboard")
-            return self.json(200, {"plugin": item, "plugins": pa.listing(app.data_dir)})
+            not_on = "" if (pa.listing_state(app.data_dir, pid) == "enabled") else pa.activate_after_install(
+                app.data_dir, pid, services=app.config.data["services"])
+            app.plugin_clock.ensure()
+            app.plugin_idle.ensure()
+            return self.json(200, {"plugin": item, "plugins": pa.listing(app.data_dir), "not_active": not_on})
         # A zip file (DASH-414, plug-in API 1.15): uploaded as it is, checked, shown with What it may do, then
         # installed (with its container built from the zip's Dockerfile) after the password, in the background.
         if path == "/api/plugins/zip" and method == "POST":
@@ -3226,6 +3230,10 @@ class Handler(BaseHTTPRequestHandler):
             def after(item):
                 if item["id"] in pa.FROM_SETUP.values():  # chosen in the set-up and now added: no more offer (DASH-399)
                     pa.drop_wanted(app.config, item["id"])
+                not_on = pa.activate_after_install(app.data_dir, item["id"], services=app.config.data["services"])
+                app.plugin_clock.ensure()
+                app.plugin_idle.ensure()
+                return not_on
             try:
                 j = plugin_zip.start_install(app.data_dir, str(body.get("zip") or ""), media, after)
             except LookupError as e:
@@ -3300,7 +3308,10 @@ class Handler(BaseHTTPRequestHandler):
             if item["id"] in pa.FROM_SETUP.values():  # chosen in the set-up and now added: no more offer (DASH-399)
                 pa.drop_wanted(app.config, item["id"])
             logs.event("info", "plug-ins", f"Added {item['name']} {item['version']}")
-            return self.json(200, {"plugin": item, "plugins": pa.listing(app.data_dir)})
+            not_on = pa.activate_after_install(app.data_dir, item["id"], services=app.config.data["services"])
+            app.plugin_clock.ensure()
+            app.plugin_idle.ensure()
+            return self.json(200, {"plugin": item, "plugins": pa.listing(app.data_dir), "not_active": not_on})
         ml = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/logo$", path)
         if ml and method == "GET":  # a plug-in's logo (API 1.14, DASH-428): the cleaned copy in its folder, nothing else
             from . import plugin_logo

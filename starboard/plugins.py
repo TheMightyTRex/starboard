@@ -793,6 +793,10 @@ def compose(manifest, plugin_dir, media_dir, host=None, media_user=None, extra=N
         lines += ["    volumes:"] + [f"      - {json.dumps(v)}" for v in vols]
         env = {**({"TZ": host["tz"]} if host.get("tz") else {}), **{k: str(_fill(v, extra)) for k, v in (c.get("env") or {}).items()}, "STARBOARD_API": api_address(c.get("network", "default")),
                "STARBOARD_API_KEY_FILE": "/run/starboard/key"}
+        # Its own address on the home network (owner, 19 November 2026): a plug-in that gives Jellyfin or a device an
+        # address, such as Create your own TV channel, needs no one to open its page first to learn it.
+        if net == "lan" and c.get("publish") and port_out and extra.get("home_ip"):
+            env["STARBOARD_HOME_ADDRESS"] = f"http://{extra['home_ip']}:{int(port_out)}"
         lines += ["    environment:"] + [f"      {k}: {json.dumps(v)}" for k, v in sorted(env.items())]
     if networks:
         # Its own network, which reaches nothing outside; Starboard joins it so the plug-in can call the API (PS5).

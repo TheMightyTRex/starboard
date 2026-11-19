@@ -372,7 +372,8 @@ function stateButton(p, redraw, primary = false) {
     return el("button", { type: "button", class: "btn btn--primary", onclick: () => {
       // The Settings part may be in a topic tab that is not showing: show it, then go to the first empty required field.
       const part = $(`#pl-${p.id}-settings-h`)?.closest("section.settings-section");
-      if (part?.classList.contains("topic-off")) $(`#topic-tabs [aria-controls="${part.id}"]`)?.click();
+      const topic = topicOf(part);
+      if (topic?.classList.contains("topic-off")) $(`#topic-tabs [aria-controls="${topic.id}"]`)?.click();
       const fields = part ? $$("input, select, textarea", part).filter((f) => f.type !== "hidden") : [];
       const first = fields.find((f) => (p.status?.missing || []).some((m) => document.querySelector(`label[for="${f.id}"]`)?.textContent.startsWith(m))) || fields[0];
       first?.scrollIntoView({ block: "center" });
@@ -500,8 +501,8 @@ function focusState(p) {
   // Two frames later: the topic tabs are drawn again in the next frame after the page changes.
   requestAnimationFrame(() => requestAnimationFrame(() => {
     const h = $(`#pl-${p.id}-state-h`);
-    const part = h?.closest("section.settings-section");
-    if (part?.classList.contains("topic-off")) $(`#topic-tabs [aria-controls="${part.id}"]`)?.click();
+    const topic = topicOf(h);
+    if (topic?.classList.contains("topic-off")) $(`#topic-tabs [aria-controls="${topic.id}"]`)?.click();
     if (h) { h.tabIndex = -1; h.focus(); }
   }));
 }
@@ -620,9 +621,33 @@ function stateWords(p) {
   return `${version}${p.author ? `, by ${p.author}` : ""}.`;
 }
 
+// A plug-in's General (owner, 19 November 2026: "rename State to General and include (on a separate card for each
+// section) State, Versions, Jobs, What it may do, Remove"): one topic tab holding a card for each, each with an h3.
+function groupSection(id, title, ...cards) {
+  const g = section(id, title, "", ...cards.filter(Boolean));
+  g.classList.add("settings-section--group");
+  // Every heading in a card goes one level down (h2 to h3, h3 to h4 and so on), keeping its attributes and content,
+  // so the page's outline stays in order under General.
+  const retag = (h) => {
+    const to = document.createElement(`h${Number(h.tagName[1]) + 1}`);
+    for (const a of h.attributes) to.setAttribute(a.name, a.value);
+    to.append(...h.childNodes);
+    h.replaceWith(to);
+  };
+  for (const c of cards.filter(Boolean)) $$("h5, h4, h3, h2", c).reverse().forEach(retag);
+  return g;
+}
+
+// The topic a part is in: the outermost section, which has the topic tab (a card in General is inside it).
+function topicOf(node) {
+  let s = node?.closest("section.settings-section");
+  while (s?.parentElement?.closest("section.settings-section")) s = s.parentElement.closest("section.settings-section");
+  return s;
+}
+
 // A plug-in's own page, Settings, Plug-ins, <its name> (DASH-318), laid out like every Settings page (DASH-307):
-// its state and its one button at the top, then versions, jobs, styles, settings by group and its screens, then
-// its own buttons (Actions), what it may do, and Remove at the foot.
+// General first (its state and its one button, versions, jobs, what it may do and Remove, a card each), then its web
+// page, styles, settings by group, its screens and its own buttons (Actions).
 function pluginPage(p, redraw) {
   const said = el("p", { class: "small", role: "status" });  // what a button did, said here rather than in a toast
   const buttons = (p.actions || []).map((a) => {
@@ -647,42 +672,40 @@ function pluginPage(p, redraw) {
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: (STATE[st.state] || ["", ""])[0] }), el("p", { text: st.sentence }))) : null;
   const first = st.action === "rollback" ? rollbackButton(p, redraw, true)
     : st.action === "update" && p.update ? updateButton(p, redraw) : stateButton(p, redraw, true);
-  // State (issue #8): the chip at the right of the heading's line, and Activate or Deactivate at the right of the
-  // version line under it.
+  // State (issue #8): the chip at the right of the heading's line and the version under it, in the grey band; Activate
+  // or Deactivate first in the white body under the band (owner, 19 November 2026).
   const stateSec = section(`pl-${p.id}-state`, "State", stateWords(p),
     headChip(...chipOf(p)), fix || healthNote(p) || (p.message ? el("p", { class: "small", text: p.message }) : null));
-  const about = $(".settings-section__head > p", stateSec);
-  const stateLine = el("div", { class: "state-line" }, about || el("span"), el("div", { class: "actions" }, first));
-  if (about) $(".settings-section__head", stateSec).append(stateLine); else stateSec.append(stateLine);
+  $(".settings-section__head", stateSec).after(el("div", { class: "actions" }, first));
   const news = whatsNew(p);
   if (news) stateSec.append(news);
   if (offerSaid) { stateSec.append(notice("success", offerSaid)); offerSaid = ""; }
-  return [
-    stateSec,
-    webSection(p),
-    adoptSection(p, redraw),
-    !p.builtin ? section(`pl-${p.id}-versions`, "Versions",
+  const versions = !p.builtin ? section(`pl-${p.id}-versions`, "Versions",
       p.update ? `Version ${p.update.version} is available.${p.update.changelog ? ` ${p.update.changelog}` : ""}`
         : st.can_roll_back ? `Version ${st.previous_version} is kept, in case this one does not suit you.` : `Version ${p.version}. No newer version is known.`,
       (p.update && st.action !== "update") || (st.can_roll_back && st.action !== "rollback")
         ? el("div", { class: "actions" }, p.update && st.action !== "update" ? updateButton(p, redraw) : null,
           st.can_roll_back && st.action !== "rollback" ? rollbackButton(p, redraw) : null) : null,
-      p.from_zip ? updateFromZip(p, redraw) : updateFromAddress(p, redraw)) : null,
-    p.jobs?.length ? section(`pl-${p.id}-jobs`, "Jobs", "Starboard runs these for it, and lists them in System with when each last ran.",
-      el("ul", {}, p.jobs.map((j) => el("li", { text: j }))), el("a", { class: "btn btn--quiet", href: "/system.html#jobs-panel" }, "Open System, Jobs")) : null,
+      p.from_zip ? updateFromZip(p, redraw) : updateFromAddress(p, redraw)) : null;
+  const jobs = p.jobs?.length ? section(`pl-${p.id}-jobs`, "Jobs", "Starboard runs these for it, and lists them in System with when each last ran.",
+    el("ul", {}, p.jobs.map((j) => el("li", { text: j }))), el("a", { class: "btn btn--quiet", href: "/system.html#jobs-panel" }, "Open System, Jobs")) : null;
+  const may = section(`pl-${p.id}-may`, "What it may do", "What you allowed when you installed it.", pluginPermissions(p.permissions));
+  const remove = dangerSection(`pl-${p.id}-remove`, "Remove", "Stops it and takes it off this Starboard. Its folder is kept.",
+    el("div", { class: "actions" }, removeButton(p, () => { location.href = "/settings-plugins.html"; })));
+  return [
+    groupSection(`pl-${p.id}-general`, "General", stateSec, versions, jobs, may, remove),
+    webSection(p),
+    adoptSection(p, redraw),
     p.looks?.length ? section(`pl-${p.id}-styles`, "Styles", "Colours for Starboard from this plug-in. Choose one for this browser, as in Display.", styleGallery(p)) : null,
     appSettingsSection(p),
     ...groups.map((g) => section(g.id, g.group || "Settings", "Saved for everyone who uses this Starboard.", g.body)),
     ...custom.map((c) => section(`pl-${p.id}-${c.key}`, c.label, c.hint || "", customScreen(p, c))),
     buttons.length ? section(`pl-${p.id}-actions`, "Actions", p.state === "enabled" ? "Things it can do now, as well as on its own schedule." : "Activate it to use these.",
-      el("div", { class: "actions" }, ...buttons), said) : null,
-    section(`pl-${p.id}-may`, "What it may do", "What you allowed when you installed it.", pluginPermissions(p.permissions)),
-    dangerSection(`pl-${p.id}-remove`, "Remove", "Stops it and takes it off this Starboard. Its folder is kept.",
-      el("div", { class: "actions" }, removeButton(p, () => { location.href = "/settings-plugins.html"; })))].filter(Boolean);
+      el("div", { class: "actions" }, ...buttons), said) : null].filter(Boolean);
 }
 
 // A plug-in's own screen (11 November 2026): a managed list the plug-in describes as data, drawn here. Rows grouped
-// with a state, Test, Activate or Deactivate, Move and Remove; Add takes an address; Test all checks everything.
+// with a state, Test, Activate or Deactivate, Move and Remove; Add takes plain text, such as a name or an address; Test all checks everything.
 const CUSTOM_STATE = { ok: STATUS.running, warning: STATUS.needsAttention, problem: STATUS.notResponding,
   off: STATUS.inactive, unknown: STATUS.notChecked };
 function customScreen(p, s) {
@@ -845,7 +868,7 @@ function customScreen(p, s) {
   const attachForm = (it) => {
     const a = it.attach;
     const base = `attach-${p.id}-${s.key}-${it.id}`;
-    const url = el("input", { class: "input", id: `${base}-url`, type: "url", value: a.value || "", placeholder: a.placeholder || "", autocomplete: "off",
+    const url = el("input", { class: "input", id: `${base}-url`, type: "text", spellcheck: "false", value: a.value || "", placeholder: a.placeholder || "", autocomplete: "off",
       ...(a.hint ? { "aria-describedby": `${base}-h` } : {}) });
     const save = el("button", { type: "submit", class: "btn btn--primary" }, icon("plus"), a.label);
     const form = el("form", { class: "stack-2" }, el("div", { class: "actions" }, url, save));
@@ -941,7 +964,9 @@ function customScreen(p, s) {
     const here = byId.get(at);
     const add = !here && data.add ? (() => {
       const id = `add-${p.id}-${s.key}`;
-      const input = el("input", { class: "input", id, type: "url", placeholder: data.add.placeholder || "", autocomplete: "off" });
+      // Plain text (owner, 19 November 2026): a name such as Comedy was refused as "not an address". The plug-in
+    // checks what it is given; an address still fits.
+    const input = el("input", { class: "input", id, type: "text", placeholder: data.add.placeholder || "", autocomplete: "off", spellcheck: "false" });
       const addBtn = el("button", { type: "submit", class: "btn btn--primary" }, icon("plus"), data.add.label || "Add");
       const form = el("form", { class: "stack-2" }, el("label", { class: "field__label", for: id, text: data.add.label || "Add" }),
         data.add.hint ? el("p", { class: "hint", text: data.add.hint }) : null, el("div", { class: "actions" }, input, addBtn));
@@ -1223,7 +1248,7 @@ function addPluginSection(redraw) {
     add.addEventListener("click", async () => {
       const password = await installWarning(s, { opener: add });
       if (password === null) return;
-      try { await api("/api/plugins/add", { method: "POST", body: { ...source(), password } }); toast(`${s.name} installed. Activate it when you are ready`); location.href = `/settings-plugin.html?id=${encodeURIComponent(s.id)}`; }
+      try { const r = await api("/api/plugins/add", { method: "POST", body: { ...source(), password } }); toast(r.not_active ? `${s.name} installed. ${r.not_active}` : `${s.name} installed and active`); location.href = `/settings-plugin.html?id=${encodeURIComponent(s.id)}`; }
       catch (err) { problem(err.message, add); }
     });
     seen.replaceChildren(...[

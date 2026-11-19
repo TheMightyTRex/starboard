@@ -820,6 +820,19 @@ def choose_ports(data_dir, pid, manifest, refused=()):
     return out
 
 
+def home_ip():
+    """The server's address on the home network, as other devices reach it (Starboard runs on the host's network).
+    Connecting a UDP socket sends nothing. Empty when there is none."""
+    import socket
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("192.0.2.1", 9))
+            ip = s.getsockname()[0]
+    except OSError:
+        return ""
+    return "" if ip.startswith("127.") else ip
+
+
 def write_compose(data_dir, pid, media_dir=None, refused=()):
     """Writes the plug-in's Compose file again with its ports, secrets and Jellyfin's details (API 1.13)."""
     where = folder(data_dir, pid)
@@ -828,7 +841,7 @@ def write_compose(data_dir, pid, media_dir=None, refused=()):
     if not m.get("containers") or st.get("builtin"):
         return False
     extra = {"ports": choose_ports(data_dir, pid, m, refused), "secrets": secrets_for(data_dir, pid, m),
-             "jellyfin": _read(os.path.join(where, "jellyfin.json"), {}) or {}, **base_extra(data_dir, m)}
+             "jellyfin": _read(os.path.join(where, "jellyfin.json"), {}) or {}, "home_ip": home_ip(), **base_extra(data_dir, m)}
     if not (extra["ports"] or extra["secrets"] or extra.get("jellyfin_metadata")
             or any(plugins.FILLED.search(str(v)) for c in m["containers"] for v in (c.get("env") or {}).values())):
         return False  # nothing of API 1.13 or 1.14: the Compose file written at install stays as it is
@@ -889,6 +902,41 @@ def web_pages(data_dir, pid, manifest=None, st=None):
     ports = st.get("ports") or {}
     return [{"container": name, "port": ports[name], "label": f"Open {m.get('name', pid)}"}
             for name, _inner, _pref in plugins.published_lan(m) if isinstance(ports.get(name), int)]
+
+
+def listing_state(data_dir, pid):
+    """Its saved state: installed, enabled, disabled or failed."""
+    return (_read(os.path.join(folder(data_dir, pid), "state.json"), {}) or {}).get("state", "")
+
+
+def activate_after_install(data_dir, pid, services=None):
+    """Activates a plug-in just installed (owner, 19 November 2026: "When you install a plugin - it should automatically
+    activate. Keep the option in state."). One that needs setting up first, or does not suit this Starboard, stays as
+    it is and its page says why. Returns what happened, in words for the page: never raises, as the install is done."""
+    from . import plugin_life
+    try:
+        plugin_life.can_enable(data_dir, pid)
+    except ValueError as e:
+        return str(e)
+    # An app plug-in that can bring in the same app from the main install, such as Tdarr, waits while that app is on
+    # this computer: Bring in only copies into an inactive plug-in, and a plug-in started first would begin empty.
+    try:
+        a = adopt_info(_read(os.path.join(folder(data_dir, pid), "manifest.json"), {}) or {})
+    except ValueError:
+        a = None
+    if a:
+        from . import containers
+        try:
+            containers.docker("GET", f"/containers/{a['app']}/json")
+            return (f"Not activated yet: {a['name']} is already on this computer. Bring in the {a['name']} you "
+                    f"already have first, then select Activate")
+        except Exception:  # noqa: BLE001  no such app here, or Docker cannot say: a new app starts as usual
+            pass
+    try:
+        enable(data_dir, pid, services=services)
+    except Exception as e:  # noqa: BLE001  installed either way: Activate on its page tries again
+        return f"It did not start: {str(e)[:200]}. Select Activate on its page to try again"
+    return ""
 
 
 def enable(data_dir, pid, helper=None, services=None):

@@ -31,6 +31,12 @@ a broadcast with its own credits. The plug-in says how much longer or shorter th
 Find a track for your cut, or line the track up yourself with describealign
 (<https://pypi.org/project/describealign/>), then put the result in the folder.
 
+## Beside Jellyfin's own Audio description plug-in
+
+The names, the languages and how close the lengths must be follow `rules.json`, shared with Jellyfin's own Audio
+description plug-in, which adds tracks in the same way with Jellyfin's ffmpeg. When that plug-in is installed, this one
+stays idle and its card says **Idle**, so the two never add the same track.
+
 ## What it may do
 
 - It uses Jellyfin's key, which Starboard keeps: to search for the title and to ask Jellyfin to read it again.

@@ -4,8 +4,7 @@
 # Add a plug-in from a zip file
 
 Add a private plug-in, such as On demand, from the zip file its maker gives you. Starboard checks the zip, shows what
-the plug-in may do and builds its container on your server. At the end, the plug-in is installed and ready to
-activate.
+the plug-in may do and builds its container on your server. At the end, the plug-in is installed and active.
 
 ## Before you begin
 
@@ -37,12 +36,14 @@ activate.
    **Cancel**: nothing is installed.
 6. A window shows each step: **Checking the zip**, **Building its container from the zip** and **Installing**. The
    build can take a few minutes the first time, while it fetches what the plug-in needs.
-7. When it finishes, the plug-in's own page opens. Select **Activate**.
+7. When it finishes, the plug-in's own page opens, and Starboard activates it: its **State** says **Active**. A
+   plug-in that needs settings first says what to enter: save them, then select **Activate** in **General**,
+   **State**.
 
 ### Update it from a newer zip
 
 1. Go to the plug-in's own page, under **Settings**, then **Plug-ins**.
-2. Select the **Versions** tab. In **Update from a zip file**, choose the new version's zip in **The new version's zip
+2. Select the **General** tab and go to **Versions**. In **Update from a zip file**, choose the new version's zip in **The new version's zip
    file**, then select **What is new**.
 
    ![On demand's Versions, with Update from a zip file, its zip file field and What is new (step 2), outlined](../images/add-a-plugin-from-a-zip-file-4-update.png)

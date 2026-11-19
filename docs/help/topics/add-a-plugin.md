@@ -29,8 +29,9 @@ is ready to use.
 
 4. To go ahead, enter your Starboard password and select **Install** and the plug-in's name. To stop, select
    **Cancel**: nothing is installed.
-5. The plug-in's own tab opens, under **Settings**, then **Plug-ins**. Select **Activate**. Its state changes
-   to **Active**. To stop it later, select **Deactivate**.
+5. The plug-in's own tab opens, under **Settings**, then **Plug-ins**, and Starboard activates it: its state is
+   **Active**. A plug-in that needs settings first says what to enter: save them, then select **Activate**. To
+   stop it later, select **Deactivate** in **General**, **State**.
 
    ![The Styles plug-in's own tab, with its state and Deactivate (step 5) outlined](../images/add-a-plugin-2-active.png)
 
@@ -43,8 +44,9 @@ is ready to use.
 ### Manage your plug-ins
 
 **Settings**, then **Plug-ins**, then **Manage** lists every plug-in you added, with its state, **Settings**,
-**Activate** or **Deactivate**, and **Remove**. Each plug-in also has its own tab after **Catalogue**, with its
-settings, what it may do, and **Remove** at the foot.
+**Activate** or **Deactivate**, and **Remove**. Each plug-in also has its own tab after **Catalogue**. Its first
+tab, **General**, has a card each for **State**, **Versions**, **Jobs** (when it has any), **What it may do** and
+**Remove**. Its other tabs hold its settings, its own screens and its styles.
 
 ### Add a catalogue from a link
 

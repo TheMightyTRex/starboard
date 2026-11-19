@@ -39,7 +39,7 @@ Measured:
 2. Under **Network**, find **Remote access** and select **Install…**.
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Remote access**. To stop, select **Cancel**: nothing is installed.
-5. Remote access's own tab opens under **Settings**, then **Plug-ins**. Select **Activate**. Its state changes to **Active**.
+5. Remote access's own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Activate**.
 
 ### Add it by its address
 
