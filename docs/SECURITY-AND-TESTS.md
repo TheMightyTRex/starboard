@@ -59,6 +59,23 @@ Latest results: 3 November 2026.
   by Starboard itself (`frame-ancestors 'self'`); every other page refuses any frame.
 - **Home network** can be switched off, so nothing else on the network can connect at all.
 
+### A known risk: Starboard's user is as strong as root (issue #187, accepted 19 November 2026)
+
+Starboard updates and runs your apps through Docker, so the installer gives it Docker's control socket, and your own
+account is usually in the `docker` group too. Docker access is the same as full control of the computer: anything that
+runs as Starboard's user, or as your account, could start a container that mounts any disk and erases it. So a check
+only on the pool helper (the root helper that erases and adds disks) would not make the server safer: something that
+could forge a pool request could already do the same another way, and erasing a disk from the page would have to go.
+
+What Starboard does instead:
+- **Protect the user.** Treat Starboard's user, the Docker group and your account as you would root: never run
+  programs you do not trust as them, and keep Starboard's password and API keys private.
+- **Never silent.** Every pool job the helper finishes, however it was asked for, is written to Starboard's log
+  (a warning when a disk was erased) and sent as the `disk.changed` event, which the Notifications plug-in turns into
+  an alert. An erase you did not start reaches you at once.
+- **The page's own checks stay:** your Starboard password, the last 4 characters of the disk's serial number for
+  every erase, a plan that runs out after 15 minutes, and the disk's fingerprint checked again before any change.
+
 ## The security review, November 2026
 
 Two passes on Starboard 0.3.4: an independent code review by a reviewer who had not seen the other pass, and

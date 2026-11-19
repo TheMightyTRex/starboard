@@ -1,12 +1,13 @@
 # Notifications: Updates
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Notifications 1.1.3 is the latest version. It needs Starboard with plug-in API 1.14 or later.
+Notifications 1.2.0 is the latest version. It needs Starboard with plug-in API 1.16 or later (Starboard 0.23.0); an older Starboard keeps 1.1.3.
 
 ## Versions
 
 | Version | Needs plug-in API | Released |
 |---|---|---|
+| 1.2.0 | 1.16 or later | Not yet released |
 | 1.1.3 | 1.14 or later | 17 November 2026 |
 | 1.1.2 | 1.14 or later | 17 November 2026 |
 | 1.1.1 | 1.14 or later | 16 November 2026 |
@@ -14,6 +15,12 @@ Notifications 1.1.3 is the latest version. It needs Starboard with plug-in API 1
 | 1.0.0 | 1.11 or later | 13 November 2026 |
 
 The catalogue offers each Starboard the newest version it can run, so an older Starboard keeps an earlier version.
+
+## What is new in 1.2.0
+
+Added:
+
+- **Disk changes:** a message whenever a disk is erased, added to the pool or taken out of it, however it was asked for, so an erase you did not start reaches you at once. Needs Starboard with plug-in API 1.16 or later; an older Starboard keeps 1.1.3.
 
 ## What is new in 1.1.3
 

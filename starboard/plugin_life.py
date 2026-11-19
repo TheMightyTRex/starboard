@@ -355,7 +355,7 @@ def emit(event, data=None):
 
 # Starboard learns of these by checking. The last four came in API 1.11 (DASH-401), for a notifications plug-in.
 POLLED = ("item.added", "download.finished", "playback.started", "request.available", "download.failed", "disk.nearly_full",
-          "update.available")
+          "update.available", "disk.changed")
 REQUEST_READY = ("Available", "Completed")  # Reelix's and Seerr's words for a request that can be watched now
 
 
@@ -375,7 +375,7 @@ class EventWatch:
     def __init__(self):
         self.seen = {}
 
-    def check(self, wanted, app_services, send=None, disks=None, limit=90, updates=None):
+    def check(self, wanted, app_services, send=None, disks=None, limit=90, updates=None, pool_job=None):
         """`disks` gives [{label, used, total, free}] and `updates` gives [{app, current, latest}] (API 1.11): both read
         what Starboard already knows, so nothing extra is fetched for them."""
         from . import services
@@ -402,6 +402,27 @@ class EventWatch:
                     sent += send("download.finished", {"title": done[key].get("title"), "app": done[key].get("service_name")}) or 0
             self.seen["download.finished"] = set(done)
         sent += self._more(wanted, app_services, send, disks, limit, updates)
+        sent += self._pool(wanted, send, pool_job)
+        return sent
+
+    def _pool(self, wanted, send, pool_job):
+        """disk.changed (API 1.16, issue #187): a pool job the root helper finished since the last check, read from the
+        job record only the helper writes, so a job asked for without Starboard's page is reported too."""
+        if "disk.changed" not in wanted or not pool_job:
+            return 0
+        try:
+            j = pool_job() or {}
+        except Exception:  # noqa: BLE001  no pool helper, or its status cannot be read: nothing to say this time
+            return 0
+        done = {f"{j.get('id')}|{j.get('finished')}": j} if j.get("id") and j.get("finished") else {}
+        sent = 0
+        for key in self._new("disk.changed", done):
+            erased = [x for x in j.get("erased") or [] if x]
+            words = {"add": "added to the pool", "remove": "taken out of the pool", "balance": "balanced"}.get(j.get("action"), "changed")
+            logs.event("warning" if erased else "info", "pool",
+                       f"Pool job {j.get('state')}: {j.get('drive') or 'the pool'} {words}" + (f"; erased {', '.join(erased)}" if erased else ""))
+            sent += send("disk.changed", {"action": j.get("action"), "state": j.get("state"), "disk": j.get("drive") or "",
+                                          "erased": erased, "result": str(j.get("result") or "")[:300]}) or 0
         return sent
 
     def _new(self, name, now):
@@ -453,6 +474,13 @@ class EventWatch:
                 u = found[key]
                 sent += send("update.available", {"app": u.get("app"), "current": u.get("current") or "", "latest": u.get("latest")}) or 0
         return sent
+
+
+def _pool_job():
+    """The pool helper's last job record (disk.changed), or None where there is no pool helper."""
+    from . import pool
+    st = pool.status()
+    return st.get("job") if st.get("set_up") else None
 
 
 # Jobs ---------------------------------------------------------------------------------------------------------
@@ -681,7 +709,7 @@ class Clock:
 
         alerts = ((self.cfg.data.get("watch") or {}).get("alerts") or {}) if self.cfg is not None else {}
         return {"disks": lambda: sysinfo.snapshot(app.disks).get("disks") or [] if getattr(app, "disks", None) else [],
-                "limit": int(alerts.get("disk_full") or 90), "updates": updates}
+                "limit": int(alerts.get("disk_full") or 90), "updates": updates, "pool_job": _pool_job}
 
     def _needed(self):
         """Jobs due, and the polled events wanted: by active plug-ins, or all of them while an API event stream is open."""

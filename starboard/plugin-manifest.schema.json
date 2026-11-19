@@ -741,6 +741,7 @@
     "enum": [
      "app.down",
      "app.up",
+     "disk.changed",
      "disk.nearly_full",
      "download.failed",
      "download.finished",
