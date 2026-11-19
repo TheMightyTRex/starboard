@@ -542,7 +542,7 @@ if (go29) {
   const head29 = await focus();
   check("T29", "focus goes to the batch's panel heading", head29.id === "update-all-h", `${head29.id} ${head29.text}`);
   const count29 = (await page.locator("#update-all-count .numeric").textContent()).trim();
-  check("T29", "the panel counts the same updates", new RegExp(`^\\d+ of ${listed.length}$`).test(count29), `${count29} / ${listed.length}`);
+  check("T29", "the panel counts the same updates", new RegExp(`^\\d+ of ${listed.length} done$`).test(count29), `${count29} / ${listed.length}`);
   const heard29 = [];
   for (let i = 0; i < 240 && !(await page.locator(".update-all .notice").count()); i++) {
     const t = await page.locator(".update-all [aria-live=polite]").textContent().catch(() => "");
@@ -553,6 +553,15 @@ if (go29) {
   check("T29", "each change is said in the panel's polite live region", heard29.some((t) => /: (Done|Updating)/.test(t)), heard29.join(" | "));
   const end29 = await focus();
   check("T29", "the result takes focus at the end", /updates finished|did not install|stopped/i.test(end29.text) && !end29.inPanel, end29.text);
+  // DASH-473: Close is the next stop after the result; Enter takes the panel away and focus to Ready to update.
+  await page.keyboard.press("Tab");
+  const close29 = await focus();
+  check("T29", "Tab from the result reaches Close", close29.id === "update-all-close", `${close29.id} ${close29.text}`);
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(500);
+  const after29 = await focus();
+  check("T29", "Close takes the panel away and focus goes to Ready to update", after29.id === "up-list-h"
+    && !(await page.locator(".update-all").count()), `${after29.id} ${after29.text}`);
 }
 
 // T22 A plug-in update by keyboard (plug-in API 1.14, DASH-424): Tab reaches Update, Enter opens the warning with

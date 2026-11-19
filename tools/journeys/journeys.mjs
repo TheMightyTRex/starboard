@@ -1716,7 +1716,11 @@ check("UPD-09", "Install all updates counts what the check found", (await page.l
 await page.locator("#whats-new").click();
 const wnPanel = page.getByRole("dialog", { name: /^What is new in \d+ updates$/ });
 await wnPanel.locator("h3").first().waitFor({ timeout: 15000 }).catch(() => {});
-const wnHeads = await wnPanel.locator("section.release-notes > h3").allTextContents();
+const wnHeads = await wnPanel.locator("section.release-notes > .release-notes__head > h3").allTextContents();
+// DASH-475: each item has its own picture beside its heading, decorative since the name is beside it.
+const wnPics = await wnPanel.locator(".release-notes__head > .app-icon").evaluateAll((n) => n.map((x) => [x.getAttribute("aria-hidden"), x.querySelector("img")?.getAttribute("alt") ?? null]));
+check("UPD-10", "each plug-in and Starboard has its picture beside its name, hidden from screen readers", wnPics.length >= 2
+  && wnPics.every(([hidden, alt]) => hidden === "true" && (alt === null || alt === "")), JSON.stringify(wnPics));
 check("UPD-10", "it lists Starboard first, then Reelix and the plug-ins, each from the version you have to the new one",
   /^Starboard \d+\.\d+\.\d+ to \d+\.\d+\.\d+$/.test(wnHeads[0] || "") && /^Reelix 0\.7\.1 to 0\.7\.2$/.test(wnHeads[1] || "")
   && wnHeads.includes("Picture shrinker 1.0.0 to 1.1.0") && wnHeads.includes("Playback Reporting 19.0.0.0 to 20.0.0.0"), wnHeads.join(" / "));
@@ -1825,7 +1829,17 @@ await allAsk.getByRole("button", { name: /^Install \d+ updates?$/ }).click();
 await page.locator(".update-all .notice").waitFor({ timeout: 90000 }).catch(() => {});
 const batchItems = await page.locator(".update-all .task-list__item").evaluateAll((li) => li.map((n) => [n.dataset.state, n.querySelector(".chip")?.textContent, !!n.querySelector(".chip svg")]));
 check("UPD-08", "each update ends with its state in words and an icon", batchItems.length >= 2 && batchItems.every(([st, w, ic]) => st && w && ic), JSON.stringify(batchItems));
-check("UPD-08", "the panel counts the same updates as the dialog", new RegExp(`^${allOrder.length} of ${allOrder.length}$`).test((await page.locator("#update-all-count .numeric").textContent()).trim()));
+check("UPD-08", "the panel counts the same updates as the dialog", new RegExp(`^${allOrder.length} of ${allOrder.length} done$`).test((await page.locator("#update-all-count .numeric").textContent()).trim()));
+// #161: at the end the words say how it ended, never "Updates finished" while it works, and the bar stops moving.
+const allLabel = (await page.locator("#update-all-count > span").first().textContent()).trim();
+check("UPD-08", "the panel says how it ended and its bar stops moving", /^(All updates finished|Some updates did not install|The updates stopped)$/.test(allLabel)
+  && !(await page.locator(".update-all .progress").evaluate((n) => n.classList.contains("progress--running"))), allLabel);
+// DASH-473: Close takes the finished panel away, focus goes to Ready to update, and it is announced.
+await page.locator("#update-all-close").click();
+await page.waitForTimeout(300);
+check("UPD-08", "Close takes the panel away and focus goes to Ready to update", (await page.locator(".update-all").count()) === 0
+  && await page.evaluate(() => document.activeElement?.id === "up-list-h"));
+check("UPD-08", "closing it is announced", /Install all updates closed/.test(await page.locator("#announcer").textContent()));
 await page.waitForTimeout(1500);
 check("UPD-08", "Recent updates records the batch as All updates", (await page.locator("#updates-recent").textContent()).includes("All updates"));
 const allRuns = await api("/api/updates");
