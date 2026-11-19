@@ -791,7 +791,7 @@ def compose(manifest, plugin_dir, media_dir, host=None, media_user=None, extra=N
         # saved setting reaches it at once and any container user can read it (DASH-357). Owner-only on the host.
         vols.append(f"{plugin_dir}/run:/run/starboard:ro")
         lines += ["    volumes:"] + [f"      - {json.dumps(v)}" for v in vols]
-        env = {**({"TZ": host["tz"]} if host.get("tz") else {}), **{k: str(_fill(v, extra)) for k, v in (c.get("env") or {}).items()}, "STARBOARD_API": "http://starboard:8095/api/v1/",
+        env = {**({"TZ": host["tz"]} if host.get("tz") else {}), **{k: str(_fill(v, extra)) for k, v in (c.get("env") or {}).items()}, "STARBOARD_API": api_address(c.get("network", "default")),
                "STARBOARD_API_KEY_FILE": "/run/starboard/key"}
         lines += ["    environment:"] + [f"      {k}: {json.dumps(v)}" for k, v in sorted(env.items())]
     if networks:
@@ -801,6 +801,15 @@ def compose(manifest, plugin_dir, media_dir, host=None, media_user=None, extra=N
             lines += ["  lan:", "    driver: bridge"]
     return "\n".join(lines) + "\n"
 
+
+
+def api_address(network):
+    """Where a plug-in reaches Starboard's API. Starboard runs on the computer's own network, so it cannot join a
+    plug-in's network: a plug-in on the home network (network:lan) reaches it as host.docker.internal at Starboard's
+    own port (STARBOARD_PORT, 8095 unless the owner chose another). Others keep the address on their own network."""
+    if network == "lan":
+        return f"http://host.docker.internal:{int(os.environ.get('STARBOARD_PORT') or 8095)}/api/v1/"
+    return "http://starboard:8095/api/v1/"
 
 def check_changes(changes):
     """Problems with the optional changes list (API 1.10), as plain sentences."""
