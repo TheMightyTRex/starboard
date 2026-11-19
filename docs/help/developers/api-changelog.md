@@ -15,7 +15,7 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
-## Starboard API 1.7.0 (Starboard 0.23.0, not released yet), 19 November 2026
+## Starboard API 1.7.0 (Starboard 0.23.0), 19 November 2026
 
 - **Added:** `POST /mcp`, for AI assistants that speak the Model Context Protocol (MCP), over its Streamable HTTP
   transport: one JSON-RPC 2.0 message in, one JSON answer back, never a stream. It takes `initialize`, `ping`,
@@ -26,16 +26,16 @@ the next major version.
 - **Added:** `links.mcp` in `GET /api/v1/`.
 - Nothing was taken away: every earlier address answers as before.
 
-## Plug-in API 1.16.0 (Starboard 0.23.0, not released yet)
+## Plug-in API 1.16.0 (Starboard 0.23.0 and 0.24.0), 19 November 2026
 
-- **Added:** custom pages that save in place, choose several and come in cards (19 November 2026). Starboard sends
+- **Added (Starboard 0.24.0):** custom pages that save in place, choose several and come in cards (19 November 2026). Starboard sends
   `X-Starboard-Can: partial,picker,cards` with every call to a custom page. A plug-in may then answer an action with
   `"partial": {"menus": [ids]}` and only those menus and their items; give an item a `picker` and `pick` in its
   `actions` for a slide-out that sends `browse` for each page and `pick` with the ticked `ids`; send
   `"layout": "cards"` and `hints`; and give an item an `image` and its `attach` a `detach_label`. Read
   [Save in place, choose several, cards and pictures](plugin-api-reference.md#save-in-place-choose-several-cards-and-pictures-api-116).
   An older Starboard sends no header, and a plug-in that gets none answers as before.
-- **Changed:** a link on a custom page's item that goes to the plug-in's own published port opens at the address the
+- **Changed (Starboard 0.24.0):** a link on a custom page's item that goes to the plug-in's own published port opens at the address the
   page was opened with, as Its web page does.
 
 - **Added:** the `disk.changed` event, with the `system:read` permission: a pool job the root helper finished
