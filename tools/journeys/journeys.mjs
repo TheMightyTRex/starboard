@@ -945,7 +945,7 @@ await api("/api/config/general", { method: "PUT", body: { settings_advanced: tru
 console.log("\n== OWN Own style colours");
 await open("settings-plugin.html?id=styles");
 const ownCards = await page.locator("input[name=pl-own-colours]").evaluateAll((rs) => rs.map((r) => r.value));
-check("OWN-01", "the own style offers Teal and the design system's five palettes", ownCards.join(",") === "teal,indigo,forest,plum,ember,graphite", ownCards.join(","));
+check("OWN-01", "the own style offers Mica's seven accents, Blue first", ownCards.join(",") === "blue,teal,indigo,forest,plum,ember,graphite", ownCards.join(","));
 await page.locator("input[name=pl-own-colours][value=forest]").check();
 await page.waitForTimeout(500);
 check("OWN-01", "choosing Forest saves it for the server and uses its colours here",
@@ -958,9 +958,9 @@ check("OWN-02", "a plug-in style in use leaves the own colours out", await page.
 await page.evaluate(() => resetStyle());
 await page.waitForTimeout(300);
 check("OWN-02", "Reset style goes back to the own style in Forest", await page.evaluate(() => !document.documentElement.dataset.style && document.documentElement.dataset.palette === "forest"));
-check("OWN-02", "and the own style's card says Forest", /Forest colours/.test(await page.locator(".style-gallery__item").first().innerText()));
-await api("/api/config/general", { method: "PUT", body: { own_colours: "teal" } });
-await page.evaluate(() => setOwnColours("teal"));
+check("OWN-02", "and the own style's card says Forest", /Forest accent/.test(await page.locator(".style-gallery__item").first().innerText()));
+await api("/api/config/general", { method: "PUT", body: { own_colours: "blue" } });
+await page.evaluate(() => setOwnColours("blue"));
 // What is new on a plug-in's State (DASH-393): the example Styles plug-in was just updated from 1.0.0 to 1.1.0.
 console.log("\n== WN What is new in a plug-in");
 await open("settings-plugin.html?id=styles");

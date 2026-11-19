@@ -7,9 +7,12 @@ add features.
 
 ## [Unreleased]
 
+## [0.22.0] (19 November 2026)
+
 ### Added
 - **Play in Jellyfin (DASH-480):** films and episodes in the Library have a Play button that opens them in Jellyfin's web app in a new tab, ready to play: on the Films wall (covers and list), at the top of a film's page, and on each episode's row in a series. It uses the address you gave Jellyfin for your browser in Settings, Manage apps (Address to open in your browser, or Outside address when you open Starboard away from home), never an address only Starboard can reach, such as a container's name. When Jellyfin's only address is one on the server itself (http://127.0.0.1:8096, as Install apps saves it), Play uses the name you opened Starboard with and Jellyfin's port, as Starboard's other Open buttons do, so it works at home without setting anything. Something Jellyfin has not added yet has no Play button and says Not in Jellyfin yet. When no address can be made (for example Jellyfin on another computer with no address for your browser), the Library says where to add one. Starboard finds Jellyfin's films while it builds the Films list, in one list, and an item's page uses the lookup it makes already for Watched, so no row asks Jellyfin anything.
 - **Restart where it is needed (DASH-470):** when Jellyfin says Restart needed, Restart Jellyfin is right there: on System, Overview, under Jellyfin's heading; on Settings, Updates, beside Jellyfin's plug-ins; and on Settings, Apps, Jellyfin, Recommended plug-ins. Beside a Reelix restore that waits for Reelix to start again, on Backup, Restart Reelix does it now. Each button shows only while a restart is needed and says what it does: anyone watching or listening is stopped and has to press play again, and Jellyfin is back in under a minute. It asks first, then follows the app until it answers again, saying how it is going, and the status updates by itself. Focus stays on the button while it works and moves to the result; a failure is said beside the button, which can be pressed again. It asks one small question every 3 seconds, only after you press it, for at most 3 minutes.
+- **Cache counts in the diagnostics:** System diagnostics show how often Starboard's caches were used and emptied, with no keys or names in them.
 
 ### Changed
 - **Library episode rows line up (owner, 19 November 2026):** each episode shows its name, then its status, Watched or Not watched, and Play, in fixed columns that line up down the season. On a phone they sit under the name on one line, with the status and Watched as icons only; screen readers still read their words. Status chips in any list row show their icon only on a phone, from the design system.
@@ -19,6 +22,15 @@ add features.
 - **Accent colour:** Settings, General, Appearance chooses the accent (Blue, Teal, Indigo, Forest, Plum, Ember or Graphite) on Mica's greys, for everyone on the server. High contrast keeps the chosen accent in a stronger shade. A server on Teal, the old default, moves to Blue once; choose Teal again to keep it.
 - **A clearer hover on every menu:** the side menu, the header tabs, topic tabs and menus show a light fill with an edge at least 3:1 against the menu, in light, dark and high contrast and with every accent; the page you are on keeps its accent bar.
 - **Styles from plug-ins keep their own design:** cards lift only in styles with elevated cards, headings keep their weight, and the menu hover edge is the style's secondary text colour, checked at 3:1 when a style is added.
+
+### Fixed
+- **Plug-ins on the home network reach Starboard (Remote access):** a plug-in on the home network is given Starboard's API on the server at host.docker.internal and Starboard's own port, which Starboard now accepts as a host name, so Remote access can read Starboard's apps.
+- **Reelix listed once:** System, Apps, Updates lists Reelix once, as its films, series, books and music connections run in its one container.
+- **Discover tiles:** cover tiles on Discover have the default 6px corners.
+
+### Security
+- **Live TV checks every address it opens:** each list, guide and stream address Live TV downloads, and every redirect, is checked against the same rules as app addresses, so a list cannot lead Starboard to a refused address such as cloud metadata.
+- **Pinned scanner versions:** the security checks run fixed versions of their scanner image and Bandit.
 
 ## [0.21.0] (17 November 2026)
 
@@ -1454,7 +1466,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused. Help: [Pause, resume and remove downloads](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/manage-downloads.md).
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.21.0...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.22.0...HEAD
+[0.22.0]: https://github.com/TheMightyTRex/starboard/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/TheMightyTRex/starboard/compare/v0.20.2...v0.21.0
 [0.20.2]: https://github.com/TheMightyTRex/starboard/compare/v0.20.1...v0.20.2
 [0.20.1]: https://github.com/TheMightyTRex/starboard/compare/v0.20.0...v0.20.1

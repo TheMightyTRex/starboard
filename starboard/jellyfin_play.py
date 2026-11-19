@@ -26,8 +26,8 @@ import re
 import urllib.parse
 
 # Hosts only Starboard or a container can reach: never shown to a browser.
-INSIDE_HOSTS = {"localhost", "host.docker.internal", "gateway.docker.internal", "jellyfin", "0.0.0.0"}
-LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "0.0.0.0"}
+INSIDE_HOSTS = {"localhost", "host.docker.internal", "gateway.docker.internal", "jellyfin", "0.0.0.0"}  # names to compare with, nothing binds  # nosec B104
+LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "0.0.0.0"}  # names to compare with, nothing binds  # nosec B104
 ID_RE = re.compile(r"^[0-9a-f]{32}$")
 
 

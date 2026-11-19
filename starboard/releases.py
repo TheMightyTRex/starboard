@@ -1799,6 +1799,36 @@ RELEASES = [
         "review": [],
         "settings": "Your settings stay as they are. To go back, run ./update.sh --to v0.20.2."
     }
+,
+    {
+        "version": "0.22.0",
+        "date": "19 November 2026",
+        "added": [
+            ["Play in Jellyfin", "Films and episodes in the Library have a Play button that opens them in Jellyfin's web app in a new tab, using the address you gave Jellyfin for your browser."],
+            ["Restart where it is needed", "When Jellyfin says Restart needed, Restart Jellyfin is on System, Overview, on Settings, Updates and beside Jellyfin's recommended plug-ins; Restart Reelix waits beside a Reelix restore."],
+            ["Cache counts in the diagnostics", "System diagnostics show how often Starboard's caches were used and emptied, with no keys or names in them."]
+        ],
+        "changed": [
+            ["Mica is Starboard's own style", "Neutral greys, 6px corners, a light lift on cards and a Blue accent, with the dashboard card as the model for panels, settings sections, tables, slide-outs and dialogs."],
+            ["Light unless you choose", "Starboard opens in Light for everyone who has not chosen a theme in Display; a choice already made is kept."],
+            ["Glass", "The header, side menu, menus, slide-outs and dialogs are frosted layers, solid in high contrast and with Reduce transparency."],
+            ["Accent colour", "Settings, General, Appearance chooses the accent for everyone on the server: Blue, Teal, Indigo, Forest, Plum, Ember or Graphite."],
+            ["A clearer hover on every menu", "Menus and tabs show a light fill with an edge at least 3:1 against the menu, in every theme and with every accent."],
+            ["Styles from plug-ins keep their own design", "Cards lift only in styles with elevated cards, and headings keep their weight."],
+            ["Library episode rows line up", "Each episode shows its name, its status, Watched and Play in columns that line up; on a phone the status and Watched show as icons, and screen readers still read their words."]
+        ],
+        "fixed": [
+            ["Plug-ins could not reach Starboard on the home network", "Plug-ins on the home network, such as Remote access, now reach Starboard's API on the server at Starboard's own port."],
+            ["Reelix was listed several times in Updates", "System, Apps, Updates lists Reelix once, as its films, series, books and music connections run in its one container."],
+            ["Discover tiles had square corners", "Cover tiles on Discover have the same 6px corners as the rest of Starboard."]
+        ],
+        "security": [
+            ["Live TV checks every address it opens", "Live TV checks each list, guide and stream address it downloads, and every redirect, against the same rules as app addresses, so a list cannot lead Starboard to a refused address such as cloud metadata."],
+            ["Pinned scanner versions", "The security checks run fixed versions of their scanner image and Bandit, so a changed scanner cannot change a result without a review."]
+        ],
+        "review": [],
+        "settings": "Your settings stay as they are. People with no theme chosen see Light. A server on Teal, the old default colour, moves to Blue once; choose Teal again in Settings, General, Appearance to keep it. To go back, run ./update.sh --to v0.21.0."
+    }
 ]
 
 
