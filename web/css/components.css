@@ -1356,6 +1356,32 @@
     background: transparent;
     border: 2px solid currentColor;
   }
+  /* On a phone, a status chip in a list row shows its icon only (TheMightyTRexUK, 19 November 2026), so the row
+     keeps room for its name and actions. The words stay in the page for screen readers. A chip with no icon
+     keeps its words, as a shape alone does not say enough. */
+  @media (max-width: 720px) {
+    .rows .row .chip:has(> svg) {
+      gap: 0;
+      min-width: 24px;
+      justify-content: center;
+      padding-inline: 4px;
+      font-size: 0;
+      line-height: 0;
+    }
+  }
+  /* A button that shows its icon only on a phone (TheMightyTRexUK, 19 November 2026), for a repeated action in a
+     list row, such as Watched on each episode. The words stay in the page for screen readers, and the button keeps
+     its height as a touch target. Use it only where the icon is clear in its row and the state is in aria-pressed
+     or the words. */
+  @media (max-width: 720px) {
+    .btn--icon-on-phone:has(> svg) {
+      gap: 0;
+      min-width: var(--control-h-compact);
+      justify-content: center;
+      padding-inline: 0;
+      font-size: 0;
+    }
+  }
   /* On a cover or a coloured edge the chip keeps its own surface, so it reads on any picture. */
   .stat .chip,
   .cover .chip {

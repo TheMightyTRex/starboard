@@ -67,9 +67,10 @@ async function chooseDownload(extra, what, opener = document.activeElement) {
   return panel;
 }
 
-function watchedButton(w, label, compact = true) {
+// iconOnPhone: the icon only on a phone (design system .btn--icon-on-phone), for each episode's row.
+function watchedButton(w, label, compact = true, iconOnPhone = false) {
   if (!w || !w.ids?.length) return null;
-  return el("button", { type: "button", class: compact ? "btn btn--quiet btn--compact" : "btn", "aria-pressed": String(!!w.watched),
+  return el("button", { type: "button", class: (compact ? "btn btn--quiet btn--compact" : "btn") + (iconOnPhone ? " btn--icon-on-phone" : ""), "aria-pressed": String(!!w.watched),
     onclick: (e) => markWatched(w.ids, !w.watched, e.currentTarget) },
     icon(w.watched ? "eye" : "eye-off"), w.watched ? "Watched" : "Not watched",
     el("span", { class: "visually-hidden", text: ` ${label}. ${w.watched ? "Select to mark as not watched" : "Select to mark as watched"}` }));
@@ -87,11 +88,14 @@ function rowList(rows, heading = "") {
     el("div", {},
       el("h3", { class: "row__title" }, r.href ? el("a", { href: r.href, text: r.title }) : r.title),
       el("div", { class: "row__meta", text: [r.date, r.note, notYet(r)].filter(Boolean).join(" · ") })),
-    el("div", { class: "row__side" }, r.status ? chip(r.status, r.tone) : null,
-      r.jf ? playLink(play, r.jf, episodeName(r, heading)) : null,
-      r.jf ? watchedButton({ watched: r.watched, ids: [r.jf] }, `${r.number} ${r.title}`) : null,
-      r.can_get && r.id ? el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => act("get", { scope: "episode", episode: r.id }, e.currentTarget) },
-        "Get it", el("span", { class: "visually-hidden", text: ` ${r.number} ${r.title}` })) : null))));
+    // Fixed columns, so they line up down the list: the name, the status, Watched, then Play (or Get it).
+    el("div", { class: "row__side lib-order__side" },
+      el("div", { class: "lib-order__status" }, r.status ? chip(r.status, r.tone) : null),
+      el("div", { class: "lib-order__watched" }, r.jf ? watchedButton({ watched: r.watched, ids: [r.jf] }, `${r.number} ${r.title}`, true, true) : null),
+      el("div", { class: "lib-order__play" },
+        r.jf ? playLink(play, r.jf, episodeName(r, heading)) : null,
+        r.can_get && r.id ? el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => act("get", { scope: "episode", episode: r.id }, e.currentTarget) },
+          "Get it", el("span", { class: "visually-hidden", text: ` ${r.number} ${r.title}` })) : null)))));
 }
 
 // A long list in groups (a series' seasons): one disclosure each, the newest open. One group stays a plain list.
