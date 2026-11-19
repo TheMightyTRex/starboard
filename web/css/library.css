@@ -41,8 +41,11 @@
 .lib-tabs [role="tab"]:focus-visible { outline-offset: calc(-1 * var(--focus-w)); }
 .lib-panel-heading { font-size: var(--text-lg); margin: 0 0 var(--space-2); }
 .lib-order .lib-order__number { min-width: 5.5ch; color: var(--color-text-muted); font-variant-numeric: tabular-nums; font-weight: var(--weight-strong); }
-.lib-order .row { grid-template-columns: auto minmax(0, 1fr) auto; }
-.lib-order .row--no-lead { grid-template-columns: minmax(0, 1fr) auto; }
+/* Episode rows: number, name, Watched, then Play (or Get it) and the status, in fixed columns so they line up. */
+.lib-order .row { grid-template-columns: auto minmax(0, 1fr) 9.5rem auto; }
+.lib-order .row--no-lead { grid-template-columns: minmax(0, 1fr) 9.5rem auto; }
+.lib-order__side { display: grid; grid-template-columns: 7rem 7.5rem; gap: var(--space-3); align-items: center; }
+.lib-order__play, .lib-order__status { display: flex; justify-content: start; }
 
 /* Search (DASH-162): what you have first, then Not in your library. */
 .lib-kinds { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
@@ -61,7 +64,9 @@
   .lib .lib-field .select { min-width: 0; width: 100%; }
   .lib-fan { display: none; }
   .lib-order .row { grid-template-columns: auto minmax(0, 1fr); }
-  .lib-order .row .row__side { grid-column: 2; justify-content: start; }
+  .lib-order .row .lib-order__watched, .lib-order .row .row__side { grid-column: 2; justify-content: start; }
+  .lib-order .row--no-lead .lib-order__watched, .lib-order .row--no-lead .row__side { grid-column: 1; }
+  .lib-order__watched:empty { display: none; }
 }
 
 /* Small row covers show no title: the row says it beside them. */

@@ -61,7 +61,7 @@ function listRow(card) {
     el("div", {},
       el("h3", { class: "row__title" }, el("a", { href: itemHref(card.id), text: card.title })),
       el("div", { class: "row__meta", text: [card.meta, card.count].filter(Boolean).join(" · ") })),
-    el("div", { class: "row__side" }, statusChip(card), playLink(state.play, card.jf, card.title)));
+    el("div", { class: "row__side" }, playLink(state.play, card.jf, card.title), statusChip(card)));
 }
 
 const letterId = (letter) => (letter === "#" ? "letter-num" : `letter-${letter.toLowerCase()}`);
