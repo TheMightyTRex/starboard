@@ -229,7 +229,7 @@ async function cloudWizard({ opener = document.activeElement, startAt = "service
       el("li", {}, el("p", { text: `Open ${s.name}'s sign-in page, sign in and allow Starboard to use your files.` }),
         el("p", {}, el("a", { class: "btn", id: "cloud-open-signin", href: sess.link, target: "_blank", rel: "noopener noreferrer" },
           icon("external-link"), "Open the sign-in page", el("span", { class: "visually-hidden", text: ` for ${s.name} (opens in a new tab)` })))),
-      el("li", {}, el("p", { text: "Your browser then shows a page that does not load. That is expected: its address holds the answer. It starts like this:" }),
+      el("li", {}, el("p", { text: "Finish every check the service asks for, such as a code from your phone or approving the sign-in in an app. Your browser then shows a page that does not load, such as This site cannot be reached. That is expected: its address holds the answer. It starts like this:" }),
         el("code", { class: "signin-example", text: "http://127.0.0.1:53682/?state=…&code=…" })),
       el("li", {}, el("div", { class: "field" }, el("label", { for: "cloud-answer", text: "Paste that whole address" }),
         el("span", { class: "hint", id: "cloud-answer-hint", text: "From the browser's address bar. It goes only to this sign-in, which then ends." }), paste))),

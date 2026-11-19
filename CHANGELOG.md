@@ -7,7 +7,12 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Detailed log for backup connections (owner, 19 November 2026):** a setting at the end of Copies off this computer. When it is on, each Test connection, each copy and each step of connecting a cloud service writes the service's own words to Starboard's log (area backup connection), such as the reason Microsoft gave for refusing a sign-in. Lines with a password, a key, a token or a sign-in code are left out. Off unless chosen; it saves as soon as it changes.
+- **Each step of connecting a cloud service is logged (owner, 19 November 2026: OneDrive's two-step check did not finish, and nothing showed why):** started, sign-in page ready, the address pasted back (or why it was not used), signed in, the folder list and the test, and where and why a sign-in stopped, ran out of time or was closed part way. Never the sign-in's address, code or token.
+
 ### Changed
+- **Signing in to a cloud service in this browser** says to finish every check the service asks for, such as a code from your phone or approving the sign-in in an app, and names the page that does not load ("This site cannot be reached") as the expected end.
 - **Plug-ins can take files up to 100 MB (owner, 19 November 2026):** a file chosen on a plug-in's own page, such as a TV channel's holding slide, may be up to 100 MB instead of 60 MB. Each plug-in still sets its own limit.
 
 ## [0.24.0] (19 November 2026)

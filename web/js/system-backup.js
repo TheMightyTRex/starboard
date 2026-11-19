@@ -521,11 +521,28 @@ async function loadCopies(focusId) {
   const running = c.status?.state === "running";
   test.disabled = now.disabled = running;
   const active = c.kind !== "off";
+  // Detailed log for backup connections (owner, 19 November 2026): saved as soon as it changes, no password, as it
+  // only decides how much goes to Starboard's own log (which never holds passwords, keys or sign-in codes).
+  const detailed = el("input", { type: "checkbox", role: "switch", id: "copies-detailed", "aria-labelledby": "copies-detailed-l", "aria-describedby": "copies-detailed-h", checked: !!c.detailed_log });
+  const detailedRow = el("ul", { class: "settings-rows" }, el("li", { class: "setting" },
+    el("div", { class: "setting__text" }, el("span", { class: "setting__label", id: "copies-detailed-l", text: "Detailed log for backup connections" }),
+      el("span", { class: "setting__hint", id: "copies-detailed-h",
+        text: "Writes each step of a test, a copy and connecting a cloud service to Starboard's log, on System, Logs, with the service's own words. Passwords, keys and sign-in codes are left out. Use it to find out why a connection does not work." })),
+    el("div", { class: "setting__control" }, el("label", { class: "switch" }, detailed))));
+  detailed.addEventListener("change", async () => {
+    try {
+      await api("/api/backup/copies/detailed", { method: "POST", body: { on: detailed.checked } });
+      announce(detailed.checked ? "Detailed log for backup connections is on" : "Detailed log for backup connections is off");
+    } catch (err) {
+      detailed.checked = !detailed.checked;
+      announce(`Not saved: ${err.message}`);
+    }
+  });
   body.replaceChildren(form,
     active ? el("h3", { text: `Copies go to ${c.where_words || c.where}` }) : "",
     active ? testedBox : "",
     active ? el("div", { class: "actions" }, test, signinAgain, now, stop) : "",
-    state);
+    state, detailedRow);
   show();
 
   form.addEventListener("submit", async (e) => {

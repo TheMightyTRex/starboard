@@ -38,7 +38,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from . import backup_copies, qr
+from . import backup_copies, logs, qr
 
 REMOTE = "starboard-cloud"
 PORT = 53682
@@ -77,6 +77,18 @@ TOKEN_LINE = re.compile(r"--->\s*(.+?)\s*<---End paste", re.S)
 
 _lock = threading.RLock()
 _session = None
+
+
+def _note(sess, level, words):
+    """One line in Starboard's log for each step of a sign-in, so one that does not finish says where and why
+    (owner, 19 November 2026: OneDrive's two-step check did not finish, and nothing showed why). Never the sign-in's
+    address, code or token: only the service, how it signs in, the step and the sentence shown."""
+    try:
+        name = service(sess["service"])["name"]
+    except Exception:  # noqa: BLE001 - a log line never stops a sign-in
+        name = str(sess.get("service") or "a service")
+    way = {"browser": "in this browser", "phone": "on the phone"}.get(sess.get("way"), "")
+    logs.event(level, "cloud sign-in", f"{name}{' ' + way if way else ''}: {words}"[:400], step=str(sess.get("state") or ""))
 
 
 class CloudError(Exception):
@@ -232,10 +244,16 @@ def current():
         return _public(_session)
 
 
+STATE_WORDS = {"starting": "waiting for the sign-in page", "link": "waiting for the address the sign-in ends on",
+               "checking": "swapping the answer for access", "phone": "waiting for approval on the phone",
+               "details": "entering the details", "signed-in": "signed in, choosing the folder"}
+
+
 def _expire():
     global _session
     s = _session
     if s and s.get("deadline") and time.time() > s["deadline"] and s["state"] in ("starting", "link", "checking", "phone"):
+        _note(s, "warning", f"the time to sign in ran out (it was at: {STATE_WORDS.get(s['state'], s['state'])})")
         s.update(state="expired", error="The time to sign in ran out, so nothing was connected. Select Try again to start again")
         _end(s)
 
@@ -264,6 +282,8 @@ def cancel():
     global _session
     with _lock:
         if _session:
+            if _session["state"] in ("starting", "link", "checking", "phone", "details", "signed-in"):
+                _note(_session, "info", f"closed before it was saved (it was at: {STATE_WORDS.get(_session['state'], _session['state'])})")
             _session["state"] = "cancelled"
             _end(_session, keep_config=False)
         _session = None
@@ -285,6 +305,7 @@ def start(data_dir, sid, way="browser", read_only=False):
             "data_dir": data_dir, "started": time.time(), "deadline": time.time() + SIGNIN_LIMIT, "read_only": bool(read_only)}
     with _lock:
         _session = sess
+    _note(sess, "info", "started" + (" (asking only to read files)" if read_only else ""))
     if s["signin"] != "oauth":
         sess.update(state="details", deadline=None)
         return _public(sess)
@@ -295,7 +316,8 @@ def start(data_dir, sid, way="browser", read_only=False):
             sess["work"] = _work(data_dir, sess["id"])
             RUN.authorize(sess)
             threading.Thread(target=_watch_link, args=(sess,), name="cloud-signin", daemon=True).start()
-    except Exception:
+    except Exception as e:
+        _note(sess, "warning", f"could not start: {e}")
         cancel()
         raise
     return _public(sess)
@@ -366,10 +388,12 @@ def _watch_link(sess):
                 link, state = _signin_link(sess, text)
                 with _lock:
                     sess.update(link=link, auth_state=state, state="link")
+                _note(sess, "info", f"sign-in page ready at {urllib.parse.urlsplit(link).hostname}")
             except CloudError as e:
                 _fail(sess, str(e))
                 return
         elif os.path.exists(os.path.join(work, "done")) or time.time() > until:
+            backup_copies.log_detail(sess.get("data_dir"), f"Connecting {_name(sess)}, starting the sign-in", _read(os.path.join(work, "out")), 1)
             _fail(sess, "rclone did not start the sign-in. Select Try again" + _last(work))
             return
         time.sleep(0.5)
@@ -382,6 +406,7 @@ def _watch_link(sess):
                 except (ValueError, CloudError) as e:
                     _fail(sess, str(e))
             else:
+                backup_copies.log_detail(sess.get("data_dir"), f"Connecting {_name(sess)}, signing in", _read(os.path.join(work, "out")), 1)
                 _fail(sess, "The service did not give Starboard access. Select Start again to sign in again" + _last(work))
             return
         if time.time() > sess["deadline"]:
@@ -429,18 +454,23 @@ def answer(sid, pasted):
     except CloudError as e:
         _fail(sess, str(e))
         raise
+    except ValueError as e:
+        _note(sess, "warning", f"the pasted address was not used: {e}")
+        raise
     fd = os.open(os.path.join(sess["work"], "answer.part"), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write(url)
     os.replace(os.path.join(sess["work"], "answer.part"), os.path.join(sess["work"], "answer"))
     with _lock:
         sess.update(state="checking", deadline=min(sess["deadline"], time.time() + 90))
+    _note(sess, "info", "the address the sign-in ended on was pasted back")
     return _public(sess)
 
 
 def _fail(sess, sentence):
     with _lock:
         if sess["state"] not in ("cancelled",):
+            _note(sess, "warning", f"did not finish (it was at: {STATE_WORDS.get(sess['state'], sess['state'])}): {sentence}")
             sess.update(state="failed", error=sentence)
         _end(sess)
 
@@ -484,6 +514,7 @@ def _phone_start(sess):
     if not re.match(r"^[A-Za-z0-9-]{4,20}$", code):
         raise CloudError("The service sent a code Starboard could not read. Choose Complete in this browser")
     life = min(int(got.get("expires_in") or PHONE_LIMIT), PHONE_LIMIT)
+    _note(sess, "info", "code shown for the phone")
     sess.update(state="phone", page=page, user_code=code, device_code=got["device_code"], interval=max(2, int(got.get("interval") or 5)),
                 deadline=time.time() + life)
     threading.Thread(target=_poll_phone, args=(sess,), name="cloud-phone", daemon=True).start()
@@ -573,6 +604,7 @@ def _signed_in(sess, got, own_client=None):
     with _lock:
         sess.update(config=_section(lines), state="signed-in", error="", deadline=None)
         _end(sess)
+    _note(sess, "info", "signed in" + (f", OneDrive {dict(lines).get('drive_type')}" if sid == "onedrive" else ""))
 
 
 def details(sid, given):
@@ -605,6 +637,7 @@ def details(sid, given):
         script = (f"rclone --config /c/rclone.conf config create {REMOTE} {RCLONE_TYPE[sess['service']]} {' '.join(args)} "
                   "--obscure --non-interactive >/c/said 2>&1; code=$?; chown -R $(stat -c %u:%g /c) /c 2>/dev/null; exit $code")
         code, said = RUN.short(sess, script, work)
+        backup_copies.log_detail(sess.get("data_dir"), f"Connecting {_name(sess)}, making the remote", said, code)
         config = _read(os.path.join(work, "rclone.conf"))
         if code or f"[{REMOTE}]" not in config:
             raise CloudError("rclone could not use those details: " + (said.strip().splitlines() or ["no reason given"])[-1][:200])
@@ -629,12 +662,23 @@ def _with_config(sess, script, label):
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(sess["config"])
         code, said = RUN.short(sess, script + "; code=$?; chown -R $(stat -c %u:%g /c) /c 2>/dev/null; exit $code", work)
+        backup_copies.log_detail(sess.get("data_dir"), f"Connecting {_name(sess)}, {LABEL_WORDS.get(label, label)}", said, code)
         after = _read(os.path.join(work, "rclone.conf"))
         if after.strip() and after != sess["config"]:
             sess["config"] = after
         return code, said
     finally:
         shutil.rmtree(work, ignore_errors=True)
+
+
+LABEL_WORDS = {"list": "listing the folders", "test": "the test"}
+
+
+def _name(sess):
+    try:
+        return service(sess["service"])["name"]
+    except Exception:  # noqa: BLE001
+        return str(sess.get("service") or "a service")
 
 
 RC = "rclone --config /c/rclone.conf --contimeout 30s --timeout 90s --retries 1 --low-level-retries 2"
@@ -646,6 +690,7 @@ def folders(sid):
     root = _remote_root(sess)
     code, said = _with_config(sess, f"timeout {STEP_LIMIT} {RC} lsf --dirs-only --max-depth 1 {backup_copies._q(root)}", "list")
     if code:
+        _note(sess, "warning", f"could not list the folders: {plain(said, sess)}")
         raise CloudError(plain(said, sess))
     names = [ln.rstrip("/") for ln in said.splitlines() if ln.endswith("/") and FOLDER_PART.match(ln.rstrip("/"))]
     return {"folders": sorted(names, key=str.lower)[:200], "root": root}
@@ -667,6 +712,7 @@ def test(sid, folder):
     code, said = _with_config(sess, f"timeout {STEP_LIMIT} sh -c {backup_copies._q(script)}", "test")
     result = read_test(said, code, sess, backup_copies.newest_size(sess["data_dir"]))
     sess["test"] = result
+    _note(sess, "info" if result["ok"] else "warning", "the test worked" if result["ok"] else f"the test did not work: {result.get('error', '')}")
     if result["ok"]:
         sess["state"] = "tested"
     return _public(sess)
