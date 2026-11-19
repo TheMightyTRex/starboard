@@ -10,6 +10,10 @@ add features.
 ### Changed
 - **Plug-ins can take files up to 100 MB (owner, 19 November 2026):** a file chosen on a plug-in's own page, such as a TV channel's holding slide, may be up to 100 MB instead of 60 MB. Each plug-in still sets its own limit.
 
+### Fixed
+- **Searching or filtering a plug-in's list of sections that fold (owner, 19 November 2026: "q is not defined. when activating leagues"):** on a plug-in's page drawn as sections that fold, such as Live TV's Channels or On demand's Sports and leagues, a search or the Show filter that left a section with nothing to show stopped the page with "q is not defined". The list was then not drawn again after a change, so a choice that had been saved looked as if it had not been.
+- **A section's switch is named for what it holds:** a screen reader heard "Every channel in" before the section's name on every such list. It now hears the plug-in's own words for the switch, such as "Every league in Football".
+
 ## [0.24.0] (19 November 2026)
 
 ### Added
