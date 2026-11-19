@@ -736,6 +736,8 @@ QUEUE_ACTIONS = {
     "block": {"removeFromClient": "true", "blocklist": "true", "skipRedownload": "true"},
     "block-search": {"removeFromClient": "true", "blocklist": "true", "skipRedownload": "false"},
 }
+# Remove from the list and keep the files (DASH-496): the app stops tracking it; the download client keeps it.
+KEEP_FILES = {"removeFromClient": "false", "blocklist": "false"}
 
 
 def queue_action(service, item_id, action, all_services=None):
@@ -747,6 +749,10 @@ def queue_action(service, item_id, action, all_services=None):
         if not native:
             raise ServiceError("Only Reelix can import again or ignore from here; open the app's queue instead")
         _api(native, f"/queue/{int(item_id)}/{action}", method="POST")
+        forget("queue")
+        return
+    if action == "remove-keep":  # DASH-496: off the list, the files stay in the download folder
+        _api(service, f"/queue/{int(item_id)}", KEEP_FILES, method="DELETE")
         forget("queue")
         return
     if action not in QUEUE_ACTIONS:
@@ -851,6 +857,14 @@ def _radio_queue_one(reelix):
 
 def radio_queue_action(reelix, item_id, action):
     """Queue actions for a radio download, through Reelix's own queue (the same three as the other apps)."""
+    if action == "remove-keep":
+        _api(reelix, f"/queue/{int(item_id)}", {"remove_from_client": "false", "blocklist": "false"}, method="DELETE")
+        forget("queue")
+        return
+    if action in ("import", "ignore"):  # a radio episode stuck at import (DASH-496), as for the other kinds
+        _api(reelix, f"/queue/{int(item_id)}/{action}", method="POST")
+        forget("queue")
+        return
     if action not in QUEUE_ACTIONS:
         raise ServiceError("Choose remove, block or block-search")
     params = {"remove_from_client": "true", "blocklist": "true" if action != "remove" else "false",

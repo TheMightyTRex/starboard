@@ -3530,6 +3530,34 @@
     gap: var(--space-4);
     align-items: start;
   }
+  /* Action list (Starboard, 19 November 2026): everything that can be done with one thing, in its slide-out. Each
+     action is a button with one line under it saying what happens (the button's aria-describedby). The actions that
+     fix it come first; the ones that take it away or delete files go in a second list under their own heading. */
+  .action-list {
+    display: grid;
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .action-list__item {
+    display: grid;
+    gap: var(--space-1);
+    justify-items: start;
+  }
+  .action-list__item > .btn {
+    max-inline-size: 100%;
+    text-align: start;
+  }
+  .action-list__hint {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+  /* What a file is, beside its name in a slide-out's file list (rows): media, a sample, an archive, a program. */
+  .file-kind {
+    white-space: nowrap;
+  }
 
   /* Dialog: a modal for a decision or a short task that must finish before going on. */
   .dialog {

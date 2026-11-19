@@ -13,6 +13,9 @@ let services = new Map(); // app name -> app from /api/config, for "Open in" lin
 let panel = null;
 let panelKey = null;
 let checkedAt = null;
+let attention = null; // the open slide-out of a download that needs attention (DASH-496): { key, data, done }
+let panelOpener = null; // the download's name that opened it, for focus to go back to
+let unpackTimer = null;
 
 const STATE_WORDS = {
   downloading: STATUS.downloading, importPending: STATUS.waitingToImport, importing: STATUS.importing,
@@ -194,7 +197,7 @@ function appLink(item) {
   return app?.link ? `${reachableUrl(app.link)}/activity/queue` : "";
 }
 
-function detailsBody(item) {
+function detailsBody(item, { brief = false } = {}) {
   const [label, tone] = words(item);
   const pct = percent(item);
   const done = item.size ? formatBytes(item.size * (item.progress || 0) / 100) : "";
@@ -204,12 +207,12 @@ function detailsBody(item) {
         el("span", { class: "numeric", text: item.size ? `${done} of ${formatBytes(item.size)} (${pct}%)` : `${pct}%` })),
       setProgress(newBar(), item, `${pct}% downloaded`)),
   ];
-  if (item.problem) {
+  if (item.problem && !brief) {
     body.push(notice("warning", `${item.service_name} needs a decision from you`, item.messages.length
       ? `Read its messages, then sort it out in the queue in ${item.service_name}.`
       : `${item.service_name} flagged this download without a message. Open the queue in ${item.service_name} to find out why.`));
   }
-  if (item.messages.length) {
+  if (item.messages.length && !brief) {
     body.push(el("section", { class: "media-panel-section", "aria-labelledby": "dd-msg-h" },
       el("h3", { id: "dd-msg-h", text: `Messages from ${item.service_name}` }),
       el("ul", { class: "rows" }, item.messages.map((m) => el("li", { class: "row row--no-lead" }, el("div", { class: "row__title", text: m }))))));
@@ -264,7 +267,7 @@ function detailsFoot(item) {
 }
 
 async function chooseEpisode(item) {
-  const panel = sidePanel({ title: "Choose the episode", wide: true, body: [el("p", { class: "muted", text: "Asking Reelix…" })] });
+  const panel = sidePanel({ title: "Choose the episode", wide: true, opener: panelOpener || document.activeElement, body: [el("p", { class: "muted", text: "Asking Reelix…" })] });
   let o;
   try { o = await api(`/api/queue/episodes?download_id=${encodeURIComponent(item.download_id)}`); }
   catch (e) { panel.body.replaceChildren(notice("danger", "Reelix could not be asked", e.message)); return; }
@@ -317,15 +320,28 @@ function openDetails(key, opener) {
   const item = byKey.get(key);
   if (!item) return;
   panelKey = key;
+  panelOpener = opener;
+  stopUnpackWatch();
+  attention = needsYou(item) ? { key, data: null, done: false } : null;
   panel = sidePanel({
-    title: item.title, body: detailsBody(item), foot: detailsFoot(item), opener,
-    onClose: () => { panel = null; panelKey = null; },
+    title: item.title, wide: !!attention, opener,
+    // What is wrong and what to do come straight after the progress, before the facts (reading order).
+    body: attention ? (([meter, ...rest]) => [meter, attentionLoading(item), ...rest])(detailsBody(item, { brief: true })) : detailsBody(item),
+    foot: attention ? attentionFoot(item) : detailsFoot(item),
+    onClose: () => { panel = null; panelKey = null; attention = null; stopUnpackWatch(); },
   });
+  if (attention) loadAttention(item);
 }
 
 function refreshDetails() {
   if (!panel || !panelKey) return;
   const item = byKey.get(panelKey);
+  if (attention) {
+    // The slide-out of a download that needs attention is drawn from its own answer (loadAttention), so the
+    // queue's timer never redraws it under the person's focus. Only its leaving the queue is said here.
+    if (!item && !attention.done && !attention.busy) attentionGone(null);
+    return;
+  }
   if (item) {
     panel.body.replaceChildren(...detailsBody(item));
   } else {
@@ -333,6 +349,319 @@ function refreshDetails() {
       "The app may have imported it, or it was removed. Close this panel to go back to the queue."));
     panel.setFoot([]);
   }
+}
+
+// A download that needs attention (DASH-496) ---------------------------------------------------------------
+// Owner, 19 November 2026: "For needs attention - I want a slide out with a list of things to do with the file
+// including delete". Selecting its name opens a wider slide-out; Starboard then asks the app, once, what is wrong
+// and reads the download folder (GET /api/queue/item), and lists every action that fits, each with one line on
+// what happens. Results are said in the live region and shown in the slide-out; focus stays on the button that was
+// pressed, or moves to the result when the download has left the queue. Nothing here runs on the queue's timer.
+
+const plural = (n, w, many) => `${n.toLocaleString("en-GB")} ${n === 1 ? w : (many || `${w}s`)}`;
+
+function needsYou(item) {
+  return item.problem || ["failed", "failedPending", "importBlocked"].includes(item.status);
+}
+
+function attentionLoading(item) {
+  return el("div", { id: "attention", class: "stack-4", "aria-busy": "true" },
+    el("p", { class: "muted", text: `Asking ${item.service_name} what is wrong and reading the download folder…` }));
+}
+
+function attentionFoot(item) {
+  const href = appLink(item);
+  return href ? [el("a", { class: "btn", href, target: "_blank", rel: "noopener noreferrer" }, icon("external-link"),
+    `Open the queue in ${item.service_name}`, el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))] : [];
+}
+
+async function loadAttention(item, { said = "" } = {}) {
+  const key = item.key;
+  let d;
+  try {
+    d = await api(`/api/queue/item?service=${encodeURIComponent(item.service)}&id=${encodeURIComponent(item.id)}`);
+  } catch (e) {
+    if (!attention || attention.key !== key) return;
+    const box = $("#attention");
+    box?.removeAttribute("aria-busy");
+    box?.replaceChildren(notice("danger", "Starboard could not ask about this download", e.message), ...attentionList(item, null));
+    return;
+  }
+  if (!attention || attention.key !== key || attention.done) return;
+  attention.data = d;
+  renderAttention(item, d);
+  if (said) announce(said);
+  else announce(`${d.diagnosis[0].title}. ${plural(d.actions.length, "action")} to choose from.`);
+}
+
+function renderAttention(item, d) {
+  // Focus stays on the same action when the list is drawn again (after Try the import again or an unpack).
+  const kept = document.activeElement?.closest?.("#attention") ? document.activeElement.dataset.action : null;
+  const parts = [];
+  d.diagnosis.forEach((x, n) => parts.push(el("div", { class: "notice", "data-tone": x.tone },
+    icon(x.tone === "danger" ? "circle-x" : "triangle-alert"),
+    el("div", { class: "notice__body" }, el(n === 0 ? "h3" : "span", { class: "notice__title", text: x.title }), el("p", { text: x.text })))));
+  if (d.unpack?.state === "running") parts.push(unpackNotice(d.unpack));
+  // What is wrong, then what can be done, then the details behind it (reading order).
+  parts.push(...attentionList(item, d));
+  parts.push(filesSection(d));
+  if (d.messages.length) {
+    parts.push(el("section", { class: "stack-2", "aria-labelledby": "na-msg-h" },
+      el("h3", { id: "na-msg-h", text: `What ${item.service_name} says` }),
+      el("ul", { class: "rows" }, d.messages.map((m) => el("li", { class: "row row--no-lead" }, el("div", { class: "row__meta", text: m }))))));
+  }
+  const box = $("#attention");
+  if (!box) return;
+  box.removeAttribute("aria-busy");
+  box.replaceChildren(...parts);
+  // The action used may have gone (Unpack, once unpacked): the suggested one takes focus instead.
+  if (kept) ($(`#attention [data-action="${kept}"]`) || $(`#attention [data-action="${d.suggest}"]`))?.focus();
+}
+
+function filesSection(d) {
+  const head = el("h3", { id: "na-files-h", text: "In the download folder" });
+  if (!d.summary) {
+    return el("section", { class: "stack-2", "aria-labelledby": "na-files-h" }, head,
+      el("p", { class: "muted", text: d.folder_problem || "The download folder could not be read." }));
+  }
+  const s = d.summary;
+  const SHOWN = 30;
+  const rows = d.files.slice(0, SHOWN).map((f) => el("li", { class: "row row--no-lead" },
+    el("div", {}, el("div", { class: "row__title", text: f.name.split("/").pop() }),
+      f.parts > 1 || f.name.includes("/") ? el("div", { class: "row__meta", text: [f.parts > 1 ? `${f.parts} parts` : "",
+        f.name.includes("/") ? `in ${f.name.split("/").slice(0, -1).join("/")}` : ""].filter(Boolean).join(", ").replace(/^in/, "In") }) : null),
+    el("div", { class: "row__side" }, el("span", { class: "tag file-kind", "data-kind": f.kind, text: f.kind_words }),
+      el("span", { class: "numeric", text: f.size_words }))));
+  const more = d.files.length > SHOWN ? el("p", { class: "small muted", text: `And ${plural(d.files.length - SHOWN, "more file")}.` }) : null;
+  return el("section", { class: "stack-2", "aria-labelledby": "na-files-h" }, head,
+    el("p", { text: s.files ? `${plural(s.files, "file")}, ${s.total_words}. ${s.words}` : s.words }),
+    d.path ? el("p", { class: "small muted" }, "Folder: ", el("code", { text: d.path })) : null,
+    rows.length ? el("ul", { class: "rows", "aria-label": "Files in the download folder" }, rows) : null, more);
+}
+
+function attentionDefs(item, d) {
+  const s = d?.summary;
+  const space = s ? `${plural(s.files, "file")} (${s.total_words})` : "what it downloaded";
+  const what = { episode: "episode", "radio episode": "episode", film: "film", book: "book", album: "album" }[d?.kind] || "download";
+  const app = item.service_name;
+  return {
+    unpack: { label: "Unpack the archives, then import", icon: "archive-restore", group: "fix", run: (b) => startUnpack(item, b),
+      hint: `Unpacks ${plural(d?.archives?.to_unpack || 0, "archive")} into the same folder, archives inside archives too, then Reelix imports what is inside. The archives stay until you delete the download.` },
+    "choose-episode": { label: "Choose the episode", icon: "list-checks", group: "fix", run: () => chooseEpisode(item),
+      hint: "Tell Reelix which episode each file is, then it imports them." },
+    "choose-film": { label: "Choose the film", icon: "film", group: "fix", run: () => chooseFilm(item),
+      hint: "Tell Reelix which film in your library this is, then it imports it." },
+    import: { label: "Try the import again", icon: "refresh-cw", group: "fix", run: (b) => attentionAction(item, "import", null, b),
+      hint: `${app} checks the files again and imports the ${what} if it can.` },
+    "block-search": { label: "Find another", icon: "search", group: "fix", hint: `Deletes this download, adds the release to the blocklist and searches for another ${what} now.`,
+      run: (b) => attentionAction(item, "block-search", { title: "Find another release?", confirm: "Delete and find another", danger: true,
+        message: `${app} deletes ${space}, adds this release to the blocklist so it is never downloaded again, and searches for another now. This cannot be undone.` }, b) },
+    ignore: { label: "Ignore", icon: "eye-off", group: "remove", hint: `Takes it off the list and notes in ${app}'s history that you chose to ignore it. The files stay where they are.`,
+      run: (b) => attentionAction(item, "ignore", { title: "Ignore this download?", confirm: "Ignore",
+        message: `${app} stops warning about it and leaves the files in ${item.client || "the download client"}'s folder. Nothing is deleted.` }, b) },
+    "remove-keep": { label: "Remove from the list and keep the files", icon: "folder", group: "remove",
+      hint: `Takes it off the list. The files stay in the download folder, and ${item.client || "the download client"} keeps them, so you can use them yourself.`,
+      run: (b) => attentionAction(item, "remove-keep", { title: "Remove it from the list?", confirm: "Remove and keep the files",
+        message: `${app} stops tracking this download. Its files stay in the download folder; nothing is deleted.` }, b) },
+    delete: { label: "Remove and delete the files", icon: "trash-2", group: "remove", danger: true, run: (b) => deleteFiles(item, d, false, b),
+      hint: s ? `Removes it and deletes ${space} from the download folder. Asks first.` : "Removes it and has the download client delete what it downloaded. Asks first." },
+    "delete-block": { label: "Remove, delete and add to the blocklist", icon: "ban", group: "remove", danger: true, run: (b) => deleteFiles(item, d, true, b),
+      hint: "For a fake or harmful release, such as an .exe posing as an episode: deletes the files and never downloads this release again. Asks first." },
+  };
+}
+
+function attentionList(item, d) {
+  const defs = attentionDefs(item, d);
+  const ids = d ? d.actions : (item.reelix ? ["import", "block-search", "ignore", "remove-keep", "delete", "delete-block"] : ["block-search", "remove-keep", "delete", "delete-block"]);
+  const suggest = d?.suggest;
+  const list = (group) => ids.filter((id) => defs[id]?.group === group).map((id) => {
+    const a = defs[id];
+    const hintId = `na-hint-${id}`;
+    const cls = a.danger ? "btn btn--danger" : id === suggest ? "btn btn--primary" : "btn";
+    const b = el("button", { type: "button", class: cls, "data-action": id, "aria-describedby": hintId }, icon(a.icon), a.label);
+    b.addEventListener("click", () => { if (b.getAttribute("aria-disabled") !== "true") a.run(b); });
+    return el("li", { class: "action-list__item" }, b,
+      el("p", { class: "action-list__hint", id: hintId, text: id === suggest ? `Suggested. ${a.hint}` : a.hint }));
+  });
+  const fix = list("fix"), remove = list("remove");
+  const groups = [
+    fix.length ? el("section", { class: "stack-2", "aria-labelledby": "na-fix-h" }, el("h3", { id: "na-fix-h", text: "Fix it" }), el("ul", { class: "action-list" }, fix)) : null,
+    el("section", { class: "stack-2", "aria-labelledby": "na-rm-h" }, el("h3", { id: "na-rm-h", text: "Take it off the list" }), el("ul", { class: "action-list" }, remove)),
+  ].filter(Boolean);
+  // The group with the suggested action comes first, so it is the first thing after what is wrong (a program: delete).
+  return defs[suggest]?.group === "remove" ? groups.reverse() : groups;
+}
+
+// While an action runs, the queue's own update must not say the download has gone before the action's answer does.
+function busy(button, on) {
+  if (attention) attention.busy = on;
+  if (!button) return;
+  if (on) { button.setAttribute("aria-disabled", "true"); button.setAttribute("aria-busy", "true"); }
+  else { button.removeAttribute("aria-disabled"); button.removeAttribute("aria-busy"); }
+}
+
+const DONE_WORDS = { import: "Reelix is trying the import again", ignore: "Ignored. The files stay where they are",
+  "block-search": "Deleted and on the blocklist. Searching for another", "remove-keep": "Removed from the list. The files stay where they are" };
+
+async function attentionAction(item, action, dialog, button) {
+  if (dialog && !(await confirmDialog(dialog))) return;
+  busy(button, true);
+  try {
+    await api("/api/queue/action", { method: "POST", body: { service: item.service, id: item.id, action } });
+  } catch (e) {
+    busy(button, false);
+    problem(`Not done: ${e.message}`, button);
+    return;
+  }
+  busy(button, false);
+  toast(DONE_WORDS[action]);
+  load();
+  if (action === "import") {
+    announce(DONE_WORDS[action]);
+    setTimeout(() => { if (attention?.key === item.key) loadAttention(item, { said: "Checked again after the import" }); }, 4000);
+    return;
+  }
+  attentionGone(`${DONE_WORDS[action]}.`);
+}
+
+// The download has left the queue: the result takes the slide-out's place and gets focus, so nothing is lost.
+function attentionGone(words) {
+  if (!panel || !attention) return;
+  attention.done = true;
+  stopUnpackWatch();
+  const result = el("div", { class: "notice", "data-tone": words ? "success" : "info", tabindex: "-1", id: "na-result" },
+    icon(words ? "circle-check" : "info"),
+    el("div", { class: "notice__body" }, el("h3", { class: "notice__title", text: words ? "Done" : "This download has left the queue" }),
+      el("p", { text: words || "The app may have imported it, or it was removed. Close this panel to go back to the queue." })));
+  panel.body.replaceChildren(result);
+  panel.setFoot([el("button", { type: "button", class: "btn", "data-closes": true, text: "Back to the queue" })]);
+  result.focus();
+  if (words) announce(words);
+}
+
+async function deleteFiles(item, d, block, button) {
+  const s = d?.summary;
+  const names = (d?.files || []).slice(0, 5).map((f) => el("li", { text: f.parts > 1 ? `${f.name} and its ${f.parts - 1} other parts` : f.name }));
+  const more = d && d.files.length > 5 ? el("li", { text: `and ${plural(d.files.length - 5, "more")}` }) : null;
+  const message = [
+    el("p", { text: s && s.files
+      ? `This deletes ${plural(s.files, "file")} from the download folder and frees ${s.total_words}. It cannot be undone.`
+      : `${item.client || "The download client"} deletes what it downloaded. Starboard could not read the folder, so it cannot say how much space this frees. It cannot be undone.` }),
+    names.length ? el("ul", { class: "small" }, names, more) : null,
+    d?.path ? el("p", { class: "small muted" }, "Folder: ", el("code", { text: d.path })) : null,
+    block ? el("p", { text: `${item.service_name} also adds this release to the blocklist, so it is never downloaded again, and does not search for another.` }) : null,
+  ].filter(Boolean);
+  const ok = await confirmDialog({ title: block ? "Delete the files and block this release?" : "Delete the files of this download?",
+    message, confirm: block ? "Delete and block" : "Delete the files", danger: true });
+  if (!ok) return;
+  busy(button, true);
+  announce("Deleting the files…");
+  let out;
+  try {
+    out = await api("/api/queue/item/delete", { method: "POST", body: { service: item.service, id: item.id, block } });
+  } catch (e) {
+    busy(button, false);
+    problem(`Not deleted: ${e.message}`, button);
+    return;
+  }
+  toast(out.words, out.left.length ? { tone: "warning" } : {});
+  load();
+  attentionGone(out.words);
+}
+
+// Unpacking runs on the server; the slide-out asks how it is going every 2 seconds while it is open, and only then.
+function unpackNotice(job) {
+  return el("div", { class: "notice", id: "na-unpack" }, icon("archive-restore"),
+    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "Unpacking" }),
+      el("p", { text: job.words || "Unpacking the archives" }), el("div", { class: "progress progress--busy", "aria-hidden": "true" }, el("span"))));
+}
+
+function stopUnpackWatch() {
+  clearTimeout(unpackTimer);
+  unpackTimer = null;
+}
+
+async function startUnpack(item, button) {
+  busy(button, true);
+  let job;
+  try {
+    job = await api("/api/queue/item/unpack", { method: "POST", body: { service: item.service, id: item.id } });
+  } catch (e) {
+    busy(button, false);
+    problem(`Not unpacked: ${e.message}`, button);
+    return;
+  }
+  announce("Unpacking the archives. This can take a few minutes for a large download.");
+  $("#na-unpack")?.remove();
+  $("#attention")?.prepend(unpackNotice(job));
+  watchUnpack(item, button);
+}
+
+function watchUnpack(item, button) {
+  stopUnpackWatch();
+  unpackTimer = setTimeout(async () => {
+    if (!attention || attention.key !== item.key) return;
+    let job;
+    try { job = await api(`/api/queue/item/unpack?service=${encodeURIComponent(item.service)}&id=${encodeURIComponent(item.id)}`); }
+    catch { watchUnpack(item, button); return; }
+    if (job.state === "running") {
+      const words = $("#na-unpack p");
+      if (words && words.textContent !== job.words) words.textContent = job.words;
+      watchUnpack(item, button);
+      return;
+    }
+    busy(button, false);
+    $("#na-unpack")?.remove();
+    if (job.state === "done") { toast(job.words.split(". ")[0], { detail: job.words.split(". ").slice(1).join(". ") }); load(); }
+    else problem(job.words, button);
+    loadAttention(item, { said: job.words });
+  }, 2000);
+}
+
+// Choose the film (DASH-496): which film in the library a download is, through Reelix's manual import.
+async function chooseFilm(item) {
+  const fp = sidePanel({ title: "Choose the film", wide: true, opener: panelOpener, body: [el("p", { class: "muted", text: "Asking Reelix…" })] });
+  const base = `/api/queue/item/film?service=${encodeURIComponent(item.service)}&id=${encodeURIComponent(item.id)}`;
+  const search = el("input", { type: "search", class: "input", id: "film-q", autocomplete: "off" });
+  const results = el("fieldset", { class: "stack-2" }, el("legend", { class: "field__label", text: "Films in your library" }));
+  const status = el("p", { class: "small muted", role: "status" });
+  const draw = (o) => {
+    results.replaceChildren(el("legend", { class: "field__label", text: "Films in your library" }),
+      ...(o.films.length ? o.films.map((f, n) => el("label", { class: "check" },
+        el("input", { type: "radio", name: "film-pick", value: f.id, checked: f.id === o.guess || (!o.guess && n === 0) }),
+        el("span", { class: "check__text" }, el("strong", { text: `${f.title}${f.year ? ` (${f.year})` : ""}` }),
+          el("span", { class: "check__hint", text: f.have ? "In your library already: importing replaces your copy if this one is better" : "Not in your library yet" }))))
+        : [el("p", { class: "muted", text: "No film in your library matches. Search for another title, or add the film in Search first." })]));
+    status.textContent = `${plural(o.films.length, "film")} found`;
+  };
+  let o;
+  try { o = await api(base); }
+  catch (e) { fp.body.replaceChildren(notice("danger", "Reelix could not be asked", e.message)); return; }
+  search.value = o.query;
+  const find = el("button", { type: "submit", class: "btn" }, icon("search"), "Search");
+  const form = el("form", { class: "inline-save", role: "search" }, search, find);
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try { draw(await api(`${base}&q=${encodeURIComponent(search.value)}`)); } catch (err) { problem(err.message, find); }
+  });
+  draw(o);
+  const go = el("button", { type: "button", class: "btn btn--primary" }, icon("download"), "Import");
+  go.addEventListener("click", async () => {
+    const picked = $('input[name="film-pick"]:checked', results);
+    if (!picked) { problem("Choose a film", go); return; }
+    busy(go, true);
+    try {
+      await api(base.replace(/\?.*/, ""), { method: "POST", body: { service: item.service, id: item.id, movie_id: Number(picked.value) } });
+      toast("Reelix is importing it"); fp.close(); load({ announceIt: true });
+    } catch (err) { busy(go, false); problem(err.message, go); }
+  });
+  fp.body.replaceChildren(
+    el("p", { text: "Reelix could not tell which film this download is. Choose the film, then Reelix imports the file to it." }),
+    o.files.length ? el("ul", { class: "rows", "aria-label": "Files it imports" }, o.files.map((f) => el("li", { class: "row row--no-lead" },
+      el("div", { class: "row__title", text: f.name }), el("div", { class: "row__side numeric", text: f.size_words })))) : null,
+    el("div", { class: "field" }, el("label", { class: "field__label", for: "film-q", text: "Find the film in your library" }), form),
+    status, results);
+  fp.setFoot([go, el("button", { type: "button", class: "btn", "data-closes": true, text: "Cancel" })]);
 }
 
 // Loading ------------------------------------------------------------------

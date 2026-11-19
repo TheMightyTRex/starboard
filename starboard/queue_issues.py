@@ -40,6 +40,7 @@ ACTION_WORDS = {
     "block-search": "Blocked this release and asked for a search for another",
     "import": "Asked Reelix to try the import again",
     "ignore": "Asked Reelix to ignore it (the files stay where they are)",
+    "remove-keep": "Removed it from the queue and kept the files",
 }
 ID_FIELDS = (("movieId", "film"), ("seriesId", "series"), ("episodeId", "episode"), ("seasonNumber", "season number"),
              ("artistId", "artist"), ("albumId", "album"), ("authorId", "author"), ("bookId", "book"))

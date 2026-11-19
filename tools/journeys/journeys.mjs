@@ -576,6 +576,66 @@ await page.waitForFunction(() => /No issues to copy/.test(document.querySelector
 check("DL-03", "and so does the live region", /No issues to copy/.test(await page.locator("#announcer").textContent()));
 await page.unroute("**/api/queue/issues*");
 
+// DL-04: a download that needs attention (DASH-496): its name opens a slide-out with what is wrong in plain words,
+// the download folder, and every action that fits, each with one line on what it does; focus goes in and back to the
+// name; the delete asks first and names what it deletes; the result is said in the live region and gets focus.
+// The default install's example is Reelix's radio episode whose folder holds only a .par2 file.
+console.log("\n== DL-04 a download that needs attention");
+await open("downloads.html");
+const radioName = page.locator("#queue button", { hasText: "Sample Science Weekly · Ask a scientist 3" });
+await radioName.focus();
+await page.keyboard.press("Enter");
+await page.locator("#side-panel").waitFor({ timeout: 5000 }).catch(() => {});
+check("DL-04", "selecting the name opens the slide-out with focus on Close",
+  await page.evaluate(() => document.activeElement?.getAttribute("aria-label") === "Close Sample Science Weekly · Ask a scientist 3"));
+await page.waitForFunction(() => document.querySelector("#attention") && !document.querySelector("#attention").hasAttribute("aria-busy"), null, { timeout: 10000 }).catch(() => {});
+const naFirst = await page.locator("#attention .notice__title").first().textContent().catch(() => "");
+check("DL-04", "it says what is wrong in plain words first", naFirst === "No media was downloaded", naFirst);
+await page.waitForFunction(() => /No media was downloaded\. \d+ actions to choose from/.test(document.querySelector("#announcer")?.textContent || ""), null, { timeout: 3000 }).catch(() => {});
+check("DL-04", "the live region says it, with the number of actions", /No media was downloaded\. \d+ actions/.test(await page.locator("#announcer").textContent()));
+const naActions = await page.locator("#attention .action-list button").evaluateAll((bs) => bs.map((b) => b.dataset.action));
+check("DL-04", "every action that fits is listed, with Remove and delete the files and the blocklist",
+  ["block-search", "import", "ignore", "remove-keep", "delete", "delete-block"].every((a) => naActions.includes(a)), naActions.join());
+check("DL-04", "each action has its one line, tied to the button", await page.locator("#attention .action-list button").evaluateAll((bs) =>
+  bs.every((b) => (document.getElementById(b.getAttribute("aria-describedby"))?.textContent || "").length > 20)));
+check("DL-04", "one primary button, the suggested one (Find another)", await page.locator("#attention .btn--primary").count() === 1
+  && /Find another/.test(await page.locator("#attention .btn--primary").textContent()));
+check("DL-04", "the folder's files are listed with what each one is", /Sample\.Science\.Weekly\.3\.par2/.test(await page.locator("#attention").textContent())
+  && await page.locator("#attention .file-kind", { hasText: "Other" }).count() === 1);
+check("DL-04", "what is wrong comes before the actions, and the actions before the files (reading order)", await page.evaluate(() => {
+  const at = (q) => [...document.querySelectorAll("#attention *")].indexOf(document.querySelector(q));
+  return at(".notice") < at(".action-list") && at(".action-list") < at("#na-files-h");
+}));
+const naTabs = [];
+for (let n = 0; n < 9; n++) { await page.keyboard.press("Tab"); naTabs.push(await page.evaluate(() => !!document.activeElement?.closest("#side-panel"))); }
+check("DL-04", "Tab stays inside the slide-out", naTabs.every(Boolean));
+await page.keyboard.press("Escape");
+await page.waitForTimeout(300);
+check("DL-04", "Escape closes it and focus goes back to the name", await radioName.evaluate((b) => b === document.activeElement));
+await page.keyboard.press("Enter");
+await page.waitForFunction(() => document.querySelector("#attention [data-action=delete]"), null, { timeout: 10000 }).catch(() => {});
+const naDelete = page.locator("#attention [data-action=delete]");
+await naDelete.focus();
+await page.keyboard.press("Enter");
+await page.locator("dialog[open]").waitFor({ timeout: 3000 }).catch(() => {});
+const naAsk = await page.locator("dialog[open]").textContent().catch(() => "");
+check("DL-04", "Remove and delete the files asks first, naming what it deletes and the space it frees",
+  /1 file from the download folder and frees 40 KB/.test(naAsk) && /Sample\.Science\.Weekly\.3\.par2/.test(naAsk) && /cannot be undone/.test(naAsk), naAsk.slice(0, 200));
+check("DL-04", "the question starts on Cancel", await page.evaluate(() => document.activeElement?.textContent === "Cancel"));
+await page.keyboard.press("Escape");
+await page.waitForTimeout(300);
+check("DL-04", "Cancel deletes nothing and focus goes back to the button", await naDelete.evaluate((b) => b === document.activeElement));
+await naDelete.click();
+await page.locator("dialog[open]").getByRole("button", { name: "Delete the files", exact: true }).click();
+await page.locator("#na-result").waitFor({ timeout: 20000 }).catch(() => {});
+await page.waitForFunction(() => /^Removed\. 1 file deleted, 40 KB freed/.test(document.querySelector("#announcer")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
+check("DL-04", "the result is said in the live region", /^Removed\. 1 file deleted, 40 KB freed/.test(await page.locator("#announcer").textContent()),
+  await page.locator("#announcer").textContent());
+check("DL-04", "and shown in the slide-out, with focus on it", await page.evaluate(() => document.activeElement?.id === "na-result"));
+await page.keyboard.press("Escape");
+await page.waitForTimeout(500);
+check("DL-04", "the download has left the queue", await page.locator("#queue button", { hasText: "Sample Science Weekly · Ask a scientist 3" }).count() === 0);
+
 // SEC-12 and SEC-13: every page has the content policy and runs no blocked script; a saved key never comes back
 console.log("\n== SEC-12 and SEC-13 every page");
 const keyed = await api("/api/services", { method: "POST", body: { type: "sonarr", name: "Journey Keyed", url: "http://journey-keyed:8989", api_key: SECRET } });

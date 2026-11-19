@@ -17,6 +17,7 @@ import time
 import json
 import os
 import pathlib
+import re
 import secrets
 import sys
 import threading
@@ -67,6 +68,7 @@ containers._helper = _never_docker
 # EXAMPLE_CONTAINERS=1: a made-up Reelix container on 0.7.1 with 0.7.2 waiting, for What is new (journeys and
 # screenshots). Docker itself is never called: every other request to it fails as if Docker were busy.
 EXAMPLE_CONTAINERS = os.environ.get("EXAMPLE_CONTAINERS") == "1"
+QUEUE_GONE = set()  # downloads removed or ignored in this run (DASH-496)
 REELIX = {"id": "example-reelix", "name": "reelix", "image": "ghcr.io/themightytrex/reelix:lite", "image_id": "sha256:example",
           "state": "running", "status": "Up 2 hours", "version": "0.7.1", "created": dt.date.today().isoformat(),
           "digests": ["ghcr.io/themightytrex/reelix@sha256:example"], "service": "reelix", "project": "media",
@@ -101,6 +103,47 @@ if EXAMPLE_CONTAINERS:
     containers.containers = lambda light=False: [{"id": REELIX["id"], "name": REELIX["name"]}] if light else [dict(REELIX)]
     containers._check_one = lambda c: {"latest": "0.7.2", "update": True, "unknown": False, "big_change": False}
     changes._fetch = lambda url: changes.parse(EXAMPLE_CHANGELOG)
+    # A download that needs attention (DASH-496): made-up download folders, read, unpacked and deleted in memory.
+    from starboard import queue_files  # noqa: E402
+    MB = 1024 * 1024
+    FOLDERS = {
+        "/data/downloads/complete/Sample.Science.Weekly.3": [("Sample.Science.Weekly.3.par2", 41_000)],
+        "/data/downloads/complete/Old.Show.S05E01": [("Old.Show.S05E01.1080p/old.show.s05e01.rar", 95 * MB),
+                                                     *[(f"Old.Show.S05E01.1080p/old.show.s05e01.r{n:02d}", 95 * MB) for n in range(14)],
+                                                     ("Old.Show.S05E01.1080p/old.show.s05e01.nfo", 2_100)],
+        "/data/downloads/torrents/Harbour.Lights.S01E06.1080p.WEB": [("Harbour.Lights.S01E06.1080p.WEB.mkv.exe", 2_480_000),
+                                                                    ("Read me to play.txt", 640)],
+    }
+    UNPACKED = {"/data/downloads/complete/Old.Show.S05E01": ("Old.Show.S05E01.1080p/Old.Show.S05E01.1080p.mkv", 1_380 * MB)}
+
+    def _example_run(container, cmd, user="", timeout=60):
+        if cmd[0] == "find" and "-printf" in cmd:
+            files = FOLDERS.get(cmd[1])
+            if files is None:
+                return 1, "", f"find: '{cmd[1]}': No such file or directory\n"
+            return 0, "d\t4096\t1000:1000\t\n" + "".join(f"f\t{n}\t1000:1000\t{name}\n" for name, n in files), ""
+        if cmd[0] == "sh":
+            return 0, "/usr/bin/unrar\n", ""
+        if cmd[:2] == ["unrar", "lb"]:
+            return 0, "Old.Show.S05E01.1080p.mkv\n", ""
+        if cmd[0] == "unrar":
+            time.sleep(EXAMPLE_STEP * 4)
+            folder = next(k for k in FOLDERS if cmd[-2].startswith(k + "/"))
+            if folder in UNPACKED and UNPACKED[folder] not in FOLDERS[folder]:
+                FOLDERS[folder].append(UNPACKED[folder])
+            return 0, "", ""
+        if cmd[0] == "rm":
+            gone = set(cmd[3:])
+            for k in FOLDERS:
+                FOLDERS[k] = [f for f in FOLDERS[k] if f"{k}/{f[0]}" not in gone and k not in gone]
+            return 0, "", ""
+        if cmd[0] == "find":  # empty folders
+            if not FOLDERS.get(cmd[1]):
+                FOLDERS.pop(cmd[1], None)
+            return 0, "", ""
+        return 1, "", "not in the example"
+    queue_files.run_in = _example_run
+    queue_files.run_helper = lambda container, cmd, user="", timeout=1800: (0, "")
 # The apps' own log limit (DASH-451), as Docker reports it on a server whose daemon.json caps every container's log.
 from starboard import app_logs  # noqa: E402
 app_logs.limits = lambda docker=None, now=None: {"available": True, "driver": "json-file", "max_size": "10m", "max_file": "3",
@@ -1345,6 +1388,9 @@ class FakeArr(BaseHTTPRequestHandler):
         body = json.loads(self.rfile.read(length) or b"{}")
         path, _, query = self.path[len("/reelix/api/v1"):].partition("?")
         parts = path.strip("/").split("/")
+        if method == "DELETE" and len(parts) == 2 and parts[0] == "queue" and parts[1].isdigit():  # removed from the queue (DASH-496)
+            QUEUE_GONE.add(int(parts[1]))
+            return self.send_json({}, 200)
         if method == "PUT" and len(parts) == 4 and parts[:2] == ["radio", "episodes"] and parts[3] == "file":  # Match by hand (DASH-212)
             RADIO_MATCHED.add(int(body.get("file_id", 0)))
             return self.send_json({"id": int(parts[2]), "title": "the chosen episode", "file_id": body.get("file_id")})
@@ -1424,8 +1470,15 @@ class FakeArr(BaseHTTPRequestHandler):
                  "seriesId": 1, "episodeId": 204, "seasonNumber": 2, "quality": {"quality": {"name": "WEBDL-1080p"}},
                  "series": {"title": "Example Show"}, "episode": {"seasonNumber": 2, "episodeNumber": 4, "title": "Harbour Lights"}},
             ]
+            if os.environ.get("EXAMPLE_ATTENTION") == "1":  # DASH-496: an .exe posing as an episode, for the slide-out's pictures
+                recs.append({"id": 5, "title": "Harbour.Lights.S01E06.1080p.WEB", "size": 2_480_640, "sizeleft": 0, "status": "completed",
+                             "trackedDownloadState": "importPending", "trackedDownloadStatus": "warning",
+                             "statusMessages": [{"title": "Harbour.Lights.S01E06.1080p.WEB", "messages": ["No video files found in the download"]}],
+                             "added": today.isoformat() + "T06:10:00Z", "downloadClient": "qBittorrent", "downloadId": "ex5",
+                             "outputPath": "/data/downloads/torrents/Harbour.Lights.S01E06.1080p.WEB", "seriesId": 2})
             if film:
                 recs = [{"id": 11, "title": "A.Film.2025.2160p", "size": 8e9, "sizeleft": 2e9, "status": "downloading", "trackedDownloadState": "downloading", "timeleft": "00:40:00"}]
+            recs = [r for r in recs if r["id"] not in QUEUE_GONE]
             return self.send_json({"records": recs, "totalRecords": len(recs)})
         if "/calendar" in p:
             items = []
@@ -1480,6 +1533,11 @@ def _post(self):
         else:
             RADIO_ADDED.append({"id": 10 + len(RADIO_ADDED), "title": body.get("external_id", ""), "external_id": body.get("external_id", "")})
         return self.send_json(RADIO_ADDED[-1], 201)
+    m = re.match(r"^/reelix/api/v1/queue/(\d+)/(import|ignore)$", self.path.split("?")[0])
+    if m:  # Try the import again and Ignore (DASH-205, DASH-496)
+        if m.group(2) == "ignore":
+            QUEUE_GONE.add(int(m.group(1)))
+        return self.send_json({"id": 1, "name": "process_download"}, 202)
     if self.path.split("?")[0] == "/reelix/api/v1/command":  # Read the library again (DASH-212)
         return self.send_json({"job_id": 5}, 202)
     found = example_library.add(self.path[len("/reelix/api/v1"):].split("?")[0], body) if self.path.startswith("/reelix/api/v1/") else None
@@ -1572,7 +1630,7 @@ def example_reelix(path, query=None):
                         "synopsis": "A made-up episode for the preview."})
         return {"series": [], "episodes": eps}
     if path == "/queue":
-        return {"items": [{"id": 31, "title": "The.Example.Hour.S04E02.mp3", "download_client": "NZBGet", "download_id": "ex31",
+        return {"items": [i for i in [{"id": 31, "title": "The.Example.Hour.S04E02.mp3", "download_client": "NZBGet", "download_id": "ex31",
                            "state": "downloading", "client_state": "downloading", "progress": 0.35, "size": 60_000_000,
                            "remaining": 39_000_000, "eta_secs": 240, "messages": [], "added": today.isoformat() + "T09:00:00Z",
                            "media": {"kind": "radio_episode", "id": 101, "title": "Lighthouses", "subtitle": "The Example Hour"}},
@@ -1588,7 +1646,8 @@ def example_reelix(path, query=None):
                            "messages": ["No audio files were found in /data/downloads/complete/Sample.Science.Weekly.3", "The folder holds only a .par2 file"],
                            "output_path": "/data/downloads/complete/Sample.Science.Weekly.3", "can_manual_import": False,
                            "added": today.isoformat() + "T07:30:00Z",
-                           "media": {"kind": "radio_episode", "id": 203, "title": "Ask a scientist 3", "subtitle": "Sample Science Weekly", "show_id": 2}}],
+                           "media": {"kind": "radio_episode", "id": 203, "title": "Ask a scientist 3", "subtitle": "Sample Science Weekly", "show_id": 2}}]
+                          if i["id"] not in QUEUE_GONE],
                 "total": 3, "page": 1, "page_size": 0}
     return []
 
@@ -2005,6 +2064,9 @@ def main():
         # Reelix, as Install apps adds it: a link with the manager key, so radio shows in Coming up and Downloads.
         call("POST", "/api/services", {"name": "Reelix", "type": "link", "group": FIND, "icon": "reelix",
                                        "url": f"http://127.0.0.1:{FAKE_PORT}/reelix", "api_key": KEY}, cookie)
+        if os.environ.get("EXAMPLE_ATTENTION") == "1":  # DASH-496: Reelix's TV address, so its downloads that need attention show
+            call("POST", "/api/services", {"name": "Reelix TV", "type": "sonarr", "group": FIND, "icon": "reelix",
+                                           "url": f"http://127.0.0.1:{FAKE_PORT}/reelix/sonarr", "api_key": KEY}, cookie)
         if EXAMPLE_CONTAINERS:
             # Reelix, seen at 0.7.0 before, so opening Apps, Updates finds it updated to 0.7.1.
             _, body = call("GET", "/api/config", cookie=cookie)
