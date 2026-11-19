@@ -709,8 +709,12 @@ class Job:
 
     def __init__(self, host, plan, out=None):
         self.host, self.plan, self.out = host, plan, out
+        entry = plan.get("entry") if isinstance(plan.get("entry"), dict) else {}
         self.data = {"id": plan["id"], "action": plan["action"], "state": "running", "started": now(), "steps": [],
-                     "moved": 0, "of": len(plan.get("moves") or [])}
+                     "moved": 0, "of": len(plan.get("moves") or []),
+                     # What it changes, for Starboard's disk.changed alert (issue #187): the disk and any it erases.
+                     "drive": str(entry.get("label") or entry.get("by_id") or ""),
+                     "erased": [str(s.get("label") or s.get("by_id") or "") for s in plan.get("steps") or [] if s.get("do") == "erase"]}
         self.save()
 
     def save(self):

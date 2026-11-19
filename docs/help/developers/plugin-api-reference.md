@@ -275,6 +275,7 @@ on its first container. Your plug-in must answer that path.
 | `request.available` | `title`, `year`, `kind` (`Film` or `Series`), `by` (who asked) | Reelix's or Seerr's newest 30 requests, checked every 5 minutes: one that becomes Available or Completed. API 1.11 |
 | `download.failed` | `title`, `app`, `reason` | The download queue, checked every 5 minutes: an item that shows a problem. API 1.11 |
 | `disk.nearly_full` | `disk` (its name), `percent`, `free` (bytes) | The disks on **System**, checked every 5 minutes: one that reaches the alerts' **Disk nearly full** limit, or 90% when it is not set. Sent again only after it drops 2 points under that limit. API 1.11 |
+| `disk.changed` | `action` (`add`, `remove` or `balance`), `state` (`done` or `failed`), `disk` (its name), `erased` (the names of disks it erased), `result` | The pool helper's job record, checked every 5 minutes: a job that finished since the last check, however it was asked for. API 1.16 |
 | `update.available` | `app`, `current`, `latest` | What Starboard already knows, checked every 5 minutes: a new Starboard release (its own check, at most every 6 hours), an app image from the last check on **Apps**, **Updates**, and a plug-in version from a catalogue. Nothing extra is fetched. API 1.11 |
 
 For the events checked every 5 minutes, the first check after Starboard starts only sets a starting point,

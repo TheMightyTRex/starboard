@@ -11,6 +11,8 @@ add features.
 - **Plug-ins activate when installed (owner, 19 November 2026):** a plug-in from the catalogue, an address or a zip file is activated as soon as it is installed. One that needs settings first says what to enter and waits, as before, and so does an app plug-in such as Tdarr while the same app is on this computer, so you can bring it in first. Activate and Deactivate stay in General, State.
 - **Plug-ins know their home address:** a plug-in with a page on your home network is given its own address there (`STARBOARD_HOME_ADDRESS`), so Create your own TV channel gives Jellyfin its channel list without anyone opening its page first.
 
+- **An alert when a disk changes (issue #187):** every pool job the helper finishes, however it was asked for, is written to the log, as a warning when a disk was erased, and sent as the new `disk.changed` event (plug-in API 1.16), which the Notifications plug-in turns into an alert. The security notes explain why Starboard's user counts as root, so a check on the pool helper alone would not help.
+
 ### Changed
 - **General on every plug-in's page (owner, 19 November 2026):** the first tab is General, with a card each for State, Versions, Jobs, What it may do and Remove. The plug-in's settings, its own pages, styles and actions keep their tabs, and a plug-in's page shows tabs from two parts. Design system: section groups.
 

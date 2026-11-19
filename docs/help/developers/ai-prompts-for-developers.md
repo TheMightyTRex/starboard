@@ -1,12 +1,12 @@
 [Help centre](../README.md) · Developers
 <!-- help: dev / plugins -->
-<!-- plugin-api: 1.15 -->
+<!-- plugin-api: 1.16 -->
 
 # AI prompts for developers
 
 An AI assistant, such as Claude, can write a Starboard plug-in or a script that reads Starboard's API, if you give
 it the rules. Copy one of the prompts on this page, fill in the parts in square brackets, and paste in the pages it
-names. The prompts are written for plug-in API 1.15, in Starboard 0.19.0 and later.
+names. The prompts are written for plug-in API 1.16, in Starboard 0.23.0 and later.
 
 ## Before you begin
 
@@ -49,7 +49,7 @@ For a plug-in that shows something on the dashboard, such as Watching now or Dis
 [Make your first plug-in](make-a-plugin.md).
 
 ```text
-Write a Starboard plug-in for plug-in API 1.15 that [say what it should do, and what its card shows].
+Write a Starboard plug-in for plug-in API 1.16 that [say what it should do, and what its card shows].
 Starboard is a lightweight home-server dashboard (https://github.com/TheMightyTRex/starboard). I have
 pasted three pages from its help centre below: the plug-in manifest reference, the plug-in API reference
 and the "Make your first plug-in" tutorial. Use only what they describe.
@@ -73,7 +73,7 @@ The card:
   future) and "status_label" (up to 24 characters) only where Starboard's word does not fit.
 - Give the card "titles", a title for each size that fits on one line: small up to 17 characters,
   medium 28, half 22, wide 43 and full 45. Put the words that matter first. Titles need
-  "starboard_api": ">=1.15 <2.0".
+  "starboard_api": ">=1.16 <2.0", or ">=1.15 <2.0" when it needs nothing new in 1.16.
 - Keep a small JSON file in /data up to date in the background, and have the card only read it.
 - Leave out refresh_seconds unless the card shows progress.
 
@@ -125,7 +125,7 @@ Paste in [Plug-in manifest reference](plugin-manifest-reference.md) (in particul
 and [Resources](plugin-manifest-reference.md#resources)) and [Test and publish a plug-in](test-and-publish-a-plugin.md).
 
 ```text
-Write a Starboard app plug-in for plug-in API 1.15 that runs [the app, with its image name and the
+Write a Starboard app plug-in for plug-in API 1.16 that runs [the app, with its image name and the
 version I want] so people on my home network can use it. Starboard is a lightweight home-server
 dashboard (https://github.com/TheMightyTRex/starboard). I have pasted its manifest reference and its page
 on testing and publishing below. Use only what they describe.
@@ -169,7 +169,7 @@ Picture shrinker. Paste in [Plug-in manifest reference](plugin-manifest-referenc
 [Plug-in API reference](plugin-api-reference.md) and [Write a plug-in that updates safely](update-a-plugin-safely.md).
 
 ```text
-Write a Starboard plug-in for plug-in API 1.15 that [say what it converts, and why], one file at a time.
+Write a Starboard plug-in for plug-in API 1.16 that [say what it converts, and why], one file at a time.
 Starboard is a lightweight home-server dashboard (https://github.com/TheMightyTRex/starboard). I have
 pasted its manifest reference, its plug-in API reference and its page on updating a plug-in safely
 below. Use only what they describe. Direct play, in the starboard-plugins collection, is the model:

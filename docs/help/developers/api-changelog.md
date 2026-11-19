@@ -15,7 +15,11 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
-## Plug-in API 1.15.0, additions in Starboard 0.23.0 (not released yet)
+## Plug-in API 1.16.0 (Starboard 0.23.0, not released yet)
+
+- **Added:** the `disk.changed` event, with the `system:read` permission: a pool job the root helper finished
+  (`action`, `state`, `disk`, `erased`, `result`), however it was asked for, so a notifications plug-in can say when a
+  disk is erased, added to the pool or taken out of it. Name `>=1.16` in `starboard_api` to use it.
 
 - **Added:** `STARBOARD_HOME_ADDRESS` for a container with `publish` on the `lan` network: its own address on the
   home network, such as `http://192.168.1.20:8790`. Create your own TV channel gives it to Jellyfin's Live TV.
@@ -24,7 +28,7 @@ the next major version.
 - **Changed:** Starboard activates a plug-in once it is installed, from a catalogue, an address or a zip file. One
   with `setup_required` or required settings stays waiting until they are saved, as before. Plan for your first
   start to come straight after the install.
-- Nothing was taken away: the plug-in API version stays 1.15.0.
+- Nothing was taken away: every 1.15 plug-in works as before.
 
 ## Starboard API 1.6.0 (Starboard 0.20.0), 16 November 2026
 
