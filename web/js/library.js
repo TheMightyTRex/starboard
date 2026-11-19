@@ -317,7 +317,8 @@ function ownFields(tab, title, year) {
     el("legend", { class: "field__label", text: "Your own details" }),
     field(OWN_NAME[tab] || "Title", name), field("Year", when, "Optional. Four numbers, such as 2004."),
     field("Description", about), station ? field("Station", station) : null,
-    field("Picture's address", address, "Optional. Reelix keeps its own copy."), field("Or choose a picture", file, "A PNG, JPEG or WebP file up to 5 MB.")));
+    field("Picture's address", address, "Optional. Reelix keeps its own copy."), el("div", { class: "field" }, el("label", { class: "field__label", for: file.id, text: "Or choose a picture" }),
+      el("p", { class: "hint", id: `own-file-${n}-h`, text: "A PNG, JPEG or WebP file up to 5 MB." }), filePicker(file))));
   const read = (f) => new Promise((resolve, reject) => {
     if (f.size > PICTURE_MAX) { reject(new Error(`${f.name} is larger than 5 MB. Choose a smaller picture`)); return; }
     const r = new FileReader();

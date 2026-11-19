@@ -17,7 +17,7 @@ function field(label, wrapper, { hint, span, short, required } = {}) {
   if (required) control.required = true;
   const hintNode = hint ? el("span", { class: "hint", id: `${control.id}-hint` }, hint) : null;
   const error = el("span", { class: "field-error", id: `${control.id}-error`, hidden: true });
-  if (hintNode) control.setAttribute("aria-describedby", hintNode.id);
+  if (hintNode) control.setAttribute("aria-describedby", [hintNode.id, control.getAttribute("aria-describedby")].filter(Boolean).join(" "));
   control.fieldError = error;
   control.fieldHint = hintNode;
   return el("div", { class: short ? "field field--short" : "field", "data-span": span ? "all" : null },
@@ -1287,7 +1287,7 @@ async function stepContent(id, root, step = {}) {
     const fullBox = el("div", { class: "form-stack" }, where.node, fullList,
       field("The backup's password", backupPassword, { required: true, hint: "The one chosen when the backup was made.", span: true }));
     const fileBox = el("div", { class: "form-stack", hidden: true },
-      field("Backup file", file, { required: true, hint: "From Settings, General, Backup and restore, Settings only, Download a backup.", span: true }));
+      field("Backup file", filePicker(file), { required: true, hint: "From Settings, General, Backup and restore, Settings only, Download a backup.", span: true }));
     kinds.forEach(({ value, input }) => input.addEventListener("change", () => { if (input.checked) { fullBox.hidden = value !== "full"; fileBox.hidden = value !== "settings"; } }));
     const restoreBox = el("div", { class: "form-stack", hidden: chosen !== "restore" },
       el("fieldset", {}, el("legend", { class: "field__label", text: "What kind of backup" }),
@@ -2105,7 +2105,7 @@ async function startJellyfin() {
   const tokenHint = el("span", {});
   const fileHint = el("span", {});
   const tokenField = field("Token or API key", token, { span: true, hint: tokenHint });
-  const fileField = field("File", file, { span: true, hint: fileHint });
+  const fileField = field("File", filePicker(file), { span: true, hint: fileHint });
   const importError = el("div", { role: "alert" });
   const showFields = () => {
     const isFile = ["plexdb", "json"].includes(kind.value);

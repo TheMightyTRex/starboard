@@ -621,6 +621,34 @@ function appIcon(s, className = "app-icon") {
 }
 
 // Icons from the shared sprite (web/icons/sprite.svg). Decoration only: the words beside them carry the meaning.
+// File picker (design system .file-field, owner, 19 November 2026: "make sure it matches the rest of the site"):
+// wraps a file input in a button in the site's style, "Choose a file", with the chosen file's name and size beside it.
+// The input itself lies over the button, so the keyboard, screen readers and its own events work as before; the page
+// keeps using `input` as it did. Returns the wrapper to put where the input was.
+let filePickers = 0;
+function filePicker(input, { choose = "Choose a file", again = "Choose another file" } = {}) {
+  if (!input.id) input.id = `file-${++filePickers}`;
+  input.classList.remove("input");
+  const words = el("span", { text: choose });
+  const name = el("span", { class: "file-field__name", id: `${input.id}-name`, text: "No file chosen" });
+  const show = () => {
+    const f = input.files && input.files[0];
+    name.textContent = f ? `${f.name}, ${formatBytes(f.size)}` : "No file chosen";
+    name.classList.toggle("is-chosen", Boolean(f));
+    words.textContent = f ? again : choose;
+    // A new choice clears the field's last error, such as "Choose the zip file" (settings.js setError).
+    if (f && input.fieldError && !input.fieldError.hidden && typeof setError === "function") setError(input, "");
+  };
+  input.setAttribute("aria-describedby", [input.getAttribute("aria-describedby"), name.id].filter(Boolean).join(" "));
+  input.moreHints = [...(input.moreHints || []), name.id];  // kept when settings.js setError rewrites the description
+  input.addEventListener("change", show);
+  const box = el("div", { class: "file-field" }, el("span", { class: "btn file-field__button" }, icon("upload"), words, input), name);
+  // A form that is reset (after an upload) empties the input without a change event.
+  queueMicrotask(() => input.form?.addEventListener("reset", () => setTimeout(show)));
+  box.filePickerShow = show;
+  return box;
+}
+
 function icon(name, size = 18) {
   const ns = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(ns, "svg");
