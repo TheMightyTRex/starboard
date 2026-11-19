@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Changed
+- **Plug-ins can take files up to 100 MB (owner, 19 November 2026):** a file chosen on a plug-in's own page, such as a TV channel's holding slide, may be up to 100 MB instead of 60 MB. Each plug-in still sets its own limit.
+
 ## [0.24.0] (19 November 2026)
 
 ### Added

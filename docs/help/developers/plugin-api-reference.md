@@ -238,7 +238,7 @@ added: one sentence, up to 200 characters, that Starboard shows. To refuse, answ
 
 When `add` has a `file`, a chosen file is sent as it is, not as JSON: Starboard streams it to your `choices` path
 plus `/file`, such as `/sources/file?name=channels.m3u`, with `Content-Type: application/octet-stream`, the file's size
-in `Content-Length` and the file's name in `name`. Files can be up to 60 MB. Read the body a piece at a time and answer
+in `Content-Length` and the file's name in `name`. Files can be up to 100 MB (60 MB before Starboard 0.24.1); refuse anything too big for you with your own words. Read the body a piece at a time and answer
 with the whole list, in the same shape, with `said` added; to refuse, answer with an HTTP error status and `{"error": ...}`.
 A plug-in without this path answers 404, and Starboard says the plug-in does not take files.
 

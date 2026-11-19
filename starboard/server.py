@@ -3416,7 +3416,7 @@ class Handler(BaseHTTPRequestHandler):
             name, item = q.get("name", [""])[0], q.get("id", [""])[0]
             if not 0 < length <= plugin_custom.MAX_UPLOAD:
                 self.close_connection = True
-                return self.error(400, "Choose a file up to 60 MB")
+                return self.error(400, plugin_custom.MAX_UPLOAD_WORDS)
             try:
                 out = plugin_custom.upload(app.data_dir, mf.group(1), mf.group(2), name, length, self.rfile, item)
                 self._body_read = True

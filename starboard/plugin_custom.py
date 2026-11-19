@@ -256,7 +256,10 @@ def _setting(data_dir, pid, key):
     return m, s
 
 
-MAX_UPLOAD = 60 * 1024 * 1024
+# A file streamed to a plug-in (DASH-359): up to 100 MB from 0.24.1 (owner, 19 November 2026: a TV channel holding
+# slide of up to 90 MB). Each plug-in still refuses what is too big for it.
+MAX_UPLOAD = 100 * 1024 * 1024
+MAX_UPLOAD_WORDS = "Choose a file up to 100 MB"
 
 
 def upload(data_dir, pid, key, name, length, stream, item=""):
@@ -267,7 +270,7 @@ def upload(data_dir, pid, key, name, length, stream, item=""):
     from . import plugin_cards, plugins_admin
     m, s = _setting(data_dir, pid, key)
     if not 0 < length <= MAX_UPLOAD:
-        raise ValueError("Choose a file up to 60 MB")
+        raise ValueError(MAX_UPLOAD_WORDS)
     main = m["containers"][0]
     try:
         with open(f"{plugins_admin.folder(data_dir, pid)}/key", encoding="utf-8") as f:
