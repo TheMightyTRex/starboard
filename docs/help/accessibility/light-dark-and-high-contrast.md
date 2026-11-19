@@ -18,9 +18,8 @@ browser you use.
 
 1. Select **Display**, the last button in the header. The **Display and accessibility** slide-out opens.
 2. Under **Theme**, choose one:
-   - **Match device** (the default) follows the light or dark setting of your phone or computer, and changes when
-     it does.
-   - **Light** and **Dark** stay as they are, whatever the device does.
+   - **Light** (the default) and **Dark** stay as they are, whatever the device does.
+   - **Match device** follows the light or dark setting of your phone or computer, and changes when it does.
 3. To make everything stronger, activate **High contrast**. Deactivate it to go back.
 4. Select **Done**, or press Escape.
 
@@ -44,7 +43,7 @@ and the focus outline. They are checked for every colour pair in the design syst
 - Every card, field and button gets a solid black or white border, and shadows are taken away.
 - The focus outline turns magenta in the light theme and yellow in the dark theme.
 - Charts change to stronger colours, and states keep their words and icons.
-- Styles from plug-ins and the own style colours are set aside while it is active.
+- Styles from plug-ins are set aside while it is active. The accent colour stays, in a stronger shade.
 
 ![The Apps page with High contrast activated in the Light theme: near-black text, black borders round every card and button, and no shadows](../images/a11y-contrast-light.png)
 
@@ -55,8 +54,9 @@ and the focus outline. They are checked for every colour pair in the design syst
 - **Styles from plug-ins:** a style changes Starboard's colours and shape. Starboard checks every style for
   contrast in light and dark before it can be chosen. Read
   [Choose a style from a plug-in](../topics/display-and-accessibility.md#choose-a-style-from-a-plug-in).
-- **Own style colours:** Starboard's own colours can be chosen for everyone on the server, in
-  **Settings**, then **General**, then **Appearance**. Every one of them passes the same contrast checks.
+- **Accent colour:** Starboard's own style is Mica, with a Blue accent. Another accent (Teal, Indigo, Forest, Plum,
+  Ember or Graphite) can be chosen for everyone on the server, in **Settings**, then **General**, then **Appearance**.
+  Every one of them passes the same contrast checks, in light, dark and high contrast.
 
 ## Things to note
 

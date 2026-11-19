@@ -1260,12 +1260,15 @@ await page.locator("#jf-plugins-list", { hasText: "Installed Merge Versions" }).
 check("JF-02", "installing says so and asks for a restart", /Jellyfin needs a restart/.test(await plug.textContent()));
 check("JF-02", "focus stays in the Merge Versions choice after it is drawn again",
   await page.evaluate(() => !!document.activeElement?.closest("#jf-plugins-list")));
-await plug.getByRole("button", { name: "Restart Jellyfin now" }).click();
+await plug.getByRole("button", { name: "Restart Jellyfin", exact: true }).click();
 await page.getByRole("dialog").getByRole("button", { name: "Restart Jellyfin", exact: true }).click();
-await page.waitForTimeout(800);
+// Restart where it is needed (DASH-470): the section is drawn again once Jellyfin answers, with the result focused.
+await page.locator("#jf-plugins-list", { hasText: "Jellyfin restarted." }).waitFor({ timeout: 30000 }).catch(() => {});
+check("JF-03", "once Jellyfin answers, the result is shown and has focus", await page.evaluate(() => /Jellyfin restarted/.test(document.activeElement?.textContent || "")));
 const after = await api("/api/jellyfin/plugins");
+// The section drawn again after the restart (DASH-470) is what finishes the set-up, so it says so there.
 check("JF-03", "after the restart Merge Versions is active and set to quiet hours",
-  after.groups.find((g) => g.id === "merge").installed[0]?.status === "Active" && after.finished.length === 1, JSON.stringify(after.finished));
+  after.groups.find((g) => g.id === "merge").installed[0]?.status === "Active" && /Set up after the restart/.test(await plug.textContent()), JSON.stringify(after.finished));
 const moved = await api("/api/jellyfin/plugins", { method: "POST", body: { group: "playback", choice: "none" } });
 check("JF-04", "Do not install deactivates and never uninstalls", moved.done[0] === "Deactivated Playback Reporting (still installed)", moved.done.join("; "));
 await api("/api/jellyfin/plugins", { method: "POST", body: { group: "playback", choice: "on" } });
@@ -1721,7 +1724,7 @@ check("UPD-03", "the page says how it ended", (await page.locator("#self-update-
 const back = await api("/api/self-update");
 check("UPD-04", "the record says who started it and how it ended", back.update?.by === "you" && back.update?.outcome === "updated", JSON.stringify(back.update));
 // Jellyfin's plug-ins from the same place, with the same password dialog and progress (DASH-422).
-const jfGo = page.locator('[data-key="jellyfin-plugins"]').getByRole("button");
+const jfGo = page.locator('[data-key="jellyfin-plugins"]').getByRole("button", { name: "Check for updates and install them" });
 await jfGo.waitFor({ timeout: 5000 }).catch(() => {});
 await jfGo.click();
 await page.getByRole("dialog").locator("input[type=password]").fill(password);
@@ -2180,6 +2183,123 @@ check("BRING-3", "Check names has Matched, Needs attention and Left where it is,
 await open("bring-in.html?part=bring-copy");
 await page.waitForSelector("main table", { timeout: 10000 }).catch(() => {});
 check("BRING-4", "the copy part shows what will happen before anything is copied", /Sources, in order/.test(await page.locator("main table").first().textContent().catch(() => "")));
+// RESTART-01 (DASH-470): Restart where it is needed. Jellyfin says Restart needed on System, Overview: Restart Jellyfin
+// is beside it, says what it does, asks first, follows Jellyfin until it answers (in words, in a polite status) and
+// moves focus to the result; a failure is said beside the button, which works again. The same button is on Settings,
+// Updates and Settings, Apps, Jellyfin, and Restart Reelix is beside a Reelix restore that waits. The made-up
+// restart needs are page routes; the restart itself reaches only the example server's stand-in Jellyfin.
+console.log("\n== RESTART-01 Restart where it is needed");
+let jfPending = true;
+const jfInfo = async (route) => {
+  const b = await (await route.fetch()).json().catch(() => ({}));
+  await route.fulfill({ contentType: "application/json", body: JSON.stringify({ ...b, configured: true, name: "Jellyfin", version: b.version || "10.11.2",
+    restart: jfPending, can_restart: true, playing: b.playing || [], added: b.added || [] }) });
+};
+await page.route(/\/api\/jellyfin(\?fresh=1)?$/, jfInfo);
+const jfRestartFails = (route) => route.request().method() === "POST"
+  ? route.fulfill({ status: 400, contentType: "application/json", body: JSON.stringify({ error: "Jellyfin did not restart: connection refused" }) }) : route.continue();
+const jfRestartWorks = (route) => { if (route.request().method() === "POST") jfPending = false; return route.continue(); };
+await open("system.html");
+const jfPanel = page.locator("#jellyfin-panel");
+const restartJf = jfPanel.getByRole("button", { name: "Restart Jellyfin" });
+check("RESTART-01", "Overview: Restart Jellyfin shows beside Restart needed", await jfPanel.locator(".chip").filter({ hasText: "Restart needed" }).count() === 1
+  && await restartJf.count() === 1);
+const what01 = await restartJf.evaluate((b) => document.getElementById(b.getAttribute("aria-describedby").split(" ")[0])?.textContent || "").catch(() => "");
+check("RESTART-01", "the button says what it does", /stopped/.test(what01) && /under a minute/.test(what01), what01);
+check("RESTART-01", "the button is at least 44 by 44", await restartJf.evaluate((b) => { const r = b.getBoundingClientRect(); return r.width >= 44 && r.height >= 44; }).catch(() => false));
+await restartJf.focus();
+await page.keyboard.press("Enter");
+const dialog01 = page.getByRole("dialog", { name: "Restart Jellyfin?" });
+check("RESTART-01", "it asks first, starting on Cancel", await dialog01.count() === 1 && await page.evaluate(() => document.activeElement?.textContent === "Cancel"));
+await page.keyboard.press("Escape");
+await page.waitForTimeout(200);
+check("RESTART-01", "Cancel changes nothing and focus returns to the button", jfPending && await restartJf.evaluate((b) => document.activeElement === b));
+// A failure first: said beside the button, and the button can be pressed again.
+await page.route(/\/api\/jellyfin\/restart$/, jfRestartFails);
+await page.keyboard.press("Enter");
+await dialog01.getByRole("button", { name: "Restart Jellyfin", exact: true }).click();
+await page.waitForSelector("#jellyfin-panel .field-error[role=alert]", { timeout: 5000 }).catch(() => {});
+const fail01 = await jfPanel.locator(".field-error[role=alert]").textContent().catch(() => "");
+check("RESTART-01", "a failure is said beside the button", /did not restart/.test(fail01), fail01);
+check("RESTART-01", "after a failure the button can be pressed again", await restartJf.getAttribute("aria-disabled") === null && jfPending);
+await page.unroute(/\/api\/jellyfin\/restart$/, jfRestartFails);
+await page.route(/\/api\/jellyfin\/restart$/, jfRestartWorks);
+await restartJf.focus();
+await page.keyboard.press("Enter");
+await dialog01.getByRole("button", { name: "Restart Jellyfin", exact: true }).click();
+const status01 = jfPanel.locator("[data-restart] [role=status]");
+await page.locator("#jellyfin-panel [data-restart] [role=status]", { hasText: /\w/ }).waitFor({ timeout: 5000 }).catch(() => {});
+const working01 = await status01.textContent();
+check("RESTART-01", "while it works, progress is said in words and focus stays on the button",
+  /Asking Jellyfin to restart|Jellyfin is restarting/.test(working01) && await restartJf.evaluate((b) => document.activeElement === b && b.getAttribute("aria-disabled") === "true"), working01);
+// "restarted and answers again": the words while it works also end in "answers again".
+await page.locator("#jellyfin-panel [data-restart] [role=status]", { hasText: "restarted and answers again" }).waitFor({ timeout: 30000 }).catch(() => {});
+await page.waitForTimeout(500);
+const done01 = await status01.textContent();
+check("RESTART-01", "when Jellyfin answers, the status says so and takes focus", /Jellyfin restarted and answers again/.test(done01)
+  && await status01.evaluate((s) => document.activeElement === s), `${done01} / ${await api("/api/jellyfin/restart").then(JSON.stringify).catch((e) => e.message)}`);
+const state01 = await jfPanel.locator("#jellyfin-state").textContent();
+check("RESTART-01", "the button goes and the state updates by itself", await restartJf.count() === 0 && !/Restart needed/.test(state01), state01);
+check("RESTART-01", "the notice says Jellyfin restarted, in words and not colour alone", await jfPanel.locator("[data-restart-notice] .notice__title").textContent() === "Jellyfin restarted");
+await page.unroute(/\/api\/jellyfin\/restart$/, jfRestartWorks);
+await open("system.html");
+check("RESTART-01", "with no restart needed, there is no Restart button", await page.locator("#jellyfin-panel").getByRole("button", { name: /^Restart/ }).count() === 0);
+await page.unroute(/\/api\/jellyfin(\?fresh=1)?$/, jfInfo);
+// Settings, Updates: Jellyfin's plug-ins row.
+const jfUpdates = async (route) => {
+  const b = await (await route.fetch()).json().catch(() => ({}));
+  await route.fulfill({ contentType: "application/json", body: JSON.stringify({ ...b, connected: true, count: b.count || 1, restart: true, can_restart: true }) });
+};
+await page.route(/\/api\/updates\/jellyfin$/, jfUpdates);
+await open("settings-updates.html");
+await page.waitForSelector("[data-key=jellyfin-plugins] [data-restart]", { timeout: 10000 }).catch(() => {});
+const jfRow = page.locator("[data-key=jellyfin-plugins]");
+check("RESTART-01", "Updates: Jellyfin's plug-ins say Restart needed, with Restart Jellyfin", /Restart needed/.test(await jfRow.textContent().catch(() => ""))
+  && await jfRow.getByRole("button", { name: "Restart Jellyfin" }).count() === 1);
+await page.unroute(/\/api\/updates\/jellyfin$/, jfUpdates);
+// Settings, Apps, Jellyfin: Recommended plug-ins, with the stand-in Jellyfin said to wait for a restart.
+const jfPlugins = async (route) => {
+  if (route.request().method() !== "GET") return route.continue();
+  const b = await (await route.fetch()).json().catch(() => ({}));
+  await route.fulfill({ contentType: "application/json", body: JSON.stringify({ ...b, restart: true, can_restart: true }) });
+};
+await page.route(/\/api\/jellyfin\/plugins$/, jfPlugins);
+await open("settings-jellyfin.html");
+await page.waitForSelector("#jf-plugins-list [data-restart] button", { timeout: 10000 }).catch(() => {});
+check("RESTART-01", "Settings, Jellyfin: Restart Jellyfin beside Jellyfin needs a restart", await page.locator("#jf-plugins-list").getByRole("button", { name: "Restart Jellyfin" }).count() === 1);
+await page.unroute(/\/api\/jellyfin\/plugins$/, jfPlugins);
+// Backup: Restart Reelix beside a restore that waits, restarted and followed through Starboard's own routes.
+let rxWaiting = true;
+const rxBackups = async (route) => {
+  const b = await (await route.fetch()).json().catch(() => ({}));
+  await route.fulfill({ contentType: "application/json", body: JSON.stringify({ backups: [], every: 7, keep: 5, ...b, service: b.service || "reelix", restore_waiting: rxWaiting }) });
+};
+const rxRestart = (route) => { rxWaiting = false; return route.fulfill({ contentType: "application/json", body: JSON.stringify({ said: "Reelix restarted" }) }); };
+const rxStatus = (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ items: [{ id: "reelix", state: "up" }], recent: [] }) });
+await page.route(/\/api\/reelix\/admin\/system\/backups$/, rxBackups);
+await page.route(/\/api\/services\/[a-z0-9-]+\/restart$/, rxRestart);
+await page.route(/\/api\/status\?id=/, rxStatus);
+await open("system-backup.html");
+await page.getByRole("button", { name: "Show Reelix's backups" }).click();
+await page.waitForTimeout(300);
+if (await page.locator("#rs-password").count()) { await page.fill("#rs-password", "made-up"); await page.keyboard.press("Enter"); }
+await page.waitForSelector("section[aria-labelledby=rs-backups-h] [data-restart] button", { timeout: 10000 }).catch(() => {});
+const restartRx = page.locator("section[aria-labelledby=rs-backups-h]").getByRole("button", { name: "Restart Reelix" });
+check("RESTART-01", "Backup: Restart Reelix beside a restore that waits", await restartRx.count() === 1);
+if (await restartRx.count()) {
+  await restartRx.focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("dialog", { name: "Restart Reelix?" }).getByRole("button", { name: "Restart Reelix", exact: true }).click();
+  await page.waitForSelector("#rs-restored", { timeout: 30000 }).catch(() => {});
+  await page.waitForTimeout(300);
+  check("RESTART-01", "the backups show no stray word null", !/\bnull\b/.test(await page.locator("section[aria-labelledby=rs-backups-h]").innerText()));
+  check("RESTART-01", "after Reelix answers, the backups are drawn again and focus is on the result",
+    await page.evaluate(() => document.activeElement?.id === "rs-restored") && await restartRx.count() === 0);
+}
+await page.unroute(/\/api\/reelix\/admin\/system\/backups$/, rxBackups);
+await page.unroute(/\/api\/services\/[a-z0-9-]+\/restart$/, rxRestart);
+await page.unroute(/\/api\/status\?id=/, rxStatus);
+
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
 const wide = [];

@@ -96,7 +96,7 @@ function helpNodes(list, panel) {
 }
 
 const PREF_KEY = "starboard.display";
-const DEFAULT_PREFS = { theme: "system", text: "100", contrast: false, motion: "device", underline: false, spacing: false, design: "", style: "" };
+const DEFAULT_PREFS = { theme: "light", text: "100", contrast: false, motion: "device", underline: false, spacing: false, design: "", style: "" };
 const DESIGNS = {
   health: ["Health first", "Apps that are not responding at the top, with a coloured edge for status."],
   tiles: ["Tiles", "A grid of cards with a description, like a launcher."],
@@ -142,9 +142,9 @@ let serverDesign = "health";
 // css/palettes.css (synced from the design system) only then. The last one seen is kept here so the first paint is
 // right before /api/session answers.
 const OWN_COLOURS_KEY = "starboard.own-colours";
-let ownColours = (() => { try { return localStorage.getItem(OWN_COLOURS_KEY) || "teal"; } catch { return "teal"; } })();
+let ownColours = (() => { try { return localStorage.getItem(OWN_COLOURS_KEY) || "blue"; } catch { return "blue"; } })();
 function setOwnColours(value) {
-  ownColours = /^[a-z]+$/.test(value || "") ? value : "teal";
+  ownColours = /^[a-z]+$/.test(value || "") ? value : "blue";
   try { localStorage.setItem(OWN_COLOURS_KEY, ownColours); } catch { /* private window */ }
   applyPrefs();
   document.dispatchEvent(new CustomEvent("stylechange"));
@@ -152,8 +152,10 @@ function setOwnColours(value) {
 
 function applyPrefs(prefs = readPrefs()) {
   const root = document.documentElement;
-  if (prefs.theme === "system") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", prefs.theme);
+  // Light unless chosen (owner, 18 November 2026, DASH-479): Match device sets the device's choice here, as the design
+  // system no longer follows it on its own.
   const dark = prefs.theme === "dark" || (prefs.theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+  root.setAttribute("data-theme", dark ? "dark" : "light");
   root.classList.toggle("is-dark", dark);
   root.classList.remove("pref-text-125", "pref-text-150", "pref-text-175");
   if (prefs.text !== "100") root.classList.add(`pref-text-${prefs.text}`);
@@ -172,7 +174,7 @@ function applyPrefs(prefs = readPrefs()) {
     delete root.dataset.style;
   }
   // The own style's colours, only while no plug-in style is in use, so a plug-in style is never mixed with them.
-  const palette = !root.dataset.style && ownColours !== "teal" ? ownColours : "";
+  const palette = !root.dataset.style && ownColours !== "blue" ? ownColours : "";
   if (palette) {
     root.dataset.palette = palette;
     if (!document.getElementById("palette-styles")) {
@@ -247,6 +249,7 @@ const STATUS = Object.freeze({
   checkFirst: ["Check before updating", "warning"],
   upToDate: ["Up to date", "success"],
   neverUpdated: ["Never updated", "warning"],
+  restartNeeded: ["Restart needed", "warning"],
   wanted: ["Wanted", "neutral"],
 });
 
@@ -688,6 +691,94 @@ function confirmDialog({ title, message, confirm = "Continue", cancel = "Cancel"
     start?.focus();
   });
 }
+
+// Restart where it is needed (DASH-470; design system: "Restart where it is needed"). Drawn only while an app says
+// it needs a restart, in the place that says so. The button says what it does beside it, asks first, then follows
+// the app until it answers again, in words in a polite status under the button. While it works the button keeps
+// focus (aria-disabled, as Show more does); when the app is back the button goes and focus moves to the result.
+// A failure is said beside the button, which can be pressed again.
+//   restart(): starts the restart (throws an Error in words);
+//   back(): true once the app answers and needs no restart (false, or a throw, while it is away);
+//   done(): draws the place again; it may return the element focus should go to.
+// It asks every 3 seconds, one small request each time, for up to 3 minutes, and only after the button is pressed.
+let restartCount = 0;
+function restartButton({ name, what, restart, back, done = null, every = 3000, limit = 180000 }) {
+  const n = ++restartCount;
+  const hint = el("p", { class: "small", id: `restart-${n}-what`, text: what });
+  const status = el("p", { class: "small", role: "status", id: `restart-${n}-status`, tabindex: "-1" });
+  const busy = el("div", { class: "progress progress--busy", hidden: true }, el("span"));
+  const button = el("button", { type: "button", class: "btn btn--primary", "aria-describedby": hint.id }, icon("rotate-ccw"), `Restart ${name}`);
+  const box = el("div", { class: "stack-2", "data-restart": "" }, el("div", { class: "actions" }, button), hint, busy, status);
+  const working = (on) => {
+    box.dataset.state = on ? "working" : "";
+    busy.hidden = !on;
+    if (on) button.setAttribute("aria-disabled", "true"); else button.removeAttribute("aria-disabled");
+  };
+  const fail = (message) => { working(false); status.textContent = ""; inlineError(button, message); };
+  button.addEventListener("click", async () => {
+    if (button.getAttribute("aria-disabled") === "true") return;
+    if (!await confirmDialog({ title: `Restart ${name}?`, message: what, confirm: `Restart ${name}`, careful: true })) return;
+    working(true);
+    status.textContent = `Asking ${name} to restart.`;
+    try { await restart(); } catch (e) { fail(e.message || `${name} did not restart`); return; }
+    const started = Date.now();
+    let said = 0;
+    status.textContent = `${name} is restarting. This checks every few seconds and says when it answers again.`;
+    for (;;) {
+      await new Promise((r) => setTimeout(r, every));
+      // Each check gives up after 8 seconds, so a request that hangs while the app is away never stalls the wait.
+      const ok = await Promise.race([Promise.resolve().then(back).catch(() => false), new Promise((r) => setTimeout(() => r(false), 8000))]);
+      if (ok) break;
+      const seconds = Math.round((Date.now() - started) / 1000);
+      if (Date.now() - started >= limit) {
+        fail(`${name} has not answered for ${Math.round(limit / 60000)} minutes. Check it is running in Apps, then try again`);
+        return;
+      }
+      if (seconds - said >= 20) { said = seconds; status.textContent = `Still waiting for ${name} to answer: ${seconds} seconds so far.`; }
+    }
+    const hadFocus = document.activeElement === button || document.activeElement === document.body;
+    working(false);
+    box.dataset.state = "done";
+    button.closest(".actions").remove();
+    hint.remove();
+    status.textContent = `${name} restarted and answers again.`;
+    const target = done ? await done() : null;
+    if (hadFocus) (target?.isConnected ? target : status.isConnected ? status : null)?.focus();
+  });
+  return box;
+}
+
+// The warning notice a Restart button sits in: why the app needs a restart, then the button (options as
+// restartButton). Drawn with the page, so it is not a live region itself; the button's status is. Once the app is
+// back it becomes a success notice, "<name> restarted".
+function restartNotice({ title, text, ...options }) {
+  const titleEl = el("span", { class: "notice__title", text: title });
+  const textEl = el("p", { text });
+  const mark = icon("triangle-alert");
+  const box = restartButton({ ...options, done: async () => {
+    note.dataset.tone = "success";
+    mark.replaceWith(icon("circle-check"));
+    titleEl.textContent = `${options.name} restarted`;
+    textEl.remove();
+    return options.done ? options.done() : null;
+  } });
+  const note = el("div", { class: "notice", "data-tone": "warning", "data-restart-notice": "" }, mark, el("div", { class: "notice__body" }, titleEl, textEl, box));
+  return note;
+}
+
+// Jellyfin's restart, for restartButton and restartNotice: Jellyfin restarts itself (POST /System/Restart through
+// Starboard) and is followed with one /System/Info call at a time (GET /api/jellyfin/restart). On the owner's server
+// Jellyfin answered again 5 seconds after a restart and its plug-ins were ready after 17 (17 November 2026);
+// playback stops either way.
+function jellyfinRestart(name = "Jellyfin", done = null) {
+  return { name, done,
+    what: `Anyone watching or listening is stopped and has to press play again. ${name} is back in under a minute.`,
+    restart: () => api("/api/jellyfin/restart", { method: "POST" }),
+    back: async () => { const s = await api("/api/jellyfin/restart"); return s.answering && !s.restart; } };
+}
+
+// The same for a restart Jellyfin waits for, in words for each place it is shown.
+const JELLYFIN_RESTART_WHY = "Jellyfin starts using new plug-ins, new versions of them and some changed settings only after it restarts.";
 
 // The set-ups' words (web/setup-answers.json, the file the terminal set-up reads too), read once for each page:
 // several steps and dialogs on one page use them, and each asked for the file again (optimisation review,
@@ -1453,24 +1544,24 @@ function resetStyle() {
   const prefs = { ...readPrefs(), style: "" };
   writePrefs(prefs);
   applyPrefs(prefs);
-  announce(`Style reset to Starboard's own style, ${ownColoursLabel()} colours`);
+  announce(`Style reset to Starboard's own style, ${ownColoursLabel()} accent`);
   document.dispatchEvent(new CustomEvent("stylechange"));
 }
 
 // The design system's palettes for the own style (DASH-388), read from palettes.json (synced from the design system)
-// only on the pages that show them. Teal is tokens.css, so its colours are here.
-const TEAL = { label: "Teal", suits: "Starboard's standard colours",
-  light: { "color-bg": "#f0f5ff", "color-header": "#fcfdff", "color-surface-raised": "#ffffff", "color-surface-sunken": "#e4ebf7", "color-text": "#141416",
-    "color-text-muted": "#424b5b", "color-border": "#7d879a", "color-accent": "#0b5f5a", "color-accent-text": "#ffffff" },
-  dark: { "color-bg": "#101827", "color-header": "#141e2e", "color-surface-raised": "#232f42", "color-surface-sunken": "#0c1220", "color-text": "#f3f4f6",
-    "color-text-muted": "#a4aec1", "color-border": "#6f7b91", "color-accent": "#5ed3c6", "color-accent-text": "#101827" } };
-const PALETTE_LABELS = { teal: "Teal", indigo: "Indigo", forest: "Forest", plum: "Plum", ember: "Ember", graphite: "Graphite" };
+// only on the pages that show them. Blue, Mica's accent and the default since DASH-479, is tokens.css, so its colours are here.
+const BLUE = { label: "Blue", suits: "Mica's accent, Starboard's standard colour",
+  light: { "color-bg": "#f3f3f3", "color-header": "#f3f3f3", "color-surface-raised": "#ffffff", "color-surface-sunken": "#ebebeb", "color-text": "#1a1a1a",
+    "color-text-muted": "#5d5d5d", "color-border": "#767676", "color-accent": "#005fb8", "color-accent-text": "#ffffff" },
+  dark: { "color-bg": "#202020", "color-header": "#202020", "color-surface-raised": "#323232", "color-surface-sunken": "#1c1c1c", "color-text": "#ffffff",
+    "color-text-muted": "#c5c5c5", "color-border": "#949494", "color-accent": "#60cdff", "color-accent-text": "#000000" } };
+const PALETTE_LABELS = { blue: "Blue", teal: "Teal", indigo: "Indigo", forest: "Forest", plum: "Plum", ember: "Ember", graphite: "Graphite" };
 function ownColoursLabel() { return PALETTE_LABELS[ownColours] || "Teal"; }
 let paletteList = null;
 function palettes() {
   if (!paletteList) {
-    paletteList = fetch("/palettes.json", { cache: "no-cache" }).then((r) => r.json()).then((d) => ({ teal: TEAL, ...d }))
-      .catch(() => ({ teal: TEAL }));
+    paletteList = fetch("/palettes.json", { cache: "no-cache" }).then((r) => r.json()).then((d) => ({ blue: BLUE, ...d }))
+      .catch(() => ({ blue: BLUE }));
   }
   return paletteList;
 }
@@ -1480,8 +1571,8 @@ function palettes() {
 function ownColoursChoice(idPrefix = "own") {
   const name = `${idPrefix}-colours`;
   const list = el("div", { class: "option-cards option-cards--row" });
-  const box = el("fieldset", { class: "stack-2", "data-own-colours": "" }, el("legend", { text: "Own style colours" }),
-    el("p", { class: "hint", id: `${name}-hint`, text: "From the design system, for everyone on this server. Reset style comes back to these." }),
+  const box = el("fieldset", { class: "stack-2", "data-own-colours": "" }, el("legend", { text: "Accent colour" }),
+    el("p", { class: "hint", id: `${name}-hint`, text: "Mica, Starboard's own style, in the accent you choose: for everyone on this server. Reset style comes back to it." }),
     list, savedNote(`${name}-saved`));
   const tick = () => $$(`input[name="${name}"]`, list).forEach((r) => { r.checked = r.value === ownColours; });
   palettes().then((all) => {
@@ -1523,7 +1614,7 @@ function openDisplayPanel(template, opener) {
   designList.closest("fieldset").before(styleSet);
   api("/api/styles").then((r) => {
     if (!r.styles.length) return;
-    for (const [value, label, help, swatch] of [["", "Starboard's own style", `${ownColoursLabel()} colours, chosen in Settings.`, null], ...r.styles.map((x) => [x.value, x.name, `${x.description} From ${x.plugin}.`, x])]) {
+    for (const [value, label, help, swatch] of [["", "Starboard's own style", `Mica with the ${ownColoursLabel()} accent, chosen in Settings.`, null], ...r.styles.map((x) => [x.value, x.name, `${x.description} From ${x.plugin}.`, x])]) {
       styleList.append(el("label", { class: "option-card" },
         el("input", { type: "radio", name: "style", value, checked: value === readPrefs().style }),
         el("strong", {}, swatch ? styleSwatch(swatch) : null, label),
@@ -1629,7 +1720,7 @@ async function startFeedback(session) {
     // Pages with the side menu open it from Feedback in the menu. Pages without one, such as the set-up, keep the
     // button bottom left: side panels open on the right, with their Save and Remove buttons at the bottom.
     launcher: inMenu.length ? false : "bottom-left",
-    theme: document.documentElement.dataset.theme || "auto", // the theme chosen in Display, or the device's
+    theme: document.documentElement.dataset.theme === "dark" ? "dark" : "light", // the theme Display set (light unless chosen, DASH-479)
     types: ["bug", "ux", "visual", "accessibility", "performance", "content", "feature", "idea", "other", "check"],
     send: {
       github: session.repo ? { repo: session.repo } : null,
@@ -1777,7 +1868,7 @@ async function startPage() {
   try {
     const session = await api("/api/session");
     serverDesign = session.design || "health";
-    if ((session.own_colours || "teal") !== ownColours) setOwnColours(session.own_colours); else applyPrefs();
+    if ((session.own_colours || "blue") !== ownColours) setOwnColours(session.own_colours); else applyPrefs();
     $$("[data-site-name]").forEach((n) => { n.textContent = session.site_name; });
     showServerName(session.server_name);
     listLoading = session.infinite_scroll === false ? "button" : "auto";

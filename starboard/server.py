@@ -1257,7 +1257,7 @@ class Handler(BaseHTTPRequestHandler):
                     # DASH-238: until the first set-up has finished, pages show only the set-up wizard.
                     "first_setup": bool(app.config.data.get("first_setup_pending")) if signed_in else None,
                     "site_name": app.config.data["site_name"], "design": app.config.data["design"],
-                    "own_colours": app.config.data.get("own_colours", "teal"),
+                    "own_colours": app.config.data.get("own_colours", "blue"),
                     # Not told to people who have not signed in.
                     "version": app.version if signed_in else None,
                     "server_name": app.config.data["server_name"] if signed_in else None,
@@ -1733,6 +1733,12 @@ class Handler(BaseHTTPRequestHandler):
                     return self.error(400, str(e))
                 except OSError as e:
                     return self.error(502, f"Jellyfin did not do it: {getattr(e, 'reason', e)}")
+            if path == "/api/jellyfin/restart" and method == "GET":  # followed by a Restart Jellyfin button (DASH-470)
+                from . import jellyfin_plugins
+                try:
+                    return self.json(200, jellyfin_plugins.restart_state(cfg.data["services"]))
+                except ValueError as e:
+                    return self.error(400, str(e))
             if path == "/api/jellyfin/restart" and method == "POST":
                 from . import jellyfin_plugins
                 try:

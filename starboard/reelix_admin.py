@@ -52,6 +52,14 @@ def base_url(data_dir, services):
     return None
 
 
+def service_id(services):
+    """The id of the Reelix app in Manage apps, for its Restart (/api/services/<id>/restart), or "" when there is none:
+    its web page entry first, as base_url chooses."""
+    found = [s for s in services if s.get("icon") == "reelix" and s.get("enabled", True)]
+    found.sort(key=lambda s: s.get("type") != "link")
+    return found[0]["id"] if found else ""
+
+
 class Visit:
     """Signed in to Reelix as an admin for one change: `with Visit(base, password) as reelix: reelix.call(...)`.
     Signs out on the way out, whatever happened."""
@@ -322,6 +330,8 @@ def _act(app, reelix, base, kind, action, body):
         out = acts[action]()
         if out.get("done"):
             logs.event("info", "reelix", out["done"])
+        if "restore_waiting" in out:  # the app Restart Reelix restarts, beside a restore that waits (DASH-470)
+            out["service"] = service_id(app.config.data["services"])
         return out
     if kind == "form":  # Information, Files, Requests, Books, Music (DASH-193, 195, 197)
         from . import reelix_forms

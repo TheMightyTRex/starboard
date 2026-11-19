@@ -391,6 +391,19 @@ def restart(services, opener=None):
     _call(jf["url"], jf["api_key"], "POST", "/System/Restart", opener=opener)
 
 
+def restart_state(services, opener=None):
+    """What a Restart Jellyfin button follows while Jellyfin starts again (DASH-470): one small /System/Info call.
+    {"answering": False} while Jellyfin is away; {"answering": True, "restart": still needed or not} once it is back."""
+    jf = find(services)
+    if not jf:
+        raise ValueError("Add Jellyfin with its API key in Manage apps first")
+    try:
+        info = _call(jf["url"], jf["api_key"], "GET", "/System/Info", opener=opener) or {}
+    except (urllib.error.URLError, OSError, ValueError):
+        return {"answering": False, "restart": None}
+    return {"answering": True, "restart": bool(info.get("HasPendingRestart"))}
+
+
 def _quiet_trigger(cfg_data):
     start, length = quiet_hours(cfg_data)
     return {"Type": "DailyTrigger", "TimeOfDayTicks": start * TICKS_PER_HOUR, "MaxRuntimeTicks": length * TICKS_PER_HOUR}

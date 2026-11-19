@@ -35,7 +35,7 @@ def restore(reelix, name):
     if not name or "/" in name or ".." in name or len(name) > 200:
         raise ValueError("Choose a backup from the list")
     reelix.call("POST", f"/system/backups/{name}/restore", ok=(200, 202, 204))
-    return {**backups(reelix), "done": "Reelix restores this backup when it starts again. Restart Reelix on System, Apps"}
+    return {**backups(reelix), "done": "Reelix restores this backup when it starts again: Restart Reelix, beside the backups, does it now"}
 
 
 def logs(reelix, level="", lines=200):
