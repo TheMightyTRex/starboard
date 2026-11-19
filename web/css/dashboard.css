@@ -15,6 +15,7 @@
   background: var(--color-surface);
   border: 1px solid var(--color-divider);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
 }
 .dash-card--small { grid-column: span 3; }
 .dash-card--medium { grid-column: span 4; }

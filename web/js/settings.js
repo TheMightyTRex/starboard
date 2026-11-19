@@ -822,7 +822,7 @@ function startGeneral() {
   let styleNames = {};
   const styleShow = () => {
     const chosen = readPrefs().style;
-    styleSaid.replaceChildren("This browser uses ", el("strong", { text: chosen ? (styleNames[chosen] || "a style from a plug-in that is now off") : `Starboard's own style, ${ownColoursLabel()} colours` }), ".");
+    styleSaid.replaceChildren("This browser uses ", el("strong", { text: chosen ? (styleNames[chosen] || "a style from a plug-in that is now off") : `Starboard's own style, ${ownColoursLabel()} accent` }), ".");
     styleResetBtn.disabled = !chosen;
   };
   styleResetBtn.addEventListener("click", () => { resetStyle(); styleShow(); });

@@ -31,7 +31,7 @@ one column, with the menu under **Menu**.
 
 | Device setting | What Starboard does |
 |---|---|
-| Dark mode | With **Theme** on **Match device**, the default, Starboard is dark when the device is. |
+| Dark mode | Starboard is light unless you choose. With **Theme** on **Match device**, Starboard is dark when the device is. |
 | Reduce motion | With **Reduce motion** on **Match device**, the default, Starboard stops sliding and smooth scrolling. |
 | Pinch to zoom | Never blocked. |
 | VoiceOver and TalkBack | Every control has a name, pages have headings and landmarks, and messages are said politely. Read [Use a screen reader](use-a-screen-reader.md). |

@@ -30,7 +30,7 @@ back to its default, including the design and the style, and says "Display setti
 
 | Setting | Choices | What it changes | More |
 |---|---|---|---|
-| **Theme** | **Match device** (default), **Light**, **Dark** | Dark text on a light page, or light text on a dark page. | [Light, dark and high contrast](../accessibility/light-dark-and-high-contrast.md) |
+| **Theme** | **Match device**, **Light** (default), **Dark** | Dark text on a light page, or light text on a dark page. | [Light, dark and high contrast](../accessibility/light-dark-and-high-contrast.md) |
 | **Text size** | **100%** (default), **125%**, **150%**, **175%** | All of Starboard's text, with the page laid out again to fit. | [Text size and spacing](../accessibility/text-size-and-spacing.md) |
 | **Reduce motion** | **Match device** (default), **On**, **Off** | Slide-outs, messages and lists appear without sliding, shimmering or loading by themselves. | [Reduce motion](../accessibility/reduce-motion.md) |
 | **High contrast** | Activated or deactivated (default) | Near-black or white text, solid borders, no shadows and a bolder focus colour. | [Light, dark and high contrast](../accessibility/light-dark-and-high-contrast.md) |
@@ -67,8 +67,8 @@ spacing, underlined links and reduced motion always win over a style.
   one you use.
 - A private or incognito window may forget them when it closes. Clearing your browser's data for Starboard also
   clears them.
-- **Settings for everyone on the server:** two related settings are kept on the server instead. The own style
-  colours are in **Settings**, then **General**, then **Appearance**. **Load more as you scroll** is in
+- **Settings for everyone on the server:** two related settings are kept on the server instead. The accent
+  colour is in **Settings**, then **General**, then **Appearance**. **Load more as you scroll** is in
   **Settings**, then **General**, then **Pages and lists**, under **Long lists**.
 - **Match device** uses the light, dark and motion settings of your phone or computer, so Starboard changes when
   they do.

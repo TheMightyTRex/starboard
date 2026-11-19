@@ -305,13 +305,13 @@ function stylePicture(look, mode) {
 // The Styles section: a picture of every style and Use this style, the same choice as Display's Style list.
 // Starboard's own style, for the default card in the Styles section: its shape, and its colours from the design
 // system palette chosen for it (DASH-388; Teal, tokens.css, unless another is chosen).
-const STARBOARD_LOOK = { value: "", name: "Starboard's own style", radius: 8, font: "\"Atkinson Hyperlegible Next\", sans-serif", shadow: "soft" };
+const STARBOARD_LOOK = { value: "", name: "Starboard's own style", radius: 6, font: "\"Atkinson Hyperlegible Next\", sans-serif", shadow: "soft" };
 function ownLook(all) {
-  const p = all[ownColours] || all.teal;
+  const p = all[ownColours] || all.blue;
   const pick = (c) => Object.fromEntries(["bg", "header", "surface_raised", "surface_sunken", "text", "text_muted", "border", "accent", "accent_text"]
     .map((k) => [k, c[`color-${k.replace(/_/g, "-")}`]]));
   return { ...STARBOARD_LOOK, light: pick(p.light), dark: pick(p.dark),
-    description: `${p.label} colours from the design system, chosen in Style and colours. Use it to go back from any style, as Reset style does in Display.` };
+    description: `Mica with the ${p.label} accent from the design system, chosen in Style and colours. Use it to go back from any style, as Reset style does in Display.` };
 }
 
 // The Styles section (owner, 12 November 2026: "you need a default option which resets the style"): Starboard's own
@@ -319,7 +319,7 @@ function ownLook(all) {
 function styleGallery(p) {
   const active = p.state === "enabled";
   const grid = el("ul", { class: "style-gallery" });
-  let all = { teal: TEAL };
+  let all = { blue: BLUE };
   const draw = () => {
     const OWN = ownLook(all);
     const current = readPrefs().style || "";

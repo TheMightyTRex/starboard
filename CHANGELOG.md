@@ -10,6 +10,14 @@ add features.
 ### Added
 - **Restart where it is needed (DASH-470):** when Jellyfin says Restart needed, Restart Jellyfin is right there: on System, Overview, under Jellyfin's heading; on Settings, Updates, beside Jellyfin's plug-ins; and on Settings, Apps, Jellyfin, Recommended plug-ins. Beside a Reelix restore that waits for Reelix to start again, on Backup, Restart Reelix does it now. Each button shows only while a restart is needed and says what it does: anyone watching or listening is stopped and has to press play again, and Jellyfin is back in under a minute. It asks first, then follows the app until it answers again, saying how it is going, and the status updates by itself. Focus stays on the button while it works and moves to the result; a failure is said beside the button, which can be pressed again. It asks one small question every 3 seconds, only after you press it, for at most 3 minutes.
 
+### Changed
+- **Mica is Starboard's own style (DASH-479):** calm neutral greys, 6px corners on buttons, fields, cards, panels, menus and dialogs, a light lift on cards, and a Blue accent. The dashboard card is the model for the rest: System panels, Settings sections, tables, slide-outs and dialogs wear its grey band across the top. Card edges and rules are one colour, a little darker than before. The design before it is the Classic style in the Styles plug-in (1.5.0).
+- **Light unless you choose:** Starboard opens in Light for everyone who has not chosen a theme in Display; Dark and Match device stay as choices, and a choice already made is kept.
+- **Glass:** the header, side menu, menus, slide-outs and dialogs are frosted layers over a soft wash of the accent colour, solid in high contrast and with Reduce transparency; cards have Mica's drop shadow.
+- **Accent colour:** Settings, General, Appearance chooses the accent (Blue, Teal, Indigo, Forest, Plum, Ember or Graphite) on Mica's greys, for everyone on the server. High contrast keeps the chosen accent in a stronger shade. A server on Teal, the old default, moves to Blue once; choose Teal again to keep it.
+- **A clearer hover on every menu:** the side menu, the header tabs, topic tabs and menus show a light fill with an edge at least 3:1 against the menu, in light, dark and high contrast and with every accent; the page you are on keeps its accent bar.
+- **Styles from plug-ins keep their own design:** cards lift only in styles with elevated cards, headings keep their weight, and the menu hover edge is the style's secondary text colour, checked at 3:1 when a style is added.
+
 ## [0.21.0] (17 November 2026)
 
 ### Added

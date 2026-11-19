@@ -221,7 +221,7 @@ body:not(.show-advanced) :is([data-advanced]:has(:target), [data-advanced]:targe
 .fold__title { margin: 0; flex: 1; font-size: var(--text-md); }
 .fold__toggle { display: flex; align-items: center; gap: var(--space-3); width: 100%; min-height: var(--control-h); padding: var(--space-2) var(--space-4);
   border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
-.fold__toggle:hover { background: var(--color-surface-sunken); }
+.fold__toggle:hover { background: var(--color-hover); box-shadow: inset 0 0 0 1px var(--color-hover-edge); }
 .fold__name { flex: 1; font-weight: var(--weight-strong); }
 .fold__switch { display: flex; align-items: center; gap: var(--space-2); }
 .fold__panel { padding: 0 var(--space-4) var(--space-4); }
