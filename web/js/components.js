@@ -454,7 +454,8 @@
   }
 
   /* Display and accessibility: theme, text size and reading aids are classes on <html>. Inputs carry
-     data-display="theme|text|motion|contrast|underline|spacing". Theme "system" follows the device.
+     data-display="theme|text|motion|contrast|underline|spacing". Light is the default (owner, 18 November 2026);
+     theme "system" (Match device) sets data-theme to the device's choice and follows it when it changes.
      Reduce motion is a switch, or radios valued "device" (follows the device), "on" (always still) and
      "off" (full movement, even when the device asks for less). A form with data-display-save="<key>" keeps the choices in
      this browser and restores them; a [data-display-reset] button inside it, or one anywhere with
@@ -468,14 +469,20 @@
     if (html.classList.contains("pref-motion-off")) return false;
     return Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
   };
+  /* The theme on <html>: light, dark, or the device's choice for "system". Exported as SharedComponents.applyTheme. */
+  const darkQuery = window.matchMedia?.("(prefers-color-scheme: dark)");
+  let followDevice = false;
+  function applyTheme(value) {
+    const html = document.documentElement;
+    followDevice = value === "system";
+    html.dataset.theme = followDevice ? (darkQuery?.matches ? "dark" : "light") : value === "dark" ? "dark" : "light";
+  }
+  darkQuery?.addEventListener?.("change", () => followDevice && applyTheme("system"));
   function applyDisplay(input) {
     const html = document.documentElement;
     const kind = input.dataset.display;
     if (input.type === "radio" && !input.checked) return;
-    if (kind === "theme") {
-      if (input.value === "system") html.removeAttribute("data-theme");
-      else html.dataset.theme = input.value;
-    }
+    if (kind === "theme") applyTheme(input.value);
     if (kind === "text")
       ["125", "150", "175"].forEach((size) =>
         html.classList.toggle(`pref-text-${size}`, input.value === size),
@@ -1007,7 +1014,7 @@
     setupSideTrees(root);
     setupSolvers(root);
   }
-  window.SharedComponents = { setup, setupHeaderFit, fitHeader, motionStill, setupSideTrees, setupSolvers, setupSearch, setupSearchIcons, setupSortables, openLayer, toast, savedNote, copyText, azLetter, azJump, azGo, loadMore };
+  window.SharedComponents = { setup, applyTheme, setupHeaderFit, fitHeader, motionStill, setupSideTrees, setupSolvers, setupSearch, setupSearchIcons, setupSortables, openLayer, toast, savedNote, copyText, azLetter, azJump, azGo, loadMore };
   // An app that wires its own behaviour (Starboard's page scripts) loads this file with data-manual, or
   // sets window.SharedComponentsManual = true first, and calls setup() or openLayer() itself.
   const manual = window.SharedComponentsManual || document.currentScript?.hasAttribute("data-manual");

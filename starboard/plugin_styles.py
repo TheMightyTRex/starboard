@@ -256,6 +256,14 @@ def check_style(style, where="style"):
                         if ratio < 4.5:
                             add("error", f"{fg} on glass ({base} over {p}) is {ratio:.2f}:1; needs 4.5:1 (WCAG 2.2)",
                                 "Bring the page colours nearer the panels, or leave glass out", at)
+        # The hover on menus (DASH-479): the edge, in the secondary text colour, at 3:1 over the hover fill (the text
+        # colour at 7% in light, 9% in dark) on every surface a menu sits on.
+        for bk in ("bg", "header", "surface", "surface_raised"):
+            fill = _mix(colours[bk], colours["text"], 0.07 if mode == "light" else 0.09)
+            ratio = contrast(colours["text_muted"], fill)
+            if ratio < 3.0:
+                add("error", f"text_muted on the hover fill over {bk} is {ratio:.2f}:1; the hover edge on menus needs 3:1 (WCAG 2.2)",
+                    f"Make text_muted {'darker' if mode == 'light' else 'lighter'}", at)
         if mode == "light" and _lum(colours["bg"]) < 0.4:
             add("warning", "The light background is dark", "People who choose Light expect a light page", at)
         if mode == "dark" and _lum(colours["bg"]) > 0.1:
@@ -332,7 +340,14 @@ def css(plugin_id, styles):
             continue
         name = f"{plugin_id}.{s['id']}"
         shape = [f"--radius: {int(s.get('radius', 0))}px", f"--font: {FONTS[s.get('font', 'hyperlegible')]}",
-                 f"--shadow-raised: {SHADOWS[s.get('shadow', 'none')]}"]
+                 f"--shadow-raised: {SHADOWS[s.get('shadow', 'none')]}",
+                 # Mica is the design system's default (DASH-479): a style keeps its own design, so cards lift only when
+                 # it asks for elevated cards, headings keep 700 unless it sets a weight, and the hover edge on menus
+                 # is its secondary text colour, checked at 3:1 over the hover fill.
+                 f"--shadow-card: {'var(--shadow-raised)' if s.get('card_style') == 'elevated' else 'none'}",
+                 "--color-hover-edge: var(--color-text-muted)"]
+        if not s.get("heading_weight"):
+            shape.append("--weight-heading: 700")
         if s.get("heading_font"):
             shape.append(f"--font-heading: {FONTS[s['heading_font']]}")
         if s.get("heading_weight"):

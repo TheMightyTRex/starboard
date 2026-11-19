@@ -194,7 +194,7 @@ class ListeningTest(unittest.TestCase):
     def test_old_settings_give_audiobookshelf_its_own_type(self):
         data = config.migrate({"schema": 1, "services": [{"name": "Audiobookshelf", "type": "link"}, {"name": "Books", "type": "link"}]})
         self.assertEqual([s["type"] for s in data["services"]], ["audiobookshelf", "link"])
-        self.assertEqual(data["schema"], 2)
+        self.assertEqual(data["schema"], config.SCHEMA)
 
 
 if __name__ == "__main__":

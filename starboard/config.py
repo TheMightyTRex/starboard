@@ -8,7 +8,7 @@ import shutil
 import threading
 import time
 
-SCHEMA = 2
+SCHEMA = 3
 BACKUP_SCHEDULES = ("off", "manual", "monthly", "weekly", "nightly")
 KEEP_VERSIONS = (5, 10, 20)
 
@@ -35,8 +35,9 @@ SERVICE_TYPES = {
 SERVER_NAME_MAX = 10
 
 DESIGNS = ["health", "tiles", "shelf", "command", "board"]
-# The own style's colours (DASH-388): the design system's palettes (web/palettes.json); teal is its default, tokens.css.
-OWN_COLOURS = ("teal", "indigo", "forest", "plum", "ember", "graphite")
+# The own style's accent colour (DASH-388, DASH-479): Blue, Mica's accent, is the default (tokens.css); the others are the
+# design system's palettes (web/palettes.json), Teal being the colour before Mica.
+OWN_COLOURS = ("blue", "teal", "indigo", "forest", "plum", "ember", "graphite")
 
 UPCOMING_VIEWS = ("list", "calendar")
 UPCOMING_DAYS = (7, 14, 30, 60, 90)
@@ -52,7 +53,7 @@ DEFAULTS = {
     # The server's own name, up to 10 characters, at the start of the level 1 menu. Empty shows nothing.
     "server_name": "",
     "design": "health",
-    "own_colours": "teal",
+    "own_colours": "blue",
     "secure_cookies": False,
     "session_days": 7,
     "update_check": True,
@@ -254,8 +255,8 @@ class Config:
         if data.get("design") not in DESIGNS:  # a design that has since been removed
             data["design"] = DEFAULTS["design"]
             self._write(data)
-        if data.get("own_colours", "teal") not in OWN_COLOURS:  # a palette the design system no longer has
-            data["own_colours"] = "teal"
+        if data.get("own_colours", "blue") not in OWN_COLOURS:  # a palette the design system no longer has
+            data["own_colours"] = "blue"
             self._write(data)
         if data["network_access"] is None:
             data["network_access"] = os.environ.get("STARBOARD_NETWORK", "1") != "0"
@@ -345,7 +346,7 @@ class Config:
             "server_name": d["server_name"],
             "server_name_max": SERVER_NAME_MAX,
             "design": d["design"],
-            "own_colours": d.get("own_colours", "teal"),
+            "own_colours": d.get("own_colours", "blue"),
             "groups": d["groups"],
             "secure_cookies": d["secure_cookies"],
             "session_days": d["session_days"],
@@ -830,6 +831,10 @@ def migrate(data):
             if s.get("type") == "link" and re.sub(r"[^a-z]", "", str(s.get("name", "")).lower()) == "audiobookshelf":
                 s["type"] = "audiobookshelf"
         data["schema"] = 2
+    if version < 3:  # Mica is the default design (DASH-479, owner, 18 November 2026): Teal was the default, so it moves to Blue
+        if data.get("own_colours", "teal") == "teal":
+            data["own_colours"] = "blue"
+        data["schema"] = 3
     return data
 
 

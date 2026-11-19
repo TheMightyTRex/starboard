@@ -5,8 +5,11 @@
  * theme is a change of values, not of components. Three themes: Light, Dark, High contrast (light and
  * dark). Display preferences (text size, wider spacing, reduced motion) are classes on <html>.
  *
- * Colours are Storyarr's, already used by Starboard. Every text and control pair below meets
- * WCAG 2.2 AA (4.5:1 text, 3:1 borders of controls and focus) in every theme; see README.md.
+ * The default design is Mica (owner, 18 November 2026, DASH-479): calm neutral greys, small round corners (6px), a
+ * layered shadow on cards and menus, and one accent colour, Blue unless another is chosen (palettes/). The design
+ * before it, teal on blue-grey with square corners, is the Classic style in Starboard's Styles plug-in.
+ * Every text and control pair below meets WCAG 2.2 AA (4.5:1 text, 3:1 borders of controls, hover edges and focus)
+ * in every theme and with every accent: tools/check_accents.py proves it.
  */
 
 @font-face {
@@ -32,7 +35,7 @@
   --word-spacing: normal;
   --weight-regular: 400;
   --weight-strong: 600;
-  --weight-heading: 700;
+  --weight-heading: 600;
 
   /* Space: a 4px scale. */
   --space-1: 4px;
@@ -52,7 +55,7 @@
   --icon-sm: 16px;
   --icon-md: 18px;
   --icon-lg: 20px;
-  --radius: 0;
+  --radius: 6px; /* Mica's corners, on every control, card, panel, menu and dialog */
   --radius-round: 50%;
   --header-h: 64px;
   --tabs-h: 48px;
@@ -80,40 +83,58 @@
   --layer-dialog: 80;
   --layer-toast: 90;
 
-  /* Colour: Light. */
-  --color-bg: #f0f5ff;
-  --color-header: #fcfdff;
-  --color-surface: #f7faff;
+  /* Colour: Light (Mica). */
+  --color-bg: #f3f3f3;
+  --color-header: #f3f3f3;
+  --color-surface: #fbfbfb;
   --color-surface-raised: #ffffff;
-  --color-surface-sunken: #e4ebf7;
-  --color-text: #141416;
-  --color-text-muted: #424b5b;
-  --color-border: #7d879a;
-  --color-divider: #c2cddf;
-  --color-accent: #0b5f5a; /* teal (UX-02, option B) */
+  --color-surface-sunken: #ebebeb;
+  --color-text: #1a1a1a;
+  --color-text-muted: #5d5d5d;
+  --color-border: #767676;
+  --color-divider: #898989; /* card edges and rules (hr) share it: the lightest grey with 3:1 on the tinted page and the card (owner, 18 November 2026) */
+  --color-accent: #005fb8; /* Blue, Mica's accent; palettes/ has the others */
   --color-accent-text: #ffffff;
-  --color-accent-soft: #dff1ef;
+  --color-accent-soft: #e0eef9;
   --color-panel-header: #ffffff;
-  /* Scroll bars: thin, square and in the border colour, so they show without shouting (TheMightyTRexUK, 2 November
+  /* Scroll bars: thin and in the border colour, so they show without shouting (TheMightyTRexUK, 2 November
      2026). They follow every theme because they point at other roles. */
   --color-scrollbar: var(--color-border);
   --color-scrollbar-hover: var(--color-text-muted);
-  --color-slide-header: var(--color-bg); /* slide-out headers: the page background over a white body */
-  --color-control-active: color-mix(in srgb, var(--color-accent) 12%, transparent);
-  --color-focus: #0b5f5a;
+  --color-slide-header: var(--color-surface-sunken); /* slide-out headers: the grey band of a dashboard card (DASH-479) */
+  /* The chosen item in a menu or a group of buttons: the accent's soft tint, with the accent bar beside it. */
+  --color-control-active: var(--color-accent-soft);
+  /* Hover on every menu, tab and list item (owner, 18 November 2026): a light fill and an edge in the border colour,
+     so the edge is at least 3:1 against whatever the item sits on, in every theme and with every accent. */
+  --color-hover: color-mix(in srgb, var(--color-text) 7%, transparent);
+  --color-hover-edge: var(--color-border);
+  /* Glass (owner, 18 November 2026: "keep some of the transparency effects and a bit more glass effect"): the header,
+     side menu, menus, slide-outs and dialogs are frosted layers. --glass-alpha is how much of the surface colour
+     shows: the least that still gives secondary text 4.5:1 with black (or, in dark, white) right behind the glass,
+     checked by tools/check_accents.py. Solid in High contrast, with Reduce transparency and where the browser has no
+     backdrop-filter. --page-tint is the accent's share in the soft wash across the page. */
+  --glass-alpha: 92%;
+  --glass-filter: blur(24px) saturate(1.6);
+  --page-tint: 3%;
+  /* Focus is neutral (Mica): the text colour, so it stands out from every accent and every surface. */
+  --color-focus: #1a1a1a;
   --color-count: #af4e24;
   --color-count-text: #ffffff;
-  --color-backdrop: rgb(16 24 40 / 0.45);
-  --color-logo-tile: #323a77;
-  --color-logo-star: #af4e24;
-  --chart-1: #4552a8;
-  --chart-2: #c0602f;
+  --color-backdrop: rgb(0 0 0 / 0.4);
+  --color-logo-tile: #005fb8;
+  --color-logo-star: #1a1a1a;
+  --chart-1: #3a52b0;
+  --chart-2: #b45a2b;
   /* Categorical series, in a fixed order that follows the thing (such as a media type); checked for colour
      blindness and 3:1 against the surface. --series-empty (with its hatch line) is free or unused space. */
-  --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100;
-  --series-5: #e87ba4; --series-6: #008300; --series-7: #6250d6;
-  --series-empty: #dfe5ef; --series-empty-line: #b9c2d1;
-  --shadow-raised: 0 8px 28px rgb(16 24 40 / 0.18);
+  --series-1: #2a78d6; --series-2: #e0612f; --series-3: #138a60; --series-4: #b07800;
+  --series-5: #d0577f; --series-6: #007a00; --series-7: #6250d6;
+  --series-empty: #e3e3e3; --series-empty-line: #b5b5b5;
+  /* Mica's layered lift: cards, menus, slide-outs and dialogs. */
+  --shadow-raised: 0 1px 2px rgb(16 24 40 / 0.06), 0 4px 8px rgb(16 24 40 / 0.06), 0 12px 32px rgb(16 24 40 / 0.10);
+  /* Cards stand off the page (owner, 18 November 2026: "the 3d effect drop shadows"): Mica's layered drop shadow,
+     box-shadow only so it is cheap to draw. The border stays, so the shadow is never the only edge. */
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.08), 0 4px 8px rgb(16 24 40 / 0.07), 0 12px 32px rgb(16 24 40 / 0.11);
 
   /* Status: background and text pairs, always shown with words and an icon or shape too. */
   --status-success-bg: #dcf2e3;
@@ -132,75 +153,38 @@
   color-scheme: light;
 }
 
-/* Dark: by the device, unless the person chose Light. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --color-bg: #101827;
-    --color-header: #141e2e;
-    --color-surface: #1c2738;
-    --color-surface-raised: #232f42;
-    --color-surface-sunken: #0c1220;
-    --color-text: #f3f4f6;
-    --color-text-muted: #a4aec1;
-    --color-border: #6f7b91;
-    --color-divider: #303c51;
-    --color-accent: #5ed3c6;
-    --color-accent-text: #101827;
-    --color-accent-soft: #163a38;
-    --color-panel-header: #232f42;
-  --color-slide-header: var(--color-bg);
-    --color-focus: #5ed3c6;
-    --color-count: #b7562c;
-    --color-backdrop: rgb(0 0 0 / 0.6);
-    --color-logo-tile: #a5b4fc;
-    --color-logo-star: #ffb38a;
-    --chart-1: #6f80e6;
-    --chart-2: #d2733c;
-    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
-    --series-5: #d55181; --series-6: #2fa82f; --series-7: #9085e9;
-    --series-empty: #3a475c; --series-empty-line: #56647b;
-    --shadow-raised: 0 8px 28px rgb(0 0 0 / 0.5);
-    --status-success-bg: #12351f;
-    --status-success-fg: #8fe0aa;
-    --status-info-bg: #142a4b;
-    --status-info-fg: #a8c8ff;
-    --status-neutral-bg: #262a33;
-    --status-neutral-fg: #c9ced8;
-    --status-warning-bg: #3a2c09;
-    --status-warning-fg: #f6cf6b;
-    --status-danger-bg: #431816;
-    --status-danger-fg: #ffaaa3;
-    --status-muted-bg: #262a33;
-    --status-muted-fg: #b3b9c5;
-    color-scheme: dark;
-  }
-}
+/* Dark: only when chosen (owner, 18 November 2026: "Light mode should be the default mode unless changed by the
+   user"). Match device, where an app offers it, sets data-theme to the device's choice in script. */
 :root[data-theme="dark"] {
-  --color-bg: #101827;
-  --color-header: #141e2e;
-  --color-surface: #1c2738;
-  --color-surface-raised: #232f42;
-  --color-surface-sunken: #0c1220;
-  --color-text: #f3f4f6;
-  --color-text-muted: #a4aec1;
-  --color-border: #6f7b91;
-  --color-divider: #303c51;
-  --color-accent: #5ed3c6;
-  --color-accent-text: #101827;
-  --color-accent-soft: #163a38;
-  --color-panel-header: #232f42;
-  --color-slide-header: var(--color-bg);
-  --color-focus: #5ed3c6;
-  --color-count: #b7562c;
+  --color-bg: #202020;
+  --color-header: #202020;
+  --color-surface: #2b2b2b;
+  --color-surface-raised: #323232;
+  --color-surface-sunken: #1c1c1c;
+  --color-text: #ffffff;
+  --color-text-muted: #c5c5c5;
+  --color-border: #949494;
+  --color-divider: #747474;
+  --color-accent: #60cdff;
+  --color-accent-text: #000000;
+  --color-accent-soft: #1f3a4d;
+  --color-panel-header: #323232;
+  --color-slide-header: var(--color-surface-sunken);
+  --color-hover: color-mix(in srgb, var(--color-text) 9%, transparent);
+  --glass-alpha: 90%;
+  --color-hover-edge: var(--color-text-muted); /* lighter in dark, so the edge keeps 3:1 over glass */
+  --color-focus: #ffffff;
+  --color-count: #c0401a;
   --color-backdrop: rgb(0 0 0 / 0.6);
-  --color-logo-tile: #a5b4fc;
-  --color-logo-star: #ffb38a;
-  --chart-1: #6f80e6;
-  --chart-2: #d2733c;
-  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
-  --series-5: #d55181; --series-6: #2fa82f; --series-7: #9085e9;
-  --series-empty: #3a475c; --series-empty-line: #56647b;
-  --shadow-raised: 0 8px 28px rgb(0 0 0 / 0.5);
+  --color-logo-tile: #60cdff;
+  --color-logo-star: #ffffff;
+  --chart-1: #8c9cf0;
+  --chart-2: #e08a55;
+  --series-1: #4a94ec; --series-2: #e5703f; --series-3: #2fae80; --series-4: #d39a1c;
+  --series-5: #e0739a; --series-6: #3fb23f; --series-7: #9a8ff0;
+  --series-empty: #3d3d3d; --series-empty-line: #5c5c5c;
+  --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 8px rgb(0 0 0 / 0.25), 0 12px 32px rgb(0 0 0 / 0.4);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.35), 0 4px 8px rgb(0 0 0 / 0.28), 0 12px 32px rgb(0 0 0 / 0.38);
   --status-success-bg: #12351f;
   --status-success-fg: #8fe0aa;
   --status-info-bg: #142a4b;
@@ -220,7 +204,9 @@
 :root.pref-contrast {
   --color-scrollbar: var(--color-text);
   --color-scrollbar-hover: var(--color-text);
-  --color-bg: #f0f5ff;
+  --color-hover: color-mix(in srgb, var(--color-text) 10%, transparent);
+  --color-hover-edge: var(--color-text);
+  --color-bg: #f3f3f3;
   --color-header: #ffffff;
   --color-surface: #ffffff;
   --color-surface-raised: #ffffff;
@@ -228,10 +214,10 @@
   --color-text: #030304;
   --color-text-muted: #19212f;
   --color-border: #000000;
-  --color-divider: #596272;
-  --color-accent: #003d39;
+  --color-divider: #5c5c5c;
+  --color-accent: #00396e;
   --color-accent-text: #ffffff;
-  --color-accent-soft: #d6eeeb;
+  --color-accent-soft: #d9e9f7;
   --color-panel-header: #ffffff;
   --color-slide-header: var(--color-bg); /* slide-out headers: the page background over a white body */
   --chart-1: #1f2a8a;
@@ -241,9 +227,10 @@
   --series-empty: #ffffff; --series-empty-line: #767676;
   --color-focus: #c4006a;
   --color-count: #863309;
-  --color-logo-tile: #11104a;
-  --color-logo-star: #863309;
+  --color-logo-tile: #00396e;
+  --color-logo-star: #000000;
   --shadow-raised: none;
+  --shadow-card: none;
   --status-success-fg: #003d17;
   --status-info-fg: #00266e;
   --status-neutral-fg: #000000;
@@ -261,10 +248,10 @@
   --color-text: #ffffff;
   --color-text-muted: #d5e0f4;
   --color-border: #ffffff;
-  --color-divider: #8391aa;
-  --color-accent: #b8f2ea;
+  --color-divider: #8f8f8f;
+  --color-accent: #a8e4ff;
   --color-accent-text: #000000;
-  --color-accent-soft: #0b2a27;
+  --color-accent-soft: #0a2a3d;
   --color-panel-header: #000000;
   --color-slide-header: var(--color-bg);
   --chart-1: #c2cbff;
@@ -274,8 +261,8 @@
   --series-empty: #000000; --series-empty-line: #8a8a8a;
   --color-focus: #ffd400;
   --color-count: #a44418;
-  --color-logo-tile: #e7ecff;
-  --color-logo-star: #ffc7a6;
+  --color-logo-tile: #a8e4ff;
+  --color-logo-star: #ffffff;
   --status-success-bg: #002b10;
   --status-success-fg: #a6ffc2;
   --status-info-bg: #001c45;

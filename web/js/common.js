@@ -96,7 +96,7 @@ function helpNodes(list, panel) {
 }
 
 const PREF_KEY = "starboard.display";
-const DEFAULT_PREFS = { theme: "system", text: "100", contrast: false, motion: "device", underline: false, spacing: false, design: "", style: "" };
+const DEFAULT_PREFS = { theme: "light", text: "100", contrast: false, motion: "device", underline: false, spacing: false, design: "", style: "" };
 const DESIGNS = {
   health: ["Health first", "Apps that are not responding at the top, with a coloured edge for status."],
   tiles: ["Tiles", "A grid of cards with a description, like a launcher."],
@@ -142,9 +142,9 @@ let serverDesign = "health";
 // css/palettes.css (synced from the design system) only then. The last one seen is kept here so the first paint is
 // right before /api/session answers.
 const OWN_COLOURS_KEY = "starboard.own-colours";
-let ownColours = (() => { try { return localStorage.getItem(OWN_COLOURS_KEY) || "teal"; } catch { return "teal"; } })();
+let ownColours = (() => { try { return localStorage.getItem(OWN_COLOURS_KEY) || "blue"; } catch { return "blue"; } })();
 function setOwnColours(value) {
-  ownColours = /^[a-z]+$/.test(value || "") ? value : "teal";
+  ownColours = /^[a-z]+$/.test(value || "") ? value : "blue";
   try { localStorage.setItem(OWN_COLOURS_KEY, ownColours); } catch { /* private window */ }
   applyPrefs();
   document.dispatchEvent(new CustomEvent("stylechange"));
@@ -152,8 +152,10 @@ function setOwnColours(value) {
 
 function applyPrefs(prefs = readPrefs()) {
   const root = document.documentElement;
-  if (prefs.theme === "system") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", prefs.theme);
+  // Light unless chosen (owner, 18 November 2026, DASH-479): Match device sets the device's choice here, as the design
+  // system no longer follows it on its own.
   const dark = prefs.theme === "dark" || (prefs.theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+  root.setAttribute("data-theme", dark ? "dark" : "light");
   root.classList.toggle("is-dark", dark);
   root.classList.remove("pref-text-125", "pref-text-150", "pref-text-175");
   if (prefs.text !== "100") root.classList.add(`pref-text-${prefs.text}`);
@@ -172,7 +174,7 @@ function applyPrefs(prefs = readPrefs()) {
     delete root.dataset.style;
   }
   // The own style's colours, only while no plug-in style is in use, so a plug-in style is never mixed with them.
-  const palette = !root.dataset.style && ownColours !== "teal" ? ownColours : "";
+  const palette = !root.dataset.style && ownColours !== "blue" ? ownColours : "";
   if (palette) {
     root.dataset.palette = palette;
     if (!document.getElementById("palette-styles")) {
@@ -1453,24 +1455,24 @@ function resetStyle() {
   const prefs = { ...readPrefs(), style: "" };
   writePrefs(prefs);
   applyPrefs(prefs);
-  announce(`Style reset to Starboard's own style, ${ownColoursLabel()} colours`);
+  announce(`Style reset to Starboard's own style, ${ownColoursLabel()} accent`);
   document.dispatchEvent(new CustomEvent("stylechange"));
 }
 
 // The design system's palettes for the own style (DASH-388), read from palettes.json (synced from the design system)
-// only on the pages that show them. Teal is tokens.css, so its colours are here.
-const TEAL = { label: "Teal", suits: "Starboard's standard colours",
-  light: { "color-bg": "#f0f5ff", "color-header": "#fcfdff", "color-surface-raised": "#ffffff", "color-surface-sunken": "#e4ebf7", "color-text": "#141416",
-    "color-text-muted": "#424b5b", "color-border": "#7d879a", "color-accent": "#0b5f5a", "color-accent-text": "#ffffff" },
-  dark: { "color-bg": "#101827", "color-header": "#141e2e", "color-surface-raised": "#232f42", "color-surface-sunken": "#0c1220", "color-text": "#f3f4f6",
-    "color-text-muted": "#a4aec1", "color-border": "#6f7b91", "color-accent": "#5ed3c6", "color-accent-text": "#101827" } };
-const PALETTE_LABELS = { teal: "Teal", indigo: "Indigo", forest: "Forest", plum: "Plum", ember: "Ember", graphite: "Graphite" };
+// only on the pages that show them. Blue, Mica's accent and the default since DASH-479, is tokens.css, so its colours are here.
+const BLUE = { label: "Blue", suits: "Mica's accent, Starboard's standard colour",
+  light: { "color-bg": "#f3f3f3", "color-header": "#f3f3f3", "color-surface-raised": "#ffffff", "color-surface-sunken": "#ebebeb", "color-text": "#1a1a1a",
+    "color-text-muted": "#5d5d5d", "color-border": "#767676", "color-accent": "#005fb8", "color-accent-text": "#ffffff" },
+  dark: { "color-bg": "#202020", "color-header": "#202020", "color-surface-raised": "#323232", "color-surface-sunken": "#1c1c1c", "color-text": "#ffffff",
+    "color-text-muted": "#c5c5c5", "color-border": "#949494", "color-accent": "#60cdff", "color-accent-text": "#000000" } };
+const PALETTE_LABELS = { blue: "Blue", teal: "Teal", indigo: "Indigo", forest: "Forest", plum: "Plum", ember: "Ember", graphite: "Graphite" };
 function ownColoursLabel() { return PALETTE_LABELS[ownColours] || "Teal"; }
 let paletteList = null;
 function palettes() {
   if (!paletteList) {
-    paletteList = fetch("/palettes.json", { cache: "no-cache" }).then((r) => r.json()).then((d) => ({ teal: TEAL, ...d }))
-      .catch(() => ({ teal: TEAL }));
+    paletteList = fetch("/palettes.json", { cache: "no-cache" }).then((r) => r.json()).then((d) => ({ blue: BLUE, ...d }))
+      .catch(() => ({ blue: BLUE }));
   }
   return paletteList;
 }
@@ -1480,8 +1482,8 @@ function palettes() {
 function ownColoursChoice(idPrefix = "own") {
   const name = `${idPrefix}-colours`;
   const list = el("div", { class: "option-cards option-cards--row" });
-  const box = el("fieldset", { class: "stack-2", "data-own-colours": "" }, el("legend", { text: "Own style colours" }),
-    el("p", { class: "hint", id: `${name}-hint`, text: "From the design system, for everyone on this server. Reset style comes back to these." }),
+  const box = el("fieldset", { class: "stack-2", "data-own-colours": "" }, el("legend", { text: "Accent colour" }),
+    el("p", { class: "hint", id: `${name}-hint`, text: "Mica, Starboard's own style, in the accent you choose: for everyone on this server. Reset style comes back to it." }),
     list, savedNote(`${name}-saved`));
   const tick = () => $$(`input[name="${name}"]`, list).forEach((r) => { r.checked = r.value === ownColours; });
   palettes().then((all) => {
@@ -1523,7 +1525,7 @@ function openDisplayPanel(template, opener) {
   designList.closest("fieldset").before(styleSet);
   api("/api/styles").then((r) => {
     if (!r.styles.length) return;
-    for (const [value, label, help, swatch] of [["", "Starboard's own style", `${ownColoursLabel()} colours, chosen in Settings.`, null], ...r.styles.map((x) => [x.value, x.name, `${x.description} From ${x.plugin}.`, x])]) {
+    for (const [value, label, help, swatch] of [["", "Starboard's own style", `Mica with the ${ownColoursLabel()} accent, chosen in Settings.`, null], ...r.styles.map((x) => [x.value, x.name, `${x.description} From ${x.plugin}.`, x])]) {
       styleList.append(el("label", { class: "option-card" },
         el("input", { type: "radio", name: "style", value, checked: value === readPrefs().style }),
         el("strong", {}, swatch ? styleSwatch(swatch) : null, label),
@@ -1629,7 +1631,7 @@ async function startFeedback(session) {
     // Pages with the side menu open it from Feedback in the menu. Pages without one, such as the set-up, keep the
     // button bottom left: side panels open on the right, with their Save and Remove buttons at the bottom.
     launcher: inMenu.length ? false : "bottom-left",
-    theme: document.documentElement.dataset.theme || "auto", // the theme chosen in Display, or the device's
+    theme: document.documentElement.dataset.theme === "dark" ? "dark" : "light", // the theme Display set (light unless chosen, DASH-479)
     types: ["bug", "ux", "visual", "accessibility", "performance", "content", "feature", "idea", "other", "check"],
     send: {
       github: session.repo ? { repo: session.repo } : null,
@@ -1777,7 +1779,7 @@ async function startPage() {
   try {
     const session = await api("/api/session");
     serverDesign = session.design || "health";
-    if ((session.own_colours || "teal") !== ownColours) setOwnColours(session.own_colours); else applyPrefs();
+    if ((session.own_colours || "blue") !== ownColours) setOwnColours(session.own_colours); else applyPrefs();
     $$("[data-site-name]").forEach((n) => { n.textContent = session.site_name; });
     showServerName(session.server_name);
     listLoading = session.infinite_scroll === false ? "button" : "auto";
