@@ -7,6 +7,12 @@ add features.
 
 ## [Unreleased]
 
+### Changed
+- **File pickers match the rest of Starboard (owner, 19 November 2026):** every file upload is a "Choose a file" button in the site's style with the chosen file's name and size beside it, instead of the browser's own picker; choosing a file clears an earlier error. Design system: `.file-field`.
+
+### Fixed
+- **A plug-in's Versions had no upload button:** Update from a zip file now has **Upload and check**, which uploads the zip, checks it and shows What is new before anything changes; it said What is new before.
+
 ## [0.23.0] (19 November 2026)
 
 ### Added
