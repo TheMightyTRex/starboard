@@ -1901,6 +1901,16 @@ function onTitle(title, chipNode) {
   wrap.append(title, chipNode);
 }
 
+// DOMContentLoaded has fired: every deferred script on the page has run (common.js loads first, without defer, so this
+// listener is always in place before it fires).
+let domReady = document.readyState === "complete";
+const domReadyPromise = new Promise((resolve) => {
+  if (domReady) { resolve(); return; }
+  const done = () => { domReady = true; resolve(); };
+  document.addEventListener("DOMContentLoaded", done, { once: true });
+  addEventListener("load", done, { once: true });  // a copy loaded after DOMContentLoaded still starts once the page has loaded
+});
+
 async function startPage() {
   setUpHeader();
   setUpDisplayPanel();
@@ -1927,7 +1937,9 @@ async function startPage() {
     if (session.ux_notes) startFeedback(session).catch(() => { /* the page works without it */ });
     // The session can answer before the page's later deferred scripts have run (Settings, Radio: "startRadioSettings
     // is not defined", 17 November 2026); DOMContentLoaded comes after every deferred script, so the page starts then.
-    if (document.readyState === "loading") await new Promise((r) => document.addEventListener("DOMContentLoaded", r, { once: true }));
+    // Not readyState alone: deferred scripts run while it is already "interactive", so the session can answer between
+    // two of them (found again 19 November 2026). domReady is set by DOMContentLoaded itself, which comes after them all.
+    if (!domReady) await domReadyPromise;
     return session;
   } catch { return null; }
 }
