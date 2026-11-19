@@ -157,7 +157,7 @@
 .discover-shelf { list-style: none; margin: 0; padding: 0 0 var(--space-2, 8px); display: grid; grid-auto-flow: column;
   grid-auto-columns: 140px; gap: var(--space-4, 16px); overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; }
 .discover-card { display: grid; gap: 4px; align-content: start; scroll-snap-align: start; }
-.discover-card__cover { width: 100%; aspect-ratio: 2 / 3; }
+.discover-card__cover { width: 100%; aspect-ratio: 2 / 3; border-radius: var(--radius, 6px); overflow: hidden; }  /* Mica corners (DASH-479) */
 .discover-card__cover img { width: 100%; height: 100%; object-fit: cover; }
 .discover-card__title { margin: 4px 0 0; font-size: var(--text-sm, 0.875rem); font-weight: var(--weight-strong, 700); overflow-wrap: anywhere;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
