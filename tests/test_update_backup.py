@@ -73,6 +73,67 @@ class UpdateBackupTest(unittest.TestCase):
         self.assertTrue((self.dir / "data.failed-update" / "config.json").exists())
         self.assertFalse([p.name for p in self.dir.joinpath("data").iterdir() if p.name.startswith(".restore-")])
 
+    # DASH-484 (owner, 19 November 2026): plug-ins added or removed between updates must not stop or spoil a backup.
+    # A folder only a plug-in's user can read is shown here with no rights, as Starboard's user would find it.
+    def held(self, name, plays):
+        held = self.dir / "data" / "holding" / name
+        (held / "data" / "main").mkdir(parents=True)
+        (held / "data" / "main" / "plays.db").write_text(plays)
+        (held / "settings.json").write_text('{"held": 1}')
+        (held / "data" / "main").chmod(0o000)
+        return held
+
+    def test_a_removed_plug_in_in_holding_is_left_out_and_comes_back_whole(self):
+        # 19 November 2026: a Watch stats copy in holding stopped the update to 0.22.0
+        # ("data/holding/.../data/main: Cannot open: Permission denied").
+        held = self.held("2026-11-17-165959-watch-stats", "held plays")
+        done = self.run_sh('backup_data backup.tar.gz\n')
+        self.assertEqual(done.returncode, 0, done.stderr)
+        with tarfile.open(self.dir / "backup.tar.gz") as t:
+            names = t.getnames()
+        self.assertIn("data/holding/2026-11-17-165959-watch-stats/settings.json", names)
+        self.assertFalse([n for n in names if n.startswith("data/holding/2026-11-17-165959-watch-stats/data/main")])
+        done = self.run_sh('restore_data backup.tar.gz\n')
+        self.assertEqual(done.returncode, 0, done.stderr)
+        (held / "data" / "main").chmod(0o755)
+        self.assertEqual((held / "data" / "main" / "plays.db").read_text(), "held plays")
+        self.assertEqual((held / "settings.json").read_text(), '{"held": 1}')
+
+    def test_a_folder_no_one_expected_is_left_out_too(self):
+        odd = self.dir / "data" / "cache" / "some-plug-in" / "inner"
+        odd.mkdir(parents=True)
+        (odd / "x").write_text("x")
+        odd.chmod(0o000)
+        done = self.run_sh('backup_data backup.tar.gz\n')
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertEqual(self.run_sh('restore_data backup.tar.gz\n').returncode, 0)
+        odd.chmod(0o755)
+        self.assertEqual((odd / "x").read_text(), "x")
+
+    def test_plug_ins_added_or_removed_after_the_backup_keep_their_data_when_going_back(self):
+        self.assertEqual(self.run_sh('backup_data backup.tar.gz\n').returncode, 0)
+        # After the backup: a new plug-in is added, and Watch stats is removed to holding.
+        new = self.dir / "data" / "plugins" / "tv-station"
+        (new / "data" / "main").mkdir(parents=True)
+        (new / "data" / "main" / "schedule.db").write_text("schedule")
+        (new / "settings.json").write_text('{"new": 1}')
+        (new / "data" / "main").chmod(0o000)
+        old = self.dir / "data" / "plugins" / "watch-stats"
+        old.chmod(0o755)
+        (old / "data" / "main").chmod(0o755)
+        held = self.dir / "data" / "holding" / "2026-11-19-090000-watch-stats"
+        held.parent.mkdir(parents=True)
+        old.rename(held)
+        (held / "data" / "main").chmod(0o000)
+        done = self.run_sh('restore_data backup.tar.gz\n')
+        self.assertEqual(done.returncode, 0, done.stderr)
+        (new / "data" / "main").chmod(0o755)
+        self.assertEqual((new / "data" / "main" / "schedule.db").read_text(), "schedule")
+        (held / "data" / "main").chmod(0o755)
+        self.assertEqual((held / "data" / "main" / "plays.db").read_text(), "plays")
+        # The backup's Watch stats comes back with its settings; its data folder stays with the held copy.
+        self.assertEqual((self.dir / "data" / "plugins" / "watch-stats" / "settings.json").read_text(), '{"keep": 1}')
+
     def test_update_sh_uses_them_and_says_so(self):
         text = (ROOT / "update.sh").read_text(encoding="utf-8")
         self.assertIn('backup_data "$BACKUP"', text)
@@ -167,7 +228,8 @@ class RaceWithThePageHelperTest(unittest.TestCase):
     """17 November 2026: Update now to 0.20.1 stopped at the backup with "tar: data/self-update.log.new: No such file
     or directory" once more. The page's helper has BusyBox tar, which looks each file up before its --exclude list, so
     leaving the log out did not help when the helper renamed it away mid-read. The helper now writes its half-made
-    log beside data, not in it, and a backup that fails is tried again, up to three times."""
+    log beside data, not in it, and a backup that fails is tried again, up to five times (three until 19 November 2026,
+    when the race below still failed one run in three)."""
 
     setUp = BusyBoxTarTest.setUp
     tearDown = BusyBoxTarTest.tearDown
@@ -191,15 +253,15 @@ class RaceWithThePageHelperTest(unittest.TestCase):
         done = self.run_backup()
         self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
         self.assertEqual(self.calls(), 2)
-        self.assertIn("trying again (1 of 3)", done.stderr)
+        self.assertIn("trying again (1 of 5)", done.stderr)
         with tarfile.open(self.dir / "backup.tar.gz") as t:
             self.assertIn("data/config.json", t.getnames())
 
-    def test_three_failures_stop_the_update(self):
+    def test_five_failures_stop_the_update(self):
         self.busybox_failing(99)
         done = self.run_backup()
         self.assertNotEqual(done.returncode, 0)
-        self.assertEqual(self.calls(), 3)
+        self.assertEqual(self.calls(), 5)
         self.assertIn("No such file or directory", done.stderr)
 
     def test_the_helper_writes_its_half_made_log_outside_data(self):
