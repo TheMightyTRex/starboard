@@ -672,13 +672,11 @@ function pluginPage(p, redraw) {
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: (STATE[st.state] || ["", ""])[0] }), el("p", { text: st.sentence }))) : null;
   const first = st.action === "rollback" ? rollbackButton(p, redraw, true)
     : st.action === "update" && p.update ? updateButton(p, redraw) : stateButton(p, redraw, true);
-  // State (issue #8): the chip at the right of the heading's line, and Activate or Deactivate at the right of the
-  // version line under it.
+  // State (issue #8): the chip at the right of the heading's line and the version under it, in the grey band; Activate
+  // or Deactivate first in the white body under the band (owner, 19 November 2026).
   const stateSec = section(`pl-${p.id}-state`, "State", stateWords(p),
     headChip(...chipOf(p)), fix || healthNote(p) || (p.message ? el("p", { class: "small", text: p.message }) : null));
-  const about = $(".settings-section__head > p", stateSec);
-  const stateLine = el("div", { class: "state-line" }, about || el("span"), el("div", { class: "actions" }, first));
-  if (about) $(".settings-section__head", stateSec).append(stateLine); else stateSec.append(stateLine);
+  $(".settings-section__head", stateSec).after(el("div", { class: "actions" }, first));
   const news = whatsNew(p);
   if (news) stateSec.append(news);
   if (offerSaid) { stateSec.append(notice("success", offerSaid)); offerSaid = ""; }
