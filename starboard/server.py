@@ -259,7 +259,9 @@ class App:
         return bool(token) and self.sessions.valid(token, self.session_version)
 
     def host_allowed(self, name):
-        if not name or name in ("localhost",) or name.endswith(".localhost") or name in self.allowed_hosts:
+        # host.docker.internal: the name plug-ins on the home network use for this computer. It exists only inside
+        # Docker's containers, so no web page can point it at Starboard.
+        if not name or name in ("localhost", "host.docker.internal") or name.endswith(".localhost") or name in self.allowed_hosts:
             return True
         try:
             ipaddress.ip_address(name)
