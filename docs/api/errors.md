@@ -65,3 +65,18 @@ what it said. Try again later, or open the app.
 ## too_many_streams
 
 **503.** 8 event streams are open already. Close one, or wait the seconds in `Retry-After`.
+
+## mcp_off
+
+**403.** AI assistants cannot connect to `/api/v1/mcp` yet (API 1.7.0). The owner activates them in Starboard,
+**Settings**, **Security**, **API keys**, **AI assistants**. Nothing is shared until then.
+
+## read_key_needed
+
+**403.** `/api/v1/mcp` takes only a key made with **Read only** (API 1.7.0). Make one for the assistant in
+**Settings**, **Security**, **API keys**, with only the scopes it needs.
+
+## origin_refused
+
+**403.** The request came from a web page on another site (its `Origin` header names a different address), which
+`/api/v1/mcp` never answers (API 1.7.0). Connect the assistant from an app or a terminal, not from a web page.

@@ -22,6 +22,15 @@ that only reads, so it can read but not change anything. This page explains how 
 
 Letting an assistant act, asking you first each time, is not built yet. It needs its own decision.
 
+## An assistant that speaks MCP
+
+An assistant that speaks MCP, the Model Context Protocol, needs no instructions about addresses: it connects to
+`/api/v1/mcp` and is given tools for the Library, downloads, requests, app health and disk space. It is off until
+you activate **Let AI assistants connect** in **Settings**, **Security**, **API keys**, and takes only a **Read only**
+key. Read [Let an AI assistant answer questions about your server](../topics/connect-an-ai-assistant-with-mcp.md), and
+[MCP tools](mcp-tools.md) for what each tool gives back. The rest of this page is for assistants that call the API
+themselves.
+
 ## Before you begin
 
 - Your Starboard password.
@@ -72,6 +81,7 @@ A good first question is "Which of my apps are not answering, and why?". The ass
 
 - [Authentication and keys](api-authentication.md)
 - [What the API covers](api-coverage.md)
+- [MCP tools](mcp-tools.md)
 - [API reference](api-reference.md)
 - [AI prompts for developers](ai-prompts-for-developers.md)
 

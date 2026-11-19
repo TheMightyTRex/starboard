@@ -240,6 +240,9 @@ class ApiV1Test(unittest.TestCase):
             for method, op in ops.items():
                 if method == "get":
                     continue
+                if path == "/api/v1/mcp":  # DASH-464: read keys only, each tool with its own scope (tests/test_mcp.py)
+                    self.assertEqual((op.get("x-right"), op.get("x-scope")), ("read", None))
+                    continue
                 self.assertEqual(op.get("x-right"), "manage", f"{method} {path}")
                 found = [a for a in api_v1.actions() if a[1] == method.upper() and re.match(a[0], sample(path))]
                 self.assertTrue(found, f"{method} {path} has no route")

@@ -58,6 +58,9 @@ DEFAULTS = {
     "session_days": 7,
     "update_check": True,
     "network_access": None,
+    # AI assistants over MCP (DASH-464): /api/v1/mcp answers only once the owner activates it in Settings, Security,
+    # API keys, and then only with a Starboard API key, for what the key's scopes cover.
+    "mcp_enabled": False,
     "show_home_address": True,
     "show_outside_address": True,  # None: take STARBOARD_NETWORK on first run (on unless it is 0)
     "fetch_icons": True,  # app icons from the dashboard-icons collection on the internet
@@ -352,6 +355,7 @@ class Config:
             "session_days": d["session_days"],
             "update_check": d["update_check"],
             "network_access": d["network_access"],
+            "mcp_enabled": d.get("mcp_enabled", False),
             "show_home_address": d["show_home_address"],
             "show_outside_address": d["show_outside_address"],
             "fetch_icons": d["fetch_icons"],
@@ -426,7 +430,7 @@ class Config:
                 d["dashboard"] = clean_dashboard(incoming["dashboard"])
             if incoming.get("setup_guide_done"):  # the first set-up has finished, in either set-up (DASH-238)
                 d.pop("first_setup_pending", None)
-            for key in ("secure_cookies", "update_check", "network_access", "show_home_address", "show_outside_address",
+            for key in ("secure_cookies", "update_check", "network_access", "mcp_enabled", "show_home_address", "show_outside_address",
                         "fetch_icons", "show_posters", "setup_guide_done", "ux_notes", "settings_advanced", "reelix_auto_update", "starboard_auto_update",
                         "apps_auto_update", "plugins_auto_update", "jellyfin_plugins_auto_update", "infinite_scroll"):
                 if key in incoming:
@@ -500,7 +504,7 @@ GENERAL_RIGHTS = {
     "plugins_auto_update": "admin", "jellyfin_plugins_auto_update": "admin", "auto_update_hours": "admin", "extras": "admin", "watch": "admin",
     "logs": "admin", "backup_schedule": "admin", "backup_keep_versions": "admin",
     # Security: never by key
-    "network_access": "never", "secure_cookies": "never", "session_days": "never", "last_version": "never",
+    "network_access": "never", "mcp_enabled": "never", "secure_cookies": "never", "session_days": "never", "last_version": "never",
 }
 RIGHT_ORDER = {"read": 0, "manage": 1, "admin": 2, "never": 3}
 

@@ -137,6 +137,7 @@ Each guide is a journey through several topics, in order.
 - [Sign out everywhere](topics/sign-out-everywhere.md)
 - [Put Starboard behind a reverse proxy](topics/reverse-proxy.md)
 - [Make an API key and use Starboard's API](topics/use-starboards-api.md)
+- [Let an AI assistant answer questions about your server](topics/connect-an-ai-assistant-with-mcp.md)
 
 ### Backup and restore
 
@@ -226,6 +227,7 @@ For people who make plug-ins, or write scripts and apps that read Starboard. AI 
 - [Authentication and keys](developers/api-authentication.md)
 - [What the API covers](developers/api-coverage.md)
 - [Connect an AI assistant](developers/connect-an-ai-assistant.md)
+- [MCP tools](developers/mcp-tools.md)
 - [API reference](developers/api-reference.md)
 - [API changelog](developers/api-changelog.md)
 - [AI prompts for developers](developers/ai-prompts-for-developers.md)

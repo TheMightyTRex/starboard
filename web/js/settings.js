@@ -109,7 +109,7 @@ const MOVED_PARTS = {
   "/settings-downloads.html": { "dl-usenet": "settings-downloads-usenet.html", "dl-hours": "settings-downloads-hours.html" },
   "/settings-radio.html": { "radio-link": "settings-radio-link.html", "radio-library": "settings-radio-library.html", "radio-logos": "settings-radio-logos.html" },
   "/settings-performance.html": { "pf-pictures": "settings-performance-pictures.html", "pf-danger": "settings-performance-pictures.html" },
-  "/settings-security.html": { "sc-pw": "settings-security-password.html", "sc-keys": "settings-security-keys.html",
+  "/settings-security.html": { "sc-pw": "settings-security-password.html", "sc-keys": "settings-security-keys.html", "sc-mcp": "settings-security-keys.html",
     "sc-ses": "settings-security-sessions.html", "sc-danger": "settings-security-sessions.html" },
 };
 function followMovedPart(path = location.pathname, hash = location.hash, search = location.search) {
@@ -2662,7 +2662,8 @@ async function startSecurity() {
       addresses, forced),
     section("sc-pw", "Password", "At least 10 characters; a short sentence of 4 or more words makes a strong password that you can remember. You stay signed in here and everyone else is signed out.", pwForm),
     section("sc-ses", "Sessions", "How long Remember me lasts, and signing out.", daysForm),
-    wants(holder, "sc-keys") ? section("sc-keys", "API keys", "For other apps, scripts and AI assistants. Each key reads, or reads and manages, only what you choose, and is shown once.", apiKeys()) : null]));
+    wants(holder, "sc-keys") ? section("sc-keys", "API keys", "For other apps, scripts and AI assistants. Each key reads, or reads and manages, only what you choose, and is shown once.", apiKeys()) : null,
+    wants(holder, "sc-mcp") ? section("sc-mcp", "AI assistants", "Let an AI assistant that speaks MCP, the Model Context Protocol, answer questions about your server. Nothing is shared until you activate it.", mcpAssistants()) : null]));
   daysForm.append(
       el("ul", { class: "settings-rows" },
         el("li", { class: "setting" },
@@ -2776,6 +2777,39 @@ function apiKeys() {
     el("p", { class: "small muted" }, "What the API offers: ", helpLink("api-quickstart", "the API quickstart"), ", ",
       helpLink("api-reference", "every route"), " and ", el("a", { href: "/api/v1/openapi.json", text: "the API description (OpenAPI)" }), "."));
   return box;
+}
+
+// AI assistants over MCP (DASH-464): off until activated here. What it shares is said beside the switch; each
+// assistant still needs a Read only key, and reads only what that key's scopes cover. Nothing polls.
+function mcpAssistants() {
+  const address = `${location.origin}/api/v1/mcp`;
+  const on = el("input", { type: "checkbox", role: "switch", id: "mcp-on", "aria-labelledby": "mcp-l", "aria-describedby": "mcp-h mcp-result", checked: !!config.mcp_enabled });
+  const result = el("p", { class: "small", id: "mcp-result", role: "status" });
+  const where = el("dl", { class: "facts facts--addresses", "aria-label": "Address for AI assistants" },
+    el("dt", { text: "Address for the assistant" }), el("dd", {}, el("code", { text: address }), copyButton(address, "the address for AI assistants")));
+  const show = () => {
+    result.textContent = config.mcp_enabled
+      ? "Active: an assistant with a Read only key from this page can ask about your server."
+      : "Inactive: no assistant can connect, whatever key it has.";
+    where.hidden = !config.mcp_enabled;
+  };
+  on.addEventListener("change", async () => {
+    try { await saveGeneral({ mcp_enabled: on.checked }, true); }
+    catch (e) { on.checked = !on.checked; problem(e.message, on); }
+    show();
+  });
+  const helpBase = ($("[data-help-link]")?.getAttribute("href") || "https://themightytrex.github.io/starboard/help/").replace(/(\/help\/).*$/, "$1");
+  const helpLink = (page, text) => el("a", { href: `${helpBase}${page}.html`, target: "_blank", rel: "noopener noreferrer" },
+    text, el("span", { class: "visually-hidden", text: " (opens in a new tab)" }));
+  show();
+  return el("div", { class: "stack-4" },
+    el("ul", { class: "settings-rows" },
+      settingRow("Let AI assistants connect",
+        el("span", { id: "mcp-h", text: "An assistant can then read the Library, what is new, coming up and playing, downloads and their problems, requests, how each app is and disk space. It cannot change anything, never gets a password or an app's key, and each question it asks is written to the audit log. Give it a Read only key with only the scopes it needs." }),
+        el("label", { class: "switch" }, on), "mcp-l")),
+    result, where,
+    el("p", { class: "small muted" }, "How to connect one: ", helpLink("topics/connect-an-ai-assistant-with-mcp", "Let an AI assistant answer questions"),
+      ". What each tool gives back: ", helpLink("developers/mcp-tools", "MCP tools"), "."));
 }
 
 // Update settings (the footer's About and updates) ---------------------------------

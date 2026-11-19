@@ -22,6 +22,8 @@ Rules from starboard/DEVELOPER-BEST-PRACTICE-2026-11-09.md (A1 to A19, AS1 to AS
   line for every write; long work answers 202.
 - Events (A15): one Server-Sent Events stream, /api/v1/events, CloudEvents-shaped, with Last-Event-ID resume from a
   ring of the last 200; at most 8 streams at once, each closed after an hour.
+- AI assistants (DASH-464, API 1.7.0): POST /api/v1/mcp speaks MCP with a read key, off until the owner activates it
+  in Settings, Security, API keys; its tools read through the routes here (starboard/mcp.py).
 - Described in starboard/openapi.json, served at /api/v1/openapi.json; a test fails when a route and the
   description differ (A4, AS17).
 """
@@ -39,7 +41,7 @@ import time
 import urllib.parse
 import uuid
 
-API_VERSION = "1.6.0"  # 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
+API_VERSION = "1.7.0"  # 1.7.0 (19 November 2026, DASH-464): /mcp, read-only tools for AI assistants, off until activated. 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
 KEYS_FILE = "api-keys.json"
 RIGHTS = ("read", "manage")  # manage: read, and the everyday actions (DASH-274). "admin" stays with the pages
 SCOPES = ("apps", "downloads", "media", "system", "library", "requests")
@@ -404,7 +406,7 @@ def routes():
 
     def root(h, m, q):
         return {"api_version": API_VERSION, "starboard_version": h.app.version,
-                "links": {"openapi": "/api/v1/openapi.json", "me": "/api/v1/me", "apps": "/api/v1/apps", "events": "/api/v1/events"}}
+                "links": {"openapi": "/api/v1/openapi.json", "me": "/api/v1/me", "apps": "/api/v1/apps", "events": "/api/v1/events", "mcp": "/api/v1/mcp"}}
 
     def me(h, m, q):
         return public(h.api_key)
@@ -835,8 +837,11 @@ def handle(h, method, path):
     if path == "/api/v1/openapi.json" and method == "GET":
         raw = json.dumps(spec()).encode()
         return h.send(200, raw, "application/json", {**base, "Cache-Control": "public, max-age=3600", "ETag": etag(raw)})
-    writes = [a for a in actions() if re.match(a[0], path)]
-    if method != "GET" and not any(a[1] == method for a in writes):
+    mcp = path == "/api/v1/mcp"  # AI assistants (DASH-464): JSON-RPC over POST, answered by mcp.py after the key checks
+    if mcp and method != "POST":
+        return problem(405, "method_not_allowed", "This address takes POST only", extra={"Allow": "POST"})
+    writes = [] if mcp else [a for a in actions() if re.match(a[0], path)]
+    if method != "GET" and not mcp and not any(a[1] == method for a in writes):
         allow = ", ".join(sorted({a[1] for a in writes})) or "GET"
         return problem(405, "method_not_allowed", f"This address takes {allow} only", extra={"Allow": allow})
     address = h.client_address_text()
@@ -853,6 +858,9 @@ def handle(h, method, path):
         return problem(429, "rate_limited", f"Up to {PER_MINUTE} requests a minute for each key", extra={**rate, "Retry-After": str(wait)})
     note_use(h.app.data_dir, k)
     h.api_key = k
+    if mcp:
+        from . import mcp as mcp_server
+        return mcp_server.handle(h, k, base, rate, problem)
     query = urllib.parse.parse_qs(urllib.parse.urlparse(h.path).query)
     if method != "GET":
         return _write(h, k, method, path, query, writes, base, rate, problem)
