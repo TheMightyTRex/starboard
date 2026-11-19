@@ -31,9 +31,11 @@ Each image is pinned by digest in the manifest:
 |---|---|
 | `GET /health` | Health: 200 while it can work |
 | `GET /card` | The Space saved card (stat) |
+| `GET /card/by-type` | The Space saved by type card (list): each type of picture and the last run |
 | `POST /shrink-now` | The Shrink now button |
 | `POST /stop` | The Stop shrinking button |
 | `GET /saved` | The Space saved page |
+| `GET /saved-by-type` | The Saved by type page, from the figures kept after each run |
 | `POST /jobs/shrink` | The job Shrink pictures |
 | `POST /jobs/new` | The job Shrink new pictures in quiet hours |
 | `POST /update/before` | The update's before step, 60 seconds at most |

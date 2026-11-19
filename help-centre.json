@@ -430,7 +430,8 @@
           "audio-description",
           "audio-description-tracks",
           "direct-play",
-          "picture-shrinker"
+          "picture-shrinker",
+          "tv-station"
         ]
       },
       {
@@ -469,7 +470,9 @@
           "maintainerr",
           "uptime-kuma",
           "seerr",
-          "tdarr"
+          "tdarr",
+          "themearr",
+          "checkrr"
         ]
       }
     ],
@@ -527,6 +530,9 @@
       },
       "picture-shrinker": {
         "icon": "image"
+      },
+      "tv-station": {
+        "icon": "tv"
       }
     }
   }

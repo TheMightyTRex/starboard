@@ -23,6 +23,7 @@ Shows the 10 films and series it found most recently with a described sound trac
 | Status | Means |
 |---|---|
 | **OK** | It has checked the library. The time in the band is when the last check finished. |
+| **Idle** | Only on the **Audio description** card: Jellyfin's own Audio description plug-in is installed and does the tag, the collection and Play the described track. The number still counts the described titles. |
 | **Scheduled** | Shown as **Checks tonight**. It has not checked the library yet. The number card says "Not checked yet". |
 | **Problem** | Only on the **Audio description** card, before the first check: the last check failed, and the words under the number say why, such as "Starboard has no Jellyfin key to give yet: add Jellyfin in Settings, Apps". |
 

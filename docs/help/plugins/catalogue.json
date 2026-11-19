@@ -5,28 +5,29 @@
   {
    "id": "audio-description",
    "name": "Audio description",
-   "description": "Finds films and series in Jellyfin with a described sound track for blind and partially sighted people, and prefers releases with one in Reelix.",
+   "description": "Finds and tags films and series in Jellyfin with a described sound track for blind and partially sighted people, plays it for the people who choose it, and prefers releases with one in Reelix.",
    "kind": "Accessibility",
    "author": "TheMightyTRexUK",
    "permissions": [
     "jellyfin:key",
     "reelix:key",
+    "media:read",
     "network:lan"
    ],
-   "version": "1.2.3",
+   "version": "1.5.0",
    "starboard_api": ">=1.14 <2.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/audio-description/starboard-plugin.json",
    "published": true,
    "recommended": false,
-   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BdWRpbyBkZXNjcmlwdGlvbiBsb2dvPC90aXRsZT48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0iIzBiNjY3MCIvPjxwYXRoIGQ9Ik0xMCAyMGg2bDgtN3YyMmwtOC03aC02eiIgZmlsbD0iI2ZmZmZmZiIvPjxwYXRoIGQ9Ik0zMCAxOC41YTcuNSA3LjUgMCAwIDEgMCAxMU0zNC41IDE0YTE0IDE0IDAgMCAxIDAgMjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIzLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPgo=",
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BdWRpbyBkZXNjcmlwdGlvbiBsb2dvPC90aXRsZT48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0iIzBiNjY3MCIvPjxyZWN0IHg9IjYiIHk9IjgiIHdpZHRoPSIyOCIgaGVpZ2h0PSIyMSIgcng9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48cGF0aCBkPSJNMTEgMTIuNWgyTTE3IDEyLjVoMk0yMyAxMi41aDJNMjkgMTIuNWgwLjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIyLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxwYXRoIGQ9Ik0yMyAyMWgxNmE0IDQgMCAwIDEgNCA0djhhNCA0IDAgMCAxLTQgNGgtOWwtNSA0LjV2LTQuNWgtMmE0IDQgMCAwIDEtNC00di04YTQgNCAwIDAgMSA0LTR6IiBmaWxsPSIjZmZmZmZmIiBzdHJva2U9IiMwYjY2NzAiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTI1LjUgMjdoM2w0LTMuNXYxMWwtNC0zLjVoLTN6IiBmaWxsPSIjMGI2NjcwIi8+PHBhdGggZD0iTTM1IDI2LjVhNCA0IDAgMCAxIDAgNiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMGI2NjcwIiBzdHJva2Utd2lkdGg9IjIuMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PC9zdmc+Cg==",
    "logo_alt": "Audio description logo",
    "versions": [
     {
-     "version": "1.2.3",
+     "version": "1.5.0",
      "starboard_api": ">=1.14 <2.0",
      "released": "2026-11-17",
      "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/audio-description/starboard-plugin.json",
-     "changelog": "Clearer words: Look for described titles now is now Check for described titles now, and its job is Check for titles with audio description. Its messages put the settings they name in quotation marks and spell out RNIB. Logo description: where its logo stands on its own, a screen reader says \"Audio description logo\", the plug-in's name, instead of a description of the symbol."
+     "changelog": "Films to list and Series to list: how many Titles with audio description lists of each: All, or the last 10, 20, 50, 100 or 500 added to Jellyfin, newest first. Last 20 by default. A series counts by its newest described episode and still lists all its described episodes. The page says how many it shows, such as \"Showing the last 20 of 143 films\", and where to change it. Newest first: the films and series are listed by when they were added to Jellyfin, newest first. The nightly check keeps that date; select Check for described titles now once after updating."
     },
     {
      "version": "1.1.0",
@@ -46,7 +47,7 @@
     "jellyfin:key",
     "network:lan"
    ],
-   "version": "1.1.4",
+   "version": "1.2.0",
    "starboard_api": ">=1.14 <2.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/audio-description-tracks/starboard-plugin.json",
    "published": true,
@@ -55,11 +56,11 @@
    "logo_alt": "Audio description tracks logo",
    "versions": [
     {
-     "version": "1.1.4",
+     "version": "1.2.0",
      "starboard_api": ">=1.14 <2.0",
      "released": "2026-11-17",
      "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/audio-description-tracks/starboard-plugin.json",
-     "changelog": "Clearer words: Look in the folder now is now Check the folder now, and its job is Check for new description tracks. Its card's band says To check, with the numbers on the card, and a track that was not added says what to do next. Logo description: where its logo stands on its own, a screen reader says \"Audio description tracks logo\", the plug-in's name, instead of a description of the symbol."
+     "changelog": "Rules 1.0: the track words, how a file name is read, how close the lengths must be (5 seconds by default), the languages and the new track's name and title come from the same rules file as Jellyfin's own Audio description plug-in, so the two add tracks in the same way. Idle beside the Jellyfin version: when Jellyfin's own Audio description plug-in is installed, this one adds nothing and its card says Idle, so the two never add the same track. Add tracks in Jellyfin instead."
     },
     {
      "version": "1.0.0",
@@ -103,6 +104,28 @@
    ],
    "rest": {
     "memory_mb": 182,
+    "cpu_percent": 0.01
+   }
+  },
+  {
+   "id": "checkrr",
+   "name": "Checkrr",
+   "description": "Checkrr checks your films and series for damaged files each Sunday night and lists them. It only reports: it never deletes, moves or replaces a file, and reads your media read only.",
+   "kind": "Apps you can add",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "network:lan",
+    "network:port"
+   ],
+   "version": "1.0.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/checkrr/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5DaGVja3JyIGxvZ288L3RpdGxlPjxyZWN0IHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgcng9IjExIiBmaWxsPSIjOGMzYTNhIi8+PHJlY3QgeD0iNyIgeT0iOSIgd2lkdGg9IjI1IiBoZWlnaHQ9IjIwIiByeD0iMyIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTEyIDEzdjEyTTI3IDEzdjEyIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48Y2lyY2xlIGN4PSIzMC41IiBjeT0iMjguNSIgcj0iNy41IiBmaWxsPSIjOGMzYTNhIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMy41Ii8+PHBhdGggZD0iTTM2IDM0bDUuNSA1LjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4K",
+   "logo_alt": "Checkrr logo",
+   "rest": {
+    "memory_mb": 19,
     "cpu_percent": 0.01
    }
   },
@@ -599,7 +622,7 @@
     "jellyfin:key",
     "network:lan"
    ],
-   "version": "1.2.1",
+   "version": "1.2.2",
    "starboard_api": ">=1.14 <2.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/picture-shrinker/starboard-plugin.json",
    "published": true,
@@ -617,7 +640,7 @@
     "apps:read",
     "network:lan"
    ],
-   "version": "1.1.3",
+   "version": "1.1.4",
    "starboard_api": ">=1.14 <2.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/remote-access/starboard-plugin.json",
    "published": true,
@@ -626,11 +649,11 @@
    "logo_alt": "Remote access logo",
    "versions": [
     {
-     "version": "1.1.3",
+     "version": "1.1.4",
      "starboard_api": ">=1.14 <2.0",
-     "released": "2026-11-17",
+     "released": "2026-11-18",
      "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/remote-access/starboard-plugin.json",
-     "changelog": "Clearer words: Cloudflare tunnel token is now Cloudflare Tunnel token, and its messages say \"the server\" instead of \"this computer\". Logo description: where its logo stands on its own, a screen reader says \"Remote access logo\", the plug-in's name, instead of a description of the symbol."
+     "changelog": "Clearer messages with what to do: when it cannot reach Starboard it says so and to update Starboard, then Start again; an app it could not check says Not checked instead of saying it is missing; a missing app says to add it in Settings, Apps. Your Tailscale name: it checks whether Starboard opens at the name, says when it works, and otherwise gives the steps to add it to STARBOARD_ALLOWED_HOSTS."
     },
     {
      "version": "1.0.0",
@@ -680,13 +703,13 @@
   {
    "id": "styles",
    "name": "Styles",
-   "description": "21 accessible styles for Display: six change every part of Starboard (cards, buttons, tabs, menus), checked for contrast.",
+   "description": "22 accessible styles for Display: six change every part of Starboard (cards, buttons, tabs, menus), checked for contrast.",
    "kind": "Appearance",
    "author": "TheMightyTRexUK",
    "permissions": [
     "appearance:styles"
    ],
-   "version": "1.4.1",
+   "version": "1.5.0",
    "starboard_api": ">=1.14 <2.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/styles/starboard-plugin.json",
    "published": true,
@@ -695,11 +718,11 @@
    "logo_alt": "Styles logo",
    "versions": [
     {
-     "version": "1.4.1",
+     "version": "1.5.0",
      "starboard_api": ">=1.14 <2.0",
-     "released": "2026-11-17",
+     "released": "2026-11-18",
      "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/styles/starboard-plugin.json",
-     "changelog": "Clearer words: its description says \"21 accessible styles\", and the descriptions of Editorial, Large and clear, Studio, Mica, Retro and Bento are plainer. Logo description: where its logo stands on its own, a screen reader says \"Styles logo\", the plug-in's name, instead of a description of the symbol."
+     "changelog": "Classic: Starboard's design before Mica (teal on cool blue-grey, square corners), now that Mica is Starboard's own style. Mica first: Mica, now Starboard's own design, is the first style, with the same colours as the design system's default. Every style keeps its own design on top of the new Mica design system: cards lift only in styles with elevated cards, and the hover on menus has a clear edge."
     },
     {
      "version": "1.3.0",
@@ -745,6 +768,48 @@
     "memory_mb": 59,
     "cpu_percent": 0.11
    }
+  },
+  {
+   "id": "themearr",
+   "name": "Themearr",
+   "description": "Themearr puts a theme tune, theme.mp3, in the folder of each film Reelix has, and Jellyfin plays it on the film's page. It needs a RapidAPI key to fetch the tunes.",
+   "kind": "Apps you can add",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "reelix:key",
+    "network:lan",
+    "network:port"
+   ],
+   "version": "1.0.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/themearr/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5UaGVtZWFyciBsb2dvPC90aXRsZT48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0iIzZjM2Y4ZSIvPjxyZWN0IHg9IjciIHk9IjEwIiB3aWR0aD0iMzQiIGhlaWdodD0iMjUiIHJ4PSIzIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMy41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48cGF0aCBkPSJNMTcgNDBoMTQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIzLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxwYXRoIGQ9Ik0yNi41IDI5VjE2bDcgMnY0bC03LTIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48ZWxsaXBzZSBjeD0iMjIiIGN5PSIyOSIgcng9IjQuNSIgcnk9IjMuNSIgZmlsbD0iI2ZmZmZmZiIvPjwvc3ZnPgo=",
+   "logo_alt": "Themearr logo",
+   "rest": {
+    "memory_mb": 48,
+    "cpu_percent": 0.64
+   }
+  },
+  {
+   "id": "tv-station",
+   "name": "Create your own TV channel",
+   "description": "Your own TV channels in Jellyfin's Live TV, made from your films and series, with your own broadcast pack: on-screen logo, idents, transitions, Coming up next cards and promos.",
+   "kind": "Jellyfin",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "jellyfin:key",
+    "network:lan",
+    "network:port"
+   ],
+   "version": "0.1.0",
+   "starboard_api": ">=1.15 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/tv-station/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5DcmVhdGUgeW91ciBvd24gVFYgY2hhbm5lbCBsb2dvPC90aXRsZT48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0iIzZhM2Q5YSIvPjxwYXRoIGQ9Ik0xOCA5bDYgNiA2LTYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48cmVjdCB4PSI3IiB5PSIxNSIgd2lkdGg9IjM0IiBoZWlnaHQ9IjIzIiByeD0iMyIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHJlY3QgeD0iMzAiIHk9IjE5IiB3aWR0aD0iNyIgaGVpZ2h0PSI0IiByeD0iMSIgZmlsbD0iI2ZmZmZmZiIvPjwvc3ZnPgo=",
+   "logo_alt": "Create your own TV channel logo"
   },
   {
    "id": "uptime-kuma",

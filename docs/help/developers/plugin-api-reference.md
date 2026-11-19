@@ -141,7 +141,7 @@ plug-in's own API key in the `X-Api-Key` header, so the plug-in can tell the cal
 |---|---|
 | `type` | Must be `list` |
 | `title`, `intro` | Cut to 80 and 400 characters |
-| `add` | Optional. Shows an add box; `label`, `hint` and `placeholder` are cut to 120 characters. Optional `file`: `{"label", "hint", "accept"}` also shows a file picker, where `accept` lists file endings such as `.m3u,.json,.gz`. From API 1.12, `"file_only": true` with a `file` shows only the file picker |
+| `add` | Optional. Shows an add box; `label`, `hint` and `placeholder` are cut to 120 characters. The box takes plain text, such as a name or an address (Starboard 0.23.0 and later; before, only a web address): check what you are sent and answer with an error in words when it does not fit. Optional `file`: `{"label", "hint", "accept"}` also shows a file picker, where `accept` lists file endings such as `.m3u,.json,.gz`. From API 1.12, `"file_only": true` with a `file` shows only the file picker |
 | `items` | Up to 4000. An item without an `id` is left out. The whole answer can be up to 2 MB |
 | `id`, `title`, `detail` | Cut to 600, 120 and 200 characters |
 | `state` | `ok`, `warning`, `problem`, `off` or `unknown`; anything else is `unknown` |
@@ -219,7 +219,7 @@ the table as before.
 
 | Field | Rules |
 |---|---|
-| `attach`, on an item | `{"label", "field", "hint", "placeholder", "accept", "value"}`, with `attach` in its `actions`: a button, such as **Add guide**, that opens a small form under the row for an address or a file. The address is sent as `{"action": "attach", "id", "value"}`; a file goes to the `/file` path with `id` added. `detach` in `actions` adds a **Remove guide** item to its More menu |
+| `attach`, on an item | `{"label", "field", "hint", "placeholder", "accept", "value"}`, with `attach` in its `actions`: a button, such as **Add guide**, that opens a small form under the row for plain text, such as a name, a number or an address (Starboard 0.23.0 and later), or a file. The address is sent as `{"action": "attach", "id", "value"}`; a file goes to the `/file` path with `id` added. `detach` in `actions` adds a **Remove guide** item to its More menu |
 | `restore` in an item's `actions` (API 1.15) | A **Put back** button on the row, for something your plug-in moved aside, such as a film Library clean-up moved to the holding folder. It sends `{"action": "restore", "id"}`; answer with the list again and `said`, such as "Put back in movies, and Reelix follows it again". An older Starboard leaves the button out |
 | `notices` | Up to 5, each `{"id", "tone", "title", "text", "progress", "dismiss"}`, at the top of the page. `tone` is `info`, `success`, `warning` or `danger`. With `progress` (0 to 100) Starboard shows a bar and asks again every 3 seconds until it has gone. With `dismiss`, a **Close** button sends `{"action": "dismiss", "id"}` |
 
@@ -319,8 +319,9 @@ And these environment variables, with the `env` from the manifest:
 
 | Name | Value |
 |---|---|
-| `STARBOARD_API` | `http://starboard:8095/api/v1/` |
+| `STARBOARD_API` | Starboard's API: `http://starboard:8095/api/v1/` on the plug-in's own network, or `http://host.docker.internal:<Starboard's port>/api/v1/` on the `lan` network (Starboard 0.22.0 and later) |
 | `STARBOARD_API_KEY_FILE` | `/run/starboard/key` |
+| `STARBOARD_HOME_ADDRESS` | Only for a container with `publish` on the `lan` network (Starboard 0.23.0 and later): its own address on the home network, such as `http://192.168.1.20:8790`, the server's address and the port Starboard chose. Give it to Jellyfin or a device that needs to reach the plug-in, rather than asking the person to open its page first |
 
 Starboard writes `reelix.json` and `usenet.json` again each time it starts and each time the plug-in is activated,
 so a changed password reaches the plug-in without a reinstall.
@@ -378,7 +379,7 @@ Starboard keeps one state for each plug-in, and shows each with one sentence and
 
 | State | What it means | The button |
 |---|---|---|
-| `installed` | Added, not started yet | **Activate** |
+| `installed` | Added, not started yet. From Starboard 0.23.0 a plug-in is activated as soon as it is installed, so it stays `installed` only when it needs setting up first or did not start | **Activate** |
 | `enabled` | Active and running | **Deactivate** |
 | `disabled` | Deactivated: stopped, with its settings and data kept | **Activate** |
 | `failed` | It did not start, or stopped answering. The message says why | **Try again**, or **Roll back** to the version before within 10 minutes of an update |

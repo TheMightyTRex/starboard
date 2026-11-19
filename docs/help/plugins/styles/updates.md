@@ -1,17 +1,29 @@
 # Styles: Updates
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Styles 1.4.1 is the latest version. It needs Starboard with plug-in API 1.14 or later.
+Styles 1.5.0 is the latest version. It needs Starboard with plug-in API 1.14 or later.
 
 ## Versions
 
 | Version | Needs plug-in API | Released |
 |---|---|---|
+| 1.5.0 | 1.14 or later | 18 November 2026 |
 | 1.4.1 | 1.14 or later | 17 November 2026 |
 | 1.4.0 | 1.14 or later | 15 November 2026 |
 | 1.3.0 | 1.2 or later | 12 November 2026 |
 
 The catalogue offers each Starboard the newest version it can run, so an older Starboard keeps an earlier version.
+
+## What is new in 1.5.0
+
+Added:
+
+- **Classic:** Starboard's design before Mica (teal on cool blue-grey, square corners), now that Mica is Starboard's own style.
+
+Changed:
+
+- **Mica first:** Mica, now Starboard's own design, is the first style, with the same colours as the design system's default.
+- Every style keeps its own design on top of the new Mica design system: cards lift only in styles with elevated cards, and the hover on menus has a clear edge.
 
 ## What is new in 1.4.1
 

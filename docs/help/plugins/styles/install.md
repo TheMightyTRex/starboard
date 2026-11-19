@@ -28,7 +28,7 @@ None: it runs no container.
 2. Under **Appearance**, find **Styles** and select **Install…**.
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Styles**. To stop, select **Cancel**: nothing is installed.
-5. Styles' own tab opens under **Settings**, then **Plug-ins**. Select **Activate**. Its state changes to **Active**.
+5. Styles' own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Activate**.
 6. Select **Display** in the header.
 7. Under **Style**, choose a style.
 8. Select **Done**.

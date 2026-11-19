@@ -24,6 +24,7 @@ These are on Audio description tracks' tab.
 
 ## Things to note
 
+- The names, the languages and how close the lengths must be follow the rules file it shares with Jellyfin's own Audio description plug-in, rules 1.0. When that plug-in is installed, this one stays idle: add tracks in Jellyfin instead.
 - A setting you change is used for the next track it checks. Tracks already added keep the name and language they were given.
 - Name each file as the film and its year, such as `Dune (2021).mp3`, or a series with its episode, such as `Slow Horses S01E03.mp3`.
 - Uploads on **Description tracks to add** can be up to 60 MB. Put a larger file in the audio-description folder in your media folder instead.

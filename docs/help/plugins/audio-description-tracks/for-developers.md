@@ -11,6 +11,7 @@ How Audio description tracks is built, for anyone who wants to change it or make
 - [`Dockerfile`](https://github.com/TheMightyTRex/starboard-plugins/blob/main/audio-description-tracks/Dockerfile)
 - [`install.py`](https://github.com/TheMightyTRex/starboard-plugins/blob/main/audio-description-tracks/install.py)
 - [`logo.svg`](https://github.com/TheMightyTRex/starboard-plugins/blob/main/audio-description-tracks/logo.svg)
+- [`rules.json`](https://github.com/TheMightyTRex/starboard-plugins/blob/main/audio-description-tracks/rules.json), shared with the Jellyfin version and copied by `tools/sync_audio_description_rules.py`
 - [`CHANGELOG.md`](https://github.com/TheMightyTRex/starboard-plugins/blob/main/audio-description-tracks/CHANGELOG.md)
 - [`tests/test_audio_description_tracks.py`](https://github.com/TheMightyTRex/starboard-plugins/blob/main/tests/test_audio_description_tracks.py)
 

@@ -35,7 +35,7 @@ These figures are the most it may use.
 2. Under **Downloads**, find **VPN check** and select **Install…**.
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install VPN check**. To stop, select **Cancel**: nothing is installed.
-5. VPN check's own tab opens under **Settings**, then **Plug-ins**. Select **Activate**. Its state changes to **Active**.
+5. VPN check's own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Activate**.
 6. Optional: on its tab, enter **Your home's public address** and select **Save**, so the card warns you if the VPN ever shows it.
 7. Add its card to your dashboard. Read [Dashboard card](../vpn-check/dashboard-card.md).
 

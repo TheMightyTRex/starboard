@@ -39,7 +39,7 @@ Measured:
 2. Under **Jellyfin**, find **Watch statistics** and select **Install…**.
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Watch statistics**. To stop, select **Cancel**: nothing is installed.
-5. Watch statistics's own tab opens under **Settings**, then **Plug-ins**. Select **Activate**. Its state changes to **Active**.
+5. Watch statistics's own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Activate**.
 6. Check its **Watch statistics source** card or its tables. If they say "Playback Reporting is not installed in Jellyfin", go on to the next step. Otherwise, you are done.
 7. Add Playback Reporting in Starboard's **Settings**, then **Jellyfin**, or in Jellyfin's **Dashboard**, then **Plugins**, then **Catalogue**.
 8. Restart Jellyfin. Playback Reporting counts from then on, so the figures grow from that day.

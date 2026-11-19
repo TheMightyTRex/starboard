@@ -588,10 +588,11 @@ def start_install(data_dir, token, media_dir, after=None):
             item = pa.install(data_dir, manifest, media_dir)
             pa.keep_logo(data_dir, item["id"], logo_of(path, manifest))
             keep(data_dir, item["id"], manifest["version"], path)
-            if after:
-                after(item)
+            not_on = after(item) if after else ""
             logs.event("info", "plug-ins", f"Added {manifest['name']} {manifest['version']} from a zip file")
-            _set(j, state="installed", said=f"{manifest['name']} installed. Activate it when you are ready")
+            # Activated once installed (owner, 19 November 2026), unless it needs setting up first.
+            _set(j, state="installed", said=f"{manifest['name']} installed and active." if after and not not_on
+                 else f"{manifest['name']} installed. {not_on or 'Activate it when you are ready'}.".replace("..", "."))
         except Exception as e:  # noqa: BLE001  any failure ends the job with words
             logs.event("error", "plug-ins", f"{manifest.get('name')} from a zip file was not installed: {e}")
             _set(j, failed_at=j["state"], state="failed", said=f"{manifest['name']} was not installed. {str(e)[:300]}")

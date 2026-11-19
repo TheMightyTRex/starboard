@@ -7,7 +7,7 @@ Add Audio description from Starboard's **Catalogue**, where it is listed under *
 
 - Starboard with plug-in API 1.14 or later. An older Starboard is offered an earlier version: read [Updates](../audio-description/updates.md).
 - Jellyfin added to Starboard, in **Settings**, then **Apps**. Audio description uses the key Starboard keeps for it. Without it, its card says "Starboard has no Jellyfin key to give yet: add Jellyfin in Settings, Apps".
-- Optional: Reelix added to Starboard, in **Settings**, then **Apps**, so it can prefer releases with audio description. Without it, **Apply the Reelix choice now** says "Starboard has no Reelix key to give yet: add Reelix in Settings, Apps".
+- Optional: Reelix added to Starboard, in **Settings**, then **Apps**, so it can check whether Reelix prefers releases with audio description. Without it, **Check the Reelix choice now** says "Starboard has no Reelix key to give yet: add Reelix in Settings, Apps".
 - Your Starboard password. Adding and removing a plug-in ask for it.
 
 ## What it may do
@@ -18,6 +18,9 @@ Starboard lists these before you add it, each with its risk.
 |---|---|
 | Use Jellyfin's API key, kept by Starboard (`jellyfin:key`) | High |
 | Use Reelix's API key, kept by Starboard (`reelix:key`) | High |
+| Your films, series and books (the media folder, read only, and the library) (`media:read`) | Medium |
+
+It asks for `media:read` only to hear Starboard's **When someone starts playing something** event, for **Play the described track**. It reads no files.
 | Reach other computers on your home network, and the internet (`network:lan`) | Medium |
 
 What it runs:
@@ -38,7 +41,7 @@ These figures are the most it may use.
 2. Under **Accessibility**, find **Audio description** and select **Install…**.
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Audio description**. To stop, select **Cancel**: nothing is installed.
-5. Audio description's own tab opens under **Settings**, then **Plug-ins**. Select **Activate**. Its state changes to **Active**.
+5. Audio description's own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Activate**.
 6. Open **People who want audio description** on its tab.
 7. Activate each person who wants audio description.
 8. Optional: select **Check for described titles now**, so you do not wait for tonight's check.

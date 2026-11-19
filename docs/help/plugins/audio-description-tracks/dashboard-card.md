@@ -17,6 +17,7 @@ Shows how many added tracks are waiting for you to say whether they play in step
 |---|---|
 | **OK** | Nothing is waiting for you. Every file in the folder is confirmed, already described or already added. |
 | **Working** | Shown as **Adding tracks**. It is checking the folder and checking new files now. |
+| **Idle** | Jellyfin's own Audio description plug-in is installed and adds the tracks, so this one adds nothing. |
 | **Warning** | Files need you. The band says "To check": added tracks to play and confirm, and files it could not add, such as **Lengths differ**, **No match** or **Choose the title**. |
 
 For each file and what to do, open **Description tracks to add** on its tab. Read [Settings](../audio-description-tracks/settings.md).

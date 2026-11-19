@@ -42,7 +42,7 @@ These figures are the most it may use.
 5. Direct play's own tab opens under **Settings**, then **Plug-ins**. Select **Finish setting up**.
 6. In **Devices**, activate each kind of device anyone in your home watches on, and deactivate any you do not have.
 7. In **When it works**, choose when it may convert files. **At weekends** is chosen when you add it.
-8. Select **Activate**. Its state changes to **Active**.
+8. Select **Activate** in **General**, **State**. Its state changes to **Active**.
 9. Add its cards to your dashboard. Read [Dashboard card](../direct-play/dashboard-card.md).
 
 It starts by checking your library, then fixes one file at a time in the hours you chose.

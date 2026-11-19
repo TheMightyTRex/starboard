@@ -1,12 +1,15 @@
 # Audio description: Updates
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Audio description 1.2.3 is the latest version. It needs Starboard with plug-in API 1.14 or later.
+Audio description 1.5.0 is the latest version. It needs Starboard with plug-in API 1.14 or later.
 
 ## Versions
 
 | Version | Needs plug-in API | Released |
 |---|---|---|
+| 1.5.0 | 1.14 or later | 17 November 2026 |
+| 1.4.0 | 1.14 or later | 17 November 2026 |
+| 1.3.0 | 1.14 or later | 17 November 2026 |
 | 1.2.3 | 1.14 or later | 17 November 2026 |
 | 1.2.2 | 1.14 or later | 17 November 2026 |
 | 1.2.1 | 1.14 or later | 16 November 2026 |
@@ -14,6 +17,51 @@ Audio description 1.2.3 is the latest version. It needs Starboard with plug-in A
 | 1.1.0 | 1.12 or later | 13 November 2026 |
 
 The catalogue offers each Starboard the newest version it can run, so an older Starboard keeps an earlier version.
+
+## What is new in 1.5.0
+
+Added:
+
+- **Films to list and Series to list:** how many Titles with audio description lists of each: All, or the last 10, 20, 50, 100 or 500 added to Jellyfin, newest first. Last 20 by default. A series counts by its newest described episode and still lists all its described episodes.
+- **The page says how many it shows,** such as "Showing the last 20 of 143 films", and where to change it.
+
+Changed:
+
+- **Newest first:** the films and series are listed by when they were added to Jellyfin, newest first. The nightly check keeps that date; select **Check for described titles now** once after updating.
+
+## What is new in 1.4.0
+
+Added:
+
+- **Titles with audio description:** every film, and every described episode by series, with its year, its described track and its status in words. Films and Series show their counts, and each title opens its page in Jellyfin. The same page as in Jellyfin's own Audio description plug-in.
+- **Jellyfin address for links:** the address you open Jellyfin at, for the links on Titles with audio description, when Starboard reaches Jellyfin at an address a browser cannot open.
+
+Changed:
+
+- **The nightly check keeps a little more:** each title's Jellyfin id and year, and which episodes are described, for the page. Select **Check for described titles now** once after updating to fill it.
+
+Fixed:
+
+- **Films in the collection:** the nightly check asks Jellyfin for each film, not the Audio description collection in their place, so once the collection was made, films in it no longer dropped out of the check and lost their tag.
+
+## What is new in 1.3.0
+
+Added:
+
+- **Find and tag:** each film and episode with a described sound track, and its series, gets the tag **Audio description** in Jellyfin at the nightly check, and the tag comes off when the track goes. Every Jellyfin app, televisions included, can filter by it.
+- **The Audio description collection:** activated by default, the films and series with a described track are in one Jellyfin collection. Deactivate **Add them to the Audio description collection** to leave it as it is.
+- **Play the described track:** for each person you activate on its page, inactive until chosen. When they start a title with a described track and another plays, Starboard asks their app to change to it. Not every Jellyfin app accepts this.
+- **Rules 1.0:** the same rules file as Jellyfin's own Audio description plug-in. When that plug-in is installed, this one leaves the tag, the collection and Play the described track to it, and its card says **Idle**.
+
+Changed:
+
+- **A new logo:** a film frame with a speech bubble holding a loudspeaker, to match the Jellyfin version.
+- **It hears when playback starts:** it asks to read what is playing (media:read), so Starboard tells it when someone starts a film.
+- **Check the Reelix choice now:** was **Apply the Reelix choice now**, and its job is **Check the audio description choice in Reelix**: both now only read Reelix and say what to do.
+
+Fixed:
+
+- **Reelix (issue #144):** it no longer tries to add a format to Reelix or change its quality levels, which Reelix refuses to all but an admin key. It reads Reelix's own Audio description format and says to set it to Prefer in **Settings**, **Reelix**, **Picture quality**. The job no longer fails.
 
 ## What is new in 1.2.3
 

@@ -1,18 +1,32 @@
 # Picture shrinker: Updates
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Picture shrinker 1.2.1 is the latest version. It needs Starboard with plug-in API 1.14 or later.
+Picture shrinker 1.2.2 is the latest version. It needs Starboard with plug-in API 1.14 or later.
 
 ## Versions
 
 | Version | Needs plug-in API | Released |
 |---|---|---|
+| 1.2.2 | 1.14 or later | 17 November 2026 |
 | 1.2.1 | 1.14 or later | 17 November 2026 |
 | 1.2.0 | 1.14 or later | 17 November 2026 |
 | 1.1.1 | 1.14 or later | 16 November 2026 |
 | 1.0.0 | 1.14 or later | 15 November 2026 |
 
 The catalogue offers each Starboard the newest version it can run, so an older Starboard keeps an earlier version.
+
+## What is new in 1.2.2
+
+Added:
+
+- **Space saved by type:** a dashboard card with the space each type of picture saved, such as posters, backdrops and photos of cast and crew, how many of each were shrunk, and the last run.
+- **Saved by type** in its settings: a table of the same figures, with the size before and now. Pictures shrunk before 1.2.2 were not counted by type, so they share one row.
+
+Changed:
+
+- **Space saved card:** with nothing shrunk yet, it says so and what to do next: choose a backup in Original pictures first, then Shrink now or the next run.
+- **Sizes as Starboard shows them:** a kilobyte is 1,024 bytes in its words too, so the figures on its cards and pages agree with the number Starboard draws on the Space saved card.
+- **Light as before:** both cards read the figures kept after each run; nothing is measured or scanned when a card asks.
 
 ## What is new in 1.2.1
 

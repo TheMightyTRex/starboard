@@ -3292,6 +3292,25 @@
   .settings-rows > .setting:last-child {
     border-bottom: 0;
   }
+  /* A group of sections (TheMightyTRexUK, 19 November 2026): one topic, such as a plug-in's General, holding several
+     cards. The group itself is no card: its heading sits on the page and each section inside is its own card, with
+     an h3. Topic tabs make one tab for the group, named by its h2. */
+  .settings-section--group {
+    gap: var(--space-4);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .settings-section--group > .settings-section__head:first-child {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  .settings-section--group > .settings-section__head:first-child h2 {
+    font-size: var(--text-lg);
+  }
   .settings-rows {
     display: grid;
     margin: 0;

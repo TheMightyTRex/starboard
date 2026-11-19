@@ -11,6 +11,7 @@ How Audio description is built, for anyone who wants to change it or make one li
 - [`Dockerfile`](https://github.com/TheMightyTRex/starboard-plugins/blob/main/audio-description/Dockerfile)
 - [`install.py`](https://github.com/TheMightyTRex/starboard-plugins/blob/main/audio-description/install.py)
 - [`logo.svg`](https://github.com/TheMightyTRex/starboard-plugins/blob/main/audio-description/logo.svg)
+- [`rules.json`](https://github.com/TheMightyTRex/starboard-plugins/blob/main/audio-description/rules.json), shared with the Jellyfin version and copied by `tools/sync_audio_description_rules.py`
 - [`CHANGELOG.md`](https://github.com/TheMightyTRex/starboard-plugins/blob/main/audio-description/CHANGELOG.md)
 - [`tests/test_audio_description.py`](https://github.com/TheMightyTRex/starboard-plugins/blob/main/tests/test_audio_description.py)
 
@@ -32,15 +33,17 @@ Each image is pinned by digest in the manifest:
 | `GET /count` | The Audio description card (stat) |
 | `GET /recent` | The Recently found with audio description card (list) |
 | `POST /scan` | The Check for described titles now button |
-| `POST /reelix` | The Apply the Reelix choice now button |
+| `POST /reelix` | The Check the Reelix choice now button |
 | `GET /people` | The People who want audio description page |
 | `GET /titles` | The Titles with audio description page |
 | `GET /elsewhere` | The Audio description elsewhere page |
 | `GET /audiovault` | The Search AudioVault page |
 | `GET /youdescribe` | The Search YouDescribe page |
 | `GET /apps` | The MovieReading and Earcatch page |
+| `GET /play` | The Play the described track page |
+| `POST /events` | Starboard's `playback.started` event |
 | `POST /jobs/scan` | The job Check for titles with audio description |
-| `POST /jobs/reelix` | The job Keep the audio description choice in Reelix |
+| `POST /jobs/reelix` | The job Check the audio description choice in Reelix |
 | `POST /update/before` | The update's before step, 60 seconds at most |
 | `POST /update/after` | The update's after step, 10 seconds at most |
 
@@ -52,10 +55,12 @@ Each image is pinned by digest in the manifest:
 ## How it works
 
 - The container rests when idle (`start: when_needed`, resting after 10 minutes). Starboard wakes it for its jobs, its buttons and its pages. Nothing runs on a timer of its own.
-- `scan` reads every film and episode from Jellyfin's `/Items`, 200 at a time with their streams only, so memory stays flat whatever the library's size. A track counts when its title, display title or comment names audio description and does not mention commentary.
-- It keeps `/data/result.json` (the described titles), `/data/seen.json` (when each was first found, for the Recently found card) and `/data/without.json` (titles without a described track, for the Sources' links).
-- `reelix` adds a custom format named **Audio description** with one release title pattern, and scores it 100 in every video quality level that does not already score it, or takes the score out when **Prefer releases with audio description** is deactivated.
+- `scan` reads every film and episode from Jellyfin's `/Items`, 200 at a time with their streams only, then every series once with its tags and year, so memory stays flat whatever the library's size. A track counts when its title, display title or comment names audio description and does not mention commentary.
+- It keeps `/data/result.json` (the described titles: each film's Jellyfin id, name, year, track and when it was added (DateCreated), and each series' id, year, counts and described episodes with their numbers and tracks, for **Titles with audio description**, which reads only this file), `/data/seen.json` (when each was first found, for the Recently found card) and `/data/without.json` (titles without a described track, for the Sources' links).
+- `reelix` only reads Reelix with the manager key Starboard gives (issue #144): `GET /customformats/builtin/audio_description`, or on an older Reelix `GET /customformats` by name, and `GET /qualityprofiles`, and counts the video levels that give the format a score of more than 0. It never posts a format or puts a quality level, which Reelix allows only to an admin key, and never fails the job: it answers with what to do.
 - For each person activated, it sets Jellyfin's **RememberAudioSelections** and keeps what they had in `/data/people.json`, to put back when they are deactivated. It tries Jellyfin 10.9's `/Users/Configuration` first, then 10.8's address.
+- After reading the library, `scan` tags with `POST /Items/{id}` (the whole item, read with `GET /Items/{id}`, as Jellyfin's metadata editor saves it) only the items whose tag changes, and keeps the collection with `/Collections`. It skips both when Jellyfin's `/Plugins` lists the Jellyfin version (`7a591954-9c27-4ba7-80c3-dc5f0a140692`), asked at most every 10 minutes.
+- On `playback.started`, it reads `/Sessions`; for each session of a chosen person playing a title whose described track is not playing, and whose app lists `SetAudioStreamIndex` in its supported commands, it sends `POST /Sessions/{id}/Command` with that command and the track's `Index`. Each start is handled once.
 - **Check for described titles now** runs the scan in the background, because a button must answer in 10 seconds.
 - Cards set their status with `band()` from `sbplugin.py`. Its before update step holds new runs and waits for one that is running.
 
