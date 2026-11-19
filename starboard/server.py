@@ -2807,6 +2807,12 @@ class Handler(BaseHTTPRequestHandler):
                         backup_copies.save(app.data_dir, new, sec)
                         logs.event("info", "backup", f"Copies off this computer: {new['kind']} {backup_copies.where(new)}".strip())
                         return self.json(200, backup_copies.public(app.data_dir))
+                    if path == "/api/backup/copies/detailed" and method == "POST":
+                        # Detailed log for backup connections (owner, 19 November 2026): a log setting, so no password.
+                        on = bool(self.body().get("on"))
+                        backup_copies.set_detailed(app.data_dir, on)
+                        logs.event("info", "backup", f"Detailed log for backup connections {'activated' if on else 'deactivated'}")
+                        return self.json(200, backup_copies.public(app.data_dir))
                     if path == "/api/backup/copies/test" and method == "POST":
                         # Test connection (DASH-452): write, read back, remove, room and sign-in; the result is kept.
                         result = backup_copies.test(app.data_dir)

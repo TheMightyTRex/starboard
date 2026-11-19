@@ -55,9 +55,11 @@ that, select **Try again** for a new one.
 **Complete in this browser:**
 
 1. Select **Open the sign-in page**. It opens in a new tab.
-2. Sign in and allow Starboard to use your files.
-3. The tab then shows a page that does not load, with an address that starts `http://127.0.0.1:53682/` or
-   `http://localhost:53682/`. This is expected: the address holds the answer from Google or Microsoft.
+2. Sign in and allow Starboard to use your files. Finish every check the service asks for, such as a code from your
+   phone or approving the sign-in in Microsoft Authenticator, in that same tab.
+3. The tab then shows a page that does not load, such as "This site cannot be reached", with an address that starts
+   `http://127.0.0.1:53682/` or `http://localhost:53682/`. This is expected: the address holds the answer from Google
+   or Microsoft. It is not a failed sign-in.
 4. Copy the whole address from the address bar, go back to Starboard and paste it into **Paste that whole address**.
 5. Select **Continue**.
 
@@ -115,6 +117,17 @@ shows when you open the page again.
   and when you close the slide-out part way.
 - Closing the slide-out before **Save and finish** saves nothing.
 - To stop copying, select **Stop making copies**. The copies already there stay.
+- Each step of signing in goes to Starboard's log, on **System**, **Logs**: when it started, when the sign-in page was
+  ready, when the address was pasted back, and why one did not finish. The sign-in's address, code and token are never
+  written.
+
+## Detailed log for backup connections
+
+**Detailed log for backup connections**, at the end of **Copies off this computer**, adds the service's own words for
+each step to Starboard's log: each **Test connection**, each copy, and each step of connecting a cloud service, such
+as the reason Microsoft or Google gave for refusing a sign-in. Lines with a password, a key, a token or a sign-in code
+are left out, and the log takes out addresses and names as it does everywhere. It is off unless you choose it, and it
+saves as soon as you change it. Use it to find out why a connection does not work, then deactivate it.
 
 ## If it does not work
 
@@ -129,6 +142,9 @@ shows when you open the page again.
 - **"The service did not accept those keys or that password":** check the keys at the service, then select **Try
   again**.
 - **"Starboard could not reach the service":** check the address, and that the server or NAS is on.
+- **The sign-in stops at a two-step check, or it is not clear why it did not work:** activate **Detailed log for
+  backup connections**, try again, then read the lines for **cloud sign-in** and **backup connection** on **System**,
+  **Logs**. They say which step it reached and what the service said.
 
 ## Find out more
 

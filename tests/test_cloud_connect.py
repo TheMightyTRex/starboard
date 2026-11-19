@@ -468,3 +468,95 @@ class TestConnection(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SignInLog(Base):
+    """Each step of a sign-in in Starboard's log, and the detailed log for backup connections (owner, 19 November 2026:
+    OneDrive's two-step check did not finish and nothing said why; "Can you add a detailed log for backup connections
+    with a setting in the backup / restore area")."""
+
+    def setUp(self):
+        super().setUp()
+        self.lines = []
+        p = mock.patch.object(cc.logs, "event", lambda level, area, message, **extra: self.lines.append((level, area, message)))
+        p.start()
+        self.p.append(p)
+
+    def words(self, area=None):
+        return " | ".join(m for _, a, m in self.lines if area is None or a == area)
+
+    def test_each_step_is_logged_without_the_address_code_or_token(self):
+        s = cc.start(self.data, "dropbox", "browser")
+        sess = cc._session
+        self.assertTrue(wait_for(lambda: cc.current()["state"] == "link"))
+        with self.assertRaises(ValueError):
+            cc.answer(s["id"], "http://127.0.0.1:53682/?state=SomeoneElse1&code=x")
+        cc.answer(s["id"], "http://localhost:53682/?code=dbx-secret-code&state=Abc123_state-XYZ")
+        self.run.finish(sess, {"access_token": "at-secret", "token_type": "Bearer", "refresh_token": "rt-secret", "expiry": "2026-11-16T12:00:00Z"})
+        self.assertTrue(wait_for(lambda: cc.current()["state"] == "signed-in"))
+        said = self.words("cloud sign-in")
+        for step in ("Dropbox in this browser: started", "sign-in page ready at www.dropbox.com", "the pasted address was not used",
+                     "was pasted back", "signed in"):
+            self.assertIn(step, said)
+        for secret in ("dbx-secret-code", "Abc123_state-XYZ", "at-secret", "rt-secret", "oauth2/authorize"):
+            self.assertNotIn(secret, said)
+        self.assertEqual(self.words("backup connection"), "", "nothing detailed unless the setting is on")
+
+    def test_a_sign_in_that_does_not_finish_says_where_and_why(self):
+        backup_copies.set_detailed(self.data, True)
+        cc.start(self.data, "dropbox", "browser")
+        sess = cc._session
+        wait_for(lambda: cc.current()["state"] == "link")
+        cc.answer(sess["id"], "http://127.0.0.1:53682/?state=Abc123_state-XYZ&code=x")
+        self.run.finish(sess, None)
+        self.assertTrue(wait_for(lambda: cc.current()["state"] == "failed"))
+        self.assertIn("did not finish (it was at: swapping the answer for access)", self.words("cloud sign-in"))
+        self.assertIn("Failed to get token: oauth2: cannot fetch token: 400", self.words("backup connection"))
+
+    def test_closing_part_way_and_running_out_of_time(self):
+        cc.start(self.data, "dropbox", "browser")
+        wait_for(lambda: cc.current()["state"] == "link")
+        cc.cancel()
+        self.assertIn("closed before it was saved (it was at: waiting for the address the sign-in ends on)", self.words("cloud sign-in"))
+        cc.start(self.data, "dropbox", "browser")
+        wait_for(lambda: cc.current()["state"] == "link")
+        cc._session["deadline"] = time.time() - 1
+        cc.current()
+        self.assertIn("the time to sign in ran out", self.words("cloud sign-in"))
+
+
+class DetailedLog(unittest.TestCase):
+    def setUp(self):
+        self.data = tempfile.mkdtemp()
+        self.lines = []
+        self.p = mock.patch("starboard.logs.event", lambda level, area, message, **extra: self.lines.append((area, message)))
+        self.p.start()
+
+    def tearDown(self):
+        self.p.stop()
+
+    def test_the_setting_is_kept_and_changes_nothing_else(self):
+        self.assertFalse(backup_copies.settings(self.data)["detailed_log"])
+        backup_copies.save(self.data, {**backup_copies.settings(self.data), "kind": "disk", "folder": "/mnt/usb/backups"}, backup_copies.secrets(self.data))
+        backup_copies.set_detailed(self.data, True)
+        s = backup_copies.settings(self.data)
+        self.assertTrue(s["detailed_log"])
+        self.assertEqual((s["kind"], s["folder"]), ("disk", "/mnt/usb/backups"))
+        self.assertTrue(backup_copies.public(self.data)["detailed_log"])
+        backup_copies.set_detailed(self.data, False)
+        self.assertFalse(backup_copies.detailed(self.data))
+
+    def test_secrets_never_reach_the_log(self):
+        said = ("2026/11/19 NOTICE: Config file not found\nPaste the following into your remote machine --->\n{\"access_token\":\"x\"}\n<---End paste\n"
+                "pass = OBSCURED\nclient_secret = abc\nhttp://127.0.0.1:53682/?state=s1&code=c1\nERROR : Failed to copy: 403 Forbidden\nCOUNT 3")
+        got = backup_copies.clean_lines(said)
+        self.assertEqual(got, ["2026/11/19 NOTICE: Config file not found", "ERROR : Failed to copy: 403 Forbidden", "Full backups there: 3"])
+        self.assertEqual(backup_copies.clean_lines("STEP-WRITE\nFREE 2097152"), ["Wrote a small test file", "Free space there: 2 MB"])
+
+    def test_only_when_the_setting_is_on(self):
+        backup_copies.log_detail(self.data, "Copy to x:y", "ERROR : it broke", 1)
+        self.assertEqual(self.lines, [])
+        backup_copies.set_detailed(self.data, True)
+        backup_copies.log_detail(self.data, "Copy to x:y", "line one\nERROR : it broke", 1)
+        self.assertEqual(self.lines[0], ("backup connection", "Copy to x:y: ended with code 1, 2 lines of detail"))
+        self.assertEqual(self.lines[-1], ("backup connection", "Copy to x:y: ERROR : it broke"))

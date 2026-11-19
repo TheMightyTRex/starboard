@@ -78,7 +78,71 @@ def settings(data_dir):
             "keep": max(1, min(int(s.get("keep") or KEEP_DEFAULT), 50)),
             # Connect a cloud service (DASH-452): which service the wizard connected ("" for a remote pasted by hand),
             # and how the person last signed in (browser or phone), offered first next time.
-            "service": str(s.get("service") or "") if kind == "rclone" else "", "signin_way": str(s.get("signin_way") or "")}
+            "service": str(s.get("service") or "") if kind == "rclone" else "", "signin_way": str(s.get("signin_way") or ""),
+            # Detailed log for backup connections (owner, 19 November 2026): off unless chosen.
+            "detailed_log": bool(s.get("detailed_log"))}
+
+
+# Detailed log for backup connections ---------------------------------------------------------------------------------
+# (owner, 19 November 2026: "Can you add a detailed log for backup connections with a setting in the backup / restore
+# area"). When it is on, the words of each step (rclone's, or the share's) go to Starboard's log, area "backup
+# connection": a test, a copy, and each step of connecting a cloud service. Lines that could hold a secret are left out
+# here, and the log takes out keys, tokens and addresses as it does everywhere.
+DETAIL_LINES = 60
+_SECRETISH = re.compile(r"(?i)(\b(pass(word)?|secret|token|client_id|client_secret|access_token|refresh_token|api[_-]?key|access[_-]?key|"
+                        r"account[_-]?key|key|authori[sz]ation|session|cookie)\b\s*=\s*\S|"
+                        r"\"[a-z_]*(token|secret|password|key)\"\s*:|bearer\s+\S|[?&](code|state)=)")
+
+
+def detailed(data_dir):
+    return bool(settings(data_dir)["detailed_log"])
+
+
+def set_detailed(data_dir, on):
+    """Detailed log for backup connections, on or off; it changes nothing else."""
+    raw = _read(os.path.join(data_dir, SETTINGS), {})
+    raw["detailed_log"] = bool(on)
+    _write(os.path.join(data_dir, SETTINGS), raw)
+    return settings(data_dir)
+
+
+def clean_lines(said):
+    """The helper's words, line by line, without anything between rclone's paste markers (a sign-in token) or any line
+    that names a password, key, token or sign-in code."""
+    text = re.sub(r"Paste the following[\s\S]*?<---End paste", "", str(said or ""))
+    text = re.sub(r"--->[\s\S]*?<---End paste", "", text)
+    out = []
+    for ln in text.splitlines():
+        ln = ln.strip()
+        if not ln or _SECRETISH.search(ln):
+            continue
+        out.append(_MARKS.get(ln) or _marked(ln) or ln[:300])
+    return out
+
+
+# The helper's step markers, in words for the log.
+_MARKS = {"STEP-FOLDER": "Reached the folder", "STEP-WRITE": "Wrote a small test file", "STEP-READ": "Read it back",
+          "STEP-REMOVE": "Removed it"}
+
+
+def _marked(ln):
+    m = re.fullmatch(r"(FREE|COUNT) (\d+)", ln)
+    if not m:
+        return None
+    n = int(m.group(2))
+    return f"Free space there: {n // 1024 ** 2} MB" if m.group(1) == "FREE" else f"Full backups there: {n}"
+
+
+def log_detail(data_dir, what, said, code=None):
+    """When the detailed log is on: what was done, how it ended, and the helper's own words (the last DETAIL_LINES)."""
+    if not data_dir or not detailed(data_dir):
+        return
+    from . import logs
+    lines = clean_lines(said)
+    logs.event("info", "backup connection", f"{what}: " + ("finished" if code in (0, None) else f"ended with code {code}")
+               + f", {len(lines)} line{'s' if len(lines) != 1 else ''} of detail")
+    for ln in lines[-DETAIL_LINES:]:
+        logs.event("info", "backup connection", f"{what}: {ln}")
 
 
 def secrets(data_dir):
@@ -352,6 +416,7 @@ def _run(data_dir, source, test=False):
         try:
             code, said = _helper(f"timeout {TEST_LIMIT} sh -c {_q(script)}" if test else script, binds, volumes=volumes,
                                  timeout=TEST_LIMIT + 30 if test else 7200)
+            log_detail(data_dir, f"{'Test connection' if test else 'Copy'} to {where(s)}", said, code)
         finally:
             for v in volumes:
                 _let_go(v)
@@ -401,6 +466,7 @@ def _rclone(data_dir, s, sec, binds, src, name, test):
     try:
         code, said = _helper(script, binds + [f"{os.path.dirname(host)}/{WORK}:/c"], image=RCLONE_IMAGE, network="bridge",
                              timeout=TEST_LIMIT + 30 if test else 7200)
+        log_detail(data_dir, f"{'Test connection' if test else 'Copy'} to {remote}", said, code)
         try:
             with open(conf, encoding="utf-8") as f:
                 after = f.read()
