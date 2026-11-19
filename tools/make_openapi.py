@@ -14,7 +14,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
-from starboard import api_v1  # noqa: E402
+from starboard import api_v1, mcp  # noqa: E402
 
 page = {"limit": {"name": "limit", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 200, "default": 50},
                   "description": "How many to give back."},
@@ -409,6 +409,45 @@ spec["components"]["parameters"]["idempotency"] = {
     "name": "Idempotency-Key", "in": "header", "required": False, "schema": {"type": "string", "pattern": "^[A-Za-z0-9._:-]{1,100}$"},
     "description": "Send the same value again to get the first answer back without doing it twice. Kept for 24 hours."}
 
+# Added in 1.7.0 (DASH-464): AI assistants over MCP. One POST address taking JSON-RPC 2.0; read keys only.
+RPC_ID = {"type": ["string", "integer"]}
+spec["components"]["schemas"]["JsonRpcRequest"] = {
+    "type": "object", "required": ["jsonrpc", "method"],
+    "properties": {"jsonrpc": {"type": "string", "enum": ["2.0"]}, "id": RPC_ID,
+                   "method": {"type": "string", "description": "initialize, ping, tools/list or tools/call; or a notification, such as notifications/initialized, with no id."},
+                   "params": ANY}}
+spec["components"]["schemas"]["JsonRpcResponse"] = {
+    "type": "object", "required": ["jsonrpc", "id"],
+    "properties": {"jsonrpc": {"type": "string", "enum": ["2.0"]}, "id": {"type": ["string", "integer", "null"]},
+                   "result": {**ANY, "description": "initialize: protocolVersion, capabilities, serverInfo and instructions. tools/list: tools. "
+                                                    "tools/call: content, structuredContent and isError."},
+                   "error": {"type": "object", "required": ["code", "message"],
+                             "properties": {"code": {"type": "integer"}, "message": {"type": "string"}}}}}
+spec["paths"]["/api/v1/mcp"] = {"post": {
+    "operationId": "mcp", "summary": "AI assistants: the Model Context Protocol, read-only tools about the media server", "tags": ["AI assistants"],
+    "description": "The MCP Streamable HTTP transport: send one JSON-RPC 2.0 message as JSON (no batches) and get one JSON answer, "
+                   "never a stream. It takes initialize, ping, tools/list and tools/call; notifications, with no id, get 202 and no body. "
+                   "Off until the owner activates AI assistants in Settings, Security, API keys (403 mcp_off). Only a Read only key "
+                   "(403 read_key_needed). tools/list gives the tools the key's scopes cover: search_library (library), recently_added, "
+                   "coming_up and now_playing (media), downloads_in_progress and download_problems (downloads), requests (requests), "
+                   "app_health (apps) and disk_space (system). Each reads the same as its /api/v1 route and changes nothing. "
+                   "Each tools/call is written to the audit log. An Origin header from another site is refused (403 origin_refused). "
+                   "MCP versions 2025-06-18 and 2025-03-26; send MCP-Protocol-Version after initialize.",
+    "parameters": [{"name": "MCP-Protocol-Version", "in": "header", "required": False, "schema": {"type": "string", "enum": list(mcp.PROTOCOL_VERSIONS)},
+                    "description": "The version initialize agreed."}],
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/JsonRpcRequest"},
+                                                                "example": {"jsonrpc": "2.0", "id": 1, "method": "tools/list"}}}},
+    "responses": {"200": {"description": "The JSON-RPC answer: result, or error with a JSON-RPC code such as -32601 for a method Starboard does not take.",
+                          "headers": {"X-Request-Id": {"$ref": "#/components/headers/X-Request-Id"}},
+                          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/JsonRpcResponse"}}}},
+                  "202": {"description": "A notification was taken. No body."},
+                  "400": {"description": "Not JSON, or not one JSON-RPC 2.0 message (a JSON-RPC error), or an MCP version Starboard does not speak (a problem).",
+                          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/JsonRpcResponse"}},
+                                      "application/problem+json": {"schema": {"$ref": "#/components/schemas/Problem"}}}},
+                  "401": {"$ref": "#/components/responses/Problem"}, "403": {"$ref": "#/components/responses/Problem"},
+                  "405": {"$ref": "#/components/responses/Problem"}, "413": {"$ref": "#/components/responses/Problem"},
+                  "429": {"$ref": "#/components/responses/Problem"}}}}
+
 
 SAMPLES = {"id": "123", "name": "livetv"}
 RUN_ID = "0123456789ab"  # an update run's id, for /api/v1/updates/runs/{id}
@@ -430,17 +469,21 @@ def with_scopes(spec):
         for method, op in ops.items():
             if op.get("security") == []:
                 continue
-            if method == "get":
+            if path == mcp.PATH:  # each tool has its own scope; the address takes read keys only
+                scope, right = None, "read"
+            elif method == "get":
                 scope = next((sc for p, sc in reads if re.match(p, sample(path))), None)
             else:
                 scope = next((sc for p, m, sc in writes if m == method.upper() and re.match(p, sample(path))), None)
+            if path != mcp.PATH:
+                right = "manage"
             ordered = {}
             for k, v in op.items():
                 ordered[k] = v
                 if k == "tags":
                     ordered["x-scope"] = scope
                     if method != "get":
-                        ordered["x-right"] = "manage"
+                        ordered["x-right"] = right
             ops[method] = ordered
     return spec
 

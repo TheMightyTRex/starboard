@@ -21,7 +21,7 @@ from .config import DEFAULTS, DESIGNS, SCHEMA, SERVICE_TYPES, UPCOMING_DAYS, UPC
 
 FORMAT = "starboard-settings"
 GENERAL_KEYS = ("site_name", "server_name", "design", "own_colours", "groups", "show_home_address", "show_outside_address",
-                "session_days", "secure_cookies", "update_check", "network_access", "upcoming_view", "upcoming_days", "download_hours",
+                "session_days", "secure_cookies", "update_check", "network_access", "mcp_enabled", "upcoming_view", "upcoming_days", "download_hours",
                 "fetch_icons", "show_posters", "watch", "extras", "performance", "dashboard", "logs", "ux_notes", "settings_advanced",
                 "reelix_auto_update", "starboard_auto_update", "apps_auto_update", "plugins_auto_update",
                 "jellyfin_plugins_auto_update", "auto_update_hours", "infinite_scroll", "backup_schedule", "backup_keep_versions")

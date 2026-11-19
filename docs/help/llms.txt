@@ -25,6 +25,7 @@
 
 - [API quickstart](developers/api-quickstart.md): make a key and make a first call with curl or Python, with paging and ETags.
 - [Authentication and keys](developers/api-authentication.md): keys, scopes (Logs and Updates only when ticked), expiry, revoking, rate limits and the audit log.
+- [MCP tools](developers/mcp-tools.md): POST /api/v1/mcp, the Model Context Protocol for AI assistants: read-only tools for the Library, downloads, requests, app health and disk space, off until the owner activates it, with a Read only key (API 1.7.0).
 - [API reference](developers/api-reference.md): every address in version 1, generated from openapi.json.
 - [List of API errors](../api/errors.md): each problem code, its cause and its fix.
 - [API changelog](developers/api-changelog.md): what each version of the API and the plug-in API added.

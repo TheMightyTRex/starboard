@@ -30,7 +30,8 @@ SCOPE_WORDS = {"apps": "your apps and their status", "downloads": "downloads, do
                "updates": "updates, only when ticked"}
 EXPLICIT = ("logs", "updates")  # api_v1.EXPLICIT_SCOPES: a key with no scopes does not have them
 # Codes that differ for some addresses: the updates' 409 is about the update, not about something to set up.
-CODES_FOR = {"/api/v1/updates": {409: ["update_running", "cannot_update"]}}
+CODES_FOR = {"/api/v1/updates": {409: ["update_running", "cannot_update"]},
+             "/api/v1/mcp": {403: ["mcp_off", "read_key_needed", "origin_refused"]}}  # DASH-464
 CODES.update({403: ["right_needed"], 409: ["not_set_up"], 413: ["too_large"], 502: ["app_failed"], 503: ["too_many_streams"]})
 
 
@@ -143,7 +144,7 @@ def operation(spec, path, method, op, table, used):
         lines.append("- **Key:** none needed.")
     else:
         scope = op.get("x-scope") or (found[0] if found else None)
-        who = "a key made with Read and manage" if right == "manage" else "any key"
+        who = "a key made with Read and manage" if right == "manage" else "a Read only key" if method != "get" else "any key"
         if scope:
             which = f"whose scopes include `{scope}`" if scope in EXPLICIT else f"whose scopes are empty or include `{scope}`"
             lines.append(f"- **Key:** {who} {which} ({SCOPE_WORDS.get(scope, scope)}). "
@@ -208,7 +209,10 @@ def operation(spec, path, method, op, table, used):
 
 def example_body(spec, op):
     """A small JSON body for a write's example: each required property with its first allowed value."""
-    schema = (((op.get("requestBody") or {}).get("content") or {}).get("application/json") or {}).get("schema") or {}
+    content = ((op.get("requestBody") or {}).get("content") or {}).get("application/json") or {}
+    if "example" in content:  # a body the description gives itself, such as a JSON-RPC message (DASH-464)
+        return json.dumps(content["example"])
+    schema = content.get("schema") or {}
     out = {}
     for name in schema.get("required") or []:
         sub = (schema.get("properties") or {}).get(name) or {}

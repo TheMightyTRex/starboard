@@ -1245,6 +1245,37 @@ await page.waitForTimeout(400);
 check("API-03", "the list says the key reads and manages", /read and manage/.test(await page.locator("#security-sections .row", { hasText: "Journey manager" }).textContent()));
 const listed = await api("/api/keys");
 for (const k of listed.keys.filter((k) => k.name === "Journey manager")) await api(`/api/keys/${k.id}`, { method: "DELETE" });
+// DASH-464: AI assistants over MCP, on the same page. Off until activated; the switch says what it shares, keeps focus
+// and says the result in a live region; a Read only key then gets the tools, and deactivating stops it at once. The
+// assistant's calls go from here, as an assistant's would, not from the page.
+console.log("\n== MCP AI assistants");
+await open("settings-security-keys.html");
+const mcpOn = page.locator("#mcp-on");
+await mcpOn.waitFor({ timeout: 10000 });
+check("MCP-01", "AI assistants is on the API keys page, inactive at first", !(await mcpOn.isChecked()) && /Inactive/.test(await page.locator("#mcp-result").textContent()));
+check("MCP-01", "the switch has its name and says what it shares", (await page.getByRole("switch", { name: "Let AI assistants connect" }).count()) === 1
+  && /cannot change anything/.test(await page.locator("#mcp-h").textContent()));
+check("MCP-01", "the result is a live region", (await page.locator("#mcp-result").getAttribute("role")) === "status");
+const mcpKey = (await api("/api/keys", { method: "POST", body: { name: "Journey assistant", right: "read", scopes: [], expires_days: "90", password } })).key;
+const mcpCall = async (msg) => {
+  const r = await fetch(`${base}/api/v1/mcp`, { method: "POST", headers: { Authorization: `Bearer ${mcpKey}`, "Content-Type": "application/json" }, body: JSON.stringify(msg) });
+  return { status: r.status, body: await r.json().catch(() => null) };
+};
+const mcpOff = await mcpCall({ jsonrpc: "2.0", id: 1, method: "tools/list" });
+check("MCP-02", "while inactive, a key gets 403 mcp_off", mcpOff.status === 403 && mcpOff.body?.code === "mcp_off", JSON.stringify(mcpOff.body).slice(0, 120));
+await mcpOn.focus();
+await page.keyboard.press("Space");
+await page.waitForFunction(() => /Active:/.test(document.querySelector("#mcp-result")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
+check("MCP-03", "Space activates it, focus stays on the switch and the address shows",
+  await mcpOn.isChecked() && await page.evaluate(() => document.activeElement?.id === "mcp-on")
+  && /\/api\/v1\/mcp$/.test(await page.locator("section[aria-labelledby='sc-mcp-h'] dd code").first().textContent()));
+const mcpList = await mcpCall({ jsonrpc: "2.0", id: 2, method: "tools/list" });
+check("MCP-04", "then a Read only key gets the read-only tools", mcpList.status === 200 && mcpList.body?.result?.tools?.length === 9
+  && mcpList.body.result.tools.every((t) => t.annotations.readOnlyHint), JSON.stringify(mcpList.body).slice(0, 120));
+await page.keyboard.press("Space");
+await page.waitForFunction(() => /Inactive:/.test(document.querySelector("#mcp-result")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
+check("MCP-05", "deactivating it stops the assistant at once", (await mcpCall({ jsonrpc: "2.0", id: 3, method: "ping" })).status === 403);
+for (const k of (await api("/api/keys")).keys.filter((k) => k.name === "Journey assistant")) await api(`/api/keys/${k.id}`, { method: "DELETE" });
 // DASH-380: Copies off this computer on System, Backup and restore, set by the example server to a made-up USB disk,
 // with a stand-in helper. Test answers in the live line and focus stays on Test; a wrong remote is said in an alert
 // that takes focus; Off saves with the password and the buttons go; the made-up disk is put back after.

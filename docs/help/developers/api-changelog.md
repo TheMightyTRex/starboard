@@ -15,6 +15,17 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Starboard API 1.7.0 (Starboard 0.23.0, not released yet), 19 November 2026
+
+- **Added:** `POST /mcp`, for AI assistants that speak the Model Context Protocol (MCP), over its Streamable HTTP
+  transport: one JSON-RPC 2.0 message in, one JSON answer back, never a stream. It takes `initialize`, `ping`,
+  `tools/list` and `tools/call`; a notification gets `202`. Off until the owner activates **AI assistants** in
+  Settings, Security, API keys (`403 mcp_off`), and only with a **Read only** key (`403 read_key_needed`). Its tools
+  only read, each through the same route and scope as the address it is named after, and each call is written to
+  the audit log. Read [MCP tools](mcp-tools.md).
+- **Added:** `links.mcp` in `GET /api/v1/`.
+- Nothing was taken away: every earlier address answers as before.
+
 ## Plug-in API 1.16.0 (Starboard 0.23.0, not released yet)
 
 - **Added:** the `disk.changed` event, with the `system:read` permission: a pool job the root helper finished

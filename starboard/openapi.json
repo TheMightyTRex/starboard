@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Starboard API",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Make a key in Starboard: Settings, Security, API keys. Send it as Authorization: Bearer sb_read_... or sb_manage_... A read key reads; a manage key also does the everyday actions (each POST, marked x-right: manage). x-scope is the scope a key needs. Errors are RFC 9457 problem details. Lists use limit and cursor. Answers carry an ETag; send If-None-Match to get 304.",
   "license": {
    "name": "MIT",
@@ -4063,6 +4063,98 @@
      }
     }
    }
+  },
+  "/api/v1/mcp": {
+   "post": {
+    "operationId": "mcp",
+    "summary": "AI assistants: the Model Context Protocol, read-only tools about the media server",
+    "tags": [
+     "AI assistants"
+    ],
+    "x-scope": null,
+    "x-right": "read",
+    "description": "The MCP Streamable HTTP transport: send one JSON-RPC 2.0 message as JSON (no batches) and get one JSON answer, never a stream. It takes initialize, ping, tools/list and tools/call; notifications, with no id, get 202 and no body. Off until the owner activates AI assistants in Settings, Security, API keys (403 mcp_off). Only a Read only key (403 read_key_needed). tools/list gives the tools the key's scopes cover: search_library (library), recently_added, coming_up and now_playing (media), downloads_in_progress and download_problems (downloads), requests (requests), app_health (apps) and disk_space (system). Each reads the same as its /api/v1 route and changes nothing. Each tools/call is written to the audit log. An Origin header from another site is refused (403 origin_refused). MCP versions 2025-06-18 and 2025-03-26; send MCP-Protocol-Version after initialize.",
+    "parameters": [
+     {
+      "name": "MCP-Protocol-Version",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "enum": [
+        "2025-06-18",
+        "2025-03-26"
+       ]
+      },
+      "description": "The version initialize agreed."
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/JsonRpcRequest"
+       },
+       "example": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/list"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "The JSON-RPC answer: result, or error with a JSON-RPC code such as -32601 for a method Starboard does not take.",
+      "headers": {
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/JsonRpcResponse"
+        }
+       }
+      }
+     },
+     "202": {
+      "description": "A notification was taken. No body."
+     },
+     "400": {
+      "description": "Not JSON, or not one JSON-RPC 2.0 message (a JSON-RPC error), or an MCP version Starboard does not speak (a problem).",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/JsonRpcResponse"
+        }
+       },
+       "application/problem+json": {
+        "schema": {
+         "$ref": "#/components/schemas/Problem"
+        }
+       }
+      }
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "403": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "405": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "413": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
   }
  },
  "components": {
@@ -4599,6 +4691,77 @@
        }
       },
       "description": "What Starboard already did about it, oldest first."
+     }
+    }
+   },
+   "JsonRpcRequest": {
+    "type": "object",
+    "required": [
+     "jsonrpc",
+     "method"
+    ],
+    "properties": {
+     "jsonrpc": {
+      "type": "string",
+      "enum": [
+       "2.0"
+      ]
+     },
+     "id": {
+      "type": [
+       "string",
+       "integer"
+      ]
+     },
+     "method": {
+      "type": "string",
+      "description": "initialize, ping, tools/list or tools/call; or a notification, such as notifications/initialized, with no id."
+     },
+     "params": {
+      "type": "object",
+      "additionalProperties": true
+     }
+    }
+   },
+   "JsonRpcResponse": {
+    "type": "object",
+    "required": [
+     "jsonrpc",
+     "id"
+    ],
+    "properties": {
+     "jsonrpc": {
+      "type": "string",
+      "enum": [
+       "2.0"
+      ]
+     },
+     "id": {
+      "type": [
+       "string",
+       "integer",
+       "null"
+      ]
+     },
+     "result": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "initialize: protocolVersion, capabilities, serverInfo and instructions. tools/list: tools. tools/call: content, structuredContent and isError."
+     },
+     "error": {
+      "type": "object",
+      "required": [
+       "code",
+       "message"
+      ],
+      "properties": {
+       "code": {
+        "type": "integer"
+       },
+       "message": {
+        "type": "string"
+       }
+      }
      }
     }
    }

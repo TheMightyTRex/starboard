@@ -22,6 +22,11 @@ def summary(app):
         _item("network", "Your home network",
               "Phones and computers on your home network can open Starboard. Off: only this computer can.",
               d.get("network_access", True), "setting", link="/settings-security.html", cost="Nothing noticeable."),
+        _item("mcp", "AI assistants",
+              "Assistants that speak MCP can read the Library, downloads, requests, app health and disk space, with a "
+              "Read only key you make for them. They cannot change anything.",
+              d.get("mcp_enabled", False), "setting", link="/settings-security-keys.html#sc-mcp-h",
+              cost="Nothing until an assistant asks; each question reads the same saved answers as the pages."),
         _item("apps", "Your apps",
               "Starboard reads status, queues, calendars and updates from the apps you add, with the API keys you give it. "
               "It adds films, series and books only when you choose Add.",
