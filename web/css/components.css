@@ -1356,6 +1356,19 @@
     background: transparent;
     border: 2px solid currentColor;
   }
+  /* On a phone, a status chip in a list row shows its icon only (TheMightyTRexUK, 19 November 2026), so the row
+     keeps room for its name and actions. The words stay in the page for screen readers. A chip with no icon
+     keeps its words, as a shape alone does not say enough. */
+  @media (max-width: 720px) {
+    .rows .row .chip:has(> svg) {
+      gap: 0;
+      min-width: 24px;
+      justify-content: center;
+      padding-inline: 4px;
+      font-size: 0;
+      line-height: 0;
+    }
+  }
   /* On a cover or a coloured edge the chip keeps its own surface, so it reads on any picture. */
   .stat .chip,
   .cover .chip {
