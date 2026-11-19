@@ -151,9 +151,29 @@ healthy() {
 # has BusyBox tar, which knows no --warning options and ends with 1 for any error, so there only 0 is accepted. Either
 # way the backup must exist and read back whole before anything is changed: a missing backup left going back with
 # nothing to restore (found by the update test, 16 November 2026).
+# DASH-484 (owner, 19 November 2026: "stop changes in the plugins impacting the backups - if they are added or removed
+# between updates"). Plug-ins make folders their own user owns, and not only in data/plugins/<id>/data: a removed
+# plug-in's folder moves to data/holding with its data (a Watch stats copy there stopped the update to 0.22.0), and a
+# new plug-in may keep files anywhere. So nothing here names where they are: left_out finds everything in a folder that
+# Starboard's user cannot read, and gives, for each, the highest folder in its chain that is not this user's, which is
+# the folder the plug-in's user made. The backup leaves those out, and going back moves each back with the folder
+# that holds it. Plug-ins added, removed or held between the backup and going back are handled the same way.
+left_out() {  # left_out <folder>: one path a line, relative to <folder>
+  local me p x
+  me="$(id -u)"
+  find "$1" -mindepth 1 2>/dev/null | while IFS= read -r p; do
+    if [ ! -r "$p" ] || { [ -d "$p" ] && [ ! -x "$p" ]; }; then
+      x="$p"
+      while [ "$(dirname "$x")" != "$1" ] && [ "$(stat -c %u "$(dirname "$x")" 2>/dev/null)" != "$me" ]; do x="$(dirname "$x")"; done
+      printf '%s\n' "${x#"$1"/}"
+    fi
+  done | sort -u | awk 'BEGIN { last = "" } last != "" && index($0, last "/") == 1 { next } { print; last = $0 }'
+}
+
 backup_data() {  # backup_data <file>
   local code=0 gnu=0
-  local opts=(--exclude='data/plugins/*/data' --exclude='data/self-update.log' --exclude='*.tmp' --exclude='*.new')
+  local opts=(--exclude='data/plugins/*/data' --exclude='data/self-update.log' --exclude='*.tmp' --exclude='*.new') x
+  while IFS= read -r x; do opts+=("--exclude=data/$x"); done < <(left_out data)
   if tar --version 2>/dev/null | grep -q 'GNU tar'; then
     gnu=1
     opts=(--warning=no-file-changed --warning=no-file-removed "${opts[@]}")
@@ -166,8 +186,8 @@ backup_data() {  # backup_data <file>
     # BusyBox tar (in the page's update helper) looks each file up before its --exclude list, so a file renamed away
     # while it reads the folder stops it even when it is left out. Such a race passes on the next try (17 November
     # 2026: Update now to 0.20.1 stopped on data/self-update.log.new).
-    [ "$tries" -lt 3 ] || return 1
-    echo "A file changed while it was backed up; trying again ($tries of 3)." >&2
+    [ "$tries" -lt 5 ] || return 1
+    echo "A file changed while it was backed up; trying again ($tries of 5)." >&2
     tries=$((tries + 1))
     sleep 1
   done
@@ -195,6 +215,27 @@ restore_data() {  # restore_data <file>: data goes to data.failed-update, the ba
       mv "data.failed-update/plugins/$id" "data/plugins/$id"
     fi
   done
+  # Everything else the backup could not hold (DASH-484): each goes back with the folder that holds it, which is
+  # Starboard's, as above. That folder's files from the backup go over it, so its settings are as they were.
+  local held anchor
+  while IFS= read -r held; do
+    anchor="$(dirname "$held")"
+    if [ "$anchor" = . ]; then  # straight in data: it moves back on its own
+      mv "data.failed-update/$held" "data/$held" 2>/dev/null || echo "Not moved back: data.failed-update/$held" >&2
+      continue
+    fi
+    [ -e "data.failed-update/$anchor" ] || continue  # it went back already, with a folder that holds it
+    if [ -e "data/$anchor" ]; then
+      rm -rf data/.restore-held
+      mv "data/$anchor" data/.restore-held
+      mv "data.failed-update/$anchor" "data/$anchor"
+      cp -a data/.restore-held/. "data/$anchor/"
+      rm -rf data/.restore-held
+    else
+      mkdir -p "data/$(dirname "$anchor")"
+      mv "data.failed-update/$anchor" "data/$anchor"
+    fi
+  done < <(left_out data.failed-update | awk -F/ '{ print NF "\t" $0 }' | sort -n | cut -f2-)
 }
 # update-data-functions-end
 

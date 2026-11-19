@@ -1818,6 +1818,7 @@ RELEASES = [
             ["Library episode rows line up", "Each episode shows its name, its status, Watched and Play in columns that line up; on a phone the status and Watched show as icons, and screen readers still read their words."]
         ],
         "fixed": [
+            ["Plug-ins added or removed could stop an update", "The settings backup before an update leaves out every folder only a plug-in can read, wherever it is, such as a removed plug-in's data in holding, and going back returns each one whole."],
             ["Plug-ins could not reach Starboard on the home network", "Plug-ins on the home network, such as Remote access, now reach Starboard's API on the server at Starboard's own port."],
             ["Reelix was listed several times in Updates", "System, Apps, Updates lists Reelix once, as its films, series, books and music connections run in its one container."],
             ["Discover tiles had square corners", "Cover tiles on Discover have the same 6px corners as the rest of Starboard."]

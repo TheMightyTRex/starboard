@@ -24,6 +24,7 @@ add features.
 - **Styles from plug-ins keep their own design:** cards lift only in styles with elevated cards, headings keep their weight, and the menu hover edge is the style's secondary text colour, checked at 3:1 when a style is added.
 
 ### Fixed
+- **Plug-ins added or removed no longer stop an update (DASH-484):** the settings backup before an update leaves out every folder Starboard's user cannot read, wherever a plug-in made it, such as a removed plug-in's data in holding, and going back after a failed update returns each one whole, including plug-ins added or removed after the backup. A backup interrupted by a file renamed away is tried five times instead of three.
 - **Plug-ins on the home network reach Starboard (Remote access):** a plug-in on the home network is given Starboard's API on the server at host.docker.internal and Starboard's own port, which Starboard now accepts as a host name, so Remote access can read Starboard's apps.
 - **Reelix listed once:** System, Apps, Updates lists Reelix once, as its films, series, books and music connections run in its one container.
 - **Discover tiles:** cover tiles on Discover have the default 6px corners.
