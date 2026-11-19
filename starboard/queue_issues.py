@@ -310,6 +310,15 @@ def _reelix_issue(r):
     return None
 
 
+def _quality_name(q):
+    """Reelix sends {"quality": "Remux-1080p", "revision": ...}; Sonarr-style apps send {"quality": {"name": ...}}.
+    Either, or plain text, gives the name (19 November 2026: the text form stopped Copy issues for every Reelix item)."""
+    inner = q.get("quality") if isinstance(q, dict) else q
+    if isinstance(inner, dict):
+        inner = inner.get("name")
+    return str(inner or "")
+
+
 def _reelix_rows(reelix, app_ids, secrets):
     page = services._api(reelix, "/queue", {"page": 1, "page_size": 0}) or {}
     out = []
@@ -331,7 +340,7 @@ def _reelix_rows(reelix, app_ids, secrets):
             ids["radio show"] = media["show_id"]
         if eps:
             ids["episodes"] = [e.get("id") for e in eps]
-        quality = ((r.get("quality") or {}).get("quality") or {}).get("name", "") if isinstance(r.get("quality"), dict) else ""
+        quality = _quality_name(r.get("quality"))
         size = r.get("size") or 0
         eta = r.get("eta_secs")
         out.append({
@@ -344,6 +353,9 @@ def _reelix_rows(reelix, app_ids, secrets):
             "time_left": f"{eta // 86400}.{eta % 86400 // 3600:02d}:{eta % 3600 // 60:02d}:{eta % 60:02d}" if isinstance(eta, int) else "",
             "added": r.get("added") or "", "indexer": clean(r.get("indexer") or "", secrets), "protocol": str(r.get("protocol") or ""),
             "quality": quality, "download_client": clean(r.get("download_client") or "", secrets),
+            # Reelix's custom formats and score, for "Not an upgrade for the existing file (Bluray-1080p, score 0)".
+            "custom_formats": [clean(str((f or {}).get("name") if isinstance(f, dict) else f), secrets) for f in r.get("custom_formats") or []][:20],
+            "format_score": r.get("format_score") if isinstance(r.get("format_score"), (int, float)) else None,
             "download_client_ids": {k: v for k, v in (("download_id", clean(r.get("download_id") or "", secrets)),
                                                        ("client_id_in_reelix", r.get("download_client_id"))) if v not in (None, "")},
             "paths": {k: v for k, v in (("output", path(r.get("output_path"), secrets)),) if v},
@@ -443,6 +455,9 @@ def markdown(result, version=""):
             source.append(f"**Protocol:** {i['protocol']}")
         if i["quality"]:
             source.append(f"**Quality:** {i['quality']}")
+        if i.get("custom_formats") or i.get("format_score") is not None:
+            source.append(f"**Custom formats:** {', '.join(i.get('custom_formats') or []) or 'none'}"
+                          + (f" (score {i['format_score']})" if i.get("format_score") is not None else ""))
         lines.append("- " + " · ".join(source))
         ids = i["download_client_ids"]
         id_words = {"download_id": "download id", "client_id_in_reelix": "the client's id in Reelix"}
