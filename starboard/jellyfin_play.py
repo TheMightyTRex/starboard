@@ -2,9 +2,11 @@
 web player, in a new tab.
 
 The address is the one the owner gave Starboard for people's browsers: the Jellyfin app's "Address to open in your
-browser" at home, and its "Outside address" away from home. Never the address Starboard itself uses (such as
-http://127.0.0.1:8096 or http://host.docker.internal:8096), which a browser on another computer cannot open. With no
-address for browsers, the Library says where to add one instead of showing a link that fails.
+browser" at home, and its "Outside address" away from home. When the only address saved is a local one on this
+computer (http://127.0.0.1:8096, as Install apps saves it), the browser builds the link from the name it used to open
+Starboard with Jellyfin's port, as Starboard's other Open buttons do (reachableUrl in common.js). Any other address
+Starboard uses (such as http://host.docker.internal:8096, or a container's name) is never shown to a browser; with no
+address that can be made, the Library says where to add one instead of showing a link that fails.
 
 Jellyfin's ids come from what the Library already reads:
 - an item page asks Jellyfin for the film or series once already, for watched or not (watched.py), and keeps the id;
@@ -25,6 +27,7 @@ import urllib.parse
 
 # Hosts only Starboard or a container can reach: never shown to a browser.
 INSIDE_HOSTS = {"localhost", "host.docker.internal", "gateway.docker.internal", "jellyfin", "0.0.0.0"}
+LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "0.0.0.0"}
 ID_RE = re.compile(r"^[0-9a-f]{32}$")
 
 
@@ -43,6 +46,19 @@ def for_browsers(url):
     return not (ip.is_loopback or ip.is_unspecified or ip.is_link_local)
 
 
+def local_port(url):
+    """{"scheme", "port", "path"} when url is an address on this computer only (127.0.0.x, localhost, ::1, 0.0.0.0), so the
+    browser can put its own host name in front of the port; else None."""
+    try:
+        u = urllib.parse.urlsplit(str(url or ""))
+        host, port = (u.hostname or "").lower(), u.port
+    except ValueError:
+        return None
+    if u.scheme not in ("http", "https") or not (host in LOCAL_HOSTS or host.startswith("127.")):
+        return None
+    return {"scheme": u.scheme, "port": port or (443 if u.scheme == "https" else 80), "path": u.path.rstrip("/")}
+
+
 def app(services):
     """The Jellyfin app Starboard reads, or None."""
     return next((s for s in services or [] if s.get("type") == "jellyfin" and s.get("enabled", True)
@@ -51,13 +67,16 @@ def app(services):
 
 def address(services):
     """What the browser needs to make Play links: {"app": the Jellyfin app's id, "home": its address for browsers at
-    home or "", "outside": its outside address or ""}. "home" and "outside" both empty means none is set yet, and
-    the page says where to add one. None when Starboard has no Jellyfin app with a key."""
+    home or "", "outside": its outside address or "", "local": {"scheme", "port", "path"} when the only address is local to
+    this computer, else None}. All three empty means no address can be made, and the page says where to add one.
+    None when Starboard has no Jellyfin app with a key."""
     jf = app(services)
     if not jf:
         return None
     clean = lambda u: str(u or "").strip().rstrip("/") if for_browsers(u) else ""  # noqa: E731
-    return {"app": jf.get("id", ""), "home": clean(jf.get("link")), "outside": clean(jf.get("outside_link"))}
+    home = clean(jf.get("link"))
+    local = None if home else (local_port(jf.get("link")) or (None if jf.get("link") else local_port(jf.get("url"))))
+    return {"app": jf.get("id", ""), "home": home, "outside": clean(jf.get("outside_link")), "local": local}
 
 
 def web_link(base, item_id):

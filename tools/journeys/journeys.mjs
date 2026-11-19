@@ -300,12 +300,19 @@ check("LIB-04", "each episode Jellyfin has shows Play, named with its season and
   await page.locator("#panel-episodes .play-link").count() === 4 && /^Play .+ \(Season 1, episode 1\) in Jellyfin \(opens in a new tab\)$/.test(epName), epName);
 check("LIB-04", "an episode with its file that Jellyfin has not added says so in words",
   /Not in Jellyfin yet/.test(await page.locator("#panel-episodes").textContent()));
-// With no address for browsers: no Play links, and where to add one.
+// With only the local address Starboard uses (as Install apps saves Jellyfin): Play is made from the host this page
+// was opened with and Jellyfin's port, as Starboard's other Open buttons do.
 const jfApp = (await api("/api/config")).services.find((x) => x.type === "jellyfin");
 const { has_api_key: _k, ...jfSaved } = jfApp;
 await api("/api/services", { method: "POST", body: { ...jfSaved, link: "" } });
 await open("library-film.html?id=1");
-check("LIB-04", "without Jellyfin's address for browsers there is no Play",
+const localHref = await page.locator(".series-head .play-link").getAttribute("href").catch(() => "");
+check("LIB-04", "with only a local address, Play uses this page's host and Jellyfin's port",
+  localHref === `http://${new URL(base).hostname}:${new URL(jfApp.url).port}${new URL(jfApp.url).pathname.replace(/\/$/, "")}/web/#/details?id=${"0".repeat(28)}1b59`, localHref);
+// With no address that can be made (a container's name only): no Play links, and where to add one.
+await api("/api/services", { method: "POST", body: { ...jfSaved, link: "http://host.docker.internal:8096" } });
+await open("library-film.html?id=1");
+check("LIB-04", "with no address a browser can open there is no Play",
   await page.locator(".play-link").count() === 0);
 const addLink = page.locator(".series-head .notice a", { hasText: "Add Jellyfin's address" });
 check("LIB-04", "and the page says where to add it", await addLink.count() === 1 && (await addLink.getAttribute("href")) === `/settings.html?edit=${encodeURIComponent(jfApp.id)}`);

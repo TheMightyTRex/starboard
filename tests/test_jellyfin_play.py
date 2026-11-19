@@ -22,12 +22,28 @@ class AddressTest(unittest.TestCase):
             self.assertTrue(jellyfin_play.for_browsers(url), url)
 
     def test_the_address_for_browsers_never_the_one_starboard_uses(self):
-        # No address for browsers: the page says where to add one (home and outside both empty).
-        self.assertEqual(jellyfin_play.address([JF]), {"app": "jf1", "home": "", "outside": ""})
-        # The link copied from the address Starboard uses is not one either.
-        self.assertEqual(jellyfin_play.address([{**JF, "link": "http://127.0.0.1:8096"}])["home"], "")
         got = jellyfin_play.address([{**JF, "link": "http://192.168.1.20:8096/", "outside_link": "https://watch.example.org"}])
-        self.assertEqual(got, {"app": "jf1", "home": "http://192.168.1.20:8096", "outside": "https://watch.example.org"})
+        self.assertEqual(got, {"app": "jf1", "home": "http://192.168.1.20:8096", "outside": "https://watch.example.org", "local": None})
+
+    def test_a_local_only_address_gives_its_port_for_the_browsers_host(self):
+        # As Install apps saves Jellyfin (http://127.0.0.1:8096, no browser address): the page puts the host it was
+        # opened with in front of the port, as Starboard's other Open buttons do.
+        self.assertEqual(jellyfin_play.address([JF]), {"app": "jf1", "home": "", "outside": "", "local": {"scheme": "http", "port": 8096, "path": ""}})
+        self.assertEqual(jellyfin_play.address([{**JF, "url": "http://127.0.0.1:8096/jellyfin/"}])["local"]["path"], "/jellyfin")  # a base path is kept
+        for url, port in (("http://localhost:8097", 8097), ("http://[::1]:8096", 8096), ("http://0.0.0.0:8096", 8096),
+                          ("http://127.0.0.2", 80), ("https://127.0.0.1", 443)):
+            self.assertEqual(jellyfin_play.address([{**JF, "url": url}])["local"]["port"], port, url)
+        # A browser address that is itself local works the same way.
+        got = jellyfin_play.address([{**JF, "url": "http://jellyfin:8096", "link": "http://127.0.0.1:8920"}])
+        self.assertEqual((got["home"], got["local"]), ("", {"scheme": "http", "port": 8920, "path": ""}))
+        # An outside address is kept beside it, for away from home.
+        self.assertEqual(jellyfin_play.address([{**JF, "outside_link": "https://watch.example.org"}])["outside"], "https://watch.example.org")
+
+    def test_no_address_can_be_made_so_the_page_says_where_to_add_one(self):
+        # Jellyfin on another computer, or reached by a container's name, with no browser address saved.
+        for svc in ({**JF, "url": "http://192.168.1.30:8096"}, {**JF, "url": "http://host.docker.internal:8096"},
+                    {**JF, "url": "http://jellyfin:8096"}, {**JF, "link": "http://host.docker.internal:8096"}):
+            self.assertEqual(jellyfin_play.address([svc]), {"app": "jf1", "home": "", "outside": "", "local": None}, svc)
 
     def test_no_jellyfin_no_play(self):
         self.assertIsNone(jellyfin_play.address([]))
@@ -120,7 +136,7 @@ class ItemTest(unittest.TestCase):
             f = library.item("/nowhere", REELIX, "films", 7, self.cfg)
             s = library.item("/nowhere", REELIX, "tv", 3, self.cfg)
         self.assertEqual(f["jf"], A)
-        self.assertEqual(f["play"], {"app": "jf1", "home": "http://192.168.1.20:8096", "outside": ""})
+        self.assertEqual(f["play"], {"app": "jf1", "home": "http://192.168.1.20:8096", "outside": "", "local": None})
         rows = s["lists"][0]["rows"]
         self.assertEqual([(r["jf"], r["has_file"]) for r in rows], [(A, True), (None, True), (None, False)])  # Two: not in Jellyfin yet
         self.assertEqual(s["play"]["home"], "http://192.168.1.20:8096")
