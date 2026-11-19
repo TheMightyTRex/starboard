@@ -113,6 +113,9 @@ code { background: var(--color-surface-sunken); padding: 0 var(--space-1); font-
 .updates-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .release-notes li > ul { margin-top: var(--space-1); }
 .release-notes > :is(h4, h5) { margin-top: var(--space-2); }
+/* Settings, Updates, What is new (DASH-475): each update's own picture beside its heading, as on its card. */
+.release-notes__head { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+.release-notes__head > h3 { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 .release-notes ul { margin: 0; }
 /* The time range beside a heading. */
 .range-picker { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin: 0; padding: 0; border: 0; min-width: 0; }

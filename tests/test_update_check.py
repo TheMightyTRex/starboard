@@ -207,6 +207,22 @@ class WhatsNew(unittest.TestCase):
                                  waiting("app:starboard", "app", "Starboard", "1", "2")])
         self.assertEqual([i["kind"] for i in got["items"]], ["starboard", "reelix", "plugin", "app"])
 
+    def test_each_update_carries_its_own_picture(self):
+        """DASH-475: a plug-in's logo (or None, for its initials), an app's and Reelix's icon, Starboard's mark."""
+        logo = {"url": "/api/plugins/ps/logo?v=abc", "alt": "A square"}
+        app_row = dict(waiting("app:sonarr", "app", "Sonarr", "1", "2"), icon={"service": "sonarr", "v": "sonarr"})
+        with mock.patch.object(update_check, "_starboard", return_value={"versions": []}), \
+             mock.patch.object(update_check, "_plugin", return_value={"versions": []}):
+            got = self.run_with([dict(waiting("plugin:ps", "plugin", "Picture shrinker", "1", "2"), logo=logo),
+                                 dict(waiting("plugin:ws", "plugin", "Watch statistics", "1", "2"), logo=None),
+                                 app_row, waiting("starboard", "starboard", "Starboard", "1", "2")])
+        by = {i["name"]: i for i in got["items"]}
+        self.assertEqual(by["Picture shrinker"]["logo"], logo)
+        self.assertIn("logo", by["Watch statistics"])
+        self.assertIsNone(by["Watch statistics"]["logo"])
+        self.assertEqual(by["Sonarr"]["icon"], {"service": "sonarr", "v": "sonarr"})
+        self.assertEqual(by["Starboard"]["logo"]["url"], "/favicon.svg")
+
 
 class ReleasePage(unittest.TestCase):
     def test_pages(self):

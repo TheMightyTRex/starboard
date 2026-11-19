@@ -81,6 +81,25 @@ def mark_set_up(data_dir, pid):
         pa._write(path, st)
 
 
+def whole_words(text, most=600):
+    """A catalogue's What is new summary that never stops mid-word (DASH-474): spaces tidied, at most `most`
+    characters. Text that was cut, here or before it reached Starboard (Audio description 1.3.0 ended "a described
+    track an"), goes back to its last whole sentence, or else its last whole word, and ends with an ellipsis."""
+    import re
+    text = " ".join(str(text or "").split())
+    cut = len(text) > most
+    if cut:
+        text = text[:most]
+    elif not text or text[-1] in ".!?)…\"'" or not re.search(r"[.!?] ", text):
+        return text  # whole, or one short line without a full stop
+    ends = [m.start() for m in re.finditer(r"[.!?](?= )", text)]
+    if ends and ends[-1] + 1 >= len(text) // 2:
+        kept = text[:ends[-1] + 1]
+        return (kept[:-1] if kept.endswith(".") else kept) + "…"
+    words = text.rsplit(" ", 1)[0] if " " in text else text[:most - 1]
+    return words.rstrip(" ,;:(-") + "…"
+
+
 # Catalogue versions ------------------------------------------------------------------------------------------------
 
 def clean_versions(entry):
@@ -98,7 +117,7 @@ def clean_versions(entry):
             continue
         out.append({"version": str(v.get("version") or "")[:30], "starboard_api": str(v.get("starboard_api") or "")[:40],
                     "manifest": address, "sha256": sha if re.match(r"^[0-9a-f]{64}$", sha) else "",
-                    "changelog": str(v.get("changelog") or "")[:600], "released": str(v.get("released") or "")[:10]})
+                    "changelog": whole_words(v.get("changelog"), 600), "released": str(v.get("released") or "")[:10]})
 
     def key(v):
         try:

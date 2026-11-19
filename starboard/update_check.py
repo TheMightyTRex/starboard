@@ -275,7 +275,8 @@ def _jellyfin_plugin(j):
 
 def whats_new(app):
     """Every waiting update's notes in one list: {items: [{target, kind, name, from, to, link, words, sections,
-    versions (the versions listed), none (why there are no notes), problem}], count}. Fetched now, in a few threads."""
+    versions (the versions listed), none (why there are no notes), problem, and logo or icon for its picture}],
+    count}. Fetched now, in a few threads."""
     from . import update_runs
     waiting = [t for t in update_runs.targets(app) if t.get("update_available")
                and not (t["kind"] == "app" and t["name"].strip().lower() == "starboard")]
@@ -291,7 +292,8 @@ def whats_new(app):
                 got = f.result(timeout=30)
             except Exception as e:  # noqa: BLE001  one that cannot be read says so; the rest are shown
                 got = {"link": "", "versions": [], "words": "", "problem": f"Starboard could not read its notes just now ({str(e)[:120]})"}
-            out.append(_item(t["id"], t["kind"], t["name"], t.get("current") or "", (t.get("latest") or "").lstrip("v"), got))
+            out.append(_item(t["id"], t["kind"], t["name"], t.get("current") or "", (t.get("latest") or "").lstrip("v"), got,
+                             image=_image(t)))
     for j in jellyfin_waiting():
         out.append(_item(f"jellyfin:{j['id']}", "jellyfin-plugin", j["name"], j["current"], j["latest"], _jellyfin_plugin(j)))
     rank = {"starboard": 0, "reelix": 1, "plugin": 2, "jellyfin-plugin": 3, "app": 4}
@@ -299,9 +301,22 @@ def whats_new(app):
     return {"items": out, "count": len(out)}
 
 
-def _item(target, kind, name, came, going, got):
+def _image(t):
+    """The picture shown beside an update's notes in What is new (DASH-475), as on its card: a plug-in's own logo
+    (or None, for its initials), an app's or Reelix's icon as the dashboard keeps it, Starboard's own mark."""
+    if t["kind"] == "plugin":
+        return {"logo": t.get("logo") or None}
+    if t["kind"] in ("app", "reelix") and t.get("icon"):
+        return {"icon": t["icon"]}
+    if t["kind"] == "starboard":
+        return {"logo": {"url": "/favicon.svg", "alt": ""}}
+    return {}
+
+
+def _item(target, kind, name, came, going, got, image=None):
     versions = got.get("versions") or []
     item = {"target": target, "kind": kind, "name": name, "from": came, "to": going, "link": got.get("link") or "",
+            **(image or {}),
             "words": got.get("words") or "", "versions": [v.get("version") for v in versions],
             "sections": _combine(versions), "problem": got.get("problem") or "", "none": ""}
     if got.get("source"):

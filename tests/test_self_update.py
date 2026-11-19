@@ -218,6 +218,21 @@ class HelperContainer(unittest.TestCase):
         self.assertTrue(body["HostConfig"]["AutoRemove"])
 
 
+class Superseded(unittest.TestCase):
+    """DASH-474: an old result is not shown once Starboard runs a newer version by another way."""
+    def test_an_update_to_an_older_version_is_superseded(self):
+        self.assertTrue(self_update.superseded({"to": "v0.20.1", "outcome": "updated"}, "0.21.0"))
+        self.assertFalse(self_update.superseded({"to": "v0.21.0", "outcome": "updated"}, "0.21.0"))
+
+    def test_a_failed_update_to_the_version_now_running_is_superseded(self):
+        self.assertTrue(self_update.superseded({"to": "v0.21.0", "outcome": "went-back"}, "0.21.0"))
+        self.assertFalse(self_update.superseded({"to": "v0.21.0", "outcome": "went-back"}, "0.20.1"))
+
+    def test_nothing_known_keeps_it(self):
+        self.assertFalse(self_update.superseded({"outcome": "updated"}, "0.21.0"))
+        self.assertFalse(self_update.superseded({"to": "v0.21.0", "outcome": "updated"}, "dev"))
+
+
 class Words(unittest.TestCase):
     def test_both_set_ups_read_the_updates_step_from_the_shared_files(self):
         answers = json.loads((ROOT / "web" / "setup-answers.json").read_text(encoding="utf-8"))["updates"]

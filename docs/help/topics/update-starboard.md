@@ -71,9 +71,13 @@ first, is checked afterwards and goes back by itself if it does not work, and th
    - a big change, such as Radarr 5 to 6: read what is new first and update it on its own;
    - anything Starboard cannot update from here, such as an app that Docker Compose did not start.
 4. Select **Install 4 updates**, for example.
-5. A panel shows each update with its state: **Waiting**, **Updating**, **Done**, **Went back** or **Held back**, and
-   how many have finished, such as "3 of 5". You can leave the page, and it carries on.
-6. When it ends, the panel says how it went, such as "4 of 5 updated. Went back by itself: Sonarr".
+5. A panel shows each update with its state: **Waiting**, **Updating**, **Done**, **Went back** or **Held back**.
+   While it works, it says **Installing updates** and how many are done, such as "3 of 5 done", and the bar moves.
+   If you asked your device for less motion, the bar keeps still. You can leave the page, and it carries on.
+6. When it ends, the panel says how it went: **All updates finished**, **Some updates did not install** or **The
+   updates stopped**, with what happened, such as "4 of 5 updated. Went back by itself: Sonarr".
+7. Select **Close** to take the panel away. You go back to **Ready to update**, and the panel does not come back when
+   you open the page again. **Recent updates** keeps the batch.
 
 The order is always the same:
 
@@ -94,8 +98,9 @@ Before you install, you can read the notes of every waiting update in one place.
 1. Go to **Settings**, then **Updates**. At the top of **Ready to update**, select **What is new**, beside **Install
    all updates**.
 2. A slide-out opens with the notes of each waiting update, from the version you have to the new one: Starboard,
-   Reelix, each plug-in and each app, each under **Added**, **Changed**, **Fixed** and **Security**. An update that
-   gives no notes says so, with a link to its release page.
+   Reelix, each plug-in and each app, each under **Added**, **Changed**, **Fixed** and **Security**. Each has its own
+   logo or icon beside its name, as on its card; a plug-in with no logo shows its initials. An update that gives no
+   notes says so, with a link to its release page.
 3. Select **Close**, or press Escape, to go back to **Ready to update**.
 
 ## Let parts update by themselves

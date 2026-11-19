@@ -10,16 +10,19 @@ add features.
 ### Added
 - **Plug-ins activate when installed (owner, 19 November 2026):** a plug-in from the catalogue, an address or a zip file is activated as soon as it is installed. One that needs settings first says what to enter and waits, as before, and so does an app plug-in such as Tdarr while the same app is on this computer, so you can bring it in first. Activate and Deactivate stay in General, State.
 - **Plug-ins know their home address:** a plug-in with a page on your home network is given its own address there (`STARBOARD_HOME_ADDRESS`), so Create your own TV channel gives Jellyfin its channel list without anyone opening its page first.
-
 - **An alert when a disk changes (issue #187):** every pool job the helper finishes, however it was asked for, is written to the log, as a warning when a disk was erased, and sent as the new `disk.changed` event (plug-in API 1.16), which the Notifications plug-in turns into an alert. The security notes explain why Starboard's user counts as root, so a check on the pool helper alone would not help.
 
 ### Changed
 - **General on every plug-in's page (owner, 19 November 2026):** the first tab is General, with a card each for State, Versions, Jobs, What it may do and Remove. The plug-in's settings, its own pages, styles and actions keep their tabs, and a plug-in's page shows tabs from two parts. Design system: section groups.
+- **Install all updates says whether it is still working (#161):** while it works, the panel says Installing updates and "4 of 5 done", and soft stripes move along the bar (still when your device asks for less motion); at the end it says All updates finished, Some updates did not install or The updates stopped. It no longer says Updates finished while updates are still installing.
 
 ### Fixed
 - **Plug-in boxes take plain text:** a plug-in's Add box and the boxes under its rows, such as a TV channel's name, Rename and Change number, no longer refuse anything that is not a web address. Each plug-in checks what it is given.
 - **Live TV's address message** says Enter rather than Type.
 - **Plug-ins on their own network reach Starboard (DASH-482):** a plug-in on its own network, such as Disk forecast or Download summary, or on the VPN, now reaches Starboard's API through a socket in its own run folder, /run/starboard/api.sock, given to it as STARBOARD_API_SOCKET. Starboard runs on the server's own network, so it could not join the plug-in's network, and the plug-in could not read its figures. The plug-in's network stays closed to everything else, and the socket answers only Starboard's API and only to that plug-in's own key. There is no extra container: one waiting thread in Starboard serves every plug-in's socket. Starboard no longer tries to join each plug-in's network.
+- **Close on Install all updates (DASH-473):** when Install all updates finishes, Close takes its panel away. Focus goes to Ready to update, a screen reader hears that it closed, and the panel does not come back when the page opens again; Recent updates keeps the batch.
+- **Pictures in What is new (DASH-475):** in Settings, Updates, What is new, each plug-in's own logo (or its initials), each app's and Reelix's icon and Starboard's mark sit beside its notes, as on its card.
+- **Three slips on the Updates and plug-in pages (DASH-474):** Settings, Updates names Apps, Updates in its words and gives Open Apps, Updates beside them, instead of "Each app's image is on ." when the link is not read; Starboard's last update result, such as "Starboard v0.20.1 is installed and answering", is no longer shown once Starboard runs a newer version; and a plug-in's What is new summary from its catalogue, on its Versions card and in Ready to update, ends at its last whole sentence or word with an ellipsis instead of stopping mid-word.
 
 ## [0.22.0] (19 November 2026)
 

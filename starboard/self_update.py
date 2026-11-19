@@ -459,7 +459,20 @@ def status(app):
         out["update"]["lines"] = [ln for ln in read_log(app.data_dir).splitlines() if not ln.startswith("@@")][-40:]
         if record.get("state") != "running":
             out["update"]["title"], out["update"]["text"] = words(record.get("outcome"), record, parsed)
+            out["update"]["superseded"] = superseded(record, app.version)
     return out
+
+
+def superseded(record, version):
+    """True when Starboard has moved on since this update (DASH-474): it now runs a newer version than the update
+    went to, or the version a failed update tried, by another way (Install all updates, ./update.sh). The page then
+    no longer shows the old result, such as "Starboard v0.20.1 is installed and answering" on 0.21.0."""
+    to = record.get("to") or ""
+    if not to or not version_key(version):
+        return False
+    if newer(version, to):
+        return True
+    return record.get("outcome") not in ("updated", "up-to-date") and version_key(version) == version_key(to)
 
 
 def automatic(app, now=None):

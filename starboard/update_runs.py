@@ -143,7 +143,8 @@ def _busy():
 def targets(app):
     """Everything Starboard can update, from what it already knows: [{id, kind, name, current, latest,
     update_available, can_update, why, can_roll_back, roll_back_to, note}]; an app or Reelix also has big_change
-    (a new major version, from the last look at its image)."""
+    (a new major version, from the last look at its image) and icon ({service, v}); a plug-in has logo ({url, alt}
+    or None)."""
     from . import containers, plugin_life, self_update
     from . import plugins_admin as pa
     out = []
@@ -166,7 +167,10 @@ def targets(app):
             if not r.get("container"):
                 continue
             reelix = _is_reelix(services, r["id"])
+            svc = next((x for x in services if x.get("id") == r["id"]), {})
             out.append({"id": "reelix" if reelix else f"app:{r['id']}", "kind": "reelix" if reelix else "app", "name": r["name"],
+                        # its icon, as Starboard keeps it for the dashboard (/api/icons/<id>), for What is new (DASH-475)
+                        "icon": {"service": r["id"], "v": str(svc.get("icon") or "")},
                         "current": r["container"].get("version") or "", "latest": r.get("latest") or "",
                         "update_available": bool(r.get("update")), "can_update": bool(r.get("update")) and r["container"].get("compose", False),
                         "why": "" if r.get("update") else ("Check for updates first" if "update" not in r else "Up to date"),
@@ -181,7 +185,8 @@ def targets(app):
         out.append({"id": f"plugin:{p['id']}", "kind": "plugin", "name": p["name"], "current": p.get("version") or "",
                     "latest": (u or {}).get("version") or "", "update_available": bool(u), "can_update": bool(u),
                     "why": "" if u else "No newer version is known from the catalogues", "can_roll_back": bool(st.get("can_roll_back")),
-                    "roll_back_to": st.get("previous_version") or "", "note": (u or {}).get("changelog") or ""})
+                    "roll_back_to": st.get("previous_version") or "", "note": (u or {}).get("changelog") or "",
+                    "logo": p.get("logo")})  # {url, alt} of its own logo, or None for its initials (DASH-475)
     return out
 
 

@@ -334,11 +334,28 @@ def view(app, rid):
 
 
 def latest(app):
-    """The newest batch, while it runs or for a day after it ended, for the page to show again on opening."""
+    """The newest batch, while it runs or for a day after it ended, for the page to show again on opening. A batch
+    whose finished panel was closed (DASH-473) is not shown again."""
     for r in update_runs.recent(app):
         if r.get("kind") == "batch":
-            if r["state"] == "running" or time.time() - (r.get("finished") or 0) < 86400:
+            if r["state"] == "running" or (not r.get("closed") and time.time() - (r.get("finished") or 0) < 86400):
                 return view(app, r["id"])
             return None
     return None
+
+
+def close(app, rid):
+    """Close on the finished panel (DASH-473): the batch stays in Recent updates, and its panel is not shown again.
+    A batch that still runs cannot be closed. Raises LookupError for no such batch, update_runs.Busy while it runs."""
+    run = update_runs.get(app, rid)
+    if run.get("kind") != "batch":
+        raise LookupError("No Install all updates with that id")
+    if run["state"] == "running":
+        raise update_runs.Busy("The updates are still installing, so the panel stays until they finish")
+    with update_runs._lock:
+        saved = update_runs._runs.get(rid)
+        if saved and not saved.get("closed"):
+            saved["closed"] = True
+            update_runs._save(app.data_dir)
+    return {"closed": True}
 
