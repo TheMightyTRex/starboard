@@ -24,7 +24,7 @@ made-up data.
 | Reading order | 93 pages at computer and phone widths, and the Apps page in each of its four card designs | 0 problems |
 | Keyboard walk | The main tasks with keys only: 90 checks of where focus is and what is said | 90 of 90 checks passed |
 | Layout | The side menu and header at every text size and spacing, in each theme, in short windows and at phone width: 1,536 states | 0 problems |
-| Colour contrast | 560 colour pairs in 14 themes and palettes | 0 failures |
+| Colour contrast | 640 colour pairs in 16 themes and palettes | 0 failures |
 
 ![The end of the scan's output: 0 findings on 101 pages](../images/a11y-results-scan.png)
 
