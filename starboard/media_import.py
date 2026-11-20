@@ -5,7 +5,6 @@ for each in batches of 25, then import the ones you keep. Nothing is downloaded 
 series for the folder it is already in and scans its files. Books, audiobooks and music use Reelix's book and music
 import (DASH-282), by author or artist folder."""
 import os
-import json
 import urllib.error
 import urllib.parse
 import urllib.request
