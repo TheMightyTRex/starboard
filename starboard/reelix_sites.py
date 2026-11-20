@@ -137,14 +137,6 @@ def vpn_available(data_dir):
         return False
 
 
-def _flaresolverr_here(data_dir):
-    from . import stack
-    try:
-        return "flaresolverr" in (stack.chosen_keys(data_dir) or [])
-    except (OSError, ValueError):
-        return False
-
-
 def flaresolverr_url(data_dir):
     """FlareSolverr's address for Reelix when Starboard installed it: through Gluetun when the stack has the VPN (it
     runs inside it), else by its own name. None when it is not installed."""

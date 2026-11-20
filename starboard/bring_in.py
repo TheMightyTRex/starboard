@@ -716,13 +716,6 @@ def _prints(data_dir, s, rels, run=None):
     return out
 
 
-def _host_path(data_dir, s, rel):
-    """Where a source file is, for the copy: this computer's own path, or a share's path inside the share."""
-    if s["kind"] in CLOUD:
-        return os.path.join(_staging(data_dir, s), rel)
-    return (s["path"].rstrip("/") + "/" + rel) if s["kind"] in ("computer", "disk") else f"{s['path']}/{rel}"
-
-
 def _extras_for(files_here, main_stem, new_stem, is_film):
     """The subtitles, artwork and .nfo beside a film or an episode, each with its new name: the part after the video's
     own name is kept (.en.srt, -poster.jpg); a film's folder pictures (poster.jpg, fanart.jpg) keep their names."""

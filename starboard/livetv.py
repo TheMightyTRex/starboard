@@ -142,13 +142,6 @@ def _check_head(head):
         raise ValueError("The guide defines entities, which Starboard does not accept")
 
 
-def _xml_events(data):
-    """Parses gzip'd XMLTV guide bytes already in memory (small files and tests)."""
-    raw = _gunzip(data)
-    _check_head(raw[:65536])
-    return _et().iterparse(io.BytesIO(raw))
-
-
 def _guide_events(url, timeout=300):
     """Downloads a gzip'd XMLTV guide to a temporary file and parses it while it unpacks, so neither the download
     nor the unpacked guide is held in memory (a 147 MB guide peaked at about 213 MB before, about 30 MB now).

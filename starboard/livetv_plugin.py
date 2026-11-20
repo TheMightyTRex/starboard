@@ -235,44 +235,6 @@ def _set_name(chans, sid, own):
     return ", ".join([_list_title(parts[0], own)] + [p.split("=", 1)[1] or "Region not known" for p in parts[1:]])
 
 
-def _tree(chans, hidden, own):
-    """Sub menus (DASH-361, owner 12 November 2026: "simplify the channels with sub menus"): a menu for each list,
-    split by region when a list has more than one, then by section, so no one screen holds every channel. Returns
-    the menus, a switch for every channel in each of them, and where each channel goes."""
-    from . import livetv
-    off = livetv.lists_off(DATA)
-    keys = list(livetv.LISTS) + _ordered((_list_key(c) for c in chans), list(livetv.LISTS))
-    keys = list(dict.fromkeys(keys))
-    menus, sets, place = [], [], {}
-    count = lambda cs: {"on": sum(1 for c in cs if c["id"] not in hidden), "total": len(cs)}
-    for key in keys:
-        title, lid = _list_title(key, own), f"in:{key}"
-        mine = [c for c in chans if _list_key(c) == key]
-        menus.append({"id": lid, "title": title, "group": "Your lists" if key.startswith("own") else "Lists",
-                      **({"active": False, "detail": "Inactive: not fetched, and none of its channels are in Jellyfin"} if key in off else
-                         {"detail": "Its channels arrive at the next run"} if not mine else {})})
-        if not mine:
-            continue
-        sets.append({"id": lid, "label": f"Every channel in {title}", "kind": "", "menu": lid, **count(mine)})
-        regions = _ordered((_region(c) for c in mine), ["UK", "US"])
-        for r in regions if len(regions) > 1 else [None]:
-            parent, here = lid, mine
-            if r is not None:
-                parent, here = f"{lid}|r={r}", [c for c in mine if _region(c) == r]
-                menus.append({"id": parent, "title": r or "Region not known", "group": "Regions", "parent": lid})
-                sets.append({"id": parent, "label": f"Every channel in {r or 'this region'}", "kind": "", "menu": parent, **count(here)})
-            sections = _ordered((_section(c) for c in here), [b for b, _ in livetv.BLOCKS])
-            if len(sections) < 2:
-                place.update({c["id"]: parent for c in here})
-                continue
-            for name in sections:
-                sid, these = f"{parent}|s={name}", [c for c in here if _section(c) == name]
-                menus.append({"id": sid, "title": name, "group": "Sections", "parent": parent})
-                sets.append({"id": sid, "label": f"Every channel in {name}", "kind": "", "menu": sid, **count(these)})
-                place.update({c["id"]: sid for c in these})
-    return menus, sets, place
-
-
 def channels_screen(said=""):
     """The plug-in's Channels screen in Starboard (DASH-313). Since 13 November 2026 (DASH-359, owner: "Build option 1
     with 2 in the accordions"): sections that fold, in Jellyfin's number order, each with its own switch and a table
