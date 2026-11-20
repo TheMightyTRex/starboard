@@ -11,7 +11,7 @@ async function renderAccess() {
   try { items = (await api("/api/access")).items; } catch (e) { list.replaceChildren(el("li", { class: "setting", text: e.message })); return; }
   // On or off as an icon beside the name: a tick or an empty ring (never colour alone), with the word in
   // hidden text and in the tooltip. Rows with a switch show their state in the switch itself.
-  const stateIcon = (on) => el("span", { class: "status-icon", "data-tone": on ? "success" : "muted", title: on ? "On" : "Off" },
+  const stateIcon = (on) => el("span", { class: "status-icon", "data-tone": on ? "success" : "muted", tabindex: "0", "data-tooltip": on ? "On" : "Off" },
     icon(on ? "circle-check" : "circle"), el("span", { class: "visually-hidden", text: on ? ", active" : ", inactive" }));
   const row = (a, control, withIcon) => {
     const labelId = `acc-${a.key}-l`;

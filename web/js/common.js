@@ -369,7 +369,10 @@ async function apiCall(path, { method = "GET", body } = {}) {
     opts.headers["Content-Type"] = "application/json";
     opts.body = JSON.stringify(body || {});
   }
-  const res = await fetch(path, opts);
+  let res;
+  try { res = await fetch(path, opts); }
+  catch (err) { if (err?.name !== "AbortError") connectionLost(); throw err; }
+  if (lostBanner) connectionBack();
   let data = {};
   try { data = await res.json(); } catch { /* empty */ }
   // 401 means signed out, except a password check that was wrong (reason "password"): that stays on the page.
@@ -384,6 +387,39 @@ async function apiCall(path, { method = "GET", body } = {}) {
     throw error;
   }
   return data;
+}
+
+// Connection lost (design system page banner, 20 November 2026): when a request cannot reach Starboard at all (the
+// server restarting for an update, or the network gone), one banner under the header says so until Starboard answers
+// again. It is shown only after a check of /healthz 2 seconds later also fails, so leaving the page or a blip shows
+// nothing; while it shows, /healthz is asked every 10 seconds, only then, and the banner goes as soon as it answers.
+let lostBanner = null;
+let leavingPage = false;
+addEventListener("pagehide", () => { leavingPage = true; });
+addEventListener("beforeunload", () => { leavingPage = true; });
+addEventListener("pageshow", () => { leavingPage = false; });
+const starboardAnswers = () => fetch("/healthz", { cache: "no-store", credentials: "same-origin" }).then((r) => r.ok, () => false);
+function connectionLost() {
+  if (lostBanner || leavingPage || !window.SharedComponents?.pageBanner) return;
+  lostBanner = "checking";
+  setTimeout(async () => {
+    if (leavingPage || await starboardAnswers()) { lostBanner = null; return; }
+    if (lostBanner !== "checking") return;
+    lostBanner = SharedComponents.pageBanner("Connection lost", { tone: "danger",
+      text: "Starboard is not answering. This page asks again every 10 seconds and says when it is back. What you changed since may not be saved." });
+    const again = async () => {
+      if (!lostBanner) return;
+      if (await starboardAnswers()) connectionBack(); else setTimeout(again, 10000);
+    };
+    setTimeout(again, 10000);
+  }, 2000);
+}
+function connectionBack() {
+  if (typeof lostBanner === "function") {
+    lostBanner();
+    announce("Connected to Starboard again");
+  }
+  lostBanner = null;
 }
 
 // The shared toast (option C): a card in the corner, up to three stacked. Its icons come from Starboard's sprite
@@ -604,7 +640,8 @@ async function copyText(text) {
 const COPY_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>'; // Lucide copy
 
 function copyButton(text, label) {
-  const button = el("button", { type: "button", class: "copy-btn", "aria-label": `Copy ${label}`, title: `Copy ${label}` });
+  label = label.replace(/^Copy /, ""); // some callers name the action already ("Copy the command")
+  const button = el("button", { type: "button", class: "copy-btn", "aria-label": `Copy ${label}`, "data-tooltip": `Copy ${label}` });
   button.innerHTML = COPY_ICON; // a fixed icon from this file, never data
   button.addEventListener("click", async (e) => {
     e.preventDefault();
@@ -694,6 +731,7 @@ function sidePanel({ title, body = [], foot = [], wide = false, opener = documen
   const shut = SharedComponents.openLayer(layer, opener instanceof HTMLElement ? opener : null, () => {
     window.removeEventListener("message", fromFrame);
     layer.remove();
+    document.title = document.title.replace(/^Error: /, ""); // an error summary's form goes with the slide-out
     onClose?.();
     setTimeout(() => FocusKeeper.recover(openedBy), 0);
   });
@@ -1957,6 +1995,7 @@ const domReadyPromise = new Promise((resolve) => {
 
 async function startPage() {
   setUpHeader();
+  SharedComponents.setupTooltips(); // the name of an icon-only button or status icon, on hover and keyboard focus
   setUpDisplayPanel();
   try {
     const session = await api("/api/session");

@@ -74,10 +74,12 @@ function dpSource(s) {
   show();
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    for (const c of [url, user, guide, most]) setError(c, "");
     const xc = form.querySelector("input[name=dp-kind]:checked").value === "xc";
-    if (!url.value.trim()) { setError(url, xc ? "Enter your IPTV server's address" : "Enter your playlist address"); url.focus(); return; }
-    if (xc && !user.value.trim()) { setError(user, "Enter the user name your IPTV provider gave you"); user.focus(); return; }
+    const wrong = [];
+    if (!url.value.trim()) wrong.push([url, xc ? "Enter your IPTV server's address" : "Enter your playlist address"]);
+    if (xc && !user.value.trim()) wrong.push([user, "Enter the user name your IPTV provider gave you"]);
+    formErrors(form, wrong);
+    if (wrong.length) return;
     save.disabled = true;
     await dpSend("/api/dispatcharr", "PUT", { kind: xc ? "xc" : "m3u", url: url.value.trim(), username: user.value.trim(), password: pass.value,
       guide: guide.value.trim(), max_streams: Number(most.value || 0) }, save);
