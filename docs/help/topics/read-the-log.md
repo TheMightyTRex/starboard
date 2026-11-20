@@ -17,10 +17,12 @@ q2: What do you want to do?
   Send it to someone to check -> 2
   Keep the logs smaller -> 3
   Remove every log now -> 4
+  Read one app's own log -> 5
 1: Read the log #read-the-log
 2: Report a problem #report-a-problem
 3: Limit how much is kept #limit-how-much-is-kept
 4: Delete all logs #delete-all-logs
+5: Read an app's log #read-an-apps-log
 ```
 
 ## Read the log
@@ -35,6 +37,22 @@ q2: What do you want to do?
 Each entry shows its **Time**, its **Level** (Error, Warning, Info or Detail), the **Area** of Starboard it
 came from and **What happened**. Select an entry's message to show more, when it has more. Select
 **Show older entries** to go further back.
+
+## Read an app's log
+
+**App logs** shows the latest lines from each app on this computer, such as Jellyfin or qBittorrent, with keys,
+passwords and addresses hidden.
+
+1. Go to **System**, then **Logs**, and find **App logs**.
+2. In **App**, choose the app. In **How many**, choose the last 100, 300 or 1,000 lines.
+3. Select **Show**. The newest line is at the end.
+4. To find something, enter a word in **Only lines with**. Each match is marked, and Starboard says how many lines
+   match.
+5. To show only some levels, select **Errors**, **Warnings**, **Info** or **Debug** to turn each one off or on. Each
+   one shows how many lines it has.
+
+Select **Wrap lines** to read long lines without scrolling sideways, **Download the lines (TXT)** to keep them in a
+file, or **Copy** to paste them somewhere else.
 
 ## Report a problem
 
