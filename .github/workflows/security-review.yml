@@ -1,0 +1,31 @@
+name: Security review
+# Claude Code security review of each pull request's changes.
+# Runs only for pull requests opened from branches in this repository:
+# the action is not hardened against prompt injection, and pull requests
+# from forks never receive the API key (no pull_request_target here).
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions: {}
+concurrency:
+  group: security-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  review:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read        # check out the code under review
+      pull-requests: write  # read the pull request and post findings as review comments
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: anthropics/claude-code-security-review@0c6a49f1fa56a1d472575da86a94dbc1edb78eda # main as of 11 Feb 2026
+        with:
+          comment-pr: true
+          upload-results: true
+          claude-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
