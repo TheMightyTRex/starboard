@@ -36,148 +36,207 @@
   --color-logo-tile: #5ed3c6;
   --color-logo-star: #ffffff;
 }
-:root[data-palette="indigo"]:where(:not(.pref-contrast)) {
-  --color-accent: #4338ca;
-  --color-accent-soft: #e8e7f9;
-  --color-control-active: #e8e7f9;
+:root[data-palette="dusk"]:where(:not(.pref-contrast)) {
+  --color-bg: #eff0f6;
+  --color-header: #eff0f6;
+  --color-surface: #f8f8fc;
+  --color-surface-sunken: #e5e7f0;
+  --color-border: #6c6f80;
+  --color-divider: #7e8196;
+  --color-accent: #4753ab;
+  --color-accent-soft: #e9eaf5;
+  --color-control-active: #e9eaf5;
   --color-accent-text: #ffffff;
   --color-count: #a61e4d;
   --color-count-text: #ffffff;
-  --color-logo-tile: #312e81;
+  --color-logo-tile: #2e368b;
   --color-logo-star: #c2410c;
 }
-:root[data-palette="indigo"][data-theme="dark"]:where(:not(.pref-contrast)) {
-  --color-accent: #a5b4fc;
-  --color-accent-soft: #3d4150;
-  --color-control-active: #3d4150;
+:root[data-palette="dusk"][data-theme="dark"]:where(:not(.pref-contrast)) {
+  --color-bg: #0e1017;
+  --color-header: #0e1017;
+  --color-surface: #151820;
+  --color-surface-raised: #1c202b;
+  --color-surface-sunken: #0a0c11;
+  --color-panel-header: #1c202b;
+  --color-text-muted: #c3c8d8;
+  --color-border: #8d93a8;
+  --color-divider: #6b7186;
+  --color-accent: #acbcff;
+  --color-accent-soft: #31364a;
+  --color-control-active: #31364a;
   --color-accent-text: #000000;
   --color-count: #b8336a;
   --color-count-text: #ffffff;
   --color-logo-tile: #c7d2fe;
   --color-logo-star: #fdba74;
 }
-:root[data-palette="indigo"].pref-contrast:not([data-theme="dark"]):not(.is-dark) {
-  --color-accent: #4338ca;
-  --color-accent-soft: #e3e1f7;
-  --color-control-active: #e3e1f7;
+:root[data-palette="dusk"].pref-contrast:not([data-theme="dark"]):not(.is-dark) {
+  --color-accent: #4651a7;
+  --color-accent-soft: #e3e5f2;
+  --color-control-active: #e3e5f2;
   --color-accent-text: #ffffff;
-  --color-logo-tile: #4338ca;
+  --color-logo-tile: #4651a7;
   --color-logo-star: #000000;
 }
-:root[data-palette="indigo"].pref-contrast:is([data-theme="dark"], .is-dark) {
-  --color-accent: #a5b4fc;
-  --color-accent-soft: #242837;
-  --color-control-active: #242837;
+:root[data-palette="dusk"].pref-contrast:is([data-theme="dark"], .is-dark) {
+  --color-accent: #acbcff;
+  --color-accent-soft: #262938;
+  --color-control-active: #262938;
   --color-accent-text: #000000;
-  --color-logo-tile: #a5b4fc;
+  --color-logo-tile: #acbcff;
   --color-logo-star: #ffffff;
 }
-:root[data-palette="forest"]:where(:not(.pref-contrast)) {
-  --color-accent: #2f6b3a;
-  --color-accent-soft: #e6ede7;
-  --color-control-active: #e6ede7;
+:root[data-palette="lime"]:where(:not(.pref-contrast)) {
+  --color-bg: #f1f4f2;
+  --color-header: #f1f4f2;
+  --color-surface: #f9fbfa;
+  --color-surface-sunken: #e5eae7;
+  --color-border: #6a716d;
+  --color-divider: #7d8580;
+  --color-accent: #3a5700;
+  --color-accent-soft: #e7ebe0;
+  --color-control-active: #e7ebe0;
   --color-accent-text: #ffffff;
-  --color-count: #9a3412;
+  --color-count: #a61e4d;
   --color-count-text: #ffffff;
-  --color-logo-tile: #1f4d2b;
+  --color-logo-tile: #2e4e00;
   --color-logo-star: #c2410c;
 }
-:root[data-palette="forest"][data-theme="dark"]:where(:not(.pref-contrast)) {
-  --color-accent: #86d39a;
-  --color-accent-soft: #36473b;
-  --color-control-active: #36473b;
+:root[data-palette="lime"][data-theme="dark"]:where(:not(.pref-contrast)) {
+  --color-bg: #04090c;
+  --color-header: #04090c;
+  --color-surface: #0b1317;
+  --color-surface-raised: #111b20;
+  --color-surface-sunken: #020507;
+  --color-panel-header: #111b20;
+  --color-text-muted: #bfcbd0;
+  --color-border: #86969d;
+  --color-divider: #62737a;
+  --color-accent: #bcf053;
+  --color-accent-soft: #2c3c1c;
+  --color-control-active: #2c3c1c;
   --color-accent-text: #000000;
-  --color-count: #b4461b;
+  --color-count: #b8336a;
   --color-count-text: #ffffff;
-  --color-logo-tile: #bbf7d0;
+  --color-logo-tile: #d9f99d;
   --color-logo-star: #fdba74;
 }
-:root[data-palette="forest"].pref-contrast:not([data-theme="dark"]):not(.is-dark) {
-  --color-accent: #2c6436;
-  --color-accent-soft: #dfe8e1;
-  --color-control-active: #dfe8e1;
+:root[data-palette="lime"].pref-contrast:not([data-theme="dark"]):not(.is-dark) {
+  --color-accent: #3a5700;
+  --color-accent-soft: #e1e6d9;
+  --color-control-active: #e1e6d9;
   --color-accent-text: #ffffff;
-  --color-logo-tile: #2c6436;
+  --color-logo-tile: #3a5700;
   --color-logo-star: #000000;
 }
-:root[data-palette="forest"].pref-contrast:is([data-theme="dark"], .is-dark) {
-  --color-accent: #86d39a;
-  --color-accent-soft: #1d2e22;
-  --color-control-active: #1d2e22;
+:root[data-palette="lime"].pref-contrast:is([data-theme="dark"], .is-dark) {
+  --color-accent: #bcf053;
+  --color-accent-soft: #293512;
+  --color-control-active: #293512;
   --color-accent-text: #000000;
-  --color-logo-tile: #86d39a;
+  --color-logo-tile: #bcf053;
   --color-logo-star: #ffffff;
 }
-:root[data-palette="plum"]:where(:not(.pref-contrast)) {
-  --color-accent: #7e2a8f;
-  --color-accent-soft: #f0e5f2;
-  --color-control-active: #f0e5f2;
-  --color-accent-text: #ffffff;
-  --color-count: #a14400;
-  --color-count-text: #ffffff;
-  --color-logo-tile: #4a1d5c;
-  --color-logo-star: #c2410c;
-}
-:root[data-palette="plum"][data-theme="dark"]:where(:not(.pref-contrast)) {
-  --color-accent: #e2a6f0;
-  --color-accent-soft: #4b3d4e;
-  --color-control-active: #4b3d4e;
-  --color-accent-text: #000000;
-  --color-count: #b4461b;
-  --color-count-text: #ffffff;
-  --color-logo-tile: #f0d4fa;
-  --color-logo-star: #fcd34d;
-}
-:root[data-palette="plum"].pref-contrast:not([data-theme="dark"]):not(.is-dark) {
-  --color-accent: #7e2a8f;
-  --color-accent-soft: #ecdfee;
-  --color-control-active: #ecdfee;
-  --color-accent-text: #ffffff;
-  --color-logo-tile: #7e2a8f;
-  --color-logo-star: #000000;
-}
-:root[data-palette="plum"].pref-contrast:is([data-theme="dark"], .is-dark) {
-  --color-accent: #e2a6f0;
-  --color-accent-soft: #322535;
-  --color-control-active: #322535;
-  --color-accent-text: #000000;
-  --color-logo-tile: #e2a6f0;
-  --color-logo-star: #ffffff;
-}
-:root[data-palette="ember"]:where(:not(.pref-contrast)) {
-  --color-accent: #a43e12;
-  --color-accent-soft: #f4e8e3;
-  --color-control-active: #f4e8e3;
+:root[data-palette="rose"]:where(:not(.pref-contrast)) {
+  --color-bg: #f8f5ed;
+  --color-header: #f8f5ed;
+  --color-surface: #fdfbf6;
+  --color-surface-sunken: #efe9dc;
+  --color-text: #17224f;
+  --color-accent: #a62a65;
+  --color-accent-soft: #f4e5ed;
+  --color-control-active: #f4e5ed;
   --color-accent-text: #ffffff;
   --color-count: #1d4ed8;
   --color-count-text: #ffffff;
-  --color-logo-tile: #7c2d12;
-  --color-logo-star: #1e40af;
+  --color-logo-tile: #880046;
+  --color-logo-star: #c2410c;
 }
-:root[data-palette="ember"][data-theme="dark"]:where(:not(.pref-contrast)) {
-  --color-accent: #ffb38a;
-  --color-accent-soft: #514037;
-  --color-control-active: #514037;
+:root[data-palette="rose"][data-theme="dark"]:where(:not(.pref-contrast)) {
+  --color-bg: #191315;
+  --color-header: #191315;
+  --color-surface: #21191c;
+  --color-surface-raised: #2a2024;
+  --color-surface-sunken: #120d0f;
+  --color-panel-header: #2a2024;
+  --color-text-muted: #d4c6cb;
+  --color-border: #a08f95;
+  --color-divider: #7a6a70;
+  --color-accent: #ff99c0;
+  --color-accent-soft: #4c303b;
+  --color-control-active: #4c303b;
   --color-accent-text: #000000;
   --color-count: #2563eb;
   --color-count-text: #ffffff;
-  --color-logo-tile: #fed7aa;
+  --color-logo-tile: #ff99c0;
   --color-logo-star: #93c5fd;
 }
-:root[data-palette="ember"].pref-contrast:not([data-theme="dark"]):not(.is-dark) {
-  --color-accent: #963910;
-  --color-accent-soft: #efe1db;
-  --color-control-active: #efe1db;
+:root[data-palette="rose"].pref-contrast:not([data-theme="dark"]):not(.is-dark) {
+  --color-accent: #9e2860;
+  --color-accent-soft: #f0dfe7;
+  --color-control-active: #f0dfe7;
   --color-accent-text: #ffffff;
-  --color-logo-tile: #963910;
+  --color-logo-tile: #9e2860;
   --color-logo-star: #000000;
 }
-:root[data-palette="ember"].pref-contrast:is([data-theme="dark"], .is-dark) {
-  --color-accent: #ffb38a;
-  --color-accent-soft: #38271e;
-  --color-control-active: #38271e;
+:root[data-palette="rose"].pref-contrast:is([data-theme="dark"], .is-dark) {
+  --color-accent: #ff99c0;
+  --color-accent-soft: #38222a;
+  --color-control-active: #38222a;
   --color-accent-text: #000000;
-  --color-logo-tile: #ffb38a;
+  --color-logo-tile: #ff99c0;
+  --color-logo-star: #ffffff;
+}
+:root[data-palette="amber"]:where(:not(.pref-contrast)) {
+  --color-bg: #f4f2ee;
+  --color-header: #f4f2ee;
+  --color-surface: #fbfaf7;
+  --color-surface-sunken: #e9e6df;
+  --color-border: #706c66;
+  --color-divider: #83807a;
+  --color-accent: #874e00;
+  --color-accent-soft: #f1eae0;
+  --color-control-active: #f1eae0;
+  --color-accent-text: #ffffff;
+  --color-count: #1d4ed8;
+  --color-count-text: #ffffff;
+  --color-logo-tile: #693200;
+  --color-logo-star: #1e40af;
+}
+:root[data-palette="amber"][data-theme="dark"]:where(:not(.pref-contrast)) {
+  --color-bg: #0d1013;
+  --color-header: #0d1013;
+  --color-surface: #14181c;
+  --color-surface-raised: #1b2025;
+  --color-surface-sunken: #090b0d;
+  --color-panel-header: #1b2025;
+  --color-text-muted: #c4c8cc;
+  --color-border: #8e959c;
+  --color-divider: #6b7279;
+  --color-accent: #f7b83d;
+  --color-accent-soft: #40351c;
+  --color-control-active: #40351c;
+  --color-accent-text: #000000;
+  --color-count: #2563eb;
+  --color-count-text: #ffffff;
+  --color-logo-tile: #fde68a;
+  --color-logo-star: #93c5fd;
+}
+:root[data-palette="amber"].pref-contrast:not([data-theme="dark"]):not(.is-dark) {
+  --color-accent: #824b00;
+  --color-accent-soft: #ece4d9;
+  --color-control-active: #ece4d9;
+  --color-accent-text: #ffffff;
+  --color-logo-tile: #824b00;
+  --color-logo-star: #000000;
+}
+:root[data-palette="amber"].pref-contrast:is([data-theme="dark"], .is-dark) {
+  --color-accent: #f7b83d;
+  --color-accent-soft: #36280d;
+  --color-control-active: #36280d;
+  --color-accent-text: #000000;
+  --color-logo-tile: #f7b83d;
   --color-logo-star: #ffffff;
 }
 :root[data-palette="graphite"]:where(:not(.pref-contrast)) {
