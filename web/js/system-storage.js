@@ -92,11 +92,6 @@ function row(d) {
     bar(pct, tone));
 }
 
-function stat(value, label, tone) {
-  return el("div", { class: "stat", "data-tone": tone ? tone[0] : null },
-    el("span", { class: "stat__value", text: value }), el("span", { class: "stat__label", text: label }), tone ? chip(tone[1], tone[0]) : null);
-}
-
 async function load() {
   try {
     const sys = await api("/api/system");
@@ -121,10 +116,10 @@ async function load() {
     const used = found.reduce((t, d) => t + d.used, 0);
     const full = disks.filter((d) => !d.missing && pctUsed(d) >= 90).length;
     stats.replaceChildren(...[
-      stat(formatBytes(total), "Total space"),
-      stat(formatBytes(used), `Used (${total ? Math.round((used / total) * 100) : 0}%)`),
-      stat(String(full), members.size ? "Disks or folders over 90% full" : "Folders over 90% full", full ? ["warning", "Nearly full"] : null),
-      missing ? stat(String(missing), missing === 1 ? "Folder not found" : "Folders not found", ["warning", "Not found"]) : null].filter(Boolean));
+      statTile(formatBytes(total), "Total space"),
+      statTile(formatBytes(used), `Used (${total ? Math.round((used / total) * 100) : 0}%)`),
+      statTile(String(full), members.size ? "Disks or folders over 90% full" : "Folders over 90% full", full ? ["warning", "Nearly full"] : null),
+      missing ? statTile(String(missing), missing === 1 ? "Folder not found" : "Folders not found", ["warning", "Not found"]) : null].filter(Boolean));
     const sorted = [...disks].filter((d) => !members.has(d.label)).sort((a, b) => (b.missing ? 101 : pctUsed(b)) - (a.missing ? 101 : pctUsed(a)));
     let list = $("ul.rows", box);
     if (!list) { list = el("ul", { class: "rows", "aria-label": "Folders, fullest first" }); box.replaceChildren(list); }

@@ -7,11 +7,6 @@ let chart = null;
 
 const clockNow = () => AppDetails.clock();
 
-function stat(value, label, tone, extra) {
-  return el("div", { class: "stat", "data-tone": tone || null },
-    el("span", { class: "stat__value", text: value }), el("span", { class: "stat__label", text: label }), extra || null);
-}
-
 function outsideItems() {
   const { config, outside } = AppDetails.state;
   return (config?.services || []).filter((s) => s.enabled && s.outside_link).map((s) => ({ s, o: outside[s.id] }));
@@ -23,16 +18,16 @@ function renderStats(points) {
   const checked = items.filter((i) => i.o);
   const ok = checked.filter((i) => i.o.reachable).length;
   let outside;
-  if (!items.length) outside = stat("None yet", "Outside addresses");
-  else if (!AppDetails.state.loaded.has("outside")) outside = stat("Checking", "Outside addresses reachable");
+  if (!items.length) outside = statTile("None yet", "Outside addresses");
+  else if (!AppDetails.state.loaded.has("outside")) outside = statTile("Checking", "Outside addresses reachable");
   else {
     const bad = checked.length - ok;
-    outside = stat(`${ok} of ${checked.length}`, "Outside addresses reachable", bad ? "warning" : "success",
+    outside = statTile(`${ok} of ${checked.length}`, "Outside addresses reachable", bad ? "warning" : "success",
       chip(bad ? "Not reachable" : "All reachable", bad ? "warning" : "success"));  // the number is the value above (DASH-309, R3)
   }
   $("#network-stats").replaceChildren(
-    stat(latest ? perSecond(latest.rx) : "Collecting", "Download now"),
-    stat(latest ? perSecond(latest.tx) : "Collecting", "Upload now"),
+    statTile(latest ? perSecond(latest.rx) : "Collecting", "Download now"),
+    statTile(latest ? perSecond(latest.tx) : "Collecting", "Upload now"),
     outside);
 }
 

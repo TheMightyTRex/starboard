@@ -1298,6 +1298,14 @@ function unitInput(input, unit) {
   return el("span", { class: "input-unit" }, input, el("span", { class: "input-unit__unit", "aria-hidden": "true", text: unit }));
 }
 
+// A figure in a row of stat tiles (System pages): its value, what it is, and a tone, either [tone, word] with a chip
+// saying the word, or a tone on its own with any node to follow (extra).
+function statTile(value, label, tone = null, extra = null) {
+  const [t, word] = Array.isArray(tone) ? tone : [tone, null];
+  return el("div", { class: "stat", "data-tone": t || null },
+    el("span", { class: "stat__value", text: value }), el("span", { class: "stat__label", text: label }), word ? chip(word, t) : extra);
+}
+
 // Settings pattern 7: what is missing and the one thing to do.
 function emptyState(title, text, action = null) {
   return el("div", { class: "empty" }, el("p", {}, el("strong", { text: title })), text ? el("p", { text }) : null, action);
