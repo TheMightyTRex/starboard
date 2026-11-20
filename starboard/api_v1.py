@@ -11,7 +11,10 @@ Rules from starboard/DEVELOPER-BEST-PRACTICE-2026-11-09.md (A1 to A19, AS1 to AS
   address), roll a plug-in back and (1.5.0, DASH-454) install every waiting update as one batch, each with the
   same backup, health check and way back as the pages. The second, since API 1.4.0 (DASH-451): a manage key with
   the logs scope, also never given unless ticked, may change the log limits (days and size) and delete all logs, as
-  Settings, General, Logs and feedback does;
+  Settings, General, Logs and feedback does. The third, since API 1.8.0 (plug-in API 1.17): a plug-in's own key,
+  which only reads, may raise and clear alerts with POST /api/v1/plugin/alerts, while the plug-in is active and its
+  approved permissions include alerts:send; any other key gets 404 (AS6), and a plug-in may raise 30 new alerts an
+  hour at most. They go out once until cleared, through the same channel, events and log as Starboard's own;
   optional expiry, last used at most once a minute, revoke (AS8); an audit line for each change and each refused
   key (AS9); refused keys count towards the sign-in lockout per address (AS10). No cookies, so no CSRF and no CORS.
 - Answers: JSON, snake_case, RFC 3339 times; errors as RFC 9457 problem details (A6); lists with limit and an
@@ -41,7 +44,7 @@ import time
 import urllib.parse
 import uuid
 
-API_VERSION = "1.7.0"  # 1.7.0 (19 November 2026, DASH-464): /mcp, read-only tools for AI assistants, off until activated. 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
+API_VERSION = "1.8.0"  # 1.8.0 (20 November 2026, plug-in API 1.17): POST /plugin/alerts, alerts from a plug-in with alerts:send, answered only to its own key. 1.7.0 (19 November 2026, DASH-464): /mcp, read-only tools for AI assistants, off until activated. 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
 KEYS_FILE = "api-keys.json"
 RIGHTS = ("read", "manage")  # manage: read, and the everyday actions (DASH-274). "admin" stays with the pages
 SCOPES = ("apps", "downloads", "media", "system", "library", "requests")
@@ -63,6 +66,14 @@ _done = collections.OrderedDict()  # (key id, method, path, Idempotency-Key) -> 
 
 class NotReady(Exception):
     """What a route needs is not set up yet, such as Reelix for the Library: 409 not_set_up."""
+
+
+class RateLimited(Exception):
+    """Too many of one thing in a while (API 1.8.0, a plug-in's alerts): 429 rate_limited with Retry-After."""
+
+    def __init__(self, message, wait):
+        super().__init__(message)
+        self.wait = wait
 
 
 class Conflict(Exception):
@@ -666,6 +677,87 @@ def routes():
     ]
 
 
+# Alerts from a plug-in (API 1.8.0, plug-in API 1.17) -----------------------------------------------------------------
+# The route's "scope" is PLUGIN_ONLY: not a key scope anyone ticks, but "the plug-in's own key, while the plug-in is
+# active and was approved alerts:send". Any other key gets 404 (AS6), as for a scope it does not have.
+
+PLUGIN_ONLY = "plugin"
+ALERT_KEY = re.compile(r"^[A-Za-z0-9._:-]{1,80}$")
+ALERT_LEVELS = ("problem", "warning", "info")
+ALERTS_AN_HOUR = 30
+_raised = {}  # plug-in id -> times of its new alerts in the last hour
+
+
+def plugin_of_key(data_dir, k, permission):
+    """{id, name} of the active plug-in whose own key `k` is and whose approved permissions include `permission`, or
+    None. The key is known by the id kept in the plug-in's state.json when it was added (or given a new key)."""
+    if not str(k.get("name", "")).startswith("Plug-in: "):
+        return None
+    from . import plugins_admin
+    for p in plugins_admin.basics(data_dir):
+        if p["state"] != "enabled":
+            continue
+        where = plugins_admin.folder(data_dir, p["id"])
+        st = plugins_admin._read_kept(os.path.join(where, "state.json"), {}) or {}
+        if st.get("key_id") != k["id"]:
+            continue
+        m = plugins_admin._read_kept(os.path.join(where, "manifest.json"), {}) or {}
+        return {"id": p["id"], "name": p["name"] or p["id"]} if permission in (m.get("permissions") or []) else None
+    return None
+
+
+def _one_line(b, name, most, required=False):
+    value = b.get(name)
+    if value is None or value == "":
+        if required:
+            raise ValueError(f"Send {name}, up to {most} characters")
+        return ""
+    if not isinstance(value, str) or len(value) > most:
+        raise ValueError(f"{name} must be words, up to {most} characters")
+    return value
+
+
+def plugin_alert(app, plugin, b):
+    """Raises or clears one of a plug-in's alerts through Starboard's watch, so it is sent once until cleared, to the
+    same channel, as the same alert.raised and alert.cleared events and in the same log. True when it was sent."""
+    key = b.get("key")
+    if not isinstance(key, str) or not ALERT_KEY.match(key):
+        raise ValueError("Send key, 1 to 80 letters, numbers, dots, colons, underscores or hyphens, such as check-router")
+    state = b.get("state")
+    if state not in ("raised", "cleared"):
+        raise ValueError("Send state: raised or cleared")
+    title = _one_line(b, "title", 120, required=state == "raised")
+    if re.search(r"[\x00-\x1f\x7f]", title):
+        raise ValueError("title must be one line, with no line breaks")
+    message = re.sub(r"[\x00-\x09\x0b-\x1f\x7f]", " ", _one_line(b, "message", 500))
+    level = b.get("level", "problem")
+    if level not in ALERT_LEVELS:
+        raise ValueError("Send level: problem, warning or info")
+    watch = app.watch
+    full = f"plugin:{plugin['id']}:{key}"
+    with watch.lock:
+        if not watch.settings().get("enabled"):  # alerts are off, as they are for Starboard's own
+            if state == "cleared":
+                watch.state["alerted"].pop(full, None)
+                watch._save()
+            return False
+        if state == "cleared":
+            sent = watch.clear(full, title or f"All clear from {plugin['name']}", f"{plugin['name']}: {message or key}")
+        elif full in watch.state["alerted"]:
+            return False  # already raised: not sent again, and not counted
+        else:
+            now = time.monotonic()
+            with _lock:
+                times = [t for t in _raised.get(plugin["id"], []) if now - t < 3600]
+                if len(times) >= ALERTS_AN_HOUR:
+                    _raised[plugin["id"]] = times
+                    raise RateLimited(f"Up to {ALERTS_AN_HOUR} new alerts an hour for each plug-in", int(3600 - (now - times[0])) + 1)
+                _raised[plugin["id"]] = times + [now]
+            sent = watch.alert(full, title, f"{plugin['name']}: {message}" if message else plugin["name"], level)
+        watch._save()
+    return bool(sent)
+
+
 EXTRA_JOBS = ("livetv", "import", "defaults", "listening")
 QUEUE_ACTIONS = ("remove", "block", "block-search", "import", "ignore")
 
@@ -807,6 +899,10 @@ def actions():
         h.app.jobs.run_soon(m.group(1), force=True)
         return 202, {"accepted": True, "status": "/api/v1/extras"}
 
+    def plugin_alerts(h, m, q, b):
+        """A plug-in's alert (API 1.8.0, plug-in API 1.17): raised or cleared, through Starboard's own alerts."""
+        return 200, {"ok": True, "sent": plugin_alert(h.app, h.api_plugin, b)}
+
     return [
         (r"^/api/v1/downloads/actions$", "POST", "downloads", download_action),
         (r"^/api/v1/download-hours$", "POST", "downloads", hours_action),
@@ -821,6 +917,7 @@ def actions():
         (r"^/api/v1/logs/limits$", "POST", "logs", log_limits_set),
         (r"^/api/v1/logs/delete$", "POST", "logs", log_delete),
         (r"^/api/v1/updates/all$", "POST", "updates", update_all),
+        (r"^/api/v1/plugin/alerts$", "POST", PLUGIN_ONLY, plugin_alerts),  # the plug-in's own key (API 1.8.0)
     ]
 
 
@@ -901,9 +998,13 @@ def _write(h, k, method, path, query, writes, base, rate, problem):
     """One write: the key's scope, then its right, then the body, then the action, with an audit line (AS9)."""
     from . import services
     pattern, _, scope, fn = next(a for a in writes if a[1] == method)
-    if not _scoped(k, scope):
+    if scope == PLUGIN_ONLY:  # the one write a plug-in's read-only key may do (API 1.8.0)
+        h.api_plugin = plugin_of_key(h.app.data_dir, k, "alerts:send")
+        if not h.api_plugin:
+            return problem(404, "not_found", "Nothing here for this key")
+    elif not _scoped(k, scope):
         return problem(404, "not_found", "Nothing here for this key")
-    if k["right"] != "manage":
+    elif k["right"] != "manage":
         return problem(403, "right_needed", "This key only reads. Make a key that may read and manage, in Settings, Security, API keys")
     idem = (h.headers.get("Idempotency-Key") or "").strip()
     if idem and not re.match(r"^[A-Za-z0-9._:-]{1,100}$", idem):
@@ -919,7 +1020,7 @@ def _write(h, k, method, path, query, writes, base, rate, problem):
         large = "too large" in str(e)
         return problem(413 if large else 400, "too_large" if large else "bad_request",
                        "Send a JSON object of up to 64 KB" if large else "Send a JSON object, such as {}")
-    status, code, out = 500, "", None
+    status, code, out, extra = 500, "", None, None
     try:
         status, out = fn(h, re.match(pattern, path), query, body)
     except LookupError as e:
@@ -930,11 +1031,13 @@ def _write(h, k, method, path, query, writes, base, rate, problem):
         status, code, title = 409, "not_set_up", str(e)
     except Conflict as e:
         status, code, title = 409, e.code, str(e)
+    except RateLimited as e:
+        status, code, title, extra = 429, "rate_limited", str(e), {"Retry-After": str(e.wait)}
     except services.ServiceError as e:
         status, code, title = 502, "app_failed", "An app did not answer: " + str(e)[:300]
     audit(h.app.data_dir, "api_write", key_id=k["id"], method=method, path=path[:100], status=status)
     if code:
-        return problem(status, code, title)
+        return problem(status, code, title, extra=extra)
     raw = json.dumps(out, separators=(",", ":"), default=str).encode()
     if idem:
         _remember(where, status, raw)

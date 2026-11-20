@@ -448,6 +448,29 @@ spec["paths"]["/api/v1/mcp"] = {"post": {
                   "405": {"$ref": "#/components/responses/Problem"}, "413": {"$ref": "#/components/responses/Problem"},
                   "429": {"$ref": "#/components/responses/Problem"}}}}
 
+# Added in 1.8.0 (plug-in API 1.17): alerts from a plug-in, answered only to its own key (x-right: plugin).
+spec["paths"]["/api/v1/plugin/alerts"] = {"post": write(
+    {"type": "object", "required": ["ok", "sent"], "properties": {
+        "ok": {"type": "boolean"},
+        "sent": {"type": "boolean", "description": "false when it was already raised, there was nothing to clear, or alerts are off in Settings, Alerts"}}},
+    "A plug-in raises or clears one of its alerts, sent through Starboard's own alerts", "sendPluginAlert", "Plug-ins",
+    body={"type": "object", "required": ["key", "state"], "properties": {
+        "key": {"type": "string", "pattern": "^[A-Za-z0-9._:-]{1,80}$", "description": "The plug-in's own name for the alert, such as check-router. Raised once until cleared."},
+        "state": {"type": "string", "enum": ["raised", "cleared"]},
+        "title": {"type": "string", "maxLength": 120, "description": "Required to raise. One line."},
+        "message": {"type": "string", "maxLength": 500, "description": "Sent after the plug-in's name, such as On demand: Ping: no answer for 3 checks in a row."},
+        "level": {"type": "string", "enum": list(api_v1.ALERT_LEVELS), "default": "problem"}}})
+    | {"description": "Only the plug-in's own key, while the plug-in is active and its approved permissions include alerts:send: "
+                      "any other key gets 404 not_found. The one write a plug-in's read-only key may do. An alert goes out once until "
+                      "it is cleared, to where Starboard sends its own (ntfy, Gotify or a webhook), as the alert.raised and alert.cleared "
+                      "events and in the log, and only while alerts are on. Up to 30 new alerts an hour for each plug-in (429 rate_limited "
+                      "with Retry-After); raising one that is already raised does not count."}}
+_alerts = spec["paths"]["/api/v1/plugin/alerts"]["post"]
+_alerts["responses"].pop("403")  # a plug-in's key is never asked for manage
+_alerts["requestBody"]["content"]["application/json"]["example"] = {
+    "key": "check-router", "state": "raised", "title": "Router is not answering", "message": "Ping: no answer for 3 checks in a row.",
+    "level": "problem"}
+
 
 SAMPLES = {"id": "123", "name": "livetv"}
 RUN_ID = "0123456789ab"  # an update run's id, for /api/v1/updates/runs/{id}
@@ -475,7 +498,9 @@ def with_scopes(spec):
                 scope = next((sc for p, sc in reads if re.match(p, sample(path))), None)
             else:
                 scope = next((sc for p, m, sc in writes if m == method.upper() and re.match(p, sample(path))), None)
-            if path != mcp.PATH:
+            if scope == api_v1.PLUGIN_ONLY:  # 1.8.0: a plug-in's own key, by its approved permission, not a scope
+                scope, right = None, "plugin"
+            elif path != mcp.PATH:
                 right = "manage"
             ordered = {}
             for k, v in op.items():

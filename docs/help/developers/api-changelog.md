@@ -15,6 +15,23 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Plug-in API 1.17.0 and Starboard API 1.8.0 (not released yet), 20 November 2026
+
+- **Added:** the `sparkline` card type. A card answers `series`, up to 8, each with a `title` and 1 to 96 `points`
+  (numbers of 0 or more, with `null` for a gap), and an optional `unit` and `detail`, and a `note`. Starboard draws a
+  small line for each series, hidden from screen readers, and the latest, lowest and highest value in words, which
+  everyone reads. Read [Sparkline cards](plugin-api-reference.md#sparkline-cards-api-117).
+- **Added:** the `alerts:send` permission (low risk, no key scope) and `POST /api/v1/plugin/alerts`. A plug-in raises
+  and clears its own alerts with `key`, `state` (`raised` or `cleared`), `title`, `message` and `level`. Each is sent
+  once until cleared, through the same channel, `alert.raised` and `alert.cleared` events and log as Starboard's own,
+  and only while alerts are on. The answer is `{"ok": true, "sent": true}`, or `false` when nothing was sent. Only the
+  plug-in's own key, while the plug-in is active and approved `alerts:send`; any other key gets `404 not_found`. Up to
+  30 new alerts an hour for each plug-in, then `429 rate_limited` with `Retry-After`. Read
+  [Sending alerts](plugin-api-reference.md#sending-alerts-api-117).
+- **Changed:** in `openapi.json`, `x-right` may be `plugin`, for an address answered only to a plug-in's own key.
+- Nothing was taken away: every earlier address and card answers as before. Name `>=1.17` in `starboard_api` to use
+  either.
+
 ## Starboard API 1.7.0 (Starboard 0.23.0), 19 November 2026
 
 - **Added:** `POST /mcp`, for AI assistants that speak the Model Context Protocol (MCP), over its Streamable HTTP

@@ -145,7 +145,10 @@ def operation(spec, path, method, op, table, used):
     else:
         scope = op.get("x-scope") or (found[0] if found else None)
         who = "a key made with Read and manage" if right == "manage" else "a Read only key" if method != "get" else "any key"
-        if scope:
+        if right == "plugin":  # API 1.8.0: a plug-in's own key, by its approved permission
+            lines.append("- **Key:** only a plug-in's own key, while the plug-in is active and its approved permissions include "
+                         "`alerts:send`. Any other key gets `404 not_found`.")
+        elif scope:
             which = f"whose scopes include `{scope}`" if scope in EXPLICIT else f"whose scopes are empty or include `{scope}`"
             lines.append(f"- **Key:** {who} {which} ({SCOPE_WORDS.get(scope, scope)}). "
                          f"A key without it gets `404 not_found`.")

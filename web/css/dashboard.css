@@ -48,6 +48,13 @@
 .guide-card__num { font-variant-numeric: tabular-nums; color: var(--color-text-muted); }
 .guide-card .progress { height: 4px; }
 
+/* A sparkline card (plug-in API 1.17): the title, a small line in the accent colour (currentColor, so forced colours
+   and high contrast keep it), then the latest, lowest and highest in words. The line stretches to the card's width. */
+.spark-card__item { display: grid; gap: var(--space-1); width: 100%; min-width: 0; }
+.spark-card__line { display: block; width: 100%; height: 28px; color: var(--color-accent); overflow: visible; }
+.spark-card__words { font-variant-numeric: tabular-nums; }
+@media (forced-colors: active) { .spark-card__line { color: CanvasText; } }
+
 /* Plug-in cards with the band (plug-in API 1.14, DASH-428, design 2): the design system's .card-band across the top,
    edge to edge; the card's own padding stays for the body. */
 .dash-card.has-band { padding-top: 0; }

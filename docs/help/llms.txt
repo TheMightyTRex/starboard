@@ -1,14 +1,14 @@
 # Starboard
 
-> Starboard is a lightweight home-server dashboard and installer, with a read-only API at /api/v1 and plug-ins that run in locked-down containers. These are its developer pages, for plug-in API 1.16 (Starboard 0.23.0 and later).
+> Starboard is a lightweight home-server dashboard and installer, with a read-only API at /api/v1 and plug-ins that run in locked-down containers. These are its developer pages, for plug-in API 1.17 (the Starboard release after 0.24.0 and later).
 
-<!-- plugin-api: 1.16 -->
+<!-- plugin-api: 1.17 -->
 
 ## Plug-ins
 
 - [Make your first plug-in](developers/make-a-plugin.md): a tutorial that builds, tests and adds a tiny plug-in with one stat card.
 - [Plug-in manifest reference](developers/plugin-manifest-reference.md): every field of starboard-plugin.json, its check and the security rules, with containers built from a zip file, Jellyfin libraries and the holding folder in the media folder (plug-in API 1.15).
-- [Plug-in API reference](developers/plugin-api-reference.md): what Starboard calls on a plug-in (cards, actions, custom settings, events, jobs) and what a plug-in may call, with the disk.changed event and STARBOARD_HOME_ADDRESS (plug-in API 1.16).
+- [Plug-in API reference](developers/plugin-api-reference.md): what Starboard calls on a plug-in (cards, actions, custom settings, events, jobs) and what a plug-in may call, with the disk.changed event and STARBOARD_HOME_ADDRESS (plug-in API 1.16), and sparkline cards and sending alerts (plug-in API 1.17).
 - [Test and publish a plug-in](developers/test-and-publish-a-plugin.md): the plug-in tester, pinning images by digest, and writing a catalogue.json.
 - [Write a plug-in that updates safely](developers/update-a-plugin-safely.md): settings migrations, a step before and after an update, the health wait with an automatic Roll back, and What is new before and after (plug-in API 1.14).
 - [Write a plug-in](basics/write-a-plugin.md): the overview, with styles and dashboard cards.
