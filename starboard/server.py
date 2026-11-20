@@ -1698,6 +1698,42 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/queue/issues" and method == "GET":  # Copy issues for an AI helper (DASH-434): only when asked
                 from . import queue_issues
                 return self.json(200, queue_issues.export(app, fresh))
+            if path == "/api/queue/item" and method == "GET":  # the Needs attention slide-out (DASH-496), only when opened
+                from . import queue_files
+                qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                try:
+                    return self.json(200, queue_files.details(cfg.data["services"], (qs.get("service") or [""])[0], (qs.get("id") or [""])[0]))
+                except LookupError as e:
+                    return self.error(404, str(e))
+                except services.ServiceError as e:
+                    return self.error(502, str(e))
+            if path in ("/api/queue/item/unpack", "/api/queue/item/delete", "/api/queue/item/film") and method in ("GET", "POST"):
+                from . import queue_files
+                qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                data = self.body() if method == "POST" else {k: v[0] for k, v in qs.items()}
+                sid, iid = str(data.get("service", "")), str(data.get("id", ""))
+                try:
+                    if path.endswith("/unpack"):
+                        if method == "GET":
+                            return self.json(200, queue_files.unpack_state(sid, iid) or {"state": "none"})
+                        return self.json(202, queue_files.start_unpack(cfg.data["services"], sid, iid, app.data_dir))
+                    if path.endswith("/delete") and method == "POST":
+                        return self.json(200, queue_files.delete(cfg.data["services"], sid, iid, bool(data.get("block")), app.data_dir))
+                    if path.endswith("/film"):
+                        if method == "GET":
+                            return self.json(200, queue_files.film_options(cfg.data["services"], sid, iid, str(data.get("q", ""))))
+                        out = queue_files.choose_film(cfg.data["services"], sid, iid, data.get("movie_id"), app.data_dir)
+                        logs.event("info", "reelix", f"Chose the film for download {iid} by hand")
+                        return self.json(200, out)
+                    return self.error(405, "Not allowed")
+                except LookupError as e:
+                    return self.error(404, str(e))
+                except ValueError as e:
+                    return self.error(400, str(e))
+                except services.ServiceError as e:
+                    return self.error(502, f"The app said no: {e}")
+                except containers.DockerError as e:
+                    return self.error(502, f"Docker said no: {e}")
             if path == "/api/queue/action" and method == "POST":
                 data = self.body()
                 service = cfg.service(str(data.get("service", "")))

@@ -247,6 +247,37 @@ if (!pages.length || pages.some((p) => p.includes("settings-updates"))) {
   } catch (e) { add("settings-updates.html, What is new", "page", "error", e.message.split("\n")[0]); }
 }
 
+// A download that needs attention (DASH-496): its slide-out with what is wrong, the actions and the folder, and the
+// question before deleting, in Light, Dark and High contrast, with its structure. Nothing is deleted.
+if (!pages.length || pages.some((p) => p.startsWith("downloads.html"))) {
+  const scan = async (name) => {
+    await axe(name, "light");
+    await structure(name);
+    await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+    await page.waitForTimeout(150);
+    await axe(name, "dark");
+    await page.evaluate(() => { document.documentElement.removeAttribute("data-theme"); document.documentElement.classList.add("pref-contrast"); });
+    await page.waitForTimeout(150);
+    await axe(name, "high contrast");
+    await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
+  };
+  try {
+    await page.goto(`${base}/downloads.html`);
+    await settle();
+    await page.locator("#queue button", { hasText: "Sample Science Weekly" }).click();
+    await page.locator("#attention .action-list").first().waitFor({ timeout: 15000 });
+    await page.waitForTimeout(300);
+    await scan("downloads.html, a download that needs attention");
+    await page.locator("#attention [data-action=delete]").click();
+    await page.locator("dialog[open]").waitFor({ timeout: 5000 });
+    await page.waitForTimeout(300);
+    await scan("downloads.html, before deleting a download's files");
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Escape");
+    console.log("checked a download that needs attention");
+  } catch (e) { add("downloads.html, a download that needs attention", "page", "error", e.message.split("\n")[0]); }
+}
+
 // Restart where it is needed (DASH-470): Restart Jellyfin on System, Overview, Settings, Updates and Settings, Apps,
 // Jellyfin, while Jellyfin says Restart needed (made up with page routes), and while it works, in Light, Dark and
 // High contrast, with its structure. Nothing is restarted: the restart itself is a made-up answer that never ends.

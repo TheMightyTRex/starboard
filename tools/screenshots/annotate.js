@@ -26,7 +26,19 @@
     if (layer && document.body.contains(layer)) return layer;
     layer = svg("svg", { id: "__annotate_layer", width: innerWidth, height: innerHeight, "aria-hidden": "true" });
     Object.assign(layer.style, { position: "fixed", inset: "0", pointerEvents: "none", zIndex: "2147483647", overflow: "visible" });
-    document.body.append(layer);
+    // A modal dialog sits in the browser's top layer, above any z-index, so over one the mark-up goes in the top layer
+    // too, as a popover shown after it (DASH-496: the question before deleting a download's files).
+    const host = document.createElement("div");
+    if (host.showPopover && document.querySelector("dialog[open]")?.matches(":modal")) {
+      host.setAttribute("popover", "manual");
+      Object.assign(host.style, { position: "fixed", inset: "0", margin: "0", padding: "0", border: "0", background: "transparent",
+        width: "100vw", height: "100vh", overflow: "visible", pointerEvents: "none" });
+      host.append(layer);
+      document.body.append(host);
+      host.showPopover();
+    } else {
+      document.body.append(layer);
+    }
     return layer;
   }
 

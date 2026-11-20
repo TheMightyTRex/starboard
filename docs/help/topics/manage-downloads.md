@@ -30,10 +30,12 @@ all downloads, remove one download, or ask an app to find a different copy.
 
 ### Remove a download
 
-1. Select the download's name. A side panel opens with its details and any messages from the app.
+1. Select the download's name. A side panel opens with its details and any messages from the app. A download that
+   needs attention opens a wider panel with every action that fits: read
+   [Fix a download that needs attention](#fix-a-download-that-needs-attention).
 2. Select **Remove**. Starboard asks **Remove this download?**
 
-   ![A download's details, with the messages from Reelix, Find another, and Remove (step 2) outlined, with example data](../images/manage-downloads-2-remove.png)
+   ![A download's details, with Remove (step 2) outlined, with example data](../images/manage-downloads-2-remove.png)
 
 3. Optional: tick **Block this release** so the app never downloads this copy again.
 4. Select **Remove download**. The app removes it from the queue and from the download app, with what it has
@@ -60,14 +62,45 @@ pass**, and when it goes to the download app by itself.
 
    ![Held downloads with example releases, with Get it now (step 1) and Remove (step 2) beside the first one outlined](../images/manage-downloads-3-held.png)
 
-### Fix a Reelix download that will not import
+### Fix a download that needs attention
 
-A Reelix download can finish but not move into your library. It then shows **Needs attention** or **Failed**.
+A download can finish but not move into your library. It then shows **Needs attention** or **Failed**.
 
-1. Select the download's name and read the messages from Reelix.
-2. Select **Try the import again**, then **Try again**. Reelix checks the finished files again.
-3. Or select **Ignore**, then **Ignore** again. Reelix stops warning about it and leaves the files in the
-   download app's folder. Nothing is deleted.
+1. Select the download's name. A side panel opens. Starboard asks the app what is wrong and reads the download
+   folder, which takes a moment.
+2. Read what is wrong at the top, in plain words, such as **The files are inside archives** or **This download
+   holds a program, not media**.
+3. Choose an action. Each one has a line under it that says what it does, and the one Starboard suggests says
+   **Suggested**. **Fix it** lists the actions that try to get it into your library; **Take it off the list**
+   lists the ones that take it away.
+
+   ![A download that needs attention, with what is wrong (step 2) and the suggested action (step 3) outlined, with example data](../images/manage-downloads-4-attention.png)
+
+4. For an action that deletes files, Starboard asks first and names the files, the folder and the space it frees.
+   Select **Delete the files**, or **Delete and block**, to go on.
+
+   ![The question before deleting, naming the file and the space it frees, with Delete the files (step 4) outlined, with example data](../images/manage-downloads-5-delete.png)
+
+5. The result shows in the panel, such as **Removed. 14 files deleted, 1.4 GB freed.** Close the panel to go
+   back to the queue.
+
+The actions, and when each one fits:
+
+- **Unpack the archives, then import**: the media is packed in RAR or zip archives. Starboard unpacks them into
+  the same folder, archives inside archives too, then Reelix imports what is inside. It can take a few minutes for
+  a large download. The archives stay until you delete the download.
+- **Choose the episode**: the release numbers its episodes another way to the series in Reelix. Tell Reelix which
+  episode each file is.
+- **Choose the film**: Reelix could not tell which film it is. Search your library and choose the film.
+- **Try the import again**: the app checks the files again and imports them if it can.
+- **Find another**: deletes this download, adds the release to the blocklist and searches for another.
+- **Ignore**: takes it off the list and notes in Reelix's history that you chose to ignore it. The files stay.
+- **Remove from the list and keep the files**: takes it off the list. The files stay in the download folder, so
+  you can use them yourself.
+- **Remove and delete the files**: takes it off the list and deletes its files, for a download you already have,
+  or one that holds only a sample.
+- **Remove, delete and add to the blocklist**: for a fake or harmful release, such as an .exe posing as an
+  episode. Never open such a file.
 
 ### Pause or resume all downloads
 
@@ -105,8 +138,15 @@ This needs the full version of Reelix. Read [Switch between the two versions of 
 
 ## If it does not work
 
-- **Needs attention:** open the download and read **Messages from** the app. Then use **Find another**, or
-  sort it out in the app's own queue.
+- **Needs attention:** open the download, read what is wrong and choose an action. Read
+  [Fix a download that needs attention](#fix-a-download-that-needs-attention).
+- **The download folder could not be read:** Starboard reads the folder through Docker. Without the Docker
+  connection, the panel still says what the app reported and offers the actions, but not **Unpack the archives**.
+  The installer asks about the Docker connection.
+- **Unpack the archives is not offered for RAR files:** the Reelix on your server has no RAR tool. Update Reelix
+  from **Apps**, then **Updates**.
+- **Removed, but some files could not be deleted:** Starboard deletes what is left only when the folder is the
+  download's own. Delete the rest in the download app, or in the folder yourself.
 - **Not done** and a message: the app refused the action. Check the app is running and try again.
 - **Download hours says Off, with no buttons:** activate download hours first. Read
   [Download only at certain hours](set-download-hours.md#steps).
