@@ -1161,6 +1161,42 @@ def _cleanup_screen(key, held):
             "items": [{**h, "state": "off", "state_label": "In holding", "group": "Moved", "actions": ["restore"]} for h in held]}
 
 
+def _example_network_check(data_dir):
+    """A made-up plug-in with a sparkline card (plug-in API 1.17): response times over the last 24 hours, with a gap
+    where a check got no answer, so the dashboard, its accessibility checks and screenshots show the card. It may send
+    alerts (alerts:send), so its permissions list that too. Nothing is fetched and no container starts."""
+    from starboard import plugin_cards, plugin_watch
+    if not any(p["id"] == "network-check" for p in plugins_admin.listing(data_dir)):
+        plugins_admin.install(data_dir, {
+            "manifest_version": 1, "id": "network-check", "name": "Network check", "version": "1.0.0",
+            "description": "Checks how quickly your router and apps answer, and sends an alert when one stops answering.",
+            "author": "TheMightyTRexUK", "licence": "MIT", "homepage": "https://example.invalid/network-check",
+            "support_url": "https://example.invalid/network-check/issues", "starboard_api": ">=1.17 <2.0",
+            "permissions": ["apps:read", "network:lan", "alerts:send"], "health": "/health",
+            "containers": [{"name": "main", "image": "ghcr.io/example/network-check@sha256:" + "f" * 64, "port": 8080,
+                            "network": "lan", "volumes": ["data"]}],
+            "cards": [{"id": "times", "title": "Response times", "type": "sparkline", "path": "/trend",
+                       "titles": {"small": "Response times", "half": "Response times"}}]},
+            "/nonexistent-media")
+        plugins_admin.set_state(data_dir, "network-check", "enabled")
+    real_answer, real_ask = plugin_cards.answer, plugin_watch._ask
+    router = [12.5, 13, 12.8, 14, 13.6, 12.9, 13.1, 15.2, 18.4, 14.1, 13, None, None, 13.4, 12.7, 12.5, 13.3, 14.8, 16.2, 15.1, 13.9, 13.2, 14, 15]
+    jellyfin = [41, 39, 40, 38, 44, 52, 61, 48, 42, 40, 39, 38, 41, 43, 40, 39, 42, 47, 58, 66, 54, 45, 42, 40]
+    reelix = [8.2, 8, 7.9, 8.4, 8.1, 9.3, 12.6, 9.1, 8.3, 8, 7.8, 8.2, 8.5, 8.1, 8, 7.9, 8.4, 9, 10.2, 9.4, 8.6, 8.3, 8.1, 8.2]
+
+    def answer(d, pid, cid, opener=None):
+        if pid != "network-check":
+            return real_answer(d, pid, cid, opener)
+        return {"type": "sparkline", "format": "number", "asked": int(time.time()),
+                "data": plugin_cards.clean("sparkline", {
+                    "series": [{"title": "Router", "points": router, "unit": "ms", "detail": "No answer for 2 checks at 04:00"},
+                               {"title": "Jellyfin", "points": jellyfin, "unit": "ms", "detail": "Average 45 ms"},
+                               {"title": "Reelix", "points": reelix, "unit": "ms", "detail": "Average 8.6 ms"}],
+                    "note": "Hourly averages, the last 24 hours", "status": "ok", "updated": int(time.time()) - 300})}
+    plugin_cards.answer = answer
+    plugin_watch._ask = lambda pid, main, path: "ok" if pid == "network-check" else real_ask(pid, main, path)
+
+
 def _example_library_cleanup(data_dir):
     from starboard import plugin_custom, plugin_watch
     if not any(p["id"] == "library-cleanup" for p in plugins_admin.listing(data_dir)):
@@ -2012,6 +2048,7 @@ def main():
     _example_picture_shrinker(str(DATA))
     _example_on_demand_zip(str(DATA))
     _example_library_cleanup(str(DATA))
+    _example_network_check(str(DATA))
     _example_plugin_update(str(DATA))
     _example_dispatcharr()
     _example_folders(DATA)
@@ -2046,11 +2083,12 @@ def main():
         call("PUT", "/api/config/general", {"plugins_auto_update": True}, cookie)
         # The dashboard with plug-in cards in the card band (plug-in API 1.14, DASH-428): Direct play with its logo and
         # a Converting chip, Picture shrinker with a PNG logo and its own words on the chip, Watch statistics without
-        # a logo (its initials) and without a status.
+        # a logo (its initials) and without a status, and Network check's sparkline card (plug-in API 1.17).
         call("PUT", "/api/config/general", {"dashboard": {"layout": "glance", "cards": [
             {"id": "plugin:direct-play:now", "size": "half"}, {"id": "plugin:picture-shrinker:saved", "size": "half"},
             {"id": "plugin:watch-stats:week", "size": "half"}, {"id": "playing", "size": "half"}, {"id": "health", "size": "half"},
-            {"id": "downloads", "size": "half"}, {"id": "coming", "size": "half"}, {"id": "recent", "size": "full"},
+            {"id": "downloads", "size": "half"}, {"id": "coming", "size": "half"}, {"id": "plugin:network-check:times", "size": "half"},
+            {"id": "recent", "size": "full"},
             {"id": "disk", "size": "small"}, {"id": "load", "size": "small"}, {"id": "vpn", "size": "small"}, {"id": "alerts", "size": "small"}]}}, cookie)
         for name, kind, group, path, icon in APPS:
             key = {"nzbget": "starboard:made-up", "gluetun": ""}.get(kind, KEY)

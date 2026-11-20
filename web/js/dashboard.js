@@ -188,6 +188,7 @@ async function pluginCard(id, given) {
   if (r.type === "status") return el("div", {}, d.status ? el("p", { class: "small", text: STATE_BAND[d.state]?.[0] }) : null,
     d.text ? el("p", { text: d.text }) : null);
   if (r.type === "guide") return guideCard(d);
+  if (r.type === "sparkline") return sparklineCard(d);
   return d.items.length ? el("ul", { class: "rows" }, d.items.map((it) => el("li", { class: "row row--no-lead" }, el("div", {},
     el("div", { class: "row__title" }, it.link ? el("a", { href: it.link, target: "_blank", rel: "noopener noreferrer" }, it.title, el("span", { class: "visually-hidden", text: " (opens in a new tab)" })) : it.title),
     it.detail ? el("div", { class: "row__meta", text: it.detail }) : null)))) : empty("Nothing to show.");
@@ -283,6 +284,45 @@ function guideCard(d) {
         bar,
         it.next ? el("div", { class: "row__meta", text: `Next: ${it.next}${it.next_start ? ` at ${hm(it.next_start)}` : ""}` }) : null));
     })));
+}
+
+// A sparkline card (plug-in API 1.17), such as Advanced dashboard's response times: one row a series with its title,
+// a small line, then the latest, lowest and highest value in words, which Starboard works out (summary), and the
+// plug-in's detail. The line is decoration for sighted people: hidden from screen readers, who get the words. It is
+// drawn in currentColor with no fill and no animation, so it follows light, dark, high contrast and forced colours.
+const SPARK_NS = "http://www.w3.org/2000/svg";
+function sparkLine(points) {
+  const w = 96, h = 24, pad = 2;
+  const known = points.filter((p) => p !== null);
+  const low = Math.min(...known), high = Math.max(...known);
+  const x = (i) => (points.length === 1 ? w / 2 : (i * w) / (points.length - 1));
+  const y = (v) => (high === low ? h / 2 : pad + ((high - v) * (h - 2 * pad)) / (high - low));
+  // Broken at each gap (null): one path segment for each run of points, a dot for a point on its own.
+  let d = "", run = false;
+  points.forEach((p, i) => {
+    if (p === null) { run = false; return; }
+    d += `${run ? "L" : "M"}${x(i).toFixed(2)} ${y(p).toFixed(2)}`;
+    if (!run && (i === points.length - 1 || points[i + 1] === null)) d += "h0";
+    run = true;
+  });
+  const svg = document.createElementNS(SPARK_NS, "svg");
+  for (const [k, v] of Object.entries({ class: "spark-card__line", viewBox: `0 0 ${w} ${h}`, preserveAspectRatio: "none",
+    "aria-hidden": "true", focusable: "false" })) svg.setAttribute(k, v);
+  const path = document.createElementNS(SPARK_NS, "path");
+  for (const [k, v] of Object.entries({ d, fill: "none", stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round",
+    "stroke-linejoin": "round", "vector-effect": "non-scaling-stroke" })) path.setAttribute(k, v);
+  svg.append(path);
+  return svg;
+}
+function sparklineCard(d) {
+  if (!d.series.length) return empty(d.note || "Nothing to show.");
+  return el("div", { class: "stack-2" },
+    el("ul", { class: "rows spark-card" }, d.series.map((s) => el("li", { class: "row row--no-lead" }, el("div", { class: "spark-card__item" },
+      el("div", { class: "row__title", text: s.title }),
+      s.points.some((p) => p !== null) ? sparkLine(s.points) : null,
+      el("div", { class: "spark-card__words", text: s.summary }),
+      s.detail ? el("div", { class: "row__meta", text: s.detail }) : null)))),
+    d.note ? el("p", { class: "small muted", text: d.note }) : null);
 }
 
 // A card's name for its size, in Edit dashboard's tools: a plug-in card's own title for that size (API 1.15) or a
