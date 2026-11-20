@@ -125,40 +125,23 @@ function factValue(f) {
   return el("dd", {}, ...f.links.flatMap((l, n) => [n ? ", " : null, el("a", { href: l.href, text: l.text })]).filter(Boolean));
 }
 
-// In-page tabs: the item's list first, then About. Arrow keys move between them (the tabs pattern).
+// In-page tabs: the item's list first, then About. The design system's tabs (20 November 2026): one Tab stop, the
+// arrow keys, Home and End; a link to a part's id opens it. A part with onOpen is filled the first time it is chosen.
 function tabs(parts) {
-  const list = el("div", { class: "lib-tabs", role: "tablist", "aria-label": "Sections" });
-  const panels = [];
+  const list = el("div", { class: "tabs__list", role: "tablist", "aria-label": "Sections" });
+  const box = el("div", { class: "tabs" }, list);
   parts.forEach((p, n) => {
-    const tab = el("button", { type: "button", role: "tab", id: `tab-${p.key}`, "aria-controls": `panel-${p.key}`,
-      "aria-selected": String(n === 0), tabindex: n === 0 ? "0" : "-1", text: p.label });
-    const panel = el("section", { role: "tabpanel", id: `panel-${p.key}`, "aria-labelledby": `tab-${p.key}`, tabindex: "0", hidden: n !== 0 },
-      p.heading && p.heading !== p.label ? el("h2", { class: "lib-panel-heading", text: p.heading }) : null, p.body);
-    list.append(tab);
-    panels.push(panel);
+    list.append(el("button", { type: "button", class: "tabs__tab", role: "tab", id: `tab-${p.key}`, "aria-controls": `panel-${p.key}`,
+      "aria-selected": String(n === 0), tabindex: n === 0 ? "0" : "-1", text: p.label }));
+    box.append(el("section", { class: "tabs__panel", role: "tabpanel", id: `panel-${p.key}`, "aria-labelledby": `tab-${p.key}`, tabindex: "0", hidden: n !== 0 },
+      p.heading && p.heading !== p.label ? el("h2", { class: "lib-panel-heading", text: p.heading }) : null, p.body));
   });
-  const select = (tab) => {
-    $$("[role=tab]", list).forEach((t) => {
-      const on = t === tab;
-      t.setAttribute("aria-selected", String(on));
-      t.tabIndex = on ? 0 : -1;
-      document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
-    });
-    const part = parts.find((p) => `tab-${p.key}` === tab.id);
+  box.addEventListener("tabs-change", (e) => {
+    const part = parts.find((p) => `tab-${p.key}` === e.detail.tab.id);
     if (part?.onOpen && !part.opened) { part.opened = true; part.onOpen(); }
-  };
-  list.addEventListener("click", (e) => { const t = e.target.closest("[role=tab]"); if (t) select(t); });
-  list.addEventListener("keydown", (e) => {
-    const all = $$("[role=tab]", list);
-    const at = all.indexOf(document.activeElement);
-    const go = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: all.length - 1 }[e.key];
-    if (go === undefined || at < 0) return;
-    e.preventDefault();
-    const next = all[(go + all.length) % all.length];
-    select(next);
-    next.focus();
   });
-  return [list, ...panels];
+  queueMicrotask(() => SharedComponents.setupTabs(box.parentElement || box));
+  return [box];
 }
 
 // The bar's width is set through the style object: the page's security policy refuses style attributes.

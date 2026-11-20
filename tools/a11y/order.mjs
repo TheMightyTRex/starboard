@@ -64,7 +64,7 @@ async function check(name, width) {
     if (kinds[0] !== "skip") out.landmarks.push(`the skip link is not first (${kinds[0] || "none"})`);
     // The page's own content starts with its h1.
     const firstReal = [...main.querySelectorAll("h1,h2,h3,button,a[href],input,select,textarea,p")].filter(shown)
-      .find((e) => !e.closest(".lib-tabs, .menu-tabs, .page-back, .back-link") && !e.matches(".page-back, .back-link, a[href].back"));
+      .find((e) => !e.closest(".tabs__list, .menu-tabs, .page-back, .back-link") && !e.matches(".page-back, .back-link, a[href].back"));
     if (firstReal && firstReal.tagName !== "H1") out.head.push(`main starts with ${label(firstReal)} before the h1`);
     return out;
   });
