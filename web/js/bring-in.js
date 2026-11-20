@@ -5,7 +5,7 @@
 // 2. What is in each, with a correction for a whole source or one folder.
 // 3. Check names: Matched, Needs a look and Left where it is, and the space needed.
 // 4. Copy: what happens, then the progress (Pause, Carry on), then the report.
-// Loaded after common.js and settings.js (notice, field, wizardFrame, stepTable, stepNamed).
+// Loaded after common.js and settings-core.js (notice, field, wizardFrame, stepTable, stepNamed).
 
 const BRING_PARTS = ["bring-sources", "bring-what", "bring-names", "bring-copy"];
 const BRING_KINDS = ["films", "series", "music", "books", "audiobooks"];

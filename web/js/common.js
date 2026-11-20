@@ -636,11 +636,11 @@ function filePicker(input, { choose = "Choose a file", again = "Choose another f
     name.textContent = f ? `${f.name}, ${formatBytes(f.size)}` : "No file chosen";
     name.classList.toggle("is-chosen", Boolean(f));
     words.textContent = f ? again : choose;
-    // A new choice clears the field's last error, such as "Choose the zip file" (settings.js setError).
+    // A new choice clears the field's last error, such as "Choose the zip file" (settings-core.js setError).
     if (f && input.fieldError && !input.fieldError.hidden && typeof setError === "function") setError(input, "");
   };
   input.setAttribute("aria-describedby", [input.getAttribute("aria-describedby"), name.id].filter(Boolean).join(" "));
-  input.moreHints = [...(input.moreHints || []), name.id];  // kept when settings.js setError rewrites the description
+  input.moreHints = [...(input.moreHints || []), name.id];  // kept when settings-core.js setError rewrites the description
   input.addEventListener("change", show);
   const box = el("div", { class: "file-field" }, el("span", { class: "btn file-field__button" }, icon("upload"), words, input), name);
   // A form that is reset (after an upload) empties the input without a change event.

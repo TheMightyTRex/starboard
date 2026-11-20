@@ -520,7 +520,7 @@ def public(run):
 
 
 def job(app, rid):
-    """A run in the shape the pages' task dialog follows (settings.js, taskJob)."""
+    """A run in the shape the pages' task dialog follows (settings-core.js, taskJob)."""
     run = get(app, rid)
     finished = run["state"] != "running"
     tasks = [{"id": s["id"], "label": s["label"], "state": s["state"], "detail": s["detail"]} for s in run["steps"] if s["state"] != "not-needed"]

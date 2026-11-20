@@ -2,7 +2,7 @@
 // such as Films, TV and Ebooks. It explains each part, picks sensible apps and folders, writes a Compose file and
 // a .env file, starts the apps only when you press Start and give your password, then talks you through connecting
 // them. "Advanced settings" shows every app, the settings folder, user and group numbers, and the files themselves.
-// Loaded by install-apps.html and setup-guide.html, after settings.js (it uses field, setError, notice, wizardFrame and appFinder).
+// Loaded by install-apps.html and setup-guide.html, after settings-core.js and settings-setup.js (it uses field, setError, notice, wizardFrame and appFinder).
 
 // VPN providers, the same file the terminal set-up reads (web/vpn-providers.json): Gluetun's name, the provider's
 // own spelling and its site.
@@ -841,7 +841,7 @@ async function installStep(id, state, data, apps, go) {
         state.moving.has("reelix") || state.moving.has("takeover") ? moveHere() : null);
     };
     // DASH-127: the move chosen on the Moving over step happens here, once Reelix has set itself up: the same steps as
-    // Settings, Your install (takeoverSection in settings.js). Until then one bar says what it is waiting for.
+    // Settings, Your install (takeoverSection in settings-setup.js). Until then one bar says what it is waiting for.
     const moveHere = () => {
       const box = el("div", { class: "stack-4" });
       const words = el("span", { text: "Waiting for Reelix to finish setting up, so it can read your apps…" });

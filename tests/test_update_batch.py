@@ -386,7 +386,7 @@ class PanelPage(unittest.TestCase):
     """The panel's words and Close in settings.js (#161, DASH-473), checked as text: no browser in the unit tests."""
     def setUp(self):
         import pathlib
-        js = (pathlib.Path(__file__).resolve().parent.parent / "web" / "js" / "settings.js").read_text(encoding="utf-8")
+        js = "".join(p.read_text(encoding="utf-8") for p in sorted((pathlib.Path(__file__).resolve().parent.parent / "web" / "js").glob("settings-*.js")))
         self.js = js[js.index("const showBatch"):js.index("updatesRefresh = refresh;")]
 
     def test_the_words_say_whether_it_is_still_working(self):

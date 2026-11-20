@@ -125,7 +125,7 @@ class CleanupApiTest(unittest.TestCase):
         self.assertIn("danger: true", js)
         steps = json.loads((ROOT / "web" / "setup-steps.json").read_text())["steps"]
         self.assertIn("cleanup", [s["id"] for s in steps])
-        self.assertIn('{ id: "cleanup"', (ROOT / "web" / "js" / "settings.js").read_text())
+        self.assertIn('{ id: "cleanup"', "".join(p.read_text(encoding="utf-8") for p in sorted((ROOT / "web" / "js").glob("settings-*.js"))))
 
 
 if __name__ == "__main__":

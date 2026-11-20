@@ -48,8 +48,11 @@ class TerminalSetup(unittest.TestCase):
 
 class BrowserSetup(unittest.TestCase):
     def test_the_browser_set_up_reads_the_same_words(self):
-        with open(os.path.join(ROOT, "web", "js", "settings.js"), encoding="utf-8") as f:
-            js = f.read()
+        import glob  # settings.js, split by page into settings-*.js
+        js = ""
+        for path in sorted(glob.glob(os.path.join(ROOT, "web", "js", "settings-*.js"))):
+            with open(path, encoding="utf-8") as f:
+                js += f.read()
         self.assertIn('.audio_description;', js)
         self.assertIn('box("audio_description", ad.label, ad.hint)', js)
 

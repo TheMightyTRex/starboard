@@ -2,7 +2,7 @@
 // follow the queue with Cancel and Try again. Reelix's full version does the downloading; it keeps this behind its
 // admin password, so Starboard asks for it (rxCall in reelix-settings.js).
 
-// settings.js starts the page (header, menus, sign-in); this only fills it.
+// settings-core.js starts the page (header, menus, sign-in); this only fills it.
 document.addEventListener("DOMContentLoaded", async () => {
   const root = $("#direct");
   let about = {};

@@ -23,7 +23,8 @@ def read(*parts):
 
 
 SHELL = load_shell()
-SCRIPTS = "".join(read(WEB, "js", name) for name in ("settings.js", "radio-settings.js", "library-settings.js"))
+SCRIPTS = "".join(read(WEB, "js", name) for name in (*sorted(n for n in os.listdir(os.path.join(WEB, "js")) if n.startswith("settings-")),  # settings.js, split by page
+                                                     "radio-settings.js", "library-settings.js"))
 
 
 def level2(group):
