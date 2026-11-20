@@ -100,14 +100,26 @@ def _versioned(full, data, depth=0):
     return _LINK.sub(tag, data), deps
 
 
+# Inside the image web/ belongs to root, so it cannot change while Starboard runs: a file read once is served from
+# memory with no further checks. In a checkout it can change, so a file and what it links to are checked again at
+# most every RECHECK seconds (before, every request checked them, and each file they link to, again).
+WEB_FIXED = not os.access(WEB, os.W_OK)
+RECHECK = 2.0
+
+
 def static_file(full, depth=0):
     """(bytes, gzip bytes or None, ETag, content type) for a file under web/, read and compressed once and kept
     until the file, or a file it links to, changes. The whole web folder is well under a megabyte."""
-    st = os.stat(full)
-    key = (st.st_mtime_ns, st.st_size)
     with _static_lock:
         hit = _static.get(full)
+    now = time.monotonic()
+    if hit and (WEB_FIXED or now - hit[3] < RECHECK):
+        return hit[1]
+    st = os.stat(full)
+    key = (st.st_mtime_ns, st.st_size)
     if hit and hit[0] == key and all(static_file(d, depth + 1)[2].strip('"') == v for d, v in hit[2].items()):
+        with _static_lock:
+            _static[full] = (*hit[:3], now)
         return hit[1]
     with open(full, "rb") as f:
         data = f.read()
@@ -123,7 +135,7 @@ def static_file(full, depth=0):
     tag = '"' + hashlib.sha256(data).hexdigest()[:20] + '"'
     value = (None if packed else data, packed, tag, kind)
     with _static_lock:
-        _static[full] = (key, value, deps)
+        _static[full] = (key, value, deps, now)
     return value
 
 
