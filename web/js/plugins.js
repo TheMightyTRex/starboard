@@ -1264,7 +1264,9 @@ function customScreen(p, s) {
     const switchFor = (g) => (data.bulk || []).find((b) => b.fold === g);
     const sections = [...groups].map(([g, rows]) => {
       const shown = rows.filter(match);
-      if (!shown.length && (q || show !== "all" || [...fold.chips.values()].some((x) => x.size))) return null;
+      // filtering(), not q: q belongs to foldMatch, so a search or a Show filter that left a section with no rows
+      // stopped the page with "q is not defined" (found on On demand's Leagues, 19 November 2026).
+      if (!shown.length && filtering()) return null;
       const slug = String(g || "other").toLowerCase().replace(/[^a-z0-9]+/g, "-");
       const panelId = `${foldBase}-${slug}`;
       const open = fold.open.has(g);
@@ -1278,7 +1280,7 @@ function customScreen(p, s) {
       const b = switchFor(g);
       const sw = b ? (() => {
         const id = `${panelId}-switch`;
-        const input = el("input", { type: "checkbox", role: "switch", id, checked: b.total > 0 && b.on === b.total, "aria-label": `Every channel in ${g}`, "data-key": `bulk:${b.id}` });
+        const input = el("input", { type: "checkbox", role: "switch", id, checked: b.total > 0 && b.on === b.total, "aria-label": b.label && b.label !== g ? b.label : `Every ${noun.replace(/s$/, "")} in ${g}`, "data-key": `bulk:${b.id}` });
         const note = el("span", { class: "saved-note", id: `${id}-saved`, hidden: true });
         input.addEventListener("change", () => run({ action: "bulk", id: b.id, value: input.checked ? "on" : "off" }, input, (out) => {
           const again = document.getElementById(`${id}-saved`);

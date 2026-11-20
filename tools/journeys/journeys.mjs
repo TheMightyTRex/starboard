@@ -1068,6 +1068,20 @@ await page.locator(".fold__toggle", { hasText: "Series" }).click();
 await page.waitForTimeout(300);
 const wsTop = await page.locator(".fold__toggle", { hasText: "Series" }).locator("xpath=ancestor::section[1]").locator("tbody tr").first().innerText();
 check("WS-05", "Top titles shows the most played series first, with plays, people and hours", /^Slow Horses\s+3\s+2\s+2\.5/.test(wsTop), wsTop);
+// A search that leaves a section with no rows hides that section. It stopped the page with "q is not defined" (found
+// on On demand's Leagues, 19 November 2026), so the list was not drawn again after a change.
+const wsBefore = problems.length;
+const wsFolds = () => page.locator("#fold-watch-stats-titles-q").locator("xpath=ancestor::*[.//*[contains(concat(' ', normalize-space(@class), ' '), ' fold ')]][1]").locator(".fold__name").allInnerTexts();
+const wsAll = (await wsFolds()).sort().join(",");
+await page.locator("#fold-watch-stats-titles-q").fill("Slow Horses");
+await page.waitForTimeout(400);
+const wsFound = (await wsFolds()).join(",");
+check("WS-07", "a search hides the section with no match and keeps the one with a match, with no script error",
+  problems.length === wsBefore && wsAll === "Films,Series" && wsFound === "Series", `before ${wsAll}, searched ${wsFound} ${problems.slice(wsBefore).join(" | ")}`);
+await page.locator("#fold-watch-stats-titles-q").fill("");
+await page.waitForTimeout(400);
+check("WS-08", "an empty search brings every section back", (await wsFolds()).sort().join(",") === wsAll, (await wsFolds()).join(","));
+problems.length = wsBefore;  // said by WS-07; the last check counts the script errors of every other page
 await page.setViewportSize({ width: 375, height: 812 });
 check("WS-06", "the tables fit at phone width", await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 0);
 await page.setViewportSize({ width: 1280, height: 860 });

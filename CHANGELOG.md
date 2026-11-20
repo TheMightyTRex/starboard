@@ -25,6 +25,10 @@ add features.
 ### Removed
 - **White Live TV channel logos (owner, 20 November 2026: "I dont need to turn the logos white anymore - can you remove it"):** every Live TV channel now shows its own logo in its own colours, as it did with White channel logos deactivated. A channel with no logo, or a photo for one, shows its name in Jellyfin instead of a drawn one. The White channel logos setting is gone from Settings, Apps, Jellyfin, from Settings, Performance, and from the Live TV plug-in, and Pillow (18 MB) is no longer in Starboard at all, nor downloaded. White logos already made stay in the Live TV folder's `logos` folder unused, and can be removed.
 
+### Fixed
+- **Searching or filtering a plug-in's list of sections that fold (owner, 19 November 2026: "q is not defined. when activating leagues"):** on a plug-in's page drawn as sections that fold, such as Live TV's Channels or On demand's Sports and leagues, a search or the Show filter that left a section with nothing to show stopped the page with "q is not defined". The list was then not drawn again after a change, so a choice that had been saved looked as if it had not been.
+- **A section's switch is named for what it holds:** a screen reader heard "Every channel in" before the section's name on every such list. It now hears the plug-in's own words for the switch, such as "Every league in Football".
+
 ## [0.24.0] (19 November 2026)
 
 ### Added
