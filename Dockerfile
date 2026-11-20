@@ -1,6 +1,5 @@
 # Starboard: Python's standard library, plus cryptography (open source, see THIRD-PARTY.md) to encrypt full backups
-# (DASH-260); it is loaded only while one is made. Pillow, for white Live TV logos, is not in the image: it is
-# downloaded the first time it is needed (starboard/pylib.py), as most servers never use it (18 MB).
+# (DASH-260); it is loaded only while one is made. Pillow left with Live TV's white logos (20 November 2026).
 # Nothing is compiled, so every build stays small and quick.
 FROM python:3.12-alpine AS system
 

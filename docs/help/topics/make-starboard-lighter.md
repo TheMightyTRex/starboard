@@ -10,10 +10,9 @@ you choose a preset, or activate and deactivate each piece of work one by one.
 
 1. Go to **Settings**, then **Performance**.
 2. Under **Preset**, choose one. The change applies at once.
-   - **Small server:** for a small or busy server. No history, no watching, no card numbers, no white logos or
-     posters, no hourly Jellyfin or Audiobookshelf jobs, and slower pages.
-   - **Balanced:** the default. History every 5 minutes, card numbers, white logos, posters and normal page
-     updates.
+   - **Small server:** for a small or busy server. No history, no watching, no card numbers, no posters, no hourly
+     Jellyfin or Audiobookshelf jobs, and slower pages.
+   - **Balanced:** the default. History every 5 minutes, card numbers, posters and normal page updates.
    - **Everything:** everything on and as fresh as it goes, including watching every 5 minutes with a weekly
      summary.
    - **Custom:** your own choices. Changing any single item yourself makes the preset **Custom**.
@@ -37,8 +36,6 @@ This runs with no page open.
   under 1 MB of memory. Read [Activate alerts](activate-alerts.md).
 - **Download hours check:** every minute or every 5 minutes, only while download hours are in use. Every 5
   minutes uses a fifth of the requests. Read [Set download hours](set-download-hours.md).
-- **Live TV white logos:** only while Live TV is active. A second or two per new logo, and up to 15 MB more memory
-  while it runs.
 - **Keep applying imported history:** up to 40 MB more memory for about 20 seconds an hour.
 - **Jellyfin user defaults:** two small requests per Jellyfin user an hour.
 - **Keep applying listening progress:** one reading of Audiobookshelf an hour, under a second of processor.

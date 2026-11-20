@@ -71,8 +71,6 @@ async function startPerformance() {
     settingRow("Download hours check", withCost("How often Starboard checks qBittorrent, NZBGet, SABnzbd and Soulseek (slskd) while download hours are active (Settings, Downloads, Download hours).", "scheduleEvery"),
       pick("pf-sched-l", [[60, "Every minute"], [300, "Every 5 minutes"]], perf().schedule_every,
         (v, t) => save({ performance: { schedule_every: Number(v) } })), "pf-sched-l"),
-    settingRow("Live TV white logos", withCost("Only matters while the Live TV plug-in is active (Settings, Plug-ins).", "white"),
-      sw("pf-white-l", x.white_logos, (on) => save({ extras: { white_logos: on } })), "pf-white-l"),
     settingRow("Keep applying imported history", withCost("Settings, Apps, Jellyfin, Import watch history.", "importKeep"),
       sw("pf-imp-l", x.import_keep, (on) => save({ extras: { import_keep: on } })), "pf-imp-l"),
     settingRow("Jellyfin user defaults", withCost("Settings, Apps, Jellyfin, User defaults.", "defaults"),

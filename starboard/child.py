@@ -30,7 +30,7 @@ def _work(kind, args):
         return listening.apply(args["data_dir"], args["services"])
     if kind == "livetv":
         from . import livetv, livetv_jellyfin
-        summary = livetv.run(args["self_url"], args["white_logos"], force=args["force"])
+        summary = livetv.run(args["self_url"], force=args["force"])
         added = livetv_jellyfin.connect(args["services"], args["settings"], args["data_dir"])
         return f"{summary} · {added}" if added else summary
     if kind == "livetv-plugin":

@@ -217,11 +217,11 @@ class OwnSourcesTest(unittest.TestCase):
                 mock.patch.object(livetv, "_channels_json", side_effect=OSError("offline")), \
                 mock.patch.object(livetv, "number_and_logos", return_value="Numbered"):
             open(os.path.join(self.d, "own.m3u"), "w").write("#EXTM3U\n")
-            self.assertIn("Your lists", livetv.run("http://sb", False))
-            livetv.run("http://sb", False)
+            self.assertIn("Your lists", livetv.run("http://sb"))
+            livetv.run("http://sb")
             self.assertEqual(len(built), 1)  # unchanged: not built again
             livetv_own.save(self.data, [{"id": "a1", "url": "https://a.example/list.m3u", "kind": "list", "name": "Mine", "on": False}])
-            livetv.run("http://sb", False)
+            livetv.run("http://sb")
             self.assertEqual(len(built), 2)
 
 

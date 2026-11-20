@@ -1,4 +1,4 @@
-"""Live TV for Jellyfin: free channel playlists, their TV guides, Sky-style numbering and clean logos.
+"""Live TV for Jellyfin: free channel playlists, their TV guides, Sky-style numbering and each channel's own logo.
 
 Optional (Settings, Apps, Jellyfin, Live TV; off until turned on). Works in the folder Jellyfin reads its Live TV
 files from (STARBOARD_IPTV_DIR, which the installer asks about). The guides are refreshed once a day, because
@@ -9,10 +9,8 @@ only when a source's list of channels has changed, or once a week to drop channe
   samsung.m3u, guide-samsung.xml   Samsung TV Plus UK and US, from i.mjh.nz (Matt Huisman)
   pluto.m3u, guide-pluto.xml       Pluto TV UK; streams go through Starboard, which keeps a Pluto session
 Then it numbers every channel by Sky's categories (101 Entertainment, 401 Lifestyle, 451 Movies, 501 Music,
-601 Sport, 701 News, 801 Documentaries, 1001 Kids, 1101 Other) and, if white logos are on, turns each logo
-white on a transparent background with Pillow (open source; see THIRD-PARTY.md), which is downloaded the first
-time (starboard/pylib.py). Without Pillow, or with white logos off, channels keep their own logos. Skipped on
-purpose: DRM and adult channels, and anything that does not play from this connection.
+601 Sport, 701 News, 801 Documentaries, 1001 Kids, 1101 Other), each with its own logo in its own colours (white
+logos were removed on 20 November 2026). Skipped on purpose: DRM and adult channels, and anything that does not play from this connection.
 """
 
 import concurrent.futures as cf
@@ -24,7 +22,6 @@ import re
 import tempfile
 import threading
 import time
-import unicodedata
 import urllib.parse
 import urllib.request
 import uuid
@@ -43,7 +40,7 @@ FILES = ["channels.m3u", "samsung.m3u", "pluto.m3u", "own.m3u"]  # Free-TV first
 BLOCKS = [("Entertainment", 101), ("Lifestyle", 401), ("Movies", 451), ("Music", 501), ("Sport", 601),
           ("News", 701), ("Documentaries", 801), ("Kids", 1001), ("Other", 1101)]
 TVL = "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries"
-# Better sources for logos whose original is region-blocked or does not whiten well.
+# Better sources for logos whose original is region-blocked.
 LOGO_OVERRIDES = {"CNN": f"{TVL}/united-states/cnn-us.png", "ABC News": f"{TVL}/united-states/abc-news-live-us.png",
                   "CBS News": f"{TVL}/united-states/cbs-news-24-7-us.png", "NBC News": f"{TVL}/united-states/nbc-news-now-us.png",
                   "Pop": f"{TVL}/united-kingdom/pop-uk.png",
@@ -51,7 +48,6 @@ LOGO_OVERRIDES = {"CNN": f"{TVL}/united-states/cnn-us.png", "ABC News": f"{TVL}/
 FREE_TV = {"CBBC": "Kids", "CBeebies": "Kids", "Pop": "Kids", "BBC News": "News", "GB News": "News", "CNN": "News",
            "ABC News": "News", "CBS News": "News", "NBC News": "News", "FOX Live Now": "News", "Bloomberg": "News",
            "WeatherNation": "News", "Great! Movies": "Movies", "True Crime": "Documentaries"}
-LOGO_VERSION = "v4"  # v4 (11 November 2026): solid shapes keep their cut-out words; nothing legible becomes the name
 DAY = 20 * 3600  # "older than a day", with room for the hourly check
 RETRY = 12 * 3600  # a guide that failed is tried again after this, not every hour
 
@@ -64,12 +60,6 @@ def _et():
 
 def folder():
     return os.environ.get("STARBOARD_IPTV_DIR", "")
-
-
-def pillow():
-    """Whether white logos can be made here: Pillow is fetched the first time they are (pylib), not kept in the image."""
-    from . import pylib
-    return pylib.available("pillow")
 
 
 MAX_DOWNLOAD = 200 * 1024 * 1024  # a guide is about 30 MB; anything far bigger is refused
@@ -463,208 +453,6 @@ def logo_key(ch):
     return re.sub(r"[^A-Za-z0-9._-]", "_", ch["attrs"].get("tvg-id") or ch["name"])[:80]
 
 
-def whiten(data):
-    """A logo turned white on a transparent 400 by 225 canvas. Raises ValueError for a photo or a blank image."""
-    import warnings
-    from PIL import Image
-    Image.MAX_IMAGE_PIXELS = 16_000_000  # a logo is small; a huge image (a decompression bomb) is refused
-    with warnings.catch_warnings():
-        warnings.simplefilter("error", Image.DecompressionBombWarning)
-        # Only the formats logos use: Pillow's rarer decoders (TIFF, FlashPix and others) are where its worst flaws
-        # have been, and channel lists come from the internet.
-        im = Image.open(io.BytesIO(data), formats=["PNG", "JPEG", "GIF", "WEBP", "BMP", "ICO"])
-        im.load()
-    im = im.convert("RGBA")
-    im.thumbnail((400, 400))
-    w, h = im.size
-    px = im.load()
-    alpha = im.getchannel("A")
-    transparent = sum(1 for v in alpha.getdata() if v < 128) / (w * h)
-    if transparent > 0.05:  # a transparent logo: keep its shape
-        mask = alpha
-        opaque = [(r, g, b) for (r, g, b, a) in im.getdata() if a > 128]
-        light = sum(1 for r, g, b in opaque if min(r, g, b) > 200) / max(1, len(opaque))
-        if 0.06 < light < 0.75:  # two-tone (white text in a red box): the white parts become holes
-            mp, m = Image.new("L", (w, h)), None
-            m = mp.load()
-            for y in range(h):
-                for x in range(w):
-                    r, g, b, a = px[x, y]
-                    m[x, y] = 0 if min(r, g, b) > 200 else a
-            mask = mp
-    else:  # opaque: the border colour is the background
-        border = [px[x, y][:3] for x in range(w) for y in (0, h - 1)] + [px[x, y][:3] for y in range(h) for x in (0, w - 1)]
-        bg = tuple(sorted(c[i] for c in border)[len(border) // 2] for i in range(3))
-        mask = Image.new("L", (w, h))
-        mp = mask.load()
-        for y in range(h):
-            for x in range(w):
-                r, g, b, _ = px[x, y]
-                d = max(abs(r - bg[0]), abs(g - bg[1]), abs(b - bg[2]))
-                mp[x, y] = max(0, min(255, (d - 28) * 5))
-    box = mask.point(lambda v: 255 if v > 24 else 0).getbbox()
-    if not box:
-        raise ValueError("blank logo")
-    mask = mask.crop(box)
-    hist = mask.histogram()
-    if sum(hist[40:216]) / max(1, sum(hist[25:])) > (0.4 if transparent > 0.05 else 0.2):
-        raise ValueError("a photo, not a logo")
-    W, H, pad = 400, 225, 0.14
-    scale = min(W * (1 - 2 * pad) / mask.width, H * (1 - 2 * pad) / mask.height)
-    mask = mask.resize((max(1, int(mask.width * scale)), max(1, int(mask.height * scale))), Image.LANCZOS)
-    out = Image.new("RGBA", (W, H), (255, 255, 255, 0))
-    white = Image.new("RGBA", mask.size, (255, 255, 255, 255))
-    white.putalpha(mask)
-    out.paste(white, ((W - mask.width) // 2, (H - mask.height) // 2), white)
-    buf = io.BytesIO()
-    out.save(buf, "PNG", optimize=True)
-    return buf.getvalue()
-
-
-def _pieces(mask):
-    """(share of the white in its largest piece, number of pieces) of a white mask, on a half-size copy."""
-    m = mask.resize((max(1, mask.width // 2), max(1, mask.height // 2))).point(lambda v: 255 if v > 128 else 0)
-    px, (w, h) = m.load(), m.size
-    seen, sizes = bytearray(w * h), []
-    for y in range(h):
-        for x in range(w):
-            if px[x, y] and not seen[y * w + x]:
-                stack, n = [(x, y)], 0
-                seen[y * w + x] = 1
-                while stack:
-                    cx, cy = stack.pop()
-                    n += 1
-                    for nx, ny in ((cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)):
-                        if 0 <= nx < w and 0 <= ny < h and px[nx, ny] and not seen[ny * w + nx]:
-                            seen[ny * w + nx] = 1
-                            stack.append((nx, ny))
-                sizes.append(n)
-    total = sum(sizes)
-    return (max(sizes) / total if total else 0.0), len(sizes)
-
-
-def legible(png):
-    """A white logo that reads (DASH-312, 11 November 2026: 67 of 622 came out as solid boxes, blobs or smudges).
-    A solid shape (mostly one large piece) keeps only the words cut out of it, as euronews, abc and DW do; when
-    nothing readable is inside, or the logo is a picture, ValueError, and the channel's name is used instead."""
-    from PIL import Image, ImageChops, ImageDraw, ImageFilter
-    a = Image.open(io.BytesIO(png)).convert("RGBA").getchannel("A")
-    box = a.point(lambda v: 255 if v > 128 else 0).getbbox()
-    if not box:
-        raise ValueError("blank logo")
-    c = a.crop(box)
-    m = c.point(lambda v: 255 if v > 128 else 0)
-    on = sum(1 for v in m.getdata() if v)
-    fill = on / (c.width * c.height)
-    edge = sum(1 for v in m.filter(ImageFilter.FIND_EDGES).getdata() if v) / max(1, on)
-    mid = sum(1 for v in c.getdata() if 40 < v < 215) / max(1, on)
-    biggest, _n = _pieces(c)
-    if fill > 0.55 and edge < 0.13 and biggest >= 0.8:  # a solid shape: keep what is cut out of it
-        inv = c.point(lambda v: 255 - v)
-        holes = inv.point(lambda v: 255 if v > 128 else 0)
-        w, h = holes.size
-        for s in [(x, y) for x in range(0, w, 3) for y in (0, h - 1)] + [(x, y) for y in range(0, h, 3) for x in (0, w - 1)]:
-            if holes.getpixel(s) == 255:  # holes open to the outside are not words
-                ImageDraw.floodfill(holes, s, 0)
-        inside = Image.composite(inv, Image.new("L", inv.size, 0), holes)
-        if sum(1 for v in inside.getdata() if v > 128) < 0.04 * w * h:
-            raise ValueError("nothing readable inside the shape")
-        # Words beside the shape stay too (Sky News: "sky" above its box): every white piece but the largest.
-        probe, best = m.copy(), None
-        for y in range(0, h, 3):
-            for x in range(0, w, 3):
-                if probe.getpixel((x, y)) == 255:
-                    before = probe.histogram()[255]
-                    ImageDraw.floodfill(probe, (x, y), 100)
-                    size = before - probe.histogram()[255]
-                    if not best or size > best[0]:
-                        best = (size, (x, y))
-        largest = m.copy()
-        ImageDraw.floodfill(largest, best[1], 77)
-        largest = largest.point(lambda v: 255 if v == 77 else 0)
-        others = Image.composite(c, Image.new("L", c.size, 0), largest.point(lambda v: 255 - v))
-        inside = ImageChops.lighter(inside, others)
-        white = Image.new("RGBA", inside.size, (255, 255, 255, 255))
-        white.putalpha(inside)
-        buf = io.BytesIO()
-        white.save(buf, "PNG")
-        return whiten(buf.getvalue())
-    if fill > 0.4 and edge > 0.2 and mid > 0.25 and biggest >= 0.6:
-        raise ValueError("a picture, not a logo")
-    return png
-
-
-def text_logo(name):
-    """The channel's name in white, for channels whose artwork is a photo or missing. Pillow's own font."""
-    from PIL import Image, ImageDraw, ImageFont
-    W, H = 400, 225
-    out = Image.new("RGBA", (W, H), (255, 255, 255, 0))
-    d = ImageDraw.Draw(out)
-    name = re.split(r"[:(]| - |'powered", name, flags=re.I)[0].strip(" '")
-    name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode() or name  # Pokémon draws as Pokemon
-    words, lines, size, font = name.upper().split(), [], 58, None
-    for size in range(58, 20, -2):
-        font = ImageFont.load_default(size)
-        lines, cur = [], ""
-        for wd in words:
-            t = f"{cur} {wd}".strip()
-            if d.textlength(t, font=font) <= W * 0.8 or not cur:
-                cur = t
-            else:
-                lines.append(cur)
-                cur = wd
-        lines.append(cur)
-        if len(lines) <= 3 and all(d.textlength(line, font=font) <= W * 0.8 for line in lines):
-            break
-    lh = size * 1.12
-    y = (H - lh * len(lines)) / 2
-    for line in lines:
-        d.text(((W - d.textlength(line, font=font)) / 2, y), line, font=font, fill=(255, 255, 255, 255))
-        y += lh
-    buf = io.BytesIO()
-    out.save(buf, "PNG", optimize=True)
-    return buf.getvalue()
-
-
-def _make_logo(ch, logos, white):
-    """(key, whether a logo file is there). Logos already made are kept whatever the setting."""
-    src = LOGO_OVERRIDES.get(ch["name"], ch["attrs"].get("tvg-logo-src", ""))
-    key = logo_key(ch)
-    path = os.path.join(logos, f"{key}.png")
-    if "/iptv/logos/" in src:  # a logo this folder already serves (Free-TV's own list): use it as it is
-        return key, os.path.exists(path)
-    if os.path.exists(path) and (not white or _stamp(path) == f"{LOGO_VERSION}|{src}"):
-        return key, True
-    if not white:
-        return key, False
-    try:
-        if not src:
-            raise ValueError("no logo")
-        png = legible(whiten(fetch(src, ua="Mozilla/5.0", timeout=20, limit=5_000_000)))
-    except Exception as e:
-        if "429" in str(e):  # rate limited: keep what is there, try again next time
-            return key, os.path.exists(path)
-        try:
-            png = text_logo(ch["name"])
-        except Exception:
-            return key, os.path.exists(path)
-    tmp = f"{path}.{threading.get_ident()}.tmp"
-    with open(tmp, "wb") as f:
-        f.write(png)
-    os.replace(tmp, path)
-    with open(path + ".src", "w", encoding="utf-8") as f:
-        f.write(f"{LOGO_VERSION}|{src}")
-    return key, True
-
-
-def _stamp(path):
-    try:
-        with open(path + ".src", encoding="utf-8") as f:
-            return f.read()
-    except OSError:
-        return ""
-
-
 HIDDEN = "hidden-channels.json"  # in the plug-in's own data folder (DASH-313)
 ALL = ".starboard-channels.json"  # every channel found, hidden ones too, so one can be turned back on
 
@@ -813,9 +601,8 @@ def drop_hidden(d, hidden):
     return gone
 
 
-def number_and_logos(d, self_url, white, hidden=frozenset()):
-    logos = os.path.join(d, "logos")
-    os.makedirs(logos, exist_ok=True)
+def number_and_logos(d, hidden=frozenset()):
+    """Numbers every channel by category, and gives each its own logo (or a better source from LOGO_OVERRIDES)."""
     chans = []
     for name in FILES:
         if os.path.exists(os.path.join(d, name)):
@@ -824,15 +611,8 @@ def number_and_logos(d, self_url, white, hidden=frozenset()):
         ch["attrs"]["tvg-logo-src"] = ch["attrs"].get("tvg-logo-src") or ch["attrs"].get("tvg-logo", "")
         ch["attrs"]["tvg-logo"] = ch["attrs"]["tvg-logo-src"]
         ch["attrs"]["group-src"] = ch["attrs"].get("group-src") or ch["attrs"].get("group-title", "")
-    note = "" if white else " (white logos off)"
-    if white:
-        from . import pylib
-        try:
-            pylib.load("pillow")  # downloaded the first time (about 7 MB), then kept in the data folder
-        except pylib.Unavailable as e:
-            white, note = False, f" (white logos off this time: {e})"
-    with cf.ThreadPoolExecutor(6) as ex:
-        have = dict(ex.map(lambda c: _make_logo(c, logos, white), chans))
+    for ch in chans:  # each channel's own logo, in its own colours
+        ch["attrs"]["tvg-logo"] = LOGO_OVERRIDES.get(ch["name"], ch["attrs"]["tvg-logo-src"])
     region = lambda c: 1 if c["attrs"]["group-src"] == "US" or c["attrs"]["group-src"].startswith("Samsung US") else 0
     for ch in chans:
         ch["cat"] = category(ch["name"], ch["attrs"]["group-src"])
@@ -843,8 +623,6 @@ def number_and_logos(d, self_url, white, hidden=frozenset()):
         ch["attrs"]["tvg-chno"] = str(nxt[ch["cat"]])
         nxt[ch["cat"]] += 1
         ch["attrs"]["group-title"] = ch["cat"]
-        if have.get(logo_key(ch)):
-            ch["attrs"]["tvg-logo"] = f"{self_url}/iptv/logos/{logo_key(ch)}.png"
     # Every channel, hidden ones too, for the plug-in's Channels screen (DASH-313); then the hidden ones go.
     _write(os.path.join(d, ALL), json.dumps([{"id": c["attrs"].get("tvg-id", ""), "name": c["name"], "number": c["attrs"]["tvg-chno"],
                                               "section": c["cat"], "list": os.path.basename(c["file"]),
@@ -859,7 +637,7 @@ def number_and_logos(d, self_url, white, hidden=frozenset()):
             for c in sorted(mine, key=lambda c: int(c["attrs"]["tvg-chno"])):
                 lines += ["#EXTINF:-1 " + " ".join(f'{k}="{v}"' for k, v in c["attrs"].items()) + f",{c['name']}", c["url"]]
             _write(path, "\n".join(lines) + "\n")
-    return f"Numbered {len(chans)} channels; {sum(have.values())} with logos" + note
+    return f"Numbered {len(chans)} channels; {sum(1 for c in chans if c['attrs'].get('tvg-logo'))} with logos"
 
 
 WEEK = 7 * 86400
@@ -870,7 +648,7 @@ def _fingerprint(obj):
     return hashlib.sha256(json.dumps(obj, sort_keys=True).encode()).hexdigest()[:16]
 
 
-def run(self_url, white, force=False):
+def run(self_url, force=False):
     """Refreshes what is due. Guides: daily. Channel lists: when a source's list changed, or weekly (or with force).
     Returns a sentence about what it did."""
     d = folder()
@@ -968,7 +746,7 @@ def run(self_url, white, force=False):
         elif guide_due("own", os.path.join(d, livetv_own.GUIDE)):
             guide_step("own", "Your guides", lambda: livetv_own.guide(d, data_dir))
     if rebuilt:
-        done.append(number_and_logos(d, self_url, white, hidden_ids(os.environ.get("STARBOARD_DATA", "/data"))))
+        done.append(number_and_logos(d, hidden_ids(os.environ.get("STARBOARD_DATA", "/data"))))
     state["self_url"] = self_url
     tmp = state_path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:

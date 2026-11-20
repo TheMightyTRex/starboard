@@ -13,7 +13,7 @@ numbered the way Sky numbers them. Live TV is a plug-in built into Starboard, so
 - The installer gave Starboard a Live TV folder. It asks "Give Starboard a Live TV folder?". To change your answer,
   read [Change what Starboard can access](change-what-starboard-can-access.md#change-access-with-the-installer).
 - Starboard can run containers (Docker access).
-- Starboard is open to your home network, because Jellyfin fetches channel logos and Pluto TV streams from it.
+- Starboard is open to your home network, because Jellyfin fetches Pluto TV streams from it.
   Read [Choose who can open Starboard](choose-who-can-open-starboard.md).
 
 ## Steps
@@ -94,10 +94,8 @@ first playlist is `/config/iptv/channels.m3u`.
   channels and anything that does not play from your connection.
 - Channels are numbered in blocks: 101 Entertainment, 401 Lifestyle, 451 Movies, 501 Music, 601 Sport,
   701 News, 801 Documentaries, 1001 Kids and 1101 Other.
-- **White channel logos** turns each logo white on a clear background. Deactivate it to keep each channel's
-  own logo. The first time, Starboard downloads the picture library it needs (Pillow, about 7 MB), so the server
-  needs the internet for that run.
-- Starboard itself still serves the channel logos and the Pluto TV links to Jellyfin.
+- Each channel shows its own logo, in its own colours. A channel with no logo shows its name in Jellyfin.
+- Starboard itself still serves the Pluto TV links to Jellyfin.
 - Where the plug-in cannot run, **Built into Starboard** says why, after "Not here". Live TV then runs inside
   Starboard, in **Settings**, **Apps**, **Jellyfin**, **Live TV**, with the same settings and its own
   **Run Live TV now**.
@@ -114,7 +112,7 @@ first playlist is `/config/iptv/channels.m3u`.
 - **The card says "Last run failed":** read the reason next to it. If it names the address, enter it in the
   **Live TV** section in **Settings**, **Plug-ins**.
 - **"Jellyfin: add its API key":** add the key to Jellyfin in **Manage apps**, then select **Run Live TV now**.
-- **Channels have no logos, or Pluto TV channels do not play:** Jellyfin cannot reach Starboard. Read
+- **Pluto TV channels do not play:** Jellyfin cannot reach Starboard. Read
   [A Live TV channel will not play](live-tv-channel-will-not-play.md).
 
 ## Find out more

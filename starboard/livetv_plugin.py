@@ -1,6 +1,6 @@
 """The Live TV plug-in's own program (DASH-285): run by Starboard's own image in the plug-in's container,
 `python -m starboard.livetv_plugin`. It does what Starboard's Live TV job did: once an hour it refreshes the guides
-that are due, rebuilds a channel list when its source changed (or weekly), whitens logos, and adds the lists and
+that are due, rebuilds a channel list when its source changed (or weekly), and adds the lists and
 guides to Jellyfin (livetv.py, livetv_jellyfin.py, unchanged). Starboard itself still serves the logos and the Pluto
 TV links to Jellyfin at the same addresses as before, from the same Live TV folder, so Jellyfin sees no change.
 
@@ -56,7 +56,7 @@ def run_once(force=False, build=None, connect=None, refresh=None):
         raise ValueError("Set the address Jellyfin uses to reach Starboard in Settings, Plug-ins, Live TV")
     guides = [os.path.join(livetv.folder() or "", g) for g in livetv_jellyfin.GUIDES]
     before = [_mtime(g) for g in guides]
-    summary = (build or livetv.run)(address, bool(s.get("white_logos", True)), force=force)
+    summary = (build or livetv.run)(address, force=force)
     jf = _read(JELLYFIN, {})
     services = [{"type": "jellyfin", "url": jf["url"], "api_key": jf["api_key"]}] if jf.get("url") and jf.get("api_key") else []
     added = (connect or livetv_jellyfin.connect)(services, {"livetv_jellyfin_folder": s.get("jellyfin_folder") or ""}, "",
@@ -464,7 +464,7 @@ def _quick(sid):
         try:
             d = livetv.folder()
             livetv_own.build(d, DATA, only=sid)
-            livetv.number_and_logos(d, str(s.get("address") or "").rstrip("/"), bool(s.get("white_logos", True)), livetv.hidden_ids(DATA))
+            livetv.number_and_logos(d, livetv.hidden_ids(DATA))
             livetv.mark_built("own", livetv_own.fingerprint(DATA))
             livetv_jellyfin.connect(_services(), {"livetv_jellyfin_folder": s.get("jellyfin_folder") or ""}, "", local_folder=d, host_path="", env={})
             livetv_jellyfin.refresh_guide(_services())

@@ -14,7 +14,6 @@ add features.
 
 ### Changed
 - **A smaller image (optimisation review, 20 November 2026):** the image takes 101 MB on disk instead of 162 MB, and the download is 25 MB instead of 41 MB (amd64). Parts of Python that Starboard never uses are left out (pip's own copy in ensurepip, IDLE, lib2to3, the help() texts, Tk, the turtle demos and the files for building C extensions); the system is now one layer, so removed files and the packages that apk upgrade replaced are no longer kept twice; and the step that sets file permissions no longer copies every file a second time. Idle memory is the same, about 21 MB.
-- **Pillow is downloaded the first time white Live TV logos need it:** the picture library (18 MB) was in every image, but only Live TV's white channel logos use it. The first run with white logos downloads it (about 7 MB) from the Python Package Index, checks it against a fixed SHA-256 and keeps it in the data folder; each later run checks every file of it again before using it. Without the internet, channels keep their own logos for that run and Live TV's status says why. cryptography, for full backups, stays in the image, so restoring a backup never needs the internet.
 - **Each settings page loads only its own script:** settings.js (340 KB) was loaded by all 37 settings pages. It is now settings-core.js (41 KB) and one part for each group of pages, so a settings page loads 72 KB of settings script on average (23 KB compressed) instead of 340 KB (91 KB compressed). With their other scripts and styles, settings pages are 149 KB compressed instead of 218 KB.
 - **The menus are kept once:** the header, side menu, phone menu and Display panel were written into each of the 96 pages (3.6 MB, 95% of the pages' size). Starboard now fills them in when it first serves a page and keeps the result in memory; the pages that reach the browser are the same. The web folder is 2.3 MB instead of 5.9 MB.
 - **Pages, scripts and styles are served from memory:** inside the image they cannot change, so Starboard no longer checks a file and everything it links to on the disk for each request (about 81 microseconds each time before, under 1 now).
@@ -22,6 +21,9 @@ add features.
 - **Radio downloads stuck at import:** Try the import again and Ignore now work for a radio episode too, from the page and from the API.
 - **Signing in to a cloud service in this browser** says to finish every check the service asks for, such as a code from your phone or approving the sign-in in an app, and names the page that does not load ("This site cannot be reached") as the expected end.
 - **Plug-ins can take files up to 100 MB (owner, 19 November 2026):** a file chosen on a plug-in's own page, such as a TV channel's holding slide, may be up to 100 MB instead of 60 MB. Each plug-in still sets its own limit.
+
+### Removed
+- **White Live TV channel logos (owner, 20 November 2026: "I dont need to turn the logos white anymore - can you remove it"):** every Live TV channel now shows its own logo in its own colours, as it did with White channel logos deactivated. A channel with no logo, or a photo for one, shows its name in Jellyfin instead of a drawn one. The White channel logos setting is gone from Settings, Apps, Jellyfin, from Settings, Performance, and from the Live TV plug-in, and Pillow (18 MB) is no longer in Starboard at all, nor downloaded. White logos already made stay in the Live TV folder's `logos` folder unused, and can be removed.
 
 ## [0.24.0] (19 November 2026)
 

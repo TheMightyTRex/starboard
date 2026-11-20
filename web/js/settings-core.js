@@ -223,7 +223,6 @@ const COSTS = {
   every: "Every minute costs five times as much as every 5 minutes; every hour, a twelfth.",
   weekly: "Costs about: one message a week. Nothing noticeable.",
   livetv: "Costs about: under 2 seconds of processor a day to refresh the guides, and about a minute once a week (or when a channel list changes) to test every stream, using up to 35 MB more memory while it runs. Nothing in between. Deactivating it saves all of that.",
-  white: "Costs about: only when new channels arrive, a second or two per logo and up to 15 MB more memory while it runs. Deactivating it saves that; logos already made stay.",
   importKeep: "Costs about: 1 second of processor and up to 40 MB more memory for about 20 seconds an hour, while it reads your Jellyfin library. Deactivating it saves that; Apply now still works.",
   defaults: "Costs about: two small requests per Jellyfin user an hour. Nothing noticeable.",
   listeningKeep: "Costs about: one reading of your Audiobookshelf library and users an hour, under a second of processor and a few MB more memory while it runs. Deactivating it saves that; Apply now still works.",
