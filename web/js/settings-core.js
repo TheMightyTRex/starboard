@@ -573,6 +573,8 @@ function topicTabs() {
   if (!nav) {
     nav = el("nav", { id: "topic-tabs", class: "topic-tabs", "aria-label": "Topics on this page" }, el("div", { role: "tablist", "aria-label": "Topics on this page" }));
     ($(".page-head", main) || holder).after(nav);
+    // Their height, for the space the page keeps clear above what has focus while they stay under the header (app.css).
+    if (window.ResizeObserver) new ResizeObserver(() => document.documentElement.style.setProperty("--topic-tabs-h", `${nav.offsetHeight}px`)).observe(nav);
   }
   const want = decodeURIComponent(location.hash.slice(1));
   const fromHash = want && topics.find((s) => s.id === want || $(`[id="${CSS.escape(want)}"]`, s));

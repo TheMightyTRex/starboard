@@ -170,6 +170,16 @@ html.panel-only body:not(.show-advanced) .panel-keep[data-advanced] { display: g
 .topic-tabs__tab[aria-selected=true] { background: var(--color-control-active); }
 .topic-tabs__tab[aria-selected=true] { color: var(--color-text); border-bottom-color: var(--color-accent); }
 .topic-off { display: none !important; }
+/* The tabs stay under the header while the page scrolls, in windows tall enough (accessibility check of plug-in pages,
+   20 November 2026): scrolled, a tab sat part under the sticky header, too small to press (WCAG 2.5.8). The page
+   keeps their height clear too, so they never cover what has focus (2.4.11); --topic-tabs-h is their height, set by
+   settings-core.js as they wrap. In short or narrow windows they scroll away with the page, as before. */
+@media (min-width: 768px) and (min-height: 640px) {
+  .topic-tabs { position: sticky; top: calc(var(--header-h) + 1px); z-index: 2; background: var(--color-bg); }
+  :root:has(.site-header__tabs) .topic-tabs { top: calc(var(--header-h) + var(--tabs-h) + 1px); }
+  :root:has(#topic-tabs) { scroll-padding-top: calc(var(--header-h) + var(--topic-tabs-h, 48px) + var(--space-4)); }
+  :root:has(.site-header__tabs):has(#topic-tabs) { scroll-padding-top: calc(var(--header-h) + var(--tabs-h) + var(--topic-tabs-h, 48px) + var(--space-4)); }
+}
 .row-choice { display: inline-flex; align-items: center; gap: var(--space-2, 0.5rem); }
 /* The Search icon button in every search box is in the shared library (components.css and .js, 12 November 2026). */
 /* A state chip on its title's line: .title-chip is in the shared library (components.css, 12 November 2026). */

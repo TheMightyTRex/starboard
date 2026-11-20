@@ -710,6 +710,10 @@ const CUSTOM_STATE = { ok: STATUS.running, warning: STATUS.needsAttention, probl
   off: STATUS.inactive, unknown: STATUS.notChecked };
 function customScreen(p, s) {
   const box = el("div", { class: "stack-4" }, el("p", { class: "muted", text: "Loading…" }));
+  // The screen's headings go on from its section's (accessibility check, 20 November 2026: groups were h4 straight
+  // under the section's h2): the first level is one below the section's heading, which is h2, or h3 in a group.
+  const level = () => { const h = box.closest("section")?.querySelector("h2, h3, h4"); return Math.min(5, h ? Number(h.tagName[1]) + 1 : 3); };
+  const h = (n, attrs, ...kids) => el(`h${Math.min(6, n)}`, attrs, ...kids);
   // A link to the plug-in's own web page (such as Create your own TV channel's schedule grid) goes to the address this
   // page was opened with, at the plug-in's port, as Its web page does: the plug-in only knows the server's home network
   // address, which a browser on another address of the server (a name, or a private network) may not reach.
@@ -750,7 +754,7 @@ function customScreen(p, s) {
   // Bulk switches (DASH-359): each set the plug-in names (Live TV: each whole list, every channel, regions, sections).
   // A switch is active when every item in it is, or as the plug-in says; changing it applies at once. `sets` are the
   // switches of the level that is open (plug-in API 1.7).
-  const bulkPanel = (data, sets) => {
+  const bulkPanel = (data, sets, at = level()) => {
     if (!sets.length) return null;
     const noun = (data.title || "items").toLowerCase();
     const kinds = new Map();
@@ -772,9 +776,9 @@ function customScreen(p, s) {
         el("div", { class: "setting__control" }, el("label", { class: "switch" }, input), note));
     };
     return el("section", { class: "stack-2", "aria-labelledby": `${head}-h` },
-      el("h4", { id: `${head}-h`, text: "Activate or deactivate in bulk" }),
+      h(at, { id: `${head}-h`, text: "Activate or deactivate in bulk" }),
       at ? null : el("p", { class: "small muted", text: `Each switch applies at once. A group of ${noun} shows as active when all of them are.` }),
-      ...[...kinds].map(([k, list]) => el("div", { class: "stack-2" }, k ? el("h5", { text: k }) : null,
+      ...[...kinds].map(([k, list]) => el("div", { class: "stack-2" }, k ? h(at + 1, { text: k }) : null,
         el("ul", { class: "settings-rows" }, list.map(row)))));
   };
   const ACTION_WORDS = { test: ["Test", "activity"], toggle: [null, null], remove: ["Remove", "trash-2"], up: ["Move up", "arrow-up"], down: ["Move down", "arrow-down"],
@@ -820,7 +824,7 @@ function customScreen(p, s) {
   // stays shown, with its new state, until Refresh, a change of filter, or leaving the page.
   const stay = new Set();
   const keep = (it) => stay.has(it.id) || show === "all" || (show === "on" ? it.on : !it.on);
-  const itemRows = (data, shown) => {
+  const itemRows = (data, shown, at) => {
     const groups = new Map();
     for (const it of shown) { if (!groups.has(it.group)) groups.set(it.group, []); groups.get(it.group).push(it); }
     // Cards (plug-in API 1.16, owner, 19 November 2026: "break the channels section into smaller cards"): each group on
@@ -828,10 +832,10 @@ function customScreen(p, s) {
     const cards = data.layout === "cards";
     return [...groups].map(([g, rows]) => el("section", cards ? { class: "card has-band plugin-screen-card", "aria-labelledby": slugId(g) }
       : { class: "stack-2", "aria-label": g || data.title },
-      cards ? el("div", { class: "card-band" }, el("h4", { class: "card-band__title", id: slugId(g), text: g || data.title })) : g ? el("h4", { text: g }) : null,
+      cards ? el("div", { class: "card-band" }, h(at, { class: "card-band__title", id: slugId(g), text: g || data.title })) : g ? h(at, { text: g }) : null,
       cards && (data.hints || {})[g] ? el("p", { class: "small muted", text: data.hints[g] }) : null,
       el("ul", { class: "rows" }, rows.flatMap((it) => [el("li", { class: "row row--no-lead" },
-        el("div", {}, el("h5", { class: "row__title", text: it.title }),
+        el("div", {}, h(cards || g ? at + 1 : at, { class: "row__title", text: it.title }),
           // A picture on the row (plug-in API 1.16), such as a channel's logo once uploaded, with its words.
           it.image ? el("img", { class: "row__image", src: it.image.src, alt: it.image.alt, loading: "lazy" }) : null,
           el("div", { class: "row__meta", text: [it.detail, it.address].filter(Boolean).join(" · ") }),
@@ -1020,9 +1024,11 @@ function customScreen(p, s) {
     const send = el("button", { type: "submit", class: "btn" }, icon("upload"), "Upload");
     const fileForm = el("form", { class: "actions" }, filePicker(file), send);
     fileForm.addEventListener("submit", (e) => { e.preventDefault(); upload(file, send, it.id, () => opened.delete(it.id)); });
-    return el("li", { class: "attach-form", id: base, role: "group", "aria-labelledby": `${base}-l` },
+    // A list item holding the group: an li with role="group" is no longer a list item, which made the list invalid
+    // while the editor was open (accessibility check, 20 November 2026).
+    return el("li", { class: "attach-form", id: base }, el("div", { class: "stack-2", role: "group", "aria-labelledby": `${base}-l` },
       el("label", { class: "field__label", id: `${base}-l`, for: url.id, text: a.field }),
-      a.hint ? el("p", { class: "hint", id: `${base}-h`, text: a.hint }) : null, form, fileForm);
+      a.hint ? el("p", { class: "hint", id: `${base}-h`, text: a.hint }) : null, form, fileForm));
   };
   // A chosen file, streamed to the plug-in as it is (DASH-359); `item`: a file for one item, such as its guide.
   const upload = async (file, send, item, done) => {
@@ -1068,25 +1074,25 @@ function customScreen(p, s) {
     });
   };
   // The rows that open the sub menus of one level, grouped by the plug-in's group, each with its state and count.
-  const menuRows = (data, kids, under) => {
+  const menuRows = (data, kids, under, at) => {
     const noun = (data.title || "items").toLowerCase();
     const groups = new Map();
     for (const m of kids) { if (!groups.has(m.group)) groups.set(m.group, []); groups.get(m.group).push(m); }
     // Cards (plug-in API 1.16): each menu, such as a channel, is a small card with the grey band, as the plug-in cards
     // in Settings, Plug-ins are: its name opens it, its state on the band, its detail under it.
     if (data.layout === "cards") {
-      return [...groups].map(([g, list]) => el("section", { class: "stack-2", "aria-label": g || data.title }, g ? el("h4", { text: g }) : null,
+      return [...groups].map(([g, list]) => el("section", { class: "stack-2", "aria-label": g || data.title }, g ? h(at, { text: g }) : null,
         el("ul", { class: "plugin-cards" }, list.map((m) => {
           const open = el("button", { type: "button", "data-menu": m.id }, m.title);
           open.addEventListener("click", () => go(m.id, false));
           return el("li", {}, el("article", { class: "card has-band plugin-card" },
-            el("div", { class: "card-band" }, el("h5", { class: "card-band__title card__title" }, open),
+            el("div", { class: "card-band" }, h(g ? at + 1 : at, { class: "card-band__title card__title" }, open),
               el("div", { class: "card-band__side" }, m.active === false ? chip("Inactive", "muted") : chip("Active", "success"), icon("chevron-right"))),
             m.detail ? el("p", { text: m.detail }) : null));
         }))));
     }
     return [...groups].map(([g, list]) => el("section", { class: "stack-2", "aria-label": g || data.title },
-      g ? el("h4", { text: g }) : null,
+      g ? h(at, { text: g }) : null,
       el("ul", { class: "rows" }, list.map((m) => {
         const its = under.get(m.id) || [];
         const can = its.filter((it) => it.actions.includes("toggle"));
@@ -1096,7 +1102,7 @@ function customScreen(p, s) {
         const open = el("button", { type: "button", "data-menu": m.id }, m.title);
         open.addEventListener("click", () => go(m.id, false));
         return el("li", { class: "row row--no-lead row--opens" },
-          el("div", {}, el("h5", { class: "row__title" }, open),
+          el("div", {}, h(g ? at + 1 : at, { class: "row__title" }, open),
             el("div", { class: "row__meta", text: [m.detail, can.length ? `${on} of ${can.length} active` : its.length ? `${its.length} ${noun}` : ""].filter(Boolean).join(" · ") })),
           el("div", { class: "row__side" }, state ? chip(...state) : null, icon("chevron-right")));
       }))));
@@ -1150,17 +1156,17 @@ function customScreen(p, s) {
       back.addEventListener("click", () => go(here.parent, true));
       const trail = [];  // where it is, such as "In Samsung TV Plus, UK", under its heading
       for (let m = parent; m; m = byId.get(m.parent)) trail.unshift(m.title);
-      return [back, el("h3", { id: levelHead, tabindex: "-1", text: here.title }),
+      return [back, h(level(), { id: levelHead, tabindex: "-1", text: here.title }),
         trail.length ? el("p", { class: "small muted", text: `In ${trail.join(", ")}` }) : null,
         here.detail ? el("p", { class: "small muted", text: here.detail }) : null];
     })() : [data.intro ? el("p", { class: "small muted", text: data.intro }) : null];
     const controls = [showFilter(data, pool), testAll, stay.size ? refreshButton() : null].filter(Boolean);
     box.replaceChildren(...[
-      ...(here ? [] : noticesOf(data)), ...top, bulkPanel(data, sets),
+      ...(here ? [] : noticesOf(data)), ...top, bulkPanel(data, sets, level() + (here ? 1 : 0)),
       controls.length ? el("div", { class: "actions" }, ...controls) : null, said,
       pool.length && !shown.length && !kids.length ? emptyState(show === "on" ? "None active" : "None inactive", "Choose All to show every one.")
         : here && !pool.length && !kids.length ? emptyState(`No ${(data.title || "items").toLowerCase()} here`, null) : null,
-      ...menuRows(data, kids, under), ...itemRows(data, shown), add].filter(Boolean));  // replaceChildren writes null as text
+      ...menuRows(data, kids, under, level() + (here ? 1 : 0)), ...itemRows(data, shown, level() + (here ? 1 : 0)), add].filter(Boolean));  // replaceChildren writes null as text
   };
   // Sections that fold, each with a table to sort and select from (plug-in API 1.8, DASH-359, owner 13 November
   // 2026: "Build option 1 with 2 in the accordions"). A section is one line until opened: its name, how many are
@@ -1288,7 +1294,7 @@ function customScreen(p, s) {
         }));
         return el("div", { class: "fold__switch" }, note, el("label", { class: "switch" }, input));
       })() : null;
-      const head = el("div", { class: "fold__head" }, el("h4", { class: "fold__title" }, toggle), sw);
+      const head = el("div", { class: "fold__head" }, h(level(), { class: "fold__title" }, toggle), sw);
       if (!open) return el("section", { class: "fold" }, head);
       const all = el("input", { type: "checkbox", "aria-label": `Tick every ${noun.replace(/s$/, "")} shown in ${g}`,
         checked: shown.length > 0 && shown.every((it) => fold.picked.has(it.id)) });
