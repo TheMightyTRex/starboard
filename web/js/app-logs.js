@@ -5,12 +5,12 @@
 
 // Docker puts its own time first ("2026-11-20T12:01:03.123456789Z ..."); apps write their level in many ways
 // ("[ERR]", "ERROR", "level=warning", "WRN"), so the level word is looked for near the start of the line.
-const APP_LOG_LEVEL = /(?:^|[\s[|(=:])(fatal|crit(?:ical)?|err(?:or)?|ftl|eror|warn(?:ing)?|wrn|dbg|debug|trace|vrb|verbose)(?=$|[\s\]|):])/i;
+const APP_LOG_LEVEL = /(?:^|[\s[|(=:])(fatal|crit(?:ical)?|err(?:or)?|ftl|warn(?:ing)?|wrn|dbg|debug|trace|vrb|verbose)(?=$|[\s\]|):])/i;
 function appLogLine(line) {
   const m = /^(\d{4}-\d\d-\d\dT(\d\d:\d\d:\d\d)\S*)\s(.*)$/.exec(line);
   const text = m ? m[3] : line;
   const word = (APP_LOG_LEVEL.exec(text.slice(0, 120)) || [])[1]?.toLowerCase() || "";
-  const level = /^(fatal|crit|err|ftl|eror)/.test(word) ? "error" : /^(warn|wrn)/.test(word) ? "warning"
+  const level = /^(fatal|crit|err|ftl)/.test(word) ? "error" : /^(warn|wrn)/.test(word) ? "warning"
     : /^(dbg|debug|trace|vrb|verbose)/.test(word) ? "debug" : "info";
   return { time: m ? m[2] : "", level, text };
 }
