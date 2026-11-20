@@ -37,10 +37,13 @@ say "Building a throwaway image of this checkout"
 docker build -q -t starboard:scan . >/dev/null || { echo "The image did not build" >&2; exit 1; }
 
 say "Trivy: known problems in the image"
-docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$HOME/.cache/trivy:/root/.cache" "$TRIVY" \
+# Trivy's database (about 900 MB unpacked) is kept in TRIVY_CACHE when set, else in memory for this run: its
+# database cannot open on a FUSE file system such as a mergerfs pool ("failed to open db: no such device").
+if [ -n "${TRIVY_CACHE:-}" ]; then TRIVY_CACHE_ARGS=(-v "$TRIVY_CACHE:/root/.cache"); else TRIVY_CACHE_ARGS=(--tmpfs /root/.cache:size=3g); fi
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "${TRIVY_CACHE_ARGS[@]}" "$TRIVY" \
   image --quiet --scanners vuln,secret --exit-code 1 starboard:scan
 result $? "Trivy image"
-docker run --rm -v "$PWD:/src:ro" -v "$HOME/.cache/trivy:/root/.cache" "$TRIVY" config --quiet --exit-code 1 /src
+docker run --rm -v "$PWD:/src:ro" "${TRIVY_CACHE_ARGS[@]}" "$TRIVY" config --quiet --exit-code 1 /src
 result $? "Trivy configuration"
 
 say "Gitleaks: the whole git history"
