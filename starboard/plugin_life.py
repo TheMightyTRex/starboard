@@ -420,7 +420,7 @@ class EventWatch:
             return 0
         done = {f"{j.get('id')}|{j.get('finished')}": j} if j.get("id") and j.get("finished") else {}
         sent = 0
-        for key in self._new("disk.changed", done):
+        for _key in self._new("disk.changed", done):
             erased = [x for x in j.get("erased") or [] if x]
             words = {"add": "added to the pool", "remove": "taken out of the pool", "balance": "balanced"}.get(j.get("action"), "changed")
             logs.event("warning" if erased else "info", "pool",
