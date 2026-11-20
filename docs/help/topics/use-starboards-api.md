@@ -29,8 +29,8 @@ key can change Starboard's settings. Make one key for each app that uses it.
 6. In **Ends**, choose **In 90 days**, **In a year** or **Never**.
 7. In **Your Starboard password**, enter the password.
 8. Select **Make a key**.
-9. Select **Copy**, then paste the key into the app that will use it. Starboard shows the key only this once.
-   Select **Done**.
+9. Select **Copy**, then paste the key into the app that will use it. The key is hidden until you select
+   **Show**. Starboard shows the key only this once. Select **Done**.
 
    ![My script's key, shown once with a made-up key, with Copy (step 9) outlined](../images/use-starboards-api-2-copy.png)
 

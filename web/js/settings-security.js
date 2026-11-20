@@ -220,16 +220,21 @@ function apiKeys() {
       e.preventDefault();
       try {
         const r = await api("/api/keys", { method: "POST", body: { name: name.value, right: right.value, scopes: boxes.filter((b) => b.input.checked).map((b) => b.input.value), expires_days: ends.value, password: pw.value } });
-        const value = el("input", { class: "input", id: "key-made", readonly: true, value: r.key, spellcheck: "false" });
-        const copy = el("button", { type: "button", class: "btn btn--primary" }, icon("copy"), "Copy");
-        copy.addEventListener("click", async () => { try { await navigator.clipboard.writeText(r.key); toast("Key copied"); } catch { value.select(); } });
+        // The design system's secret field (20 November 2026): hidden until Show, with Copy beside it. The key is set as
+        // the input's value, never an attribute, so it is not in the page's markup.
+        const value = el("input", { class: "input secret-field__input", id: "key-made", type: "password", readonly: true, autocomplete: "off", spellcheck: "false" });
+        value.value = r.key;
+        const copy = el("button", { type: "button", class: "btn btn--primary", "data-secret-copy": "" }, icon("copy"), "Copy", el("span", { class: "visually-hidden", text: " API key" }));
+        const secret = el("div", { class: "secret-field", "data-secret": "", "data-name": "API key" }, value,
+          el("button", { type: "button", class: "btn", "data-secret-show": "", "aria-controls": "key-made" }, icon("eye"), "Show"), copy);
         const done = el("button", { type: "button", class: "btn", text: "Done" });
         done.addEventListener("click", () => panel.close());
         panel.setTitle(`${r.item.name}'s key`);
         panel.body.replaceChildren(notice("success", "Copy the key now", "Starboard shows it only this once; send it as Authorization: Bearer, never in an address."),
-          field("The key", value));
-        panel.setFoot([copy, done]);
-        value.focus(); value.select();
+          field("The key", secret));
+        SharedComponents.setupSecrets(panel.body);
+        panel.setFoot([done]);
+        copy.focus();
         draw((await api("/api/keys")).keys);
       } catch (err) { problem(err.message, go); }
     });

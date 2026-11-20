@@ -39,7 +39,7 @@ FORMS = {
         ("delete_empty_folders", "Delete empty folders", "After the last file in a folder is deleted.", "bool", None),
         ("unmonitor_deleted", "Stop following what you delete", "When a file is deleted outside Reelix, Reelix stops searching for it.", "bool", None),
         ("import_extra_files", "Bring in extra files", "Subtitles and other files that come with a download.", "bool", None),
-        ("extra_file_extensions", "Extra file types", "Separated by commas, such as srt, nfo.", "list", None),
+        ("extra_file_extensions", "Extra file types", "Such as srt and nfo.", "list", None),
         ("analyze_video_files", "Read each file's details", "Resolution, sound and length, during scans.", "bool", None),
     ]),
     "requests": ("/settings/requests", "Requests", "What happens when someone asks for something.", [
@@ -63,8 +63,8 @@ FORMS = {
         ("write_tags", "Write tags into the files", "Never into files that are still sharing.", "bool", None),
         ("embed_cover", "Put the cover inside each file", None, "bool", None),
         ("save_cover_file", "Save the cover as a file too", None, "bool", None),
-        ("preferred_release_countries", "Countries to prefer", "Separated by commas, such as GB, US.", "list", None),
-        ("preferred_formats", "Formats to prefer", "Separated by commas, such as Digital Media, CD.", "list", None),
+        ("preferred_release_countries", "Countries to prefer", "Such as GB and US.", "list", None),
+        ("preferred_formats", "Formats to prefer", "Such as Digital Media and CD.", "list", None),
     ]),
 }
 MASK = "********"

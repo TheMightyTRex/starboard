@@ -164,7 +164,7 @@ if (make) {
   await page.locator("#key-password").press("Enter");
   await page.waitForTimeout(1500);
   const f7 = await focus();
-  check("T7", "the new key has focus, ready to copy", f7.id === "key-made", f7.text || f7.id);
+  check("T7", "the new key's Copy has focus, ready to copy", f7.tag === "BUTTON" && /^Copy/.test(f7.text), f7.text || f7.id);
   await page.keyboard.press("Escape");
   await page.waitForTimeout(500);
   const edit7 = page.locator("#security-sections .row", { hasText: "Journey key" }).getByRole("button", { name: /Edit/ });

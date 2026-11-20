@@ -38,14 +38,14 @@ class OwnColoursTest(unittest.TestCase):
         self.assertEqual(config.Config(self.dir.name).data["own_colours"], "teal")
 
     def test_a_palette_is_saved_and_another_word_refused(self):
-        self.config.update_general({"own_colours": "forest"})
-        self.assertEqual(config.Config(self.dir.name).data["own_colours"], "forest")
+        self.config.update_general({"own_colours": "lime"})
+        self.assertEqual(config.Config(self.dir.name).data["own_colours"], "lime")
         with self.assertRaises(config.ConfigError):
             self.config.update_general({"own_colours": "pink"})
-        self.assertEqual(self.config.data["own_colours"], "forest")
+        self.assertEqual(self.config.data["own_colours"], "lime")
 
     def test_a_palette_that_has_gone_falls_back_to_blue(self):
-        self.config.update_general({"own_colours": "plum"})
+        self.config.update_general({"own_colours": "rose"})
         path = os.path.join(self.dir.name, "config.json")
         with open(path) as f:
             data = json.load(f)
@@ -54,8 +54,29 @@ class OwnColoursTest(unittest.TestCase):
             json.dump(data, f)
         self.assertEqual(config.Config(self.dir.name).data["own_colours"], "blue")
 
+    def test_a_renamed_palette_moves_to_its_new_name(self):
+        """The design system replaced Indigo, Forest, Plum and Ember with Dusk, Lime, Rose and Amber (20 November
+        2026): a settings file, a backup or a page from before that names an old one gets the new one."""
+        path = os.path.join(self.dir.name, "config.json")
+        with open(path) as f:
+            data = json.load(f)
+        data["own_colours"] = "forest"
+        with open(path, "w") as f:
+            json.dump(data, f)
+        moved = config.Config(self.dir.name)
+        self.assertEqual(moved.data["own_colours"], "lime")
+        with open(path) as f:
+            self.assertEqual(json.load(f)["own_colours"], "lime")
+        for old, new in (("indigo", "dusk"), ("plum", "rose"), ("ember", "amber")):
+            moved.update_general({"own_colours": old})
+            self.assertEqual(moved.data["own_colours"], new)
+        with open(os.path.join(ROOT, "web", "js", "common.js")) as f:
+            js = f.read()
+        self.assertIn('RENAMED_COLOURS = { indigo: "dusk", plum: "rose", ember: "amber", forest: "lime" }', js)
+        self.assertEqual(config.RENAMED_COLOURS, {"indigo": "dusk", "plum": "rose", "ember": "amber", "forest": "lime"})
+
     def test_everyday_right_and_kept_in_a_backup(self):
-        self.assertEqual(config.general_right({"own_colours": "ember"}), "manage")
+        self.assertEqual(config.general_right({"own_colours": "amber"}), "manage")
         self.assertIn("own_colours", backup.GENERAL_KEYS)
 
     def test_every_choice_has_its_palette_from_the_design_system(self):

@@ -912,8 +912,13 @@ check("DISP-01", "a playlist address asks for no user name", await page.locator(
 await page.check("#dp-kind-xc");
 check("DISP-01", "Xtream Codes asks for a user name and password", await page.locator("#dp-user").isVisible() && await page.locator("#dp-pass").isVisible());
 await page.click("#dp-save");
-check("DISP-02", "saving Xtream Codes without a user name says so at the field, and puts focus there",
-  (await page.locator("#dp-user").getAttribute("aria-invalid")) === "true" && await page.evaluate(() => document.activeElement.id) === "dp-user");
+// The design system's error summary (20 November 2026): "There is a problem" at the top of the form has focus, with a
+// link to each field that is wrong; the field says so too.
+check("DISP-02", "saving Xtream Codes without a user name says so at the field and in the error summary, which has focus",
+  (await page.locator("#dp-user").getAttribute("aria-invalid")) === "true" && await page.evaluate(() => document.activeElement.classList.contains("error-summary"))
+  && /There is a problem/.test(await page.locator(".error-summary").innerText()));
+await page.locator(".error-summary a[href='#dp-user']").click();
+check("DISP-02", "its link puts focus on the field", await page.evaluate(() => document.activeElement.id) === "dp-user");
 await page.check("#dp-kind-m3u");
 await page.fill("#dp-guide", "https://iptv.example/xmltv.php");
 await page.click("#dp-save");
@@ -1005,20 +1010,20 @@ await api("/api/config/general", { method: "PUT", body: { settings_advanced: tru
 console.log("\n== OWN Own style colours");
 await open("settings-plugin.html?id=styles");
 const ownCards = await page.locator("input[name=pl-own-colours]").evaluateAll((rs) => rs.map((r) => r.value));
-check("OWN-01", "the own style offers Mica's seven accents, Blue first", ownCards.join(",") === "blue,teal,indigo,forest,plum,ember,graphite", ownCards.join(","));
-await page.locator("input[name=pl-own-colours][value=forest]").check();
+check("OWN-01", "the own style offers Mica's seven accents, Blue first", ownCards.join(",") === "blue,teal,dusk,lime,rose,amber,graphite", ownCards.join(","));
+await page.locator("input[name=pl-own-colours][value=lime]").check();
 await page.waitForTimeout(500);
-check("OWN-01", "choosing Forest saves it for the server and uses its colours here",
-  (await api("/api/config")).own_colours === "forest" && await page.evaluate(() => document.documentElement.dataset.palette) === "forest"
-  && (await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--color-accent").trim())) === "#2f6b3a");
+check("OWN-01", "choosing Lime saves it for the server and uses its colours here",
+  (await api("/api/config")).own_colours === "lime" && await page.evaluate(() => document.documentElement.dataset.palette) === "lime"
+  && (await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--color-accent").trim())) === "#3a5700");
 check("OWN-01", "the saved note says so beside the choice", /Saved/.test(await page.locator("#pl-own-colours-saved").textContent()));
 await page.locator(".style-gallery button", { hasText: "Use this style" }).first().click();
 await page.waitForTimeout(300);
 check("OWN-02", "a plug-in style in use leaves the own colours out", await page.evaluate(() => !document.documentElement.dataset.palette && !!document.documentElement.dataset.style));
 await page.evaluate(() => resetStyle());
 await page.waitForTimeout(300);
-check("OWN-02", "Reset style goes back to the own style in Forest", await page.evaluate(() => !document.documentElement.dataset.style && document.documentElement.dataset.palette === "forest"));
-check("OWN-02", "and the own style's card says Forest", /Forest accent/.test(await page.locator(".style-gallery__item").first().innerText()));
+check("OWN-02", "Reset style goes back to the own style in Lime", await page.evaluate(() => !document.documentElement.dataset.style && document.documentElement.dataset.palette === "lime"));
+check("OWN-02", "and the own style's card says Lime", /Lime accent/.test(await page.locator(".style-gallery__item").first().innerText()));
 await api("/api/config/general", { method: "PUT", body: { own_colours: "blue" } });
 await page.evaluate(() => setOwnColours("blue"));
 // What is new on a plug-in's State (DASH-393): the example Styles plug-in was just updated from 1.0.0 to 1.1.0.

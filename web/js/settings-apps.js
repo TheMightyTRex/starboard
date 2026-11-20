@@ -21,7 +21,7 @@ function sectionsOf(services) {
 }
 
 // The app's state as an icon beside its name: a tick, a cross or a dashed circle, never colour alone, with the
-// words in hidden text and in the tooltip.
+// words in hidden text and in the design system's tooltip on hover (no Tab stop of its own: it sits inside the name's button, which reads the words).
 function statusIcon(s) {
   const st = statusById[s.id];
   const [words, tone, name] = !s.enabled ? ["Hidden from the dashboard", "muted", "eye-off"]
@@ -29,7 +29,7 @@ function statusIcon(s) {
     : st.state === "up" ? [s.background ? "Running" : "Connected", "success", "circle-check"]
     : st.state === "down" ? [s.background ? "Not running" : "Cannot connect", "danger", "circle-x"]
     : ["Not checked", "muted", "circle-help"];
-  return el("span", { class: "status-icon", "data-tone": tone, title: words }, icon(name), el("span", { class: "visually-hidden", text: `, ${words}` }));
+  return el("span", { class: "status-icon", "data-tone": tone, "data-tooltip": words }, icon(name), el("span", { class: "visually-hidden", text: `, ${words}` }));
 }
 
 function serviceMeta(s) {
@@ -339,9 +339,12 @@ function openService(s = null, opener = null, { background = false, preset = nul
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     formError.replaceChildren();
-    [name, url, link, outside, iconInput].forEach((c) => setError(c, ""));
-    if (!name.value.trim()) { setError(name, "Enter a name for the app"); name.focus(); return; }
-    if (!url.value.trim() && !bg.checked) { setError(url, "Enter the address Starboard uses to reach the app, such as http://127.0.0.1:8096"); url.focus(); return; }
+    const wrong = [];
+    if (!name.value.trim()) wrong.push([name, "Enter a name for the app"]);
+    if (!url.value.trim() && !bg.checked) wrong.push([url, "Enter the address Starboard uses to reach the app, such as http://127.0.0.1:8096"]);
+    formErrors(form, wrong);
+    [link, outside, iconInput].forEach((c) => setError(c, ""));
+    if (wrong.length) return;
     saveButton.disabled = true;
     try {
       const saved = await api("/api/services", { method: "POST", body: values() });

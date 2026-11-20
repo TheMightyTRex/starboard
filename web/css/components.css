@@ -159,7 +159,7 @@
     :root:not(.pref-contrast):not([data-style]) .site-header {
       background-color: color-mix(in srgb, var(--color-header) var(--glass-alpha), transparent);
     }
-    :root:not(.pref-contrast):not([data-style]) :is(.menu, .side-panel, .phone-menu, .dialog) {
+    :root:not(.pref-contrast):not([data-style]) :is(.menu, .side-panel, .phone-menu, .dialog, .popover, .combobox__popup) {
       background-color: color-mix(in srgb, var(--color-surface-raised) var(--glass-alpha), transparent);
       -webkit-backdrop-filter: var(--glass-filter);
       backdrop-filter: var(--glass-filter);
@@ -170,13 +170,13 @@
   }
   /* Reduce transparency: the same selectors again, later, so every layer is solid. */
   @media (prefers-reduced-transparency: reduce) {
-    :root:not(.pref-contrast):not([data-style]) :is(.site-header, .rail, .menu, .side-panel, .phone-menu, .dialog) {
+    :root:not(.pref-contrast):not([data-style]) :is(.site-header, .rail, .menu, .side-panel, .phone-menu, .dialog, .popover, .combobox__popup) {
       -webkit-backdrop-filter: none;
       backdrop-filter: none;
     }
     :root:not(.pref-contrast):not([data-style]) :is(.site-header, .rail) { background-color: var(--color-rail, var(--color-header)); }
     :root:not(.pref-contrast):not([data-style]) .site-header { background-color: var(--color-header); }
-    :root:not(.pref-contrast):not([data-style]) :is(.menu, .side-panel, .phone-menu, .dialog) { background-color: var(--color-surface-raised); }
+    :root:not(.pref-contrast):not([data-style]) :is(.menu, .side-panel, .phone-menu, .dialog, .popover, .combobox__popup) { background-color: var(--color-surface-raised); }
     :root:not(.pref-contrast):not([data-style]) .side-panel__foot { background-color: var(--color-surface-raised); }
     :root:not(.pref-contrast):not([data-style]) body::before { content: none; }
   }
@@ -1502,8 +1502,9 @@
     gap: var(--space-2);
   }
   /* Status icon: in a list of things that each have a state (Manage apps, what an app can access), the state
-     is an icon straight after the name, with the word in hidden text and a tooltip, instead of a chip.
-     Markup: <span class="status-icon" data-tone="success" title="Connected"><svg aria-hidden>…</svg>
+     is an icon straight after the name, with the word in hidden text and a tooltip, instead of a chip. The tooltip is
+     the library's (data-tooltip, shown on hover and on focus), not a title, so keyboards reach it too (20 November 2026).
+     Markup: <span class="status-icon" data-tone="success" tabindex="0" data-tooltip="Connected"><svg aria-hidden>…</svg>
      <span class="visually-hidden">Connected</span></span> */
   .status-icon {
     display: inline-flex;
@@ -1747,49 +1748,113 @@
   .progress[data-tone="danger"] > span {
     background: var(--status-danger-fg);
   }
-  /* Busy: a job whose end is not known (WIZARD.md section 5, A job's progress). A band moves across; with less motion
-     asked for, the bar is shown half filled and still, and the words beside it say it is working. */
-  .progress--busy {
+  /* Waiting standard (DASH-493, TheMightyTRexUK, 20 November 2026): every bar that is working is thicker, with
+     rounded ends, and moving stripes. Busy: a job whose end is not known (WIZARD.md section 5, A job's progress); a
+     striped band runs along the bar. Running: a job whose end is known and still going (a count such as 4 of 5); the
+     filled part has moving stripes, starts with a visible piece and creeps towards the next count between counts
+     (creepProgress() in components.js). With less motion asked for, the stripes stay still, the band is shown half
+     filled, and the words beside the bar say it is working. Take the class off when it ends. */
+  .progress--busy,
+  .progress--running {
+    position: relative;
+    height: 14px;
+    border-radius: 7px;
     overflow: hidden;
   }
+  .progress--busy > span,
+  .progress--running > span {
+    border-radius: 7px;
+    background-color: var(--color-accent);
+    background-image: linear-gradient(-45deg, var(--stripe) 25%, transparent 25%, transparent 50%, var(--stripe) 50%,
+      var(--stripe) 75%, transparent 75%, transparent);
+    background-size: 24px 24px;
+    animation: progress-stripes 0.7s linear infinite;
+    --stripe: color-mix(in srgb, var(--color-surface) 40%, transparent);
+  }
+  .progress--running > span {
+    min-width: 4%;
+  }
   .progress--busy > span {
-    width: 30%;
-    animation: progress-busy 1.4s ease-in-out infinite;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 35%;
+    animation: progress-stripes 0.7s linear infinite, progress-busy 1.8s ease-in-out infinite;
+  }
+  @keyframes progress-stripes {
+    from { background-position: 0 0; }
+    to { background-position: 24px 0; }
   }
   @keyframes progress-busy {
-    from { margin-left: -30%; }
-    to { margin-left: 100%; }
+    from { left: -35%; }
+    to { left: 100%; }
+  }
+  /* Kept for apps that still name it. */
+  @keyframes progress-running {
+    from { background-position: 0 0; }
+    to { background-position: 24px 0; }
+  }
+  :root.pref-motion :is(.progress--busy, .progress--running) > span {
+    animation: none;
   }
   :root.pref-motion .progress--busy > span {
     width: 50%;
-    animation: none;
   }
   @media (prefers-reduced-motion: reduce) {
-    :root:not(.pref-motion-off) .progress--busy > span {
-      width: 50%;
+    :root:not(.pref-motion-off) :is(.progress--busy, .progress--running) > span {
       animation: none;
     }
+    :root:not(.pref-motion-off) .progress--busy > span {
+      width: 50%;
+    }
   }
-  /* Running: a job whose end is known and still going (a count such as 4 of 5). The filled part keeps its width and
-     soft stripes move across it, so the bar shows the work is live between counts. With less motion asked for, the
-     stripes stay still; the words beside the bar say it is running either way. Take the class off when it ends. */
-  .progress--running > span {
-    background-image: linear-gradient(-45deg, color-mix(in srgb, var(--color-surface) 28%, transparent) 25%, transparent 25%,
-      transparent 50%, color-mix(in srgb, var(--color-surface) 28%, transparent) 50%, color-mix(in srgb, var(--color-surface) 28%, transparent) 75%,
-      transparent 75%, transparent);
-    background-size: 16px 16px;
-    animation: progress-running 0.9s linear infinite;
+  /* The waiting mark (DASH-493, option A, the ring): one small mark for a short wait, always with words beside it,
+     instead of a plain "Loading…". `.wait` holds `.wait__mark` and the words; give the words role="status" where
+     they change. A busy button (aria-busy="true") draws the same ring before its words, keeps its size and cannot
+     be pressed again (set aria-disabled too, and the doing word, such as "Testing"). With less motion asked for,
+     the ring does not turn; it fades in and out. */
+  .wait {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
   }
-  @keyframes progress-running {
-    from { background-position: 0 0; }
-    to { background-position: 16px 0; }
+  .wait__mark,
+  .btn[aria-busy="true"]::before {
+    display: inline-block;
+    box-sizing: border-box;
+    flex: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--color-divider);
+    border-top-color: var(--color-accent);
+    border-radius: 50%;
+    animation: wait-turn 0.8s linear infinite;
   }
-  :root.pref-motion .progress--running > span {
-    animation: none;
+  .btn[aria-busy="true"] {
+    cursor: progress;
+    opacity: 1;
+  }
+  .btn[aria-busy="true"]::before {
+    content: "";
+    display: inline-block;
+    box-sizing: border-box;
+    border-color: color-mix(in srgb, currentColor 30%, transparent);
+    border-top-color: currentColor;
+  }
+  @keyframes wait-turn {
+    to { transform: rotate(360deg); }
+  }
+  :root.pref-motion .wait__mark,
+  :root.pref-motion .btn[aria-busy="true"]::before {
+    animation: loading-fade 2s ease-in-out infinite;
   }
   @media (prefers-reduced-motion: reduce) {
-    :root:not(.pref-motion-off) .progress--running > span {
-      animation: none;
+    :root:not(.pref-motion-off) .wait__mark,
+    :root:not(.pref-motion-off) .btn[aria-busy="true"]::before {
+      animation: loading-fade 2s ease-in-out infinite;
     }
   }
   .meter {
@@ -2038,11 +2103,11 @@
   }
   .loading-bar {
     position: relative;
-    height: 3px;
+    height: 6px;
     overflow: hidden;
   }
-  /* Chase (TheMightyTRexUK, 12 November 2026): a long bar and a short bar follow each other across until loading
-     ends. Reduce motion shows a still line instead. */
+  /* Chase (TheMightyTRexUK, 12 November 2026; striped, option E, 20 November 2026): a long and a short striped bar
+     follow each other across until loading ends. Reduce motion shows a still line instead. */
   .loading-bar[data-active]::before,
   .loading-bar[data-active]::after {
     content: "";
@@ -2050,14 +2115,18 @@
     top: 0;
     bottom: 0;
     left: 0;
-    background: var(--color-accent);
+    background-color: var(--color-accent);
+    background-image: linear-gradient(-45deg, var(--stripe) 25%, transparent 25%, transparent 50%, var(--stripe) 50%,
+      var(--stripe) 75%, transparent 75%, transparent);
+    background-size: 24px 24px;
+    --stripe: color-mix(in srgb, var(--color-surface) 40%, transparent);
     will-change: left, right;
   }
   .loading-bar[data-active]::before {
-    animation: loading-long 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
+    animation: progress-stripes 0.7s linear infinite, loading-long 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
   }
   .loading-bar[data-active]::after {
-    animation: loading-short 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) 1.15s infinite;
+    animation: progress-stripes 0.7s linear infinite, loading-short 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) 1.15s infinite;
   }
   /* Toast (option C, TheMightyTRexUK, 3 November 2026): a card in the corner with a status edge, an icon, a title,
      an optional line of detail, one optional action and Close. Tones: success, info, warning and danger
@@ -5341,6 +5410,28 @@
     }
   }
 
+  /* Windows Contrast themes (forced colours, assistive technology review, 20 November 2026): every state that was
+     shown only by a background, a gradient or a border colour gets a system colour, so it still shows. */
+  @media (forced-colors: active) {
+    .switch input::after { background: CanvasText; }
+    .switch input:checked { background: Highlight; border-color: Highlight; }
+    .switch input:checked::after { background: HighlightText; }
+    .menu-tabs a[aria-current="page"]::after,
+    .rail a[aria-current="page"]::before,
+    .logo-tabs > button[aria-selected="true"]::after { background: Highlight; }
+    .logo-tabs > button[aria-selected="true"],
+    .phone-menu__section ul a[aria-current="page"] { outline: 2px solid Highlight; outline-offset: -2px; }
+    .progress > span,
+    .progress--busy > span,
+    .progress--running > span { background: Highlight; forced-color-adjust: none; }
+    .loading-bar[data-active]::before,
+    .loading-bar[data-active]::after { background: Highlight; forced-color-adjust: none; }
+    .wait__mark,
+    .btn[aria-busy="true"]::before { border-color: CanvasText; border-top-color: Highlight; forced-color-adjust: none; }
+    .update-dot { background: Mark; border: 1px solid CanvasText; forced-color-adjust: none; }
+    .cover-pick input:checked + img { outline: 4px solid Highlight; outline-offset: 2px; }
+  }
+
   /* 8. Motion ----------------------------------------------------------------------------------- */
   @keyframes slide-in-right {
     from {
@@ -5528,7 +5619,11 @@ body:has(.side-panel-layer:not([hidden]), dialog[open]) snag-list { display: non
    the step's title, so the set-up is done there. The page fills what is left of the slide-out and scrolls itself. */
 .wizard-step { display: flex; flex-direction: column; gap: var(--space-4); block-size: 100%; }
 .wizard-step--framed { gap: 0; }
-.wizard-step--framed .wizard-step__head { padding: var(--space-4); border-block-end: 1px solid var(--color-divider); }
+/* The step count with the step's own link on the right of the same line, such as Open as a page (TheMightyTRexUK,
+   20 November 2026); on a narrow slide-out the link wraps under the count. */
+.wizard-step__count { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-4); }
+/* Less space over the step count (TheMightyTRexUK, 20 November 2026). */
+.wizard-step--framed .wizard-step__head { padding: var(--space-2) var(--space-4) var(--space-4); border-block-end: 1px solid var(--color-divider); }
 .side-panel__body:has(> .wizard-step--framed) { padding: 0; display: flex; }
 .side-panel__body > .wizard-step--framed { flex: 1; min-block-size: 0; }
 .wizard-frame { flex: 1; min-block-size: 50vh; }
@@ -5963,4 +6058,923 @@ body:has(.side-panel-layer:not([hidden]), dialog[open]) snag-list { display: non
   .tested[data-tone="success"] > svg { color: var(--status-success-fg); }
   .tested[data-tone="danger"] > svg { color: var(--status-danger-fg); }
 
+}
+
+/* 9. Components added on 20 November 2026 ------------------------------------------------------------------------
+   Log viewer, tabs, combobox, sparkline and gauge, pagination, error summary, secret field, schedule picker, tag
+   input, popover and the alerts centre, page banner, tooltip and the command palette. Behaviour is in components.js;
+   LIBRARY.md has each one's classes and rules. Everything is lazy: nothing runs until the part is on the page. */
+@layer shared {
+  /* Log viewer: monospace lines with a level filter, search with highlights, follow new lines with pause, wrap and
+     download. It keeps at most 10,000 lines and draws only the newest 1,000 that match, so a long log stays light. */
+  .log-view {
+    display: grid;
+    gap: var(--space-3);
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+  }
+  .log-view__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--space-2) var(--space-3);
+  }
+  .log-view__search {
+    flex: 1 1 16rem;
+  }
+  .log-view__count {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+  .log-view__scroll {
+    max-height: min(60vh, 32rem);
+    overflow: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--color-divider);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+  }
+  .log-view__scroll:focus-visible {
+    outline-offset: 2px;
+  }
+  .log-view__lines {
+    min-width: 100%;
+    width: max-content;
+    margin: 0;
+    padding: var(--space-2) 0;
+    list-style: none;
+    font-family: ui-monospace, "Cascadia Mono", "DejaVu Sans Mono", monospace;
+    font-size: var(--text-sm);
+    line-height: var(--leading-tight);
+  }
+  .log-view[data-wrap] .log-view__lines {
+    width: auto;
+  }
+  .log-view__line {
+    display: grid;
+    grid-template-columns: auto 8ch minmax(0, 1fr);
+    gap: var(--space-3);
+    padding: 2px var(--space-3);
+    border-left: 3px solid transparent;
+  }
+  .log-view__time {
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .log-view__level {
+    font-weight: var(--weight-strong);
+  }
+  .log-view__text {
+    white-space: pre;
+  }
+  .log-view[data-wrap] .log-view__text {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .log-view__line[data-level="error"] {
+    border-left-color: var(--status-danger-fg);
+  }
+  .log-view__line[data-level="error"] .log-view__level {
+    color: var(--status-danger-fg);
+  }
+  .log-view__line[data-level="warning"] {
+    border-left-color: var(--status-warning-fg);
+  }
+  .log-view__line[data-level="warning"] .log-view__level {
+    color: var(--status-warning-fg);
+  }
+  .log-view__line[data-level="debug"] .log-view__level {
+    color: var(--color-text-muted);
+  }
+  .log-view__match {
+    background: var(--color-accent-soft);
+    color: var(--color-text);
+    box-shadow: inset 0 -2px 0 var(--color-accent);
+  }
+  .log-view__earlier {
+    display: flex;
+    justify-content: center;
+    padding: var(--space-1) var(--space-3) var(--space-2);
+    font-family: var(--font);
+  }
+  .log-view__empty {
+    padding: var(--space-4);
+    color: var(--color-text-muted);
+    font-family: var(--font);
+  }
+
+  /* Tabs: in-page tabs by the ARIA tabs pattern, for an item page's parts (DESIGN-SYSTEM.md section 5). The tab
+     list is one Tab stop; arrow keys, Home and End move. Without script every panel shows, one after another. */
+  .tabs {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+  }
+  .tabs__list {
+    display: flex;
+    gap: var(--space-1);
+    overflow-x: auto;
+    border-bottom: 1px solid var(--color-divider);
+  }
+  .tabs:not([data-ready]) .tabs__list {
+    display: none;
+  }
+  .tabs__tab {
+    position: relative;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--control-h);
+    padding: 0 var(--space-4);
+    border: 0;
+    border-radius: 0;
+    background: none;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-strong);
+    white-space: nowrap;
+  }
+  .tabs__tab:hover {
+    background-color: var(--color-hover);
+    box-shadow: inset 0 0 0 1px var(--color-hover-edge);
+    color: var(--color-text);
+  }
+  .tabs__tab[aria-selected="true"] {
+    color: var(--color-text);
+  }
+  .tabs__tab[aria-selected="true"]::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: var(--current-bar-w);
+    background: var(--color-accent);
+  }
+  .tabs__tab:focus-visible {
+    outline-offset: calc(-1 * var(--focus-w));
+  }
+  .tabs__tab .count {
+    margin-left: var(--space-1);
+  }
+  .tabs__panel {
+    min-width: 0;
+  }
+  .tabs__panel:focus-visible {
+    outline-offset: 4px;
+  }
+
+  /* Combobox (searchable select): a text box that filters a list (ARIA 1.2 combobox with a listbox). Focus stays
+     in the box; the option the arrow keys reach has the focus ring and aria-activedescendant points at it. */
+  .combobox {
+    position: relative;
+    display: flex;
+    min-width: 0;
+  }
+  .combobox__input {
+    flex: 1;
+    min-width: 0;
+    padding-inline-end: var(--control-h);
+  }
+  .combobox__toggle {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: var(--control-h);
+    display: inline-grid;
+    place-items: center;
+    border: 0;
+    background: none;
+    color: var(--color-text-muted);
+  }
+  .combobox__toggle:hover {
+    color: var(--color-text);
+  }
+  .combobox__toggle svg {
+    transition: transform var(--motion-fast);
+  }
+  .combobox:has([aria-expanded="true"]) .combobox__toggle svg {
+    transform: rotate(180deg);
+  }
+  .combobox__popup {
+    position: absolute;
+    top: calc(100% + var(--space-1));
+    left: 0;
+    right: 0;
+    z-index: var(--layer-menu);
+    max-height: 18rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--space-1) 0;
+    border: 1px solid var(--color-divider);
+    border-radius: var(--radius);
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-raised);
+  }
+  .combobox__list {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .combobox__option {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--control-h);
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--text-sm);
+    cursor: pointer;
+  }
+  .combobox__option::before {
+    content: "✓";
+    visibility: hidden;
+  }
+  .combobox__option[aria-selected="true"] {
+    font-weight: var(--weight-strong);
+  }
+  .combobox__option[aria-selected="true"]::before {
+    visibility: visible;
+  }
+  .combobox__option:hover,
+  .combobox__option.is-active {
+    background-color: var(--color-hover);
+    box-shadow: inset 0 0 0 1px var(--color-hover-edge);
+  }
+  .combobox__option.is-active {
+    outline: var(--focus-w) solid var(--color-focus);
+    outline-offset: calc(-1 * var(--focus-w));
+  }
+  .combobox__option mark {
+    background: none;
+    color: inherit;
+    font-weight: var(--weight-heading);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+  }
+  .combobox__hint {
+    margin-left: auto;
+    padding-left: var(--space-3);
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-regular);
+  }
+  .combobox__none {
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+
+  /* Sparkline and gauge, for stat tiles. Both are drawn in SVG from the chart tokens and hidden from screen readers;
+     the numbers are in words beside them (.stat__trend, .gauge__value), so nothing rests on the drawing. */
+  .sparkline {
+    display: block;
+    width: 100%;
+    height: 32px;
+    overflow: visible;
+  }
+  .sparkline__area {
+    fill: color-mix(in srgb, var(--chart-1) 14%, transparent);
+    stroke: none;
+  }
+  .sparkline__line {
+    fill: none;
+    stroke: var(--chart-1);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+  }
+  /* A tile with a drawing keeps its words at the top, however tall the row is. */
+  .stat:has(> .sparkline, > .gauge) {
+    align-content: start;
+  }
+  .stat__trend {
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+    font-variant-numeric: tabular-nums;
+  }
+  .gauge {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+  .gauge__dial {
+    display: grid;
+    width: 100%;
+    max-width: 10rem;
+  }
+  .gauge__dial > * {
+    grid-area: 1 / 1;
+  }
+  .gauge__svg {
+    width: 100%;
+    height: auto;
+  }
+  .gauge__track,
+  .gauge__fill {
+    fill: none;
+    stroke-width: 10;
+  }
+  .gauge__track {
+    stroke: var(--series-empty);
+  }
+  .gauge__fill {
+    stroke: var(--color-accent);
+    transition: stroke-dasharray var(--motion-panel);
+  }
+  .gauge[data-tone="success"] .gauge__fill {
+    stroke: var(--status-success-fg);
+  }
+  .gauge[data-tone="warning"] .gauge__fill {
+    stroke: var(--status-warning-fg);
+  }
+  .gauge[data-tone="danger"] .gauge__fill {
+    stroke: var(--status-danger-fg);
+  }
+  .gauge__value {
+    align-self: end;
+    justify-self: center;
+    font-size: var(--text-xl);
+    font-weight: var(--weight-strong);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .gauge__label {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    text-align: center;
+  }
+
+  /* Pagination: page links, the place in words ("Showing 21 to 40 of 312") and how many rows a page shows. */
+  .pagination {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3) var(--space-4);
+  }
+  .pagination__summary {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-variant-numeric: tabular-nums;
+  }
+  .pagination__pages {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .pagination__link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    min-width: var(--control-h);
+    min-height: var(--control-h);
+    padding: 0 var(--space-3);
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    color: var(--color-accent);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-strong);
+    font-variant-numeric: tabular-nums;
+    text-decoration: none;
+  }
+  .pagination__link:hover {
+    background-color: var(--color-hover);
+    box-shadow: inset 0 0 0 1px var(--color-hover-edge);
+    text-decoration: underline;
+  }
+  .pagination__link[aria-current="page"] {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-accent-text);
+  }
+  .pagination__gap {
+    display: inline-grid;
+    place-items: center;
+    min-width: var(--control-h);
+    min-height: var(--control-h);
+    color: var(--color-text-muted);
+  }
+  /* On a phone only the first, this and the last page show, with Previous and Next. */
+  @media (max-width: 480px) {
+    .pagination__near {
+      display: none;
+    }
+  }
+  .pagination__size {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-strong);
+  }
+  .pagination__size .select {
+    width: auto;
+  }
+
+  /* Error summary (after GOV.UK): at the top of a form after a submit that failed, focused, with a link to each
+     field. Each field still has its own .field-error, tied to it by aria-describedby. */
+  .error-summary {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border: 2px solid var(--status-danger-fg);
+    border-left-width: var(--status-edge-w);
+    border-radius: var(--radius);
+    background: var(--color-surface-raised);
+  }
+  .error-summary:focus {
+    outline: var(--focus-w) solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  .error-summary__title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    color: var(--status-danger-fg);
+    font-size: var(--text-lg);
+  }
+  .error-summary__list {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding-left: var(--space-5);
+  }
+  .error-summary__list a {
+    color: var(--status-danger-fg);
+    font-weight: var(--weight-strong);
+    text-decoration: underline;
+  }
+
+  /* Secret field: an API key or password the app keeps, hidden until Show; Copy and Replace beside it. The value is
+     never put in an attribute, a message or the log. */
+  .secret-field {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+  .secret-field__input {
+    flex: 1 1 16rem;
+    min-width: 0;
+    font-family: ui-monospace, "Cascadia Mono", "DejaVu Sans Mono", monospace;
+  }
+  .secret-field .btn {
+    flex: none;
+  }
+
+  /* Schedule picker: how often, on which days and at what time, read back in words ("Every weekday at 07:00"). */
+  .schedule {
+    display: grid;
+    gap: var(--space-4);
+    min-width: 0;
+    max-width: 40rem;
+  }
+  .schedule__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--space-3) var(--space-4);
+  }
+  .schedule__row > .field {
+    flex: 0 1 14rem;
+  }
+  .schedule fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .schedule legend {
+    margin-bottom: var(--space-1);
+    padding: 0;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-strong);
+  }
+  .schedule__days {
+    display: inline-flex;
+    flex-wrap: wrap;
+    max-width: 100%;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .schedule__day {
+    position: relative;
+  }
+  .schedule__day input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .schedule__day > span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-width: var(--control-h);
+    min-height: calc(var(--control-h) - 2px);
+    padding: 0 var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-strong);
+  }
+  .schedule__day > span::before {
+    content: "✓";
+    visibility: hidden;
+  }
+  .schedule__day + .schedule__day > span {
+    border-left: 1px solid var(--color-divider);
+  }
+  .schedule__day input:checked + span {
+    background: var(--color-accent);
+    color: var(--color-accent-text);
+  }
+  .schedule__day input:checked + span::before {
+    visibility: visible;
+  }
+  .schedule__day input:focus-visible + span {
+    outline: var(--focus-w) solid var(--color-focus);
+    outline-offset: calc(-1 * var(--focus-w));
+  }
+  .schedule__words {
+    display: flex;
+    align-items: start;
+    gap: var(--space-2);
+    margin: 0;
+    padding: var(--space-3) var(--space-4);
+    border-left: 4px solid var(--color-accent);
+    border-radius: var(--radius);
+    background: var(--color-surface-sunken);
+  }
+  .schedule__words strong {
+    display: block;
+  }
+
+  /* Tag input: words added with Enter or a comma, each with its own Remove button. */
+  .tag-input {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: var(--control-h);
+    padding: 5px var(--space-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface-raised);
+    cursor: text;
+  }
+  .tag-input:has(.tag-input__field:focus-visible) {
+    outline: var(--focus-w) solid var(--color-focus);
+  }
+  .tag-input__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .tag-input__tag {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--control-h-compact);
+    padding-left: var(--space-2);
+    border: 1px solid var(--color-divider);
+    border-radius: var(--radius);
+    background: var(--color-accent-soft);
+    font-size: var(--text-sm);
+    overflow-wrap: anywhere;
+  }
+  .tag-input__tag button {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: var(--control-h-compact);
+    height: var(--control-h-compact);
+    border: 0;
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--color-text);
+  }
+  .tag-input__tag button:hover {
+    background-color: var(--color-hover);
+    box-shadow: inset 0 0 0 1px var(--color-hover-edge);
+  }
+  .tag-input__field {
+    flex: 1 1 8rem;
+    min-width: 6rem;
+    min-height: var(--control-h-compact);
+    padding: 0 var(--space-1);
+    border: 0;
+    background: transparent;
+    font-size: var(--text-md);
+  }
+  .tag-input__field:focus-visible {
+    outline: none;
+  }
+
+  /* Popover: a small non-modal layer from a button, for things to read and act on (the alerts centre). Not for
+     actions alone (.menu) and not for a task (a slide-out or dialog). Escape, a press outside or moving focus out
+     of it closes it; focus goes back to its button. */
+  .popover-wrap {
+    position: relative;
+    display: inline-block;
+  }
+  .popover {
+    position: absolute;
+    top: calc(100% + var(--space-1));
+    right: 0;
+    z-index: var(--layer-menu);
+    width: min(24rem, calc(100vw - 2 * var(--space-4)));
+    display: grid;
+    border: 1px solid var(--color-divider);
+    border-radius: var(--radius);
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-raised);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    text-align: left;
+  }
+  .popover[data-align="start"],
+  .popover.is-flipped-start {
+    left: 0;
+    right: auto;
+  }
+  .popover.is-flipped-end {
+    left: auto;
+    right: 0;
+  }
+  .popover__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    min-height: var(--control-h);
+    padding: var(--space-1) var(--space-2) var(--space-1) var(--space-4);
+    border-bottom: 1px solid var(--color-divider);
+    border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0;
+    background: var(--color-surface-sunken);
+  }
+  .popover__head :is(h2, h3) {
+    margin: 0;
+    font-size: var(--text-md);
+  }
+  .popover__head:focus {
+    outline: none;
+  }
+  .popover__body {
+    max-height: min(60vh, 28rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--space-3) var(--space-4);
+  }
+  .popover__body--flush {
+    padding: 0;
+  }
+  .popover__foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border-top: 1px solid var(--color-divider);
+  }
+  @media (max-width: 720px) {
+    .popover {
+      position: fixed;
+      top: calc(var(--header-h) + var(--space-1));
+      left: var(--space-2);
+      right: var(--space-2);
+      width: auto;
+    }
+  }
+  /* Alerts centre: the header's Alerts button opens a popover of recent alerts. Unread ones have a dot, bold words
+     and "Unread" in hidden text; Mark as read on each, and Mark all as read in the head. */
+  .alerts {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .alerts__item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 2px var(--space-3);
+    align-items: start;
+    padding: var(--space-3) var(--space-2) var(--space-3) var(--space-4);
+    border-top: 1px solid var(--color-divider);
+  }
+  .alerts__item:first-child {
+    border-top: 0;
+  }
+  .alerts__item > svg {
+    margin-top: 2px;
+    color: var(--status-info-fg);
+  }
+  .alerts__item[data-tone="success"] > svg {
+    color: var(--status-success-fg);
+  }
+  .alerts__item[data-tone="warning"] > svg {
+    color: var(--status-warning-fg);
+  }
+  .alerts__item[data-tone="danger"] > svg {
+    color: var(--status-danger-fg);
+  }
+  .alerts__text {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+  .alerts__title {
+    color: var(--color-text);
+    overflow-wrap: anywhere;
+  }
+  .alerts__item[data-unread] .alerts__title {
+    font-weight: var(--weight-heading);
+  }
+  .alerts__item[data-unread] .alerts__title::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: var(--space-2);
+    border-radius: var(--radius-round);
+    background: var(--color-accent);
+    vertical-align: 0.1em;
+  }
+  .alerts__time {
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+  }
+  .alerts__read {
+    margin: calc(-1 * var(--space-2)) 0;
+  }
+  .alerts__empty {
+    margin: 0;
+    padding: var(--space-4);
+    color: var(--color-text-muted);
+  }
+  .icon-btn .count {
+    margin-left: var(--space-1);
+  }
+
+  /* Page banner: one message for the whole app that stays while its state lasts ("Connection lost", "Restart
+     needed"), directly under the header and above the page. Not for the page's own messages (.notice) or for a
+     result (a toast). It does not stick, so it never covers what has focus. */
+  .page-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
+    min-height: var(--control-h);
+    padding: var(--space-2) var(--space-6);
+    border-bottom: 2px solid var(--status-info-fg);
+    background: var(--status-info-bg);
+    color: var(--status-info-fg);
+  }
+  .page-banner > svg {
+    flex: none;
+  }
+  .page-banner__text {
+    flex: 1 1 18rem;
+    margin: 0;
+  }
+  .page-banner__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  .page-banner[data-tone="success"] {
+    border-color: var(--status-success-fg);
+    background: var(--status-success-bg);
+    color: var(--status-success-fg);
+  }
+  .page-banner[data-tone="warning"] {
+    border-color: var(--status-warning-fg);
+    background: var(--status-warning-bg);
+    color: var(--status-warning-fg);
+  }
+  .page-banner[data-tone="danger"] {
+    border-color: var(--status-danger-fg);
+    background: var(--status-danger-bg);
+    color: var(--status-danger-fg);
+  }
+  @media (max-width: 720px) {
+    .page-banner {
+      padding-inline: var(--space-4);
+    }
+  }
+
+  /* Tooltip: a short name or word for something that shows only an icon, on hover and on focus (WCAG 1.4.13): the
+     pointer can move onto it, Escape closes it, and it stays until the pointer or focus leaves. One shared element,
+     made the first time it is needed. Never the only place for something needed to act. */
+  .tooltip {
+    position: fixed;
+    z-index: var(--layer-toast);
+    max-width: min(20rem, calc(100vw - 2 * var(--space-2)));
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-text);
+    color: var(--color-bg);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-strong);
+    line-height: var(--leading-tight);
+    animation: fade-in var(--motion-fast);
+  }
+  [data-tooltip]:not(button, a, input) {
+    cursor: default;
+  }
+
+  /* Command palette (Ctrl+K): a dialog with the combobox, to go to a page or start an action by name. Opened by a
+     button too, so the shortcut is never the only way. */
+  .command-palette {
+    width: min(40rem, calc(100vw - 32px));
+    margin-top: 12vh;
+  }
+  .command-palette .combobox {
+    display: grid;
+  }
+  .command-palette .combobox__input {
+    width: auto;
+    margin: var(--space-3);
+  }
+  .command-palette .combobox__toggle {
+    display: none;
+  }
+  .command-palette .combobox__input {
+    padding-inline-end: var(--space-3);
+  }
+  .command-palette .combobox__popup {
+    position: static;
+    max-height: min(50vh, 24rem);
+    border: 0;
+    border-top: 1px solid var(--color-divider);
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+  :root:not(.pref-contrast):not([data-style]) .command-palette .combobox__popup {
+    background-color: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .command-palette__keys {
+    margin: 0;
+    padding: var(--space-2) var(--space-4) var(--space-3);
+    border-top: 1px solid var(--color-divider);
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+  }
+  .command-palette-open kbd {
+    margin-left: var(--space-2);
+    padding: 0 var(--space-1);
+    border: 1px solid var(--color-divider);
+    border-radius: var(--radius);
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+  }
+
+  /* Windows Contrast themes for the parts above: every state shown by a fill or a colour gets a system colour. */
+  @media (forced-colors: active) {
+    .log-view__match { background: Mark; color: MarkText; forced-color-adjust: none; }
+    .log-view__line[data-level="error"],
+    .log-view__line[data-level="warning"] { border-left-color: CanvasText; }
+    .tabs__tab[aria-selected="true"]::after { background: Highlight; }
+    .tabs__tab[aria-selected="true"] { outline: 2px solid Highlight; outline-offset: -2px; }
+    .combobox__option.is-active { outline: 2px solid Highlight; }
+    .combobox__option[aria-selected="true"] { color: Highlight; }
+    .sparkline__area { fill: none; }
+    .sparkline__line,
+    .gauge__fill { stroke: Highlight; }
+    .gauge__track { stroke: GrayText; }
+    .pagination__link[aria-current="page"] { border: 2px solid Highlight; }
+    .schedule__day input:checked + span,
+    .tag-input__tag { outline: 2px solid Highlight; outline-offset: -2px; }
+    .alerts__item[data-unread] .alerts__title::before { background: Highlight; forced-color-adjust: none; }
+    .page-banner { border-bottom-color: CanvasText; }
+    .tooltip { background: Canvas; color: CanvasText; border-color: CanvasText; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :root:not(.pref-motion-off) :is(.tooltip, .gauge__fill, .combobox__toggle svg) {
+      animation: none;
+      transition: none;
+    }
+  }
+  :root.pref-motion :is(.tooltip, .gauge__fill, .combobox__toggle svg) {
+    animation: none;
+    transition: none;
+  }
 }

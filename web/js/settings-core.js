@@ -40,6 +40,21 @@ function setError(control, message) {
   if (describedBy) control.setAttribute("aria-describedby", describedBy); else control.removeAttribute("aria-describedby");
 }
 
+// The design system's error summary (20 November 2026), for a form where more than one field can be wrong: "There is
+// a problem" at the top of the form, focused, with a link to each field, each field's own error under its label, and
+// "Error: " at the start of the page title. errors: [[control, message]]; an empty list clears it. Starboard's own
+// setError keeps each field's error node, so the summary only adds the list and the title.
+function formErrors(form, errors) {
+  const fields = [...form.querySelectorAll("input, select, textarea")].filter((c) => c.fieldError);
+  fields.forEach((c) => setError(c, ""));
+  SharedComponents.clearErrors(form);
+  if (!errors.length) return;
+  // showErrors finds each field's error node by its id (field() makes it), fills it with "Error: " for screen readers,
+  // and adds it to aria-describedby after the hint.
+  SharedComponents.showErrors(form, errors.map(([c, message]) => ({ field: c.id, message })));
+  errors.forEach(([c]) => { c.fieldError.hidden = false; });
+}
+
 function switchRow(label, hint, input) {
   input.setAttribute("role", "switch");
   return el("label", { class: "switch" },
@@ -558,6 +573,8 @@ function topicTabs() {
   if (!nav) {
     nav = el("nav", { id: "topic-tabs", class: "topic-tabs", "aria-label": "Topics on this page" }, el("div", { role: "tablist", "aria-label": "Topics on this page" }));
     ($(".page-head", main) || holder).after(nav);
+    // Their height, for the space the page keeps clear above what has focus while they stay under the header (app.css).
+    if (window.ResizeObserver) new ResizeObserver(() => document.documentElement.style.setProperty("--topic-tabs-h", `${nav.offsetHeight}px`)).observe(nav);
   }
   const want = decodeURIComponent(location.hash.slice(1));
   const fromHash = want && topics.find((s) => s.id === want || $(`[id="${CSS.escape(want)}"]`, s));

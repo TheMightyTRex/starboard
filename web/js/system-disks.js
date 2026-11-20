@@ -45,7 +45,7 @@ const EVENT_WORDS = { danger: ["Problem", "circle-x"], warning: ["Warning", "tri
 function eventRow(e) {
   const [word, iconName] = EVENT_WORDS[e.tone] || EVENT_WORDS.info;
   return el("li", { class: "row row--no-lead" },
-    el("p", {}, el("span", { class: "status-icon", "data-tone": e.tone === "info" ? null : e.tone, title: word }, icon(iconName), el("span", { class: "visually-hidden", text: `${word}: ` })),
+    el("p", {}, el("span", { class: "status-icon", "data-tone": e.tone === "info" ? null : e.tone, tabindex: "0", "data-tooltip": word }, icon(iconName), el("span", { class: "visually-hidden", text: `${word}: ` })),
       e.when ? el("span", { class: "small muted numeric", text: `${e.when} ` }) : null, e.text));
 }
 
