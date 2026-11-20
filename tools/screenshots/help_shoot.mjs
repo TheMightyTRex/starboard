@@ -3,7 +3,8 @@
 // the step's number in the article. tools/help-screenshots.sh runs this in the Playwright image.
 //
 // Each shot in help_shots.json: { topic, file, page, width?, height?, scheme?, run?, after?, marks: [{ t, step?, side? }],
-// steps: [...], alt }. A mark's t is the visible text of a control, "$css selector", or "field:name" (the form
+// steps: [...], alt }. A mark's t is the visible text of a control, "$css selector", "$$css selector" (one outline
+// round every match), or "field:name" (the form
 // field with that name, with its label and hint). A shot whose mark-up check fails is not taken: it is listed
 // at the end, and the run fails. 7 November 2026.
 import { chromium } from "playwright";
@@ -32,6 +33,8 @@ async function pageFor(shot) {
   if (!contexts[key]) {
     const context = await browser.newContext({ viewport: { width: w, height: h }, colorScheme: scheme });
     await context.addInitScript(() => { try { sessionStorage.setItem("starboard.setup-wizard", JSON.stringify({ opened: true })); } catch { /* fine */ } });  // the set-up wizard counts as seen (DASH-289)
+    // Light unless chosen since DASH-479, so a dark shot chooses Dark in Display, as a person would.
+    if (scheme === "dark") await context.addInitScript(() => { try { const k = "starboard.display"; localStorage.setItem(k, JSON.stringify({ ...JSON.parse(localStorage.getItem(k) || "{}"), theme: "dark" })); } catch { /* fine */ } });
     const login = await context.newPage();
     await login.goto(`${base}/login.html`);
     await login.fill("input[type=password]", password);
@@ -62,6 +65,9 @@ async function take(shot, page) {
         const input = document.querySelector(`[name="${t.slice(6)}"]`);
         return input ? (input.closest(".field") || input) : null;
       }
+      // "$$selector": one outline round every match, such as a side menu link's icon and words ("$$.rail a > *"),
+      // when the link itself runs to the edge of the screen.
+      if (t.startsWith("$$")) { const all = [...document.querySelectorAll(t.slice(2))]; return all.length ? all : null; }
       return t.startsWith("$") ? document.querySelector(t.slice(1)) : window.Annotate.byText(t);
     };
     window.Annotate.clear();
@@ -69,7 +75,7 @@ async function take(shot, page) {
     for (const m of marks) {
       const el = target(m.t);
       if (!el) { missing.push(m.t); continue; }
-      el.scrollIntoView({ block: "nearest" });
+      (Array.isArray(el) ? el[0] : el).scrollIntoView({ block: "nearest" });
     }
     for (const m of marks) {
       const el = target(m.t);

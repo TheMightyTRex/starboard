@@ -99,6 +99,8 @@ async function pageFor(shot) {
   if (!contexts[key]) {
     const context = await browser.newContext({ viewport: { width: shot.width, height: shot.height }, colorScheme: shot.scheme || "light" });
     await context.addInitScript(() => { try { sessionStorage.setItem("starboard.setup-wizard", JSON.stringify({ opened: true })); } catch { /* fine */ } });  // the set-up wizard counts as seen (DASH-289)
+    // Light unless chosen since DASH-479, so a dark shot chooses Dark in Display, as a person would.
+    if ((shot.scheme || "light") === "dark") await context.addInitScript(() => { try { const k = "starboard.display"; localStorage.setItem(k, JSON.stringify({ ...JSON.parse(localStorage.getItem(k) || "{}"), theme: "dark" })); } catch { /* fine */ } });
     const page = await context.newPage();
     page.on("pageerror", (e) => errors.push(`${page.url()}: ${e.message}`));
     page.on("console", (m) => { if (m.type() === "error" && !/40[04]/.test(m.text())) errors.push(`${page.url()}: ${m.text()}`); });

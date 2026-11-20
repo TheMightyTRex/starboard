@@ -14,7 +14,7 @@
         {
           "t": "$#add-service",
           "step": 2,
-          "side": "left"
+          "side": "right"
         }
       ],
       "steps": [
@@ -22,7 +22,7 @@
         2
       ],
       "alt": "Settings, Apps, Manage apps, with Manage apps (step 1) and Add an app (step 2) outlined",
-      "height": 1120,
+      "height": 1200,
       "run": "window.scrollTo(0, 0);"
     },
     {
@@ -91,7 +91,7 @@
       "run": "for (let i = 0; i < 40 && !document.querySelector('#lookup [data-kind=radio] button'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('#lib-found').hidden = true; document.querySelectorAll('#lookup [data-kind]').forEach((g) => { if (g.dataset.kind !== 'radio') g.hidden = true; }); window.scrollTo(0, 0);",
       "marks": [
         {
-          "t": "$.rail a[href='/search.html']",
+          "t": "$$.rail a[href='/search.html'] > *",
           "step": 1,
           "side": "right",
           "tail": 90
@@ -125,7 +125,7 @@
       "run": "for (let i = 0; i < 40 && !document.querySelector('li.row'); i++) await new Promise(r => setTimeout(r, 250)); const li = [...document.querySelectorAll('li.row')].find((x) => x.textContent.includes('Lighthouses')); li.dataset.shot = 'radio'; const cu = [...document.querySelectorAll(\"a[href='/upcoming.html']\")].find((a) => a.offsetParent && a.getBoundingClientRect().top < 70); cu.dataset.shot = 'coming-up';",
       "marks": [
         {
-          "t": "$.rail a[href='/search.html']",
+          "t": "$$.rail a[href='/search.html'] > *",
           "step": 1,
           "side": "right",
           "tail": 90
@@ -159,7 +159,7 @@
       "run": "const li = [...document.querySelectorAll('li.row')].find((x) => x.textContent.includes('The Example Hour')); li.dataset.shot = 'radio'; li.scrollIntoView({ block: 'center' });",
       "marks": [
         {
-          "t": "$.rail a[href='/downloads.html']",
+          "t": "$$.rail a[href='/downloads.html'] > *",
           "step": 4,
           "side": "right",
           "tail": 90
@@ -625,7 +625,7 @@
       "run": "for (let i = 0; i < 60 && (!document.querySelector('#lib-start .lib-kinds a') || document.querySelector('#lib-start').textContent.includes('Reading')); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('#kinds-h').scrollIntoView({ block: 'center' });",
       "marks": [
         {
-          "t": "$.rail a[href='/search.html']",
+          "t": "$$.rail a[href='/search.html'] > *",
           "step": 1,
           "side": "right",
           "tail": 90
@@ -720,7 +720,7 @@
       "run": "for (let i = 0; i < 40 && !document.querySelector('#lib-wall .media-card img'); i++) await new Promise(r => setTimeout(r, 250)); await new Promise(r => setTimeout(r, 800));",
       "marks": [
         {
-          "t": "$.rail a[href='/library-tv.html']",
+          "t": "$$.rail a[href='/library-tv.html'] > *",
           "step": 1,
           "side": "right",
           "tail": 90
@@ -880,7 +880,7 @@
       "file": "add-a-plugin-4-test.png",
       "page": "settings-plugins-catalogue.html",
       "height": 1300,
-      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('#pl-test-file'); i++) await new Promise(r => setTimeout(r, 250)); [...document.querySelectorAll('[role=tab]')].find((t) => t.textContent.trim() === 'Test a plug-in').click(); await new Promise(r => setTimeout(r, 600)); const f = new File([\"{\\\"manifest_version\\\": 1, \\\"id\\\": \\\"my-style\\\", \\\"name\\\": \\\"My style\\\", \\\"version\\\": \\\"0.1.0\\\", \\\"description\\\": \\\"A first try at a style.\\\", \\\"author\\\": \\\"Sam\\\", \\\"licence\\\": \\\"MIT\\\", \\\"homepage\\\": \\\"https://example.invalid/my-style\\\", \\\"support_url\\\": \\\"https://example.invalid/my-style/issues\\\", \\\"starboard_api\\\": \\\">=1.0 <2.0\\\", \\\"permissions\\\": [\\\"appearance:styles\\\"], \\\"containers\\\": [], \\\"styles\\\": [{\\\"id\\\": \\\"sky\\\", \\\"name\\\": \\\"Sky\\\", \\\"radius\\\": 8, \\\"font\\\": \\\"system\\\", \\\"shadow\\\": \\\"soft\\\", \\\"light\\\": {\\\"bg\\\": \\\"#eaf4ff\\\", \\\"header\\\": \\\"#f5faff\\\", \\\"surface\\\": \\\"#f2f8ff\\\", \\\"surface_raised\\\": \\\"#ffffff\\\", \\\"surface_sunken\\\": \\\"#dceaf8\\\", \\\"text\\\": \\\"#10202e\\\", \\\"text_muted\\\": \\\"#7a8a99\\\", \\\"border\\\": \\\"#6a7d90\\\", \\\"divider\\\": \\\"#c9d8e6\\\", \\\"accent\\\": \\\"#3d8fe0\\\", \\\"accent_text\\\": \\\"#ffffff\\\", \\\"accent_soft\\\": \\\"#dbeafb\\\", \\\"focus\\\": \\\"#1f5fa8\\\"}, \\\"dark\\\": {\\\"bg\\\": \\\"#0b1520\\\", \\\"header\\\": \\\"#101c29\\\", \\\"surface\\\": \\\"#12202e\\\", \\\"surface_raised\\\": \\\"#182a3b\\\", \\\"surface_sunken\\\": \\\"#08111a\\\", \\\"text\\\": \\\"#e8f2fc\\\", \\\"text_muted\\\": \\\"#a8bccf\\\", \\\"border\\\": \\\"#6a8099\\\", \\\"divider\\\": \\\"#22374b\\\", \\\"accent\\\": \\\"#7cc0ff\\\", \\\"accent_text\\\": \\\"#0b1520\\\", \\\"accent_soft\\\": \\\"#163452\\\", \\\"focus\\\": \\\"#7cc0ff\\\"}}]}\"], 'starboard-plugin.json', { type: 'application/json' }); const dt = new DataTransfer(); dt.items.add(f); const i = document.querySelector('#pl-test-file'); i.files = dt.files; i.closest('form').requestSubmit(); await new Promise(r => setTimeout(r, 1200)); document.querySelector('#pl-test-h').scrollIntoView();for (let i = 0; i < 40 && !document.querySelector('section:has(#pl-test-h) .rows li'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('#pl-test-h').scrollIntoView(); window.scrollBy(0, -80);",
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('#pl-test-file'); i++) await new Promise(r => setTimeout(r, 250)); [...document.querySelectorAll('[role=tab]')].find((t) => t.textContent.trim() === 'Test a plug-in').click(); await new Promise(r => setTimeout(r, 600)); const f = new File([\"{\\\"manifest_version\\\": 1, \\\"id\\\": \\\"my-style\\\", \\\"name\\\": \\\"My style\\\", \\\"version\\\": \\\"0.1.0\\\", \\\"description\\\": \\\"A first try at a style.\\\", \\\"author\\\": \\\"Sam\\\", \\\"licence\\\": \\\"MIT\\\", \\\"homepage\\\": \\\"https://example.invalid/my-style\\\", \\\"support_url\\\": \\\"https://example.invalid/my-style/issues\\\", \\\"starboard_api\\\": \\\">=1.0 <2.0\\\", \\\"permissions\\\": [\\\"appearance:styles\\\"], \\\"containers\\\": [], \\\"styles\\\": [{\\\"id\\\": \\\"sky\\\", \\\"name\\\": \\\"Sky\\\", \\\"radius\\\": 8, \\\"font\\\": \\\"system\\\", \\\"shadow\\\": \\\"soft\\\", \\\"light\\\": {\\\"bg\\\": \\\"#eaf4ff\\\", \\\"header\\\": \\\"#f5faff\\\", \\\"surface\\\": \\\"#f2f8ff\\\", \\\"surface_raised\\\": \\\"#ffffff\\\", \\\"surface_sunken\\\": \\\"#dceaf8\\\", \\\"text\\\": \\\"#10202e\\\", \\\"text_muted\\\": \\\"#7a8a99\\\", \\\"border\\\": \\\"#6a7d90\\\", \\\"divider\\\": \\\"#c9d8e6\\\", \\\"accent\\\": \\\"#3d8fe0\\\", \\\"accent_text\\\": \\\"#ffffff\\\", \\\"accent_soft\\\": \\\"#dbeafb\\\", \\\"focus\\\": \\\"#1f5fa8\\\"}, \\\"dark\\\": {\\\"bg\\\": \\\"#0b1520\\\", \\\"header\\\": \\\"#101c29\\\", \\\"surface\\\": \\\"#12202e\\\", \\\"surface_raised\\\": \\\"#182a3b\\\", \\\"surface_sunken\\\": \\\"#08111a\\\", \\\"text\\\": \\\"#e8f2fc\\\", \\\"text_muted\\\": \\\"#a8bccf\\\", \\\"border\\\": \\\"#6a8099\\\", \\\"divider\\\": \\\"#22374b\\\", \\\"accent\\\": \\\"#7cc0ff\\\", \\\"accent_text\\\": \\\"#0b1520\\\", \\\"accent_soft\\\": \\\"#163452\\\", \\\"focus\\\": \\\"#7cc0ff\\\"}}]}\"], 'starboard-plugin.json', { type: 'application/json' }); const dt = new DataTransfer(); dt.items.add(f); const i = document.querySelector('#pl-test-file'); i.files = dt.files; i.closest('form').requestSubmit(); await new Promise(r => setTimeout(r, 1200)); document.querySelector('#pl-test-h').scrollIntoView();for (let i = 0; i < 40 && !document.querySelector('section:has(#pl-test-h) .rows li'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('section:has(#pl-test-h) .rows').scrollIntoView({ block: 'center' });",
       "marks": [
         {
           "t": "$section:has(#pl-test-h) .rows",
@@ -1366,7 +1366,7 @@
       "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('.rail__feedback:not([hidden])'); i++) await new Promise(r => setTimeout(r, 250)); ",
       "marks": [
         {
-          "t": "$.rail__feedback",
+          "t": "$$.rail__feedback > :not(.visually-hidden)",
           "side": "right",
           "tail": 90,
           "step": 1
