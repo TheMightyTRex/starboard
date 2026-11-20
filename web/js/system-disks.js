@@ -150,11 +150,6 @@ function openReport(d, opener) {
 
 // Page --------------------------------------------------------------------------------------------
 
-function stat(value, label, tone) {
-  return el("div", { class: "stat", "data-tone": tone ? tone[0] : null },
-    el("span", { class: "stat__value", text: value }), el("span", { class: "stat__label", text: label }), tone ? chip(tone[1], tone[0]) : null);
-}
-
 function diskRow(d) {
   const [tone, word, , reason] = status(d);
   const cell = (label, ...content) => el("td", { "data-label": label }, ...content);
@@ -181,7 +176,7 @@ function meterPanel(id, title, hint, rows) {
     })));
 }
 
-function emptyState(title, text) {
+function disksEmpty(title, text) {
   $("#disks").replaceChildren(el("div", { class: "empty" }, icon("heart-pulse", 32), el("h2", { text: title }), el("p", { text }),
     repo ? el("a", { class: "btn", href: `https://github.com/${repo}#disk-health`, target: "_blank", rel: "noopener noreferrer" },
       el("span", { text: "Open the set-up guide" }), el("span", { class: "visually-hidden", text: " (opens in a new tab)" })) : null));
@@ -194,12 +189,12 @@ async function load() {
   try {
     data = await api("/api/disk-health");
     if (!data.configured) {
-      emptyState("Disk health is not set up", "A job on the server saves each disk's SMART report, and STARBOARD_SMART_DIR tells Starboard where to find them.");
+      disksEmpty("Disk health is not set up", "A job on the server saves each disk's SMART report, and STARBOARD_SMART_DIR tells Starboard where to find them.");
       $("#disks-summary").textContent = "Not set up";
       return;
     }
     if (!data.disks.length) {
-      emptyState("No SMART reports yet", "The folder in STARBOARD_SMART_DIR has no reports in it yet. They appear after the job on the server next runs.");
+      disksEmpty("No SMART reports yet", "The folder in STARBOARD_SMART_DIR has no reports in it yet. They appear after the job on the server next runs.");
       $("#disks-summary").textContent = "No reports yet";
       return;
     }
@@ -213,10 +208,10 @@ async function load() {
     const withTemp = disks.filter((d) => d.temperature != null).sort((a, b) => b.temperature - a.temperature);
     const withHours = disks.filter((d) => d.hours != null).sort((a, b) => b.hours - a.hours);
     $("#disk-stats").replaceChildren(
-      stat(String(disks.length), disks.length === 1 ? "Disk" : "Disks"),
-      stat(String(toCheck), "To check", failing ? ["danger", "Failing"] : toCheck ? ["warning", "Needs attention"] : null),
-      stat(withTemp.length ? `${withTemp[0].temperature}°C` : "Not reported", withTemp.length ? `Hottest, ${nameOf(withTemp[0])}` : "Hottest", isHot(withTemp[0] || {}) ? ["warning", "Hot"] : null),
-      stat(withHours.length ? `${years(withHours[0].hours).toFixed(1)} years` : "Not reported", withHours.length ? `Oldest, ${nameOf(withHours[0])}` : "Oldest",
+      statTile(String(disks.length), disks.length === 1 ? "Disk" : "Disks"),
+      statTile(String(toCheck), "To check", failing ? ["danger", "Failing"] : toCheck ? ["warning", "Needs attention"] : null),
+      statTile(withTemp.length ? `${withTemp[0].temperature}°C` : "Not reported", withTemp.length ? `Hottest, ${nameOf(withTemp[0])}` : "Hottest", isHot(withTemp[0] || {}) ? ["warning", "Hot"] : null),
+      statTile(withHours.length ? `${years(withHours[0].hours).toFixed(1)} years` : "Not reported", withHours.length ? `Oldest, ${nameOf(withHours[0])}` : "Oldest",
         withHours.length && years(withHours[0].hours) >= 5 ? ["warning", "Plan to replace"] : null));
 
     let tbody = $("#disks tbody");

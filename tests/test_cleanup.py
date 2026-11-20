@@ -117,7 +117,7 @@ class CleanupApiTest(unittest.TestCase):
         self.assertEqual(done["holding"], [])
 
     def test_the_pages_and_menu(self):
-        shell = (ROOT / "tools" / "apply_shell.py").read_text()
+        shell = (ROOT / "starboard" / "shell.py").read_text()
         self.assertIn('("Clean up", "trash-2", [("system-cleanup.html", "What is left over"', shell)
         self.assertIn('("system-holding.html", "Holding folder"', shell)
         js = (ROOT / "web" / "js" / "system-cleanup.js").read_text()
@@ -125,7 +125,7 @@ class CleanupApiTest(unittest.TestCase):
         self.assertIn("danger: true", js)
         steps = json.loads((ROOT / "web" / "setup-steps.json").read_text())["steps"]
         self.assertIn("cleanup", [s["id"] for s in steps])
-        self.assertIn('{ id: "cleanup"', (ROOT / "web" / "js" / "settings.js").read_text())
+        self.assertIn('{ id: "cleanup"', "".join(p.read_text(encoding="utf-8") for p in sorted((ROOT / "web" / "js").glob("settings-*.js"))))
 
 
 if __name__ == "__main__":

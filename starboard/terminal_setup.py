@@ -3261,7 +3261,7 @@ def updates_summary(chosen):
 
 def update_parts(state):
     """The parts the Updates step asks about: Reelix only when it is being installed, Jellyfin's plug-ins only with
-    Jellyfin; the same rule as the browser set-up (settings.js, the updates step)."""
+    Jellyfin; the same rule as the browser set-up (settings-setup.js, the updates step)."""
     from . import setup_answers
     apps = (state.get("choice") or {}).get("apps") or []
     return [p for p in setup_answers.WORDS["updates"]["parts"] if p["when"] == "always" or p["when"] in apps]
@@ -3437,7 +3437,7 @@ def step_find(api, term, state):
 
 
 def _service_body(s, api_key):
-    """A service as Starboard saves it, with its new key (serviceBody in web/js/settings.js)."""
+    """A service as Starboard saves it, with its new key (serviceBody in web/js/settings-core.js)."""
     body = {k: v for k, v in s.items() if k != "has_api_key"}
     body["api_key"] = api_key
     if body.get("link") == body.get("url"):

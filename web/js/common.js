@@ -636,11 +636,11 @@ function filePicker(input, { choose = "Choose a file", again = "Choose another f
     name.textContent = f ? `${f.name}, ${formatBytes(f.size)}` : "No file chosen";
     name.classList.toggle("is-chosen", Boolean(f));
     words.textContent = f ? again : choose;
-    // A new choice clears the field's last error, such as "Choose the zip file" (settings.js setError).
+    // A new choice clears the field's last error, such as "Choose the zip file" (settings-core.js setError).
     if (f && input.fieldError && !input.fieldError.hidden && typeof setError === "function") setError(input, "");
   };
   input.setAttribute("aria-describedby", [input.getAttribute("aria-describedby"), name.id].filter(Boolean).join(" "));
-  input.moreHints = [...(input.moreHints || []), name.id];  // kept when settings.js setError rewrites the description
+  input.moreHints = [...(input.moreHints || []), name.id];  // kept when settings-core.js setError rewrites the description
   input.addEventListener("change", show);
   const box = el("div", { class: "file-field" }, el("span", { class: "btn file-field__button" }, icon("upload"), words, input), name);
   // A form that is reset (after an upload) empties the input without a change event.
@@ -1298,6 +1298,14 @@ function unitInput(input, unit) {
   return el("span", { class: "input-unit" }, input, el("span", { class: "input-unit__unit", "aria-hidden": "true", text: unit }));
 }
 
+// A figure in a row of stat tiles (System pages): its value, what it is, and a tone, either [tone, word] with a chip
+// saying the word, or a tone on its own with any node to follow (extra).
+function statTile(value, label, tone = null, extra = null) {
+  const [t, word] = Array.isArray(tone) ? tone : [tone, null];
+  return el("div", { class: "stat", "data-tone": t || null },
+    el("span", { class: "stat__value", text: value }), el("span", { class: "stat__label", text: label }), word ? chip(word, t) : extra);
+}
+
 // Settings pattern 7: what is missing and the one thing to do.
 function emptyState(title, text, action = null) {
   return el("div", { class: "empty" }, el("p", {}, el("strong", { text: title })), text ? el("p", { text }) : null, action);
@@ -1422,15 +1430,16 @@ async function folderBrowser(start, opener, onChoose, { purpose = "", place: sta
 }
 
 // Bringing in media (DASH-455): while a copy runs, is paused or stopped, or has a report waiting, the dashboard and
-// Activity show one line with its bar and a link to it. Asked again every 10 seconds while it runs; nothing otherwise.
+// Activity show one line with its bar and a link to it. Asked again every 10 seconds while it runs and the tab is in
+// view; nothing otherwise, and once more when a hidden tab comes back.
 async function bringInBanner(after) {
   if (!after) return;
   const PHASES = { reelix: "Waiting for Reelix to start", checking: "Checking names with Reelix", downloading: "Copying down from the cloud", adding: "Adding to Reelix" };
-  let box = null, timer = 0;
+  let box = null, timer = 0, live = false;
   const draw = async () => {
     let j;
     try { j = await api("/api/bring-in/status"); } catch { return; }
-    if (!j?.state || j.state === "none") { box?.remove(); clearInterval(timer); return; }
+    if (!j?.state || j.state === "none") { box?.remove(); clearInterval(timer); live = false; return; }
     const pct = j.bytes_total ? Math.round((j.bytes_done / j.bytes_total) * 100) : 0;
     const title = j.state === "done" ? "Your media is in" : j.state === "paused" ? "Bringing in your media: paused" :
       j.state === "stopped" ? "Bringing in your media: stopped" : `Bringing in your media: ${PHASES[j.phase] || `${pct}%`}`;
@@ -1445,10 +1454,13 @@ async function bringInBanner(after) {
       el("a", { class: "btn btn--compact", href: "/bring-in.html" }, j.state === "done" ? "Open the report" : "Open", el("span", { class: "visually-hidden", text: " Bring in media" })));
     if (box) box.replaceWith(node); else after.after(node);
     box = node;
-    if (!["running", "waiting"].includes(j.state)) clearInterval(timer);
+    live = ["running", "waiting"].includes(j.state);
+    if (!live) clearInterval(timer);
   };
   await draw();
-  if (box) timer = setInterval(draw, 10000);
+  if (!live) return;
+  timer = setInterval(() => { if (!document.hidden) draw(); }, 10000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && live) draw(); });
 }
 
 // Still to set up, one at a time (DASH-289, owner, 10 November 2026): a slide-out that walks through each item left,

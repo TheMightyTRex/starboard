@@ -418,7 +418,7 @@ class SameStepsAsTheBrowserTest(unittest.TestCase):
 
     def test_the_browser_reads_the_same_storage_and_key_words(self):
         import json
-        js = (ROOT / "web" / "js" / "settings.js").read_text(encoding="utf-8")
+        js = "".join(p.read_text(encoding="utf-8") for p in sorted((ROOT / "web" / "js").glob("settings-*.js")))
         words = json.loads((ROOT / "web" / "setup-answers.json").read_text(encoding="utf-8"))
         self.assertIn("storage_page", js)
         for k, v in words["keys"]["places"].items():

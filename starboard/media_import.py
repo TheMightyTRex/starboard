@@ -5,10 +5,10 @@ for each in batches of 25, then import the ones you keep. Nothing is downloaded 
 series for the folder it is already in and scans its files. Books, audiobooks and music use Reelix's book and music
 import (DASH-282), by author or artist folder."""
 import os
-import json
 import urllib.error
 import urllib.parse
 import urllib.request
+from . import jsonhttp
 
 KINDS = {"movie": "films", "series": "tv"}
 # Books and audiobooks (DASH-282): Reelix keeps their folders apart (/bookrootfolders) and imports by author, matched
@@ -36,21 +36,13 @@ def _reelix(cfg):
 
 def _call(cfg, method, path, body=None, timeout=60):
     base, key = _reelix(cfg)
-    req = urllib.request.Request(base + path, method=method, data=json.dumps(body).encode() if body is not None else None,
-                                 headers={"X-Api-Key": key, "Accept": "application/json", "Content-Type": "application/json",
-                                          "User-Agent": "Starboard", "X-Reelix-Request": "1"})
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:  # Reelix's address from Starboard's own apps  # nosec B310
-            raw = r.read(20_000_000)
+    try:  # Reelix's address from Starboard's own apps
+        return jsonhttp.request(base + path, method, body, {"X-Api-Key": key, "Content-Type": "application/json", "X-Reelix-Request": "1"},
+                                timeout, limit=20_000_000)
     except urllib.error.HTTPError as e:
-        try:
-            message = json.loads(e.read(4000)).get("message")
-        except ValueError:
-            message = None
-        raise ImportError_(message or f"Reelix answered {e.code}") from None
+        raise ImportError_(jsonhttp.error_message(e, 4000) or f"Reelix answered {e.code}") from None
     except (urllib.error.URLError, OSError):
         raise ImportError_("Starboard could not reach Reelix") from None
-    return json.loads(raw) if raw else None
 
 
 LEFT_OUT = "import-left-out.json"  # folders the person chose to leave out (owner, 10 November 2026)

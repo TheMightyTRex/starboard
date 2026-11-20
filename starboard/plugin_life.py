@@ -7,7 +7,6 @@ Everything is kept in the plug-in's own folder (data/plugins/<id>/): state.json,
 settings and Compose file of the version before the last update. Only one previous version is kept.
 """
 import datetime as dt
-import hashlib
 import json
 import os
 import shutil
@@ -136,20 +135,6 @@ def best_version(versions):
         hidden += 1
         needs = needs or v["starboard_api"]
     return None, hidden, needs
-
-
-def fetch_checked(address, sha256="", opener=None):
-    """A manifest from its address; with a catalogue's SHA-256, refused when the file changed since it was listed."""
-    from . import outside
-    outside.check_url(address)
-    req = urllib.request.Request(address, headers={"User-Agent": "Starboard", "Accept": "application/json"})
-    with (opener or urllib.request.build_opener()).open(req, timeout=5) as r:  # checked above  # nosec B310
-        raw = r.read(pa.MAX_MANIFEST + 1)
-    if len(raw) > pa.MAX_MANIFEST:
-        raise ValueError("That manifest is too large")
-    if sha256 and hashlib.sha256(raw).hexdigest() != sha256:
-        raise ValueError("The file changed since the catalogue listed it, so Starboard did not use it")
-    return pa.parse(raw)
 
 
 def updates_known(data_dir):
@@ -435,7 +420,7 @@ class EventWatch:
             return 0
         done = {f"{j.get('id')}|{j.get('finished')}": j} if j.get("id") and j.get("finished") else {}
         sent = 0
-        for key in self._new("disk.changed", done):
+        for _key in self._new("disk.changed", done):
             erased = [x for x in j.get("erased") or [] if x]
             words = {"add": "added to the pool", "remove": "taken out of the pool", "balance": "balanced"}.get(j.get("action"), "changed")
             logs.event("warning" if erased else "info", "pool",

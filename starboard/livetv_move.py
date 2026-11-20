@@ -5,7 +5,7 @@ adds them to Jellyfin. Starboard keeps serving the logos and Pluto TV links at /
 so Jellyfin's tuners and guides stay as they are.
 
 The move happens by itself, once, when Starboard starts: if Live TV was on (extras.livetv), Starboard can run
-containers and the installer gave a Live TV folder, it adds the plug-in with the same settings (white logos, the
+containers and the installer gave a Live TV folder, it adds the plug-in with the same settings (the
 address Jellyfin uses, the folder as Jellyfin sees it), activates it, and switches its own job off. When any of that
 is missing (no Docker access, Starboard not in Docker), Live TV keeps running inside Starboard as before, so nobody
 loses it; Settings, Plug-ins offers the plug-in when it can run.
@@ -53,8 +53,7 @@ def settings_from(cfg, self_url):
     """The plug-in's settings from Starboard's own Live TV settings, so nothing changes for Jellyfin."""
     from . import livetv_jellyfin
     extras = cfg.data["extras"]
-    return {"white_logos": bool(extras.get("white_logos", True)),
-            "address": (extras.get("livetv_address") or self_url or "").rstrip("/"),
+    return {"address": (extras.get("livetv_address") or self_url or "").rstrip("/"),
             # The folder Jellyfin's own tuners use first, so nothing is added twice; else worked out, as before.
             "jellyfin_folder": livetv_jellyfin.folder_from_jellyfin(cfg.data["services"])
             or livetv_jellyfin.jellyfin_folder(extras, cfg.data_dir) or ""}

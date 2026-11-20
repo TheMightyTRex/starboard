@@ -97,8 +97,9 @@ class HelpDocsTest(unittest.TestCase):
                 self.assertFalse(re.search(r'class: "help-link", href', s), f"{f.name}: in-page help must use helpButton()")
             for summary in re.findall(r'el\("summary", \{ text: "([^"]+)"', s):
                 self.assertFalse(summary.startswith(("How ", "Which ", "What is")), f"{f.name}: help '{summary}' is a fold-out")
+        from starboard import shell  # the header, filled into each page when it is served
         for f in web.glob("*.html"):
-            for a in re.findall(r"<a [^>]*data-help-link>.*?</a>", f.read_text(encoding="utf-8"), re.S):
+            for a in re.findall(r"<a [^>]*data-help-link>.*?</a>", shell.fill(f.name, f.read_text(encoding="utf-8")), re.S):
                 self.assertIn("M15 3h6v6", a, f"{f.name}: the header Help needs the new-tab help icon")
 
 

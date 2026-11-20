@@ -120,6 +120,10 @@ def lines_of(path):
     if path.suffix == ".md":
         return markdown_lines(text)
     if path.suffix == ".html":
+        if path.parent.name == "web":  # the menus, which the server fills in (starboard/shell.py), are checked too
+            sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+            from starboard import shell
+            text = shell.fill(path.name, text)
         return html_lines(text)
     if path.suffix == ".js":
         return string_lines(text, "//")

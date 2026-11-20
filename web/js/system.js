@@ -7,11 +7,6 @@ const charts = {};
 
 function checkAgainLabel(button) { button.replaceChildren(icon("refresh-cw"), el("span", { text: "Check again" })); }
 
-function tile(value, label, tone) {
-  return el("div", { class: "stat", "data-tone": tone ? tone[0] : null },
-    el("span", { class: "stat__value", text: value }), el("span", { class: "stat__label", text: label }), tone ? chip(tone[1], tone[0]) : null);
-}
-
 const tempTone = (c) => (c == null ? null : c >= 85 ? ["danger", "Very hot"] : c >= 75 ? ["warning", "Hot"] : null);
 const busyTone = (pct, word) => (pct >= 90 ? ["warning", word] : null);
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
@@ -106,10 +101,7 @@ function renderWarnings(items) {
 
 function makeCharts() {
   const base = { level: 3, points: [] };
-  charts.cpu = lineChart({ ...base, title: "Processor", series: [{ key: "cpu", name: "Processor" }], format: percent, max: 100 });
-  charts.mem = lineChart({ ...base, title: "Memory", series: [{ key: "mem", name: "Memory" }], format: percent, max: 100 });
-  charts.temp = lineChart({ ...base, title: "Processor temperature", series: [{ key: "temp", name: "Temperature" }], format: degrees, max: 100 });
-  charts.net = lineChart({ ...base, title: "Network", series: [{ key: "rx", name: "Download" }, { key: "tx", name: "Upload" }], format: perSecond });
+  Object.assign(charts, serverCharts(base));
   $("#charts").replaceChildren(charts.cpu, charts.mem, charts.temp, charts.net);
 }
 
@@ -125,10 +117,10 @@ async function load() {
     const temp = last.temp;
     const load1 = sys.load.length ? sys.load[0] : null;
     $("#stats").replaceChildren(
-      tile(points.length ? percent(last.cpu) : "Not recorded yet", "Processor", points.length ? busyTone(last.cpu, "Busy") : null),
-      tile(formatBytes(memUsed), `Memory used of ${formatBytes(sys.memory.total)} (${percent(memPct)})`, busyTone(memPct, "Nearly full")),
-      tile(temp != null ? degrees(temp) : "Not reported", "Processor temperature", tempTone(temp)),
-      tile(load1 != null ? load1.toFixed(1) : "Not reported", `Load, ${plural(sys.cpus, "thread", "threads")}`, load1 > sys.cpus ? ["warning", "Busy"] : null));
+      statTile(points.length ? percent(last.cpu) : "Not recorded yet", "Processor", points.length ? busyTone(last.cpu, "Busy") : null),
+      statTile(formatBytes(memUsed), `Memory used of ${formatBytes(sys.memory.total)} (${percent(memPct)})`, busyTone(memPct, "Nearly full")),
+      statTile(temp != null ? degrees(temp) : "Not reported", "Processor temperature", tempTone(temp)),
+      statTile(load1 != null ? load1.toFixed(1) : "Not reported", `Load, ${plural(sys.cpus, "thread", "threads")}`, load1 > sys.cpus ? ["warning", "Busy"] : null));
 
     const items = warnings(health, disks);
     renderWarnings(items);

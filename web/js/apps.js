@@ -220,7 +220,7 @@ function showAll() {
   $("#app-filter").focus();
 }
 
-function emptyState(services) {
+function appsEmpty(services) {
   const box = $("#apps-empty");
   let node = null;
   if (!services.length) {
@@ -256,7 +256,7 @@ function render({ announceCount = false } = {}) {
   renderGroups(shown);
   const count = shown.length === services.length ? `${services.length} ${services.length === 1 ? "app" : "apps"}` : `Showing ${shown.length} of ${services.length} apps`;
   $("#apps-count").textContent = count;
-  emptyState(services);
+  appsEmpty(services);
   if (announceCount) announce(count);
 }
 

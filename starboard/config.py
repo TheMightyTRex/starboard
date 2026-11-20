@@ -87,7 +87,7 @@ DEFAULTS = {
               "alerts": {"apps_down": True, "disk_problem": True, "disk_full": 90, "download_stuck": True,
                          "backup_failed": True, "cert_days": 14}},
     # Hourly jobs (jobs.py): each off until turned on in Settings, Apps, Jellyfin or Settings, Apps, Audiobookshelf.
-    "extras": {"livetv": False, "white_logos": True, "livetv_address": "", "livetv_jellyfin_folder": "", "import_keep": False, "defaults": False,
+    "extras": {"livetv": False, "livetv_address": "", "livetv_jellyfin_folder": "", "import_keep": False, "defaults": False,
                "listening_keep": False, "jellyfin_user": "",
                # The set-up's Audio description tick (DASH-399): a wish to install the plug-in, unticked until chosen.
                "audio_description": False},
@@ -539,9 +539,9 @@ USAGE_CHOICES = ("off", "ask", "open", "nightly", "weekly")
 # download hours, the import itself) are left as they are; only how often and how much changes.
 # What each preset does, in words: shown by the browser and terminal set-ups and Settings, Performance.
 PRESET_ABOUT = {
-    "small": "For a small or busy server: no history, no watching, no card numbers, no white logos or posters, no hourly "
+    "small": "For a small or busy server: no history, no watching, no card numbers, no posters, no hourly "
              "Jellyfin or Audiobookshelf jobs, slower pages. Live TV and download hours stay as you set them.",
-    "balanced": "The default: history every 5 minutes, card numbers, white logos, posters, normal page updates. Watching "
+    "balanced": "The default: history every 5 minutes, card numbers, posters, normal page updates. Watching "
                 "and the hourly Jellyfin and Audiobookshelf jobs stay as you set them.",
     "everything": "Everything on and as fresh as it goes: history every minute, watching every 5 minutes with a weekly "
                   "summary, the hourly Jellyfin and Audiobookshelf jobs, faster Downloads.",
@@ -550,17 +550,17 @@ PRESETS = {
     "small": {"title": "Small server", "performance": {"history": False, "history_every": 900, "schedule_every": 300,
               "downloads_refresh": 30, "monitor_refresh": 5, "card_numbers": False,
               "storage_refresh": 0, "usage_every": "ask"},
-              "watch": {"enabled": False}, "extras": {"white_logos": False, "import_keep": False, "defaults": False, "listening_keep": False},
+              "watch": {"enabled": False}, "extras": {"import_keep": False, "defaults": False, "listening_keep": False},
               "show_posters": False},
     "balanced": {"title": "Balanced", "performance": {"history": True, "history_every": 300, "schedule_every": 60,
                  "downloads_refresh": 15, "monitor_refresh": 2, "card_numbers": True,
                  "storage_refresh": 0, "usage_every": "ask"},
-                 "watch": {}, "extras": {"white_logos": True}, "show_posters": True},
+                 "watch": {}, "extras": {}, "show_posters": True},
     "everything": {"title": "Everything", "performance": {"history": True, "history_every": 60, "schedule_every": 60,
                    "downloads_refresh": 10, "monitor_refresh": 2, "card_numbers": True,
                    "storage_refresh": 60, "usage_every": "weekly"},
                    "watch": {"enabled": True, "every": 5, "weekly": True},
-                   "extras": {"white_logos": True, "import_keep": True, "defaults": True, "listening_keep": True}, "show_posters": True},
+                   "extras": {"import_keep": True, "defaults": True, "listening_keep": True}, "show_posters": True},
 }
 
 
@@ -672,7 +672,7 @@ def clean_extras(incoming, current):
     if not isinstance(incoming, dict):
         raise ConfigError("Send the Jellyfin job settings as an object")
     out = dict(current)
-    for key in ("livetv", "white_logos", "import_keep", "defaults", "listening_keep", "audio_description"):
+    for key in ("livetv", "import_keep", "defaults", "listening_keep", "audio_description"):
         if key in incoming:
             out[key] = bool(incoming[key])
     if "jellyfin_user" in incoming:  # whose watched status the Library shows (DASH-276); "" is Jellyfin's first admin

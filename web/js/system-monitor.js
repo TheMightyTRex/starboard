@@ -25,13 +25,7 @@ function ago(t, last) {
 
 function makeCharts() {
   const base = { points: [], span: SPAN, xFormat: ago, waiting: "Reading the server. The chart starts in a few seconds." };
-  charts = {
-    cpu: lineChart({ ...base, title: "Processor", series: [{ key: "cpu", name: "Processor" }], format: percent, max: 100 }),
-    mem: lineChart({ ...base, title: "Memory", series: [{ key: "mem", name: "Memory" }], format: percent, max: 100 }),
-    temp: lineChart({ ...base, title: "Processor temperature", series: [{ key: "temp", name: "Temperature" }], format: degrees, max: 100 }),
-    net: lineChart({ ...base, title: "Network", series: [{ key: "rx", name: "Download" }, { key: "tx", name: "Upload" }], format: perSecond }),
-    disk: lineChart({ ...base, title: "Disk activity", series: [{ key: "read", name: "Read" }, { key: "write", name: "Write" }], format: perSecond }),
-  };
+  charts = serverCharts(base, { disk: true });
   $("#charts").replaceChildren(...Object.values(charts));
 }
 

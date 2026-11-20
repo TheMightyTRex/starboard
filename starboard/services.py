@@ -15,6 +15,7 @@ import urllib.request
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 
+from . import jsonhttp
 from . import logs, posters
 from .config import SERVICE_TYPES
 
@@ -156,33 +157,19 @@ def _api(service, path, params=None, method="GET", body=None, timeout=TIMEOUT):
     url = base + path
     if params:
         url += "?" + urllib.parse.urlencode(params)
-    headers = {"Accept": "application/json", "User-Agent": USER_AGENT}
+    headers = {"User-Agent": USER_AGENT}
     if service.get("api_key"):
         headers["X-Api-Key"] = service["api_key"]
         if service["type"] == "audiobookshelf":
             headers["Authorization"] = f"Bearer {service['api_key']}"
-    data = None
-    if body is not None:
-        data = json.dumps(body).encode()
-        headers["Content-Type"] = "application/json"
-    req = urllib.request.Request(url, data=data, headers=headers, method=method)
     started = time.time()
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:  # app addresses are checked to be http(s) when saved (config.validate_service)  # nosec B310
-            raw = resp.read(8_000_000)
-            logs.detail("apps", f"{service['name']} {method} {path} {resp.status} in {round((time.time() - started) * 1000)} ms")
-            return json.loads(raw) if raw else None
+    try:  # app addresses are checked to be http(s) when saved (config.validate_service)
+        status, answer = jsonhttp.request(url, method, body, headers, timeout, limit=8_000_000, full=True)
+        logs.detail("apps", f"{service['name']} {method} {path} {status} in {round((time.time() - started) * 1000)} ms")
+        return answer
     except urllib.error.HTTPError as e:
         logs.detail("apps", f"{service['name']} {method} {path} answered {e.code} in {round((time.time() - started) * 1000)} ms")
-        detail = ""
-        try:
-            payload = json.loads(e.read(20000))
-            if isinstance(payload, list) and payload:
-                detail = payload[0].get("errorMessage", "")
-            elif isinstance(payload, dict):
-                detail = payload.get("message", "")
-        except ValueError:
-            pass
+        detail = jsonhttp.error_message(e)
         if e.code in (401, 403):
             raise ServiceError(f"{service['name']} refused the API key") from None
         err = ServiceError(detail or f"{service['name']} answered with error {e.code}")

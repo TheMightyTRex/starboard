@@ -9,7 +9,8 @@ import unittest
 from starboard import config, start, terminal_setup
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-WIZARDS = ["starboard/terminal_setup.py", "web/js/install.js", "web/js/settings.js", "run-first.sh", "install.sh"]
+SETTINGS_PARTS = sorted(f"web/js/{p.name}" for p in (ROOT / "web" / "js").glob("settings-*.js"))  # settings.js, split by page
+WIZARDS = ["starboard/terminal_setup.py", "web/js/install.js", *SETTINGS_PARTS, "run-first.sh", "install.sh"]
 CONTRACTIONS = re.compile(r"\b(can't|won't|don't|doesn't|isn't|aren't|didn't|wasn't|haven't|hasn't|shouldn't|wouldn't|"
                           r"couldn't|you're|you'll|you've|we're|they're|it's|that's|there's|let's|I'm)\b", re.I)
 
@@ -71,7 +72,7 @@ class WizardRulesTest(unittest.TestCase):
         self.assertEqual(len(ids), len(set(ids)), "a step id is there twice")
         for s in table:
             self.assertTrue(s["title"] and s["question"], s)
-        for path in ("web/js/settings.js", "web/js/install.js"):
+        for path in (*SETTINGS_PARTS, "web/js/install.js"):
             for used in re.findall(r'stepNamed\(T, "([a-z-]+)"\)', (ROOT / path).read_text(encoding="utf-8")):
                 self.assertIn(used, ids, f"{path} asks for a step the table does not have")
         self.assertEqual(terminal_setup.STEPS[:5], [terminal_setup.title(i) for i in ("password", "place", "keyboard", "start", "storage")])

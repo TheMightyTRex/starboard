@@ -89,21 +89,22 @@ class JellyfinTest(unittest.TestCase):
         self.assertIn("already", migrate.ensure_defaults(self.services))
         self.assertEqual(FakeJellyfin.prefs["landing-livetv"], "channels")
 
-    def test_numbering_by_category_without_white_logos(self):
+    def test_numbering_by_category_keeps_each_channels_own_logo(self):
         with tempfile.TemporaryDirectory() as d:
             with open(os.path.join(d, "samsung.m3u"), "w") as f:
                 f.write('#EXTM3U\n#EXTINF:-1 tvg-id="a" tvg-logo="https://x/a.png" tvg-chno="5" group-title="Samsung UK · News",Daily News\nhttps://x/a.m3u8\n'
                         '#EXTINF:-1 tvg-id="b" tvg-logo="" tvg-chno="6" group-title="Samsung UK · Movies",Film Four Ever\nhttps://x/b.m3u8\n')
             os.environ["STARBOARD_IPTV_DIR"] = d
             try:
-                self.assertIn("Numbered 2", livetv.number_and_logos(d, "http://starboard:8090", white=False))
+                self.assertIn("Numbered 2", livetv.number_and_logos(d))
             finally:
                 del os.environ["STARBOARD_IPTV_DIR"]
             with open(os.path.join(d, "samsung.m3u")) as f:
                 text = f.read()
             self.assertIn('tvg-chno="701"', text)
+            self.assertIn('tvg-logo="https://x/a.png"', text)  # its own logo, in its own colours (20 November 2026)
+            self.assertNotIn("/iptv/logos/", text)
             self.assertIn('tvg-chno="451"', text)
-            self.assertIn('tvg-logo="https://x/a.png"', text)  # no white logo made: its own logo stays
             with open(os.path.join(d, livetv.ALL)) as f:  # each channel's region, for the Live TV switches (DASH-359)
                 self.assertEqual({c["region"] for c in json.load(f)}, {"UK"})
 

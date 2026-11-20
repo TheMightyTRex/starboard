@@ -17,6 +17,7 @@ import os
 import urllib.error
 import urllib.parse
 import urllib.request
+from . import jsonhttp
 
 ADMIN = "admin"
 KEY_NAME = "Starboard"
@@ -36,25 +37,13 @@ class AppSetupError(Exception):
 
 def _call(base, method, path, body=None, headers=None, opener=None):
     """One request; returns the parsed answer (or the text), raising AppSetupError with the app's words on failure."""
-    data = json.dumps(body).encode() if body is not None else None
-    h = {"Accept": "application/json", "User-Agent": "Starboard", **(headers or {})}
-    if data is not None:
-        h["Content-Type"] = "application/json"
-    req = urllib.request.Request(base.rstrip("/") + path, data=data, method=method, headers=h)
-    try:
-        with (opener or urllib.request.build_opener()).open(req, timeout=TIMEOUT) as r:  # an app's address on this computer, from the stack  # nosec B310
-            raw = r.read()
+    try:  # an app's address on this computer, from the stack
+        return jsonhttp.request(base.rstrip("/") + path, method, body, headers, TIMEOUT, opener=opener or urllib.request.build_opener(), text=True)
     except urllib.error.HTTPError as e:
-        words = e.read()[:300].decode("utf-8", "replace").strip()
+        words = jsonhttp.error_words(e)
         raise AppSetupError(f"{e.code} from {method} {path}" + (f": {words}" if words else "")) from None
     except (urllib.error.URLError, OSError) as e:
         raise AppSetupError(f"no answer at {base}: {getattr(e, 'reason', e)}") from None
-    if not raw:
-        return None
-    try:
-        return json.loads(raw)
-    except ValueError:
-        return raw.decode("utf-8", "replace")
 
 
 # Jellyfin -------------------------------------------------------------------------------------------------------

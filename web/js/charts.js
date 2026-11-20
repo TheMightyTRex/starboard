@@ -273,3 +273,16 @@ const RANGE_WORDS = { 1: "the last hour", 6: "the last 6 hours", 24: "the last 2
 const percent = (v) => `${Math.round(v)}%`;
 const perSecond = (v) => `${formatBytes(v)}/s`;
 const degrees = (v) => `${Math.round(v)}°C`;
+
+// The server's line charts, shared by System, Overview and Monitor: processor, memory, temperature and network, and
+// disk activity when asked. base: what every chart has (points, level, span and the rest).
+function serverCharts(base, { disk = false } = {}) {
+  const out = {
+    cpu: lineChart({ ...base, title: "Processor", series: [{ key: "cpu", name: "Processor" }], format: percent, max: 100 }),
+    mem: lineChart({ ...base, title: "Memory", series: [{ key: "mem", name: "Memory" }], format: percent, max: 100 }),
+    temp: lineChart({ ...base, title: "Processor temperature", series: [{ key: "temp", name: "Temperature" }], format: degrees, max: 100 }),
+    net: lineChart({ ...base, title: "Network", series: [{ key: "rx", name: "Download" }, { key: "tx", name: "Upload" }], format: perSecond }),
+  };
+  if (disk) out.disk = lineChart({ ...base, title: "Disk activity", series: [{ key: "read", name: "Read" }, { key: "write", name: "Write" }], format: perSecond });
+  return out;
+}

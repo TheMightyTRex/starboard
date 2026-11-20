@@ -97,7 +97,7 @@ class Jobs:
             # The heavy ones run in a short-lived process, so the memory they use goes back to the system when they
             # end (child.py, DASH-79). Live TV also puts the channels and guides into Jellyfin itself (DASH-229).
             if key == "livetv":
-                summary = child.run("livetv", {"self_url": self.self_url(), "white_logos": bool(self.settings().get("white_logos", True)),
+                summary = child.run("livetv", {"self_url": self.self_url(),
                                                "force": force, "services": services, "settings": self.settings(),
                                                "data_dir": self.app.config.data_dir}, timeout=3 * 3600)
             elif key in ("import", "listening"):
@@ -181,4 +181,4 @@ class Jobs:
                 needs = [] if livetv.folder() and os.path.isdir(livetv.folder()) else ["Jellyfin's Live TV folder (./install.sh asks)"]
             row["needs"] = needs
             out.append(row)
-        return {"jobs": out, "self_url": self.self_url(), "pillow": livetv.pillow()}
+        return {"jobs": out, "self_url": self.self_url()}

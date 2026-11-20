@@ -79,7 +79,7 @@ class TerminalBringIn(unittest.TestCase):
         self.assertEqual(ids[at + 1:at + 5], ["bring-sources", "bring-what", "bring-names", "bring-copy"])
         browser = (ROOT / "web/js/bring-in.js").read_text()
         self.assertIn('const BRING_PARTS = ["bring-sources", "bring-what", "bring-names", "bring-copy"];', browser)
-        guide = (ROOT / "web/js/settings.js").read_text()
+        guide = "".join(p.read_text(encoding="utf-8") for p in sorted((ROOT / "web" / "js").glob("settings-*.js")))
         self.assertLess(guide.index('id: "drives"'), guide.index("bringInSteps(T)"))
         self.assertLess(guide.index("bringInSteps(T)"), guide.index('...flow.before().filter((x) => x.id !== "moving")'))
         table = {s["id"]: s for s in json.loads((ROOT / "web/setup-steps.json").read_text())["steps"]}

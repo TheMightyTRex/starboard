@@ -242,7 +242,7 @@ class Words(unittest.TestCase):
         self.assertIn("deactivated unless you choose it", answers["later"])
         self.assertEqual([p["key"] for p in answers["parts"]], ["starboard_auto_update", "reelix_auto_update", "apps_auto_update",
                                                                "plugins_auto_update", "jellyfin_plugins_auto_update"])
-        js = (ROOT / "web" / "js" / "settings.js").read_text(encoding="utf-8")
+        js = "".join(p.read_text(encoding="utf-8") for p in sorted((ROOT / "web" / "js").glob("settings-*.js")))
         self.assertIn('list.push({ id: "updates"', js)
         self.assertLess(js.index('list.push({ id: "hours"'), js.index('list.push({ id: "updates"'))
         self.assertIn('list.push({ id: "alerts"', js[js.index('list.push({ id: "updates"'):])  # the restore branch asks neither
@@ -275,7 +275,7 @@ class TerminalStep(unittest.TestCase):
         self.assertFalse(ts.step_updates(FakeApi(), plain()[0], {"start": "restore"}))
 
     def test_the_browser_set_up_uses_the_same_parts_and_rule(self):
-        js = (ROOT / "web" / "js" / "settings.js").read_text(encoding="utf-8")
+        js = "".join(p.read_text(encoding="utf-8") for p in sorted((ROOT / "web" / "js").glob("settings-*.js")))
         self.assertIn('w.parts.filter((p) => p.when === "always" || (step.has || {})[p.when])', js)
         self.assertIn('has: { reelix: coming(["reelix"]), jellyfin: coming(["jellyfin"]) }', js)
         self.assertIn("function updatesSummary(w, cfg)", js)

@@ -98,4 +98,4 @@ guide and the notes on GitHub, so they always say the same thing.
 
 When a release changes how something works in a way people should agree to (a new kind of access, a setting
 whose default changes, data that moves), give it a `review` step. If no existing step fits, add one to
-`stepContent()` in `web/js/settings.js`, so the same step also works in the set-up guide.
+`stepContent()` in `web/js/settings-setup.js`, so the same step also works in the set-up guide.

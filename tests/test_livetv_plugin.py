@@ -61,7 +61,7 @@ class LiveTvPluginTest(unittest.TestCase):
             self.assertEqual(json.load(f), {"url": "http://host.docker.internal:8097", "api_key": "made-up-jf-key"})
 
     def test_the_move_keeps_every_setting_and_switches_starboards_job_off(self):
-        cfg = FakeConfig(self.tmp.name, {"livetv": True, "white_logos": False, "livetv_address": "http://192.168.1.20:8095",
+        cfg = FakeConfig(self.tmp.name, {"livetv": True, "livetv_address": "http://192.168.1.20:8095",
                                          "livetv_jellyfin_folder": "/config/iptv"})
         runs = []
         with mock.patch.object(livetv_move, "can_run", return_value=""), mock.patch.object(pa, "host_for_builtin", return_value=HOST):
@@ -71,7 +71,7 @@ class LiveTvPluginTest(unittest.TestCase):
         self.assertFalse(cfg.data["extras"]["livetv"])
         self.assertIn("up -d", runs[-1])
         with open(os.path.join(pa.folder(self.tmp.name, "livetv"), "settings.json")) as f:
-            self.assertEqual(json.load(f), {"white_logos": False, "now_section": "", "address": "http://192.168.1.20:8095", "jellyfin_folder": "/config/iptv"})
+            self.assertEqual(json.load(f), {"now_section": "", "address": "http://192.168.1.20:8095", "jellyfin_folder": "/config/iptv"})
         self.assertTrue(livetv_move.plugin_active(self.tmp.name))
         self.assertEqual(livetv_move.move(cfg, self.tmp.name, "/srv/media", ""), "")  # once only
 
@@ -92,11 +92,11 @@ class LiveTvPluginTest(unittest.TestCase):
     def test_the_program_runs_reports_and_answers(self):
         d = self.tmp.name
         settings, jellyfin, status = (os.path.join(d, n) for n in ("settings.json", "jellyfin.json", "status.json"))
-        json.dump({"address": "http://192.168.1.20:8095", "white_logos": True, "jellyfin_folder": "/config/iptv"}, open(settings, "w"))
+        json.dump({"address": "http://192.168.1.20:8095", "jellyfin_folder": "/config/iptv"}, open(settings, "w"))
         json.dump({"url": "http://host.docker.internal:8097", "api_key": "made-up-jf-key"}, open(jellyfin, "w"))
         seen = {}
         with mock.patch.multiple(livetv_plugin, SETTINGS=settings, JELLYFIN=jellyfin, STATUS=status):
-            said = livetv_plugin.run_once(build=lambda addr, white, force: (seen.update(addr=addr, white=white) or "Guides refreshed"),
+            said = livetv_plugin.run_once(build=lambda addr, force: (seen.update(addr=addr) or "Guides refreshed"),
                                           connect=lambda services, extras, dd, **k: (seen.update(svc=services, folder=extras) or "Jellyfin: added 2"))
             self.assertEqual(said, "Guides refreshed · Jellyfin: added 2")
             self.assertEqual(seen["svc"][0]["url"], "http://host.docker.internal:8097")
@@ -378,14 +378,14 @@ class InactiveListTest(unittest.TestCase):
                     mock.patch.object(livetv, "build_freetv", side_effect=lambda dd: fetched.append("freetv") or "Free-TV"), \
                     mock.patch.object(livetv, "_channels_json", side_effect=lambda s: fetched.append(s)), \
                     mock.patch.object(livetv, "number_and_logos", return_value="Numbered 0 channels"):
-                said = livetv.run("http://starboard:8090", False, force=True)
+                said = livetv.run("http://starboard:8090", force=True)
                 self.assertEqual(fetched, [])
                 self.assertIn("Free-TV: inactive, emptied", said)
                 self.assertEqual(livetv._parse(os.path.join(d, "channels.m3u")), [])
                 self.assertEqual(livetv.all_channels(d), [])
                 with open(os.path.join(d, "guide.xml")) as f:
                     self.assertIn("<tv", f.read())
-                self.assertNotIn("inactive", livetv.run("http://starboard:8090", False, force=True))  # once only
+                self.assertNotIn("inactive", livetv.run("http://starboard:8090", force=True))  # once only
                 livetv.save_lists_off(data, {"samsung", "pluto"})
-                livetv.run("http://starboard:8090", False)
+                livetv.run("http://starboard:8090")
                 self.assertEqual(fetched, ["guide", "freetv"])  # activated: built again as new

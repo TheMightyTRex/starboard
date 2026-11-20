@@ -1,6 +1,6 @@
 """The Live TV plug-in's own program (DASH-285): run by Starboard's own image in the plug-in's container,
 `python -m starboard.livetv_plugin`. It does what Starboard's Live TV job did: once an hour it refreshes the guides
-that are due, rebuilds a channel list when its source changed (or weekly), whitens logos, and adds the lists and
+that are due, rebuilds a channel list when its source changed (or weekly), and adds the lists and
 guides to Jellyfin (livetv.py, livetv_jellyfin.py, unchanged). Starboard itself still serves the logos and the Pluto
 TV links to Jellyfin at the same addresses as before, from the same Live TV folder, so Jellyfin sees no change.
 
@@ -56,7 +56,7 @@ def run_once(force=False, build=None, connect=None, refresh=None):
         raise ValueError("Set the address Jellyfin uses to reach Starboard in Settings, Plug-ins, Live TV")
     guides = [os.path.join(livetv.folder() or "", g) for g in livetv_jellyfin.GUIDES]
     before = [_mtime(g) for g in guides]
-    summary = (build or livetv.run)(address, bool(s.get("white_logos", True)), force=force)
+    summary = (build or livetv.run)(address, force=force)
     jf = _read(JELLYFIN, {})
     services = [{"type": "jellyfin", "url": jf["url"], "api_key": jf["api_key"]}] if jf.get("url") and jf.get("api_key") else []
     added = (connect or livetv_jellyfin.connect)(services, {"livetv_jellyfin_folder": s.get("jellyfin_folder") or ""}, "",
@@ -233,44 +233,6 @@ def _list_title(key, own):
 def _set_name(chans, sid, own):
     parts = sid[3:].split("|")
     return ", ".join([_list_title(parts[0], own)] + [p.split("=", 1)[1] or "Region not known" for p in parts[1:]])
-
-
-def _tree(chans, hidden, own):
-    """Sub menus (DASH-361, owner 12 November 2026: "simplify the channels with sub menus"): a menu for each list,
-    split by region when a list has more than one, then by section, so no one screen holds every channel. Returns
-    the menus, a switch for every channel in each of them, and where each channel goes."""
-    from . import livetv
-    off = livetv.lists_off(DATA)
-    keys = list(livetv.LISTS) + _ordered((_list_key(c) for c in chans), list(livetv.LISTS))
-    keys = list(dict.fromkeys(keys))
-    menus, sets, place = [], [], {}
-    count = lambda cs: {"on": sum(1 for c in cs if c["id"] not in hidden), "total": len(cs)}
-    for key in keys:
-        title, lid = _list_title(key, own), f"in:{key}"
-        mine = [c for c in chans if _list_key(c) == key]
-        menus.append({"id": lid, "title": title, "group": "Your lists" if key.startswith("own") else "Lists",
-                      **({"active": False, "detail": "Inactive: not fetched, and none of its channels are in Jellyfin"} if key in off else
-                         {"detail": "Its channels arrive at the next run"} if not mine else {})})
-        if not mine:
-            continue
-        sets.append({"id": lid, "label": f"Every channel in {title}", "kind": "", "menu": lid, **count(mine)})
-        regions = _ordered((_region(c) for c in mine), ["UK", "US"])
-        for r in regions if len(regions) > 1 else [None]:
-            parent, here = lid, mine
-            if r is not None:
-                parent, here = f"{lid}|r={r}", [c for c in mine if _region(c) == r]
-                menus.append({"id": parent, "title": r or "Region not known", "group": "Regions", "parent": lid})
-                sets.append({"id": parent, "label": f"Every channel in {r or 'this region'}", "kind": "", "menu": parent, **count(here)})
-            sections = _ordered((_section(c) for c in here), [b for b, _ in livetv.BLOCKS])
-            if len(sections) < 2:
-                place.update({c["id"]: parent for c in here})
-                continue
-            for name in sections:
-                sid, these = f"{parent}|s={name}", [c for c in here if _section(c) == name]
-                menus.append({"id": sid, "title": name, "group": "Sections", "parent": parent})
-                sets.append({"id": sid, "label": f"Every channel in {name}", "kind": "", "menu": sid, **count(these)})
-                place.update({c["id"]: sid for c in these})
-    return menus, sets, place
 
 
 def channels_screen(said=""):
@@ -502,7 +464,7 @@ def _quick(sid):
         try:
             d = livetv.folder()
             livetv_own.build(d, DATA, only=sid)
-            livetv.number_and_logos(d, str(s.get("address") or "").rstrip("/"), bool(s.get("white_logos", True)), livetv.hidden_ids(DATA))
+            livetv.number_and_logos(d, livetv.hidden_ids(DATA))
             livetv.mark_built("own", livetv_own.fingerprint(DATA))
             livetv_jellyfin.connect(_services(), {"livetv_jellyfin_folder": s.get("jellyfin_folder") or ""}, "", local_folder=d, host_path="", env={})
             livetv_jellyfin.refresh_guide(_services())

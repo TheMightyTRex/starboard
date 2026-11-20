@@ -500,7 +500,7 @@ def automatic(app, now=None):
 
 
 def job(app):
-    """The running or last update in the shape the pages' task dialog follows (settings.js, taskJob): each step with
+    """The running or last update in the shape the pages' task dialog follows (settings-core.js, taskJob): each step with
     its state, what is happening now, and the result at the end."""
     s = status(app)
     u = s.get("update")
