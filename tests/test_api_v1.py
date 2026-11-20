@@ -243,9 +243,12 @@ class ApiV1Test(unittest.TestCase):
                 if path == "/api/v1/mcp":  # DASH-464: read keys only, each tool with its own scope (tests/test_mcp.py)
                     self.assertEqual((op.get("x-right"), op.get("x-scope")), ("read", None))
                     continue
-                self.assertEqual(op.get("x-right"), "manage", f"{method} {path}")
                 found = [a for a in api_v1.actions() if a[1] == method.upper() and re.match(a[0], sample(path))]
                 self.assertTrue(found, f"{method} {path} has no route")
+                if found[0][2] == api_v1.PLUGIN_ONLY:  # API 1.8.0: a plug-in's own key (tests/test_plugin_api_117.py)
+                    self.assertEqual((op.get("x-right"), op.get("x-scope")), ("plugin", None), path)
+                    continue
+                self.assertEqual(op.get("x-right"), "manage", f"{method} {path}")
                 self.assertEqual(op["x-scope"], found[0][2], path)
         for pattern, method, *_ in api_v1.actions():
             self.assertTrue(any(method.lower() in ops and re.match(pattern, sample(p)) for p, ops in self.spec["paths"].items()),

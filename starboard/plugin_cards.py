@@ -1,4 +1,4 @@
-"""Plug-in cards on the dashboard (DASH-149): a plug-in declares a card (stat, list, status or guide) and a path on its
+"""Plug-in cards on the dashboard (DASH-149): a plug-in declares a card (stat, list, status, guide or sparkline) and a path on its
 main container; Starboard asks that path at most once a minute whatever the number of people looking, checks the
 answer's shape, cuts long text, and draws the card itself. A card's text is never treated as HTML.
 
@@ -8,6 +8,8 @@ The answers, by type:
   status  {"state": "ok" | "warning" | "problem", "text": "Up to date"}
   guide   {"items": [{"channel": "Kestrel Sport", "number": "601", "now": "Football Extra", "start": 1794..., "stop": 1794...,
                       "next": "Darts", "next_start": 1794...}], "note": "..."}   (12 at most; times are Unix seconds)
+  sparkline {"series": [{"title": "Router", "points": [12.5, 14, null, 15], "unit": "ms", "detail": "Average 13 ms"}],
+             "note": "..."}   (API 1.17: 8 series at most, each 1 to 96 points, a number of 0 or more or null for a gap)
 
 Any answer may also carry (plug-in API 1.14):
   refresh_seconds  how soon the dashboard asks again, 10 to 3600
@@ -16,6 +18,7 @@ Any answer may also carry (plug-in API 1.14):
   updated          when what it shows last changed, in Unix seconds; without it, the band says when Starboard asked
 """
 import json
+import math
 import re
 import threading
 import time
@@ -128,7 +131,44 @@ def _clean(card_type, data):
             out.append({"channel": _text(it["channel"], 80), "number": _text(it.get("number"), 8), "now": _text(it.get("now"), 120),
                         "next": _text(it.get("next"), 120), **times})
         return {"items": out, "note": _text(data.get("note"), 120)}
-    raise ValueError("Cards are stat, list, status or guide")
+    if card_type == "sparkline":  # a small line for each series, such as response times (API 1.17)
+        series = data.get("series")
+        if not isinstance(series, list) or not series:
+            raise ValueError("A sparkline card needs series, a list")
+        out = []
+        for s in series[:SPARK_SERIES]:
+            if not isinstance(s, dict) or not s.get("title"):
+                raise ValueError("Each series in a sparkline card needs a title")
+            points = s.get("points")
+            if not isinstance(points, list) or not 1 <= len(points) <= SPARK_POINTS:
+                raise ValueError(f"Each series in a sparkline card needs points: a list of 1 to {SPARK_POINTS} numbers")
+            if not all(p is None or (isinstance(p, (int, float)) and not isinstance(p, bool) and math.isfinite(p) and p >= 0) for p in points):
+                raise ValueError("Each point in a sparkline card must be a number of 0 or more, or null for a gap")
+            unit = _text(s.get("unit"), 8)
+            out.append({"title": _text(s["title"], 80), "points": points, "unit": unit, "detail": _text(s.get("detail"), 120),
+                        "summary": spark_summary(points, unit)})
+        return {"series": out, "note": _text(data.get("note"), 120)}
+    raise ValueError("Cards are stat, list, status, guide or sparkline")
+
+
+SPARK_SERIES, SPARK_POINTS = 8, 96  # a sparkline card shows 8 series at most, each of 1 to 96 points (API 1.17)
+
+
+def _figure(value, unit):
+    """A number as people read it, rounded to what matters (1,500, 15, 12.5, 0.25), with its unit."""
+    v = round(value) if value >= 100 else round(value, 1) if value >= 10 else round(value, 2)
+    words = f"{v:,.0f}" if v == int(v) else f"{v:,}".rstrip("0").rstrip(".")
+    return words + ("" if not unit else unit if unit == "%" else f" {unit}")
+
+
+def spark_summary(points, unit=""):
+    """What a sparkline shows, in words for everyone and screen readers (API 1.17): the latest point, the lowest and
+    the highest, such as "Now 15 ms, lowest 12.5 ms, highest 15 ms". "Latest" when the last point is a gap."""
+    known = [p for p in points if p is not None]
+    if not known:
+        return "No readings yet"
+    first = "Now" if points[-1] is not None else "Latest"
+    return f"{first} {_figure(known[-1], unit)}, lowest {_figure(min(known), unit)}, highest {_figure(max(known), unit)}"
 
 
 def _host(pid, main, wake=True):

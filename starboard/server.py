@@ -3521,6 +3521,7 @@ class Handler(BaseHTTPRequestHandler):
             self.check_password(body)
             hold = bool(body.get("holding"))  # API 1.13 (DASH-411): its folder straight on to the holding folder
             pa.uninstall(app.data_dir, pid, to_holding=hold, config=app.config)  # its Apps entry goes too (DASH-427)
+            app.watch.forget(f"plugin:{pid}:")  # its alerts (plug-in API 1.17) go quietly with it
             services.forget()
             logs.event("info", "plug-ins", f"Removed {pid}; its folder is kept in " + ("the holding folder" if hold else "data/plugins/.removed"))
         elif what == "enable":

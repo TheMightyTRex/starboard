@@ -166,9 +166,9 @@ class Watch:
             self.wake.clear()
 
     def alert(self, key, title, message, level="problem"):
-        """Sends an alert once for each key, until clear(key)."""
+        """Sends an alert once for each key, until clear(key). True when it was raised now."""
         if key in self.state["alerted"]:
-            return
+            return False
         self.state["alerted"][key] = time.time()
         logs.event("warning", "alert", f"{title}: {message}")
         from . import api_v1
@@ -179,9 +179,12 @@ class Watch:
                 send(channel, title, message, level)
             except ValueError as e:
                 logs.event("error", "alert", f"Alert not sent: {e}")
+        return True
 
     def clear(self, key, title=None, message=None):
-        if self.state["alerted"].pop(key, None) and title:
+        """Clears an alert, saying so when a title is given. True when it had been raised."""
+        was = self.state["alerted"].pop(key, None) is not None
+        if was and title:
             logs.event("info", "alert", f"{title}: {message}")
             from . import api_v1
             api_v1.publish("alert.cleared", {"title": title, "message": message or ""})
@@ -191,6 +194,17 @@ class Watch:
                     send(channel, title, message or "", "info")
                 except ValueError:
                     pass
+        return was
+
+    def forget(self, prefix):
+        """Drops every alert whose key starts with `prefix`, quietly, such as a removed plug-in's (plug-in API 1.17)."""
+        with self.lock:
+            gone = [k for k in self.state["alerted"] if k.startswith(prefix)]
+            for k in gone:
+                del self.state["alerted"][k]
+            if gone:
+                self._save()
+        return len(gone)
 
     def tick(self):
         w = self.settings()

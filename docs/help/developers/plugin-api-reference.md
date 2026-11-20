@@ -4,7 +4,7 @@
 # Plug-in API reference
 
 What Starboard calls on a plug-in, what it sends and what it expects back, and what a plug-in finds and may call in
-return. This page matches plug-in API 1.16.0. The fields that ask for each of these are in the
+return. This page matches plug-in API 1.17.0. The fields that ask for each of these are in the
 [Plug-in manifest reference](plugin-manifest-reference.md).
 
 ## How Starboard reaches a plug-in
@@ -38,6 +38,34 @@ once every `refresh_minutes`, or at the card's own `refresh_seconds` (API 1.14, 
 | `list` | `{"items": [{"title": "Dune", "detail": "Added today", "link": "https://example.invalid/dune"}]}` | Up to 10 items are shown. Each needs a `title` (80 characters); `detail` is cut to 120. A `link` must start with `http://` or `https://`, or it is left out |
 | `status` | `{"state": "ok", "text": "Up to date"}` | `state` is `ok`, `warning` or `problem`. `text` is cut to 160 characters |
 | `guide` | `{"items": [{"channel": "Kestrel Sport", "number": "601", "now": "Football Extra", "start": 1794600000, "stop": 1794603600, "next": "Darts", "next_start": 1794603600}], "note": ""}` | From API 1.8. Up to 12 items, each with a `channel` (80 characters); `now` and `next` are cut to 120. `start`, `stop` and `next_start` are seconds since 1970: Starboard shows the times and how far through the programme it is |
+| `sparkline` | `{"series": [{"title": "Router", "points": [12.5, 14, null, 15], "unit": "ms", "detail": "Average 13 ms"}], "note": "Hourly averages, the last 24 hours"}` | From API 1.17. Up to 8 series are shown. Each needs a `title` (80 characters) and `points`: 1 to 96 numbers of 0 or more, oldest first, with `null` for a gap. Any other point, or more than 96, is refused with what is wrong. `unit` is cut to 8 characters, `detail` and `note` to 120. Read [Sparkline cards](#sparkline-cards-api-117) |
+
+### Sparkline cards (API 1.17)
+
+A sparkline card shows how something changed, such as a router's response times over the last day. Starboard draws
+one row for each series:
+
+1. The series' `title`.
+2. A small line of its `points`, oldest at the left, broken where a point is `null`. It has no axes or numbers of its
+   own, and it is drawn in the accent colour with no animation, so it follows light, dark, high contrast and
+   forced colours.
+3. Words Starboard works out from the points, such as "Now 15 ms, lowest 12.5 ms, highest 15 ms", rounded to what
+   matters (1,500, 15, 12.5 or 0.25). When the last point is a gap it says "Latest" in place of "Now", and with no
+   numbers at all it says "No readings yet".
+4. The series' `detail`, such as "Average 13 ms".
+
+The `note` goes under the rows. The line is hidden from screen readers (`aria-hidden="true"`), which read the title,
+the words and the detail instead, so nothing depends on the line. It is not a live region: a refresh does not
+interrupt a screen reader. Every card size works, down to a phone 320 pixels wide, as the line stretches to the
+card's width.
+
+```json
+{"series": [{"title": "Router", "points": [12.5, 14, null, 15], "unit": "ms", "detail": "Average 13 ms"},
+            {"title": "Jellyfin", "points": [40, 38, 41, 39], "unit": "ms"}],
+ "note": "Hourly averages, the last 24 hours", "status": "ok", "updated": 1794694110}
+```
+
+Send what you measured, not a picture of it: Starboard keeps only the fields here and draws the line itself.
 
 ### How often a card is asked (API 1.14)
 
@@ -381,7 +409,8 @@ A plug-in whose first container has `"start": "when_needed"` rests when it is no
 
 Every plug-in with a container gets its own key to [Starboard's API](api-reference.md), made when it is added.
 
-- It is named `Plug-in:` and the plug-in's name, and it can only read.
+- It is named `Plug-in:` and the plug-in's name, and it can only read, with one exception from API 1.17: a plug-in
+  approved `alerts:send` may raise and clear its own alerts. Read [Sending alerts](#sending-alerts-api-117).
 - Its scopes are the read permissions the person approved: `apps:read` gives `apps`, `downloads:read` gives
   `downloads`, `media:read` gives `media` and `system:read` gives `system`.
 - It does not expire. It stops working when the plug-in is removed.
@@ -409,6 +438,61 @@ print(json.load(c.getresponse())["items"])
 ```
 
 The rules for every key, such as 120 requests a minute, are in [Authentication and keys](api-authentication.md).
+
+## Sending alerts (API 1.17)
+
+A plug-in with the `alerts:send` permission may send alerts through Starboard, to where Starboard sends its own:
+ntfy, Gotify or a webhook, set in Settings, Alerts, and plug-ins that pass them on, such as Notifications. It sends
+`POST /api/v1/plugin/alerts` (Starboard API 1.8.0) with its own key, through `STARBOARD_API_SOCKET`, or over HTTP
+for a plug-in on the `lan` network.
+
+```json
+{"key": "check-router", "state": "raised", "title": "Router is not answering",
+ "message": "Ping: no answer for 3 checks in a row.", "level": "problem"}
+```
+
+| Field | What it is | Rules |
+|---|---|---|
+| `key` | Your own name for the alert, such as `check-router` | Required. 1 to 80 letters, numbers, dots, colons, underscores and hyphens |
+| `state` | `raised` when something is wrong, `cleared` when it is right again | Required |
+| `title` | The alert's heading | Required to raise; optional to clear. One line, up to 120 characters |
+| `message` | What happened | Up to 500 characters. Starboard puts your plug-in's name in front, such as "Network check: Ping: no answer for 3 checks in a row." |
+| `level` | `problem`, `warning` or `info` | `problem` when left out. It sets the alert's priority, as for Starboard's own |
+
+The answer is `{"ok": true, "sent": true}`, or `"sent": false` when nothing was sent: the alert was already raised,
+there was nothing to clear, or alerts are off in Settings, Alerts.
+
+- **Once until cleared.** Each `key` is raised once. Send `raised` as often as you check: it is sent again only after
+  you send `cleared`. Then it is sent as Starboard's own alerts are: to the alert channel, as the `alert.raised` and
+  `alert.cleared` events, and in Starboard's log.
+- **Alerts off.** When alerts are off in Settings, Alerts, nothing is sent, as for Starboard's own.
+- **Limits.** Up to 30 new alerts an hour for each plug-in. Beyond that the answer is `429 rate_limited` with
+  `Retry-After`, the seconds to wait. Raising one that is already raised, and clearing, never count.
+- **Errors.** A body that does not follow the rules gets `400 bad_request` saying what to change. Any key but the
+  plug-in's own, a plug-in without `alerts:send`, or one that is not active, gets `404 not_found`.
+- **Removed.** When the plug-in is removed, its alerts are forgotten without a word.
+- Every call is written to the audit log, as every change through the API is.
+
+```python
+import http.client, json, os, socket, urllib.parse
+
+class Starboard(http.client.HTTPConnection):
+    def connect(self):
+        self.sock = socket.socket(socket.AF_UNIX)
+        self.sock.settimeout(10)
+        self.sock.connect(os.environ["STARBOARD_API_SOCKET"])
+
+key = open(os.environ["STARBOARD_API_KEY_FILE"]).read().strip()
+path = urllib.parse.urlsplit(os.environ["STARBOARD_API"]).path + "plugin/alerts"
+alert = {"key": "check-router", "state": "raised", "title": "Router is not answering",
+         "message": "Ping: no answer for 3 checks in a row.", "level": "problem"}
+c = Starboard("localhost", timeout=10)
+c.request("POST", path, body=json.dumps(alert),
+          headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"})
+print(json.load(c.getresponse()))  # {"ok": true, "sent": true}
+```
+
+When the router answers again, send `{"key": "check-router", "state": "cleared", "title": "Router is answering again"}`.
 
 ## States
 

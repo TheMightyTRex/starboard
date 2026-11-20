@@ -176,6 +176,7 @@
    "type": "array",
    "items": {
     "enum": [
+     "alerts:send",
      "appearance:styles",
      "apps:read",
      "downloads:read",
@@ -665,7 +666,8 @@
        "stat",
        "list",
        "status",
-       "guide"
+       "guide",
+       "sparkline"
       ]
      },
      "format": {

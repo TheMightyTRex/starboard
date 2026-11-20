@@ -4,7 +4,7 @@
 # Plug-in manifest reference
 
 Every field of `starboard-plugin.json`, version 1, with the check Starboard runs on it and why. Starboard refuses
-any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.15.0
+any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.17.0
 (`API_VERSION` in `starboard/plugins.py`).
 
 The same rules are in a JSON Schema, `starboard/plugin-manifest.schema.json`, for editors and other tools. The
@@ -65,6 +65,7 @@ people read every one, and the plug-in's API key gets only the read permissions 
 | `jellyfin:metadata` | Read and change Jellyfin's metadata folder: the posters, photos and details Jellyfin saved (API 1.14) | medium | none |
 | `jellyfin:libraries` | Have Starboard add its own libraries to Jellyfin, for folders it fills in your media folder (API 1.15) | medium | none |
 | `library:holding` | Move films and series from your library into the holding folder in your media folder, and put them back (API 1.15) | high | none |
+| `alerts:send` | Send alerts through Starboard, to where it sends its own (ntfy, Gotify, a webhook, and plug-ins that pass them on) (API 1.17). The one thing the plug-in's read-only key may change: read [Sending alerts](plugin-api-reference.md#sending-alerts-api-117) | low | none |
 
 The plug-in's risk is its highest permission's risk. Read [What a plug-in can change](../basics/what-plugins-can-change.md)
 for how this is shown to people.
@@ -397,7 +398,7 @@ Each item in `cards` is a card people can add with **Edit dashboard**. Read
 | `id` | Its id, in the card's address | Letters, numbers, hyphens and underscores, up to 40. Give every card one |
 | `title` | Its name on the dashboard | A card needs a `title` (or a `label`), so a screen reader can name it |
 | `titles` | Its title for each card size, so it fits on one line in that size: any of `small`, `medium`, `half`, `wide` and `full` | Each one line of words, up to the size's limit: small 17, medium 28, half 22, wide 43 and full 45 characters. A size left out shows the plug-in's name with the card's `title` under it. Read [A title for each size](#a-title-for-each-size-api-115). API 1.15 |
-| `type` | `stat`, `list`, `status` or, from API 1.8, `guide` | Required |
+| `type` | `stat`, `list`, `status`, from API 1.8 `guide`, or from API 1.17 `sparkline` | Required |
 | `path` | The path on the first container that answers | Required: starts with `/`, up to 80 letters, numbers, `/`, `_`, `.` and `-` |
 | `format` | For `stat`: `number`, `bytes`, `percent`, `duration` (seconds) or `date` (seconds since 1970) | `number` when left out |
 | `label` | Another name for the card | Optional |
@@ -700,6 +701,7 @@ it is missing, because What is new then cannot say what changed. Say when settin
 | 1.12 | 13 November 2026 | `"user": "media"` on a container that mounts `media/<one folder>`; `link` and `state_label` on a custom setting's item; `file_only` on its add box |
 | 1.13 | 13 November 2026 | App plug-ins: `network:port` and `publish` on `lan` with `host_port`, `{secret:...}` and `{jellyfin:...}` in `env`, `tmpfs`, `data:<path>` and `media/<one folder>:ro`, `pids`, and `adopt` |
 | 1.14 | 14 November 2026 | A card's own refresh time, `refresh_seconds`, in the manifest and in its answer, 10 seconds at the quickest; `recommended` on a catalogue entry; `logo` (and `logo`, `logo_alt` on a catalogue entry); every card drawn with a grey band holding the logo, the name, a status chip and when it last updated (`status`, `status_label` and `updated` in its answer); a `schedule` setting and a job's `schedule`; the `jellyfin:metadata` permission with the `jellyfin-metadata` volume; `update` (a `before` and an `after` step, `health_wait_seconds` and settings `migrations`), with the health wait and an automatic Roll back after every update, and **What is new** shown before an update too |
+| 1.17 | 20 November 2026 | The `sparkline` card: a small line for each series, with the latest, lowest and highest value in words; the `alerts:send` permission, with `POST /api/v1/plugin/alerts` to raise and clear alerts through Starboard's own |
 | 1.16 | 19 November 2026 | The `disk.changed` event; a plug-in is activated when installed; a custom setting's `add` box and an item's `attach` form take plain text; `STARBOARD_HOME_ADDRESS` for a container with `publish` on the `lan` network |
 | 1.15 | 15 November 2026 | `build` on a container, for an image Starboard builds from the `Dockerfile` in the plug-in's zip file, installed with **Upload a zip file** and updated with **Update from a zip file**; `jellyfin_libraries` with the `jellyfin:libraries` permission; the `library:holding` permission with the `media:holding` volume (the media folder, read and write, for its holding folder `media/.holding/<id>`), and `restore` on a custom setting's item, drawn as **Put back**; `titles` on a card, a title for each card size that fits on one line in that size |
 
