@@ -97,6 +97,20 @@ function renderWarnings(items) {
   renderKeyed(list, items, (i) => i.key, (item) => warningRow(item));
 }
 
+// A stat tile with the design system's gauge (20 November 2026): one value against its most, the value in words in the
+// middle and the arc in the warning or danger colour past its limits, with the status chip under it, so the state is
+// never colour alone. The drawing is hidden from screen readers; they read the value and the label.
+function gaugeTile(value, label, tone, { max = 100, unit = "%", warn, danger } = {}) {
+  const [t, word] = Array.isArray(tone) ? tone : [tone, null];
+  const arc = (cls) => svgEl("path", { class: cls, d: "M10 60 A50 50 0 0 1 110 60", pathLength: "100" });
+  const svg = svgEl("svg", { class: "gauge__svg", viewBox: "0 0 120 66", "aria-hidden": "true", focusable: "false" });
+  svg.append(arc("gauge__track"), arc("gauge__fill"));
+  const gauge = el("div", { class: "gauge", "data-max": String(max), "data-warn": warn ?? null, "data-danger": danger ?? null },
+    el("div", { class: "gauge__dial" }, svg, el("span", { class: "gauge__value" })), el("span", { class: "gauge__label", text: label }));
+  SharedComponents.gauge(gauge, value, { max, unit });
+  return el("div", { class: "stat", "data-tone": t || null }, gauge, word ? chip(word, t) : null);
+}
+
 // Charts ------------------------------------------------------------------------------------------
 
 function makeCharts() {
@@ -117,9 +131,11 @@ async function load() {
     const temp = last.temp;
     const load1 = sys.load.length ? sys.load[0] : null;
     $("#stats").replaceChildren(
-      statTile(points.length ? percent(last.cpu) : "Not recorded yet", "Processor", points.length ? busyTone(last.cpu, "Busy") : null),
-      statTile(formatBytes(memUsed), `Memory used of ${formatBytes(sys.memory.total)} (${percent(memPct)})`, busyTone(memPct, "Nearly full")),
-      statTile(temp != null ? degrees(temp) : "Not reported", "Processor temperature", tempTone(temp)),
+      points.length ? gaugeTile(last.cpu, "Processor", busyTone(last.cpu, "Busy"), { warn: 90 })
+        : statTile("Not recorded yet", "Processor"),
+      gaugeTile(memPct, `Memory, ${formatBytes(memUsed)} used of ${formatBytes(sys.memory.total)}`, busyTone(memPct, "Nearly full"), { warn: 90 }),
+      temp != null ? gaugeTile(temp, "Processor temperature", tempTone(temp), { max: 100, unit: " °C", warn: 75, danger: 85 })
+        : statTile("Not reported", "Processor temperature"),
       statTile(load1 != null ? load1.toFixed(1) : "Not reported", `Load, ${plural(sys.cpus, "thread", "threads")}`, load1 > sys.cpus ? ["warning", "Busy"] : null));
 
     const items = warnings(health, disks);
