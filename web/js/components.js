@@ -339,6 +339,9 @@
   // Icons come from the page's own sprite (<use href="#i-name">) unless the app names a sprite file:
   // data-sprite="/icons/sprite.svg" on this script tag, or window.SharedComponentsSprite (Starboard sets it).
   const scriptSprite = document.currentScript?.dataset.sprite || "";
+  // Words from an app or the page, made safe to put inside HTML.
+  const escapeHtml = (text) =>
+    String(text).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const sprite = (name) =>
     `<svg class="i" aria-hidden="true" focusable="false"><use href="${window.SharedComponentsSprite || scriptSprite}#i-${name}"/></svg>`;
   const TONES = {
@@ -1567,7 +1570,7 @@
     const page = Math.min(Math.max(1, o.page), last);
     const from = o.total ? (page - 1) * o.pageSize + 1 : 0;
     const to = Math.min(o.total, page * o.pageSize);
-    const summary = `Showing ${num(from)} to ${num(to)} of ${num(o.total)}${o.noun ? ` ${o.noun}` : ""}`;
+    const summary = `Showing ${num(from)} to ${num(to)} of ${num(o.total)}${o.noun ? ` ${escapeHtml(o.noun)}` : ""}`;
     const want = [...new Set([1, page - 1, page, page + 1, last])].filter((p) => p >= 1 && p <= last).sort((a, b) => a - b);
     const pages = [];
     want.forEach((p, i) => {
@@ -1576,7 +1579,7 @@
       pages.push(p);
     });
     const link = (p, inner, extra = "") =>
-      `<a class="pagination__link" href="${o.href ? o.href(p) : `#page-${p}`}" data-page="${p}"${extra}>${inner}</a>`;
+      `<a class="pagination__link" href="${escapeHtml(o.href ? o.href(p) : `#page-${p}`)}" data-page="${p}"${extra}>${inner}</a>`;
     const id = nav.id || (nav.id = `pages-${Math.random().toString(36).slice(2, 8)}`);
     let html = `<p class="pagination__summary">${summary}</p><ul class="pagination__pages">`;
     if (page > 1) html += `<li>${link(page - 1, `${sprite("chevron-left")}Previous<span class="visually-hidden"> page</span>`, ' rel="prev"')}</li>`;
@@ -1669,7 +1672,7 @@
       const control = document.getElementById(field);
       if (control) setFieldError(control, message);
       const li = document.createElement("li");
-      li.innerHTML = `<a href="#${field}"></a>`;
+      li.append(Object.assign(document.createElement("a"), { href: `#${field}` }));
       li.firstChild.textContent = message;
       list.append(li);
     }
@@ -1712,7 +1715,10 @@
       let kept = "";
       let cancel = null;
       const label = (button, words, icon) => {
-        button.innerHTML = `${sprite(icon)}${words}<span class="visually-hidden"> ${name}</span>`;
+        // Built from nodes: the name comes from data-name, so it never goes into HTML (CodeQL, 20 November 2026).
+        const hidden = Object.assign(document.createElement("span"), { className: "visually-hidden", textContent: ` ${name}` });
+        button.innerHTML = sprite(icon);
+        button.append(words, hidden);
       };
       const setShown = (shown, tell = true) => {
         input.type = shown ? "text" : "password";
