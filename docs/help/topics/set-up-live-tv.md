@@ -95,7 +95,8 @@ first playlist is `/config/iptv/channels.m3u`.
 - Channels are numbered in blocks: 101 Entertainment, 401 Lifestyle, 451 Movies, 501 Music, 601 Sport,
   701 News, 801 Documentaries, 1001 Kids and 1101 Other.
 - **White channel logos** turns each logo white on a clear background. Deactivate it to keep each channel's
-  own logo.
+  own logo. The first time, Starboard downloads the picture library it needs (Pillow, about 7 MB), so the server
+  needs the internet for that run.
 - Starboard itself still serves the channel logos and the Pluto TV links to Jellyfin.
 - Where the plug-in cannot run, **Built into Starboard** says why, after "Not here". Live TV then runs inside
   Starboard, in **Settings**, **Apps**, **Jellyfin**, **Live TV**, with the same settings and its own

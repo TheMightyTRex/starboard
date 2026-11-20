@@ -2089,7 +2089,7 @@ async function startJellyfin() {
   const liveRows = el("ul", { class: "settings-rows" },
     settingRow("Build Live TV channels and guide", withCost(lt.what + ". Free channels only: Samsung TV Plus, Pluto TV and Free-TV, with Sky-style numbers.", "livetv"),
       sw("lt-on-l", x().livetv, (on) => save({ livetv: on })), "lt-on-l"),
-    settingRow("White channel logos", withCost(d.pillow ? "Turns each logo white on a clear background, with Pillow (open source, credited in About). Inactive: channels keep their own logos." : "Needs Pillow, which this install does not have. Channels keep their own logos.", "white"),
+    settingRow("White channel logos", withCost(d.pillow ? "Turns each logo white on a clear background, with Pillow (open source, credited in About), which Starboard downloads the first time (about 7 MB). Inactive: channels keep their own logos." : "Needs Pillow, which this install does not have. Channels keep their own logos.", "white"),
       sw("lt-white-l", x().white_logos && d.pillow, (on) => save({ white_logos: on }), !d.pillow), "lt-white-l"));
   const liveNeeds = lt.needs.length ? notice("warning", "Needs set-up on the server", `Starboard needs ${lt.needs.join(" and ")}. Run ./install.sh and say yes to Live TV.`) : null;
   const liveHelp = el("p", { class: "help-links" }, helpButton("How Jellyfin uses these files", { body: el("p", { text: "With Jellyfin's API key, Starboard adds these to Jellyfin after each run, and leaves your own alone. By hand, in Jellyfin: Dashboard, Live TV. Add a tuner of type M3U for each playlist (channels.m3u, samsung.m3u, pluto.m3u) and an XMLTV guide for each guide file (guide.xml, guide-samsung.xml, guide-pluto.xml), from the folder they are in inside Jellyfin." }) }));

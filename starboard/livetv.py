@@ -10,9 +10,9 @@ only when a source's list of channels has changed, or once a week to drop channe
   pluto.m3u, guide-pluto.xml       Pluto TV UK; streams go through Starboard, which keeps a Pluto session
 Then it numbers every channel by Sky's categories (101 Entertainment, 401 Lifestyle, 451 Movies, 501 Music,
 601 Sport, 701 News, 801 Documentaries, 1001 Kids, 1101 Other) and, if white logos are on, turns each logo
-white on a transparent background with Pillow (open source; see THIRD-PARTY.md). Without Pillow, or with white
-logos off, channels keep their own logos. Skipped on purpose: DRM and adult channels, and anything that does not
-play from this connection.
+white on a transparent background with Pillow (open source; see THIRD-PARTY.md), which is downloaded the first
+time (starboard/pylib.py). Without Pillow, or with white logos off, channels keep their own logos. Skipped on
+purpose: DRM and adult channels, and anything that does not play from this connection.
 """
 
 import concurrent.futures as cf
@@ -67,11 +67,9 @@ def folder():
 
 
 def pillow():
-    try:
-        import PIL  # noqa: F401
-        return True
-    except ImportError:
-        return False
+    """Whether white logos can be made here: Pillow is fetched the first time they are (pylib), not kept in the image."""
+    from . import pylib
+    return pylib.available("pillow")
 
 
 MAX_DOWNLOAD = 200 * 1024 * 1024  # a guide is about 30 MB; anything far bigger is refused
@@ -826,7 +824,13 @@ def number_and_logos(d, self_url, white, hidden=frozenset()):
         ch["attrs"]["tvg-logo-src"] = ch["attrs"].get("tvg-logo-src") or ch["attrs"].get("tvg-logo", "")
         ch["attrs"]["tvg-logo"] = ch["attrs"]["tvg-logo-src"]
         ch["attrs"]["group-src"] = ch["attrs"].get("group-src") or ch["attrs"].get("group-title", "")
-    white = white and pillow()
+    note = "" if white else " (white logos off)"
+    if white:
+        from . import pylib
+        try:
+            pylib.load("pillow")  # downloaded the first time (about 7 MB), then kept in the data folder
+        except pylib.Unavailable as e:
+            white, note = False, f" (white logos off this time: {e})"
     with cf.ThreadPoolExecutor(6) as ex:
         have = dict(ex.map(lambda c: _make_logo(c, logos, white), chans))
     region = lambda c: 1 if c["attrs"]["group-src"] == "US" or c["attrs"]["group-src"].startswith("Samsung US") else 0
@@ -855,7 +859,7 @@ def number_and_logos(d, self_url, white, hidden=frozenset()):
             for c in sorted(mine, key=lambda c: int(c["attrs"]["tvg-chno"])):
                 lines += ["#EXTINF:-1 " + " ".join(f'{k}="{v}"' for k, v in c["attrs"].items()) + f",{c['name']}", c["url"]]
             _write(path, "\n".join(lines) + "\n")
-    return f"Numbered {len(chans)} channels; {sum(have.values())} with logos" + ("" if white else " (white logos off)")
+    return f"Numbered {len(chans)} channels; {sum(have.values())} with logos" + note
 
 
 WEEK = 7 * 86400

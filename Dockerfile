@@ -1,7 +1,7 @@
-# Starboard: Python's standard library, plus Pillow (open source, see THIRD-PARTY.md) for white Live TV logos, and
-# cryptography (open source, see THIRD-PARTY.md) to encrypt full backups (DASH-260); it is loaded only while one is made.
-# Pillow is optional: where no ready-made Pillow exists (such as 32-bit Raspberry Pi), the image builds without it
-# and channels keep their own logos. Nothing is compiled, so every build stays small and quick.
+# Starboard: Python's standard library, plus cryptography (open source, see THIRD-PARTY.md) to encrypt full backups
+# (DASH-260); it is loaded only while one is made. Pillow, for white Live TV logos, is not in the image: it is
+# downloaded the first time it is needed (starboard/pylib.py), as most servers never use it (18 MB).
+# Nothing is compiled, so every build stays small and quick.
 FROM python:3.12-alpine AS system
 
 # tzdata: download hours follow the server's local time (TZ). apk upgrade: every package of the base image takes
@@ -11,8 +11,6 @@ FROM python:3.12-alpine AS system
 # library: pip's own copy in ensurepip, the IDLE editor, 2to3, help() texts, Tk windows, the turtle demos and the
 # files for building C extensions. Nothing in Starboard imports them.
 RUN apk upgrade --no-cache && apk add --no-cache tzdata \
- && (pip install --no-cache-dir --only-binary=:all: "pillow==13.0.0" \
-     || echo "No ready-made Pillow for this processor: white logos are off") \
  && (pip install --no-cache-dir --only-binary=:all: "cryptography==50.0.2" \
      || echo "No ready-made cryptography for this processor: full backups cannot be made here") \
  && pip uninstall -y -q pip \

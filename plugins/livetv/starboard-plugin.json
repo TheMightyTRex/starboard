@@ -18,7 +18,7 @@
  "health": "/health",
  "settings": [
   {"key": "white_logos", "label": "White channel logos", "type": "switch", "default": true,
-   "hint": "Turns each logo white on a clear background. Deactivated: channels keep their own logos."},
+   "hint": "Turns each logo white on a clear background. The first time, Starboard downloads Pillow (about 7 MB) to do it. Deactivated: channels keep their own logos."},
   {"key": "now_section", "label": "On TV now card shows", "type": "choice", "default": "",
    "choices": [{"value": "", "label": "Every section"}, {"value": "Entertainment", "label": "Entertainment"}, {"value": "Lifestyle", "label": "Lifestyle"},
                {"value": "Movies", "label": "Movies"}, {"value": "Music", "label": "Music"}, {"value": "Sport", "label": "Sport"}, {"value": "News", "label": "News"},
