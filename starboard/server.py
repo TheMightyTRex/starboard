@@ -128,6 +128,9 @@ def static_file(full, depth=0):
     deps = {}
     if text:
         kind += "; charset=utf-8"
+        if full.endswith(".html") and b"<!-- shell:start" in data:  # the menus, written once here (starboard/shell.py)
+            from . import shell
+            data = shell.fill(os.path.basename(full), data.decode("utf-8")).encode("utf-8")
         if full.endswith((".html", ".js", ".css")):
             data, deps = _versioned(full, data, depth)
     # Only the compressed copy is kept when there is one; the rare browser without gzip gets it unpacked.

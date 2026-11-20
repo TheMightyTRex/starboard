@@ -31,7 +31,7 @@ Starboard's help follows the shared guides in the design system, which Starboard
   New Fix a problem articles go in the problem solver in `help-centre.json`.
 - **The help centre's pages** at https://themightytrex.github.io/starboard/help/ are built from these files by
   `the design system's help centre builder (tools/help_centre)` and published when a change reaches main. Each article is its own page; the app's Help
-  buttons open them (`tools/apply_shell.py`).
+  buttons open them (`starboard/shell.py`).
 - **Made-up examples:** use `192.168.1.20` or `192.168.1.21` for addresses, `starboard-pi` for a Raspberry Pi,
   and names such as Sam and Alex. `tools/check-private.sh` allows exactly these, and refuses any other home
   network address.

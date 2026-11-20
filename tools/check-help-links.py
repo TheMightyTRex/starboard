@@ -2,7 +2,7 @@
 """Check that every link into the help centre goes to an article that exists, and to a heading that exists.
 
 It reads the help articles themselves, the release notes (CHANGELOG.md and docs/releases), the pages and scripts
-in web/, the Python in starboard/ and tools/apply_shell.py. Anchors are made the way the help centre's builder and
+in web/ and the Python in starboard/ (the Help buttons are in starboard/shell.py). Anchors are made the way the help centre's builder and
 GitHub make them: the heading's words in lower case, punctuation left out, spaces as hyphens. A link to a heading
 that appears twice in one article is refused too, because GitHub and the help centre number the second one
 differently.
@@ -91,7 +91,7 @@ def main():
                     check(f"{rel}:{n}", target, anchor)
 
     # Links from the release notes, the pages, the scripts and the code.
-    others = [ROOT / "CHANGELOG.md", ROOT / "README.md", ROOT / "tools" / "apply_shell.py"]
+    others = [ROOT / "CHANGELOG.md", ROOT / "README.md", ROOT / "starboard" / "shell.py"]
     others += sorted((ROOT / "docs" / "releases").glob("*.md"))
     others += sorted((ROOT / "web").glob("*.html")) + sorted((ROOT / "web" / "js").glob("*.js"))
     others += sorted((ROOT / "starboard").glob("*.py")) + sorted((ROOT / "starboard").glob("*.sh"))
@@ -108,11 +108,11 @@ def main():
                     continue  # an address built in code, such as HELP_BASE + a page
                 check(f"{rel}:{n}", page_to_md(m.group(1)), m.group(2))
 
-    # The app's Help buttons (tools/apply_shell.py's HELP) and its help paths written as docs/help/... in code.
-    shell = (ROOT / "tools" / "apply_shell.py").read_text()
+    # The app's Help buttons (starboard/shell.py's HELP) and its help paths written as docs/help/... in code.
+    shell = (ROOT / "starboard" / "shell.py").read_text()
     for path in set(re.findall(r'"((?:topics|guides|basics)/[\w-]+\.md(?:#[\w-]+)?|README\.md#[\w-]+)"', shell)):
         file, _, anchor = path.partition("#")
-        check("tools/apply_shell.py (Help buttons)", HELP / file, anchor)
+        check("starboard/shell.py (Help buttons)", HELP / file, anchor)
     for path in sorted((ROOT / "starboard").glob("*.py")) + sorted((ROOT / "web" / "js").glob("*.js")):
         for n, line in enumerate(path.read_text().splitlines(), 1):
             for m in re.finditer(r"docs/help/((?:topics|guides|basics)/[\w-]+\.md)(?:#([\w-]+))?", line):

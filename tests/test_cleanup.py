@@ -117,7 +117,7 @@ class CleanupApiTest(unittest.TestCase):
         self.assertEqual(done["holding"], [])
 
     def test_the_pages_and_menu(self):
-        shell = (ROOT / "tools" / "apply_shell.py").read_text()
+        shell = (ROOT / "starboard" / "shell.py").read_text()
         self.assertIn('("Clean up", "trash-2", [("system-cleanup.html", "What is left over"', shell)
         self.assertIn('("system-holding.html", "Holding folder"', shell)
         js = (ROOT / "web" / "js" / "system-cleanup.js").read_text()
