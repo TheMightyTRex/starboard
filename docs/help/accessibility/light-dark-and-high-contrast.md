@@ -54,8 +54,9 @@ and the focus outline. They are checked for every colour pair in the design syst
 - **Styles from plug-ins:** a style changes Starboard's colours and shape. Starboard checks every style for
   contrast in light and dark before it can be chosen. Read
   [Choose a style from a plug-in](../topics/display-and-accessibility.md#choose-a-style-from-a-plug-in).
-- **Accent colour:** Starboard's own style is Mica, with a Blue accent. Another accent (Teal, Indigo, Forest, Plum,
-  Ember or Graphite) can be chosen for everyone on the server, in **Settings**, then **General**, then **Appearance**.
+- **Accent colour:** Starboard's own style is Mica, with a Blue accent. Another accent (Teal, Dusk, Lime, Rose,
+  Amber or Graphite) can be chosen for everyone on the server, in **Settings**, then **General**, then **Appearance**.
+  Dusk, Lime, Rose and Amber also tint the page and its cards in light and dark; high contrast keeps white or black.
   Every one of them passes the same contrast checks, in light, dark and high contrast.
 
 ## Things to note

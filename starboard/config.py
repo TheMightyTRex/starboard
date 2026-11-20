@@ -37,7 +37,10 @@ SERVER_NAME_MAX = 10
 DESIGNS = ["health", "tiles", "shelf", "command", "board"]
 # The own style's accent colour (DASH-388, DASH-479): Blue, Mica's accent, is the default (tokens.css); the others are the
 # design system's palettes (web/palettes.json), Teal being the colour before Mica.
-OWN_COLOURS = ("blue", "teal", "indigo", "forest", "plum", "ember", "graphite")
+OWN_COLOURS = ("blue", "teal", "dusk", "lime", "rose", "amber", "graphite")
+# The design system replaced four palettes (20 November 2026, its palettes/renamed.json): a saved old name, in the
+# settings file, a backup or a page from before, moves to its new one.
+RENAMED_COLOURS = {"indigo": "dusk", "plum": "rose", "ember": "amber", "forest": "lime"}
 
 UPCOMING_VIEWS = ("list", "calendar")
 UPCOMING_DAYS = (7, 14, 30, 60, 90)
@@ -258,6 +261,9 @@ class Config:
         if data.get("design") not in DESIGNS:  # a design that has since been removed
             data["design"] = DEFAULTS["design"]
             self._write(data)
+        if data.get("own_colours") in RENAMED_COLOURS:  # a palette the design system renamed
+            data["own_colours"] = RENAMED_COLOURS[data["own_colours"]]
+            self._write(data)
         if data.get("own_colours", "blue") not in OWN_COLOURS:  # a palette the design system no longer has
             data["own_colours"] = "blue"
             self._write(data)
@@ -412,6 +418,7 @@ class Config:
                     raise ConfigError("Choose one of the designs")
                 d["design"] = incoming["design"]
             if "own_colours" in incoming:
+                incoming = dict(incoming, own_colours=RENAMED_COLOURS.get(incoming["own_colours"], incoming["own_colours"]))
                 if incoming["own_colours"] not in OWN_COLOURS:
                     raise ConfigError("Choose one of the colours")
                 d["own_colours"] = incoming["own_colours"]

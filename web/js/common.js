@@ -181,8 +181,12 @@ let serverDesign = "health";
 // css/palettes.css (synced from the design system) only then. The last one seen is kept here so the first paint is
 // right before /api/session answers.
 const OWN_COLOURS_KEY = "starboard.own-colours";
-let ownColours = (() => { try { return localStorage.getItem(OWN_COLOURS_KEY) || "blue"; } catch { return "blue"; } })();
+// The design system replaced four palettes (20 November 2026, its palettes/renamed.json): an old name kept in this
+// browser moves to its new one.
+const RENAMED_COLOURS = { indigo: "dusk", plum: "rose", ember: "amber", forest: "lime" };
+let ownColours = (() => { try { const c = localStorage.getItem(OWN_COLOURS_KEY) || "blue"; return RENAMED_COLOURS[c] || c; } catch { return "blue"; } })();
 function setOwnColours(value) {
+  value = RENAMED_COLOURS[value] || value;
   ownColours = /^[a-z]+$/.test(value || "") ? value : "blue";
   try { localStorage.setItem(OWN_COLOURS_KEY, ownColours); } catch { /* private window */ }
   applyPrefs();
@@ -1634,7 +1638,7 @@ const BLUE = { label: "Blue", suits: "Mica's accent, Starboard's standard colour
     "color-text-muted": "#5d5d5d", "color-border": "#767676", "color-accent": "#005fb8", "color-accent-text": "#ffffff" },
   dark: { "color-bg": "#202020", "color-header": "#202020", "color-surface-raised": "#323232", "color-surface-sunken": "#1c1c1c", "color-text": "#ffffff",
     "color-text-muted": "#c5c5c5", "color-border": "#949494", "color-accent": "#60cdff", "color-accent-text": "#000000" } };
-const PALETTE_LABELS = { blue: "Blue", teal: "Teal", indigo: "Indigo", forest: "Forest", plum: "Plum", ember: "Ember", graphite: "Graphite" };
+const PALETTE_LABELS = { blue: "Blue", teal: "Teal", dusk: "Dusk", lime: "Lime", rose: "Rose", amber: "Amber", graphite: "Graphite" };
 function ownColoursLabel() { return PALETTE_LABELS[ownColours] || "Teal"; }
 let paletteList = null;
 function palettes() {
