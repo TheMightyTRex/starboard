@@ -59,6 +59,21 @@ async function rxCall(kind, action, body, what) {
   return null;
 }
 
+// A list of short words (file types, countries, formats) as the design system's tag input (20 November 2026): Enter or a
+// comma adds each, and each has its own Remove button. read() gives them joined with commas, as Reelix's forms take
+// them, with anything still in the box. The list is named like the field; field() labels the box, the first input.
+const TAG_HINT = "Press Enter or a comma after each one.";
+function tagInput(label, words, id = null) {
+  const hidden = el("input", { type: "hidden" });
+  hidden.value = words.join(",");
+  const input = el("input", { class: "tag-input__field", id, type: "text", autocomplete: "off", spellcheck: "false" });
+  const wrap = el("div", {}, el("div", { class: "tag-input", "data-tag-input": "" },
+    el("ul", { class: "tag-input__list", "aria-label": label }, words.map((w) => el("li", { "data-value": w, text: w }))), input, hidden));
+  SharedComponents.setupTagInputs(wrap);
+  return { node: wrap, read: () => [hidden.value, input.value.trim()].filter(Boolean).join(",") };
+}
+const listWords = (v) => (Array.isArray(v) ? v : String(v ?? "").split(",")).map((x) => String(x).trim()).filter(Boolean);
+
 // Forms from the schema ------------------------------------------------------------------------------------------
 
 // Reelix's field kinds as the library's fields: text, url and path inputs, secrets, numbers, switches, selects,
@@ -87,6 +102,11 @@ function rxSchemaForm(fields, values = {}, { editing = false } = {}) {
       return el("fieldset", { class: "field" }, el("legend", { text: f.label }), hint ? el("span", { class: "hint", text: hint }) : null,
         el("div", { class: "stack-1" }, boxes.map((b) => el("label", { class: "check" }, b.input, el("span", { class: "check__text", text: String(b.o.label ?? b.o.value) })))));
     }
+    if (f.type === "list") {
+      const tags = tagInput(f.label, listWords(v));
+      read.push(() => [f.name, tags.read()]);
+      return field(f.label, tags.node, { hint: [hint, TAG_HINT].filter(Boolean).join(" "), required: f.required });
+    }
     const input = el("input", { class: "input", spellcheck: "false", autocomplete: "off" });
     if (f.type === "secret") {
       input.type = "password";
@@ -96,16 +116,13 @@ function rxSchemaForm(fields, values = {}, { editing = false } = {}) {
       input.type = "text";
       input.inputMode = "decimal";
       input.value = v ?? "";
-    } else if (f.type === "list") {
-      input.value = Array.isArray(v) ? v.join(", ") : (v ?? "");
     } else {
       input.type = f.type === "url" ? "url" : "text";
       input.value = v ?? "";
     }
     if (f.placeholder && !input.placeholder) input.placeholder = f.placeholder;
     read.push(() => [f.name, f.type === "secret" && !input.value && editing ? "********" : input.value]);
-    return field(f.label, input, { hint: f.type === "list" ? [hint, "Separate them with commas."].filter(Boolean).join(" ") : hint,
-      required: f.required && !(editing && f.type === "secret") });
+    return field(f.label, input, { hint, required: f.required && !(editing && f.type === "secret") });
   };
   const main = fields.filter((f) => !f.advanced).map(make);
   const extra = fields.filter((f) => f.advanced).map(make);
@@ -651,6 +668,10 @@ function rxFormSection(name, title, about) {
         const picker = locationPicker({ id, label: f.label, value: was, app: "reelix", hint: f.hint,
           onChange: (v) => now(f.key, v, picker.input, () => { picker.input.value = was; picker.refresh(); }).then(() => { was = picker.input.value; }) });
         places.push(picker.node);
+      } else if (f.type === "list") {
+        const tags = tagInput(f.label, listWords(f.value), id);
+        read.push(() => [f.key, tags.read()]);
+        typed.push(field(f.label, tags.node, { hint: [f.hint, TAG_HINT].filter(Boolean).join(" ") }));
       } else {
         const input = el("input", { class: "input", id, type: f.type === "secret" ? "password" : "text", autocomplete: "off", spellcheck: "false",
           inputmode: f.type.includes("number") ? "numeric" : null, value: f.value ?? "" });
