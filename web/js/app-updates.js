@@ -134,7 +134,7 @@ function render() {
   $("#updates-log").hidden = !data.job?.finished || !data.job.log;
   $("#updates-log-text").textContent = data.job?.log || "";
 
-  if (busy() && !poll) poll = setInterval(refresh, 1500);
+  if (busy() && !poll) poll = setInterval(() => { if (!document.hidden) refresh(); }, 1500); // a hidden tab waits
   if (!busy() && poll) { clearInterval(poll); poll = null; }
   if (busyBefore && !busy()) announce("The update has finished");
   busyBefore = busy();
@@ -219,6 +219,7 @@ startPage().then(async () => {
     $("#updates input.updates-choose")?.focus();
   });
   await refresh();
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && poll) refresh(); }); // catch up at once
   const wanted = new URLSearchParams(location.search).get("app");
   if (wanted && data.available) openFor(wanted);
 });
