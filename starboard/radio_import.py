@@ -48,12 +48,10 @@ def status(cfg):
 def radio_library(abs_service, opener=None):
     """Audiobookshelf's Radio library: (id, folder as Audiobookshelf sees it), or None. A podcast library named Radio,
     or the one whose folder ends in /radio."""
-    import json
     import urllib.request
-    req = urllib.request.Request(abs_service["url"].rstrip("/") + "/api/libraries",
-                                 headers={"Authorization": "Bearer " + abs_service["api_key"], "Accept": "application/json", "User-Agent": "Starboard"})
-    with (opener or urllib.request.build_opener()).open(req, timeout=20) as r:  # Audiobookshelf's address from Starboard's apps  # nosec B310
-        libraries = json.loads(r.read(2_000_000)).get("libraries", [])
+    from . import jsonhttp
+    libraries = jsonhttp.request(abs_service["url"].rstrip("/") + "/api/libraries", headers={"Authorization": "Bearer " + abs_service["api_key"]},
+                                 timeout=20, limit=2_000_000, opener=opener or urllib.request.build_opener()).get("libraries", [])
     podcasts = [x for x in libraries if x.get("mediaType") == "podcast"]
     pick = next((x for x in podcasts if (x.get("name") or "").strip().lower() == "radio"), None) or \
         next((x for x in podcasts if any((f.get("fullPath") or "").rstrip("/").endswith("/radio") for f in x.get("folders") or [])), None)

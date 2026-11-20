@@ -6,12 +6,12 @@ Jellyfin reads the files from its own side of the folder, so Starboard works out
 the person typed in Settings, Apps, Jellyfin, or, for an Install apps stack, the Live TV folder inside Jellyfin's
 settings folder (CONFIG_DIR/jellyfin is /config for Jellyfin). The FFmpeg wrapper from DASH-169 is not touched.
 """
-import json
 import os
 import posixpath
 import urllib.error
 import urllib.request
 
+from . import jsonhttp
 from . import livetv
 
 PLAYLISTS = [("channels.m3u", "Free-TV"), ("samsung.m3u", "Samsung TV Plus"), ("pluto.m3u", "Pluto TV"), ("own.m3u", "Your lists")]
@@ -42,15 +42,9 @@ def jellyfin_folder(extras, data_dir, host_path=None, env=None):
 
 
 def _call(base, key, method, path, body=None, opener=None):
-    data = json.dumps(body).encode() if body is not None else None
     # Newer Jellyfin (10.11 and later) takes the key only in Authorization; older versions and Emby in X-Emby-Token.
-    headers = {"Authorization": f'MediaBrowser Token="{key}"', "X-Emby-Token": key, "Accept": "application/json", "User-Agent": "Starboard"}
-    if data is not None:
-        headers["Content-Type"] = "application/json"
-    req = urllib.request.Request(base.rstrip("/") + path, data=data, method=method, headers=headers)
-    with (opener or urllib.request.build_opener()).open(req, timeout=TIMEOUT) as r:  # Jellyfin from the dashboard  # nosec B310
-        raw = r.read()
-    return json.loads(raw) if raw else None
+    headers = {"Authorization": f'MediaBrowser Token="{key}"', "X-Emby-Token": key}
+    return jsonhttp.request(base.rstrip("/") + path, method, body, headers, TIMEOUT, opener=opener or urllib.request.build_opener())
 
 
 def folder_from_jellyfin(services, opener=None):
