@@ -17,7 +17,9 @@ class LibraryComponentTest(unittest.TestCase):
     def setUp(self):
         self.lib = read(JS / "components.js")
         start = self.lib.index("function loadMore(box")
-        self.body = self.lib[start:self.lib.index("function setup(root)", start)]
+        # To the next part of the library: since 20 November 2026 more components (the log viewer, the tooltip) come
+        # between loadMore and setup, with scroll handlers of their own.
+        self.body = self.lib[start:self.lib.index("\n  /* ", start)]
 
     def test_it_is_offered_by_the_library(self):
         self.assertRegex(self.lib, r"window\.SharedComponents = \{[^}]*\bloadMore\b")
