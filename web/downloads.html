@@ -48,6 +48,7 @@
   </section>
   <div class="toolbar">
     <div class="toolbar__row">
+      <label class="check dl-select-all" hidden><input type="checkbox" id="select-all"><span class="check__text">Select all</span></label>
       <div class="filter-chips" id="queue-filters" role="group" aria-label="Show only"></div>
       <div class="toolbar__end">
         <div class="menu-wrap" id="sort-wrap">
@@ -66,6 +67,10 @@
   </div>
   <div id="queue-errors"></div>
   <div id="queue" aria-label="Queue"></div>
+  <div class="selection-bar" id="selection-bar" role="region" aria-label="Selected downloads" hidden>
+    <span class="selection-bar__text" id="selection-text"></span>
+    <div class="actions" id="selection-actions"></div>
+  </div>
   <section class="media-section" id="held-section" aria-labelledby="held-h" hidden>
     <h2 class="group-heading" id="held-h" tabindex="-1">Held downloads</h2>
     <p class="small muted" id="held-summary"></p>
