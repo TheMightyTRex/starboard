@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Fixed
+- **The red edge of a Remove section (design system, 21 November 2026; reported twice with Snaglist, on Plug-ins and on a plug-in's settings):** its grey head band ran out over the top of the red edge. The edge now runs the full height and is as wide as every other status edge.
+
 ## [0.25.0] (20 November 2026)
 
 ### Added
