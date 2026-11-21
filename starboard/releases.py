@@ -1908,6 +1908,21 @@ RELEASES = [
         ],
         "review": [],
         "settings": "Your settings stay as they are, except that an old colour theme moves to its new one and the White channel logos setting goes. To go back, run ./update.sh --to v0.24.0."
+    },
+    {
+        "version": "0.26.0",
+        "date": "21 November 2026",
+        "added": [
+            ["Bulk actions on the download queue", "On Activity, Downloads, Queue, tick downloads or Select all, then try the import again, ignore, find another or remove them together; Starboard asks first, names how many, and says what was done."]
+        ],
+        "fixed": [
+            ["The red edge of a Remove section", "It now runs the full height of the section and is as wide as every other status edge."]
+        ],
+        "security": [
+            ["Security scan", "Trivy, Gitleaks, Bandit, ShellCheck, Hadolint and ZAP signed out and signed in found nothing to fix."]
+        ],
+        "review": [],
+        "settings": "Your settings stay as they are. To go back, run ./update.sh --to v0.25.0."
     }
 ]
 
