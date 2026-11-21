@@ -4,7 +4,7 @@
 # Pause, resume and remove downloads
 
 **Activity**, then **Downloads** shows the queues of all your apps in one list. From it you can pause and resume
-all downloads, remove one download, or ask an app to find a different copy.
+all downloads, remove one download or several at once, or ask an app to find a different copy.
 
 ## Before you begin
 
@@ -49,6 +49,31 @@ Use this when a download is stuck or the wrong one.
 2. Select **Find another**. Starboard asks **Block this release and find another?**
 3. Select **Block and search**. The app removes this copy, never downloads it again and searches for another
    now.
+
+### Act on several downloads at once
+
+Use this to remove, ignore or import many downloads together, such as a whole season that is not an upgrade.
+
+1. Tick the box at the start of each download's row. To tick a run of rows, tick the first, then hold **Shift**
+   and tick the last. To tick every download on the list, tick **Select all**.
+2. A bar at the foot of the list says how many are selected and shows what you can do with them:
+   **Try the import again** and **Ignore** for Reelix downloads waiting to import, **Find another**, **Remove**
+   and **Clear selection**.
+
+   ![The queue with two downloads ticked, with Select all (step 1) and the bar of actions (step 2) outlined, with example data](../images/manage-downloads-6-select.png)
+
+3. Select an action. Starboard asks first and says how many downloads it acts on.
+4. Optional: for **Remove**, tick **Block these releases** so the apps do not download them again.
+5. Select the button that names the action, such as **Remove 2 downloads**.
+
+   ![The question before removing two downloads, with Block these releases (step 4) and Remove 2 downloads (step 5) outlined, with example data](../images/manage-downloads-7-bulk-remove.png)
+
+6. Starboard sends each download to its app in turn and counts them in the bar, then says what was done, such as
+   **Removed 12 downloads.** Any it could not do are named, with the app's reason.
+
+**Try the import again** and **Ignore** act only on the selected downloads that are waiting to import; the
+question says how many others are left as they are. A download the filter hides is not selected, so choose the
+filter first, such as **Needs attention**, then **Select all**.
 
 ### Get a held download now, or remove it
 

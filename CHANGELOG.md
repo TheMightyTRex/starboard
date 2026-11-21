@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Bulk actions on the download queue (owner, 21 November 2026: "add a bulk selector to the list so can do bulk actions"):** on Activity, Downloads, Queue, each download has a box at the start of its row, and Select all in the toolbar ticks every download on the list; Shift and a tick selects a run of rows. A bar at the foot of the list says how many are selected and offers Try the import again and Ignore (for Reelix downloads waiting to import), Find another, Remove (with Block these releases) and Clear selection. Starboard asks first, naming how many it acts on, then sends each download to its app in turn, counts them in the bar and says what was done; any it could not do are named with the app's reason. A download the filter hides drops out of the selection. Screen readers hear the count and the result, and focus goes back to Select all, or to the empty list's words, when the bar closes. Design system: selection bar, selectable rows.
+
 ## [0.25.0] (20 November 2026)
 
 ### Added

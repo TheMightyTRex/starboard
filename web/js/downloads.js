@@ -16,6 +16,9 @@ let checkedAt = null;
 let attention = null; // the open slide-out of a download that needs attention (DASH-496): { key, data, done }
 let panelOpener = null; // the download's name that opened it, for focus to go back to
 let unpackTimer = null;
+let chosen = new Set(); // keys of the downloads ticked for a bulk action (owner, 21 November 2026)
+let lastPicked = null; // the key last ticked or cleared, for Shift and click to tick a run of rows
+let bulkRunning = false;
 
 const STATE_WORDS = {
   downloading: STATUS.downloading, importPending: STATUS.waitingToImport, importing: STATUS.importing,
@@ -75,6 +78,8 @@ function setProgress(bar, item, label) {
 // Rows ---------------------------------------------------------------------
 
 function buildRow() {
+  const pick = el("input", { type: "checkbox", class: "dl-pick__box" });
+  pick.addEventListener("click", (e) => pickRow(pick.closest("[data-key]").dataset.key, pick.checked, e.shiftKey));
   const button = el("button", { type: "button" });
   button.addEventListener("click", () => openDetails(button.closest("[data-key]").dataset.key, button));
   const meta = el("div", { class: "row__meta" });
@@ -82,9 +87,9 @@ function buildRow() {
   const pct = el("span", { class: "numeric" });
   const side = el("div", { class: "row__side" }, pct);
   const bar = newBar();
-  const li = el("li", { class: "row row--opens row--no-lead" },
+  const li = el("li", { class: "row row--opens dl-row" }, el("label", { class: "dl-pick" }, pick),
     el("div", {}, el("div", { class: "row__title" }, button), meta, reason), side, bar);
-  li.parts = { button, meta, reason, pct, side, bar, chip: null };
+  li.parts = { pick, button, meta, reason, pct, side, bar, chip: null };
   return li;
 }
 
@@ -93,6 +98,11 @@ function renderRow(item, old) {
   const p = li.parts;
   const [label, tone] = words(item);
   if (p.button.textContent !== item.title) p.button.textContent = item.title;
+  const can = canAct(item);
+  p.pick.disabled = !can || bulkRunning;
+  p.pick.parentElement.classList.toggle("dl-pick--none", !can);
+  p.pick.checked = chosen.has(item.key);
+  p.pick.setAttribute("aria-label", `Select ${item.title}`);
   p.meta.textContent = [grouped ? "" : item.service_name, item.client, formatBytes(item.size), timeLeftWords(item.time_left)].filter(Boolean).join(" · ");
   p.reason.textContent = item.problem && item.messages.length ? item.messages[0] : "";
   p.reason.hidden = !p.reason.textContent;
@@ -146,14 +156,144 @@ function renderRows() {
   let empty = $("#queue-empty");
   if (!shown.length) {
     const text = items.length ? `Nothing in the queue is "${filter}" right now.` : "Nothing is downloading. New downloads from your apps appear here.";
-    if (!empty) { empty = el("p", { id: "queue-empty", class: "empty" }); box.after(empty); }
+    if (!empty) { empty = el("p", { id: "queue-empty", class: "empty", tabindex: "-1" }); box.after(empty); }
     empty.textContent = text;
   } else {
     empty?.remove();
   }
+  // Only downloads on the list stay ticked: one that left the queue, or that the filter hides, drops out.
+  const keys = new Set(shown.filter(canAct).map((i) => i.key));
+  for (const k of chosen) if (!keys.has(k)) chosen.delete(k);
+  renderSelection(shown);
   $("#queue-count").textContent = filter
     ? `${shown.length} of ${items.length} downloads`
     : `${items.length} ${items.length === 1 ? "download" : "downloads"}`;
+}
+
+// Bulk actions (owner, 21 November 2026: "add a bulk selector to the list so can do bulk actions") ------------
+// A box on each row and Select all in the toolbar; the selection bar at the foot of the list then offers the
+// actions that fit what is ticked. Each download is sent on its own, one after another, as the slide-out does, and
+// the bar counts them; then one sentence says what was done. Focus goes to Select all when the bar closes.
+
+function canAct(item) { return item.id != null && !!item.service; }
+function stuckItem(item) { return item.reelix && ["importPending", "importBlocked", "failedPending"].includes(item.status); }
+function shownItems() { return sorted(items.filter((i) => !filter || words(i)[0] === filter)); }
+
+function pickRow(key, on, range) {
+  const list = shownItems().filter(canAct).map((i) => i.key);
+  const keys = range && lastPicked && list.includes(lastPicked)
+    ? list.slice(Math.min(list.indexOf(lastPicked), list.indexOf(key)), Math.max(list.indexOf(lastPicked), list.indexOf(key)) + 1)
+    : [key];
+  keys.forEach((k) => (on ? chosen.add(k) : chosen.delete(k)));
+  lastPicked = key;
+  renderRows();
+}
+
+function renderSelection(shown = shownItems()) {
+  const can = shown.filter(canAct);
+  const all = $("#select-all");
+  if (all) {
+    all.disabled = !can.length || bulkRunning;
+    all.checked = can.length > 0 && chosen.size === can.length;
+    all.indeterminate = chosen.size > 0 && chosen.size < can.length;
+    all.closest("label").hidden = !can.length;
+  }
+  const bar = $("#selection-bar");
+  if (!bar || bulkRunning) return;
+  const picked = can.filter((i) => chosen.has(i.key));
+  const sig = picked.map((i) => `${i.key}:${stuckItem(i)}`).join(",");
+  if (bar.dataset.sig === sig) return; // the poll changes nothing here, so focus in the bar stays put
+  bar.dataset.sig = sig;
+  bar.hidden = !picked.length;
+  if (!picked.length) return;
+  const stuck = picked.filter(stuckItem);
+  const one = picked.length === 1;
+  $("#selection-text").textContent = `${plural(picked.length, "download")} selected`;
+  const button = (iconName, text, action, cls = "btn") => {
+    const b = el("button", { type: "button", class: cls }, icon(iconName), text);
+    b.addEventListener("click", action);
+    return b;
+  };
+  const clients = (list) => [...new Set(list.map((i) => i.client).filter(Boolean))];
+  const where = (list) => (clients(list).length === 1 ? clients(list)[0] : "the download clients");
+  const left = (n) => {
+    const rest = picked.length - n;
+    if (!rest) return "";
+    return rest === 1 ? " The other download is not waiting to import, so it is left as it is."
+      : ` The other ${rest} downloads are not waiting to import, so they are left as they are.`;
+  };
+  const out = [];
+  if (stuck.length) {
+    out.push(button("refresh-cw", "Try the import again", () => bulkRun(stuck, "import", {
+      title: `Try the import again for ${plural(stuck.length, "download")}?`,
+      message: `Reelix checks the finished files again and moves them into your library if it can.${left(stuck.length)}`,
+      confirm: "Try again" }), "btn btn--primary"));
+    out.push(button("eye-off", "Ignore", () => bulkRun(stuck, "ignore", {
+      title: `Ignore ${plural(stuck.length, "download")}?`,
+      message: `Reelix stops warning about ${stuck.length === 1 ? "it" : "them"} and leaves the files in ${where(stuck)}'s folder. Nothing is deleted.${left(stuck.length)}`,
+      confirm: "Ignore" })));
+  }
+  out.push(button("search", "Find another", () => bulkRun(picked, "block-search", {
+    title: one ? "Block this release and find another?" : `Block these ${picked.length} releases and find others?`,
+    message: `Each app removes ${one ? "it" : "them"} from ${where(picked)}, never downloads ${one ? "that release" : "those releases"} again, and searches for another now.`,
+    confirm: "Block and search" })));
+  out.push(button("trash-2", "Remove", () => {
+    const block = el("input", { type: "checkbox" });
+    bulkRun(picked, () => (block.checked ? "block" : "remove"), {
+      title: `Remove ${plural(picked.length, "download")}?`,
+      message: `Each app removes ${one ? "it" : "them"} from its queue and from ${where(picked)}, with what ${one ? "it has" : "they have"} downloaded.`,
+      fields: [el("label", { class: "check" }, block, el("span", { class: "check__text" }, el("strong", { text: one ? "Block this release" : "Block these releases" }),
+        el("span", { class: "check__hint", text: "So the apps do not download them again." })))],
+      confirm: one ? "Remove download" : `Remove ${picked.length} downloads`, danger: true });
+  }, "btn btn--danger"));
+  out.push(button("x", "Clear selection", () => { chosen.clear(); renderRows(); $("#select-all")?.focus(); announce("Selection cleared"); }));
+  $("#selection-actions").replaceChildren(...out);
+}
+
+const BULK_DONE = { import: ["Reelix is trying the import again for", "The import was not tried again for"],
+  ignore: ["Ignored", "Not ignored:"], "block-search": ["Blocked, and searching for others for", "Not blocked:"],
+  remove: ["Removed", "Not removed:"], block: ["Removed and blocked", "Not removed:"] };
+
+async function bulkRun(list, action, dialog) {
+  if (bulkRunning || !(await confirmDialog(dialog))) return;
+  const chosenAction = typeof action === "function" ? action() : action;
+  const bar = $("#selection-bar");
+  const text = $("#selection-text");
+  bulkRunning = true;
+  bar.setAttribute("aria-busy", "true");
+  bar.querySelectorAll("button").forEach((b) => { b.disabled = true; });
+  renderRows();
+  const failed = [];
+  for (const [n, item] of list.entries()) {
+    text.textContent = `Working on ${n + 1} of ${list.length}…`;
+    try {
+      await api("/api/queue/action", { method: "POST", body: { service: item.service, id: item.id, action: chosenAction } });
+      chosen.delete(item.key);
+    } catch (e) { failed.push(`${item.title}: ${e.message}`); }
+  }
+  bulkRunning = false;
+  bar.removeAttribute("aria-busy");
+  delete bar.dataset.sig;
+  const done = list.length - failed.length;
+  const [yes, no] = BULK_DONE[chosenAction];
+  const said = [done ? `${yes} ${plural(done, "download")}.` : "", failed.length ? `${no} ${plural(failed.length, "download")}.` : ""].filter(Boolean).join(" ");
+  await load();
+  // Focus: the bar's first button while some are still ticked; otherwise Select all, or the empty queue's words.
+  const all = $("#select-all");
+  if (!bar.hidden) $("button", bar)?.focus();
+  else if (all && !all.closest("label").hidden) all.focus();
+  else $("#queue-empty")?.focus();
+  if (failed.length) problem(`${said} ${failed.join(" ")}`); else toast(said);
+  announce(said);
+}
+
+function selectAll() {
+  const all = $("#select-all");
+  const can = shownItems().filter(canAct);
+  if (all.checked) can.forEach((i) => chosen.add(i.key)); else chosen.clear();
+  lastPicked = null;
+  renderRows();
+  announce(all.checked ? `${plural(can.length, "download")} selected` : "Selection cleared");
 }
 
 // One state at a time (DASH-309, R4): a segmented control, All first. The poll only changes the counts in place;
@@ -995,6 +1135,7 @@ startPage().then(async () => {
     setPaused(!paused);
     announce(paused ? "Updates paused" : every ? `Updates resumed, every ${every} seconds` : "Updates only when you press Check again");
   });
+  $("#select-all").addEventListener("change", selectAll);
   $("#group-by-app").addEventListener("click", (e) => {
     grouped = !grouped;
     e.currentTarget.setAttribute("aria-pressed", String(grouped));
