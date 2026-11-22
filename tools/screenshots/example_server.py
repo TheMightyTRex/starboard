@@ -2153,6 +2153,16 @@ def main():
             _, body = call("GET", "/api/config", cookie=cookie)
             rid = next(sv["id"] for sv in json.loads(body)["services"] if sv["name"] == "Reelix")
             (DATA / "app-changes.json").write_text(json.dumps({"seen": {rid: "0.7.0"}, "notices": {}}))
+    # Activity, History, Across apps (DASH-68): what Starboard itself would have written over a few days.
+    from starboard import activity_log
+    hour = 3600
+    activity_log.record_many(str(DATA), [
+        ("upgraded", "Jellyfin", "Jellyfin updated from 10.11.2 to 10.11.3", "", now - 3 * hour, ""),
+        ("failed", "", "Kavita is not responding", "Kavita did not answer.", now - 9 * hour, ""),
+        ("added", "Disk forecast", "Disk forecast plug-in added, version 1.2.0", "", now - 26 * hour, ""),
+        ("upgraded", "Starboard", "Starboard is updated", "Starboard v0.26.0 is installed and answering.", now - 30 * hour, ""),
+        ("failed", "qBittorrent", "qBittorrent was not updated", "The new version did not start, so Starboard went back to the one before.", now - 50 * hour, ""),
+        ("upgraded", "Audiobookshelf", "Audiobookshelf updated from 2.30.0 to 2.31.0", "", now - 75 * hour, "")])
     print("READY", flush=True)
     threading.Event().wait()
 
