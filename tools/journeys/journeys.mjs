@@ -991,8 +991,8 @@ check("MENU2-05", "Radio has Sources, Add a show from a link, Your podcast libra
 check("MENU2-05", "Sources shows only the sources", (await headings()) === "Sources", await headings());
 check("MENU2-05", "Performance has Preset and Pictures", (await level2("settings-performance.html")) === "Preset|Pictures");
 check("MENU2-05", "Pictures has the picture cache and its Clear", (await level2("settings-performance-pictures.html")) && (await headings()) === "Pictures|Clear", await headings());
-check("MENU2-05", "Security has Who can open the dashboard, Password, API keys, Sign out everywhere",
-  (await level2("settings-security.html")) === "Who can open the dashboard|Password|API keys|Sign out everywhere", await level2("settings-security.html"));
+check("MENU2-05", "Security has Who can open the dashboard, Password, Sign-in methods, API keys, Sign out everywhere",
+  (await level2("settings-security.html")) === "Who can open the dashboard|Password|Sign-in methods|API keys|Sign out everywhere", await level2("settings-security.html"));
 for (const [from, to] of [["settings-radio.html#radio-logos-h", "/settings-radio-logos.html"], ["settings-performance.html#pf-pictures-h", "/settings-performance-pictures.html"],
   ["settings-security.html#sc-keys-h", "/settings-security-keys.html"], ["settings-security.html#sc-pw-h", "/settings-security-password.html"]]) {
   await open("index.html");
@@ -2637,6 +2637,7 @@ await page.unroute(/\/api\/status\?id=/, rxStatus);
 // the password, shows a QR code and the recovery codes once; signing in then asks for the code after the password;
 // deactivating puts it back. The example server takes 123456 as the right code (tools/screenshots/example_server.py).
 console.log("\n== SIGNIN-01 Two-step code and single sign-on");
+const problemsBefore = problems.length;  // the refusals below are answered 401 and 409 on purpose; the browser logs each as an error
 await page.setViewportSize({ width: 1280, height: 860 });
 await open("settings-security-signin.html");
 check("SIGNIN-01", "nothing is on at first: the two-step code says Off, with its set-up button", await page.getByRole("button", { name: "Set up a two-step code" }).count() === 1
@@ -2691,7 +2692,7 @@ await page.getByRole("button", { name: "Deactivate the two-step code" }).click()
 check("SIGNIN-04", "deactivating asks first, and the safe choice is not the default", await page.getByRole("dialog").count() === 1);
 await page.fill("#signin-password", password);
 await page.keyboard.press("Enter");
-await page.waitForTimeout(800);
+await page.getByRole("button", { name: "Set up a two-step code" }).waitFor({ timeout: 8000 }).catch(() => {});
 check("SIGNIN-04", "after it, the two-step code is off again and the password alone signs in", !(await api("/api/security/signin")).totp.enabled && await page.getByRole("button", { name: "Set up a two-step code" }).count() === 1);
 // Single sign-on, as far as a made-up provider allows: the form, the secret kept out of the page, the test before it can be used.
 await page.getByRole("tab", { name: "Single sign-on" }).click().catch(() => {});
@@ -2699,8 +2700,9 @@ check("SIGNIN-05", "the secret is never in the page, only that it is kept", awai
 check("SIGNIN-05", "Allow single sign-on is a switch with a name", await page.getByRole("switch", { name: /Allow single sign-on/ }).count() === 1);
 const pwOff = await page.evaluate(async () => { try { await api("/api/security/password-login", { method: "POST", body: { password: "example-password", allowed: false } }); return "allowed"; } catch (e) { return e.message; } });
 check("SIGNIN-05", "the password cannot be deactivated until single sign-on is on and has been tested", /Activate single sign-on and test it first/.test(pwOff), pwOff);
-const asKey = await page.evaluate(async () => (await fetch("/api/security/signin", { headers: { Authorization: "Bearer sb_manage_000000_nope" } })).status);
+const asKey = await page.evaluate(async () => (await fetch("/api/security/signin", { credentials: "omit", headers: { Authorization: "Bearer sb_manage_000000_nope" } })).status);
 check("SIGNIN-05", "an API key, or a made-up one, cannot read any of it", asKey === 401, String(asKey));
+problems.splice(problemsBefore, problems.length, ...problems.slice(problemsBefore).filter((m) => !/status of (401|409)/.test(m)));
 
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });

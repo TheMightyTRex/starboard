@@ -173,7 +173,7 @@ async function startSignin() {
     const parts = [state, form];
     if (o.configured) {
       const test = el("a", { class: "btn", href: "/api/oidc/start?test=1" }, icon("key-round"), "Test sign-in");
-      const allow = el("input", { type: "checkbox", role: "switch", id: "sso-on", checked: o.enabled, "aria-describedby": "sso-on-h" });
+      const allow = el("input", { type: "checkbox", role: "switch", id: "sso-on", checked: o.enabled, "aria-labelledby": "sso-on-l", "aria-describedby": "sso-on-h" });
       if (!o.tested && !o.enabled) allow.setAttribute("aria-disabled", "true");
       allow.addEventListener("change", async () => {
         const want = allow.checked;
@@ -203,7 +203,7 @@ async function startSignin() {
   // Password sign-in -------------------------------------------------------------------------------------------
   function passwordSection() {
     const on = st.password_login;
-    const sw = el("input", { type: "checkbox", role: "switch", id: "pw-on", checked: on, "aria-describedby": "pw-on-h" });
+    const sw = el("input", { type: "checkbox", role: "switch", id: "pw-on", checked: on, "aria-labelledby": "pw-on-l", "aria-describedby": "pw-on-h" });
     sw.addEventListener("change", async () => {
       const want = sw.checked;
       sw.checked = !want;
