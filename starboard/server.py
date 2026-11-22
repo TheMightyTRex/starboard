@@ -669,6 +669,17 @@ def after_install_change(app, password, plan, sab_ini, by_installer=None, sab_fr
     threading.Thread(target=run, name="install-change", daemon=True).start()
 
 
+def transfer_with_vpn(data_dir, service_list):
+    """services.transfer, with the VPN read from its container when the stack has Gluetun but no connection entry
+    answers for it. Without this the dashboard said No VPN on a server whose downloads all went through one."""
+    out = services.transfer(service_list)
+    if not out["vpn"] and "gluetun" in stack.chosen_keys(data_dir):
+        found = containers.vpn_from_container()
+        if found:
+            out["vpn"].append(found)
+    return out
+
+
 def follow_vpn(app, password, on, plan):
     """Once a VPN was added or removed in Settings, Downloads, VPN (DASH-440): Reelix reaches the download apps at
     gluetun or by their own names, its searches go through the VPN or not, and without one qBittorrent listens on
@@ -2593,7 +2604,7 @@ class Handler(BaseHTTPRequestHandler):
                 logs.event("info", "downloads", f"{s['name']}: unpacking and folder scanning resumed")
                 return self.json(200, {"said": f"{s['name']} is unpacking again"})
             if path == "/api/transfer" and method == "GET":
-                return self.json(200, services.cached("transfer", 5, lambda: services.transfer(cfg.data["services"]), fresh))
+                return self.json(200, services.cached("transfer", 5, lambda: transfer_with_vpn(app.data_dir, cfg.data["services"]), fresh))
             if path == "/api/numbers" and method == "GET":
                 return self.json(200, {"items": services.cached("numbers", 60, lambda: services.numbers(cfg.data["services"]), fresh)})
             if path == "/api/requests" and method == "GET":

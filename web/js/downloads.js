@@ -1017,7 +1017,7 @@ async function loadTransfer(fresh = false) {
   for (const v of t.vpn) {
     const where = [v.city, v.country].filter(Boolean).join(", ");
     tiles.push(stat(v.running ? "Connected" : "Not connected",
-      `${v.name}${where ? `: ${where}` : ""}${v.port ? `, forwarded port ${v.port}` : v.running ? ", no forwarded port" : ""}`,
+      `${v.name}${where ? `: ${where}` : ""}${v.port ? `, forwarded port ${v.port}` : v.running && v.from !== "container" ? ", no forwarded port" : ""}`,
       v.running ? "success" : "danger", v.running ? null : "Downloads may stop"));
   }
   for (const e of t.errors) tiles.push(stat(STATUS.notResponding[0], e.message, STATUS.notResponding[1]));
