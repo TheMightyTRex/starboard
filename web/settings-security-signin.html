@@ -12,14 +12,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="stylesheet" href="/css/tokens.css">
 <link rel="stylesheet" href="/css/components.css">
-<link rel="stylesheet" href="/css/parts/error-summary.css">
-<link rel="stylesheet" href="/css/parts/secret-field.css">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/designs.css">
 <link rel="stylesheet" href="/css/settings.css">
 <script src="/js/components.js" data-manual></script>
-<script src="/js/parts/error-summary.js"></script>
-<script src="/js/parts/secret-field.js"></script>
 <script src="/js/common.js"></script>
 <script src="/js/settings-core.js" defer></script>
 <script src="/js/settings-signin.js" defer></script>
@@ -35,7 +31,7 @@
       <p class="page-head__summary">A two-step code, single sign-on with your own provider, and whether the password works. All are off until you set them up.</p>
     </div>
   </div>
-  <div class="settings-sections" id="signin-sections" aria-busy="true"></div>
+  <div class="settings-sections" id="signin-sections" data-parts="sc-2fa sc-sso sc-pwoff sc-reach" aria-busy="true"></div>
 </div>
 </main>
 </body>
