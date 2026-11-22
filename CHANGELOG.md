@@ -7,6 +7,18 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Restore a full backup on this server (DASH-387):** on Settings, General, Backup and restore, each full backup in the folder has Restore beside it, so you can go back to an earlier day without a new install. A danger dialog says what is replaced and asks for the backup's password and your Starboard password. Nothing changes until both are right and the whole file has been read. Starboard first makes a full backup of how things are now, in the same folder and with the same backup password, and removes no older one to make room; then it stops the apps in the backup, puts Starboard's files and each app's settings and database back, and starts the apps again, saying each step on the page. Your Starboard password and sign-ins stay as they are. If Starboard stops part way, the apps are started at its next start. A backup from a server with another settings folder, or from a newer Starboard, is refused in words. Help: [Make and restore a full backup](docs/help/topics/make-and-restore-a-full-backup.md).
+- **Each full backup is checked after it is made (DASH-381):** Starboard reads the new file back from the backup folder (its size, its start and its last part, opened with the key) and the list says Checked beside it. One that does not read back is not kept and the backup is reported as failed, with the alert for a failed backup; the older backups stay. The check reads at most 1 MiB, never the whole file.
+- **Reelix's backups on another disk than its settings (DASH-386):** when the media folder is on another disk, Reelix's backups has Where Reelix keeps them: next to its settings, or in the media folder, each with its disk named. The backups already made move with the choice, and Restart Reelix beside it makes Reelix use the new folder. When both are on one disk, the page says so. Help: [Reelix's own backups](docs/help/topics/reelix-backups.md).
+
+### Changed
+- **Reelix's backup settings follow the settings patterns (DASH-385):** how often Reelix makes a backup and how many it keeps are selects that apply at once, each with the saved note beside it, in place of two typed fields and Save the schedule. A choice that is not saved goes back to what it was. The dialog for restoring a Reelix backup says that nothing changes until Reelix restarts.
+- **A full backup is put back only once it has been read to its end:** the set-up's Restore a backup now reads the whole file before it changes anything, so a damaged or cut-off backup leaves a new install as it was.
+
+### Fixed
+- **Restoring a full backup stopped with "Permission denied":** the helper wrote Starboard's working copy of the backup readable by root only, and Starboard never runs as root, so the set-up's Restore a backup could not open it. Found by restoring for real, with Docker, on made-up data (`tools/try-full-restore.py`).
+
 ## [0.26.0] (21 November 2026)
 
 ### Added

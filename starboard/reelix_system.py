@@ -30,6 +30,14 @@ def backup_settings(reelix, every, keep):
     return {**backups(reelix), "done": "Backup schedule saved" if every else "Scheduled backups are off"}
 
 
+def backup_place(data_dir, reelix, key):
+    """Where Reelix keeps its backups (DASH-386): next to its settings or in the media folder, from its next start."""
+    from . import reelix_backup_place
+    now = backups(reelix)
+    done = reelix_backup_place.choose(data_dir, str(key or ""), [b["name"] for b in now["backups"]], now["restore_waiting"])
+    return {**backups(reelix), "done": done}
+
+
 def restore(reelix, name):
     name = str(name or "")
     if not name or "/" in name or ".." in name or len(name) > 200:

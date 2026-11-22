@@ -2931,7 +2931,8 @@ class Handler(BaseHTTPRequestHandler):
                             can = ""
                         except full_backup.BackupError as e:
                             can = str(e)
-                        return self.json(200, {"status": full_backup.status(app.data_dir), "folder": full_backup.default_folder(app.data_dir),
+                        return self.json(200, {"status": full_backup.status(app.data_dir), "restore": full_backup.restore_status(app.data_dir),
+                                               "folder": full_backup.default_folder(app.data_dir),
                                                "cannot": can, "installed": bool(stack.env_values(app.data_dir).get("CONFIG_DIR")),
                                                "docker": containers.available(), "starboard": full_backup.sizes(app.data_dir),
                                                "keep": backup_schedule.keep_for(app.backup_schedule.mode())})
@@ -2939,7 +2940,24 @@ class Handler(BaseHTTPRequestHandler):
                         return self.json(200, {"apps": full_backup.app_sizes(app.data_dir), "starboard": full_backup.sizes(app.data_dir)})
                     if path == "/api/backup/full/found" and method == "GET":
                         folder = q.get("folder", [""])[0]
-                        return self.json(200, {"found": full_backup.found(folder), "disk": full_backup.disk_of(app.data_dir, folder)})
+                        return self.json(200, {"found": full_backup.with_checked(app.data_dir, full_backup.found(folder)),
+                                               "disk": full_backup.disk_of(app.data_dir, folder)})
+                    if path == "/api/backup/full/restore-here" and method == "GET":  # DASH-387
+                        return self.json(200, {"status": full_backup.restore_status(app.data_dir)})
+                    if path == "/api/backup/full/restore-here" and method == "POST":
+                        data = self.body()
+                        self.check_password(data)
+
+                        def apply_settings(raw):
+                            # As the set-up's restore does it: the settings restore saves a copy of the current ones first.
+                            count = backup.restore(cfg, {"format": backup.FORMAT, "schema": raw.get("schema"), "services": raw.get("services") or [],
+                                                         "settings": {k: raw[k] for k in backup.GENERAL_KEYS + backup.OTHER_KEYS if k in raw}})
+                            logs.event("info", "backup", f"Full backup restored on this server ({count} apps)")
+                            return count
+                        full_backup.start_restore(app.data_dir, app.version, str(data.get("file") or ""), str(data.get("backup_password") or ""),
+                                                  apply_settings, cfg.data.get("site_name", ""))
+                        logs.event("info", "backup", "Restoring a full backup on this server started")
+                        return self.json(202, {"status": full_backup.restore_status(app.data_dir)})
                     if path == "/api/backup/full" and method == "POST":
                         data = self.body()
                         self.check_password(data)
