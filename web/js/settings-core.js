@@ -650,5 +650,5 @@ Promise.all([startPage(), settingsLoaded]).then(async ([session]) => {
   advancedSwitch();
   watchTopics();
   for (const [selector, start] of SETTINGS_STARTS) if ($(selector)) globalThis[start]?.();
-  $("#usenet-rights")?.append(usenetRights());
+  $("#download-rights")?.append(downloadRights());
 });

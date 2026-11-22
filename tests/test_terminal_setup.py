@@ -127,6 +127,17 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertIn(terminal_setup.USENET_ABOUT, js)
         self.assertIn(terminal_setup.USENET_AD.removeprefix("Ad: "), js)
 
+    def test_about_says_it_for_every_download_app(self):
+        """About's notice covers torrents as well as Usenet, in the README and help footer's words (DASH-525)."""
+        web = os.path.join(os.path.dirname(__file__), "..", "web")
+        js = open(os.path.join(web, "js", "common.js"), encoding="utf-8").read()
+        wide = terminal_setup.USENET_RIGHTS.replace("Use Usenet only", "Use the download apps only")
+        self.assertIn(wide, js)
+        self.assertIn(wide, " ".join(open(os.path.join(web, "..", "README.md"), encoding="utf-8").read().split()))
+        self.assertIn('$("#download-rights")?.append(downloadRights())',
+                      open(os.path.join(web, "js", "settings-core.js"), encoding="utf-8").read())
+        self.assertIn('id="download-rights"', open(os.path.join(web, "settings-updates.html"), encoding="utf-8").read())
+
     def test_help_mismatch_and_short_passwords_ask_again(self):
         term, out = self.term(["", "", "", "", "", "", "2", "", "", ""], ["?", "short", SIGN_IN_WORDS, "different words", SIGN_IN_WORDS, SIGN_IN_WORDS])
         with self.no_apps():
