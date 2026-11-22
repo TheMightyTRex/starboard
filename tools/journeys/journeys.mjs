@@ -861,8 +861,8 @@ check("FOOT-01", "the version at the bottom of the side menu links to Settings, 
   /^(Starboard version )?v\d+\.\d+\.\d+(, update available: version \d+\.\d+\.\d+)?$/.test((await page.locator(".rail__end a.rail__version [data-version-short]").textContent()).trim())
   && (await page.locator(".rail__end a.rail__version").getAttribute("href")) === "/settings-updates.html");
 const footLinks = await page.locator(".site-footer .site-footer__links a").evaluateAll((as) => as.map((a) => a.childNodes[0].textContent.trim()));
-check("FOOT-01", "the footer links are Help, Release notes, GitHub repository, About and updates",
-  footLinks.join("|") === "Help|Release notes|GitHub repository|About and updates", footLinks.join(", "));
+check("FOOT-01", "the footer links are Help, Discord support server, Release notes, GitHub repository, About and updates",
+  footLinks.join("|") === "Help|Discord support server|Release notes|GitHub repository|About and updates", footLinks.join(", "));
 const maker = page.locator(".site-footer > a.site-footer__maker");
 check("FOOT-01", "TheMightyTRexUK is on the right, one link to the GitHub profile, with the dinosaur mark",
   (await maker.count()) === 1 && (await maker.getAttribute("href")) === "https://github.com/TheMightyTRex"
