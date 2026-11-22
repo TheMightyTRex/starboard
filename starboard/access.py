@@ -6,7 +6,7 @@ was asked for), and how to change it: a switch in Settings, or a question in ./i
 
 import os
 
-from . import containers, sysinfo
+from . import containers, signin, sysinfo
 
 
 def _item(key, title, what, on, change, **extra):
@@ -27,6 +27,12 @@ def summary(app):
               "Read only key you make for them. They cannot change anything.",
               d.get("mcp_enabled", False), "setting", link="/settings-security-keys.html#sc-mcp-h",
               cost="Nothing until an assistant asks; each question reads the same saved answers as the pages."),
+        _item("sso", "Your single sign-on provider",
+              "When single sign-on is on, the sign-in page sends people to the provider you chose (Authentik, Keycloak, Google or another), "
+              "and Starboard asks it for the sign-in's result and its published keys. It sends the client ID and the client secret you gave it, "
+              "and nothing else about you or your server. The password keeps working unless you turn it off.",
+              signin.sso_on(app), "setting", link="/settings-security-signin.html",
+              cost="Nothing until someone signs in this way; then two small requests to the provider."),
         _item("apps", "Your apps",
               "Starboard reads status, queues, calendars and updates from the apps you add, with the API keys you give it. "
               "It adds films, series and books only when you choose Add.",

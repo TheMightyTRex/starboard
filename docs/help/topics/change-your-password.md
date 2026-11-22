@@ -38,6 +38,8 @@ Beside the button, Starboard shows "Password changed. Everyone else is signed ou
 - API keys keep working after the password changes. To stop one, revoke it. Read
   [Make an API key and use Starboard's API](use-starboards-api.md#revoke-a-key).
 - A backup of Starboard's settings never holds the password, so changing it does not affect your backups.
+- To add a second check, read [Set up a two-step code](set-up-a-two-step-code.md). To sign in with your own provider, read
+  [Set up single sign-on](set-up-single-sign-on.md).
 
 ## If it does not work
 

@@ -89,6 +89,23 @@
       <button class="btn btn--primary" type="submit">Sign in</button>
       <p class="small muted">Forgotten the password? On the server, run ./reset-password.sh in the Starboard folder. The help centre explains it, under Reset a forgotten password.</p>
     </form>
+    <div id="sso" class="stack-4" hidden>
+      <p id="sso-or" class="small muted" hidden>Or</p>
+      <a class="btn" id="sso-link" href="/api/oidc/start"><span id="sso-label">Sign in with single sign-on</span></a>
+      <p id="sso-off-note" class="small muted" hidden>Password sign-in is deactivated. If single sign-on does not work, run ./reset-sign-in.sh on the server, in the Starboard folder. The help centre explains it, under Get back in when sign-in is locked.</p>
+    </div>
+    <form id="code-form" class="stack-4" method="post" novalidate hidden>
+      <h2 id="code-title" tabindex="-1">Enter your two-step code</h2>
+      <div class="field">
+        <label for="code">Code from your authenticator app</label>
+        <span class="hint" id="code-hint">6 digits. If you cannot get to the app, enter one of your recovery codes instead.</span>
+        <input class="input" id="code" name="code" autocomplete="one-time-code" inputmode="text" spellcheck="false" autocapitalize="off" required aria-describedby="code-hint">
+        <span class="field-error" id="code-error" role="alert" hidden></span>
+      </div>
+      <p class="field-error" id="code-form-error" role="alert" hidden></p>
+      <button class="btn btn--primary" type="submit">Verify</button>
+      <p class="small muted">Lost the app and the recovery codes? On the server, run ./reset-sign-in.sh in the Starboard folder. The help centre explains it, under Get back in when sign-in is locked.</p>
+    </form>
   </section>
 </div>
 </main>

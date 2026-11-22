@@ -22,7 +22,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from . import start as how_to_start
 from . import places  # location and keyboard, both set-ups' first questions (DASH-259)
 from . import library  # the Library and Search from Reelix (DASH-163, DASH-162)
-from . import access, activity_log, auth, backup, helpdocs, setup_left, reelix_admin, reelix_move, reelix_setup, reelix_version, reelix_waiting, requests_route, tasklist, takeover, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
+from . import access, activity_log, auth, backup, oidc, signin, helpdocs, setup_left, reelix_admin, reelix_move, reelix_setup, reelix_version, reelix_waiting, requests_route, tasklist, takeover, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
 from .config import GENERAL_RIGHTS, Config, ConfigError, general_right, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -160,6 +160,11 @@ class App:
         if os.path.exists(os.path.join(data_dir, "reset-password")):
             self._reset_password(data_dir)
         self.limits = auth.RateLimit()
+        self.code_limits = auth.RateLimit()  # two-step codes: 5 wrong in 15 minutes from one address
+        self.code_limits_all = auth.RateLimit(limit=10, window=900)  # and 10 from anywhere, so many addresses add nothing
+        self.sso_limits = auth.RateLimit(limit=20, window=900)  # starting a single sign-on costs a request to the provider
+        if os.path.exists(os.path.join(data_dir, "reset-sign-in")):
+            self._reset_sign_in(data_dir)
         self.version = read_version()
         self.config.version = self.version  # saved settings copies record the version (DASH-109)
         since = self.config.data.get("version_since") or {}
@@ -243,11 +248,20 @@ class App:
         with self.config.lock:
             self.config.data["auth"]["password_hash"] = ""
             self.config.data["auth"]["session_version"] = self.config.data["auth"].get("session_version", 1) + 1
+            for k in ("totp", "password_login"):  # a forgotten password and a lost phone are often the same bad day
+                self.config.data["auth"].pop(k, None)
+            if self.config.data["auth"].get("oidc"):
+                self.config.data["auth"]["oidc"].update(enabled=False, tested=False)
             self.config.save()
         self.sessions.end_all()
         self._remove_setup_token(data_dir)  # an old code from before the first password must not work again
         os.remove(os.path.join(data_dir, "reset-password"))
         logs.event("warning", "security", "The password was reset on the server. Everyone is signed out; a new set-up code is in the log")
+
+    def _reset_sign_in(self, data_dir):
+        """./reset-sign-in.sh, run on the server itself: the two-step code and single sign-on off, the password back on."""
+        signin.reset(self)
+        os.remove(os.path.join(data_dir, "reset-sign-in"))
 
     @staticmethod
     def _remove_setup_token(data_dir):
@@ -1331,6 +1345,7 @@ class Handler(BaseHTTPRequestHandler):
                     "first_setup": bool(app.config.data.get("first_setup_pending")) if signed_in else None,
                     "site_name": app.config.data["site_name"], "design": app.config.data["design"],
                     "own_colours": app.config.data.get("own_colours", "blue"),
+                    **({} if signed_in else signin.for_login_page(app)),  # the sign-in page: a single sign-on button, and whether a password works
                     # Not told to people who have not signed in.
                     "version": app.version if signed_in else None,
                     "server_name": app.config.data["server_name"] if signed_in else None,
@@ -1358,6 +1373,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self.first_password()
             if path == "/api/login" and method == "POST":
                 return self.login()
+            if path == "/api/login/code" and method == "POST":
+                return self.login_code()
+            if path == "/api/oidc/start" and method == "GET":
+                return self.sso_start()
+            if path == "/api/oidc/callback" and method == "GET":
+                return self.sso_callback()
             if path == "/api/logout" and method == "POST":
                 app.sessions.end(self.token())
                 return self.json(200, {"ok": True}, {"Set-Cookie": self.session_cookie("", 0)})
@@ -3077,6 +3098,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, backup.server_status())
             if path == "/api/password" and method == "POST":
                 return self.change_password()
+            if path.startswith("/api/security/") and path != "/api/security/":
+                return self.signin_settings(method, path)
             if path in ("/api/locations", "/api/locations/chosen") and method == "GET":  # settings pattern 4 (DASH-310)
                 from . import locations
                 q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
@@ -3815,12 +3838,141 @@ class Handler(BaseHTTPRequestHandler):
         if not app.limits.attempt(address):
             return self.error(429, "Too many attempts. Wait 15 minutes and try again")
         data = self.body()
+        if not app.needs_setup and not signin.password_allowed(app):
+            # Turned off on purpose: said plainly, so the owner knows what to do. The way back in is on the server.
+            return self.error(403, "Password sign-in is deactivated. Use single sign-on, or run ./reset-sign-in.sh on the server", reason="password-off")
         if app.needs_setup or not auth.check_password(str(data.get("password", "")), app.config.data["auth"]["password_hash"]):
             logs.event("warning", "sign-in", "A sign-in used the wrong password")
             return self.error(401, "That password is not right")
         app.limits.clear(address)
+        if signin.totp_on(app):  # the second step: nothing is opened yet
+            return self.json(200, {"ok": True, "needs_code": True, "challenge": signin.new_challenge(address, bool(data.get("remember")))})
         logs.event("info", "sign-in", "Signed in")
         return self.json(200, {"ok": True}, self.new_session(bool(data.get("remember"))))
+
+    def login_code(self):
+        """The two-step code (or a recovery code) after the password. Limited per address and across all of them."""
+        app = self.app
+        address = self.client_address_text()
+        if not (app.code_limits.attempt(address) and app.code_limits_all.attempt("all")):
+            signin.audit(app, "sign_in_code_limited", address=address)
+            return self.error(429, "Too many attempts. Wait 15 minutes and try again")
+        data = self.body()
+        try:
+            remember = signin.check_code(app, data.get("challenge"), address, data.get("code"))
+        except signin.SigninError as e:
+            return self.error(e.status, e.message)
+        app.code_limits.clear(address)
+        app.code_limits_all.clear("all")
+        return self.json(200, {"ok": True}, self.new_session(remember))
+
+    # Single sign-on (DASH-512) ----------------------------------------------
+
+    def sso_cookie(self, value, max_age):
+        parts = [f"{oidc.BINDER_COOKIE}={value}", "Path=/api/oidc", "HttpOnly", "SameSite=Lax", f"Max-Age={max_age}"]  # Lax: the provider sends the browser back to us
+        if self.is_https() or self.app.config.data.get("secure_cookies"):
+            parts.append("Secure")
+        return "; ".join(parts)
+
+    def sso_start(self):
+        app = self.app
+        address = self.client_address_text()
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        test = q.get("test", [""])[0] == "1"
+        cfg = signin.section(app, "oidc")
+        if (test and not self.signed_in()) or (not test and not signin.sso_on(app)) or not cfg.get("issuer"):
+            return self.send(303, extra={"Location": "/login.html?sso=off"})
+        if not app.sso_limits.attempt(address):
+            return self.send(303, extra={"Location": "/login.html?sso=limited"})
+        try:
+            where, binder = oidc.begin(cfg, remember=q.get("remember", [""])[0] == "1", test=test)
+        except oidc.SignInError as e:
+            logs.event("warning", "sign-in", f"Single sign-on could not start: {e.reason}")
+            return self.send(303, extra={"Location": "/login.html?sso=failed" if not test else "/settings-security-signin.html?sso=failed"})
+        self.send(303, extra={"Location": where, "Set-Cookie": self.sso_cookie(binder, oidc.STATE_LIFE), "Cache-Control": "no-store"})
+
+    def sso_callback(self):
+        app = self.app
+        address = self.client_address_text()
+        q = {k: v[0] for k, v in urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).items()}
+        jar = cookies.SimpleCookie()
+        try:
+            jar.load(self.headers.get("Cookie", ""))
+        except cookies.CookieError:
+            pass
+        binder = jar[oidc.BINDER_COOKIE].value if oidc.BINDER_COOKIE in jar else ""
+        cfg = signin.section(app, "oidc")
+        fail = lambda code, why, test=False: (  # noqa: E731
+            signin.audit(app, "sso_refused", address=address, reason=why),
+            logs.event("warning", "sign-in", f"Single sign-on was refused: {why}"),
+            self.send(303, extra={"Location": ("/settings-security-signin.html" if test else "/login.html") + f"?sso={code}", "Cache-Control": "no-store"}))[-1]
+        if not app.limits.attempt(address):
+            return fail("limited", "too many attempts")
+        if not cfg.get("issuer"):
+            return fail("off", "single sign-on is not set up")
+        if "error" in q:
+            return fail("denied", "the provider said " + re.sub(r"[^a-z_]", "", q["error"].lower())[:40])
+        try:
+            claims, remember, test = oidc.finish(cfg, q.get("state"), q.get("code"), binder)
+        except oidc.SignInError as e:
+            return fail(e.code, e.reason)
+        if test and not self.signed_in():
+            return fail("failed", "a test sign-in came back without a session", True)
+        if not test and not signin.sso_on(app):
+            return fail("off", "single sign-on is deactivated")
+        if not oidc.is_owner(claims, cfg.get("claim", "email"), cfg.get("value", "")):
+            return fail("nomatch", f"the {cfg.get('claim', 'email')} did not match the one allowed" + (" or was not verified" if cfg.get("claim", "email") == "email" else ""), test)
+        app.limits.clear(address)
+        if test:
+            signin.mark_tested(app)
+            signin.audit(app, "sso_tested", address=address)
+            logs.event("info", "sign-in", "A test sign-in with single sign-on worked")
+            return self.redirect_page("/settings-security-signin.html?sso=tested")
+        signin.audit(app, "sign_in_sso", address=address)
+        logs.event("info", "sign-in", "Signed in with single sign-on")
+        return self.redirect_page("/dashboard.html", self.new_session(remember))
+
+    def redirect_page(self, to, extra=None):
+        """A page that moves on by itself. A redirect straight from the provider's return would not carry the
+        session cookie (it is SameSite=Strict, and a redirect from another site counts as another site's); a page of
+        ours that then moves on does."""
+        body = ('<!doctype html><html lang="en-GB"><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=' + to
+                + '"><title>Signing in</title><p>Signing in. <a href="' + to + '">Continue</a></p>').encode()
+        self.send(200, body, "text/html; charset=utf-8", dict({"Cache-Control": "no-store"}, **(extra or {})))
+
+    def signin_settings(self, method, path):
+        """Settings, Security, Sign-in: the two-step code, single sign-on and the password's switch. Each change asks for the password."""
+        app = self.app
+        address = self.client_address_text()
+        if path == "/api/security/signin" and method == "GET":
+            origin = ("https" if self.is_https() else "http") + "://" + (self.headers.get("X-Forwarded-Host") if app.trust_proxy and self.headers.get("X-Forwarded-Host") else self.headers.get("Host", ""))
+            return self.json(200, dict(signin.status(app), redirect_default=origin + "/api/oidc/callback"))
+        if method != "POST":
+            return self.error(404, "Not found")
+        data = self.body()
+        if path != "/api/security/totp/confirm":  # the password was asked for when the set-up began
+            self.check_password(data)
+        try:
+            if path == "/api/security/totp/start":
+                return self.json(200, signin.totp_start(app, app.config.data.get("site_name") or "Starboard"))
+            if path == "/api/security/totp/confirm":
+                return self.json(200, signin.totp_confirm(app, data.get("code"), address))
+            if path == "/api/security/totp/off":
+                return self.json(200, signin.totp_off(app, address))
+            if path == "/api/security/totp/recovery":
+                return self.json(200, signin.new_recovery(app, data.get("code"), address))
+            if path == "/api/security/oidc/save":
+                origin = ("https" if self.is_https() else "http") + "://" + self.headers.get("Host", "")
+                return self.json(200, signin.oidc_save(app, data, address, origin + "/api/oidc/callback"))
+            if path == "/api/security/oidc/enable":
+                return self.json(200, signin.oidc_enable(app, bool(data.get("enabled")), address))
+            if path == "/api/security/oidc/remove":
+                return self.json(200, signin.oidc_forget(app, address))
+            if path == "/api/security/password-login":
+                return self.json(200, signin.set_password_login(app, bool(data.get("allowed")), address))
+        except signin.SigninError as e:
+            return self.error(e.status, e.message)
+        return self.error(404, "Not found")
 
     def check_password(self, data):
         """Downloading or restoring settings needs the password again: the file holds API keys."""

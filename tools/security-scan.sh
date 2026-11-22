@@ -59,7 +59,7 @@ docker run --rm -v "$PWD:/src:ro" python:3.12.16-alpine3.24 sh -c \
 result $? "Bandit"
 
 say "ShellCheck"
-docker run --rm -v "$PWD:/mnt:ro" -w /mnt koalaman/shellcheck:v0.11.0 -x -S warning install.sh run-first.sh update.sh reset-password.sh \
+docker run --rm -v "$PWD:/mnt:ro" -w /mnt koalaman/shellcheck:v0.11.0 -x -S warning install.sh run-first.sh update.sh reset-password.sh reset-sign-in.sh \
   tools/*.sh tools/vm/vm.sh deploy/*.sh
 result $? "ShellCheck"
 

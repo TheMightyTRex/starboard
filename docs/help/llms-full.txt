@@ -256,7 +256,7 @@ has no body to read. Read [API quickstart].
 Starboard writes a line to its audit log, `data/logs/audit.jsonl`, each time a key is made or revoked, each time
 a key changes something (`api_write`, with the key's id, the address and the answer's status), and each time a wrong
 key is refused, with the address it came from. Plug-ins being added, updated, rolled back, activated
-and removed are written there too. The log never holds a key or a password. It keeps 5 files of about 1 MB each, and counts towards the log limits in
+and removed are written there too, and so is each sign-in step beyond the password: the two-step code turned on or off, a code or recovery code used or refused, single sign-on set up, tested, turned on or off, and each sign-in it allowed or refused, with the address it came from (`totp_enabled`, `sign_in_code_ok`, `sign_in_code_failed`, `sign_in_recovery_code_used`, `sso_configured`, `sign_in_sso`, `sso_refused` and the like). The log never holds a key or a password. It keeps 5 files of about 1 MB each, and counts towards the log limits in
 Settings, General, Logs and feedback: its older files go with the oldest days, and Delete all logs empties it (the
 delete itself is its next line).
 

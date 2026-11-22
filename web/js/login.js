@@ -47,6 +47,62 @@ startPage().then((session) => {
     }
     history.replaceState(null, "", location.pathname + location.search);
   }
+  // Single sign-on (DASH-512): a button when the owner has turned it on, and no password form if the password is off.
+  if (!setup && session) {
+    const sso = $("#sso");
+    if (session.sso) {
+      sso.hidden = false;
+      $("#sso-label").textContent = `Sign in with ${session.sso.name}`;
+      $("#sso-link").addEventListener("click", (ev) => {
+        ev.preventDefault();  // the box is passed on in the address, never the password
+        const q = $("#remember").checked ? "?remember=1" : "";
+        location.href = `/api/oidc/start${q}`;
+      });
+    }
+    if (session.password_login === false) {
+      form.hidden = true;
+      sso.hidden = false;
+      $("#sso-off-note").hidden = false;
+    } else if (session.sso) {
+      $("#sso-or").hidden = false;
+    }
+    const why = { failed: "Single sign-on did not work. Try again, or sign in with your password.", nomatch: "That account is not the one allowed to sign in to this dashboard.",
+      denied: "Single sign-on was cancelled or refused by the provider.", expired: "That sign-in ran out of time. Try again.", limited: "Too many attempts. Wait 15 minutes and try again.",
+      off: "Single sign-on is not activated." }[new URLSearchParams(location.search).get("sso")];
+    if (why) { showFormError(why); }
+  }
+  const codeForm = $("#code-form");
+  codeForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    clearErrors(codeForm);
+    const input = $("#code");
+    if (!input.value.trim()) { showFieldError(input, "Enter the code from your authenticator app, or a recovery code"); return; }
+    const button = $("button[type=submit]", codeForm);
+    button.disabled = true;
+    try {
+      await api("/api/login/code", { method: "POST", body: { challenge: codeForm.dataset.challenge, code: input.value } });
+      goOn();
+    } catch (err) {
+      if (/password again/i.test(err.message)) {  // the password step ran out: back to the start
+        codeForm.hidden = true;
+        form.hidden = false;
+        form.password.value = "";
+        showFieldError(form.password, err.message);
+      } else showFieldError(input, err.message);
+      input.value = "";
+    } finally {
+      button.disabled = false;
+    }
+  });
+  // Only a page on this dashboard: the address is resolved first, so tricks like "/\t/evil.example" fail.
+  const goOn = () => {
+    let next = "/dashboard.html";
+    try {
+      const asked = new URL(new URLSearchParams(location.search).get("next") || "/dashboard.html", location.origin);
+      if (asked.origin === location.origin) next = asked.pathname + asked.search + asked.hash;
+    } catch { /* not an address: go to Apps */ }
+    location.href = next;
+  };
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     clearErrors(form);
@@ -62,16 +118,21 @@ startPage().then((session) => {
     const button = $("button[type=submit]", form);
     button.disabled = true;
     try {
+      let answer = null;
       if (setup) await api("/api/setup", { method: "POST", body: { token: form.token.value, password: form.password.value, remember: form.remember.checked, site_name: form.site_name.value } });
-      else await api("/api/login", { method: "POST", body: { password: form.password.value, remember: form.remember.checked } });
+      else answer = await api("/api/login", { method: "POST", body: { password: form.password.value, remember: form.remember.checked } });
       if (setup) { location.href = "/setup-guide.html"; return; }  // set-up goes on to the guide: find apps, choose what runs
-      // Only a page on this dashboard: the address is resolved first, so tricks like "/\t/evil.example" fail.
-      let next = "/dashboard.html";
-      try {
-        const asked = new URL(new URLSearchParams(location.search).get("next") || "/dashboard.html", location.origin);
-        if (asked.origin === location.origin) next = asked.pathname + asked.search + asked.hash;
-      } catch { /* not an address: go to Apps */ }
-      location.href = next;
+      if (answer?.needs_code) {  // the password was right; the second step is next, in the same place
+        form.hidden = true;
+        $("#sso").hidden = true;
+        form.password.value = "";
+        codeForm.dataset.challenge = answer.challenge;
+        codeForm.hidden = false;
+        announce("Password accepted. Enter your two-step code.");
+        $("#code").focus();
+        return;
+      }
+      goOn();
     } catch (err) {
       const m = err.message;
       if (!setup) showFieldError(form.password, /not right/i.test(m) ? "That password is not right. Check Caps Lock and try again." : m);

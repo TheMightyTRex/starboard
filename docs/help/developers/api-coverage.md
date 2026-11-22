@@ -72,9 +72,10 @@ Every address starts with `/api/v1`. The [API reference](api-reference.md) gives
 | Change General, Alerts, Performance or Jellyfin settings (apart from the log limits, in **System**) | Signed in only | |
 | Make or revoke API keys; add or remove plug-ins; update a plug-in from an address | Signed in only | |
 | Password, Sign out everywhere, who can open the dashboard | Signed in only | |
+| The two-step code, single sign-on (OpenID Connect) and whether the password works | Signed in only, and each change asks for the password again. An API key can never read or change them | |
 | Reelix's settings, editions and moving apps into Reelix | Signed in only: they use Reelix's admin password | |
 | Your install, Install apps, taking over and rolling back | Signed in only: they change what runs on the server | |
-| Reset the password; go back to an older Starboard | On the server only, with `./reset-password.sh` or `./update.sh --to` | |
+| Reset the password; deactivate the two-step code and single sign-on; go back to an older Starboard | On the server only, with `./reset-password.sh`, `./reset-sign-in.sh` or `./update.sh --to` | |
 
 ## Updates
 

@@ -70,9 +70,12 @@ out, and your apps and settings stay as they are.
 
 ## Things to note
 
+- The two-step code and single sign-on are deactivated too, so you are not locked out by a lost phone. Set them up
+  again afterwards in **Settings**, then **Security**, then **Sign-in methods**.
 - Only the password and sign-ins change. Your apps, API keys, categories and settings stay as they are.
 - The dashboard name is filled in for you on the **Create your password** page. Change it there if you want to.
-- If you still know the password, [change your password](change-your-password.md) instead.
+- If you still know the password, [change your password](change-your-password.md) instead. If the two-step code or
+  single sign-on is the problem, read [Get back in when sign-in is locked](get-back-in-when-sign-in-is-locked.md).
 
 ## If it does not work
 
