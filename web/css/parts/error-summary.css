@@ -1,0 +1,38 @@
+/* error-summary: a part of the shared components. Load it after components.css, on the pages that use it.
+ * Made by tools/parts.py from components.css in github.com/TheMightyTRex/design-system: change it there, not here. */
+@layer shared {
+  /* Error summary (after GOV.UK): at the top of a form after a submit that failed, focused, with a link to each
+     field. Each field still has its own .field-error, tied to it by aria-describedby. */
+  .error-summary {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border: 2px solid var(--status-danger-fg);
+    border-left-width: var(--status-edge-w);
+    border-radius: var(--radius);
+    background: var(--color-surface-raised);
+  }
+  .error-summary:focus {
+    outline: var(--focus-w) solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  .error-summary__title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    color: var(--status-danger-fg);
+    font-size: var(--text-lg);
+  }
+  .error-summary__list {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding-left: var(--space-5);
+  }
+  .error-summary__list a {
+    color: var(--status-danger-fg);
+    font-weight: var(--weight-strong);
+    text-decoration: underline;
+  }
+}
