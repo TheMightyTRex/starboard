@@ -12,7 +12,7 @@ body:
   id: version
   attributes:
     label: Starboard version
-    description: Find it on Settings, then About and updates.
+    description: Find it on Settings, then Updates, then About.
     placeholder: 0.26.0
   validations:
     required: true
