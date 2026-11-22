@@ -243,7 +243,13 @@ if (!pages.length || pages.some((p) => p.includes("settings-updates"))) {
     await page.waitForTimeout(300);
     await scan("settings-updates.html, What is new");
     await page.keyboard.press("Escape");
-    console.log("checked Check for updates and What is new");
+    // About (DASH-408): the accessibility and lean sections, in a tab that is hidden until it is chosen.
+    await page.goto(`${base}/settings-updates.html`);
+    await settle();
+    await page.locator('[role="tab"]', { hasText: "About" }).click();
+    await page.waitForTimeout(300);
+    await scan("settings-updates.html, About");
+    console.log("checked Check for updates, What is new and About");
   } catch (e) { add("settings-updates.html, What is new", "page", "error", e.message.split("\n")[0]); }
 }
 

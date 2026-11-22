@@ -125,6 +125,7 @@ Each guide is a journey through several topics, in order.
 - [Find out what each app is using](topics/monitor-apps.md)
 - [Run a server job](topics/run-a-server-job.md)
 - [Make Starboard use less of your server](topics/make-starboard-lighter.md)
+- [How lean Starboard is](topics/how-lean-starboard-is.md)
 
 ### Alerts
 
