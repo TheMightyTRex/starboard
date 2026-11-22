@@ -144,7 +144,9 @@ Each guide is a journey through several topics, in order.
 - [Back up and restore Starboard's settings](topics/back-up-settings.md)
 - [Restore a saved copy of your settings](topics/restore-a-saved-copy.md)
 - [Back up the whole server](topics/back-up-the-server.md)
+- [Make and restore a full backup](topics/make-and-restore-a-full-backup.md)
 - [Copy backups to a cloud service](topics/copy-backups-to-a-cloud-service.md)
+- [Reelix's own backups](topics/reelix-backups.md)
 
 ### Jellyfin and Audiobookshelf
 

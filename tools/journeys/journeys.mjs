@@ -2485,6 +2485,129 @@ await page.unroute(/\/api\/reelix\/admin\/system\/backups$/, rxBackups);
 await page.unroute(/\/api\/services\/[a-z0-9-]+\/restart$/, rxRestart);
 await page.unroute(/\/api\/status\?id=/, rxStatus);
 
+// Full backups: Checked in the list (DASH-381) and Restore on this server (DASH-387). The example server restores
+// nothing: its made-up backup password is "made-up backup", and the steps pass in a few seconds.
+console.log("\n== Full backups: Checked, and Restore on this server (DASH-381, DASH-387)");
+await open("system-backup.html");
+await page.locator("#full-list li[data-key]").first().waitFor({ timeout: 10000 }).catch(() => {});
+const fullRows = page.locator("#full-list li[data-key]");
+check("BKC-01", "the newest full backup says Checked, the one made before the check does not",
+  /Checked/.test(await fullRows.nth(0).innerText()) && !/Checked/.test(await fullRows.nth(1).innerText()), await fullRows.nth(0).innerText());
+check("BKC-01", "the page says what Checked means", /Checked means Starboard read the copy back/.test(await page.locator("#full-body").innerText()));
+const restoreBtn = fullRows.nth(1).getByRole("button", { name: /^Restore the full backup from / });
+check("RST-01", "each full backup has a danger Restore button that names its date", await restoreBtn.count() === 1
+  && await restoreBtn.evaluate((b) => b.classList.contains("btn--danger")));
+await restoreBtn.focus();
+await page.keyboard.press("Enter");
+const rstDialog = page.getByRole("dialog", { name: /^Restore the full backup from / });
+await rstDialog.waitFor({ timeout: 5000 }).catch(() => {});
+const rstText = await rstDialog.innerText().catch(() => "");
+check("RST-02", "the dialog says what is replaced, that a full backup is made first and that the apps stop",
+  /go back to how they were then/.test(rstText) && /makes a full backup of how things are now first/.test(rstText) && /Your apps stop/.test(rstText) && /media is not touched/.test(rstText), rstText);
+check("RST-02", "it is a danger dialog with Cancel, and focus starts on the backup's password",
+  await rstDialog.getByRole("button", { name: "Restore this backup" }).evaluate((b) => b.classList.contains("btn--danger"))
+  && await rstDialog.getByRole("button", { name: "Cancel" }).count() === 1 && await activeId() === "restore-full-pw", await activeId());
+await page.keyboard.press("Escape");
+await page.waitForTimeout(300);
+check("RST-02", "Escape closes it, changes nothing and focus is back on Restore",
+  await rstDialog.count() === 0 && (await api("/api/backup/full/restore-here")).status.state === "none"
+  && await page.evaluate(() => document.activeElement?.closest("li")?.dataset.key === document.querySelectorAll("#full-list li[data-key]")[1].dataset.key));
+await page.keyboard.press("Enter");
+await rstDialog.waitFor({ timeout: 5000 }).catch(() => {});
+await page.fill("#restore-full-pw", "not the backup password");
+await page.fill("#restore-full-mine", password);
+await rstDialog.getByRole("button", { name: "Restore this backup" }).click();
+await page.waitForSelector("#restore-full-pw[aria-invalid=true]", { timeout: 5000 }).catch(() => {});
+check("RST-03", "a wrong backup password opens the dialog again with the error under that field, focus in it, and nothing started",
+  /does not open this backup/.test(await page.locator("#restore-full-pw-error").innerText().catch(() => "")) && await activeId() === "restore-full-pw"
+  && (await page.locator("#restore-full-pw").getAttribute("aria-describedby") || "").includes("restore-full-pw-error")
+  && (await api("/api/backup/full/restore-here")).status.state === "none");
+await page.fill("#restore-full-pw", "made-up backup");
+await page.fill("#restore-full-mine", password);
+await rstDialog.getByRole("button", { name: "Restore this backup" }).click();
+await page.waitForFunction(() => /Restoring the full backup/.test(document.querySelector("#full-restore-state")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
+await page.waitForTimeout(300);
+check("RST-04", "both passwords right: the page says it is restoring, in a live region, and says so to screen readers",
+  /Restoring the full backup from/.test(await page.locator("#full-restore-state").innerText()) && await page.locator("#full-restore-state").getAttribute("aria-live") === "polite"
+  && /^Restoring the full backup from/.test(await announced()), await page.locator("#full-restore-state").innerText());
+check("RST-04", "no backup can be made meanwhile, and focus is back on the Restore button",
+  await page.getByRole("button", { name: "Make a full backup" }).isDisabled()
+  && await page.evaluate(() => document.activeElement?.closest("li")?.dataset.key === document.querySelectorAll("#full-list li[data-key]")[1].dataset.key));
+await page.waitForFunction(() => /Restored the full backup/.test(document.querySelector("#full-restore-state")?.textContent || ""), null, { timeout: 20000 }).catch(() => {});
+await page.waitForTimeout(500);
+const rstDone = await page.locator("#full-restore-state").innerText();
+check("RST-05", "when it ends the page says so, with the apps and where the backup of before is",
+  /Restored the full backup from/.test(rstDone) && /settings of 7 apps are back/.test(rstDone) && /starboard-full-[0-9-]+\.starboard/.test(rstDone), rstDone);
+check("RST-05", "the list is drawn again with focus still on the same row, and a backup can be made again",
+  await page.evaluate(() => document.activeElement?.closest("li")?.dataset.key === document.querySelectorAll("#full-list li[data-key]")[1].dataset.key)
+  && !(await page.getByRole("button", { name: "Make a full backup" }).isDisabled()));
+
+// Reelix's backup settings (DASH-385) and its backups on another disk (DASH-386).
+console.log("\n== Reelix's backups: selects that apply at once, and the folder on another disk (DASH-385, DASH-386)");
+let rxMoved = false;
+const rxPlace = async (route) => {
+  const b = await (await route.fetch()).json().catch(() => ({}));
+  if (rxMoved && b.place) b.place = { ...b.place, now: b.place.chosen, restart: false };
+  await route.fulfill({ contentType: "application/json", body: JSON.stringify({ ...b, service: b.service || "reelix" }) });
+};
+await page.route(/\/api\/reelix\/admin\/system\/(backups|backup-place|backup-settings)$/, rxPlace);
+await page.route(/\/api\/services\/[a-z0-9-]+\/restart$/, (route) => { rxMoved = true; return route.fulfill({ contentType: "application/json", body: JSON.stringify({ said: "Reelix restarted" }) }); });
+await page.route(/\/api\/status\?id=/, rxStatus);
+await open("system-backup.html");
+await page.getByRole("button", { name: "Show Reelix's backups" }).click();
+await page.waitForTimeout(300);
+if (await page.locator("#rs-password").count()) { await page.fill("#rs-password", "made-up"); await page.keyboard.press("Enter"); }
+await page.waitForSelector("#rs-every", { timeout: 10000 }).catch(() => {});
+const rxSection = page.locator("section[aria-labelledby=rs-backups-h]");
+check("RXB-01", "how often and how many are selects with a label and a hint, and there is no Save button",
+  await page.evaluate(() => ["rs-every", "rs-keep"].every((id) => { const s = document.getElementById(id); return s?.tagName === "SELECT" && document.getElementById(s.getAttribute("aria-labelledby"))?.textContent && document.getElementById(s.getAttribute("aria-describedby"))?.textContent; }))
+  && await rxSection.getByRole("button", { name: /Save/ }).count() === 0);
+await page.locator("#rs-every").focus();
+await page.locator("#rs-every").selectOption("14");
+await page.waitForFunction(() => { const n = document.querySelector("#rs-every")?.parentElement.querySelector(".saved-note"); return n && !n.hidden; }, null, { timeout: 5000 }).catch(() => {});
+const rxSaved = await api("/api/reelix/admin/system/backups", { method: "POST", body: { password: "made-up" } });
+check("RXB-02", "a choice applies at once: Reelix has it, the saved note shows beside the select as a status, and focus stays on it",
+  rxSaved.every === 14 && /^Saved at \d\d:\d\d$/.test(await page.locator("#rs-every + .saved-note").innerText().catch(() => ""))
+  && await page.locator("#rs-every + .saved-note").getAttribute("role") === "status" && await activeId() === "rs-every", `${rxSaved.every} ${await activeId()}`);
+await page.locator("#rs-keep").selectOption("10");
+await page.waitForFunction(() => { const n = document.querySelector("#rs-keep")?.parentElement.querySelector(".saved-note"); return n && !n.hidden; }, null, { timeout: 5000 }).catch(() => {});
+const rxSaved2 = await api("/api/reelix/admin/system/backups", { method: "POST", body: { password: "made-up" } });
+check("RXB-02", "the second select saves with the first one's newest value", rxSaved2.every === 14 && rxSaved2.keep === 10, `${rxSaved2.every} ${rxSaved2.keep}`);
+const rxOptions = await page.locator("#rs-place option").allTextContents();
+check("RXB-03", "where Reelix keeps them names both places and their disks",
+  rxOptions.length === 2 && /Next to its settings, on the system disk/.test(rxOptions[0]) && /In the media folder, on WDC WD40EFRX/.test(rxOptions[1]), rxOptions.join(" | "));
+await page.locator("#rs-place").focus();
+await page.locator("#rs-place").selectOption("media");
+await page.waitForSelector("section[aria-labelledby=rs-backups-h] [data-restart-notice]", { timeout: 10000 }).catch(() => {});
+await page.waitForTimeout(300);
+check("RXB-03", "choosing the media folder saves at once, keeps focus on the select and says Reelix must restart",
+  await activeId() === "rs-place" && await page.locator("#rs-place").inputValue() === "media"
+  && /The new backup folder waits for Reelix to restart/.test(await rxSection.innerText()) && /media folder from its next start/.test(await announced()), await announced());
+const restartMoved = rxSection.getByRole("button", { name: "Restart Reelix" });
+if (await restartMoved.count()) {
+  await restartMoved.focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("dialog", { name: "Restart Reelix?" }).getByRole("button", { name: "Restart Reelix", exact: true }).click();
+  await page.waitForSelector("#rs-restored", { timeout: 30000 }).catch(() => {});
+  await page.waitForTimeout(300);
+}
+check("RXB-04", "after the restart the notice goes, the result has focus and no stray word null shows",
+  await restartMoved.count() === 0 && await page.evaluate(() => document.activeElement?.id === "rs-restored") && !/\bnull\b/.test(await rxSection.innerText()));
+const rxRestoreBtn = rxSection.getByRole("button", { name: /^Restore / }).first();
+if (await rxRestoreBtn.count()) {
+  await rxRestoreBtn.click();
+  const rxDialog = page.getByRole("dialog", { name: "Restore this Reelix backup?" });
+  check("RXB-05", "the restore dialog says Reelix must restart before anything changes", /happens when Reelix restarts/.test(await rxDialog.innerText().catch(() => "")));
+  await rxDialog.getByRole("button", { name: "Cancel" }).click();
+} else check("RXB-05", "the restore dialog says Reelix must restart before anything changes", false, "no Reelix backup in the list");
+// Back to how it was.
+rxMoved = false;
+await api("/api/reelix/admin/system/backup-place", { method: "POST", body: { password: "made-up", place: "settings" } });
+await api("/api/reelix/admin/system/backup-settings", { method: "POST", body: { password: "made-up", every: 7, keep: 5 } });
+await page.unroute(/\/api\/reelix\/admin\/system\/(backups|backup-place|backup-settings)$/, rxPlace);
+await page.unroute(/\/api\/services\/[a-z0-9-]+\/restart$/);
+await page.unroute(/\/api\/status\?id=/, rxStatus);
+
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
 const wide = [];

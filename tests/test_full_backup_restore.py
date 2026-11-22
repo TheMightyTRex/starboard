@@ -163,6 +163,209 @@ class MakeAndRestore(unittest.TestCase):
         left = sorted(os.listdir(folder))
         self.assertEqual(left, sorted([old[2], os.path.basename(s["file"]), "notes.txt"]))
 
+    # DASH-381: each copy is read back after it is written.
+
+    def test_a_new_backup_is_checked(self):
+        s = self.make()
+        self.assertEqual(s["state"], "done", s.get("error"))
+        name = os.path.basename(s["file"])
+        mark = fb.checked(self.data)[name]
+        self.assertEqual(mark["size"], os.path.getsize(self.host + s["file"]))
+        listed = fb.with_checked(self.data, fb.found("/mnt/backups/starboard"))
+        self.assertEqual([bool(b["checked"]) for b in listed], [True])
+        # A file that changed size since is not the one that was checked.
+        with open(self.host + s["file"], "ab") as f:
+            f.write(b"x")
+        self.assertEqual([b["checked"] for b in fb.with_checked(self.data, fb.found("/mnt/backups/starboard"))], [None])
+        self.assertNotIn(fb.CHECKED, [rel for _, rel in fb._starboard_files(self.data, True)], "the marks stay out of backups")
+
+    def damaged_as_written(self, change):
+        """Makes one whose copy in the folder is changed straight after it is written, as a failing disk would."""
+        real = fake_helper(self.host)
+
+        def helper(script, binds, timeout=0):
+            out = real(script, binds, timeout)
+            if "cp " in script and ".part" in script:
+                folder = self.host + "/mnt/backups/starboard"
+                new = max((f for f in os.listdir(folder) if f.endswith(".starboard")), key=lambda f: os.path.getmtime(f"{folder}/{f}"))
+                os.chmod(f"{folder}/{new}", 0o600)
+                change(f"{folder}/{new}")
+            return out
+        with mock.patch.object(fb, "_helper", helper):
+            return self.make(keep=1)
+
+    def test_a_backup_that_does_not_read_back_is_not_kept(self):
+        folder = self.host + "/mnt/backups/starboard"
+        os.makedirs(folder)
+        write(folder + "/starboard-full-2026-10-01-030000.starboard", "the older one")
+        os.utime(folder + "/starboard-full-2026-10-01-030000.starboard", (1_700_000_000, 1_700_000_000))
+
+        def flip_last_byte(path):
+            with open(path, "r+b") as f:
+                f.seek(-1, os.SEEK_END)
+                last = f.read(1)
+                f.seek(-1, os.SEEK_END)
+                f.write(bytes([last[0] ^ 1]))
+        s = self.damaged_as_written(flip_last_byte)
+        self.assertEqual(s["state"], "failed")
+        self.assertRegex(s["error"], r"did not read back as it was written \(its last part does not open\)")
+        left = sorted(os.listdir(folder))
+        self.assertEqual(len(left), 2, left)
+        self.assertEqual(left[0], "starboard-full-2026-10-01-030000.starboard", "the older one stays although only 1 is kept")
+        self.assertTrue(left[1].endswith(".starboard.part"), "the one that did not read back is no backup")
+        self.assertEqual(fb.checked(self.data), {})
+
+    def test_a_backup_cut_short_on_the_disk_is_noticed(self):
+        def cut(path):
+            with open(path, "r+b") as f:
+                f.truncate(os.path.getsize(path) - 10)
+        s = self.damaged_as_written(cut)
+        self.assertEqual(s["state"], "failed")
+        self.assertIn("it is not the size that was written", s["error"])
+
+    # DASH-387: restore a full backup on this server.
+
+    def restore_here(self, file, password=PASSWORD, apply=None):
+        applied = []
+        fb.start_restore(self.data, "0.15.0", file, password, apply or (lambda raw: applied.append(raw) or len(raw.get("services") or [])), "Harbour")
+        for _ in range(400):
+            s = fb.restore_status(self.data)
+            if s.get("state") != "running":
+                return s, applied
+            time.sleep(0.05)
+        self.fail("The restore did not finish")
+
+    def test_restore_on_this_server(self):
+        first = self.make(keep=1)
+        self.assertEqual(first["state"], "done", first.get("error"))
+        # Since the backup: Reelix's database changed and was not closed cleanly, a plug-in setting changed, an app was added.
+        write(self.config + "/reelix/reelix.db", "reelix database, changed since")
+        write(self.config + "/reelix/reelix.db-wal", "pages of the newer database")
+        write(self.config + "/reelix/notes-journal", "a file of the person's own that only ends the same")
+        write(self.config + "/reelix/MediaCover/1/poster.jpg", "poster")
+        write(self.data + "/plugins/styles/settings.json", '{"changed": true}')
+        write(self.config + "/kavita/kavita.db", "added after the backup")
+        time.sleep(1.1)  # file names are to the second
+        self.calls.clear()
+
+        s, applied = self.restore_here(first["file"])
+        self.assertEqual(s["state"], "done", s.get("error"))
+        # A full backup of how things were was made first, and the one being restored was not removed to make room.
+        folder = self.host + "/mnt/backups/starboard"
+        self.assertEqual(len([f for f in os.listdir(folder) if f.endswith(".starboard")]), 2)
+        self.assertTrue(os.path.isfile(self.host + s["safety"]))
+        self.assertNotEqual(s["safety"], first["file"])
+        # Reelix stopped (twice: for the copy, then for the restore) and runs again; Starboard never stopped.
+        self.assertEqual(self.calls.count(("POST", "/containers/reelix-id/stop?t=30")), 2)
+        self.assertEqual(self.calls.count(("POST", "/containers/reelix-id/start")), 2)
+        self.assertEqual(self.calls[-1], ("POST", "/containers/reelix-id/start"))
+        self.assertFalse(any("starboard-id" in p for _, p in self.calls))
+        self.assertEqual(s["stopped"], [])
+        # The apps' settings are as they were in the backup; what was not in it is left alone.
+        with open(self.config + "/reelix/reelix.db", encoding="utf-8") as f:
+            self.assertEqual(f.read(), "reelix database")
+        self.assertFalse(os.path.exists(self.config + "/reelix/reelix.db-wal"), "never played into the older database")
+        self.assertTrue(os.path.exists(self.config + "/reelix/notes-journal"))
+        self.assertTrue(os.path.exists(self.config + "/reelix/MediaCover/1/poster.jpg"))
+        self.assertTrue(os.path.exists(self.config + "/kavita/kavita.db"))
+        with open(self.data + "/plugins/styles/settings.json", encoding="utf-8") as f:
+            self.assertEqual(f.read(), "{}")
+        self.assertTrue(os.path.isfile(self.data + "/sessions.json"), "the sign-ins stay")
+        self.assertEqual(applied[0]["site_name"], "Harbour")
+        self.assertEqual(s["apps"], ["jellyfin", "qbittorrent", "reelix"])
+        self.assertFalse(os.path.exists(self.data + "/" + fb.WORK))
+        # The copy made first restores too, and brings the changed state back.
+        s2, _ = self.restore_here(s["safety"])
+        self.assertEqual(s2["state"], "done", s2.get("error"))
+        with open(self.config + "/reelix/reelix.db", encoding="utf-8") as f:
+            self.assertEqual(f.read(), "reelix database, changed since")
+
+    def test_a_wrong_password_changes_nothing(self):
+        first = self.make()
+        write(self.config + "/reelix/reelix.db", "changed since")
+        self.calls.clear()
+        with self.assertRaisesRegex(fb.BackupError, "password does not open"):
+            fb.start_restore(self.data, "0.15.0", first["file"], "another long password", lambda raw: 0)
+        self.assertEqual(self.calls, [], "nothing stopped")
+        self.assertEqual(len(os.listdir(self.host + "/mnt/backups/starboard")), 1, "no copy made")
+        self.assertEqual(fb.restore_status(self.data), {"state": "none"})
+        self.assertFalse(fb._restoring.locked())
+        with open(self.config + "/reelix/reelix.db", encoding="utf-8") as f:
+            self.assertEqual(f.read(), "changed since")
+
+    def test_a_damaged_backup_changes_nothing_and_the_apps_start_again(self):
+        first = self.make()
+        with open(self.host + first["file"], "r+b") as f:  # cut inside its last part: the first part still opens
+            f.truncate(os.path.getsize(self.host + first["file"]) - 10)
+        with open(self.host + first["file"], "rb") as f:
+            small = len(fb.read_header(f)[1]) + fb.CHUNK > os.path.getsize(self.host + first["file"])
+        write(self.config + "/reelix/reelix.db", "changed since")
+        write(self.data + "/plugins/styles/settings.json", '{"changed": true}')
+        time.sleep(1.1)
+        if small:  # one part only: the password check itself refuses it
+            with self.assertRaisesRegex(fb.BackupError, "cut short|damaged|does not open"):
+                fb.start_restore(self.data, "0.15.0", first["file"], PASSWORD, lambda raw: 0)
+        else:
+            s, applied = self.restore_here(first["file"])
+            self.assertEqual(s["state"], "failed")
+            self.assertEqual(applied, [])
+            self.assertEqual(self.calls[-1], ("POST", "/containers/reelix-id/start"))
+        with open(self.config + "/reelix/reelix.db", encoding="utf-8") as f:
+            self.assertEqual(f.read(), "changed since")
+        with open(self.data + "/plugins/styles/settings.json", encoding="utf-8") as f:
+            self.assertEqual(f.read(), '{"changed": true}')
+        self.assertFalse(fb._restoring.locked())
+
+    def test_a_backup_cut_after_several_parts_changes_nothing(self):
+        write(self.config + "/jellyfin/data/data/big.bin", "")
+        with open(self.config + "/jellyfin/data/data/big.bin", "wb") as f:
+            f.write(os.urandom(3 * fb.CHUNK))  # does not compress, so the backup has several parts
+        first = self.make()
+        self.assertEqual(first["state"], "done", first.get("error"))
+        with open(self.host + first["file"], "r+b") as f:
+            f.truncate(os.path.getsize(self.host + first["file"]) - 10)
+        write(self.config + "/reelix/reelix.db", "changed since")
+        write(self.data + "/plugins/styles/settings.json", '{"changed": true}')
+        time.sleep(1.1)
+        self.calls.clear()
+        s, applied = self.restore_here(first["file"])
+        self.assertEqual(s["state"], "failed")
+        self.assertIn("cut short", s["error"])
+        self.assertEqual(applied, [])
+        self.assertTrue(os.path.isfile(self.host + s["safety"]), "the copy of how things were is there all the same")
+        self.assertEqual(self.calls[-1], ("POST", "/containers/reelix-id/start"), "the apps run again")
+        with open(self.config + "/reelix/reelix.db", encoding="utf-8") as f:
+            self.assertEqual(f.read(), "changed since")
+        with open(self.data + "/plugins/styles/settings.json", encoding="utf-8") as f:
+            self.assertEqual(f.read(), '{"changed": true}')
+
+    def test_a_backup_from_another_layout_or_a_newer_starboard_is_refused(self):
+        first = self.make()
+        write(self.data + "/stack/.env", f"CONFIG_DIR=/srv/elsewhere/config\nDATA_DIR=/mnt/media\nPUID={os.getuid()}\nPGID={os.getgid()}\n")
+        with self.assertRaisesRegex(fb.BackupError, "keeps its apps' settings in /srv/stack/config"):
+            fb.start_restore(self.data, "0.15.0", first["file"], PASSWORD, lambda raw: 0)
+        write(self.data + "/stack/.env", f"CONFIG_DIR=/srv/stack/config\nDATA_DIR=/mnt/media\nPUID={os.getuid()}\nPGID={os.getgid()}\n")
+        with self.assertRaisesRegex(fb.BackupError, "newer than this one"):
+            fb.start_restore(self.data, "0.14.9", first["file"], PASSWORD, lambda raw: 0)
+        self.assertFalse(fb._restoring.locked())
+
+    def test_no_backup_is_made_while_one_is_restored(self):
+        self.assertTrue(fb._restoring.acquire(blocking=False))
+        try:
+            with self.assertRaisesRegex(fb.BackupError, "is being restored"):
+                fb.start(self.data, "0.15.0", PASSWORD, "/mnt/backups/starboard", False)
+        finally:
+            fb._restoring.release()
+
+    def test_apps_a_restore_stopped_start_again_when_starboard_starts(self):
+        fb._tell(self.data, state="running", step="Putting the backup back", stopped=["reelix-id"])
+        self.calls.clear()
+        self.assertEqual(fb.start_left_stopped(self.data), ["reelix-id"])
+        self.assertEqual(self.calls, [("POST", "/containers/reelix-id/start")])
+        now = fb.restore_status(self.data)
+        self.assertEqual((now["state"], now["stopped"]), ("failed", []))
+        self.assertIn("Restore it again", now["error"])
+
 
 class WhichDisk(unittest.TestCase):
     DRIVES = [{"mount": "/mnt/disk1", "model": "WDC WD40EFRX", "label": "", "device": "sdb1", "size": 4000},

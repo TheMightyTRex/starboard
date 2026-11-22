@@ -64,7 +64,9 @@ up to a day late, and a monthly one at any time before the next 1st.
 - To keep a copy of each full backup somewhere else, such as Google Drive, OneDrive or your own Nextcloud, read
   [Copy backups to a cloud service](copy-backups-to-a-cloud-service.md).
 - If Starboard installed Reelix, **Reelix's backups** on the same page makes and restores Reelix's own
-  backups. Starboard asks for Reelix's password first.
+  backups. Starboard asks for Reelix's password first. Read [Reelix's own backups](reelix-backups.md).
+- To go back to an earlier day on this server, apps and all, read
+  [Make and restore a full backup](make-and-restore-a-full-backup.md).
 
 ## If it does not work
 
@@ -77,6 +79,7 @@ up to a day late, and a monthly one at any time before the next 1st.
 - [Restore a saved copy of your settings](restore-a-saved-copy.md)
 - [Move Starboard to a new computer](../guides/move-starboard-to-a-new-computer.md)
 - [Back up the whole server](back-up-the-server.md)
+- [Make and restore a full backup](make-and-restore-a-full-backup.md)
 - [Copy backups to a cloud service](copy-backups-to-a-cloud-service.md)
 - [What an API key is](../basics/what-is-an-api-key.md)
 

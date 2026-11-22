@@ -323,6 +323,7 @@ def _act(app, reelix, base, kind, action, body):
         from . import reelix_system as rs
         acts = {"backups": lambda: rs.backups(reelix), "backup-now": lambda: rs.backup_now(reelix),
                 "backup-settings": lambda: rs.backup_settings(reelix, body.get("every"), body.get("keep")),
+                "backup-place": lambda: rs.backup_place(app.data_dir, reelix, body.get("place")),
                 "restore": lambda: rs.restore(reelix, body.get("name")), "logs": lambda: rs.logs(reelix, str(body.get("level", "")), body.get("lines")),
                 "tasks": lambda: rs.tasks(reelix), "run-task": lambda: rs.run_task(reelix, body.get("task"))}
         if action not in acts:
@@ -332,6 +333,8 @@ def _act(app, reelix, base, kind, action, body):
             logs.event("info", "reelix", out["done"])
         if "restore_waiting" in out:  # the app Restart Reelix restarts, beside a restore that waits (DASH-470)
             out["service"] = service_id(app.config.data["services"])
+            from . import reelix_backup_place  # where the backups are kept, and whether another disk is on offer (DASH-386)
+            out["place"] = reelix_backup_place.place(app.data_dir, out.get("folder"))
         return out
     if kind == "form":  # Information, Files, Requests, Books, Music (DASH-193, 195, 197)
         from . import reelix_forms
