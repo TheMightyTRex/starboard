@@ -126,3 +126,31 @@ class Radio(unittest.TestCase):
         self.assertEqual(got["items"], [])
         self.assertIn("Update Reelix", got["note"])
 
+
+
+class RowFilters(unittest.TestCase):
+    """DASH-301: the filters on Discover's rows are remembered for the account, and cards carry what they tell apart."""
+    def test_saved_filters_keep_only_known_choices(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(df.filters(d), {})
+            got = df.save_filters(d, {"where": "out", "decade": "1990s", "release": "coming", "language": "fr", "bad": 1})
+            self.assertEqual(got, {"where": "out", "decade": "1990s", "release": "coming", "language": "fr"})
+            self.assertEqual(df.filters(d), got)
+            self.assertEqual(df.save_filters(d, {"where": "all", "decade": "x", "language": "<b>", "release": ""}), {})
+            with self.assertRaises(ValueError):
+                df.save_filters(d, "no")
+
+    @mock.patch.object(services, "_api")
+    @mock.patch.object(services, "cached", side_effect=lambda key, secs, fn: fn())
+    def test_cards_say_released_and_language(self, _c, api):
+        api.side_effect = lambda s, p, params=None, **kw: (ANSWERS[p] if p != "/discover/trending-movies" else {"results": [
+            {"tmdb_id": 1, "title": "Old", "year": 1995, "release_date": "1995-02-01", "original_language": "fre"},
+            {"tmdb_id": 2, "title": "Soon", "year": 2999, "release_date": "2999-02-01", "original_language": "en"},
+            {"tmdb_id": 3, "title": "Bare", "year": 2001}]})
+        cards = df.row({}, "films", "trending-movies")["items"]
+        by = {c["title"]: c["fx"] for c in cards}
+        self.assertEqual(by["Old"].get("r"), "released")
+        self.assertEqual(by["Soon"].get("r"), "coming")
+        self.assertEqual(by["Bare"], {"r": "released"})
+        self.assertEqual(by["Soon"].get("la"), "en")
