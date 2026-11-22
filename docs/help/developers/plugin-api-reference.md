@@ -395,10 +395,11 @@ once.
 
 A plug-in whose first container has `"start": "when_needed"` rests when it is not used:
 
-- Starboard stops that container once two things are both true for `idle_stop_minutes` (15 when left out):
-  Starboard has not called it, and its network has been quiet.
+- Starboard stops that container once three things are all true for `idle_stop_minutes` (15 when left out):
+  Starboard has not called it, its network has been quiet, and it has used almost no processor time.
 - Network traffic keeps it running, so Jellyfin or another app streaming from it straight away does not count as
-  idle. A container on the VPN shares Gluetun's network, so Starboard cannot tell, and it never rests.
+  idle. So does processor time (more than 0.3 seconds a minute), so a plug-in that is converting a file or shrinking
+  pictures is never stopped in the middle of its work, even with no network traffic. A container on the VPN shares Gluetun's network, so Starboard cannot tell, and it never rests.
 - The next time Starboard calls it, for a card, a button, its own page, an event or a job, Starboard starts it
   first and waits up to 20 seconds for it to answer.
 - Only Starboard can start it again. Use `when_needed` only when Starboard is how people reach it.
