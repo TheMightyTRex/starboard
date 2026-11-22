@@ -32,6 +32,7 @@
 
 ## Optional
 
+- [All the developer pages in one file](llms-full.txt): the API and plug-in pages above in full, for tools that read one file, made from the pages by tools/make_llms_full.py.
 - [AI prompts for developers](developers/ai-prompts-for-developers.md): copy-ready prompts for a card plug-in, an app plug-in and a plug-in that converts files, each with the checklist the assistant must follow, and for scripts that use the API.
 - [OpenAPI description](../../starboard/openapi.json): the machine-readable API description, also served at /api/v1/openapi.json.
 - [Plug-in manifest JSON Schema](../../starboard/plugin-manifest.schema.json): the manifest's rules for editors and tools.

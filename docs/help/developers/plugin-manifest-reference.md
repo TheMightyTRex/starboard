@@ -90,6 +90,8 @@ settings, events and jobs.
 | `tmpfs` | Folders in memory the app writes to, such as `/var/run/postgresql`, owned by its user | Up to 6 paths inside the container, never `/tmp` (it always has one) or `/run/starboard`. Only `/run` may run programs, for images with s6. API 1.13 |
 | `user` | The user it runs as | `uid:gid` such as `1000:1000`, never root (uid 0); `10001:10001` when left out. From API 1.12, `media`: the media folder's owner, only for a container that mounts `media/<one folder>`, from API 1.14 `jellyfin-metadata`, or from API 1.15 `media:holding`. Read [Adding files to the media folder](#adding-files-to-the-media-folder) |
 | `command` | The command it runs | Only plug-ins built into Starboard may set it |
+| `entrypoint` | The program it starts, in place of the image's own (API 1.13) | A list of one to 20 words, each up to 300 characters, such as `["python3", "app.py"]` |
+| `files` | Small files Starboard writes once into the container's data folder, such as a settings file an app needs before it starts | An object of one to four file names (letters, numbers, `.`, `_` and `-`, up to 61 characters, starting with a letter or number) with the text of each, up to 16 KB each. The container needs a `data` or `data:<path>` volume to write them into |
 | `build` | Its image is built by Starboard from the `Dockerfile` in the plug-in's zip file (API 1.15) | `true` or left out. With it, `image` must be `local/<id>:<version>`, such as `local/on-demand:0.9.2`, and the plug-in installs only from a zip file. Read [Built from a zip file](#built-from-a-zip-file) |
 
 The container's name on the server is `plugin-<id>-<name>`, such as `plugin-hello-card-main`.
@@ -476,7 +478,32 @@ keeps the new version (API 1.14): read [Updates](#updates).
 `styles` lists 1 to 32 styles for **Display** (16 before API 1.2), and needs the permission `appearance:styles`.
 Each style has an `id`, a `name`, and a `light` and a `dark` set of colours. Starboard checks every style for
 contrast in light and dark before it can be added. A plug-in with only styles runs no container. Read
-[Styles in Write a plug-in](../basics/write-a-plugin.md#styles), and the JSON Schema for every style field.
+[Styles in Write a plug-in](../basics/write-a-plugin.md#styles).
+
+These are the other fields of a style, all optional. They come from the JSON Schema, so the table and the check
+cannot differ.
+
+| Field | Its values |
+|---|---|
+| `description` | Text, up to 120 characters |
+| `radius` | A whole number from 0 to 24 (pixels) |
+| `font` and `heading_font` | `hyperlegible`, `system`, `rounded`, `serif` or `mono` |
+| `heading_weight` | `600`, `700` or `800` |
+| `heading_case` | `none` or `labels` |
+| `heading_tracking` | `tight`, `normal` or `wide` |
+| `shadow` | `none`, `soft`, `strong`, `layered`, `glow`, `clay` or `hairline` |
+| `card_style` | `flat`, `outlined`, `elevated` or `tonal` |
+| `button_fill` | `solid`, `outline`, `soft` or `ghost` |
+| `border_width` | `1`, `2` or `3` (pixels) |
+| `focus_width` | A whole number from 3 to 5 (pixels). Never less than 3, so the focus outline stays clear |
+| `tab_style` | `underline`, `pill` or `boxed` |
+| `header_style` | `solid`, `blurred`, `accent_bar` or `rule` |
+| `rail_style` | `solid`, `floating` or `tinted` |
+| `chip_style` | `soft` or `outline` |
+| `gradient` | `none`, `linear`, `radial` or `mesh` |
+| `gradient_angle` | A whole number from 0 to 360 (degrees) |
+| `texture` | `none`, `dots`, `grid`, `lines` or `grain` |
+| `primary_gradient`, `glass` and `rounded_controls` | `true` or `false` |
 
 ## Notices
 
