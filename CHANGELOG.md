@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Bulk actions on Activity, Wanted (DASH-524; owner, 22 November 2026: "I want the same bulk selections on Activity > Wanted"):** every row on the Wanted pages (Films, TV, Music, Books, Audiobooks) now has a box at its start, as the download queue has, and Select all in the toolbar ticks every row on the list; Shift and a tick selects a run of rows. A bar at the foot of the list says how many are selected and offers Search, Download now (for films and episodes while download hours pause downloads), Stop following and Clear selection. Stop following is new here: Reelix stops searching for the ticked titles, so they leave the list, and nothing is deleted; Starboard asks first and names how many. When the bar closes, focus goes to Select all, or to the list's words when it is empty, and the result is said. This replaces Select several, which only searched. Help: Act on several at once, in Find and get what is missing, with two pictures.
+
 ### Fixed
 - **The VPN card said No VPN on a server that uses one (owner, 22 November 2026):** when Gluetun was kept from an earlier set-up, Starboard had no connection to ask it, and the dashboard and Downloads said No VPN although every download went through it. Starboard now reads the VPN's own health check from its container, so the card says Connected or Not connected. If the state cannot be read, it says Not known, never No VPN.
 
