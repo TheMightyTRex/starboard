@@ -1716,7 +1716,17 @@ def handle(h, method, path):
         except services.ServiceError as e:
             return h.error(502, f"Reelix did not answer: {e}")
         out["rows"] = discover_feeds.arrange(out["rows"], discover_feeds.layout(data_dir).get(tab))  # DASH-303
+        out["filters"] = discover_feeds.filters(data_dir)  # DASH-301: with the rows, so the page asks once
         return h.json(200, out)
+    if path == "/api/library/discover-filters":  # DASH-301: the filters on Discover's rows, remembered for the account
+        from . import discover_feeds
+        if method == "GET":
+            return h.json(200, {"filters": discover_feeds.filters(data_dir)})
+        if method == "POST":
+            try:
+                return h.json(200, {"filters": discover_feeds.save_filters(data_dir, h.body().get("filters") or {})})
+            except ValueError as e:
+                return h.error(400, str(e))
     if path == "/api/library/discover-layout":  # DASH-303: which rows Discover shows and their order, in Settings
         from . import discover_feeds
         try:

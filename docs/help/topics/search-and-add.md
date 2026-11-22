@@ -41,6 +41,24 @@ podcasts have **Follow** instead.
 9. Select **Add to Reelix**. The button beside it changes to **Added**, and it appears in the Library within a few
    minutes.
 
+### Filter the rows on a Discover page
+
+Use this to narrow every row on a Discover page at once, such as to films you do not have, from one decade.
+
+1. Go to **Discover**, then **Films**, **TV**, **Music**, **Radio**, **Books** or **Audiobooks**. Above the rows, a
+   bar of filters appears once the first row has loaded.
+2. Choose **In your library** or **Not in your library**, then choose a **Year** (a decade), **Released** or **Not
+   released**, or a **Language**. A filter shows only when the rows have something to tell apart, and each choice says
+   how many covers it leaves.
+
+   ![A Discover page with example data, with the filter bar (step 1) and Year (step 2) outlined](../images/search-and-add-4-discover-filters.png)
+
+3. Starboard hides the covers that do not match, in every row, and says how many are shown, such as **9 of 12 shown**.
+   A row with nothing left says so. Select **Clear filters** to show everything again.
+
+The filters combine, and Starboard remembers them for your account on every Discover page. They apply to the rows
+loaded so far, so a row further down is filtered as it appears.
+
 ## Things to note
 
 - Each search has its own address, such as `http://192.168.1.20:8095/search.html?q=harbour`, so you can bookmark

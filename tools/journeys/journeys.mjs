@@ -1219,6 +1219,31 @@ check("GEN-04", "the TV list has its own genres, all unticked",
   (await api("/api/library/discover-layout?tab=tv")).rows.filter((r) => r.genre).every((r) => !r.shown));
 await api("/api/library/discover-layout?tab=films", { method: "DELETE" });
 
+// DASH-301: filters on Discover's rows (the same filters on every row, with counts, remembered for the account).
+await api("/api/library/discover-filters?tab=films", { method: "POST", body: { filters: {} } });
+await open("discover-films.html");
+await page.locator("#discover-filters #df-where-out").waitFor({ timeout: 10000 });
+
+const allCards = await page.locator("#discover-rows .discover-card").count();
+await page.locator("#df-where-out").check({ force: true });
+await page.waitForTimeout(400);
+const outCards = await page.locator("#discover-rows .discover-card:not([hidden])").count();
+check("DSC-01", "Not in your library hides the covers you have, in every row, and the count follows", outCards > 0 && outCards < allCards
+  && (await page.locator("#discover-count").textContent()).includes(" of "), `${outCards} of ${allCards}`);
+check("DSC-01", "the choice is remembered for the account", (await api("/api/library/discover-filters?tab=films")).filters.where === "out");
+await page.locator("#df-decade").selectOption({ index: 1 });
+await page.waitForTimeout(400);
+const decadeCards = await page.locator("#discover-rows .discover-card:not([hidden])").count();
+check("DSC-01", "a decade narrows it further (the filters combine)", decadeCards > 0 && decadeCards < outCards, `${decadeCards} of ${outCards}`);
+await open("discover-films.html");
+await page.locator("#discover-filters #df-where-out").waitFor({ timeout: 10000 });
+check("DSC-01", "a new visit starts with the same filters on", await page.locator("#df-where-out").isChecked() && (await page.locator("#df-decade").inputValue()) !== "");
+await page.locator("#df-clear").click();
+await page.waitForTimeout(300);
+check("DSC-01", "Clear filters shows every cover again and focus goes to All", (await page.locator("#discover-rows .discover-card[hidden]").count()) === 0
+  && await page.evaluate(() => document.activeElement.id) === "df-where-all");
+await api("/api/library/discover-filters?tab=films", { method: "POST", body: { filters: {} } });
+
 // DASH-396 (owner, 13 November 2026: "Do you have the same options for TV, books, audio books and Radio - might need a
 // separate section for each in the settings"): Discover rows has a section per area; with topic tabs, only the area
 // shown asks Reelix; each Discover page opens its own section; Radio offers its shared genres as rows.
