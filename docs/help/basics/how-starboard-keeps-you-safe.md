@@ -10,7 +10,7 @@ is what protects you, what Starboard can and cannot do on your computer, and the
 
 - Starboard has one password, at least 10 characters long. It is stored only as a hash (PBKDF2-SHA256 with
   600,000 rounds), so the password itself is never kept.
-- Choosing the first password needs the one-time setup code the installer prints, so nobody else on your network
+- Choosing the first password needs the one-time set-up code the installer prints, so nobody else on your network
   can claim a new server before you.
 - Five wrong attempts lock that address out for 15 minutes.
 - Without **Remember me**, you are signed out when the browser closes, or after a day.
@@ -81,5 +81,7 @@ privately as [SECURITY.md](../../../SECURITY.md) explains.
 such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
+
+**Need help?** Ask on the [Starboard Discord support server](https://discord.gg/xN9bf2H4vv).
 
 <!-- /footer -->

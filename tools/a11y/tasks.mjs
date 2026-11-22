@@ -886,7 +886,85 @@ check("T31", "the last part's button says what it does", start29.includes("Start
   await page.unroute(/\/api\/jellyfin\/restart$/, restart);
 }
 
-// T34 History, Across apps (DASH-68): the filter by arrow keys says the new count; Delete history asks first with focus
+// T34 Restore a full backup on this server (DASH-387) by keyboard alone: Tab from the list's heading reaches Restore
+// beside the newest backup; Enter opens a danger dialog with focus on the backup's password; Tab reaches the
+// Starboard password, Restore this backup, then Cancel; Escape closes it with focus back on Restore and nothing
+// started. With both passwords, Enter starts it: focus is back on Restore and each step is said politely. The example
+// server restores nothing (its made-up backup password is "made-up backup").
+await page.goto(`${base}/system-backup.html`);
+await settle();
+await page.locator("#full-list li[data-key]").first().waitFor({ timeout: 10000 }).catch(() => {});
+await page.evaluate(() => { const h = [...document.querySelectorAll("#full-body h3")].find((x) => x.textContent === "Full backups in the folder"); h.tabIndex = -1; h.focus(); });
+const r34 = await tabTo((f) => /^Restore the full backup from /.test(f.text) && f.tag === "BUTTON", 3);
+check("T34", "Tab from the list's heading reaches Restore, named with the backup's date", !!r34, r34 ? r34.text : "not reached");
+if (r34) {
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(400);
+  const d34 = await focus();
+  check("T34", "Enter opens the dialog with focus on the backup's password", d34.inPanel && d34.id === "restore-full-pw", `${d34.tag} ${d34.id}`);
+  const order34 = [];
+  for (let i = 0; i < 3; i++) { await page.keyboard.press("Tab"); const f = await focus(); order34.push(f.id || f.text); }
+  check("T34", "Tab goes to the Starboard password, Restore this backup, then Cancel", order34.join(" > ") === "restore-full-mine > Restore this backup > Cancel", order34.join(" > "));
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(400);
+  const e34 = await focus();
+  check("T34", "Escape closes it with focus back on Restore, and nothing started", /^Restore the full backup from /.test(e34.text) && !e34.inPanel
+    && await page.evaluate(() => api("/api/backup/full/restore-here").then((r) => r.status.state === "none")), e34.text);
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(400);
+  await page.keyboard.type("made-up backup");
+  await page.keyboard.press("Tab");
+  await page.keyboard.type(password);
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(() => /^Restoring the full backup/.test(document.querySelector("#announcer")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
+  const g34 = await focus();
+  check("T34", "Enter in the last field starts it: focus is back on Restore and it is said", /^Restore the full backup from /.test(g34.text) && !g34.lost
+    && /^Restoring the full backup/.test(await page.locator("#announcer").innerText()), `${g34.text} | ${await page.locator("#announcer").innerText()}`);
+  await page.waitForFunction(() => /Restored the full backup/.test(document.querySelector("#full-restore-state")?.textContent || ""), null, { timeout: 20000 }).catch(() => {});
+  await page.waitForTimeout(600);
+  const h34 = await focus();
+  check("T34", "when it ends the result is in the polite region and focus is still on the same Restore", /Restored the full backup/.test(await page.locator("#full-restore-state[aria-live=polite]").innerText())
+    && /^Restore the full backup from /.test(h34.text) && !h34.lost, h34.text);
+}
+// T35 Reelix's backup settings (DASH-385, DASH-386) by keyboard alone: the selects change with the arrow keys and
+// save at once, focus stays on the select and the saved note says so; choosing the media folder says Reelix must
+// restart, with focus still on the select.
+await page.goto(`${base}/system-backup.html`);
+await settle();
+const show35 = page.getByRole("button", { name: "Show Reelix's backups" });
+if (await show35.count()) {
+  await show35.focus();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(500);
+  if (await page.locator("#rs-password").count()) { await page.keyboard.type("made-up"); await page.keyboard.press("Enter"); }
+  await page.locator("#rs-every").waitFor({ timeout: 10000 }).catch(() => {});
+  await page.waitForTimeout(300);
+  const a35 = await focus();
+  check("T35", "after the password, focus is not lost", !a35.lost, a35.text);
+  await page.locator("#rs-backup-now").focus();
+  const s35 = await tabTo((f) => f.id === "rs-every", 3);
+  check("T35", "Tab from Make a backup now reaches the first select", !!s35);
+  await page.keyboard.press("ArrowDown");
+  await page.waitForFunction(() => { const n = document.querySelector("#rs-every")?.parentElement.querySelector(".saved-note"); return n && !n.hidden; }, null, { timeout: 5000 }).catch(() => {});
+  const b35 = await focus();
+  check("T35", "an arrow key changes it, it saves at once, focus stays and Saved is said", b35.id === "rs-every"
+    && /^Saved at \d\d:\d\d$/.test(await page.locator("#rs-every + .saved-note[role=status]").innerText().catch(() => "")), `${b35.id} | ${await page.locator("#rs-every + .saved-note").innerText().catch(() => "no note")}`);
+  await page.keyboard.press("ArrowUp");
+  await page.waitForTimeout(600);
+  const p35 = await tabTo((f) => f.id === "rs-place", 3);
+  check("T35", "Tab reaches Where Reelix keeps them", !!p35);
+  await page.keyboard.press("ArrowDown");
+  await page.locator("[data-restart-notice]").waitFor({ timeout: 10000 }).catch(() => {});
+  await page.waitForTimeout(300);
+  const c35 = await focus();
+  check("T35", "choosing the media folder keeps focus on the select, and what happens next is said", c35.id === "rs-place"
+    && /media folder from its next start/.test(await page.locator("#announcer").innerText()) && await page.locator("[data-restart-notice]").count() === 1, `${c35.id} | ${await page.locator("#announcer").innerText()}`);
+  await page.keyboard.press("ArrowUp");
+  await page.waitForTimeout(800);
+  check("T35", "choosing next to its settings again takes the restart notice away", await page.locator("[data-restart-notice]").count() === 0 && (await focus()).id === "rs-place");
+} else check("T35", "the example server has Reelix's backups", false);
+
+// T36 History, Across apps (DASH-68): the filter by arrow keys says the new count; Delete history asks first with focus
 // on Cancel, and afterwards focus is back on Delete history with the result said. Last, as it empties the list.
 {
   await page.goto(`${base}/history-apps.html`);
@@ -894,25 +972,25 @@ check("T31", "the last part's button says what it does", start29.includes("Start
   await page.locator("#across-list .chip").first().waitFor({ timeout: 10000 }).catch(() => {});
   await page.locator("main h1").evaluate((h) => { h.tabIndex = -1; h.focus(); });
   const f34 = await tabTo((f) => f.name === "across-show", 4);
-  check("T34", "Tab from the heading reaches the Show filter, on Everything", !!f34 && f34.id === "across-show-all", f34 ? f34.id : "not reached");
+  check("T36", "Tab from the heading reaches the Show filter, on Everything", !!f34 && f34.id === "across-show-all", f34 ? f34.id : "not reached");
   await page.keyboard.press("ArrowRight");
   await page.keyboard.press("ArrowRight");
   await page.waitForTimeout(1200);
   const g34 = await focus(), s34 = await said();
   const kinds = await page.locator("#across-list .chip").allTextContents();
-  check("T34", "the arrow keys choose Failed, focus stays on it, the list holds only Failed and the count is said",
+  check("T36", "the arrow keys choose Failed, focus stays on it, the list holds only Failed and the count is said",
     g34.id === "across-show-failed" && kinds.length > 0 && kinds.every((k) => k.trim() === "Failed") && /entr(y|ies), newest first/.test(s34), `${g34.id} / ${kinds.length} / ${s34}`);
   const d34 = await tabTo((f) => f.tag === "BUTTON" && f.text === "Delete history" && f.inMain, 60);
-  check("T34", "Tab reaches Delete history at the end of the page", !!d34, d34 ? d34.text : "not reached");
+  check("T36", "Tab reaches Delete history at the end of the page", !!d34, d34 ? d34.text : "not reached");
   await page.keyboard.press("Enter");
   await page.waitForTimeout(400);
   const c34 = await focus();
-  check("T34", "Enter asks first, with focus on Cancel", c34.inPanel && c34.text === "Cancel", `${c34.tag} ${c34.text}`);
+  check("T36", "Enter asks first, with focus on Cancel", c34.inPanel && c34.text === "Cancel", `${c34.tag} ${c34.text}`);
   await page.keyboard.press("Shift+Tab");
   await page.keyboard.press("Enter");
   await page.waitForTimeout(1500);
   const e34 = await focus(), t34 = await said();
-  check("T34", "after deleting, focus is back on Delete history and the result is said", e34.text === "Delete history" && e34.inMain && /History across apps deleted/.test(t34), `${e34.text} / ${t34}`);
+  check("T36", "after deleting, focus is back on Delete history and the result is said", e34.text === "Delete history" && e34.inMain && /History across apps deleted/.test(t34), `${e34.text} / ${t34}`);
 }
 
 await browser.close();

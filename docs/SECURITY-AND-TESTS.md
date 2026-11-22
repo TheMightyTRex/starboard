@@ -13,7 +13,7 @@ Latest results: 3 November 2026.
 
 **Signing in**
 - One password of at least 10 characters, stored only as a PBKDF2-SHA256 hash with 600,000 rounds.
-- The first password needs a one-time setup code that only someone with access to the server can read. It
+- The first password needs a one-time set-up code that only someone with access to the server can read. It
   stops working once used.
 - Five wrong attempts lock an address out for 15 minutes, and at most two password checks run at once, so
   guesses sent all together are counted too.
@@ -130,7 +130,7 @@ Each check has an ID, which the test scripts print beside their results. The tes
 | SEC-14 | `.env` and data files are readable by the owner only | Install tests; unit tests | Pass |
 | SEC-15 | Container labels cannot run commands | Unit test | Pass |
 | SEC-16 | A history file over 80 MB is refused, before the upload | Unit test | Pass. The Live TV and picture limits have no test yet. |
-| SEC-17 | The setup code is needed, and works only once | Unit test | Pass. Guessing the code has no test yet. |
+| SEC-17 | The set-up code is needed, and works only once | Unit test | Pass. Guessing the code has no test yet. |
 | SEC-18 | A new password signs out every other browser | Unit test | Pass |
 | SEC-19 | Scan with OWASP ZAP, signed out and signed in (active) | `tools/security-scan.sh` | Pass: no failures; the warnings left are explained below |
 | SEC-20 | Known issues in the image and its libraries (Trivy) | `tools/security-scan.sh` | Pass: 0 after updating Pillow (see below) |
@@ -194,7 +194,7 @@ and each fix has a test where code can test it:
 - **What the set-up hands to the installer (medium):** `data/setup-host.json` is in the data folder, which the
   container can write to. The Run first script now passes on only `--disk Media=`, `--livetv-folder` and
   `--disk-health`, each folder checked again by the same rule as the server, from a regular file only.
-- **The setup code (medium to low):** a link planted at `data/setup-token` could have sent a host file, such as an
+- **The set-up code (medium to low):** a link planted at `data/setup-token` could have sent a host file, such as an
   SSH key, to the container. The code is now read only from a regular file, never through a link, and only as code
   characters, in the terminal set-up, `install.sh` and the Run first script.
 - **Files the scripts write (low):** the hand-over is written to a new file and moved into place; Docker's installer
@@ -324,6 +324,6 @@ These suit Starboard and cost nothing:
 
 ## Not tested yet
 
-- Connection time-outs, HTTPS-only cookies, the Live TV and picture size limits, and guessing the setup code.
+- Connection time-outs, HTTPS-only cookies, the Live TV and picture size limits, and guessing the set-up code.
   Each is in the code, and was checked by hand in the review, but has no automatic test yet.
 - Windows and Mac, which Starboard does not support yet, and a physical Raspberry Pi.

@@ -51,8 +51,8 @@ Each step is explained in [Set up everything with the Run first script](../topic
 
 ## Step 3: Create your password and finish setting up
 
-With a desktop, the set-up page opens by itself with the setup code filled in. With no desktop, open the address it
-shows on a phone or another computer and enter the setup code. Follow
+With a desktop, the set-up page opens by itself with the set-up code filled in. With no desktop, open the address it
+shows on a phone or another computer and enter the set-up code. Follow
 [Create your password and sign in](../topics/create-your-password.md). In the terminal instead, follow
 [Set up Starboard in the terminal, with no browser](../topics/set-up-in-the-terminal.md).
 
@@ -79,5 +79,7 @@ Wi-Fi. Follow [Open Starboard from a phone or another computer](../topics/open-f
 such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
+
+**Need help?** Ask on the [Starboard Discord support server](https://discord.gg/xN9bf2H4vv).
 
 <!-- /footer -->

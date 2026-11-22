@@ -35,6 +35,8 @@ KEEP = 5
 SCRYPT = {"n": 2 ** 15, "r": 8, "p": 1}
 NAME_RE = re.compile(r"^starboard-full-\d{4}-\d{2}-\d{2}-\d{6}(-pictures)?\.starboard$")
 STATUS = "backup-full.json"
+RESTORE_STATUS = "restore-full.json"  # restoring one on this server (DASH-387)
+CHECKED = "backup-checked.json"  # which copies read back as written (DASH-381)
 WORK = "backup-work"
 # Nothing that can be downloaded or made again goes in (owner, 12 November 2026: "take out anything that can be re
 # download"): caches, logs, transcodes, fetched artwork and posters, guides, queued download files. On the owner's
@@ -44,6 +46,7 @@ KEY_FILE = "backup-key.json"  # the scheduled copies' key (DASH-17): never in a 
 # Copies off this computer (DASH-380): the share's password and rclone's config, and the copy's own work folder and status.
 COPY_SKIP = ("backup-copies-secret.json", "backup-copies-status.json", "backup-copies-test.json", "backup-copy-work/")
 STARBOARD_SKIP = ("sessions.json", "logs/", "backups/", WORK + "/", "plugins/.removed/", "setup-token", "posters/", "icons/", KEY_FILE, *COPY_SKIP,
+                  STATUS, RESTORE_STATUS, CHECKED,
                   "library/films.json", "library/tv.json", "library/music.json", "library/books.json", "library/audiobooks.json",
                   "library/radio.json", "library/network-logos.json", "space.json", "usage.json", "disk-temps.json", "imports/")
 STARBOARD_PICTURES = ("library/station-logos/",)
@@ -52,10 +55,16 @@ APP_SKIP = ["*cache*", "*/Cache/*", "*/logs/*", "*/log/*", "*/Logs/*", "*.log", 
             "*/temp/*", "*/tmp/*", "*/Backups/*", "*/backups/*", "*/crashreports/*", "*.pid", "*/ipc-socket", "*/keyframes/*",
             "*/attachments/*", "*/trickplay/*", "*/__pycache__/*", "*/data/metadata/*", "*/MediaCover/*", "*/nzb/*", "*xmltv*",
             "*/omdb/*", "*/streams/*", "*/collections/*.jpg", "*/collections/*.png", "*.db-shm"]
+# Never put back from a backup (older ones hold some of them): what this Starboard is doing now, and its own keys.
+NEVER_BACK = (STATUS, RESTORE_STATUS, CHECKED, KEY_FILE, "sessions.json", "setup-token", *(c for c in COPY_SKIP if not c.endswith("/")))
+# Left beside a database by an app that did not close it cleanly. Put under an older database they would be played
+# into it, so a restore on a running server removes them first (DASH-387).
+SIDE_FILES = ("*-wal", "*-shm", "*-journal")
 APP_PICTURES = ["*/metadata/items/*", "*/metadata/authors/*", "*/covers/*", "*/logos/*", "*/artwork/*", "*/images/*", "*/item-images/*"]
 PICTURE_EXT = (".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg")
 
 _lock = threading.Lock()
+_restoring = threading.Lock()  # held while a full backup is restored on this server (DASH-387)
 
 
 class BackupError(Exception):
@@ -119,6 +128,7 @@ class Sealed(io.RawIOBase):
 
     def __init__(self, out, key, header):
         self.out, self.aes, self.buf, self.count = out, _aes()(key), bytearray(), 0
+        self.last = 0  # how many bytes the last part takes at the end of the file, for the check after writing
         self.prefix = base64.b64decode(header["nonce"])
         self.head = json.dumps(header, sort_keys=True).encode("utf-8")
         out.write(MAGIC + struct.pack(">I", len(self.head)) + self.head)
@@ -137,6 +147,7 @@ class Sealed(io.RawIOBase):
         nonce = self.prefix + struct.pack(">I", self.count)
         sealed = self.aes.encrypt(nonce, plain, self.head + (b"last" if last else b"more") + struct.pack(">I", self.count))
         self.out.write(struct.pack(">I", len(sealed)) + sealed)
+        self.last = 4 + len(sealed)
         self.count += 1
 
     def close(self):
@@ -303,6 +314,65 @@ def _say(data_dir, **kw):
     os.replace(tmp, _status_path(data_dir))
 
 
+# Checking one after it is made (DASH-381) -------------------------------------------------------------------------------
+
+def _read_back(work, host_work, root, inner, name, key, sealed, size):
+    """Reads the copy in the backup folder back: it has the size that was written, it starts with the same header, and
+    its last part opens with the key. Cheap on purpose: the helper reads the start and at most 1 MiB of the end, never
+    the whole file. Raises BackupError saying which of the three failed."""
+    front = MAGIC + struct.pack(">I", len(sealed.head)) + sealed.head
+    code, said = _helper(f"f={_q(inner)}/{_q(name)}; [ $(wc -c < \"$f\") -eq {int(size)} ] || exit 4; "
+                         f"head -c {len(front)} \"$f\" > /w/check.head && tail -c {int(sealed.last)} \"$f\" > /w/check.tail",
+                         [f"{root}:/t:ro", f"{host_work}:/w"], timeout=300)
+    if code == 4:
+        raise BackupError("it is not the size that was written")
+    if code:
+        raise BackupError(f"it could not be read: {said.strip()[-200:]}")
+    with open(os.path.join(work, "check.head"), "rb") as f:
+        if f.read() != front:
+            raise BackupError("its start is not what was written")
+    with open(os.path.join(work, "check.tail"), "rb") as f:
+        tail = f.read()
+    from cryptography.exceptions import InvalidTag
+    n = struct.pack(">I", sealed.count - 1)
+    try:
+        if len(tail) < 4 or struct.unpack(">I", tail[:4])[0] != len(tail) - 4:
+            raise InvalidTag
+        _aes()(key).decrypt(sealed.prefix + n, tail[4:], sealed.head + b"last" + n)
+    except InvalidTag:
+        raise BackupError("its last part does not open") from None
+
+
+def checked(data_dir):
+    """{file name: {"size", "at"}} for the copies that read back as written."""
+    try:
+        with open(os.path.join(data_dir, CHECKED), encoding="utf-8") as f:
+            raw = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    return {k: v for k, v in raw.items() if isinstance(v, dict)} if isinstance(raw, dict) else {}
+
+
+def _note_checked(data_dir, name, size):
+    marks = checked(data_dir)
+    marks[name] = {"size": int(size), "at": time.time()}
+    marks = dict(sorted(marks.items(), key=lambda kv: kv[1].get("at") or 0)[-60:])  # more than any folder keeps
+    path = os.path.join(data_dir, CHECKED)
+    with open(path + ".tmp", "w", encoding="utf-8") as f:
+        json.dump(marks, f)
+    os.replace(path + ".tmp", path)
+
+
+def with_checked(data_dir, items):
+    """found()'s list with "checked": when each copy read back as written (seconds), or None. A file whose size has
+    changed since is not the one that was checked."""
+    marks = checked(data_dir)
+    for b in items:
+        mark = marks.get(b["name"]) or {}
+        b["checked"] = mark.get("at") if mark.get("size") == b["size"] else None
+    return items
+
+
 # Making one -----------------------------------------------------------------------------------------------------------
 
 def start(data_dir, version, password, target, pictures, site_name="", keep=KEEP, saved=None):
@@ -324,6 +394,8 @@ def start(data_dir, version, password, target, pictures, site_name="", keep=KEEP
     host_data = os.path.dirname(host_data) if host_data else None
     if not host_data:
         raise BackupError("Starboard cannot find its own folder on this computer")
+    if _restoring.locked():
+        raise BackupError("A full backup is being restored. Make one when it has finished")
     if not _lock.acquire(blocking=False):
         raise BackupError("A backup is being made already")
     _say(data_dir, state="running", step="Starting", started=time.time(), finished=None, error="", file="", target=target, pictures=bool(pictures),
@@ -332,7 +404,8 @@ def start(data_dir, version, password, target, pictures, site_name="", keep=KEEP
                      daemon=True).start()
 
 
-def _make(data_dir, version, password, target, pictures, config_dir, host_data, site_name, env, keep=KEEP, saved=None):
+def _make(data_dir, version, password, target, pictures, config_dir, host_data, site_name, env, keep=KEEP, saved=None, prune=True):
+    """prune=False (the copy made before a restore, DASH-387) leaves every older copy, the one being restored included."""
     from . import containers
     work = os.path.join(data_dir, WORK)
     try:
@@ -392,16 +465,29 @@ def _make(data_dir, version, password, target, pictures, config_dir, host_data, 
         root, path = _place(target)
         inner = "/t" + path[len(root):]
         owner = f"{int(env.get('PUID') or 1000)}:{int(env.get('PGID') or 1000)}"  # the person's own user, so they can tidy the folder
-        prune = f"ls -1t {_q(inner)} | grep -E '^starboard-full-[0-9-]+(-pictures)?\\.starboard$' | tail -n +{int(keep) + 1}"
+        older = f"ls -1t {_q(inner)} | grep -E '^starboard-full-[0-9-]+(-pictures)?\\.starboard$' | tail -n +{int(keep) + 1}"
         # A .part left by a copy that was cut off (the computer stopped) is never a backup: it goes first (DASH-78).
         code, said = _helper(f"mkdir -p {_q(inner)} && find {_q(inner)} -maxdepth 1 -name 'starboard-full-*.starboard.part' -delete && "
                              f"cp /w/{_q(name)} {_q(inner)}/{_q(name + '.part')} && "
                              f"mv {_q(inner)}/{_q(name + '.part')} {_q(inner)}/{_q(name)} && "
-                             f"chown {owner} {_q(inner)} {_q(inner)}/{_q(name)} && chmod 600 {_q(inner)}/{_q(name)} && "
-                             f"{prune} | while read -r old; do rm -f {_q(inner)}/\"$old\"; done",
+                             f"chown {owner} {_q(inner)} {_q(inner)}/{_q(name)} && chmod 600 {_q(inner)}/{_q(name)}",
                              [f"{host_data}/{WORK}:/w:ro", f"{root}:/t"])
         if code:
             raise BackupError(f"Writing to {target} did not work: {said.strip()[-200:]}")
+        # DASH-381: the copy in the folder is read back (its size, its start and its last part) before anything older
+        # goes. One that does not read back is set aside as a .part, so it never counts as a backup.
+        _say(data_dir, step="Checking it reads back")
+        try:
+            _read_back(work, f"{host_data}/{WORK}", root, inner, name, key, sealed, size)
+        except BackupError as e:
+            _helper(f"mv {_q(inner)}/{_q(name)} {_q(inner)}/{_q(name + '.part')}", [f"{root}:/t"], timeout=120)
+            raise BackupError(f"The backup was written to {target}, but did not read back as it was written ({e}). It is not kept. "
+                              "Make it again. If this happens again, check the disk the folder is on") from None
+        _note_checked(data_dir, name, size)
+        if prune:
+            code, said = _helper(f"{older} | while read -r old; do rm -f {_q(inner)}/\"$old\"; done", [f"{root}:/t"], timeout=120)
+            if code:
+                raise BackupError(f"Removing the older backups in {target} did not work: {said.strip()[-200:]}")
         from . import backup_copies  # DASH-380: a copy off this computer, when one is chosen; never fails the backup
         backup_copies.after_full(data_dir, f"{path}/{name}")
         _say(data_dir, state="done", step="", finished=time.time(), file=f"{path}/{name}", size=size)
@@ -414,25 +500,28 @@ def _make(data_dir, version, password, target, pictures, config_dir, host_data, 
 
 def start_left_stopped(data_dir):
     """At start (DASH-382): apps a full backup stopped while it copied them, when Starboard itself stopped before it
-    could start them again, are started now, and a backup left "running" is marked as stopped. Returns the
-    containers started again; one that would not start stays listed, for the next start."""
+    could start them again, are started now, and a backup left "running" is marked as stopped. The same for apps a
+    restore on this server had stopped (DASH-387). Returns the containers started again; one that would not start
+    stays listed, for the next start."""
     from . import containers
-    now = status(data_dir)
-    left = [c for c in now.get("stopped") or [] if isinstance(c, str) and re.fullmatch(r"[0-9a-zA-Z_.-]{1,128}", c)]
-    if _lock.locked():
-        return []  # a backup is being made in this Starboard: it starts its own apps again
-    started, still = [], []
-    for cid in left:
-        try:
-            containers.docker("POST", f"/containers/{cid}/start", timeout=60)
-            started.append(cid)
-        except containers.DockerError:
-            still.append(cid)
-    if left or now.get("stopped"):
-        _say(data_dir, stopped=still)
-    if now.get("state") == "running":
-        _say(data_dir, state="failed", step="", finished=time.time(),
-             error="Starboard stopped while the backup was being made. Make it again.")
+    if _lock.locked() or _restoring.locked():
+        return []  # being made or restored in this Starboard: it starts its own apps again
+    started = []
+    for read, write, what in ((status, _say, "Starboard stopped while the backup was being made. Make it again."),
+                              (restore_status, _tell, "Starboard stopped while the backup was being restored. The apps were started again. Restore it again.")):
+        now = read(data_dir)
+        left = [c for c in now.get("stopped") or [] if isinstance(c, str) and re.fullmatch(r"[0-9a-zA-Z_.-]{1,128}", c)]
+        still = []
+        for cid in left:
+            try:
+                containers.docker("POST", f"/containers/{cid}/start", timeout=60)
+                started.append(cid)
+            except containers.DockerError:
+                still.append(cid)
+        if left or now.get("stopped"):
+            write(data_dir, stopped=still)
+        if now.get("state") == "running":
+            write(data_dir, state="failed", step="", finished=time.time(), error=what)
     return started
 
 
@@ -460,10 +549,15 @@ def found(folder):
     return sorted(out, key=lambda b: b["created"] or "", reverse=True)
 
 
-def restore(data_dir, file_path, password, config_dir=None, puid=1000, pgid=1000):
+def restore(data_dir, file_path, password, config_dir=None, puid=1000, pgid=1000, running=False):
     """Puts a full backup back: Starboard's files (its sign-in stays as it is now), then every app's folder into the
     settings folder. Returns {"settings": the settings backup inside, "apps": [...], "config_dir": ...}. The set-up
-    then writes the Compose file (keeping the restored .env's secrets) and starts the apps."""
+    then writes the Compose file (keeping the restored .env's secrets) and starts the apps.
+
+    Nothing is changed until the whole file has been read to its last part, so a damaged or cut-off backup leaves
+    Starboard and the apps as they were. running=True is for a server whose apps have run since (DASH-387): files an
+    app leaves beside a database it did not close cleanly are removed first, so they are never played into the older
+    database."""
     from . import containers, stack
     if not containers.available():
         raise BackupError("Starboard needs Docker access to put your apps' settings back")
@@ -478,9 +572,12 @@ def restore(data_dir, file_path, password, config_dir=None, puid=1000, pgid=1000
     shutil.rmtree(work, ignore_errors=True)
     os.makedirs(work, mode=0o700)
     try:
-        code, said = _helper(f"cp /t{_q(path[len(root):])} /w/in.starboard", [f"{root}:/t:ro", f"{host_data}/{WORK}:/w"])
+        # The copy in the folder is readable by its owner only, and the helper writes as root: without the chmod,
+        # Starboard, which never runs as root, could not open its own working copy. The work folder itself is private.
+        code, said = _helper(f"cp /t{_q(path[len(root):])} /w/in.starboard && chmod 644 /w/in.starboard", [f"{root}:/t:ro", f"{host_data}/{WORK}:/w"])
         if code:
             raise BackupError(f"Starboard could not read {file_path}")
+        staged = os.path.join(work, "starboard")
         with open(os.path.join(work, "in.starboard"), "rb") as raw:
             opened = Opened(raw, password)
             header = opened.header
@@ -494,10 +591,9 @@ def restore(data_dir, file_path, password, config_dir=None, puid=1000, pgid=1000
                         continue
                     if name.startswith("starboard/"):
                         rel = name[len("starboard/"):]
-                        if rel in ("config.json", "api-keys.json") or rel.startswith(("logs/", WORK)):
-                            dest = os.path.join(work, "starboard", rel)  # read below, not copied over
-                        else:
-                            dest = os.path.join(data_dir, rel)
+                        if rel in NEVER_BACK or rel.startswith(("logs/", WORK)):
+                            continue
+                        dest = os.path.join(staged, rel)  # put in place below, once the whole file has been read
                     elif name.startswith("apps/") and name.endswith(".tar.gz") and folders.NAME.match(name[5:-7]):
                         dest = os.path.join(work, "apps", name[5:])
                     else:
@@ -505,24 +601,176 @@ def restore(data_dir, file_path, password, config_dir=None, puid=1000, pgid=1000
                     os.makedirs(os.path.dirname(dest), exist_ok=True)
                     with tar.extractfile(m) as src, open(dest, "wb") as out:
                         shutil.copyfileobj(src, out, CHUNK)
+            while opened.read(CHUNK):  # to the sealed last part: a file cut after the archive's own end is refused too
+                pass
         settings = {}
         try:
-            with open(os.path.join(work, "starboard", "config.json"), encoding="utf-8") as f:
+            with open(os.path.join(staged, "config.json"), encoding="utf-8") as f:
                 settings = json.load(f)
         except (OSError, ValueError):
             pass
-        keys = os.path.join(work, "starboard", "api-keys.json")
-        if os.path.exists(keys):
-            shutil.copyfile(keys, os.path.join(data_dir, "api-keys.json"))
+        for folder, _, files in os.walk(staged):
+            for name in files:
+                rel = os.path.relpath(os.path.join(folder, name), staged)
+                if rel == "config.json":
+                    continue  # read above and given back as "settings", never copied over: the sign-in stays
+                dest = os.path.join(data_dir, rel)
+                os.makedirs(os.path.dirname(dest), exist_ok=True)
+                os.replace(os.path.join(folder, name), dest)
         apps = sorted(n[:-7] for n in os.listdir(os.path.join(work, "apps")))
         inner = "/c" + cpath[len(croot):]
-        code, said = _helper(f"mkdir -p {_q(inner)} && for a in /w/apps/*.tar.gz; do tar -C {_q(inner)} -xzf \"$a\" || exit 3; done && "
+        side = " -o ".join(f"-name {_q(p)}" for p in SIDE_FILES)
+        tidy = (f"n=$(basename \"$a\" .tar.gz); if [ -d {_q(inner)}/\"$n\" ]; then find {_q(inner)}/\"$n\" -type f \\( {side} \\) | "
+                "while IFS= read -r f; do b=\"${f%-wal}\"; b=\"${b%-shm}\"; b=\"${b%-journal}\"; if [ -f \"$b\" ]; then rm -f \"$f\"; fi; done; fi; ") if running else ""
+        code, said = _helper(f"mkdir -p {_q(inner)} && for a in /w/apps/*.tar.gz; do {tidy}tar -C {_q(inner)} -xzf \"$a\" || exit 3; done && "
                              f"chown -R {int(puid)}:{int(pgid)} {_q(inner)}", [f"{host_data}/{WORK}:/w:ro", f"{croot}:/c"])
         if code:
             raise BackupError(f"Putting the apps' settings back in {target} did not work: {said.strip()[-200:]}")
         return {"settings": settings, "apps": apps, "config_dir": target, "header": {k: header.get(k) for k in ("created", "version", "pictures", "site_name")}}
     finally:
         shutil.rmtree(work, ignore_errors=True)
+
+
+# Restoring one on this server (DASH-387) ------------------------------------------------------------------------------
+# From System, Backup and restore, on a server that is running. In order: the password is tried on the file's first
+# part; a full backup of how things are now is made into the same folder with the same password, and nothing older is
+# removed; the apps whose folders come back are stopped; the backup is put back (restore, running=True); Starboard's
+# settings come back through the settings restore, which saves its own copy first; the apps start again. If Starboard
+# stops part way, the apps are started at its next start (start_left_stopped).
+
+def restore_status(data_dir):
+    try:
+        with open(os.path.join(data_dir, RESTORE_STATUS), encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {"state": "none"}
+
+
+def _tell(data_dir, **kw):
+    now = restore_status(data_dir)
+    now.update(kw)
+    path = os.path.join(data_dir, RESTORE_STATUS)
+    with open(path + ".tmp", "w", encoding="utf-8") as f:
+        json.dump(now, f)
+    os.replace(path + ".tmp", path)
+
+
+def _version_key(v):
+    m = re.match(r"^v?(\d+)\.(\d+)\.(\d+)", str(v or ""))
+    return tuple(int(x) for x in m.groups()) if m else None
+
+
+def _first_part(data_dir, host_data, root, path, password):
+    """The header of a backup in the folder, after its first part has opened with the password. Reads the start of
+    the file only. Raises BackupError for a wrong password or a file that is not a full backup."""
+    work = os.path.join(data_dir, WORK)
+    shutil.rmtree(work, ignore_errors=True)
+    os.makedirs(work, mode=0o700)
+    try:
+        code, _ = _helper(f"head -c {CHUNK + 1024 * 1024 + 64} /t{_q(path[len(root):])} > /w/first", [f"{root}:/t:ro", f"{host_data}/{WORK}:/w"], timeout=120)
+        if code:
+            raise BackupError(f"Starboard could not read {path}")
+        with open(os.path.join(work, "first"), "rb") as f:
+            try:
+                opened = Opened(f, password)
+            except (ValueError, KeyError, struct.error):
+                raise BackupError("This backup's header is damaged") from None
+            opened._next()
+            return opened.header
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def start_restore(data_dir, version, file_path, password, apply_settings, site_name=""):
+    """Checks everything that can be checked without changing anything, then restores in the background.
+    apply_settings(settings) puts Starboard's own settings back and returns how many apps they hold."""
+    from . import containers, stack
+    _aes()
+    if not containers.available():
+        raise BackupError("Starboard needs Docker access to put your apps' settings back")
+    env = stack.env_values(data_dir)
+    config_dir = env.get("CONFIG_DIR")
+    if not config_dir:
+        raise BackupError("Starboard did not install your apps, so it cannot put their settings back here. Restore a full backup in the set-up of a new install")
+    root, path = _place(file_path)
+    if not NAME_RE.match(os.path.basename(path)):
+        raise BackupError("Choose a Starboard full backup (a .starboard file)")
+    host_data = stack.host_folder(data_dir)
+    host_data = os.path.dirname(host_data) if host_data else None
+    if not host_data:
+        raise BackupError("Starboard cannot find its own folder on this computer")
+    if _lock.locked():
+        raise BackupError("A backup is being made. Restore when it has finished")
+    if not _restoring.acquire(blocking=False):
+        raise BackupError("A full backup is being restored already")
+    try:
+        header = _first_part(data_dir, host_data, root, path, password)
+        theirs = folders.tidy(header.get("config_dir") or config_dir)
+        if theirs != folders.tidy(config_dir):
+            raise BackupError(f"This backup is from a server that keeps its apps' settings in {theirs}; this one keeps them in {config_dir}. "
+                              "Restore it in the set-up of a new install instead")
+        made, mine = _version_key(header.get("version")), _version_key(version)
+        if made and mine and made > mine:
+            raise BackupError(f"This backup was made by Starboard {header.get('version')}, which is newer than this one ({version}). Update Starboard, then restore it")
+        _tell(data_dir, state="running", step="Starting", started=time.time(), finished=None, error="", file=path, safety="", stopped=[],
+              created=header.get("created"), apps=[], count=None)
+        threading.Thread(target=_restore_here, args=(data_dir, version, path, password, header, config_dir, host_data, env, apply_settings, site_name),
+                         daemon=True).start()
+    except BaseException:
+        _restoring.release()
+        raise
+
+
+def _restore_here(data_dir, version, path, password, header, config_dir, host_data, env, apply_settings, site_name):
+    from . import containers
+    stopped = []
+    try:
+        _tell(data_dir, step="Making a full backup of how things are now")
+        if not _lock.acquire(blocking=False):
+            raise BackupError("A backup is being made. Restore when it has finished")
+        folder = os.path.dirname(path)
+        while datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S") in os.path.basename(path):
+            time.sleep(0.2)  # file names are to the second: the copy made now must never take the name of the one being restored
+        _say(data_dir, state="running", step="Starting", started=time.time(), finished=None, error="", file="", target=folder,
+             pictures=bool(header.get("pictures")), scheduled=False)
+        _make(data_dir, version, password, folder, bool(header.get("pictures")), config_dir, host_data, site_name, env, prune=False)
+        before = status(data_dir)
+        if before.get("state") != "done":
+            raise BackupError(f"The backup of how things are now did not work, so nothing was changed: {before.get('error') or 'no reason given'}")
+        _tell(data_dir, safety=before.get("file") or "", step="Stopping the apps")
+        using = _containers_using(config_dir)
+        for app in header.get("apps") or []:
+            for cid in using.get(app, []):
+                _tell(data_dir, stopped=stopped + [cid])  # noted first, so a Starboard that stops here starts it again
+                try:
+                    containers.docker("POST", f"/containers/{cid}/stop?t=30", timeout=60)
+                    stopped.append(cid)
+                except containers.DockerError:
+                    pass
+        _tell(data_dir, stopped=list(stopped), step="Putting the backup back")
+        out = restore(data_dir, path, password, config_dir=config_dir, puid=int(env.get("PUID") or 1000), pgid=int(env.get("PGID") or 1000), running=True)
+        _tell(data_dir, step="Putting Starboard's settings back", apps=out["apps"])
+        count = apply_settings(out["settings"] or {})
+        _tell(data_dir, count=count, step="Starting the apps again")
+        _start_again(data_dir, stopped)
+        _tell(data_dir, state="done", step="", finished=time.time())
+    except Exception as e:  # noqa: BLE001 - whatever stops it, the page says what
+        _start_again(data_dir, stopped)
+        _tell(data_dir, state="failed", step="", finished=time.time(), error=str(e) or e.__class__.__name__)
+    finally:
+        _restoring.release()
+
+
+def _start_again(data_dir, stopped):
+    from . import containers
+    still = []
+    for cid in list(stopped):
+        try:
+            containers.docker("POST", f"/containers/{cid}/start", timeout=60)
+        except containers.DockerError:
+            still.append(cid)
+    stopped[:] = still
+    _tell(data_dir, stopped=still)
 
 
 POOL = "/mnt/pool"  # the drive pool's one folder (start.storage): its disks are never the system disk

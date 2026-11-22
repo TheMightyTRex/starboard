@@ -34,6 +34,11 @@ Jellyfin" or "Jellyfin refused the API key".
 Open the app itself in your browser. If it does not open, the app has stopped. Start it again, then select
 **Check again** in the app's details.
 
+Starboard checks an app that is not responding less often, so a stopped app costs your server little: after 2
+checks with no answer it waits 30 seconds, then 1, 2 and 4 minutes, and from then on 5 minutes between checks. The
+app's details say how often, such as "Starboard checks it every 2 minutes until it answers". **Check again** checks
+at once, and the first answer from the app puts it back to a check every 15 seconds.
+
 ## Check the address Starboard uses
 
 1. If the app opens in your browser, select **Edit app** in its details. The app's **Edit** panel opens in
@@ -98,5 +103,7 @@ app and read its own messages.
 such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
+
+**Need help?** Ask on the [Starboard Discord support server](https://discord.gg/xN9bf2H4vv).
 
 <!-- /footer -->

@@ -431,6 +431,50 @@ if (!pages.length || pages.some((p) => p.includes("system-backup"))) {
     if (kept) await page.evaluate(([k, pw]) => api("/api/backup/copies", { method: "PUT", body: { password: pw, kind: k.kind, folder: k.folder, keep: k.keep } }), [kept, password]);
     console.log("checked Connect a cloud service");
   } catch (e) { add("system-backup.html, Connect a cloud service", "page", "error", e.message.split("\n")[0]); }
+  // Full backups with Checked and Restore, the restore dialog (also with an error under a field), the restore while
+  // it runs and when it ends (DASH-381, DASH-387); Reelix's backup settings and the folder choice (DASH-385, DASH-386).
+  // The example server restores and moves nothing.
+  try {
+    await page.goto(`${base}/system-backup.html`);
+    await settle();
+    await page.locator("#full-list li[data-key]").first().waitFor();
+    await page.locator("#full-list").scrollIntoViewIfNeeded();
+    await themes("system-backup.html, full backups with Checked and Restore");
+    await page.locator("#full-list li[data-key] button").nth(1).click();
+    await page.locator("#restore-full-pw").waitFor();
+    await themes("Restore a full backup, the dialog");
+    await page.locator("#restore-full-pw").fill("not the backup password");
+    await page.locator("#restore-full-mine").fill(password);
+    await page.locator("dialog .dialog__foot .btn--danger").click();
+    await page.locator("#restore-full-pw[aria-invalid=true]").waitFor();
+    await themes("Restore a full backup, a wrong backup password");
+    await page.locator("#restore-full-pw").fill("made-up backup");
+    await page.locator("#restore-full-mine").fill(password);
+    await page.locator("dialog .dialog__foot .btn--danger").click();
+    await page.locator("#full-restore-state .notice").waitFor();
+    await axe("Restore a full backup, restoring", "light");
+    await page.locator("#full-restore-state .notice[data-tone=success]").waitFor({ timeout: 20000 });
+    await themes("Restore a full backup, restored");
+    await page.getByRole("button", { name: "Show Reelix's backups" }).click();
+    await page.locator("#rs-password").fill("made-up");
+    await page.keyboard.press("Enter");
+    await page.locator("#rs-place").waitFor();
+    await page.locator("#rs-every").selectOption("14");
+    await page.locator("#rs-every + .saved-note:not([hidden])").waitFor();
+    await themes("Reelix's backups, the settings with a saved note");
+    await page.locator("#rs-place").selectOption("media");
+    await page.locator("[data-restart-notice]").waitFor();
+    await themes("Reelix's backups, the new folder waits for a restart");
+    await page.locator("section[aria-labelledby=rs-backups-h] li.row button").first().click();
+    await page.getByRole("dialog", { name: "Restore this Reelix backup?" }).waitFor();
+    await themes("Reelix's backups, the restore dialog");
+    await page.keyboard.press("Escape");
+    await page.evaluate(async () => {
+      await api("/api/reelix/admin/system/backup-place", { method: "POST", body: { password: "made-up", place: "settings" } });
+      await api("/api/reelix/admin/system/backup-settings", { method: "POST", body: { password: "made-up", every: 7, keep: 5 } });
+    });
+    console.log("checked full backups and Reelix's backups");
+  } catch (e) { add("system-backup.html, full backups and Reelix's backups", "page", "error", e.message.split("\n")[0]); }
 }
 
 // Slide-out and dialog behaviour (once; every page uses the same code): Display, then a confirm dialog.

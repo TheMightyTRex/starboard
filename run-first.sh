@@ -1750,7 +1750,7 @@ code="$( { [ -f data/setup-token ] && [ ! -L data/setup-token ] && head -c 64 da
 url="http://localhost:$port/"
 [ -n "$code" ] && url="http://localhost:$port/setup.html#code=$code"
 
-# The end: "Done", where to open Starboard and the setup code, then the window goes back to the terminal.
+# The end: "Done", where to open Starboard and the set-up code, then the window goes back to the terminal.
 page 9
 KEYS=""; MENU_RIGHT=""
 [ "$FANCY" = 1 ] && menu
@@ -1758,7 +1758,7 @@ ok "Starboard is installed and running."
 say ""
 card "Open Starboard" "On this computer" "http://localhost:$port"
 [ -n "$lan" ] && card_row "On other devices" "http://$lan:$port"
-[ -n "$code" ] && card_row "Setup code" "$code"
+[ -n "$code" ] && card_row "Set-up code" "$code"
 card_row "Ask again" "cd ${DIR/#$HOME/~} && ./install.sh"
 card_row "Update later" "cd ${DIR/#$HOME/~} && ./update.sh"
 # DASH-89: a server with no desktop usually runs with no screen either.
@@ -1766,10 +1766,10 @@ card_row "Update later" "cd ${DIR/#$HOME/~} && ./update.sh"
 card_end
 say ""
 if [ "$DESKTOP" = 1 ]; then
-  para "The set-up continues in your browser: it opens now, with the setup code filled in. If it does not open, or you close it, go to http://localhost:$port"
+  para "The set-up continues in your browser: it opens now, with the set-up code filled in. If it does not open, or you close it, go to http://localhost:$port"
   xdg-open "$url" >/dev/null 2>&1 &
 else
-  para "Finish setting up in a browser on a phone or another computer at home: open the address for other devices and enter the setup code."
+  para "Finish setting up in a browser on a phone or another computer at home: open the address for other devices and enter the set-up code."
 fi
 [ "$NEW_GROUP" = 1 ] && para "Sign out and back in once, so docker commands work in new terminals too."
 finish

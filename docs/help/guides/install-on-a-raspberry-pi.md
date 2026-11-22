@@ -55,7 +55,7 @@ Follow [Start Starboard on Raspberry Pi OS](../topics/start-on-raspberry-pi-os.m
 ## Step 4: Create your password and finish setting up
 
 On your computer or phone, open `http://starboard-pi.local:8095`, with your Pi's name in place of `starboard-pi`.
-Enter the setup code and choose a password: follow [Create your password and sign in](../topics/create-your-password.md).
+Enter the set-up code and choose a password: follow [Create your password and sign in](../topics/create-your-password.md).
 If the name does not open, use the Pi's address instead: read
 [Open Starboard from a phone or another computer](../topics/open-from-another-device.md).
 
@@ -78,5 +78,7 @@ If the name does not open, use the Pi's address instead: read
 such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
+
+**Need help?** Ask on the [Starboard Discord support server](https://discord.gg/xN9bf2H4vv).
 
 <!-- /footer -->

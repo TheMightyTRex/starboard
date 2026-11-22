@@ -31,7 +31,7 @@ browser on a phone or another computer. It takes about 20 minutes.
    Enter. Nothing appears as you enter it.
 5. At **How do you want to finish setting up?**, press Enter for **Here in the terminal (recommended)**. Read
    [Set up Starboard in the terminal, with no browser](set-up-in-the-terminal.md). To use a browser instead, choose
-   **In a browser**, then open the address it shows on a phone or another computer and enter the setup code.
+   **In a browser**, then open the address it shows on a phone or another computer and enter the set-up code.
 
 The Run first script installs git and Docker, which a new Debian does not have. Read
 [Set up everything with the Run first script](run-first.md#steps) for what each step does.
@@ -84,5 +84,7 @@ The Run first script installs git and Docker, which a new Debian does not have. 
 such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
+
+**Need help?** Ask on the [Starboard Discord support server](https://discord.gg/xN9bf2H4vv).
 
 <!-- /footer -->

@@ -57,7 +57,7 @@ starts its installer. Enter `a` at its first question for accessible mode, which
 installation.
 
 **With a desktop: set up in the browser.** When the installer finishes, the set-up page opens in your browser by
-itself, with the setup code filled in.
+itself, with the set-up code filled in.
 
 **With no desktop: set up in the terminal.** On the server, or connected to it over SSH, the script finds there is
 no desktop and asks every set-up question in the terminal instead: your password, your apps and your download
@@ -172,7 +172,7 @@ In the help centre: [Install with the installer](https://themightytrex.github.io
 
 ## Security
 
-- **One password,** stored only as a hash, with the installer's one-time setup code for the first one. Five wrong
+- **One password,** stored only as a hash, with the installer's one-time set-up code for the first one. Five wrong
   attempts lock an address out for 15 minutes, and changes to the computer ask for the password again.
 - **Your keys stay on the server,** readable by your user only, and are never sent to the browser.
 - **Only the access you allow.** Starboard runs as your user in a read-only container with no extra privileges.
@@ -205,5 +205,7 @@ ISC licence (`tools/LICENSE-lucide.txt`).
 such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
+
+**Need help?** Ask on the [Starboard Discord support server](https://discord.gg/xN9bf2H4vv).
 
 <!-- /footer -->

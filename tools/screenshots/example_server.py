@@ -346,6 +346,48 @@ def _example_full_backups():
          "size": 640 * 1000 ** 2 + n * 3 * 1000 ** 2, "created": d.isoformat(timespec="seconds"), "version": "0.15.0", "pictures": False,
          "apps": apps, "site_name": "Harbour", "config_dir": "/srv/media-stack/config"}
         for n, d in enumerate(day - dt.timedelta(days=7 * k) for k in range(2))]
+    # Each copy is checked after it is made (DASH-381): the newest here read back as written; the older one was
+    # made before Starboard checked, so it has no mark.
+    newest = full_backup.found("/x")[0]
+    (DATA / full_backup.CHECKED).write_text(json.dumps({newest["name"]: {"size": newest["size"], "at": day.timestamp() + 95}}))
+
+    # Restore on this server (DASH-387): nothing is restored here. The made-up backup password is "made-up backup";
+    # another is refused as the real one is. The steps pass in a few seconds, then it says it finished.
+    def start_restore(data_dir, version, file_path, password, apply_settings, site_name=""):
+        if password != "made-up backup":
+            raise full_backup.BackupError("That password does not open this backup")
+        made = next((b["created"] for b in full_backup.found(os.path.dirname(file_path)) if b["path"] == file_path), None)
+        safety = f"{os.path.dirname(file_path)}/starboard-full-{dt.datetime.now():%Y-%m-%d-%H%M%S}.starboard"
+        full_backup._tell(data_dir, state="running", step="Making a full backup of how things are now", started=time.time(), finished=None, error="",
+                          file=file_path, safety="", stopped=[], created=made, apps=[], count=None)
+
+        def steps():
+            for step in ("Stopping the apps", "Putting the backup back", "Starting the apps again"):
+                time.sleep(1.2)
+                full_backup._tell(data_dir, step=step, safety=safety)
+            time.sleep(1.2)
+            full_backup._tell(data_dir, state="done", step="", finished=time.time(), apps=apps, count=len(apps))
+        threading.Thread(target=steps, daemon=True).start()
+    full_backup.start_restore = start_restore
+
+
+def _example_reelix_backup_place():
+    """Where Reelix keeps its backups (DASH-386): its settings on the system disk and the media folder on its own
+    disk, so the choice is offered. Choosing is remembered while the example server runs; nothing is moved."""
+    from starboard import reelix_backup_place as rbp
+    kept = {"chosen": "settings", "now": "settings"}
+    choices = [{"key": "settings", "folder": "/srv/media-stack/config/reelix/backups", "disk": "the system disk", "system": True, "mount": "/"},
+               {"key": "media", "folder": "/srv/media/backups/reelix", "disk": "WDC WD40EFRX", "system": False, "mount": "/srv/media"}]
+    rbp.place = lambda data_dir, running_folder: {**kept, "restart": kept["now"] != kept["chosen"], "choices": choices, "other": "", "same_disk": False}
+
+    def choose(data_dir, key, backups, restore_waiting, run_in=None):
+        if key not in rbp.PLACES:
+            raise ValueError("Choose next to Reelix's settings or the media folder")
+        kept["chosen"] = key
+        return "Reelix keeps its backups " + ("next to its settings" if key == "settings" else "in the media folder") + " from its next start"
+    rbp.choose = choose
+
+
 def _example_tdarr():
     """Tdarr's settings (DASH-306), on Settings, Tdarr and on the Tdarr plug-in page's Settings topic: made-up answers
     as Tdarr gives them, kept while the example server runs. Nothing is sent anywhere."""
@@ -2053,6 +2095,7 @@ def main():
     _example_dispatcharr()
     _example_folders(DATA)
     _example_full_backups()
+    _example_reelix_backup_place()
     _example_copies(DATA)
     _example_tdarr()
     _example_self_update()

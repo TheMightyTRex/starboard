@@ -10,6 +10,7 @@ import pathlib
 import re
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+DISCORD = "https://discord.gg/xN9bf2H4vv"  # the support server's permanent invitation (DASH-526)
 START = "<!-- footer: download rights -->"
 END = "<!-- /footer -->"
 FOOTER = f"""{START}
@@ -20,6 +21,8 @@ FOOTER = f"""{START}
 such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
+
+**Need help?** Ask on the [Starboard Discord support server]({DISCORD}).
 
 {END}
 """
