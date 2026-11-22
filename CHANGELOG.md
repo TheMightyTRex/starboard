@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Fixed
+- **The VPN card said No VPN on a server that uses one (owner, 22 November 2026):** when Gluetun was kept from an earlier set-up, Starboard had no connection to ask it, and the dashboard and Downloads said No VPN although every download went through it. Starboard now reads the VPN's own health check from its container, so the card says Connected or Not connected. If the state cannot be read, it says Not known, never No VPN.
+
 ## [0.26.0] (21 November 2026)
 
 ### Added
