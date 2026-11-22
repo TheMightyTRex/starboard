@@ -1,0 +1,79 @@
+name: Something is not working
+description: Report a problem with Starboard
+labels:
+- bug
+body:
+- type: markdown
+  attributes:
+    value: Before you report, ask on the [Discord support server](https://discord.gg/xN9bf2H4vv). A moderator can tell you
+      whether it is a bug, or help you fix it without one. Hide passwords, API keys, tokens and addresses in anything you
+      paste.
+- type: input
+  id: version
+  attributes:
+    label: Starboard version
+    description: Find it on Settings, then About and updates.
+    placeholder: 0.26.0
+  validations:
+    required: true
+- type: dropdown
+  id: area
+  attributes:
+    label: Where it happens
+    options:
+    - Installing or updating Starboard
+    - Library
+    - Discover and Search
+    - Activity and downloads
+    - System
+    - Settings
+    - Plug-ins
+    - Something is hard to use with my device or assistive technology
+    - Something else
+  validations:
+    required: true
+- type: textarea
+  id: happened
+  attributes:
+    label: What happened
+    description: Say what you did and what you got.
+  validations:
+    required: true
+- type: textarea
+  id: expected
+  attributes:
+    label: What you expected to happen
+  validations:
+    required: true
+- type: textarea
+  id: steps
+  attributes:
+    label: How to make it happen again
+    description: One step on each line.
+    placeholder: '1.
+
+      2.
+
+      3.'
+  validations:
+    required: true
+- type: textarea
+  id: details
+  attributes:
+    label: Details from Starboard
+    render: text
+    description: Go to System, then Logs, activate detailed logging, repeat the problem, then select Copy the details and
+      paste them here. Starboard removes passwords, API keys, addresses and names from the details it copies. Read them before
+      you post all the same.
+- type: textarea
+  id: more
+  attributes:
+    label: Anything else
+    description: Screenshots help. Add a description of each one, or say what it shows.
+- type: checkboxes
+  id: private
+  attributes:
+    label: Before you send
+    options:
+    - label: I have read what I pasted and removed anything private.
+      required: true

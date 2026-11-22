@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+- name: Ask on the Discord support server
+  url: https://discord.gg/xN9bf2H4vv
+  about: Ask for help first. A moderator can tell you whether it is a bug.

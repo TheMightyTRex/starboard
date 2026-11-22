@@ -22,7 +22,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from . import start as how_to_start
 from . import places  # location and keyboard, both set-ups' first questions (DASH-259)
 from . import library  # the Library and Search from Reelix (DASH-163, DASH-162)
-from . import access, auth, backup, helpdocs, setup_left, reelix_admin, reelix_move, reelix_setup, reelix_version, reelix_waiting, requests_route, tasklist, takeover, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
+from . import access, activity_log, auth, backup, helpdocs, setup_left, reelix_admin, reelix_move, reelix_setup, reelix_version, reelix_waiting, requests_route, tasklist, takeover, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
 from .config import GENERAL_RIGHTS, Config, ConfigError, general_right, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -155,6 +155,7 @@ class App:
         self._feedback_keys = {}  # Snaglist's key -> the session it was given to
         self._feedback_lock = threading.Lock()
         self.log = logs.start(data_dir, lambda: self.config.data["logs"], lambda: [self.config.data.get("site_name", "")])
+        activity_log.start(data_dir)  # Activity, History, Across apps (DASH-68): names the folder, opens nothing
         self.sessions = auth.Sessions(data_dir)
         if os.path.exists(os.path.join(data_dir, "reset-password")):
             self._reset_password(data_dir)
@@ -746,6 +747,8 @@ def _adopt_run(app, after_job, wait):
             try:
                 added = add_found(app, [{**i, "read_key": i.get("can_read_key", False)} for i in fresh])
                 logs.event("info", "install apps", f"Added to Starboard as they answered: {', '.join(added['added'])}")
+                for one in added["added"]:
+                    activity_log.note("added", str(one), f"{one} installed and added to Starboard")
             except Exception as e:  # noqa: BLE001  (logged; the person can add them in Manage apps)
                 logs.event("warning", "install apps", f"Could not add the new apps to Starboard: {e}")
         there = {i["key"] for i in items if i["key"] in keys}
@@ -1501,6 +1504,8 @@ class Handler(BaseHTTPRequestHandler):
                 incoming = self.body()
                 service_id = cfg.upsert_service(incoming)
                 logs.event("info", "apps", f"{'Changed' if incoming.get('id') else 'Added'} {str(incoming.get('name', 'an app'))[:60]}")
+                if not incoming.get("id"):
+                    activity_log.note("added", str(incoming.get("name", "An app")), f"{incoming.get('name', 'An app')} added to Starboard")
                 return self.json(200, {"id": service_id, "config": cfg.public()})
             if path == "/api/services/order" and method == "POST":
                 cfg.reorder_services(self.body().get("ids", []))
@@ -1615,6 +1620,22 @@ class Handler(BaseHTTPRequestHandler):
                 except services.ServiceError as e:
                     return self.error(502, f"Reelix said no: {e}")
                 return self.error(404, "Not found")
+            if path == "/api/activity-history" and method == "GET":  # History, Across apps (DASH-68)
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                try:
+                    page = int((q.get("page") or ["1"])[0] or 1)
+                    which = (q.get("which") or ["all"])[0]
+                    notes = []
+                    if page == 1 and which == "all":  # the apps' own newest entries, read only when the page opens
+                        notes = services.cached("activity-history-gather", 60, lambda: activity_log.gather(app.data_dir, cfg.data["services"]))
+                    return self.json(200, {**activity_log.listing(app.data_dir, which, page), "notes": notes})
+                except ValueError as e:
+                    return self.error(400, str(e))
+            if path == "/api/activity-history/delete" and method == "POST":
+                gone = activity_log.clear(app.data_dir)
+                said = f"History across apps deleted: {gone} {'entry' if gone == 1 else 'entries'}. Each app keeps its own history"
+                logs.event("info", "history", said)
+                return self.json(200, {"said": said})
             if path == "/api/reelix-history/keep" and method == "PUT":  # History, how much to keep (12 November 2026)
                 from . import activity
                 days = int(self.body().get("days") or 0)
@@ -1703,14 +1724,19 @@ class Handler(BaseHTTPRequestHandler):
                     return self.error(400, str(e))
                 except services.ServiceError as e:
                     return self.error(502, str(e))
-            if path in ("/api/wanted", "/api/wanted/search"):
+            if path in ("/api/wanted", "/api/wanted/search", "/api/wanted/stop"):
                 from . import wanted  # DASH-207: Missing and Below the quality wanted, from Reelix
                 try:
-                    if method == "GET":
+                    if path == "/api/wanted/stop" and method == "POST":  # DASH-524: stop following the ticked ones
+                        b = self.body()
+                        said = wanted.stop(cfg.data["services"], str(b.get("kind", "")), b.get("ids"))
+                        logs.event("info", "wanted", said)
+                        return self.json(200, {"said": said})
+                    if path == "/api/wanted" and method == "GET":
                         q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
                         return self.json(200, wanted.listing(cfg.data["services"], q.get("which", ["missing"])[0],
                                                              q.get("kind", ["movie"])[0], int(q.get("page", ["1"])[0] or 1)))
-                    if method == "POST":
+                    if path == "/api/wanted/search" and method == "POST":
                         b = self.body()
                         said = wanted.search(cfg.data["services"], str(b.get("which", "")), str(b.get("kind", "")), b.get("ids"))
                         logs.event("info", "wanted", said)
@@ -3359,6 +3385,7 @@ class Handler(BaseHTTPRequestHandler):
                 item = pa.install(app.data_dir, pa.builtins()[pid], media, builtin=True)
             pa.keep_logo(app.data_dir, pid, pa.fetch_logo(pa.builtins()[pid], "builtin")[0])  # API 1.14
             logs.event("info", "plug-ins", f"Added {item['name']}, built into Starboard")
+            activity_log.note("added", item["name"], f"{item['name']} plug-in added")
             not_on = "" if (pa.listing_state(app.data_dir, pid) == "enabled") else pa.activate_after_install(
                 app.data_dir, pid, services=app.config.data["services"])
             app.plugin_clock.ensure()
@@ -3465,6 +3492,7 @@ class Handler(BaseHTTPRequestHandler):
             if item["id"] in pa.FROM_SETUP.values():  # chosen in the set-up and now added: no more offer (DASH-399)
                 pa.drop_wanted(app.config, item["id"])
             logs.event("info", "plug-ins", f"Added {item['name']} {item['version']}")
+            activity_log.note("added", item["name"], f"{item['name']} plug-in added, version {item['version']}")
             not_on = pa.activate_after_install(app.data_dir, item["id"], services=app.config.data["services"])
             app.plugin_clock.ensure()
             app.plugin_idle.ensure()

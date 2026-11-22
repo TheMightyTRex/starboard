@@ -171,6 +171,9 @@ class Watch:
             return False
         self.state["alerted"][key] = time.time()
         logs.event("warning", "alert", f"{title}: {message}")
+        if level == "problem" and not key.startswith(("update:", "starboard-update:", "update-all:")):
+            from . import activity_log  # Activity, History, Across apps (DASH-68); updates write their own entry
+            activity_log.note("failed", "Starboard" if key.startswith(("backup", "full-backup", "disk:")) else "", title, message, key=f"alert:{key}"[:120])
         from . import api_v1
         api_v1.publish("alert.raised", {"title": title, "message": message, "level": level})
         channel = self.settings().get("channel") or {}
@@ -372,6 +375,11 @@ class Watch:
         for d in sysinfo.snapshot(self.app.disks).get("disks", []):
             if d.get("total"):
                 lines.append(f"- {d['label']}: {round(d['used'] / d['total'] * 100)}% full")
+        from . import activity_log  # what the activity history holds for the week (DASH-68): one small file read
+        week = activity_log.week(self.app.data_dir) if getattr(self.app, "data_dir", None) else {}
+        if any(week.values()):
+            lines.append(f"This week: {week['added']} added, {week['failed']} failed, {week['upgraded']} upgraded. "
+                         "The list is in Activity, History, Across apps.")
         if channel.get("kind") in ("ntfy", "gotify", "webhook"):
             try:
                 send(channel, f"{name}: your week", "\n".join(lines), "info")

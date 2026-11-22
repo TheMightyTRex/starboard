@@ -26,6 +26,9 @@ The first summary comes on the next Monday, after 09:00 by the server's clock.
   [Check your disks' health](check-disk-health.md).
 - **Folders:** how full each folder on System, Storage is. Read
   [Check free space and what is using it](check-storage.md).
+- **This week:** how many things were added, failed and upgraded across your apps, when there were any. The
+  list is in **Activity**, then **History**, then **Across apps**. Read
+  [Check what was added, failed and upgraded across your apps](check-what-happened-across-your-apps.md).
 
 ## Things to note
 
