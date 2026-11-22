@@ -8,6 +8,7 @@ add features.
 ## [Unreleased]
 
 ### Changed
+- **A resting plug-in is never stopped while it works (DASH-516, lighter at rest):** a plug-in with `start: when_needed` now counts processor time as use as well as network traffic, so one that is converting a file or shrinking pictures stays up until it finishes. This makes it safe to let the helpers that only work on a schedule rest between jobs. `tools/measure-rest.sh` samples the containers and the disks at rest, read only, for before and after figures.
 - **About, redone (DASH-408; owner, 13 November 2026: "highlighting all the accessibility features and another section talking about it being a lean system"):** Settings, Updates, About now has a section on every accessibility feature (always on, chosen in Display, and how it is checked) and a section on how lean Starboard is, with figures measured on the server on 22 November 2026: Starboard's container 33.6 MiB of memory, 0.12% of one processor over 3 hours 38 minutes, a 102 MB image and a median page of 132,649 bytes compressed, beside Reelix, Jellyfin and qBittorrent measured at the same time. Help: [How lean Starboard is](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/how-lean-starboard-is.md) says how each figure was measured, what it does not show, and how to measure your own server; `tools/measure-lean.sh` repeats the readings, read only.
 
 ## [0.27.0] (22 November 2026)

@@ -188,6 +188,23 @@ class Idle(Base):
         self.assertEqual(plugin_watch.resting(self.tmp.name, "on-demand"), ["main"])
         self.assertIn("stop plugin-on-demand-main", self.compose.call_args[0][2])
 
+    def test_a_plug_in_busy_with_no_network_is_not_rested_in_the_middle(self):
+        """DASH-516: a conversion uses the processor, not the network, so processor time counts as use."""
+        from starboard import containers
+        main = {"name": "main"}
+        reads = iter([(1000, 0), (1100, 40_000_000), (1200, 2_000_000_000), (1300, 2_010_000_000)])
+
+        def docker(method, path, timeout=5):
+            net, cpu = next(reads)
+            return {"networks": {"eth0": {"rx_bytes": net, "tx_bytes": 0}}, "cpu_stats": {"cpu_usage": {"total_usage": cpu}}}
+        plugin_watch._traffic.pop("on-demand", None)
+        with mock.patch.object(containers, "docker", docker):
+            first = plugin_watch._moved("on-demand", main, 1000.0)
+            self.assertEqual(first, plugin_watch._started)  # first look: unknown, so as it was
+            self.assertEqual(plugin_watch._moved("on-demand", main, 1060.0), plugin_watch._started)  # a health check
+            self.assertEqual(plugin_watch._moved("on-demand", main, 1120.0), 1120.0)  # 2 seconds of processor time: busy
+            self.assertEqual(plugin_watch._moved("on-demand", main, 1180.0), 1120.0)  # quiet again
+
     def test_only_the_main_container_rests(self):
         self.m["containers"][0].pop("start")
         with open(os.path.join(self.where, "manifest.json"), "w") as f:
