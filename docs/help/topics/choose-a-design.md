@@ -23,11 +23,18 @@ their own in the Display panel.
 3. Choose a design, such as **Tiles**. The change applies at once, and Starboard confirms with **Default
    design: Tiles**.
 
+   ![Settings, General, Appearance, with Default design (step 2) and Tiles (step 3) outlined, with example data](../images/choose-a-design-1-default.png)
+
 ### Choose your own design
 
 1. Select **Display** in the header of any page. A side panel opens, called **Display and accessibility**.
+
+   ![The Apps page, with Display in the header (step 1) outlined, with example data](../images/choose-a-design-2-display.png)
+
 2. Under **Design**, choose a design. The Apps page changes at once.
 3. Select **Done**.
+
+   ![The Display and accessibility panel, with Done (step 3) outlined, with example data](../images/choose-a-design-3-own.png)
 
 To go back to the design for everyone, choose **Use the dashboard's default** under **Design**.
 

@@ -22,9 +22,14 @@ Starboard. Nothing you do here changes the app itself.
 5. Select **Save app**. For Sonarr, Radarr, Lidarr and Readarr the button is **Save and continue**: check the
    **Adding options**, then select **Save adding options**.
 
+   ![The Edit Jellyfin panel, with Test connection (step 4) and Save app (step 5) outlined, with example data](../images/change-or-remove-an-app-1-edit.png)
+
 ### Hide an app without removing it
 
 1. In **Manage apps**, select **More actions** (three dots) for the app.
+
+   ![Manage apps with the More actions menu open, with More actions (step 1) outlined, with example data](../images/change-or-remove-an-app-2-more.png)
+
 2. Select **Hide from the dashboard**. The app stays in **Manage apps**, marked hidden from the dashboard.
 3. To bring it back, open the same menu and select **Show on the dashboard**.
 
@@ -37,6 +42,9 @@ Starboard. Nothing you do here changes the app itself.
 
 1. In **Manage apps**, select **More actions** for the app, then **Remove**. The app's **Edit** panel also
    has **Remove**.
+
+   ![The More actions menu of an app, with Remove (step 1) outlined, with example data](../images/change-or-remove-an-app-3-remove.png)
+
 2. Starboard asks you to confirm. Select **Remove** and the app's name, such as **Remove Jellyfin**.
 
 ## Things to note

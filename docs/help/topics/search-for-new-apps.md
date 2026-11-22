@@ -17,11 +17,20 @@ do not need to enter each address, and with Docker access Starboard can fill in 
 
 1. Go to **Settings**, then **Apps**, then **Manage apps**.
 2. Select **Search for new apps**. A side panel opens, and Starboard searches for apps.
+
+   ![Settings, Apps, Manage apps, with Search for new apps (step 2) outlined, with example data](../images/search-for-new-apps-1-button.png)
+
 3. Read the list. Each app shows its address and whether it needs an API key. Every app starts ticked.
 4. Untick any app you do not want on your dashboard.
+
+   ![The Search for new apps panel, with the first app's tick box (step 4) outlined, with example data](../images/search-for-new-apps-2-list.png)
+
 5. If **Fill in API keys for me** is shown, leave it ticked to have Starboard read each key from the app's own
    settings file.
 6. Select **Add the ticked apps**. Starboard adds them to **Manage apps** and closes the panel.
+
+   ![The Search for new apps panel, with Add the ticked apps (step 6) outlined, with example data](../images/search-for-new-apps-3-add.png)
+
 7. If Starboard says some apps still need their API keys, select **Edit** for each one and paste its key.
    Read [Find an app's API key](find-an-api-key.md#where-each-app-keeps-its-key).
 

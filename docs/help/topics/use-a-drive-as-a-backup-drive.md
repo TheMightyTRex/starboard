@@ -33,8 +33,17 @@ matters somewhere else. Read [Pools are not backups](../basics/what-is-a-drive-p
 ## Steps
 
 1. Go to **System**, then **Storage**, then **Pool**, and select **Add a disk**.
+
+   ![System, Storage, Pool, with Add a disk (step 1) outlined, with example data](../images/use-a-drive-as-a-backup-drive-1-add.png)
+
 2. Choose the disk, then select **Continue to What it is for**.
+
+   ![Add a disk, Choose a disk, with Continue to What it is for (step 2) outlined, with example data](../images/use-a-drive-as-a-backup-drive-2-choose.png)
+
 3. Under **Use it**, select **Parity disk (recommended backup)** or **Copy disk**.
+
+   ![Add a disk, What it is for, with Parity disk (step 3) outlined, with example data](../images/use-a-drive-as-a-backup-drive-3-use.png)
+
 4. For a copy disk, enter the folders in the pool to copy, with commas between them, such as `media, photos`.
 5. Select **Continue to Check**, read the check, then select **Continue to Confirm**.
 6. Enter the end of the serial number if the disk is being erased, and your Starboard password.

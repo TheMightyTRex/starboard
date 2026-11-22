@@ -19,9 +19,18 @@ restarts for a moment while it updates, and so does anything that depends on it.
    version, **Latest** version and **Status**.
 2. Select **Check**, or **Check again** after the first check. Starboard asks where each app's downloads come
    from whether there is a newer version. This can take a minute.
+
+   ![System, Apps, Updates, with Check (step 2) outlined, with example data](../images/update-your-apps-1-check.png)
+
 3. Read each app's **Status**: **Update available**, **Up to date** or **Big change: check first**.
+
+   ![The list of apps and their status after Check, with an app's row and its Status (step 3) outlined, with example data](../images/update-your-apps-2-list.png)
+
 4. To update one app, select **Update** for it. To update every app marked **Update available**, select
    **Update all**.
+
+   ![System, Apps, Updates, with Update all (step 4) outlined, with example data](../images/update-your-apps-3-all.png)
+
 5. Starboard asks you to confirm. Select **Update** and the app's name, or **Update** and the number of apps.
 6. Wait while the status shows **Downloading**, then **Installing**. **Updated** means the app is running the
    new version.

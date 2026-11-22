@@ -15,11 +15,19 @@ device you use, and every other browser and phone is signed out.
 
 1. Go to **Settings**, then **Security**.
 2. Find **Password**.
+
+   ![Settings, Security, Password, with Password (step 2) outlined, with example data](../images/change-your-password-1-page.png)
+
 3. In **Current password**, enter the password you use now.
 4. In **New password**, enter the new one. It must have at least 10 characters. A short sentence is a good
    choice.
+
+   ![The password form, with Current password (step 3) and New password (step 4) outlined, with example data](../images/change-your-password-2-fields.png)
+
 5. In **Enter the new password again**, enter the new password a second time.
 6. Select **Change password**.
+
+   ![The password form, with Enter the new password again (step 5) and Change password (step 6) outlined, with example data](../images/change-your-password-3-change.png)
 
 Beside the button, Starboard shows "Password changed. Everyone else is signed out". The form empties.
 

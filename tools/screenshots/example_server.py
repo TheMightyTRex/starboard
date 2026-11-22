@@ -333,6 +333,26 @@ def _example_update_all():
         path.write_text(json.dumps(json.loads(path.read_text()) + [batch]))
 
 
+def _example_saved_copies(data):
+    """Settings, Restore, and System, Backup and restore, Copies Starboard saved: two made-up copies of the settings, one
+    made before an update changed them and one before a restore, so the list the help describes has something in it."""
+    import shutil
+    from starboard import config as settings_config
+    folder = os.path.join(str(data), "backups")
+    source = os.path.join(str(data), "config.json")
+    if not os.path.exists(source):
+        return
+    os.makedirs(folder, mode=0o700, exist_ok=True)
+    versions = {}
+    for days, reason, version in ((9, "before-migration", "0.25.0"), (3, "before-restore", "0.26.0")):
+        when = dt.datetime.now() - dt.timedelta(days=days)
+        name = f"config-{when:%Y-%m-%d-%H%M%S}-{reason}.json"
+        shutil.copy2(source, os.path.join(folder, name))
+        os.utime(os.path.join(folder, name), (when.timestamp(), when.timestamp()))  # the list says when each was made
+        versions[name] = version
+    settings_config._write_versions(folder, versions)
+
+
 def _example_full_backups():
     """System, Backup and restore, Full without media (DASH-260): the media folder on its own disk, so the page says
     which disk the copies go on, and two made-up copies in the folder. Nothing is read from this computer."""
@@ -2112,6 +2132,7 @@ def main():
         rec["spotify_was_connected"] = True
         reelix_direct_health._write(str(DATA), rec)
     server, app = make_server("127.0.0.1", PORT, str(DATA))
+    _example_saved_copies(DATA)  # after the settings file is written
     threading.Thread(target=server.serve_forever, daemon=True).start()
     if app.needs_setup:
         password = secrets.token_urlsafe(12)

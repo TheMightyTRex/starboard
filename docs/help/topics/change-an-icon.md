@@ -19,9 +19,17 @@ collection, the web address of a picture, or a picture file of your own.
 1. Find the icon's name in the [dashboard-icons collection](https://github.com/homarr-labs/dashboard-icons). The
    name is the file name without its ending, such as `jellyfin` or `home-assistant`.
 2. Go to **Settings**, then **Apps**, then **Manage apps**, and select **Edit** for the app.
+
+   ![Settings, Apps, Manage apps, with Edit beside Jellyfin (step 2) outlined, with example data](../images/change-an-icon-1-edit.png)
+
 3. In **Icon**, enter the name. Or enter the full address of an SVG or PNG picture, starting with `https://`.
+
+   ![The Edit Jellyfin panel, with Icon (step 3) outlined, with example data](../images/change-an-icon-2-icon.png)
+
 4. Select **Save app**, or **Save and continue** for Sonarr, Radarr, Lidarr and Readarr. Starboard downloads
    the icon once and keeps a copy.
+
+   ![The Edit Jellyfin panel, with Save app (step 4) outlined, with example data](../images/change-an-icon-3-save.png)
 
 ### Use your own picture
 

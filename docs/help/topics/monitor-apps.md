@@ -18,8 +18,15 @@ disks. With one install option, it also lists how much processor and memory each
 1. Go to **System**, then **Overview**, then **Monitor**. The charts start after a few seconds, and show the
    last 3 minutes.
 2. Read the charts: **Processor**, **Memory**, **Processor temperature**, **Network** and **Disk activity**.
+
+   ![System, Overview, Monitor, with the charts (step 2) outlined, with example data](../images/monitor-apps-1-charts.png)
+
+   ![Monitor, with the Network chart (step 2) outlined, with example data](../images/monitor-apps-2-network.png)
+
 3. Find **Apps**. It lists the 12 busiest apps, with each one's **Processor** and **Memory**.
 4. Optional: select **Pause** to hold the charts still while you read them. Select **Pause** again to carry on.
+
+   ![Monitor with the charts paused, with Pause (step 4) outlined, with example data](../images/monitor-apps-3-pause.png)
 
 ## Things to note
 

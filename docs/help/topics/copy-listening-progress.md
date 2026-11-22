@@ -28,6 +28,8 @@ Audiobookshelf into your Audiobookshelf. At the end, each person carries on from
 3. Enter the **Server address**, such as `http://192.168.1.20:8096`, and the **Token or API key**.
 4. Select **Read the progress**.
 
+   ![Settings, Audiobookshelf, Copy listening progress, with Read from (step 2) and Read the progress (step 4) outlined, with example data](../images/copy-listening-progress-1-read.png)
+
 Starboard shows "Reading the progress. This can take a minute or two." When it ends, it shows **Progress
 read** and a table of the accounts it found, with how many books each one has started and finished.
 
@@ -38,11 +40,16 @@ read** and a table of the accounts it found, with how many books each one has st
    the Jellyfin account `alex` goes to the Audiobookshelf user `Alex`.
 3. If accounts have the same names in both places, select **Match accounts with the same name**.
 
+   ![The accounts found, with the Audiobookshelf user choice (step 2) and Match accounts with the same name (step 3) outlined, with example data](../images/copy-listening-progress-2-match.png)
+
 Each choice saves straight away.
 
 ### Apply the progress
 
 1. Select **Apply now**.
+
+   ![Copy listening progress, with Apply now (step 1) outlined, with example data](../images/copy-listening-progress-3-apply.png)
+
 2. When it ends, the **Applied** column shows how many books each account received.
 
 To keep applying progress as new books are scanned in, activate **Keep applying every hour**.

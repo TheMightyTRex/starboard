@@ -32,11 +32,20 @@ Everything also has the No-IP updater. Apps that need another app bring it with 
 
 1. Go to **Settings**, then **Apps**, then **Your install**. **Your install now** shows the install, which Reelix
    runs, the Usenet app, the apps and the memory they use.
+
+   ![Settings, Apps, Your install, with Your install now (step 1) outlined, with example data](../images/change-your-install-1-now.png)
+
 2. Under **Change your install**, choose **Basics**, **Full install** or **Everything**. Each one says what it adds or
    takes away.
+
+   ![Your install, with Change your install (step 2) outlined, with example data](../images/change-your-install-2-change.png)
+
 3. Under **Usenet app**, choose **NZBGet** or **SABnzbd**, if you want to change it.
 4. Under **Reelix**, choose the version, if you want to change it.
 5. Under **Make the change**, read the summary, enter **Your password**, then select **Change my install**.
+
+   ![Your install, Make the change, with Change my install (step 5) outlined, with example data](../images/change-your-install-3-make.png)
+
 6. Wait until Starboard shows **Your install is changed**. It then updates the dashboard and Reelix, and the page
    shows what was done.
 

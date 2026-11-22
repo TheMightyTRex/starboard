@@ -34,6 +34,9 @@ assistant is not built yet.
 1. Go to **Settings**, then **Security**, then **API keys**.
 2. Under **AI assistants**, activate **Let AI assistants connect**. Starboard says **Active** and shows the
    **Address for the assistant**, such as `http://192.0.2.10:8095/api/v1/mcp`.
+
+   ![Settings, Security, API keys, with Let AI assistants connect (step 2) outlined, with example data](../images/connect-an-ai-assistant-with-mcp-1-switch.png)
+
 3. Select the copy button beside the address.
 
 ### Make the assistant's key
@@ -42,8 +45,14 @@ assistant is not built yet.
 2. In **Name it after what will use it**, enter the assistant's name, such as `AI assistant`. The name shows in the
    audit log.
 3. In **What it may do**, keep **Read only**. Starboard refuses a key that may also manage.
+
+   ![The Make a key panel, with the name (step 2) and What it may do (step 3) outlined, with example data](../images/connect-an-ai-assistant-with-mcp-2-key.png)
+
 4. In **What it may read**, tick only what the assistant needs, such as **Apps**, **Downloads** and **System**.
 5. In **Ends**, choose **In 90 days**.
+
+   ![The Make a key panel, with What it may read (step 4) and Ends (step 5) outlined, with example data](../images/connect-an-ai-assistant-with-mcp-3-scopes.png)
+
 6. In **Your Starboard password**, enter the password, then select **Make a key**.
 7. Select **Copy**. Starboard shows the key only this once. Select **Done**.
 

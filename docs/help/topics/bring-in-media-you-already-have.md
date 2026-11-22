@@ -22,11 +22,20 @@ You can do it as you set up Starboard (an optional step, after you choose where 
 2. **Where your media is:** select **Add a source**. Choose a place: **This computer**, one of your disks, a
    network share, **Another network share** to add one, or OneDrive or Google Drive. Open folders until you are in the one with your
    media, then select **Use this folder**. Each folder shows its size and what is in it.
+
+   ![Bring in media you already have, Where your media is, with Add a source (step 2) outlined, with example data](../images/bring-in-media-you-already-have-1-sources.png)
+
 3. Add every place your media is in. Put them in order with **Move up** and **Move down**: when the same title is
    in two places, the one higher in the list is brought in. Select **Continue**.
+
+   ![The list of places with Move up and Move down (step 3) outlined, with example data](../images/bring-in-media-you-already-have-2-order.png)
+
 4. **What is in each:** Starboard checks inside each place and counts the films, series, music, books and
    audiobooks it finds. If it is wrong about a folder, change it in **Change** beside that folder, or for the whole
    place in **Everything in it is**. Select **Continue**.
+
+   ![Bring in media you already have, with Continue to the next step (step 4) outlined, with example data](../images/bring-in-media-you-already-have-3-continue.png)
+
 5. **Check names:** each title has its new name and place, checked with Reelix. They are in three lists:
    - **Matched:** ready to copy.
    - **Needs attention:** choose the right match, or **Leave it where it is**, then select **Save**.

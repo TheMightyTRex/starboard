@@ -21,13 +21,22 @@ these ways:
 
 1. Go to **System**, then **Storage**.
 2. Read the tiles: **Total space**, how much is **Used**, and how many folders are over 90% full.
+
+   ![System, Storage, with the tiles (step 2) outlined, with example data](../images/check-storage-1-tiles.png)
+
 3. Find each folder in the list, fullest first. Each one says **Healthy**, **Nearly full** or **Not found**.
+
+   ![System, Storage, with the list of folders and their state (step 3) outlined, with example data](../images/check-storage-2-folder.png)
+
 4. Select a folder to read its path, its file system, and how much is used and free.
 
 ### Sort the space by type
 
 1. On the Storage page, find **What is using the space**.
 2. Select **Sort by type now**. The button says **Sorting by type…** while Starboard reads the folders.
+
+   ![What is using the space, with Sort by type (step 2) outlined, with example data](../images/check-storage-3-sort.png)
+
 3. Wait. A large disk can take a few minutes. The charts then show the space by type, with free space.
 
 To sort again later, select **Sort by type again**.

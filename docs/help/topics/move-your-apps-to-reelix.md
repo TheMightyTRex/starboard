@@ -22,6 +22,8 @@ requests. Your media files stay where they are, and your old apps are not change
 Starboard can do these steps for you, with the keys filled in: read
 [Take over the apps you already run](take-over-your-apps.md#steps). To do them in Reelix yourself:
 
+![Apps you already run, with Step 1, move them into Reelix, outlined, with example data](../images/move-your-apps-to-reelix-1-step1.png)
+
 1. In Reelix, go to **System**, then **Migrate**.
 2. Move **Prowlarr** first, so your indexers come from one place. The indexers Prowlarr gave your other apps are
    then left out of those, as they should be.
@@ -29,8 +31,13 @@ Starboard can do these steps for you, with the keys filled in: read
    API key (Settings, General in that app), select **Test connection**, then **Preview migration**. Read the list,
    then select **Start migration**.
 4. Move **Jellyseerr** or **Seerr** last, for your users and requests.
+
+   ![Apps you already run, with Step 2, requests, which moves Jellyseerr or Seerr last (step 4), outlined, with example data](../images/move-your-apps-to-reelix-2-requests.png)
+
 5. Leave **Search for missing items after adding them** off for the first move. Reelix then finds your files
    without downloading anything.
+
+   ![Apps you already run, with Show what moves, which lists what Reelix adds from each app (step 3), outlined, with example data](../images/move-your-apps-to-reelix-3-hold.png)
 
 Reelix then links each file in your folders to its film or episode. On a pool of hard disks this takes about 20
 seconds for each series, so over an hour for 200 series. Your library works in Reelix while it runs.

@@ -38,9 +38,17 @@ The hint under **API key** in Starboard also says where the key is for the kind 
 ## Steps
 
 1. Open the app's own web page.
+
+   ![Manage apps, with Edit beside Jellyfin outlined, with example data](../images/find-an-api-key-3-manage.png)
+
 2. Go to the place the table names for that app.
 3. Copy the key. Some apps have a copy button beside it. Otherwise, select the whole key and copy it.
+
+   ![Search for new apps, which reads each key from the app's own settings, with Add the ticked apps outlined, with example data](../images/find-an-api-key-2-search.png)
+
 4. In Starboard, paste the key into **API key** and select **Test connection**.
+
+   ![The Edit Jellyfin panel, with API key and Test connection (step 4) outlined, with example data](../images/find-an-api-key-1-field.png)
 
 ## Things to note
 

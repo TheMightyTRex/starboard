@@ -32,10 +32,15 @@ q2: What do you want to do?
 1. Go to **Settings**, then **General**, then **Logs and feedback**.
 2. Under **Send feedback**, deactivate **Send feedback**. Activate it again the same way.
 
+   ![Settings, General, Logs and feedback, with Send feedback (step 2) outlined, with example data](../images/send-feedback-1-logs-page.png)
+
 ## Send a report
 
 1. On the page with the problem, select **Feedback** in the side menu. On a phone, open the menu and
    select **Send feedback**.
+
+   ![The side menu, with Feedback (step 1) outlined, with example data](../images/send-feedback-2-rail.png)
+
 2. Choose what you want to send, such as **Something is broken** or **A new feature**.
 3. Choose what to show: **One thing on the page**, **A series of steps** or **Describe it in words**. For one
    thing, select the part of the page it is about.
@@ -52,6 +57,9 @@ q2: What do you want to do?
 
 1. Go to **Settings**, then **General**, then **Logs and feedback**.
 2. Under **Send feedback**, the saved reports are listed, newest first. Open **The full report** to read one.
+
+   ![Settings, General, Logs and feedback, where the reports saved in Starboard are listed (step 1), with example data](../images/send-feedback-3-saved.png)
+
 3. Select **Mark fixed** when it is dealt with. To delete one, select **More actions**, then **Remove**, then
    **Remove report**.
 4. Select **Download all** to save every report as one file.

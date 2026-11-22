@@ -28,6 +28,9 @@ Choose where alerts go. Starboard can send them to one of these:
    is optional.
 5. Select **Save where alerts go**. Starboard shows the time it saved, such as "Saved at 16:31".
 6. Select **Send a test alert**. Starboard shows "Test alert sent. Check that it arrived."
+
+   ![Settings, Alerts, Where alerts go, with Send alerts to (step 2), Save where alerts go (step 5) and Send a test alert (step 6) outlined, with example data](../images/activate-alerts-1-where.png)
+
 7. Check your phone. The test message says that alerts from Starboard reach you there.
 
 ### Activate watching
@@ -38,9 +41,13 @@ The rest of the Alerts page is under **More settings**.
 2. Under **Watching**, activate **Watch in the background**. Starboard now checks your apps with no page open.
 3. In **How often**, choose how often it checks. **Every 5 minutes** is plenty for a home server.
 
+   ![Settings, Alerts, Watching, with Watch in the background (step 2) and How often (step 3) outlined, with example data](../images/activate-alerts-2-watching.png)
+
 ### Choose what to alert on
 
 Under **What to alert on**, each alert is active unless you deactivate it. Each change applies at once.
+
+![Settings, Alerts, What to alert on, the list of alerts that can be active or inactive, with example data](../images/activate-alerts-3-what.png)
 
 - **An app stops answering:** after two checks in a row, so a restart does not alert. Another message comes
   when it answers again.

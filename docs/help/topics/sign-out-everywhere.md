@@ -11,8 +11,16 @@ after you lose a phone, or when you signed in on someone else's computer.
 1. Go to **Settings**, then **Security**.
 2. Activate **More settings**, if it is not active already.
 3. Under **Sessions**, find **Sign out**, then select **Sign out everywhere**.
+
+   ![Settings, Security, Sessions, with Sign out everywhere (step 3) outlined, with example data](../images/sign-out-everywhere-1-button.png)
+
 4. Starboard asks **Sign out everywhere?** In **Your Starboard password**, enter the password.
+
+   ![The question Sign out everywhere?, with Your Starboard password (step 4) outlined, with example data](../images/sign-out-everywhere-2-ask.png)
+
 5. Select **Sign out everywhere** to confirm.
+
+   ![The question Sign out everywhere?, with Sign out everywhere (step 5) outlined, with example data](../images/sign-out-everywhere-3-confirm.png)
 
 Starboard signs everyone out and shows the sign-in page. Everyone needs the password to sign in again.
 

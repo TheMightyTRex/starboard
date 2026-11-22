@@ -31,10 +31,18 @@ connections, how long files are kept (retention) and the price.
 
 1. Choose a provider and make an account on its site. Keep the details it gives you: the server address, the
    port, your user name, your password and how many connections you may use.
+
+   ![Settings, Apps, Manage apps, with the Usenet providers (step 1) outlined, with example data](../images/choose-a-usenet-provider-1-providers.png)
+
 2. Go to **Settings**, then **Downloads**, and find 'Usenet provider'.
 3. Enter the **Server address**, **Port**, **User name**, **Password** and **Connections**. Keep **Encrypted
    connection (recommended)** ticked, with port 563.
+
+   ![Settings, Downloads, Usenet, with Server address and the other details (step 3) outlined, with example data](../images/choose-a-usenet-provider-2-details.png)
+
 4. Select **Test the server**. When it says **It works**, select **Add it to NZBGet** (or **Add it to SABnzbd**).
+
+   ![The Usenet form, with Test the server and Add it to NZBGet (step 4) outlined, with example data](../images/choose-a-usenet-provider-3-test.png)
 
 The Usenet step of Install apps asks for the same details, so you can add the server while you install. Reelix
 already sends downloads to NZBGet or SABnzbd, so nothing else needs to change.
