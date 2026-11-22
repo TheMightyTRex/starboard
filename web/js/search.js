@@ -221,7 +221,8 @@ async function openPanel(r, opener) {
       const back = el("button", { type: "button", class: "btn btn--primary", "data-closes": true }, "Back to results");
       panel.setFoot([back, el("a", { class: "btn", href: "/downloads.html" }, icon("download"), "View downloads")]);
       back.focus();
-      toast(`Added ${done.title} to ${done.service_name}`);
+      // The panel says it in a notice with its own words, so no toast repeats it (DASH-309, R5); screen readers hear it here.
+      announce(`Added ${done.title} to ${done.service_name}`);
     } catch (e) {
       error.textContent = e.message;
       submit.disabled = false;
