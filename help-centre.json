@@ -18,6 +18,7 @@
   "footer_starts": "Download only what you have the right to",
   "search_example": "Enter what you want to do, such as \"add a disk\" or \"forgotten password\".",
   "front_door": true,
+  "discord": "https://discord.gg/xN9bf2H4vv",
   "footer_note": "**Download only what you have the right to.** Use the download apps only for files you have the right to download, such as open-source software, works in the public domain and your own backups. Downloading films, series, music or books without the copyright holder's permission is against the law in the UK and most other countries. Starboard does not host or provide any files, and you are responsible for what you download.",
   "strip_between": [
     "<!-- footer: download rights -->",

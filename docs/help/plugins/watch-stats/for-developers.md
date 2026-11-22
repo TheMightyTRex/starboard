@@ -63,4 +63,6 @@ such as open-source software, works in the public domain and your own backups. D
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 
+**Need help?** Ask on the [Starboard Discord support server](https://discord.gg/xN9bf2H4vv).
+
 <!-- /footer -->

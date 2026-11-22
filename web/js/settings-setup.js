@@ -776,6 +776,7 @@ async function startAbout() {
     facts.replaceChildren(el("dt", { text: "Version" }), el("dd", { class: "numeric", text: v.current }));
     if (v.since) facts.append(el("dt", { text: "Running since" }), el("dd", { text: new Date(v.since * 1000).toLocaleString("en-GB", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) }));
     if (repo) facts.append(el("dt", { text: "Source code" }), el("dd", {}, el("a", { href: `https://github.com/${repo}`, target: "_blank", rel: "noopener noreferrer" }, "Starboard on GitHub", el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))));
+    facts.append(el("dt", { text: "Support" }), el("dd", {}, el("a", { href: DISCORD_INVITE, target: "_blank", rel: "noopener noreferrer" }, "Discord support server", el("span", { class: "visually-hidden", text: " (opens in a new tab)" }), icon("external-link"))));
   };
   check.addEventListener("change", async () => {
     try {
