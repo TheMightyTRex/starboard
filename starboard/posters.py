@@ -3,6 +3,10 @@
 Sonarr, Radarr, Lidarr and Readarr keep small copies of every poster (250 pixels wide). The server fetches
 each one once, with the app's API key, and keeps it in data/posters for a week. Browsers only load posters
 from Starboard, so no image site sees them, and the posters still show when the internet is down.
+
+An app with no picture route, such as Reelix (DASH-65): the item's own image addresses, then Reelix's own API, then
+TMDB through the app's lookup, each at the image site's small size (TMDB w185). With none, the page shows its
+placeholder (the app's icon), and the item is left alone for an hour.
 """
 
 import os
@@ -10,6 +14,7 @@ import re
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 KINDS = {  # Starboard's name -> (app type, path under the app's API)
@@ -43,6 +48,8 @@ def get(service, kind, item_id, folder):
                 return f.read(), "image/jpeg"
     except OSError:
         pass
+    if _missing.get(path, 0) > time.monotonic():  # no picture anywhere when last asked (DASH-65)
+        return None
     url = service["url"].rstrip("/") + KINDS[kind][1].format(id=item_id)
     req = urllib.request.Request(url, headers={"X-Api-Key": service.get("api_key", ""), "User-Agent": "Starboard"})
     data = None
@@ -52,12 +59,18 @@ def get(service, kind, item_id, folder):
                 data = resp.read(MAX_BYTES + 1)
     except (urllib.error.URLError, OSError, ValueError):
         data = None
-    if data is None:  # Reelix (12 November 2026): no mediacover; its own API names the poster, fetched like the Library's
-        data = _from_reelix(service, kind, item_id)
-        if data is None:
+    if data is None or len(data) > MAX_BYTES:
+        # No picture route (Reelix, DASH-65): the item's own image addresses, then Reelix's own API, then TMDB through
+        # the app's lookup. With none, the page draws its placeholder, and the app is not asked again for an hour.
+        item = _app_json(service, ITEMS[kind][0].format(id=int(item_id)))
+        item = item if isinstance(item, dict) else {}
+        data = _from_item(service, kind, item) or _from_reelix(service, kind, item_id) or _from_tmdb(service, kind, item)
+        if data is None or len(data) > MAX_BYTES:
+            if len(_missing) >= MISSING_MAX:
+                _missing.clear()
+            _missing[path] = time.monotonic() + MISSING_KEEP
             return None
-    if len(data) > MAX_BYTES:
-        return None
+        _missing.pop(path, None)
     with _lock:
         tmp = path + ".tmp"
         with open(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "wb") as f:
@@ -65,6 +78,93 @@ def get(service, kind, item_id, folder):
         os.replace(tmp, path)
         _prune(folder)
     return data, "image/jpeg"
+
+
+# Fallbacks (DASH-65) -------------------------------------------------------------------------------------
+ITEMS = {  # Starboard's name -> (the item under the app's API, the picture's coverType)
+    "series": ("/api/v3/series/{id}", "poster"),
+    "movie": ("/api/v3/movie/{id}", "poster"),
+    "album": ("/api/v1/album/{id}", "cover"),
+    "book": ("/api/v1/book/{id}", "cover"),
+}
+MISSING_KEEP = 3600  # seconds an item with no picture anywhere is left alone
+MISSING_MAX = 500  # at most this many are remembered (about 60 KB), in memory only
+_missing = {}  # the picture's file path: time.monotonic() until which it is not looked for again
+
+
+def _app_json(service, path):
+    """A small JSON answer from the app's own API, or None."""
+    import json
+    req = urllib.request.Request(service["url"].rstrip("/") + path,
+                                 headers={"X-Api-Key": service.get("api_key", ""), "User-Agent": "Starboard", "Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:  # app addresses are checked to be http(s) when saved (config.validate_service)  # nosec B310
+            return json.loads(resp.read(512 * 1024) or b"null")
+    except (urllib.error.URLError, OSError, ValueError):
+        return None
+
+
+def _picture(url):
+    """A picture from one of the image sites the Library uses, at its small size, or None."""
+    from . import library
+    url = library.small(url)
+    if not library.poster_allowed(url):
+        return None
+    try:
+        with library._image_opener.open(urllib.request.Request(url, headers={"User-Agent": "Starboard", "Accept": "image/*"}), timeout=8) as resp:  # checked  # nosec B310
+            data = resp.read(MAX_BYTES + 1) if (resp.headers.get("Content-Type") or "").startswith("image/") else None
+    except (urllib.error.URLError, OSError, ValueError):
+        return None
+    return data if data and len(data) <= MAX_BYTES else None
+
+
+def _own_picture(service, url):
+    """A picture the app serves itself (an address starting with "/"), asked for with its key, or None."""
+    if not url.startswith("/") or url.startswith("//"):
+        return None
+    base = urllib.parse.urlsplit(service["url"])
+    req = urllib.request.Request(f"{base.scheme}://{base.netloc}{url}", headers={"X-Api-Key": service.get("api_key", ""), "User-Agent": "Starboard"})
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:  # the app's own address, as above  # nosec B310
+            data = resp.read(MAX_BYTES + 1) if (resp.headers.get("Content-Type") or "").startswith("image/") else None
+    except (urllib.error.URLError, OSError, ValueError):
+        return None
+    return data if data and len(data) <= MAX_BYTES else None
+
+
+def _from_item(service, kind, item):
+    """The item's own image addresses: those on an image site first, at the small size, then the app's own copy."""
+    images = [i for i in item.get("images") or [] if isinstance(i, dict) and i.get("coverType") == ITEMS[kind][1]]
+    addresses = [i.get(k) for k in ("remoteUrl", "url") for i in images if isinstance(i.get(k), str) and i.get(k)]
+    for url in dict.fromkeys(a for a in addresses if not a.startswith("/")):
+        data = _picture(url)
+        if data:
+            return data
+    for url in dict.fromkeys(a for a in addresses if a.startswith("/")):
+        data = _own_picture(service, url)
+        if data:
+            return data
+    return None
+
+
+def _from_tmdb(service, kind, item):
+    """TMDB's poster through the app's own lookup, by the item's TMDB or TVDB number (films and series)."""
+    if kind == "movie" and str(item.get("tmdbId") or "").isdigit():
+        found = _app_json(service, f"/api/v3/movie/lookup/tmdb?tmdbId={int(item['tmdbId'])}")
+    elif kind == "series" and str(item.get("tvdbId") or "").isdigit():
+        found = _app_json(service, f"/api/v3/series/lookup?term=tvdb%3A{int(item['tvdbId'])}")
+    else:
+        return None
+    found = found[0] if isinstance(found, list) and found else found
+    if not isinstance(found, dict):
+        return None
+    addresses = [found.get("remotePoster")] + [i.get("remoteUrl") for i in found.get("images") or []
+                                               if isinstance(i, dict) and i.get("coverType") == "poster"]
+    for url in dict.fromkeys(a for a in addresses if isinstance(a, str) and a):
+        data = _picture(url)
+        if data:
+            return data
+    return None
 
 
 NATIVE = {"movie": "movies", "series": "series"}

@@ -3,7 +3,7 @@
 
 # Create your password and sign in
 
-The first time you open Starboard, you enter the setup code, name your dashboard and choose a password. Starboard then
+The first time you open Starboard, you enter the set-up code, name your dashboard and choose a password. Starboard then
 signs you in and opens a short set-up guide: how to start, where your media goes, and your apps. Until the guide is
 finished, Starboard shows only the set-up.
 
@@ -11,16 +11,16 @@ finished, Starboard shows only the set-up.
 
 - Starboard is installed and running. Read [Install Starboard with the installer](install-with-the-installer.md) or
   [Install Starboard from the ready-made image](install-from-the-ready-made-image.md).
-- You have the setup code. Read [Find the setup code](find-the-setup-code.md).
+- You have the set-up code. Read [Find the set-up code](find-the-setup-code.md).
 
 ## Steps
 
 1. In a browser on the server, open `http://localhost:8095`. On another device at home, use the server's address
    instead, such as `http://192.168.1.20:8095`.
 
-   Starboard opens the page **Set up Starboard**.
+   Starboard opens the page **Create your password**.
 
-2. In **Setup code**, paste or enter the setup code. When the Run first script opened the page, it is filled in.
+2. In **Set-up code**, paste or enter the set-up code. When the Run first script opened the page, it is filled in.
 3. In **Name your dashboard**, keep "Starboard" or enter a name of your own, such as "Sam's server". It appears in the
    header and the browser tab.
 4. In **Choose a password**, enter a password of at least 10 characters. A short sentence works well, such as "the
@@ -30,7 +30,7 @@ finished, Starboard shows only the set-up.
    [Things to note](#things-to-note).
 7. Select **Save password and continue**.
 
-   Starboard signs you in and opens its set-up guide, also called **Set up Starboard**.
+   Starboard signs you in and opens its set-up guide, **Set up Starboard**.
 
 8. Follow the guide. It asks one question per step, the same questions in the same order as the
    [set-up in the terminal](set-up-in-the-terminal.md#steps). Select **Continue** to save each step, or
@@ -57,7 +57,7 @@ Next time, Starboard shows **Sign in to Starboard**.
 
 ## If it does not work
 
-- **"The setup code is not right":** copy the code again, exactly. Read [Find the setup code](find-the-setup-code.md).
+- **"The set-up code is not right":** copy the code again, exactly. Read [Find the set-up code](find-the-setup-code.md).
 - **"Use at least 10 characters":** the password is too short. Add more characters.
 - **"The two passwords are different. Enter it again.":** enter the password again in **Enter it again**.
 - **"That password is not right. Check Caps Lock and try again.":** when signing in, check the Caps Lock key and enter

@@ -182,7 +182,7 @@ const AppDetails = (() => {
     if (st?.state === "down") {
       out.push(el("div", { class: "notice", role: "status", "data-tone": "danger" }, icon("circle-alert"), el("div", { class: "notice__body" },
         el("span", { class: "notice__title", text: `Starboard could not reach ${s.name}` }),
-        el("p", { text: `${sentence(st.message || "It did not answer")}${st.down_since ? ` Not responding for ${since(st.down_since)}.` : ""} Check that it is running, then select Check again.` }))));
+        el("p", { text: `${sentence(st.message || "It did not answer")}${st.down_since ? ` Not responding for ${since(st.down_since)}.` : ""}${st.check_every ? ` Starboard checks it every ${every(st.check_every)} until it answers.` : ""} Check that it is running, then select Check again.` }))));
     } else if (st?.state === "unknown" || (!st && state.loaded.has("status"))) {
       out.push(el("div", { class: "notice", role: "status", "data-tone": "warning" }, icon("triangle-alert"), el("div", { class: "notice__body" },
         el("span", { class: "notice__title", text: "Starboard cannot check this service" }),
@@ -274,6 +274,12 @@ const AppDetails = (() => {
     return out;
   }
 
+  // How often an app that is not responding is checked (DASH-66): "30 seconds", "1 minute", "5 minutes".
+  function every(seconds) {
+    if (seconds < 60) return `${seconds} seconds`;
+    const m = Math.round(seconds / 60);
+    return `${m} ${m === 1 ? "minute" : "minutes"}`;
+  }
   function since(t) {
     const mins = Math.max(1, Math.round((Date.now() / 1000 - t) / 60));
     if (mins < 60) return `${mins} ${mins === 1 ? "minute" : "minutes"}`;

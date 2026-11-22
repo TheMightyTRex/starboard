@@ -51,8 +51,8 @@ Each step is explained in [Set up everything with the Run first script](../topic
 
 ## Step 3: Create your password and finish setting up
 
-With a desktop, the set-up page opens by itself with the setup code filled in. With no desktop, open the address it
-shows on a phone or another computer and enter the setup code. Follow
+With a desktop, the set-up page opens by itself with the set-up code filled in. With no desktop, open the address it
+shows on a phone or another computer and enter the set-up code. Follow
 [Create your password and sign in](../topics/create-your-password.md). In the terminal instead, follow
 [Set up Starboard in the terminal, with no browser](../topics/set-up-in-the-terminal.md).
 

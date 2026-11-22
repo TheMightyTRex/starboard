@@ -1,4 +1,4 @@
-// Sign in, or choose the first password with the setup code. Errors show under the field they are about.
+// Sign in, or choose the first password with the set-up code. Errors show under the field they are about.
 
 function showFieldError(input, message) {
   const error = $(`#${input.id}-error`);
@@ -51,7 +51,7 @@ startPage().then((session) => {
     e.preventDefault();
     clearErrors(form);
     if (setup) {
-      if (!form.token.value.trim()) { showFieldError(form.token, "Enter the setup code. It is in the installer's output or the server log."); return; }
+      if (!form.token.value.trim()) { showFieldError(form.token, "Enter the set-up code. It is in the installer's output or the server log."); return; }
       if (!form.site_name.value.trim()) { showFieldError(form.site_name, "Enter a name for the dashboard"); return; }
       if (form.password.value.length < 10) { showFieldError(form.password, `Use at least 10 characters. This one has ${form.password.value.length}.`); return; }
       if (form.password.value !== form.confirm.value) { showFieldError(form.confirm, "The two passwords are different. Enter it again."); return; }
@@ -75,7 +75,7 @@ startPage().then((session) => {
     } catch (err) {
       const m = err.message;
       if (!setup) showFieldError(form.password, /not right/i.test(m) ? "That password is not right. Check Caps Lock and try again." : m);
-      else if (/setup code/i.test(m)) {
+      else if (/set-?up code/i.test(m)) {
         // A code from the link that is refused (an old link, say) can be typed instead.
         if (form.token.readOnly) { form.token.readOnly = false; $("#token-hint").textContent = "In the installer's output, or run docker compose logs starboard on the server."; }
         showFieldError(form.token, m);

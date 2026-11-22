@@ -396,6 +396,12 @@ class PanelPage(unittest.TestCase):
         self.assertIn('bar.classList.toggle("progress--running", !v.finished)', self.js)
         self.assertIn('bar.classList.remove("progress--running")', self.js)
 
+    def test_the_bar_starts_at_1_per_cent_and_the_count_stays_true(self):
+        """DASH-489: the moving bar shows from the first moment; aria-valuenow is still how many have ended."""
+        self.assertIn("v.finished ? share : Math.max(1, share)", self.js)
+        self.assertIn('bar.setAttribute("aria-valuenow", String(v.ended))', self.js)
+        self.assertIn('bar.setAttribute("aria-valuemax", String(v.count || 1))', self.js)
+
     def test_close_removes_the_panel_moves_focus_and_announces(self):
         self.assertIn('"Close"', self.js)
         self.assertIn("/api/updates/all/${id}/close", self.js)

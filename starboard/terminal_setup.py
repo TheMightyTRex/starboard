@@ -425,7 +425,7 @@ class Report:
         if short:
             lines += ["", "_Shortened to fit. The whole report was saved on the server._"]
         lines += ["", "<sub>Sent with Starboard's terminal set-up, which leaves out passwords, keys, VPN details, the "
-                      "setup code and the answers typed into the set-up.</sub>"]
+                      "set-up code and the answers typed into the set-up.</sub>"]
         # Nothing in a report may notify anyone on GitHub: an invisible space after @ stops a mention.
         return re.sub(r"@(?=[A-Za-z0-9-])", "@\u200b", "\n".join(lines))
 
@@ -1946,7 +1946,7 @@ def refused(term, e):
 
 
 def read_setup_code(path):
-    """The setup code from Starboard's file, or "": a regular file only (never through a link, which could point at
+    """The set-up code from Starboard's file, or "": a regular file only (never through a link, which could point at
     a secret elsewhere on this computer), at most 64 bytes, and only the characters a code has."""
     try:
         fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
@@ -1970,7 +1970,7 @@ def step_password(api, term, state):
     if token:
         term.typed.add(fingerprint(token))  # never in a feedback report
         head(term, state, "password")
-        term.note("Choose the password for Starboard. You use it to sign in from any device. No setup code is needed: "
+        term.note("Choose the password for Starboard. You use it to sign in from any device. No set-up code is needed: "
                   "you are on the server itself. Type ? for help.")
         while True:
             first = term.hidden(f"{question('password')}, 10 characters or more")

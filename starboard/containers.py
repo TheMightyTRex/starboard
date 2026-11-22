@@ -263,6 +263,20 @@ def match(service, found):
 
 # Restart (owner, 12 November 2026) ------------------------------------------------------------------------
 
+
+def vpn_from_container(name="gluetun"):
+    """The VPN's state read from its container, for a Gluetun that Starboard has no connection entry for (one kept
+    from an earlier set-up, whose control port is not open; found on the owner's server, 22 November 2026). Gluetun's
+    own health check says whether the tunnel is up. None when there is no such container or Docker cannot be asked."""
+    try:
+        state = ((docker("GET", f"/containers/{name}/json", timeout=5) or {}).get("State")) or {}
+    except DockerError:
+        return None
+    health = (state.get("Health") or {}).get("Status", "")
+    running = bool(state.get("Running")) and health in ("healthy", "")
+    return {"name": "Gluetun", "running": running, "status": health or state.get("Status", ""), "from": "container"}
+
+
 def restart(name, wait=20):
     """Restarts one container by name, giving it `wait` seconds to stop cleanly. Raises DockerError."""
     docker("POST", f"/containers/{urllib.parse.quote(name, safe='')}/restart?t={int(wait)}", timeout=wait + 60)

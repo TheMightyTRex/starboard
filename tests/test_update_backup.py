@@ -9,6 +9,7 @@ folder with a plug-in data folder nobody can read.
 directory". The page's helper rewrites its log after every line as self-update.log.new and renames it, so tar listed
 the file and found it gone. The backup now leaves out that log and every half-written .tmp or .new file, and a backup
 that fails says why."""
+import json
 import os
 import pathlib
 import subprocess
@@ -133,6 +134,47 @@ class UpdateBackupTest(unittest.TestCase):
         self.assertEqual((held / "data" / "main" / "plays.db").read_text(), "plays")
         # The backup's Watch stats comes back with its settings; its data folder stays with the held copy.
         self.assertEqual((self.dir / "data" / "plugins" / "watch-stats" / "settings.json").read_text(), '{"keep": 1}')
+
+    def caches(self):
+        data = self.dir / "data"
+        for name in ("posters/library/a.img", "posters/tv-series-1.jpg", "icons/sonarr.png", "logs/starboard.log",
+                     "library/films.json", "library/tv.json", "library/music.json", "library/books.json",
+                     "library/audiobooks.json", "library/radio.json", "library/network-logos.json",
+                     "library/views.json", "library/station-logos/one.png", "plugins/watch-stats/logs/kept.txt"):
+            (data / name).parent.mkdir(parents=True, exist_ok=True)
+            (data / name).write_text("before " + name)
+
+    def test_the_backup_leaves_out_caches(self):
+        """DASH-384: posters, icons, logs and the Library's lists are made again, so they are not in the copy."""
+        self.caches()
+        done = self.run_sh('backup_data backup.tar.gz\n')
+        self.assertEqual(done.returncode, 0, done.stderr)
+        with tarfile.open(self.dir / "backup.tar.gz") as t:
+            names = t.getnames()
+        left_out = [n for n in names if n.startswith(("data/posters", "data/icons", "data/logs"))
+                    or n in ["data/library/" + f for f in ("films.json", "tv.json", "music.json", "books.json", "audiobooks.json",
+                                                           "radio.json", "network-logos.json")]]
+        self.assertEqual(left_out, [])
+        for kept in ("data/config.json", "data/library/views.json", "data/library/station-logos/one.png",
+                     "data/plugins/watch-stats/logs/kept.txt", "data/plugins/watch-stats/settings.json"):
+            self.assertIn(kept, names)  # settings, what someone added, and a plug-in's own folder of the same name
+
+    def test_going_back_keeps_posters_icons_and_logs_and_drops_the_lists(self):
+        self.caches()
+        done = self.run_sh('backup_data backup.tar.gz\n'
+                           'echo "the update failed here" >> data/logs/starboard.log\n'
+                           'echo "written by the newer version" > data/library/films.json\n'
+                           'echo \'{"site_name": "after"}\' > data/config.json\n'
+                           'restore_data backup.tar.gz\n')
+        self.assertEqual(done.returncode, 0, done.stderr)
+        data = self.dir / "data"
+        self.assertEqual(json.loads((data / "config.json").read_text())["site_name"], "before")
+        self.assertIn("the update failed here", (data / "logs" / "starboard.log").read_text())  # the log says why
+        self.assertTrue((data / "posters" / "library" / "a.img").exists())
+        self.assertTrue((data / "icons" / "sonarr.png").exists())
+        self.assertFalse((data / "library" / "films.json").exists())  # made again by the version that runs
+        self.assertEqual((data / "library" / "views.json").read_text(), "before library/views.json")
+        self.assertTrue((data / "library" / "station-logos" / "one.png").exists())
 
     def test_update_sh_uses_them_and_says_so(self):
         text = (ROOT / "update.sh").read_text(encoding="utf-8")
