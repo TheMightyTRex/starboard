@@ -326,7 +326,10 @@ def answer(path, q):
                              "availability": "available" if n == 2 else "unknown"} for n, t in enumerate(names)]}
     if path.startswith("/discover/"):
         names = _titles(12, path)
-        return {"results": [{"kind": "movie", "tmdb_id": 8000 + n, "title": t, "year": 2026 - n % 5, "overview": "A made-up result for the preview.",
+        # Years across decades, some not out yet and three languages, so the rows' filters have something to tell apart (DASH-301).
+        return {"results": [{"kind": "movie", "tmdb_id": 8000 + n, "title": t, "year": 2027 if n % 6 == 1 else 2026 - (n % 5) * 7, "overview": "A made-up result for the preview.",
+                             "release_date": (TODAY + dt.timedelta(days=40)).isoformat() if n % 6 == 1 else f"{2026 - (n % 5) * 7}-03-01",
+                             "original_language": ["en", "fr", "en", "ja"][n % 4],
                              "poster": None, "availability": "available" if n == 3 else "monitored" if n == 5 else "unknown"}
                             for n, t in enumerate(names)]}
     if path in ("/movies/lookup", "/series/lookup"):

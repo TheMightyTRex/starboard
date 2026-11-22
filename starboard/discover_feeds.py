@@ -5,6 +5,7 @@ called from Starboard. Each row is fetched when the page shows it and kept for a
 you already have it, so Add is only offered for what you do not.
 
   GET /api/library/discover?tab=films           the rows (and genres for films and TV)
+  GET, POST /api/library/discover-filters       the filters on the rows, remembered for the account (DASH-301)
 
 Films and TV also offer a row for each of TMDB's genres (DASH-395, owner, 13 November 2026: "For discover rows - I
 want to add more options - like comedy, sci fi etc."). They come from the same genre list as the chips, start
@@ -15,6 +16,7 @@ same options for TV, books, audio books and Radio"). Books and audiobooks have e
   GET /api/library/discover-row?tab=films&row=  one row's cards
   GET /api/library/discover-radio-search?q=&stations=1&feeds=1  radio search across every source (DASH-339)
 """
+import datetime
 import json
 import os
 import re
@@ -155,6 +157,58 @@ def reset_layout(data_dir, listed, tab):
     return describe(data_dir, listed, tab)
 
 
+# Filters on Discover's rows (DASH-301): remembered for the account on the server, the same on every Discover page.
+FILTERS = {"where": ("all", "in", "out"), "release": ("", "released", "coming")}
+
+
+def _filters_path(data_dir):
+    return os.path.join(data_dir, "library", "discover-filters.json")
+
+
+def filters(data_dir):
+    try:
+        with open(_filters_path(data_dir), encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def save_filters(data_dir, given):
+    if not isinstance(given, dict):
+        raise ValueError("Send the filters")
+    clean = {}
+    for key, allowed in FILTERS.items():
+        if given.get(key) in allowed and given.get(key) != allowed[0]:
+            clean[key] = given[key]
+    if re.match(r"^\d{4}s$", str(given.get("decade") or "")):
+        clean["decade"] = given["decade"]
+    if re.match(r"^[a-z]{2,3}$", str(given.get("language") or "")):
+        clean["language"] = given["language"]
+    folder = os.path.join(data_dir, "library")
+    os.makedirs(folder, mode=0o700, exist_ok=True)
+    path = _filters_path(data_dir)
+    with open(os.open(path + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
+        json.dump(clean, f)
+    os.replace(path + ".tmp", path)
+    return clean
+
+
+def _facts(x, today):
+    """What the filters tell a film or series card apart by: released or not, and its language."""
+    from .library import lang
+    out = {}
+    date = str(x.get("release_date") or "")[:10]
+    if date:
+        out["r"] = "coming" if date > today else "released"
+    elif x.get("year"):
+        out["r"] = "coming" if int(x["year"]) > int(today[:4]) else "released"
+    code = lang(x.get("original_language") or "")
+    if code:
+        out["la"] = code
+    return out
+
+
 def _state(x):
     a = str(x.get("availability") or "").lower()
     if x.get("library_id") or a in HAVE:
@@ -181,10 +235,11 @@ def row(reelix, tab, row_id):
     out = []
     if tab in ("films", "tv"):
         got = _api(reelix, f"/discover/{row_id}") or {}
+        today = datetime.date.today().isoformat()
         for x in (got.get("results") or [])[:20]:
             key = f"tmdb:{x['tmdb_id']}" if x.get("tmdb_id") else ""
             out.append({"key": key, "kind": tab, "title": x.get("title") or "", "year": x.get("year"),
-                        "detail": "", "overview": (x.get("overview") or "")[:300], "image": _picture(x.get("poster")), "state": _state(x)})
+                        "detail": "", "overview": (x.get("overview") or "")[:300], "image": _picture(x.get("poster")), "state": _state(x), "fx": _facts(x, today)})
     else:
         kind = {"music": "album", "books": "book", "audiobooks": "book", "radio": "radio"}[tab]
         got = _api(reelix, f"/discover/content/{kind}/{row_id}") or {}

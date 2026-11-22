@@ -1,0 +1,30 @@
+{
+  "shots": [
+    {
+      "topic": "search-and-add",
+      "file": "search-and-add-4-discover-filters.png",
+      "page": "discover-films.html",
+      "height": 800,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; await until(() => document.querySelector('#discover-filters:not([hidden]) #df-decade')); const w = document.querySelector('#df-where-out'); w.click(); await wait(600);",
+      "marks": [
+        {
+          "t": "$#discover-filters",
+          "step": 1,
+          "side": "top",
+          "tail": 50
+        },
+        {
+          "t": "$#df-decade",
+          "step": 2,
+          "side": "bottom",
+          "tail": 50
+        }
+      ],
+      "steps": [
+        1,
+        2
+      ],
+      "alt": "A Discover page with example data, with the filter bar (step 1) and Year (step 2) outlined"
+    }
+  ]
+}

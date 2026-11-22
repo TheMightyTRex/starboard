@@ -23,6 +23,106 @@ function dCard(c) {
     el("div", { class: "discover-card__action" }, side));
 }
 
+// Filters on the rows (DASH-301; owner, 10 November 2026: "on Search and Discover results, filters"): Show (all, in
+// your library, not in your library), year by decade, released or not, and language, with counts, in the page's
+// toolbar. They combine and act on every row at once; the choice is remembered for the account on the server, the
+// same on each Discover page. Nothing is asked again (lightweight rule): the cards already loaded are hidden or
+// shown, and a row that loads later is filtered as it arrives, so the counts are for the rows loaded so far.
+const D_NO_FILTERS = { where: "all", decade: "", release: "", language: "" };
+let dFilters = { ...D_NO_FILTERS };
+let dLoaded = []; // each row loaded so far: { list, items }
+const dDecade = (c) => (c.year ? `${Math.floor(Number(c.year) / 10) * 10}s` : "");
+const D_FACETS = { where: (c) => (c.state ? "in" : "out"), decade: dDecade, release: (c) => c.fx?.r || "", language: (c) => c.fx?.la || "" };
+const dLanguage = (() => {
+  let names = null;
+  try { names = new Intl.DisplayNames(["en-GB"], { type: "language" }); } catch { names = null; }
+  return (code) => { try { return (names && names.of(code)) || code.toUpperCase(); } catch { return code.toUpperCase(); } };
+})();
+
+// Does a card pass every filter (leaving out one, to count that one's choices)?
+function dPasses(c, skip = "") {
+  for (const [key, of] of Object.entries(D_FACETS)) {
+    const want = dFilters[key];
+    if (key !== skip && want && want !== "all" && of(c) !== want) return false;
+  }
+  return true;
+}
+
+// A row's cards are hidden or shown; a row with cards but none that pass says so, in the row.
+function dFilterRow(row) {
+  const cards = row.list.querySelectorAll(".discover-card");
+  let any = false;
+  row.items.forEach((c, n) => { const ok = dPasses(c); any = any || ok; if (cards[n]) cards[n].hidden = !ok; });
+  const note = row.list.querySelector(".discover-none");
+  if (!any && !note) row.list.append(el("li", { class: "muted small discover-none", text: "Nothing in this row matches the filters." }));
+  else if (any) note?.remove();
+}
+
+function dApplyFilters() {
+  dLoaded = dLoaded.filter((row) => row.list.isConnected); // a genre row taken away is forgotten
+  for (const row of dLoaded) {
+    dFilterRow(row);
+    row.list.scrollLeft = 0;
+    row.list.dispatchEvent(new Event("scroll")); // the shelf's arrows follow what is left
+  }
+}
+
+let dSaveTimer = 0;
+function dChanged() {
+  clearTimeout(dSaveTimer);
+  dSaveTimer = setTimeout(() => api(`/api/library/discover-filters?tab=${D_TAB}`, { method: "POST", body: { filters: dFilters } }).catch(() => { /* kept on this page until it is left */ }), 400);
+  dApplyFilters();
+  const [shown, all] = dDrawFilters();
+  announce(shown === all ? `${all} shown` : `${shown} of ${all} shown`);
+}
+
+// Drawn again after each change and each row that loads, as the counts change; focus goes back to the control that
+// had it (the same ids). A filter with nothing to tell apart is left out, unless it is on, so it can be taken off.
+function dDrawFilters() {
+  const bar = $("#discover-filters");
+  const cards = dLoaded.filter((r) => r.list.isConnected).flatMap((r) => r.items);
+  const shown = cards.filter((c) => dPasses(c)).length;
+  if (!bar) return [shown, cards.length];
+  const had = document.activeElement && bar.contains(document.activeElement) ? document.activeElement.id : "";
+  const tally = (key) => {
+    const out = new Map();
+    for (const c of cards) { const v = D_FACETS[key](c); if (v && dPasses(c, key)) out.set(v, (out.get(v) || 0) + 1); }
+    return out;
+  };
+  const known = (key) => new Set(cards.map(D_FACETS[key]).filter(Boolean));
+  const total = (key) => cards.filter((c) => dPasses(c, key)).length;
+  const select = (key, label, any, words = (v) => v, sort = (a, b) => words(a).localeCompare(words(b))) => {
+    const values = [...known(key)].sort(sort);
+    if (values.length < 2 && !dFilters[key]) return null;
+    if (dFilters[key] && !values.includes(dFilters[key])) values.push(dFilters[key]);
+    const counts = tally(key);
+    const pick = el("select", { class: "select", id: `df-${key}` }, [["", any], ...values.map((v) => [v, `${words(v)} ${(counts.get(v) || 0).toLocaleString("en-GB")}`])]
+      .map(([v, t]) => el("option", { value: v, text: t, selected: v === dFilters[key] })));
+    pick.addEventListener("change", () => { dFilters[key] = pick.value; dChanged(); });
+    return el("div", { class: "field lib-field" }, el("label", { class: "visually-hidden", for: `df-${key}`, text: label }), pick);
+  };
+  const where = tally("where"), release = tally("release");
+  const on = Object.keys(D_NO_FILTERS).some((k) => dFilters[k] !== D_NO_FILTERS[k]);
+  const clear = on ? el("button", { type: "button", class: "btn btn--quiet", id: "df-clear" }, icon("x"), "Clear filters") : null;
+  clear?.addEventListener("click", () => { dFilters = { ...D_NO_FILTERS }; dChanged(); $("#df-where-all")?.focus(); });
+  bar.replaceChildren(el("div", { class: "toolbar__row" }, ...[
+    segmentedFilter({ name: "df-where", label: "Show", value: dFilters.where,
+      options: [["all", "All", total("where")], ["in", "In your library", where.get("in") || 0], ["out", "Not in your library", where.get("out") || 0]],
+      onChange: (v) => { dFilters.where = v; dChanged(); } }),
+    select("decade", "Year", "Any year", (v) => v, (a, b) => b.localeCompare(a)),
+    known("release").size > 1 || dFilters.release ? segmentedFilter({ name: "df-release", label: "Released", value: dFilters.release,
+      options: [["", "All", total("release")], ["released", "Released", release.get("released") || 0], ["coming", "Not released", release.get("coming") || 0]],
+      onChange: (v) => { dFilters.release = v || ""; dChanged(); } }) : null,
+    select("language", "Language", "Any language", dLanguage),
+    clear,
+    el("div", { class: "toolbar__end" }, el("span", { class: "toolbar__count", id: "discover-count",
+      text: shown === cards.length ? `${cards.length.toLocaleString("en-GB")} shown` : `${shown.toLocaleString("en-GB")} of ${cards.length.toLocaleString("en-GB")} shown` })),
+  ].filter(Boolean)));
+  bar.hidden = !cards.length;
+  if (had) document.getElementById(had)?.focus();
+  return [shown, cards.length];
+}
+
 function dRow(r, { open = false } = {}) {
   const list = el("ul", { class: "discover-shelf", "aria-label": r.title }, el("li", { class: "muted small", text: "Loading…" }));
   const sec = el("section", { class: "discover-row", "aria-labelledby": `d-${r.id.replace(/[^a-z0-9]/gi, "-")}` },
@@ -32,6 +132,7 @@ function dRow(r, { open = false } = {}) {
     try {
       const got = await api(`/api/library/discover-row?tab=${D_TAB}&row=${encodeURIComponent(r.id)}`);
       list.replaceChildren(...(got.items.length ? got.items.map(dCard) : [el("li", { class: "muted small", text: "Nothing here right now." })]));
+      if (got.items.length) { const row = { list, items: got.items }; dLoaded.push(row); dFilterRow(row); dDrawFilters(); }
       requestAnimationFrame(() => list.dispatchEvent(new Event("scroll")));  // the shelf shows its arrows now there is more
     } catch (e) { list.replaceChildren(el("li", {}, notice("info", "This row did not load", e.message))); }
   };
@@ -49,6 +150,8 @@ async function startDiscover() {
   try { d = await api(`/api/library/discover?tab=${D_TAB}`); }
   catch (e) { holder.removeAttribute("aria-busy"); holder.replaceChildren(notice("danger", "Discover did not load", e.message)); return; }
   holder.removeAttribute("aria-busy");
+  dFilters = { ...D_NO_FILTERS, ...(d.filters || {}) };
+  const filterBar = el("div", { class: "toolbar" }, el("div", { id: "discover-filters", class: "search-filters", role: "group", "aria-label": "Filter every row", hidden: true }));
   const picked = el("div", { id: "discover-picked" });
   // Genres are filter chips that can be on together (DASH-309, R4), in a toolbar: each genre pressed puts its row at
   // the top, in the chips' order. Focus stays on the chip; the change is said.
@@ -56,6 +159,7 @@ async function startDiscover() {
   picked.addEventListener("genres-clear", () => shownGenres.clear());
   const showGenres = () => {
     picked.replaceChildren(...d.genres.filter((g) => shownGenres.has(g)).map((g) => dRow(g, { open: true })));
+    dDrawFilters(); // a genre taken away takes its cards out of the counts
     picked.querySelectorAll("h2").forEach((h) => h.setAttribute("tabindex", "-1"));
   };
   // A genre ticked as a row in Settings (DASH-395) is on the page already, so it has no chip as well.
@@ -74,7 +178,7 @@ async function startDiscover() {
         });
         return b;
       })))) : null;
-  holder.replaceChildren(...[D_TAB === "radio" ? radioFinder(d, picked) : null, chips, picked, ...d.rows.map((r, n) => dRow(r, { open: n < 2 }))].filter(Boolean));
+  holder.replaceChildren(...[D_TAB === "radio" ? radioFinder(d, picked) : null, filterBar, chips, picked, ...d.rows.map((r, n) => dRow(r, { open: n < 2 }))].filter(Boolean));
 }
 
 // Radio (DASH-339): one search across every source Reelix has switched on, with From radio stations and Podcast
