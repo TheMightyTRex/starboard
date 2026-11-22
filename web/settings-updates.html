@@ -73,6 +73,57 @@
         <li>It only asks your apps for what a page shows, and only reaches what you allow.</li>
       </ul>
       <dl class="facts" id="about-facts"></dl>
+      <h3 id="ab-access-h">Accessibility</h3>
+      <p>Starboard is built and tested to WCAG 2.2 level AA, so that it can be used with a mouse, a keyboard alone, a
+        screen reader, voice control, large text or zoom, on a computer, a phone or a television. Read
+        <a href="https://themightytrex.github.io/starboard/help/accessibility/overview.html" target="_blank" rel="noopener noreferrer">Accessibility in Starboard<span class="visually-hidden"> (opens in a new tab)</span></a> for the whole picture.</p>
+      <h4>Always on</h4>
+      <ul class="small">
+        <li><strong>Readable type:</strong> Atkinson Hyperlegible Next, a typeface designed for readers with low vision, comes with Starboard.</li>
+        <li><strong>Strong colours:</strong> text has at least 4.5 to 1 contrast, and the edges of controls and the focus outline at least 3 to 1, in every theme.</li>
+        <li><strong>Large controls:</strong> buttons and fields are 44 pixels high, and nothing you need to select is smaller than 24 by 24 pixels.</li>
+        <li><strong>Keyboard first:</strong> everything works with the keyboard. A thick focus outline shows where you are, and the sticky header never covers it. Skip to main content is the first Tab on every page. There are no shortcuts of a single letter.</li>
+        <li><strong>Slide-outs and dialogs:</strong> focus goes in, stays in, and returns to what opened it. Escape, Close, Done or Cancel closes them.</li>
+        <li><strong>Screen readers:</strong> every page has landmarks, one main heading, headings in order and a title that names the page, and is marked as British English. Short messages such as Saved are said without moving you. A problem is said beside its field. Every icon button has a name, and a list that refreshes by itself is not read out again.</li>
+        <li><strong>Never by colour alone:</strong> every state is shown in words with an icon, and the second line of a chart is dashed.</li>
+        <li><strong>Charts as tables:</strong> each chart has a sentence that says what it shows, and Show as a table.</li>
+        <li><strong>Nothing moves by itself:</strong> no slide-out opens on its own, and focus never jumps to the top of the page after a save or a delete.</li>
+        <li><strong>Zoom and small screens:</strong> pages work at 400% zoom and at 320 pixels wide with no sideways scrolling of the page, on a phone layout with a Menu button and in portrait or landscape.</li>
+        <li><strong>The set-up in the terminal:</strong> an accessible mode gives plain numbered lines for screen readers.</li>
+      </ul>
+      <h4>You choose, in Display</h4>
+      <p class="small">Display is the last button in the header of every page, including Sign in. Each choice applies at once and is kept in your browser.</p>
+      <ul class="small">
+        <li><strong>Text size:</strong> from 100% to 175%, and wider spacing between lines, letters and words.</li>
+        <li><strong>Theme:</strong> Light, Dark or Match device, and High contrast for stronger colours and borders.</li>
+        <li><strong>Reduce motion:</strong> no sliding, shimmering or smooth scrolling. It follows your device unless you choose.</li>
+        <li><strong>Underline links:</strong> every link underlined, so a link is never shown by colour alone.</li>
+      </ul>
+      <h4>How it is checked</h4>
+      <p class="small">Before every change is merged and before every release, an automatic scan with axe-core checks every page in Light, Dark and High contrast. Further checks read the reading order, walk the main tasks with the keyboard only, check where focus lands after each action, and check that changes are announced. Starboard has not yet been listened to with a real screen reader by a person, or tested with people who use assistive technology every day, and the help says what else is not tested.
+        Read <a href="https://themightytrex.github.io/starboard/help/accessibility/how-starboard-is-tested.html" target="_blank" rel="noopener noreferrer">How Starboard is tested<span class="visually-hidden"> (opens in a new tab)</span></a>, <a href="https://themightytrex.github.io/starboard/help/accessibility/latest-test-results.html" target="_blank" rel="noopener noreferrer">the latest test results<span class="visually-hidden"> (opens in a new tab)</span></a> and <a href="https://themightytrex.github.io/starboard/help/accessibility/limits-and-known-gaps.html" target="_blank" rel="noopener noreferrer">the limits and known gaps<span class="visually-hidden"> (opens in a new tab)</span></a>.
+        If something is hard to use, <a href="https://themightytrex.github.io/starboard/help/accessibility/tell-us-about-a-problem.html" target="_blank" rel="noopener noreferrer">tell us about it<span class="visually-hidden"> (opens in a new tab)</span></a>.</p>
+      <h3 id="ab-lean-h">How lean Starboard is</h3>
+      <p>Starboard is built to leave your server's power for your apps. These figures were measured on the server Starboard runs on, with Starboard 0.26.0, at 17:56 UTC on 22 November 2026.</p>
+      <div class="table-wrap" data-stack><table class="table">
+        <caption class="visually-hidden">How much of the server Starboard uses</caption>
+        <thead><tr><th scope="col">What</th><th scope="col">Measured</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Memory of Starboard's container</th><td class="numeric">33.6 MiB</td></tr>
+          <tr><th scope="row">Memory of Starboard's process</th><td class="numeric">36.1 MiB</td></tr>
+          <tr><th scope="row">Processor, six readings</th><td class="numeric">0.00% five times, 0.01% once</td></tr>
+          <tr><th scope="row">Processor over 3 hours 38 minutes</th><td class="numeric">16.3 seconds, 0.12% of one processor</td></tr>
+          <tr><th scope="row">Starboard's image</th><td class="numeric">102 MB</td></tr>
+          <tr><th scope="row">Median page, compressed</th><td class="numeric">132,649 bytes</td></tr>
+        </tbody>
+      </table></div>
+      <p class="small">For comparison, on the same server at the same time: Reelix 399.2 MiB with a 1.11 GB image, Jellyfin 780.9 MiB with a 1.29 GB image, and qBittorrent 21.0 MiB with a 338 MB image.</p>
+      <ul class="small">
+        <li><strong>Almost no packages:</strong> Starboard uses Python's standard library and plain HTML, CSS and JavaScript.</li>
+        <li><strong>Nothing runs unless it is needed:</strong> Starboard works only for a page you have open or a schedule you activated, and the Performance page says what each background job costs.</li>
+        <li><strong>Pages load only what they use:</strong> a page loads a part of the design system only when it uses it, which cut the median page by 10.9%.</li>
+      </ul>
+      <p class="small">How each figure was measured, and what it does not show, is in <a href="https://themightytrex.github.io/starboard/help/topics/how-lean-starboard-is.html" target="_blank" rel="noopener noreferrer">How lean Starboard is<span class="visually-hidden"> (opens in a new tab)</span></a>.</p>
       <h3>Affiliate links and copyright</h3>
       <p>Starboard suggests some Usenet providers for SABnzbd through affiliate links, marked Ad. If you sign up through
         one, the provider pays a small commission towards Starboard's development. You pay the same price.</p>
