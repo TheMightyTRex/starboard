@@ -406,6 +406,10 @@ def finish(app, record=None, parsed=None):
     title, text = words(outcome, record, parsed)
     ok = outcome in ("updated", "up-to-date")
     logs.event("info" if ok else "error", "updates", f"{title}: {text}")
+    if outcome != "up-to-date":  # Activity, History, Across apps (DASH-68)
+        from . import activity_log
+        activity_log.note("upgraded" if ok else "failed", "Starboard", title, text,
+                          key=f"starboard-update:{record.get('to')}:{int(record.get('started') or 0)}")
     watch = getattr(app, "watch", None)
     if watch:
         try:

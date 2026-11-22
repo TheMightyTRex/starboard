@@ -18,7 +18,7 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "library-audiobooks-narrators.html",
   "library-film.html?id=3", "library-tv-show.html?id=8", "library-artist.html?id=1", "library-radio-show.html?id=1",
   "library-book.html?id=4", "library-audiobook.html?id=6",
-  "discover-films.html", "discover-radio.html", "downloads-finished.html", "wanted-films.html", "wanted-music.html", "wanted-audiobooks.html", "history.html", "settings-reelix.html",
+  "discover-films.html", "discover-radio.html", "downloads-finished.html", "wanted-films.html", "wanted-music.html", "wanted-audiobooks.html", "history.html", "history-apps.html", "settings-reelix.html",
   "search-sites.html", "settings-radio.html",  // Search the sites (DASH-213), Settings, Radio (DASH-212)
   "settings-dispatcharr.html",  // Settings, Apps, Dispatcharr (DASH-228)
   // General's level 2 pages (DASH-389)

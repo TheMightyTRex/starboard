@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<title>Across apps · History · Activity · Starboard</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#323a77">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/designs.css">
+<script src="/js/components.js" data-manual></script>
+<script src="/js/common.js"></script>
+<script src="/js/history-apps.js" defer></script>
+</head>
+<body class="page-placeholder with-rail">
+<!-- shell:start (filled in by starboard/shell.py; edit the menus there) -->
+<!-- shell:end -->
+<main id="main" tabindex="-1">
+<div class="page">
+  <div class="page-head">
+    <div class="page-head__text"><h1>Across apps</h1><p class="page-head__summary" id="across-summary">What was added, what failed and what was upgraded across your apps, newest first.</p></div>
+  </div>
+  <div class="toolbar">
+    <div class="toolbar__row">
+      <fieldset class="segmented" id="across-filters"><legend class="visually-hidden">Show</legend>
+        <label for="across-show-all"><input type="radio" name="across-show" id="across-show-all" value="all" checked><span>Everything</span></label>
+        <label for="across-show-added"><input type="radio" name="across-show" id="across-show-added" value="added"><span>Added</span></label>
+        <label for="across-show-failed"><input type="radio" name="across-show" id="across-show-failed" value="failed"><span>Failed</span></label>
+        <label for="across-show-upgraded"><input type="radio" name="across-show" id="across-show-upgraded" value="upgraded"><span>Upgraded</span></label>
+      </fieldset>
+    </div>
+  </div>
+  <div id="across-notes" hidden></div>
+  <h2 class="visually-hidden" id="across-list-h">What happened across your apps, newest first</h2>
+  <ul class="rows" id="across-list" aria-labelledby="across-list-h"></ul>
+  <div class="actions"><button type="button" class="btn" id="across-more" hidden>Show more</button></div>
+</div>
+</main>
+</body>
+</html>
