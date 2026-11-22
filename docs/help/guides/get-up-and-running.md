@@ -82,8 +82,8 @@ system: [Linux Mint](../topics/start-on-linux-mint.md), [Debian](../topics/start
 
 ## Step 5, with a browser: create your password and set up
 
-On a computer with a desktop, the set-up page opens by itself with the setup code filled in. With no desktop, open
-the address the installer printed on a phone or another computer, and enter the setup code. Choose your password:
+On a computer with a desktop, the set-up page opens by itself with the set-up code filled in. With no desktop, open
+the address the installer printed on a phone or another computer, and enter the set-up code. Choose your password:
 follow [Create your password and sign in](../topics/create-your-password.md). Starboard's set-up guide then asks what
 you want to watch, listen to and read.
 
@@ -122,5 +122,7 @@ shows what is left: read [Finish what is still to set up](../topics/finish-setti
 such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
+
+**Need help?** Ask on the [Starboard Discord support server](https://discord.gg/xN9bf2H4vv).
 
 <!-- /footer -->

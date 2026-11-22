@@ -995,7 +995,7 @@ step_done() {
   card "Open Starboard" "On this computer" "http://localhost:$PORT"
   if [ "$NETWORK" = 1 ] && [ -n "$lan" ]; then card_row "On other devices" "http://$lan:$PORT"; fi
   code="$( { [ -f data/setup-token ] && [ ! -L data/setup-token ] && head -c 64 data/setup-token; } 2>/dev/null | tr -cd 'A-Za-z0-9_-' || true)"
-  if [ -n "$code" ] && [ "$TERMINAL" = 0 ]; then card_row "Setup code" "$code"; fi
+  if [ -n "$code" ] && [ "$TERMINAL" = 0 ]; then card_row "Set-up code" "$code"; fi
   card_row "Ask again" "./install.sh"
   card_row "Update" "./update.sh"
   card_end
@@ -1012,7 +1012,7 @@ step_done() {
   fi
   [ "$MODE" = native ] && note "To keep it running after you sign out: loginctl enable-linger $USER"
   if [ -n "$code" ] && [ "$TERMINAL" = 0 ]; then
-    para "You need the setup code once, to choose your password. No browser here? Finish in the terminal instead: python3 -m starboard.terminal_setup --port $PORT"
+    para "You need the set-up code once, to choose your password. No browser here? Finish in the terminal instead: python3 -m starboard.terminal_setup --port $PORT"
   fi
   para "What Starboard can access, and how to change it: Settings, Updates, Update settings."
   if [ "$TERMINAL" = 1 ]; then

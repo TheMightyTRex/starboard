@@ -4,7 +4,7 @@
 # Install Starboard from the ready-made image
 
 With the ready-made image, Docker downloads Starboard already built, so there is nothing to build and no questions
-to answer. At the end, Starboard is running and you have the setup code for choosing your password.
+to answer. At the end, Starboard is running and you have the set-up code for choosing your password.
 
 ## Before you begin
 
@@ -72,15 +72,15 @@ to answer. At the end, Starboard is running and you have the setup code for choo
 
    When the prompt comes back, Starboard is running.
 
-9. Show Starboard's log, which holds the setup code:
+9. Show Starboard's log, which holds the set-up code:
 
    ```bash
    docker logs starboard
    ```
 
-   Find the line "No password yet. Open the dashboard and enter this setup code:". The code is at the end of it.
+   Find the line "No password yet. Open the dashboard and enter this set-up code:". The code is at the end of it.
 
-10. In a browser on this computer, open `http://localhost:8095`. Enter the setup code and choose your password. Read
+10. In a browser on this computer, open `http://localhost:8095`. Enter the set-up code and choose your password. Read
     [Create your password and sign in](create-your-password.md).
 
 ## Optional extras
@@ -118,12 +118,12 @@ that explains it. To activate one, follow
   first.
 - **Starboard stops straight after it starts, or the log says it cannot write to `/data`:** the `data` folder belongs
   to another user, or the numbers on the `user:` line are not yours. Check Steps 4 to 7.
-- **No setup code in the log:** a password has already been chosen. If you have forgotten it, read
+- **No set-up code in the log:** a password has already been chosen. If you have forgotten it, read
   [Reset a forgotten password](reset-a-forgotten-password.md).
 
 ## Find out more
 
-- [Find the setup code](find-the-setup-code.md)
+- [Find the set-up code](find-the-setup-code.md)
 - [Open Starboard from a phone or another computer](open-from-another-device.md)
 - [Update Starboard](update-starboard.md)
 - [Install Starboard with the installer](install-with-the-installer.md)
@@ -137,5 +137,7 @@ that explains it. To activate one, follow
 such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
+
+**Need help?** Ask on the [Starboard Discord support server](https://discord.gg/xN9bf2H4vv).
 
 <!-- /footer -->

@@ -158,6 +158,16 @@ healthy() {
 # Starboard's user cannot read, and gives, for each, the highest folder in its chain that is not this user's, which is
 # the folder the plug-in's user made. The backup leaves those out, and going back moves each back with the folder
 # that holds it. Plug-ins added, removed or held between the backup and going back are handled the same way.
+# DASH-384: caches are left out as well, as in a full backup without media (full_backup.py, STARBOARD_SKIP): fetched
+# posters and icons, the logs, and the Library's lists, which Starboard makes again from the apps. They are not
+# settings, and on a server with a large library they were most of each copy. Going back keeps the posters, icons and
+# logs that are there (the logs say why the update failed); the Library's lists are made again by the version that
+# runs, since a newer version may have written them differently. Station logos someone added (library/station-logos)
+# and the Library's saved views stay in the copy.
+CACHES_LEFT_OUT=(posters icons logs library/films.json library/tv.json library/music.json library/books.json
+  library/audiobooks.json library/radio.json library/network-logos.json)
+CACHES_KEPT=(posters icons logs)
+
 left_out() {  # left_out <folder>: one path a line, relative to <folder>
   local me p x
   me="$(id -u)"
@@ -173,6 +183,7 @@ left_out() {  # left_out <folder>: one path a line, relative to <folder>
 backup_data() {  # backup_data <file>
   local code=0 gnu=0
   local opts=(--exclude='data/plugins/*/data' --exclude='data/self-update.log' --exclude='*.tmp' --exclude='*.new') x
+  for x in "${CACHES_LEFT_OUT[@]}"; do opts+=("--exclude=data/$x"); done
   while IFS= read -r x; do opts+=("--exclude=data/$x"); done < <(left_out data)
   if tar --version 2>/dev/null | grep -q 'GNU tar'; then
     gnu=1
@@ -236,6 +247,13 @@ restore_data() {  # restore_data <file>: data goes to data.failed-update, the ba
       mv "data.failed-update/$anchor" "data/$anchor"
     fi
   done < <(left_out data.failed-update | awk -F/ '{ print NF "\t" $0 }' | sort -n | cut -f2-)
+  # The caches the backup leaves out (DASH-384): posters, icons and logs stay with the data folder.
+  local cache
+  for cache in "${CACHES_KEPT[@]}"; do
+    if [ -e "data.failed-update/$cache" ] && [ ! -e "data/$cache" ]; then
+      mv "data.failed-update/$cache" "data/$cache" 2>/dev/null || echo "Not moved back: data.failed-update/$cache" >&2
+    fi
+  done
 }
 # update-data-functions-end
 
@@ -249,7 +267,7 @@ if ! backup_err="$(backup_data "$BACKUP" 2>&1)"; then
   echo "Stopped: your settings could not be backed up, so nothing was changed. $(printf '%s\n' "$backup_err" | grep -m1 -v 'error exit delayed' || true)"
   exit 1
 fi
-echo "Saved $BACKUP (the plug-ins' own data folders are not in it: they stay where they are)"
+echo "Saved $BACKUP (the plug-ins' own data folders are not in it: they stay where they are; nor are posters, icons, logs and the Library's lists, which Starboard makes again)"
 # DASH-109: keep the copies of the last versions only (Settings, Updates, Restore: 5, 10 or 20; 5 if unset). These are
 # update.sh's own rolling copies, one per update, so the older ones are removed rather than kept elsewhere.
 if command -v python3 >/dev/null 2>&1; then

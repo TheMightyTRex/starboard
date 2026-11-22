@@ -250,7 +250,7 @@ case "$ACTION" in
     vm "cd starboard && ./install.sh --yes --no-docker --no-disks --no-app-use --no-livetv --no-disk-health" | tail -n 8 || echo "     That step failed: the checks below show what it broke"
     check INS-02 "starts and answers /healthz" wait_web
     check INS-02 "first visit goes to set-up" test "$(web /index.html)" = 303
-    check INS-02 "setup code written" vm "test -s starboard/data/setup-token"
+    check INS-02 "set-up code written" vm "test -s starboard/data/setup-token"
     check INS-02 ".env readable by the owner only" vm "test \$(stat -c %a starboard/.env) = 600"
     check INS-02 "data folder private" vm "test \$(stat -c %a starboard/data) = 700"
     check INS-02 "no Docker socket mounted" vm "! docker inspect starboard --format '{{range .Mounts}}{{.Source}} {{end}}' | grep -q docker.sock"
@@ -263,7 +263,7 @@ case "$ACTION" in
     TOKEN="$(vm "cat starboard/data/setup-token")"
     vm "cd starboard && ./install.sh --yes --docker" | tail -n 3 || echo "     That step failed: the checks below show what it broke"
     check INS-05 "starts again" wait_web
-    check INS-05 "setup code kept" test "$(vm "cat starboard/data/setup-token")" = "$TOKEN"
+    check INS-05 "set-up code kept" test "$(vm "cat starboard/data/setup-token")" = "$TOKEN"
     check INS-03 "Docker socket mounted when asked" vm "docker inspect starboard --format '{{range .Mounts}}{{.Source}} {{end}}' | grep -q docker.sock"
 
     say "INS-06 this computer only"
@@ -281,7 +281,7 @@ case "$ACTION" in
     say "INS-01 the ready-made image"
     vm "mkdir -p ~/image/data && cp starboard/compose.image.yaml ~/image/ && cd ~/image && docker compose -f compose.image.yaml up -d" | tail -n 2 || echo "     That step failed: the checks below show what it broke"
     check INS-01 "published image starts" wait_web
-    check INS-01 "setup code in the log" vm "docker logs starboard 2>&1 | grep -qi 'setup code'"
+    check INS-01 "set-up code in the log" vm "docker logs starboard 2>&1 | grep -qi 'set-up code'"
 
     say "$SYSTEM: $PASS passed, $FAIL failed"
     [ "$FAIL" = 0 ]
@@ -341,7 +341,7 @@ case "$ACTION" in
     check FIRST-02 "tester allowed to use Docker" vm "getent group docker | grep -qw tester"
     check FIRST-02 "Starboard downloaded" vm "test -d starboard/.git"
     check FIRST-02 "Starboard starts and answers /healthz" wait_web
-    check FIRST-02 "setup code written" vm "test -s starboard/data/setup-token"
+    check FIRST-02 "set-up code written" vm "test -s starboard/data/setup-token"
 
     say "FIRST-03 run it again: nothing to install"
     check FIRST-03 "--check says everything is here" vm "$RF --check"

@@ -4,6 +4,8 @@ Help for installing and using Starboard, written for people who have never run a
 a guide if you have a goal in mind, use a topic for one task, and read the basics for anything that is new
 to you.
 
+**Stuck, or want to talk to other people who use Starboard?** Join the [Starboard Discord support server](https://discord.gg/xN9bf2H4vv).
+
 > [!TIP]
 > **Start here: [Quick start: one command sets up everything](guides/quick-start.md).** Once Linux is on the
 > computer, the Run first script sets up everything else in about 15 minutes.
@@ -52,7 +54,7 @@ Each guide is a journey through several topics, in order.
 - [What the installer asks, and what each answer means](topics/what-the-installer-asks.md)
 - [Set up Starboard in the terminal, with no browser](topics/set-up-in-the-terminal.md)
 - [Install Starboard from the ready-made image](topics/install-from-the-ready-made-image.md)
-- [Find the setup code](topics/find-the-setup-code.md)
+- [Find the set-up code](topics/find-the-setup-code.md)
 - [Create your password and sign in](topics/create-your-password.md)
 - [Open Starboard from a phone or another computer](topics/open-from-another-device.md)
 - [Change what Starboard can access](topics/change-what-starboard-can-access.md)
@@ -144,7 +146,9 @@ Each guide is a journey through several topics, in order.
 - [Back up and restore Starboard's settings](topics/back-up-settings.md)
 - [Restore a saved copy of your settings](topics/restore-a-saved-copy.md)
 - [Back up the whole server](topics/back-up-the-server.md)
+- [Make and restore a full backup](topics/make-and-restore-a-full-backup.md)
 - [Copy backups to a cloud service](topics/copy-backups-to-a-cloud-service.md)
+- [Reelix's own backups](topics/reelix-backups.md)
 
 ### Jellyfin and Audiobookshelf
 
@@ -244,5 +248,7 @@ How these articles are written, for anyone who wants to help: [How this help is 
 such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
+
+**Need help?** Ask on the [Starboard Discord support server](https://discord.gg/xN9bf2H4vv).
 
 <!-- /footer -->

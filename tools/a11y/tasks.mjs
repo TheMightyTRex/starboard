@@ -886,7 +886,7 @@ check("T31", "the last part's button says what it does", start29.includes("Start
   await page.unroute(/\/api\/jellyfin\/restart$/, restart);
 }
 
-// T34 Bulk actions on Wanted (DASH-524): Space ticks a row, Shift and Space takes a run, the bar names the count,
+// T36 Bulk actions on Wanted (DASH-524): Space ticks a row, Shift and Space takes a run, the bar names the count,
 // Stop following asks first, then focus goes to Select all and the result is said.
 await page.goto(`${base}/wanted-films.html`);
 await settle();
@@ -894,43 +894,121 @@ const picks34 = page.locator("#wanted-list .dl-pick__box");
 if (await picks34.count() >= 3) {
   await page.locator("#wanted-all").focus();
   const a34 = await tabTo((f) => f.id === "select-all", 12);
-  check("T34", "Tab from Search all reaches Select all before the list", !!a34, a34 ? a34.text : "not reached");
+  check("T36", "Tab from Search all reaches Select all before the list", !!a34, a34 ? a34.text : "not reached");
   const r34 = await tabTo((f) => /^Select /.test(f.text) && f.tag === "INPUT" && f.id !== "select-all", 6);
-  check("T34", "then each row's box, named for its row", !!r34, r34 ? r34.text : "not reached");
+  check("T36", "then each row's box, named for its row", !!r34, r34 ? r34.text : "not reached");
   await page.keyboard.press("Space");
   await page.waitForTimeout(200);
-  check("T34", "Space ticks it and the bar says 1 film selected", /^1 film selected$/.test(await page.locator("#selection-text").textContent()));
+  check("T36", "Space ticks it and the bar says 1 film selected", /^1 film selected$/.test(await page.locator("#selection-text").textContent()));
   await picks34.nth(2).focus();
   await page.keyboard.down("Shift"); await page.keyboard.press("Space"); await page.keyboard.up("Shift");
   await page.waitForTimeout(200);
-  check("T34", "Shift and Space takes the run of rows", /^3 films selected$/.test(await page.locator("#selection-text").textContent()), await page.locator("#selection-text").textContent());
-  check("T34", "Select all is part ticked", await page.locator("#select-all").evaluate((b) => b.indeterminate));
+  check("T36", "Shift and Space takes the run of rows", /^3 films selected$/.test(await page.locator("#selection-text").textContent()), await page.locator("#selection-text").textContent());
+  check("T36", "Select all is part ticked", await page.locator("#select-all").evaluate((b) => b.indeterminate));
   const gone34 = await picks34.evaluateAll((boxes) => boxes.slice(0, 3).map((b) => b.getAttribute("aria-label")));
   const b34 = await tabTo((f) => f.tag === "BUTTON" && f.text === "Stop following", 80);
-  check("T34", "Tab reaches the bar's Stop following after the list", !!b34, b34 ? b34.text : "not reached");
+  check("T36", "Tab reaches the bar's Stop following after the list", !!b34, b34 ? b34.text : "not reached");
   await page.keyboard.press("Enter");
   await page.waitForTimeout(300);
   const d34 = await focus();
-  check("T34", "Stop following asks first, in a dialog", d34.inPanel, `${d34.tag} ${d34.text}`);
-  check("T34", "the question names the count", /Stop following 3 films\?/.test(await page.locator("dialog[open] h2").textContent()));
+  check("T36", "Stop following asks first, in a dialog", d34.inPanel, `${d34.tag} ${d34.text}`);
+  check("T36", "the question names the count", /Stop following 3 films\?/.test(await page.locator("dialog[open] h2").textContent()));
   await page.locator("dialog[open] button[value=ok]").focus();
   await page.keyboard.press("Enter");
   await settle();
   const f34 = await focus(), s34 = await said();
-  check("T34", "after it, focus is on Select all", f34.id === "select-all", `${f34.tag} ${f34.text}`);
-  check("T34", "the result is said", /no longer follows 3 films/.test(s34), s34);
+  check("T36", "after it, focus is on Select all", f34.id === "select-all", `${f34.tag} ${f34.text}`);
+  check("T36", "the result is said", /no longer follows 3 films/.test(s34), s34);
   const left34 = await picks34.evaluateAll((boxes) => boxes.map((b) => b.getAttribute("aria-label")));
-  check("T34", "the rows have left the list and the bar has closed", !gone34.some((n) => left34.includes(n)) && await page.locator("#selection-bar").isHidden(), left34.join(", "));
+  check("T36", "the rows have left the list and the bar has closed", !gone34.some((n) => left34.includes(n)) && await page.locator("#selection-bar").isHidden(), left34.join(", "));
   await page.locator("#select-all").focus();
   await page.keyboard.press("Space");
   await page.waitForTimeout(300);
-  check("T34", "Select all ticks every row and says how many", new RegExp(`${left34.length} films selected`).test(await said()), await said());
+  check("T36", "Select all ticks every row and says how many", new RegExp(`${left34.length} films selected`).test(await said()), await said());
   await page.locator("#selection-actions button", { hasText: "Clear selection" }).focus();
   await page.keyboard.press("Enter");
   await page.waitForTimeout(300);
   const c34 = await focus();
-  check("T34", "Clear selection closes the bar, says so, and gives focus to Select all", c34.id === "select-all" && /Selection cleared/.test(await said()) && await page.locator("#selection-bar").isHidden(), c34.text);
-} else check("T34", "Wanted has rows with a box each", false);
+  check("T36", "Clear selection closes the bar, says so, and gives focus to Select all", c34.id === "select-all" && /Selection cleared/.test(await said()) && await page.locator("#selection-bar").isHidden(), c34.text);
+} else check("T36", "Wanted has rows with a box each", false);
+
+// T34 Restore a full backup on this server (DASH-387) by keyboard alone: Tab from the list's heading reaches Restore
+// beside the newest backup; Enter opens a danger dialog with focus on the backup's password; Tab reaches the
+// Starboard password, Restore this backup, then Cancel; Escape closes it with focus back on Restore and nothing
+// started. With both passwords, Enter starts it: focus is back on Restore and each step is said politely. The example
+// server restores nothing (its made-up backup password is "made-up backup").
+await page.goto(`${base}/system-backup.html`);
+await settle();
+await page.locator("#full-list li[data-key]").first().waitFor({ timeout: 10000 }).catch(() => {});
+await page.evaluate(() => { const h = [...document.querySelectorAll("#full-body h3")].find((x) => x.textContent === "Full backups in the folder"); h.tabIndex = -1; h.focus(); });
+const r34 = await tabTo((f) => /^Restore the full backup from /.test(f.text) && f.tag === "BUTTON", 3);
+check("T34", "Tab from the list's heading reaches Restore, named with the backup's date", !!r34, r34 ? r34.text : "not reached");
+if (r34) {
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(400);
+  const d34 = await focus();
+  check("T34", "Enter opens the dialog with focus on the backup's password", d34.inPanel && d34.id === "restore-full-pw", `${d34.tag} ${d34.id}`);
+  const order34 = [];
+  for (let i = 0; i < 3; i++) { await page.keyboard.press("Tab"); const f = await focus(); order34.push(f.id || f.text); }
+  check("T34", "Tab goes to the Starboard password, Restore this backup, then Cancel", order34.join(" > ") === "restore-full-mine > Restore this backup > Cancel", order34.join(" > "));
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(400);
+  const e34 = await focus();
+  check("T34", "Escape closes it with focus back on Restore, and nothing started", /^Restore the full backup from /.test(e34.text) && !e34.inPanel
+    && await page.evaluate(() => api("/api/backup/full/restore-here").then((r) => r.status.state === "none")), e34.text);
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(400);
+  await page.keyboard.type("made-up backup");
+  await page.keyboard.press("Tab");
+  await page.keyboard.type(password);
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(() => /^Restoring the full backup/.test(document.querySelector("#announcer")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
+  const g34 = await focus();
+  check("T34", "Enter in the last field starts it: focus is back on Restore and it is said", /^Restore the full backup from /.test(g34.text) && !g34.lost
+    && /^Restoring the full backup/.test(await page.locator("#announcer").innerText()), `${g34.text} | ${await page.locator("#announcer").innerText()}`);
+  await page.waitForFunction(() => /Restored the full backup/.test(document.querySelector("#full-restore-state")?.textContent || ""), null, { timeout: 20000 }).catch(() => {});
+  await page.waitForTimeout(600);
+  const h34 = await focus();
+  check("T34", "when it ends the result is in the polite region and focus is still on the same Restore", /Restored the full backup/.test(await page.locator("#full-restore-state[aria-live=polite]").innerText())
+    && /^Restore the full backup from /.test(h34.text) && !h34.lost, h34.text);
+}
+// T35 Reelix's backup settings (DASH-385, DASH-386) by keyboard alone: the selects change with the arrow keys and
+// save at once, focus stays on the select and the saved note says so; choosing the media folder says Reelix must
+// restart, with focus still on the select.
+await page.goto(`${base}/system-backup.html`);
+await settle();
+const show35 = page.getByRole("button", { name: "Show Reelix's backups" });
+if (await show35.count()) {
+  await show35.focus();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(500);
+  if (await page.locator("#rs-password").count()) { await page.keyboard.type("made-up"); await page.keyboard.press("Enter"); }
+  await page.locator("#rs-every").waitFor({ timeout: 10000 }).catch(() => {});
+  await page.waitForTimeout(300);
+  const a35 = await focus();
+  check("T35", "after the password, focus is not lost", !a35.lost, a35.text);
+  await page.locator("#rs-backup-now").focus();
+  const s35 = await tabTo((f) => f.id === "rs-every", 3);
+  check("T35", "Tab from Make a backup now reaches the first select", !!s35);
+  await page.keyboard.press("ArrowDown");
+  await page.waitForFunction(() => { const n = document.querySelector("#rs-every")?.parentElement.querySelector(".saved-note"); return n && !n.hidden; }, null, { timeout: 5000 }).catch(() => {});
+  const b35 = await focus();
+  check("T35", "an arrow key changes it, it saves at once, focus stays and Saved is said", b35.id === "rs-every"
+    && /^Saved at \d\d:\d\d$/.test(await page.locator("#rs-every + .saved-note[role=status]").innerText().catch(() => "")), `${b35.id} | ${await page.locator("#rs-every + .saved-note").innerText().catch(() => "no note")}`);
+  await page.keyboard.press("ArrowUp");
+  await page.waitForTimeout(600);
+  const p35 = await tabTo((f) => f.id === "rs-place", 3);
+  check("T35", "Tab reaches Where Reelix keeps them", !!p35);
+  await page.keyboard.press("ArrowDown");
+  await page.locator("[data-restart-notice]").waitFor({ timeout: 10000 }).catch(() => {});
+  await page.waitForTimeout(300);
+  const c35 = await focus();
+  check("T35", "choosing the media folder keeps focus on the select, and what happens next is said", c35.id === "rs-place"
+    && /media folder from its next start/.test(await page.locator("#announcer").innerText()) && await page.locator("[data-restart-notice]").count() === 1, `${c35.id} | ${await page.locator("#announcer").innerText()}`);
+  await page.keyboard.press("ArrowUp");
+  await page.waitForTimeout(800);
+  check("T35", "choosing next to its settings again takes the restart notice away", await page.locator("[data-restart-notice]").count() === 0 && (await focus()).id === "rs-place");
+} else check("T35", "the example server has Reelix's backups", false);
 
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);

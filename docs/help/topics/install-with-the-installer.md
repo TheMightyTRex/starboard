@@ -4,7 +4,7 @@
 # Install Starboard with the installer
 
 The installer asks what Starboard may access on your computer, then builds and starts it. At the end it shows the
-addresses to open Starboard and a one-time setup code for choosing your password. It takes about 10 minutes.
+addresses to open Starboard and a one-time set-up code for choosing your password. It takes about 10 minutes.
 
 Most people use the [Run first script](run-first.md) instead. It installs Docker and everything else, then runs
 this installer for you. Use this page to do it by hand.
@@ -52,7 +52,7 @@ this installer for you. Use this page to do it by hand.
 6. Answer each question: enter the number of your answer and press Enter. Press Enter on its own to take the
    recommended answer. When you run the installer again, your last answer is the default instead.
 7. Wait while the installer builds and starts Starboard. The first time, this can take several minutes.
-8. When it finishes, the installer shows the addresses and the setup code. Keep the terminal open, or write the code
+8. When it finishes, the installer shows the addresses and the set-up code. Keep the terminal open, or write the code
    down.
 9. Open the first address in a browser on this computer and choose your password. Read
    [Create your password and sign in](create-your-password.md).
@@ -75,8 +75,8 @@ When Starboard is running, the installer shows **Open Starboard** with these lin
 - **On this computer:** the address to use in a browser on the server itself, such as `http://localhost:8095`.
 - **On other devices:** the address for every other device at home, such as `http://192.168.1.20:8095`. It appears
   only if you let your home network open Starboard.
-- **Setup code:** the one-time code you enter before choosing a password. If you lose it, read
-  [Find the setup code](find-the-setup-code.md).
+- **Set-up code:** the one-time code you enter before choosing a password. If you lose it, read
+  [Find the set-up code](find-the-setup-code.md).
 - **Ask again** and **Update:** the commands to change your answers and to update Starboard.
 
 ## Things to note
@@ -104,7 +104,7 @@ Each time the installer stops, it shows an error number, such as "Error IN-07". 
 
 ## Find out more
 
-- [Find the setup code](find-the-setup-code.md)
+- [Find the set-up code](find-the-setup-code.md)
 - [Set up Starboard in the terminal, with no browser](set-up-in-the-terminal.md)
 - [Create your password and sign in](create-your-password.md)
 - [Open Starboard from a phone or another computer](open-from-another-device.md)
@@ -120,5 +120,7 @@ Each time the installer stops, it shows an error number, such as "Error IN-07". 
 such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
+
+**Need help?** Ask on the [Starboard Discord support server](https://discord.gg/xN9bf2H4vv).
 
 <!-- /footer -->

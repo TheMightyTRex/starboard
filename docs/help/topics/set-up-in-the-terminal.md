@@ -26,7 +26,7 @@ hours. It takes about 10 minutes, plus the time to download the apps.
    [What the installer asks](what-the-installer-asks.md#the-access-it-asks-for). When Starboard is running, the
    set-up questions follow in the same terminal.
 3. **Your password:** choose one of at least 10 characters and enter it again. Nothing shows as you enter it. You do
-   not need the setup code on the server itself. Then name your dashboard, or press Enter to keep "Starboard".
+   not need the set-up code on the server itself. Then name your dashboard, or press Enter to keep "Starboard".
 4. **How to start:** on a new computer, press Enter for **New install**. Moving from apps you already run, or
    restoring a backup, is in [Other answers](#other-answers).
 5. **Storage:** choose where your media goes: this computer's main disk, a separate disk, or a pool of several
@@ -113,7 +113,7 @@ error filled in. Enter `q` at any feedback question to go back to the step.
   folder. It asks for your password first.
 - Starboard checks your answers exactly as the browser does, and saves them in the same place. VPN details are saved
   in `data/stack/.env`, which only you can read.
-- A feedback report never holds your set-up answers, password, VPN details or setup code. Email addresses, network
+- A feedback report never holds your set-up answers, password, VPN details or set-up code. Email addresses, network
   addresses, user names in folder paths and anything that has the form of a key are replaced. Do not enter a password in
   your feedback: one on its own could stay in it. If something private is in the report, enter `q` and start again.
 - The QR code is made to fit your window. In a window 80 characters by 24 lines it holds only the report's title; a
@@ -145,5 +145,7 @@ error filled in. Enter `q` at any feedback question to go back to the step.
 such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
+
+**Need help?** Ask on the [Starboard Discord support server](https://discord.gg/xN9bf2H4vv).
 
 <!-- /footer -->

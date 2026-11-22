@@ -56,19 +56,65 @@ function rsFailed(body, retry, e) {
 // Backups (DASH-201)
 async function rsBackups(body, locked) {
   const draw = (r, said = null) => {
-    const every = el("input", { class: "input", inputmode: "numeric", value: String(r.every), id: "rs-every" });
-    const keep = el("input", { class: "input", inputmode: "numeric", value: String(r.keep), id: "rs-keep" });
-    const saveSched = el("button", { type: "button", class: "btn", id: "rs-save-sched" }, "Save the schedule");
-    // A saved setting: the saved note beside Save the schedule drawn again, which keeps focus (DASH-309, R5).
-    saveSched.addEventListener("click", async () => { try { const o = await rsCall("backup-settings", { every: every.value, keep: keep.value }, "change Reelix's backups"); if (o) { draw(o); rsSavedNote($("#rs-save-sched"), o.done); } } catch (e) { problem(e.message, saveSched); } });
+    // Settings pattern 2 (DASH-385): selects that apply at once, each with the saved note beside it. A choice that
+    // is not saved (the password dialog was closed, or Reelix refused) goes back to what it was.
+    const pick = (id, value, options) => el("select", { class: "select", id, "aria-labelledby": `${id}-l`, "aria-describedby": `${id}-h` },
+      (options.some(([v]) => v === value) ? options : [...options, [value, id === "rs-every" ? `Every ${value} days` : `${value} backups`]].sort((x, y) => x[0] - y[0]))
+        .map(([v, text]) => el("option", { value: String(v), text, selected: v === value })));
+    const every = pick("rs-every", r.every, [[0, "Off"], [1, "Every day"], [2, "Every 2 days"], [3, "Every 3 days"], [7, "Every week"], [14, "Every 2 weeks"], [30, "Every 30 days"]]);
+    const keep = pick("rs-keep", r.keep, [3, 5, 7, 10, 14, 30].map((n) => [n, `${n} backups`]));
+    const setting = (select, label, hint, note) => el("li", { class: "setting" },
+      el("div", { class: "setting__text" }, el("span", { class: "setting__label", id: `${select.id}-l`, text: label }),
+        el("span", { class: "setting__hint", id: `${select.id}-h`, text: hint })),
+      el("div", { class: "setting__control" }, select, note));
+    const applies = (select, was, send, after) => {
+      const note = el("span", { class: "saved-note", hidden: true });
+      select.addEventListener("change", async () => {
+        try {
+          const o = await send();
+          if (!o) { select.value = String(was); select.focus(); return; }
+          if (after) { after(o); return; }
+          r = { ...r, ...o };
+          was = select.value;
+          select.focus();
+          window.SharedComponents.savedNote(note);
+        } catch (e) { select.value = String(was); problem(e.message, select); }
+      });
+      return note;
+    };
+    const sendSchedule = () => rsCall("backup-settings", { every: every.value, keep: keep.value }, "change Reelix's backups");
+    const settings = [
+      setting(every, "Make a backup", "Reelix makes these by itself. With Off, you can still make one by hand.", applies(every, r.every, sendSchedule)),
+      setting(keep, "Keep the newest", "Reelix removes scheduled backups beyond this number. Ones made by hand are always kept.", applies(keep, r.keep, sendSchedule))];
+    // Where they are kept (DASH-386): next to Reelix's settings, or in the media folder when that is another disk.
+    const p = r.place;
+    const disk = (c) => (c.disk ? `, on ${c.disk}` : "");
+    let placeNote = null;
+    if (p && (p.chosen === "other" || p.now === "other")) {
+      // A folder someone set in Reelix's own configuration file: said, and left alone.
+      placeNote = el("p", { class: "small muted", text: `Reelix keeps its backups in ${p.other || "a folder set in its own configuration file"}, which was not chosen here, so Starboard leaves it as it is.` });
+    } else if (p && (!p.same_disk || p.chosen === "media")) {
+      const [beside, media] = p.choices;
+      const where = el("select", { class: "select", id: "rs-place", "aria-labelledby": "rs-place-l", "aria-describedby": "rs-place-h" },
+        [["settings", `Next to its settings${disk(beside)}`], ["media", `In the media folder${disk(media)}`]]
+          .map(([v, text]) => el("option", { value: v, text, selected: v === p.chosen })));
+      const note = applies(where, p.chosen, () => rsCall("backup-place", { place: where.value }, "change where Reelix keeps its backups"),
+        (o) => { draw(o); $("#rs-place")?.focus(); const n = $("#rs-place")?.parentElement.querySelector(".saved-note"); if (n) window.SharedComponents.savedNote(n); announce(o.done); });
+      settings.push(setting(where, "Where Reelix keeps them",
+        `${media.folder} is on another disk than Reelix's settings, so a failed system disk does not take the backups with it. The backups already made move with the choice. Reelix uses the new folder once it has restarted.`, note));
+    } else if (p && p.same_disk) {
+      placeNote = el("p", { class: "small muted", text: `Reelix can keep its backups next to its settings or in the media folder. Here both are on the same disk (${p.choices[0].disk || p.choices[0].mount}), so moving them would not protect them. Full without media, on this page, can go to any disk and holds Reelix's library and settings too.` });
+    }
     const now = el("button", { type: "button", class: "btn btn--primary", id: "rs-backup-now" }, "Make a backup now");
     // The new backup is in the list: said, with focus back on the button (R5).
     now.addEventListener("click", async () => { now.disabled = true; try { const o = await rsCall("backup-now", {}, "make a Reelix backup"); if (o) { draw(o); $("#rs-backup-now")?.focus(); announce(o.done); } } catch (e) { problem(e.message, now); now.disabled = false; } });
     const rows = r.backups.map((b) => {
-      const back = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, "Restore", el("span", { class: "visually-hidden", text: ` ${b.name}` }));
+      // It opens a danger dialog, so it is a danger button (design system: danger is shown before and after).
+      const back = el("button", { type: "button", class: "btn btn--danger btn--compact" }, icon("archive-restore"), "Restore", el("span", { class: "visually-hidden", text: ` ${b.name}` }));
       back.addEventListener("click", async () => {
         if (!await confirmDialog({ title: "Restore this Reelix backup?", danger: true, confirm: "Restore",
-          message: `Reelix goes back to how it was on ${rsWhen(b.when)} when it starts again. What changed since then is lost.` })) return;
+          message: [el("p", { text: `Reelix goes back to how it was on ${rsWhen(b.when)}. What changed in Reelix since then is lost.` }),
+            el("p", { text: "The restore happens when Reelix restarts. Restart Reelix appears beside the backups once you confirm; until then nothing changes." })] })) return;
         // The restore happens later, when Reelix starts again, so it stays a toast (section 10, Toasts).
         try { const o = await rsCall("restore", { name: b.name }, "restore a Reelix backup"); if (o) { draw(o); toast(o.done); } } catch (e) { problem(e.message, back); }
       });
@@ -94,13 +140,29 @@ async function rsBackups(body, locked) {
       : el("p", { class: "small", text: "A restore is waiting for Reelix to start again. Add Reelix in Manage apps to restart it from here." });
     const note = said ? el("div", { class: "notice", "data-tone": said.tone, id: "rs-restored", tabindex: "-1" }, icon(said.tone === "success" ? "circle-check" : "triangle-alert"),
       el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: said.title }), el("p", { text: said.text }))) : null;
-    body.replaceChildren(...[note, restore,
+    // A changed folder waits for Reelix to start again, as a restore does (DASH-386, DASH-470).
+    const moving = p && p.restart && !r.restore_waiting && r.service
+      ? restartNotice({ title: "The new backup folder waits for Reelix to restart", name: "Reelix",
+        text: `Reelix keeps its backups ${p.chosen === "media" ? "in the media folder" : "next to its settings"} once it has restarted. Until then it lists none of the ones that moved.`,
+        what: "Reelix stops and starts again. Searches, requests and downloads it was handling carry on once it is back.",
+        restart: () => api(`/api/services/${encodeURIComponent(r.service)}/restart`, { method: "POST" }),
+        back: async () => (await api(`/api/status?id=${encodeURIComponent(r.service)}`)).items?.[0]?.state === "up",
+        done: async () => {
+          const o = await rsCall("backups", {}, "show Reelix's backups");
+          if (!o) return null;
+          draw(o, o.place?.restart ? { tone: "warning", title: "Still the old folder", text: "Reelix answers again, and still uses the folder from before. Check Reelix's log in Logs." }
+            : { tone: "success", title: "Done", text: `Reelix restarted and keeps its backups in ${o.folder}.` });
+          return $("#rs-restored");
+        } })
+      : p && p.restart && !r.restore_waiting ? el("p", { class: "small", text: "The new backup folder waits for Reelix to restart. Add Reelix in Manage apps to restart it from here." }) : null;
+    const onSameDisk = !p || p.now !== "media";
+    body.replaceChildren(...[note, restore, moving,
       el("ul", { class: "rows" }, rows.length ? rows : [el("li", { class: "empty", text: "No backups yet." })]),
-      el("div", { class: "form-grid" },
-        el("div", { class: "field" }, el("label", { class: "field__label", for: "rs-every", text: "Days between backups" }), el("p", { class: "hint", text: "0 deactivates scheduled backups." }), every),
-        el("div", { class: "field" }, el("label", { class: "field__label", for: "rs-keep", text: "Backups to keep" }), el("p", { class: "hint", text: "Ones made by hand are always kept." }), keep)),
-      el("div", { class: "actions" }, now, saveSched),
-      r.folder ? el("p", { class: "small muted", text: `Inside Reelix they are in ${r.folder}, next to its settings. Starboard's Full without media copies Reelix's library and settings itself, so these are extra copies on the same disk.` }) : null].filter(Boolean));  // replaceChildren writes a null as the word "null"
+      el("div", { class: "actions" }, now),
+      el("ul", { class: "settings-rows" }, settings), placeNote,
+      r.folder ? el("p", { class: "small muted", text: onSameDisk
+        ? `Inside Reelix they are in ${r.folder}, next to its settings. Starboard's Full without media copies Reelix's library and settings itself, so these are extra copies on the same disk.`
+        : `Inside Reelix they are in ${r.folder}, in the media folder. Starboard's Full without media copies Reelix's library and settings itself, so these are extra copies.` }) : null].filter(Boolean));  // replaceChildren writes a null as the word "null"
   };
   try { const r = await rsCall("backups", {}, "show Reelix's backups"); if (r) draw(r); else locked(); } catch (e) { rsFailed(body, locked, e); }
 }
@@ -146,13 +208,3 @@ startPage().then(() => {
       rsSection("rs-tasks", "Reelix's scheduled tasks", "What Reelix does on its own, such as refreshing the library, with Run now.", rsTasks, "Show Reelix's tasks"));
   }
 });
-
-// The saved note beside a button (DASH-309, R5), for a page that is not a settings page.
-function rsSavedNote(button, text) {
-  if (!button) { announce(text || "Saved"); return; }
-  button.focus();
-  const box = button.parentElement;
-  const note = box.querySelector(":scope > .saved-note") || el("span", { class: "saved-note", hidden: true });
-  box.append(note);
-  window.SharedComponents.savedNote(note, text || "");
-}

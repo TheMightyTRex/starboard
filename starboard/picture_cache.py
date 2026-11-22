@@ -60,6 +60,8 @@ def maybe_sweep(data_dir):
 
 def clear(data_dir):
     """Empties the cache (only picture files Starboard made; folders stay)."""
+    from . import posters
+    posters._missing.clear()  # items with no picture are looked for again (DASH-65)
     gone = 0
     for p in list(_files(data_dir)):
         try:

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Forgotten the password? Run this on the server, in the Starboard folder:  ./reset-password.sh
 #
-# It removes the password, signs everyone out and restarts Starboard, which prints a new setup code. Open
+# It removes the password, signs everyone out and restarts Starboard, which prints a new set-up code. Open
 # Starboard, enter the code and choose a new password. Your apps and settings stay as they are.
 # Works for the installer (Docker or --native). With the ready-made image, see docs/help (Reset a forgotten password).
 set -euo pipefail
@@ -20,4 +20,4 @@ for _ in $(seq 1 30); do
 done
 [ -s data/setup-token ] || { echo "Stopped: Starboard did not restart. Its log says why: docker compose logs starboard (or, for --native, journalctl --user -u starboard)" >&2; exit 1; }
 echo "The password is removed and everyone is signed out."
-echo "Open Starboard, enter this setup code and choose a new password: $(cat data/setup-token)"
+echo "Open Starboard, enter this set-up code and choose a new password: $(cat data/setup-token)"

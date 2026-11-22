@@ -1,6 +1,8 @@
 // Shared by every page: display settings, the header, the API helper and small DOM helpers.
 // The help centre: one page for each article in docs/help, with search (the design system's help centre builder (tools/help_centre), .github/workflows/help.yml).
 const HELP_CENTRE = "https://themightytrex.github.io/starboard/help/";
+// The Discord support server (a permanent invitation, DASH-526): in the footer and on About and updates.
+const DISCORD_INVITE = "https://discord.gg/xN9bf2H4vv";
 /** docs/help path ("topics/x.md#part") -> its help centre page. */
 function helpPage(path) {
   const [file, anchor] = path.split("#");
@@ -1056,7 +1058,10 @@ function showVersion(version, repo, latest) {
         el("span", { class: "site-footer__brand" }, brand || "", "Starboard"),
         el("nav", { "aria-label": "Starboard" }, el("ul", { class: "site-footer__links" },
           // The help centre's pages, built from docs/help and published on GitHub Pages.
-          link(`${HELP_CENTRE}index.html`, "Help", true), notes,
+          link(`${HELP_CENTRE}index.html`, "Help", true),
+          el("li", {}, el("a", { href: DISCORD_INVITE, target: "_blank", rel: "noopener noreferrer" }, "Discord support server",
+            el("span", { class: "visually-hidden", text: " (opens in a new tab)" }), icon("external-link"))),
+          notes,
           repo ? link(`https://github.com/${repo}`, "GitHub repository", true) : null,
           // A newer release adds "Upgrade available" to About and updates, in words and with the update dot.
           el("li", {}, el("a", { href: "/settings-updates.html", "data-footer-updates": true }, "About and updates",

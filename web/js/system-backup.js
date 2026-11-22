@@ -325,7 +325,8 @@ async function loadFull() {
   const make = el("button", { type: "button", class: "btn btn--primary" }, icon("archive"), "Make a full backup");
   make.addEventListener("click", () => openMakeFull(folder.input.value.trim(), pictures.checked, make));
   const state = el("div", { "aria-live": "polite" });
-  const list = el("ul", { class: "rows", "aria-label": "Full backups in the folder, newest first" });
+  const restoreState = el("div", { id: "full-restore-state", "aria-live": "polite" });
+  const list = el("ul", { class: "rows", id: "full-list", "aria-label": "Full backups in the folder, newest first" });
   body.replaceChildren(
     folder.node, disk,
     el("ul", { class: "settings-rows" }, el("li", { class: "setting" },
@@ -333,14 +334,30 @@ async function loadFull() {
       el("div", { class: "setting__control" }, el("label", { class: "switch" }, pictures)))),
     el("div", { class: "actions" }, measure), sizes,
     el("div", { class: "actions" }, make), state,
-    el("h3", { text: "Full backups in the folder" }), list,
-    el("p", { class: "small muted", text: "To restore one, install Starboard on the new server and choose Restore a backup in the set-up. Each app stops for a moment while its own folder is copied." }));
+    el("h3", { text: "Full backups in the folder" }),
+    el("p", { class: "small muted", text: "Checked means Starboard read the copy back after writing it: its size, its start and its last part." }),
+    restoreState, list,
+    el("p", { class: "small muted", text: "Restore puts one back on this server. For a new server, install Starboard there and choose Restore a backup in the set-up. Each app stops for a moment while its own folder is copied." }));
   const showState = (s) => {
     if (s.state === "running") state.replaceChildren(notice("info", "Making a full backup", `${s.step || "Starting"}. You can leave this page.`));
     else if (s.state === "failed") state.replaceChildren(notice("danger", "The full backup did not finish", s.error));
     else if (s.state === "done") state.replaceChildren(notice("success", `Made ${formatDate(s.finished * 1000, true)}`, `${formatBytes(s.size)} in ${s.file}.`));
     else state.replaceChildren();
-    make.disabled = s.state === "running";
+    making = s.state === "running";
+    make.disabled = making || restoring;
+  };
+  // Restore on this server (DASH-387): what it is doing now, then how it ended, in words in a polite live region.
+  const showRestore = (r) => {
+    restoring = r.state === "running";
+    make.disabled = making || restoring;
+    const made = r.created ? formatDate(r.created, true) : "";
+    if (r.state === "running") restoreState.replaceChildren(notice("info", `Restoring the full backup${made ? ` from ${made}` : ""}`, `${r.step || "Starting"}. Your apps stop while this happens and start again by themselves. You can leave this page.`));
+    else if (r.state === "failed") restoreState.replaceChildren(notice("danger", "The restore did not finish", `${r.error}${r.safety ? ` The full backup of how things were is ${r.safety}.` : ""}`));
+    else if (r.state === "done") {
+      const n = (r.apps || []).length;
+      restoreState.replaceChildren(notice("success", `Restored the full backup${made ? ` from ${made}` : ""}`,
+        `Finished ${formatDate(r.finished * 1000, true)}. The settings of ${n} ${n === 1 ? "app" : "apps"} are back and the apps are running again. How things were before is in the list, as ${String(r.safety || "").split("/").pop()}.`));
+    } else restoreState.replaceChildren();
   };
   // Which disk the folder is on (DASH-260): said plainly, and a warning when it is the system disk.
   const showDisk = (d) => {
@@ -354,28 +371,84 @@ async function loadFull() {
     try {
       const r = await api(`/api/backup/full/found?folder=${encodeURIComponent(folder.input.value.trim())}`);
       showDisk(r.disk);
-      list.replaceChildren(...(r.found.length ? r.found.map((b) => el("li", { class: "row row--no-lead" },
-        el("div", {}, el("div", { class: "row__title", text: formatDate(b.created, true) }),
-          el("div", { class: "row__meta", text: [formatBytes(b.size), `${b.apps.length} apps`, b.version ? `Starboard ${b.version}` : ""].filter(Boolean).join(" · ") })),
-        el("div", { class: "row__side" }, chip(b.pictures ? "With your pictures" : "Without pictures", "muted")))) :
-        [el("li", {}, emptyState("No full backups here yet", "Make one, and it appears here."))]));
+      // Drawn again when a backup or a restore ends: focus stays on the row it was on.
+      const focusKey = list.contains(document.activeElement) ? document.activeElement.closest("[data-key]")?.dataset.key : null;
+      list.replaceChildren(...(r.found.length ? r.found.map((b) => {
+        const made = formatDate(b.created, true);
+        const restore = el("button", { type: "button", class: "btn btn--danger btn--compact" }, icon("archive-restore"), "Restore",
+          el("span", { class: "visually-hidden", text: ` the full backup from ${made}` }));
+        restore.addEventListener("click", () => restoreFull(b, restore, showRestore));
+        return el("li", { class: "row row--no-lead", "data-key": b.name },
+          el("div", {}, el("div", { class: "row__title", text: made }),
+            el("div", { class: "row__meta", text: [formatBytes(b.size), `${b.apps.length} apps`, b.version ? `Starboard ${b.version}` : ""].filter(Boolean).join(" · ") })),
+          el("div", { class: "row__side" }, b.checked ? chip("Checked", "success", "circle-check") : null,
+            chip(b.pictures ? "With your pictures" : "Without pictures", "muted"), restore));
+      }) : [el("li", {}, emptyState("No full backups here yet", "Make one, and it appears here."))]));
+      if (focusKey) [...list.querySelectorAll("[data-key]")].find((n) => n.dataset.key === focusKey)?.querySelector("button")?.focus();
     } catch (e) { list.replaceChildren(el("li", {}, notice("danger", "Could not read the folder", e.message))); }
   };
+  let making = false, restoring = false;
   showState(f.status);
+  showRestore(f.restore || { state: "none" });
   showList();
   folder.input.addEventListener("change", showList);
   let was = f.status.state;
   const poll = setInterval(async () => {
     if (!document.body.contains(state)) { clearInterval(poll); return; }
-    if (!make.disabled) return;
+    if (!making && !restoring) return;
     try {
-      const s = (await api("/api/backup/full")).status;
-      showState(s);
-      if (was === "running" && s.state !== "running") showList();
-      was = s.state;
+      const now = await api("/api/backup/full");
+      const wasRestoring = restoring;
+      showState(now.status);
+      showRestore(now.restore || { state: "none" });
+      if ((was === "running" && now.status.state !== "running") || (wasRestoring && !restoring)) showList();
+      was = now.status.state;
     } catch { /* try again next time */ }
   }, 3000);
   document.addEventListener("full-backup-started", () => { make.disabled = true; was = "running"; showState({ state: "running" }); });
+}
+
+// Restore a full backup on this server (DASH-387). A danger dialog that says what is replaced and what is made first,
+// and asks for both passwords: the backup's own, which opens it, and Starboard's. A wrong one opens the dialog again
+// with the error under its field. Nothing is changed until both are right.
+async function restoreFull(b, opener, showRestore) {
+  const made = formatDate(b.created, true);
+  const apps = b.apps.length;
+  const errors = { backup: "", mine: "" };
+  for (;;) {
+    const field = (key, id, label, hint, autocomplete) => {
+      const input = el("input", { class: "input", id, type: "password", autocomplete, required: true });
+      const error = el("span", { class: "field-error", id: `${id}-error` }, icon("circle-alert"), el("span", { text: errors[key] }));
+      error.hidden = !errors[key];
+      input.setAttribute("aria-describedby", [hint ? `${id}-hint` : "", errors[key] ? error.id : ""].filter(Boolean).join(" "));
+      if (errors[key]) input.setAttribute("aria-invalid", "true");
+      return { input, node: el("div", { class: "field" }, el("label", { for: id, text: label }), hint ? el("span", { class: "hint", id: `${id}-hint`, text: hint }) : null, input, error) };
+    };
+    const backup = field("backup", "restore-full-pw", "The backup's password", "The one chosen when this backup was made.", "off");
+    const mine = field("mine", "restore-full-mine", "Your Starboard password", "", "current-password");
+    const asked = confirmDialog({
+      title: `Restore the full backup from ${made}?`,
+      message: [
+        el("p", { text: `Starboard, its plug-ins and the settings and database of ${apps} ${apps === 1 ? "app" : "apps"}${apps ? ` (${b.apps.join(", ")})` : ""} go back to how they were then. What changed since is replaced. Your media is not touched.` }),
+        el("p", { text: "Starboard makes a full backup of how things are now first, in the same folder and with the same backup password, so you can go back. Your apps stop while this happens and start again afterwards. Your Starboard password and sign-ins stay as they are." })],
+      confirm: "Restore this backup", danger: true, fields: [backup.node, mine.node] });
+    (errors.mine && !errors.backup ? mine : backup).input.focus();
+    if (!(await asked)) return;
+    errors.backup = errors.mine = "";
+    try {
+      const r = await api("/api/backup/full/restore-here", { method: "POST", body: { file: b.path, backup_password: backup.input.value, password: mine.input.value } });
+      showRestore(r.status);
+      announce(`Restoring the full backup from ${made}`);
+      return;
+    } catch (e) {
+      if (e.status === 401) { errors.mine = "That password is not right. Check Caps Lock and try again."; continue; }
+      if (e.status === 429) { errors.mine = e.message; continue; }
+      if (/password/i.test(e.message)) { errors.backup = e.message; continue; }
+      showRestore({ state: "failed", error: `${e.message}. Nothing was changed.` });
+      if (opener.isConnected) opener.focus();
+      return;
+    }
+  }
 }
 
 function openMakeFull(folder, pictures, opener) {
