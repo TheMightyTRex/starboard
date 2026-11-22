@@ -2715,6 +2715,17 @@ class Handler(BaseHTTPRequestHandler):
                 snap["pools"] = sysinfo.pools([dict(d, path=p) for (_, p), d in zip(app.disks, snap["disks"])])
                 snap["cache"] = services.cache_stats()  # key-free diagnostics: no search terms or cache keys
                 return self.json(200, snap)
+            if path == "/api/system/transcode-check" and method == "GET":  # the last result of this run, never a new test (DASH-515)
+                from . import transcode_check
+                return self.json(200, {"result": transcode_check.last()})
+            if path == "/api/system/transcode-check" and method == "POST":  # only when Test now is pressed (DASH-515)
+                from . import transcode_check
+                from .api_v1 import audit
+                audit(app.data_dir, "transcode_check", session=self.session_label())
+                try:
+                    return self.json(200, {"result": transcode_check.check(cfg.data["services"])})
+                except transcode_check.CheckError as e:
+                    return self.error(409, str(e))
             if path == "/api/system/recovery" and method == "GET":  # after an unexpected shutdown (DASH-88)
                 from . import recovery
                 return self.json(200, {"report": recovery.report(app.data_dir)})

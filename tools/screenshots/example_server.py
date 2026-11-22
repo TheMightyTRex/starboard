@@ -650,6 +650,26 @@ _LIVETV_CHANNELS = [  # (name, section, list, region)
 _LIVETV_HIDDEN = ("Quiet Coast Comedy", "Station Eleven Classics", "Lighthouse Westerns", "Winter Map Weather", "Pier Retro")
 
 
+def _example_transcode():
+    """Hardware video conversion check (DASH-515): the real check, with a made-up Jellyfin container whose answers are
+    written here, so the help's pictures show a chip where VAAPI works and Quick Sync does not. Nothing runs."""
+    from starboard import transcode_check
+    real = transcode_check.check
+    probe = ("FFMPEG=/usr/lib/jellyfin-ffmpeg/ffmpeg\nVERSION=ffmpeg version 7.1.1-Jellyfin\nDRI=yes\n"
+             "NODE=/dev/dri/renderD128 gid=105 access=ok vendor=0x8086\nNVIDIA=\nGROUPS=1000 44 105\n"
+             "ENC=h264_qsv\nENC=h264_vaapi\nENC=libx264\n")
+
+    def answer(script):
+        if "FFMPEG=" in script:
+            return 0, probe
+        if "h264_qsv" in script:
+            return 1, "[h264_qsv] Error creating a MFX session: -9.\nDevice creation failed: -1313558101."
+        return 0, ""
+    transcode_check.check = lambda services, **k: real(
+        services, listing=[{"id": "j1", "name": "jellyfin"}], inspect=lambda n: {"State": {"Running": True}, "Config": {"Env": ["PUID=1000"]}},
+        exec_fn=answer)
+
+
 def _example_keys(data_dir):
     """Two made-up API keys, so Settings, Security, API keys shows a read key and a manage key with scopes (DASH-274)."""
     from starboard import api_v1
@@ -2103,6 +2123,7 @@ def main():
     _example_plugins(str(DATA))
     _example_livetv(str(DATA))
     _example_keys(str(DATA))
+    _example_transcode()
     _example_watch_stats(str(DATA))
     _example_app_plugins(str(DATA))
     _example_audio_description(str(DATA))
