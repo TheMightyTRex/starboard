@@ -114,26 +114,29 @@ def check_code(app, token, address, code):
         if item["tries"] > CHALLENGE_TRIES:
             del _challenges[key]
             raise SigninError(401, "Too many wrong codes. Enter your password again")
-    t = section(app, "totp")
     if not totp_on(app):
         with _challenge_lock:
             _challenges.pop(key, None)
         raise SigninError(401, "Enter your password again")
     entered = str(code or "")
-    step = totp.verify(t["secret"], entered, t.get("last_step", 0))
-    left = None
-    if step is None:
-        left = totp.use_recovery_code(entered, t.get("recovery") or [])
+    # Checked and marked used under one lock: two requests with the same code cannot both pass.
+    with app.config.lock:
+        t = section(app, "totp")
+        if not totp_on(app):
+            step, left = None, None
+        else:
+            step = totp.verify(t["secret"], entered, t.get("last_step", 0))
+            left = totp.use_recovery_code(entered, t.get("recovery") or []) if step is None else None
+        if step is not None:
+            t["last_step"] = step
+            _save(app)
+        elif left is not None:
+            t["recovery"] = left
+            _save(app)
     if step is None and left is None:
         audit(app, "sign_in_code_failed", address=address)
         logs.event("warning", "sign-in", "A sign-in used the wrong two-step code")
         raise SigninError(401, "That code is not right")
-    with app.config.lock:
-        if step is not None:
-            t["last_step"] = step
-        else:
-            t["recovery"] = left
-        _save(app)
     with _challenge_lock:
         remember = _challenges.pop(key, {}).get("remember", False)
     if step is None:
