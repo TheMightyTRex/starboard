@@ -192,7 +192,7 @@ def totp_off(app, address):
 def new_recovery(app, code, address):
     t = section(app, "totp")
     if not totp_on(app):
-        raise SigninError(409, "Turn the two-step code on first")
+        raise SigninError(409, "Activate the two-step code first")
     step = totp.verify(t["secret"], code, t.get("last_step", 0))
     if step is None:
         audit(app, "recovery_codes_refused", address=address)
@@ -290,7 +290,7 @@ def set_password_login(app, allowed, address):
     if not allowed:
         o = section(app, "oidc")
         if not (sso_on(app) and o.get("tested")):
-            raise SigninError(409, "Turn single sign-on on and test it first. Then the password can be deactivated")
+            raise SigninError(409, "Activate single sign-on and test it first. Then the password can be deactivated")
     with app.config.lock:
         if allowed:
             app.config.data["auth"].pop("password_login", None)

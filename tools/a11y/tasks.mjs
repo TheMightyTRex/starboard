@@ -1039,6 +1039,50 @@ if (await show35.count()) {
   check("T36", "after deleting, focus is back on Delete history and the result is said", e34.text === "Delete history" && e34.inMain && /History across apps deleted/.test(t34), `${e34.text} / ${t34}`);
 }
 
+// T-SIGNIN (DASH-512) Set up a two-step code by keyboard alone: the dialog asks for the password first, the slide-out
+// starts in the code field, the recovery codes end on I have saved them, and focus is never lost to the top.
+await page.goto(`${base}/settings-security-signin.html`);
+await settle();
+const setUp = await tabTo((f) => f.tag === "BUTTON" && /Set up a two-step code/.test(f.text), 80);
+check("T-SIGNIN", "Set up a two-step code can be reached with Tab", !!setUp);
+if (setUp) {
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(500);
+  const d1 = await focus();
+  check("T-SIGNIN", "the password dialog starts in the password field", d1.id === "signin-password", d1.id || d1.text);
+  await page.keyboard.type(password);
+  await page.keyboard.press("Enter");
+  await page.locator("#totp-form").waitFor({ timeout: 8000 });
+  await page.waitForTimeout(400);
+  const d2 = await focus();
+  check("T-SIGNIN", "the QR code slide-out starts in the code field", d2.id === "totp-code" && d2.inPanel, d2.id || d2.text);
+  await page.keyboard.type("123456");
+  await page.keyboard.press("Enter");
+  await page.locator(".recovery-codes").waitFor({ timeout: 8000 });
+  await page.waitForTimeout(400);
+  const d3 = await focus();
+  check("T-SIGNIN", "the recovery codes end on I have saved them", /I have saved them/.test(d3.text) && d3.inPanel, d3.text);
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(700);
+  const d4 = await focus(), s4 = await said();
+  check("T-SIGNIN", "after it closes focus is not lost to the top of the page", !d4.lost, d4.text);
+  check("T-SIGNIN", "the result is said", /Two-step code activated|recovery codes left/i.test(s4), s4);
+  // Put back: the dialog, then the password, by keyboard.
+  const off = await tabTo((f) => f.tag === "BUTTON" && /Deactivate the two-step code/.test(f.text), 80);
+  check("T-SIGNIN", "Deactivate the two-step code can be reached with Tab", !!off);
+  if (off) {
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(500);
+    const d5 = await focus();
+    check("T-SIGNIN", "its dialog starts in the password field", d5.id === "signin-password", d5.id || d5.text);
+    await page.keyboard.type(password);
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(1000);
+    const d6 = await focus();
+    check("T-SIGNIN", "after deactivating, focus is not lost to the top of the page", !d6.lost, d6.text);
+  }
+}
+
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

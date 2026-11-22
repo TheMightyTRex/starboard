@@ -180,7 +180,7 @@ async function startSignin() {
         if (want && !o.tested) { allow.checked = false; problem("Run the test sign-in first. It must work before you turn this on", allow); return; }
         allow.checked = !want;
         const r = await askPassword({ title: want ? "Allow single sign-on?" : "Deactivate single sign-on?", confirm: want ? "Allow" : "Deactivate", danger: !want,
-          message: want ? "The sign-in page then offers a button for your provider, beside the password." : "The button goes. The password works again, even if you had turned it off." });
+          message: want ? "The sign-in page then offers a button for your provider, beside the password." : "The button goes. The password works again, even if you had deactivated it." });
         if (!r) { allow.focus(); return; }
         try { st = { ...st, ...(await api("/api/security/oidc/enable", { method: "POST", body: { password: r.password, enabled: want } })) }; draw(); showSaved("sso-saved", want ? "Single sign-on is on" : "Single sign-on is off"); }
         catch (err) { problem(err.message, allow); }

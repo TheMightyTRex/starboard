@@ -28,7 +28,7 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "settings-downloads.html", "settings-downloads-usenet.html", "settings-downloads-hours.html",
   // Radio's, Performance's and Security's level 2 pages (DASH-391)
   "settings-radio-link.html", "settings-radio-library.html", "settings-radio-logos.html", "settings-performance-pictures.html",
-  "settings-security-password.html", "settings-security-keys.html", "settings-security-sessions.html",
+  "settings-security-password.html", "settings-security-signin.html", "settings-security-keys.html", "settings-security-sessions.html",
   "settings-plugins.html", "settings-plugins-catalogue.html", "settings-plugin.html?id=direct-play"];  // with the set-up's Audio description offer (DASH-399)
 const SECRET = "made-up-journey-key-7f3a9c1e5b";
 const XSS = `<img src=x onerror="window.__xss='name'">`;
@@ -2632,6 +2632,75 @@ await api("/api/reelix/admin/system/backup-settings", { method: "POST", body: { 
 await page.unroute(/\/api\/reelix\/admin\/system\/(backups|backup-place|backup-settings)$/, rxPlace);
 await page.unroute(/\/api\/services\/[a-z0-9-]+\/restart$/);
 await page.unroute(/\/api\/status\?id=/, rxStatus);
+
+// DASH-512: the two-step code and single sign-on for Starboard's own sign-in. Both are off until set up; set-up asks for
+// the password, shows a QR code and the recovery codes once; signing in then asks for the code after the password;
+// deactivating puts it back. The example server takes 123456 as the right code (tools/screenshots/example_server.py).
+console.log("\n== SIGNIN-01 Two-step code and single sign-on");
+await page.setViewportSize({ width: 1280, height: 860 });
+await open("settings-security-signin.html");
+check("SIGNIN-01", "nothing is on at first: the two-step code says Off, with its set-up button", await page.getByRole("button", { name: "Set up a two-step code" }).count() === 1
+  && /Off/.test(await page.locator("#sc-2fa-h").locator("xpath=ancestor::section").innerText()));
+const signinState = await api("/api/security/signin");
+check("SIGNIN-01", "the settings say so, and never hold a secret", !signinState.totp.enabled && !signinState.oidc.enabled && signinState.password_login && !JSON.stringify(signinState).includes("made-up-client-secret"));
+await page.getByRole("button", { name: "Set up a two-step code" }).click();
+check("SIGNIN-02", "the set-up asks for the password first, with focus in its field", await page.evaluate(() => document.activeElement?.id === "signin-password"));
+await page.fill("#signin-password", "not the password at all");
+await page.keyboard.press("Enter");
+await page.waitForTimeout(800);
+check("SIGNIN-02", "a wrong password is refused and no QR code is shown", await page.locator(".qr-card__code svg").count() === 0);
+await page.getByRole("button", { name: "Set up a two-step code" }).click();
+await page.fill("#signin-password", password);
+await page.keyboard.press("Enter");
+await page.locator("#totp-form").waitFor({ timeout: 8000 });
+check("SIGNIN-02", "the QR code has a name for screen readers, and the key can be typed instead", await page.locator('.qr-card__code svg[role=img][aria-label]').count() === 1 && /^[A-Z2-7 ]{20,}$/.test(await page.locator("#totp-key").innerText()));
+check("SIGNIN-02", "focus is in the code field", await page.evaluate(() => document.activeElement?.id === "totp-code"));
+await page.fill("#totp-code", "000000");
+await page.keyboard.press("Enter");
+await page.waitForTimeout(800);
+check("SIGNIN-02", "a wrong code is refused beside the field and nothing is turned on", /not right/.test(await page.locator("#totp-code-error").innerText().catch(() => "")) && !(await api("/api/security/signin")).totp.enabled);
+await page.fill("#totp-code", "123456");
+await page.keyboard.press("Enter");
+await page.locator(".recovery-codes").waitFor({ timeout: 8000 });
+const recovery = await page.locator(".recovery-codes code").allTextContents();
+check("SIGNIN-02", "8 different recovery codes are shown, once", recovery.length === 8 && new Set(recovery).size === 8 && recovery.every((c) => /^[a-z2-9]{5}-[a-z2-9]{5}$/.test(c)), recovery.join(" "));
+check("SIGNIN-02", "focus is on I have saved them", await page.evaluate(() => /I have saved them/.test(document.activeElement?.textContent || "")));
+await page.keyboard.press("Enter");
+await page.waitForTimeout(600);
+check("SIGNIN-02", "it is on, and says how many recovery codes are left", /8 of 8 recovery codes left/.test(await page.locator("#recovery-left").innerText()));
+check("SIGNIN-02", "focus is not lost to the top of the page", await page.evaluate(() => document.activeElement && document.activeElement !== document.body));
+// Signing in as someone who has not: a second browser, with no session.
+const other = await (await browser.newContext({ viewport: { width: 1280, height: 860 } })).newPage();
+await other.goto(`${base}/login.html`);
+await other.fill("#password", password);
+await other.keyboard.press("Enter");
+await other.locator("#code").waitFor({ state: "visible", timeout: 8000 });
+check("SIGNIN-03", "the code is asked for after the password, and nothing is signed in yet", /login/.test(other.url()) && await other.evaluate(() => document.activeElement?.id === "code"));
+check("SIGNIN-03", "the password form is gone and the step says what to enter", await other.locator("#login-form").isHidden() && /authenticator app/.test(await other.locator("label[for=code]").innerText()));
+await other.fill("#code", "111111");
+await other.keyboard.press("Enter");
+await other.waitForTimeout(800);
+check("SIGNIN-03", "a wrong code says so under the field, keeps focus there and signs nobody in", /not right/.test(await other.locator("#code-error").innerText()) && await other.evaluate(() => document.activeElement?.id === "code") && /login/.test(other.url()));
+await other.fill("#code", recovery[0].toUpperCase());
+await other.keyboard.press("Enter");
+await other.waitForURL((u) => !u.pathname.endsWith("login.html"), { timeout: 8000 }).catch(() => {});
+check("SIGNIN-03", "a recovery code signs in, once", !/login/.test(other.url()) && (await api("/api/security/signin")).totp.recovery_left === 7);
+await other.context().close();
+await open("settings-security-signin.html");
+await page.getByRole("button", { name: "Deactivate the two-step code" }).click();
+check("SIGNIN-04", "deactivating asks first, and the safe choice is not the default", await page.getByRole("dialog").count() === 1);
+await page.fill("#signin-password", password);
+await page.keyboard.press("Enter");
+await page.waitForTimeout(800);
+check("SIGNIN-04", "after it, the two-step code is off again and the password alone signs in", !(await api("/api/security/signin")).totp.enabled && await page.getByRole("button", { name: "Set up a two-step code" }).count() === 1);
+// Single sign-on, as far as a made-up provider allows: the form, the secret kept out of the page, the test before it can be used.
+await page.getByRole("tab", { name: "Single sign-on" }).click().catch(() => {});
+check("SIGNIN-05", "the secret is never in the page, only that it is kept", await page.locator("#sso-secret").getAttribute("placeholder") === "Kept. Leave blank to keep it" && !(await page.content()).includes("made-up-client-secret"));
+check("SIGNIN-05", "Allow single sign-on is a switch with a name", await page.getByRole("switch", { name: /Allow single sign-on/ }).count() === 1);
+const pwOff = await page.evaluate(async () => { try { await api("/api/security/password-login", { method: "POST", body: { password: "example-password", allowed: false } }); return "allowed"; } catch (e) { return e.message; } });
+check("SIGNIN-05", "the password cannot be deactivated until single sign-on is on and has been tested", /Activate single sign-on and test it first/.test(pwOff), pwOff);
+const asKey = await page.evaluate(async () => (await fetch("/api/security/signin", { headers: { Authorization: "Bearer sb_manage_000000_nope" } })).status);
+check("SIGNIN-05", "an API key, or a made-up one, cannot read any of it", asKey === 401, String(asKey));
 
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
