@@ -18,7 +18,7 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "library-audiobooks-narrators.html",
   "library-film.html?id=3", "library-tv-show.html?id=8", "library-artist.html?id=1", "library-radio-show.html?id=1",
   "library-book.html?id=4", "library-audiobook.html?id=6",
-  "discover-films.html", "discover-radio.html", "downloads-finished.html", "wanted-films.html", "wanted-music.html", "wanted-audiobooks.html", "history.html", "settings-reelix.html",
+  "discover-films.html", "discover-radio.html", "downloads-finished.html", "wanted-films.html", "wanted-music.html", "wanted-audiobooks.html", "history.html", "history-apps.html", "settings-reelix.html",
   "search-sites.html", "settings-radio.html",  // Search the sites (DASH-213), Settings, Radio (DASH-212)
   "settings-dispatcharr.html",  // Settings, Apps, Dispatcharr (DASH-228)
   // General's level 2 pages (DASH-389)
@@ -861,8 +861,8 @@ check("FOOT-01", "the version at the bottom of the side menu links to Settings, 
   /^(Starboard version )?v\d+\.\d+\.\d+(, update available: version \d+\.\d+\.\d+)?$/.test((await page.locator(".rail__end a.rail__version [data-version-short]").textContent()).trim())
   && (await page.locator(".rail__end a.rail__version").getAttribute("href")) === "/settings-updates.html");
 const footLinks = await page.locator(".site-footer .site-footer__links a").evaluateAll((as) => as.map((a) => a.childNodes[0].textContent.trim()));
-check("FOOT-01", "the footer links are Help, Release notes, GitHub repository, About and updates",
-  footLinks.join("|") === "Help|Release notes|GitHub repository|About and updates", footLinks.join(", "));
+check("FOOT-01", "the footer links are Help, Discord support server, Release notes, GitHub repository, About and updates",
+  footLinks.join("|") === "Help|Discord support server|Release notes|GitHub repository|About and updates", footLinks.join(", "));
 const maker = page.locator(".site-footer > a.site-footer__maker");
 check("FOOT-01", "TheMightyTRexUK is on the right, one link to the GitHub profile, with the dinosaur mark",
   (await maker.count()) === 1 && (await maker.getAttribute("href")) === "https://github.com/TheMightyTRex"

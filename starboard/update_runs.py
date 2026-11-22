@@ -107,6 +107,14 @@ def _end(data_dir, run, state, said, app=None):
     api_v1.audit(data_dir, "update_finished", target=run["target"], action=run["action"], state=state, version=run["to"])
     ok = state in ("updated", "rolled-back", "up-to-date")
     logs.event("info" if ok else "error", "updates", f"{run['name']}: {said}")
+    # Activity, History, Across apps (DASH-68): one entry for each app, plug-in or Starboard part that was updated or
+    # was not. A roll back someone asked for, nothing to do, and Install all updates' own summary write nothing.
+    if state in ("updated", "failed", "went-back", "refused") and run.get("action") != "update-all" and not run.get("items"):
+        from . import activity_log
+        versions = " to ".join(str(v) for v in (run.get("from"), run.get("to")) if v)
+        activity_log.note("upgraded" if state == "updated" else "failed", run["name"],
+                          f"{run['name']} updated{' from ' + versions if run.get('from') and run.get('to') else ' to ' + versions if versions else ''}"
+                          if state == "updated" else f"{run['name']} was not updated", "" if state == "updated" else said, key=f"update:{run['id']}")
     watch = getattr(app, "watch", None)
     if watch and not ok:
         try:

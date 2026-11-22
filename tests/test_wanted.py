@@ -62,3 +62,27 @@ class WantedEveryKind(unittest.TestCase):
             self.assertEqual(calls[-1][1:], ("/books/search", None, {"kind": "item", "ids": [1, 2], "format": "audiobook"}))
             wanted.search(svc, "cutoff", "album", [])
             self.assertEqual(calls[-1][1:], ("/music/search", None, {"kind": "cutoff", "ids": []}))
+
+
+class StopFollowing(unittest.TestCase):
+    """DASH-524: Stop following for the ticked ones, one request to Reelix for each kind."""
+    def test_each_kind_uses_reelix_own_route(self):
+        want = {"movie": ("/movies/bulk", {"ids": [3, 4], "edit": {"monitored": False}}, "2 films"),
+                "episode": ("/episodes/monitor", {"episode_ids": [3, 4], "monitored": False}, "2 episodes"),
+                "album": ("/albums/monitor", {"album_ids": [3, 4], "monitored": False}, "2 albums"),
+                "ebook": ("/books/monitor", {"book_ids": [3, 4], "format": "ebook", "monitored": False}, "2 books"),
+                "audiobook": ("/books/monitor", {"book_ids": [3, 4], "format": "audiobook", "monitored": False}, "2 audiobooks")}
+        for kind, (path, body, words) in want.items():
+            with mock.patch("starboard.services.reelix_native", return_value=REELIX), mock.patch("starboard.services._api") as api:
+                said = wanted.stop([], kind, [4, "3", 4, "x"])
+            self.assertEqual((api.call_args[0][1], api.call_args.kwargs["method"], api.call_args.kwargs["body"]), (path, "PUT", body))
+            self.assertEqual(said, f"Reelix no longer follows {words}")
+
+    def test_one_is_singular_and_none_is_refused(self):
+        with mock.patch("starboard.services.reelix_native", return_value=REELIX), mock.patch("starboard.services._api") as api:
+            self.assertEqual(wanted.stop([], "movie", [9]), "Reelix no longer follows 1 film")
+            with self.assertRaisesRegex(ValueError, "Tick at least one"):
+                wanted.stop([], "movie", [])
+            with self.assertRaises(ValueError):
+                wanted.stop([], "radio", [1])
+            self.assertEqual(api.call_count, 1)

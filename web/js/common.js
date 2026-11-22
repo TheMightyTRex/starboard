@@ -997,11 +997,20 @@ const USENET_AD = "these are affiliate links. If you sign up through one, the pr
 const USENET_RIGHTS_TITLE = "Download only what you have the right to";
 const USENET_RIGHTS = "Use Usenet only for files you have the right to download, such as open-source software, works in the public domain and your own backups. Downloading films, series, music or books without the copyright holder's permission is against the law in the UK and most other countries. Starboard does not host or provide any files, and you are responsible for what you download.";
 
-// What Usenet may be used for, as a notice: in the wizard, on Manage apps and on About.
-function usenetRights() {
+// The same words for every download app (torrents as well as Usenet), as in the README and help footer
+// (tools/help_footer.py). About shows these.
+const DOWNLOAD_RIGHTS = "Use the download apps only for files you have the right to download, such as open-source software, works in the public domain and your own backups. Downloading films, series, music or books without the copyright holder's permission is against the law in the UK and most other countries. Starboard does not host or provide any files, and you are responsible for what you download.";
+
+function rightsNotice(text) {
   return el("div", { class: "notice" }, icon("info"), el("div", { class: "notice__body" },
-    el("span", { class: "notice__title", text: USENET_RIGHTS_TITLE }), el("p", { text: USENET_RIGHTS })));
+    el("span", { class: "notice__title", text: USENET_RIGHTS_TITLE }), el("p", { text })));
 }
+
+// What Usenet may be used for, as a notice: in the wizard and on Manage apps.
+function usenetRights() { return rightsNotice(USENET_RIGHTS); }
+
+// What every download app may be used for, as a notice: on About.
+function downloadRights() { return rightsNotice(DOWNLOAD_RIGHTS); }
 
 // The providers: each name is the affiliate link, opening in a new tab, after the Ad note.
 function usenetProviders() {

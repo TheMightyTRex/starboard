@@ -69,7 +69,7 @@ MENU = [
                                    ("wanted-music.html", "Music", "music"), ("wanted-books.html", "Books", "book-open"),
                                    ("wanted-audiobooks.html", "Audiobooks", "headphones")]),
         ("Requests", "inbox", [("downloads-requests.html", "Requests", "inbox"), ("downloads-issues.html", "Issues", "circle-alert")]),
-        ("History", "history", [("history.html", "History", "history")]),
+        ("History", "history", [("history.html", "History", "history"), ("history-apps.html", "Across apps", "layout-grid")]),
     ]),
     ("system", "System", "server", [
         ("Overview", "layout-dashboard", [("system.html", "Overview", "layout-dashboard"), ("system-monitor.html", "Monitor", "gauge")]),
@@ -168,6 +168,7 @@ HELP = {
     "downloads-issues.html": ("topics/approve-requests.md", "issues people report"),
     "downloads-direct.html": ("topics/manage-downloads.md#download-from-a-youtube-or-spotify-link", "downloading from YouTube and Spotify"),
     "history.html": EVERYDAY,
+    "history-apps.html": ("topics/check-what-happened-across-your-apps.md", "checking what was added, failed and upgraded across your apps"),
     "system.html": ("README.md#your-server", "your server"),
     "system-monitor.html": ("topics/monitor-apps.md", "finding out what each app is using"),
     "index.html": ("README.md#apps", "apps"),
