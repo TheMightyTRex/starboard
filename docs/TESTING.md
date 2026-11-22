@@ -96,11 +96,11 @@ Pi OS). `VM_MEMORY=512` sets the memory, for example to match a Raspberry Pi Zer
 the `qemu-system-arm` and `qemu-efi-aarch64` packages. Without hardware speed-up (KVM) the PC systems are about
 ten times slower; arm64 is always emulated.
 
-The 17 checks: the installer with every question answered No (starts, first visit goes to set-up, setup code,
+The 17 checks: the installer with every question answered No (starts, first visit goes to set-up, set-up code,
 `.env` and `data` private, no Docker socket, the API refuses without signing in, another host name is
-refused); the installer run again with Docker access (setup code kept, socket mounted); this computer only
+refused); the installer run again with Docker access (set-up code kept, socket mounted); this computer only
 (answers inside the VM, refused from outside); `./update.sh --check`; the published image starts and prints
-the setup code.
+the set-up code.
 
 ## Latest results
 

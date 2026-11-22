@@ -27,6 +27,36 @@ DOWN_SINCE = {}  # app id: when it first stopped answering, cleared when it answ
 ON_CHANGE = None  # set at start to plugin_life.emit: an app going down or coming back is an event for plug-ins
 SAID_DOWN = set()  # apps said to be down to plug-ins, so each change is said once
 FIRST_SEEN = {}  # (app id, message): when an app's own health warning was first seen
+# Backing off (DASH-66): an app that has not answered BACKOFF_AFTER checks in a row is checked less often, the wait
+# doubling from the usual 15 seconds up to BACKOFF_MAX, and its last answer is shown meanwhile. The first answer from
+# it, to a check or to anything else Starboard asks it, puts it back to every check. Check again always checks.
+BACKOFF_AFTER = 2  # as alerts and plug-in events: two checks in a row say an app is down, at the usual pace
+BACKOFF_BASE = 15  # seconds: how long the shared status answer is kept
+BACKOFF_MAX = 300  # seconds: the longest an app that is down waits for its next check
+_backoff = {}  # app id: {"fails", "due" (time.monotonic()), "url", "result"}; in memory only
+
+
+def backoff_wait(fails):
+    """Seconds until the next check of an app that has not answered `fails` checks in a row: 0 is every check."""
+    if fails < BACKOFF_AFTER:
+        return 0
+    return min(BACKOFF_MAX, BACKOFF_BASE * 2 ** min(fails - BACKOFF_AFTER + 1, 10))
+
+
+def _held(service, now=None):
+    """The last answer of an app whose next check is not due yet, or None when it is to be checked now."""
+    entry = _backoff.get(service.get("id"))
+    if not entry or entry["url"] != service.get("url"):
+        return None
+    if (time.monotonic() if now is None else now) >= entry["due"]:
+        return None
+    return dict(entry["result"])
+
+
+def _answered(service):
+    """An app answered something: its next status check is a real one."""
+    if _backoff and service.get("id") in _backoff:
+        _backoff.pop(service["id"], None)
 
 
 class _KeepKeysHome(urllib.request.HTTPRedirectHandler):
@@ -166,8 +196,10 @@ def _api(service, path, params=None, method="GET", body=None, timeout=TIMEOUT):
     try:  # app addresses are checked to be http(s) when saved (config.validate_service)
         status, answer = jsonhttp.request(url, method, body, headers, timeout, limit=8_000_000, full=True)
         logs.detail("apps", f"{service['name']} {method} {path} {status} in {round((time.time() - started) * 1000)} ms")
+        _answered(service)
         return answer
     except urllib.error.HTTPError as e:
+        _answered(service)  # an error is still an answer: only an app that says nothing backs off (DASH-66)
         logs.detail("apps", f"{service['name']} {method} {path} answered {e.code} in {round((time.time() - started) * 1000)} ms")
         detail = jsonhttp.error_message(e)
         if e.code in (401, 403):
@@ -202,7 +234,9 @@ def _fetch(service, req, timeout):
         with urllib.request.urlopen(req, timeout=timeout) as resp:  # app addresses are checked to be http(s) when saved (config.validate_service)  # nosec B310
             raw = resp.read(8_000_000)
             logs.detail("apps", f"{where} {resp.status} in {round((time.time() - started) * 1000)} ms")
+        _answered(service)
     except urllib.error.HTTPError as e:
+        _answered(service)
         logs.detail("apps", f"{where} answered {e.code}")
         if e.code in (401, 403):
             raise ServiceError(f"{service['name']} refused the API key") from None
@@ -349,8 +383,15 @@ def _record(service, result):
         RECENT[sid].append({"t": round(now), "state": result["state"], "ms": result.get("ms"), "message": result.get("message", "")})
         if result["state"] == "down":
             result["down_since"] = DOWN_SINCE.setdefault(sid, now)
+            entry = _backoff.get(sid)
+            fails = entry["fails"] + 1 if entry and entry["url"] == service.get("url") else 1
+            wait = backoff_wait(fails)
+            if wait:
+                result["check_every"] = wait  # seconds: said in the app's slide-out
+            _backoff[sid] = {"fails": fails, "due": time.monotonic() + wait, "url": service.get("url"), "result": result}
         else:
             DOWN_SINCE.pop(sid, None)
+            _backoff.pop(sid, None)
         # Plug-ins that asked for app.down or app.up (DASH-330): down after two checks in a row without an answer
         # (as alerts, so a restart says nothing), up when one that was said to be down answers again.
         last_two = [c["state"] for c in list(RECENT[sid])[-2:]]
@@ -383,12 +424,16 @@ def recent_checks(service_id):
     return list(reversed(RECENT.get(service_id, [])))
 
 
-def status_all(services, only=None):
-    """Every enabled app's state; only: one app id, checked on its own (Check again in its slide-out)."""
+def status_all(services, only=None, fresh=False):
+    """Every enabled app's state; only: one app id, checked on its own (Check again in its slide-out). An app that
+    is backing off (DASH-66) keeps its last answer until its next check is due, unless only or fresh asks for it."""
     enabled = [s for s in services if s.get("enabled", True) and (only is None or s["id"] == only)]
     by_id = {s["id"]: s for s in services}
-    checked = [s for s in enabled if s.get("url")]
+    now = time.monotonic()
+    held = {} if fresh or only is not None else {s["id"]: h for s in enabled if s.get("url") and (h := _held(s, now))}
+    checked = [s for s in enabled if s.get("url") and s["id"] not in held]
     results = {r["id"]: r for r in POOL.map(check, checked)}
+    results.update(held)
     out = []
     for s in enabled:
         if s["id"] in results:

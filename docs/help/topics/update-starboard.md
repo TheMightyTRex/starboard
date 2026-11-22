@@ -73,6 +73,7 @@ first, is checked afterwards and goes back by itself if it does not work, and th
 4. Select **Install 4 updates**, for example.
 5. A panel shows each update with its state: **Waiting**, **Updating**, **Done**, **Went back** or **Held back**.
    While it works, it says **Installing updates** and how many are done, such as "3 of 5 done", and the bar moves.
+   The bar shows from the first moment, before the first update is done, and grows as each update ends.
    If you asked your device for less motion, the bar keeps still. You can leave the page, and it carries on.
 6. When it ends, the panel says how it went: **All updates finished**, **Some updates did not install** or **The
    updates stopped**, with what happened, such as "4 of 5 updated. Went back by itself: Sonarr".
@@ -189,6 +190,8 @@ If you only want to know whether an update is out, without installing it, run `.
 
 - The updater keeps a backup of your `data` folder in the `backups` folder each time it runs, named with the date. It
   never sends anything anywhere.
+- The backup holds your settings. It leaves out what Starboard makes again by itself: fetched posters and icons, the
+  logs and the Library's lists. Each plug-in's own data folder is left out too, and stays where it is.
 - If the new version does not start, the updater goes back to the version you had and puts your settings back. The
   last lines say "Back on" and the version.
 - If the `image:` line in your Compose file ends in a version, such as `:0.7.2` instead of `:latest`, pulling does not

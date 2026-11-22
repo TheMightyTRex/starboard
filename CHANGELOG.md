@@ -7,8 +7,18 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Fallback posters (DASH-65):** when an app has no small posters of its own, such as Reelix, Coming up uses the picture address the app gives for the item, then TMDB's poster through the app's own search, each at a small size (TMDB's 185 pixels wide). With no picture anywhere, the item shows the app's icon, and the app is asked again after an hour. Help: [Find out what is coming up](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/coming-up.md).
+
+### Changed
+- **Apps that are not responding are checked less often (DASH-66):** after 2 checks with no answer, Starboard waits 30 seconds, then 1, 2 and 4 minutes, and from then on 5 minutes between checks, so a stopped app costs the server little. The app's details say how often. Check again checks at once, and the first answer from the app puts it back to every check. Help: [An app shows as not responding](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/app-not-responding.md).
+- **The updater's backup is smaller (DASH-384):** `./update.sh` and Update now leave fetched posters and icons, the logs and the Library's lists out of the copy of the `data` folder they make before each update, as a full backup without media does. Going back keeps the posters, icons and logs that are there. Help: [Update Starboard](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/update-starboard.md).
+- **Set-up code, and a heading for each page (DASH-72):** the one-time code is "set-up code" everywhere, and the page where you enter it is called Create your password, so it no longer shares the heading Set up Starboard with the set-up guide. Help: [Create your password and sign in](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/create-your-password.md).
+
 ### Fixed
+- **Install all updates (owner, 19 November 2026: "show the animated progress bar at 1% then increase as items get installed"; DASH-489):** on Settings, Updates, the moving bar shows from the moment the panel says Installing updates, and grows as each update ends. It no longer waits empty for the first update. The count read out stays the true one, such as "0 of 5 done".
 - **The VPN card said No VPN on a server that uses one (owner, 22 November 2026):** when Gluetun was kept from an earlier set-up, Starboard had no connection to ask it, and the dashboard and Downloads said No VPN although every download went through it. Starboard now reads the VPN's own health check from its container, so the card says Connected or Not connected. If the state cannot be read, it says Not known, never No VPN.
+
 
 ## [0.26.0] (21 November 2026)
 

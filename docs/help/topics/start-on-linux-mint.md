@@ -30,7 +30,7 @@ minutes, most of it waiting for downloads.
 4. Press Enter at each question to take the recommended answer. When it asks for your password, enter it and press
    Enter. Nothing appears as you enter it.
 5. At **How do you want to finish setting up?**, press Enter for **In a browser (recommended)**. Firefox opens
-   Starboard's set-up page with the setup code filled in. Read
+   Starboard's set-up page with the set-up code filled in. Read
    [Create your password and sign in](create-your-password.md).
 
 On Linux Mint, the Run first script installs Docker from Linux Mint's own software sources. Read
@@ -49,7 +49,7 @@ On Linux Mint, the Run first script installs Docker from Linux Mint's own softwa
   [If it does not work](run-first.md#if-it-does-not-work) in the Run first article.
 - **Error RF-12, or "Could not get lock":** the Update Manager took more than 45 minutes. Read
   [RF-12](run-first-errors.md#rf-12).
-- **The browser does not open:** open Firefox and go to the address the terminal shows, then enter the setup code
+- **The browser does not open:** open Firefox and go to the address the terminal shows, then enter the set-up code
   it shows.
 - **A phone or another computer cannot open Starboard:** the firewall may be active. Allow Starboard's port:
 

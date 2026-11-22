@@ -1,9 +1,9 @@
 [Help centre](../README.md) · Install and update · how-to
 <!-- help: start / install -->
 
-# Find the setup code
+# Find the set-up code
 
-The setup code is a one-time code that proves the person choosing Starboard's password is the person who installed
+The set-up code is a one-time code that proves the person choosing Starboard's password is the person who installed
 it. The installer shows it at the end. You can show it again on the server until you have chosen a password.
 
 ## Before you begin
@@ -14,7 +14,7 @@ it. The installer shows it at the end. You can show it again on the server until
 
 ## Steps if you used the installer
 
-1. Find **Setup code** in the **Open Starboard** box the installer showed at the end. Read
+1. Find **Set-up code** in the **Open Starboard** box the installer showed at the end. Read
    [What it prints at the end](install-with-the-installer.md#what-it-prints-at-the-end).
 2. If you closed the terminal, open a new one and go to the Starboard folder:
 
@@ -22,7 +22,7 @@ it. The installer shows it at the end. You can show it again on the server until
    cd ~/starboard
    ```
 
-3. Show the code. This prints the setup code on its own:
+3. Show the code. This prints the set-up code on its own:
 
    ```bash
    cat data/setup-token
@@ -44,7 +44,7 @@ it. The installer shows it at the end. You can show it again on the server until
    docker logs starboard
    ```
 
-3. Find the line "No password yet. Open the dashboard and enter this setup code:". The code is at the end of it.
+3. Find the line "No password yet. Open the dashboard and enter this set-up code:". The code is at the end of it.
 
 ## Things to note
 
@@ -58,8 +58,8 @@ it. The installer shows it at the end. You can show it again on the server until
 - **"No such file or directory":** either you are not in the Starboard folder, or a password has already been
   chosen, so there is no code any more. Run `cd ~/starboard` and try again.
 - **A password has already been chosen and you do not know it:** read
-  [Reset a forgotten password](reset-a-forgotten-password.md). Resetting makes a new setup code.
-- **Starboard says "The setup code is not right":** check you copied the whole code and nothing else, with no space
+  [Reset a forgotten password](reset-a-forgotten-password.md). Resetting makes a new set-up code.
+- **Starboard says "The set-up code is not right":** check you copied the whole code and nothing else, with no space
   at either end. Show it again with the steps here and copy it once more.
 
 ## Find out more

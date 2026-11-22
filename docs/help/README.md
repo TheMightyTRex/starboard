@@ -52,7 +52,7 @@ Each guide is a journey through several topics, in order.
 - [What the installer asks, and what each answer means](topics/what-the-installer-asks.md)
 - [Set up Starboard in the terminal, with no browser](topics/set-up-in-the-terminal.md)
 - [Install Starboard from the ready-made image](topics/install-from-the-ready-made-image.md)
-- [Find the setup code](topics/find-the-setup-code.md)
+- [Find the set-up code](topics/find-the-setup-code.md)
 - [Create your password and sign in](topics/create-your-password.md)
 - [Open Starboard from a phone or another computer](topics/open-from-another-device.md)
 - [Change what Starboard can access](topics/change-what-starboard-can-access.md)
