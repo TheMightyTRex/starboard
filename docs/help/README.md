@@ -4,6 +4,8 @@ Help for installing and using Starboard, written for people who have never run a
 a guide if you have a goal in mind, use a topic for one task, and read the basics for anything that is new
 to you.
 
+**Stuck, or want to talk to other people who use Starboard?** Join the [Starboard Discord support server](https://discord.gg/xN9bf2H4vv).
+
 > [!TIP]
 > **Start here: [Quick start: one command sets up everything](guides/quick-start.md).** Once Linux is on the
 > computer, the Run first script sets up everything else in about 15 minutes.
@@ -246,5 +248,7 @@ How these articles are written, for anyone who wants to help: [How this help is 
 such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
+
+**Need help?** Ask on the [Starboard Discord support server](https://discord.gg/xN9bf2H4vv).
 
 <!-- /footer -->

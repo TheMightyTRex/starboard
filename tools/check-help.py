@@ -144,7 +144,7 @@ def main():
             problems.append(f"{path.relative_to(HELP.parent.parent)}: no download rights footer, or an old one (run tools/help_footer.py)")
     problems += plugin_mirror() + plugin_api_pages()
     for target in re.findall(r"\]\(([^)#\s]+)\)", index):
-        if not (HELP / target).exists():
+        if not target.startswith("https://") and not (HELP / target).exists():  # a web address is not a page
             problems.append(f"README.md: the index lists {target}, which does not exist yet")
     for p in problems:
         print(p)
