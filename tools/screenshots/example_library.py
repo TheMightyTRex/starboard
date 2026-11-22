@@ -243,11 +243,12 @@ def answer(path, q):
                  "rejections": [] if n < 3 else [{"reason": "Not wanted in this profile: 720p", "kind": "permanent", "spec": "quality"}]}
                 for n in range(5)]
     if path in ("/wanted/missing", "/wanted/cutoff"):  # Wanted (DASH-207)
-        films = [f for f in FILMS if (not f["has_file"]) == (path == "/wanted/missing")][:12]
+        films = [f for f in FILMS if (not f["has_file"]) == (path == "/wanted/missing") and f["id"] not in CHANGED.get("unfollowed", ())][:12]
         if q.get("kind") == "episode":
             items = [{"kind": "episode", "id": 500 + n, "series_id": 8, "title": "43 Planets", "season_number": 2, "episode_number": n + 1,
                       "episode_title": f"{WORDS_A[n]} {WORDS_B[n]}", "date": (TODAY - dt.timedelta(days=7 * n)).isoformat(),
-                      "quality": "SDTV" if path.endswith("cutoff") else None, "cutoff": "HD-1080p"} for n in range(6)]
+                      "quality": "SDTV" if path.endswith("cutoff") else None, "cutoff": "HD-1080p"} for n in range(6)
+                     if CHANGED["episodes"].get(500 + n, True)]
         else:
             items = [{"kind": "movie", "id": f["id"], "movie_id": f["id"], "title": f["title"], "year": f["year"],
                       "date": f"{f['year']}-05-01", "quality": "HD-720p" if path.endswith("cutoff") else None, "cutoff": "HD-1080p"} for f in films]
@@ -436,6 +437,8 @@ def change(method, path, body, q):
             for x in items:
                 if x["id"] in ids:
                     x["monitored"] = bool((body.get("edit") or {}).get("monitored"))
+                    if path == "/movies/bulk" and not x["monitored"]:  # Wanted, Stop following (DASH-524): it leaves the lists
+                        CHANGED.setdefault("unfollowed", set()).add(x["id"])
         return {}
     if path == "/episodes/monitor":
         for e in body.get("episode_ids") or []:

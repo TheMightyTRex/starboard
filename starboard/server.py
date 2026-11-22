@@ -1703,14 +1703,19 @@ class Handler(BaseHTTPRequestHandler):
                     return self.error(400, str(e))
                 except services.ServiceError as e:
                     return self.error(502, str(e))
-            if path in ("/api/wanted", "/api/wanted/search"):
+            if path in ("/api/wanted", "/api/wanted/search", "/api/wanted/stop"):
                 from . import wanted  # DASH-207: Missing and Below the quality wanted, from Reelix
                 try:
-                    if method == "GET":
+                    if path == "/api/wanted/stop" and method == "POST":  # DASH-524: stop following the ticked ones
+                        b = self.body()
+                        said = wanted.stop(cfg.data["services"], str(b.get("kind", "")), b.get("ids"))
+                        logs.event("info", "wanted", said)
+                        return self.json(200, {"said": said})
+                    if path == "/api/wanted" and method == "GET":
                         q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
                         return self.json(200, wanted.listing(cfg.data["services"], q.get("which", ["missing"])[0],
                                                              q.get("kind", ["movie"])[0], int(q.get("page", ["1"])[0] or 1)))
-                    if method == "POST":
+                    if path == "/api/wanted/search" and method == "POST":
                         b = self.body()
                         said = wanted.search(cfg.data["services"], str(b.get("which", "")), str(b.get("kind", "")), b.get("ids"))
                         logs.event("info", "wanted", said)

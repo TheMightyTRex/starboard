@@ -22,7 +22,7 @@
 /* Downloads: the reason a row needs attention shows in the row on wider screens only. */
 .dl-reason { color: var(--status-warning-fg); }
 
-/* Downloads: a box at the start of each row for bulk actions (21 November 2026). The label is the 44px target and
+/* Downloads and Wanted (DASH-524): a box at the start of each row for bulk actions (21 November 2026). The label is the 44px target and
    sits above the row's own link, which covers the row. A download no app can act on keeps the space, with no box. */
 .dl-pick {
   position: relative;
@@ -34,7 +34,7 @@
   margin-block: calc(var(--space-2) * -1);
   cursor: pointer;
 }
-.dl-pick__box { width: 22px; height: 22px; margin: 0; accent-color: var(--color-accent); }
+.dl-pick__box { width: 24px; height: 24px; margin: 0; accent-color: var(--color-accent); }
 .dl-pick--none { visibility: hidden; }
 .dl-select-all { padding-block: 0; align-items: center; margin-right: var(--space-2); }
 #selection-bar { margin-top: var(--space-4); }

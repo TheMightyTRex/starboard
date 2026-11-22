@@ -886,6 +886,52 @@ check("T31", "the last part's button says what it does", start29.includes("Start
   await page.unroute(/\/api\/jellyfin\/restart$/, restart);
 }
 
+// T36 Bulk actions on Wanted (DASH-524): Space ticks a row, Shift and Space takes a run, the bar names the count,
+// Stop following asks first, then focus goes to Select all and the result is said.
+await page.goto(`${base}/wanted-films.html`);
+await settle();
+const picks34 = page.locator("#wanted-list .dl-pick__box");
+if (await picks34.count() >= 3) {
+  await page.locator("#wanted-all").focus();
+  const a34 = await tabTo((f) => f.id === "select-all", 12);
+  check("T36", "Tab from Search all reaches Select all before the list", !!a34, a34 ? a34.text : "not reached");
+  const r34 = await tabTo((f) => /^Select /.test(f.text) && f.tag === "INPUT" && f.id !== "select-all", 6);
+  check("T36", "then each row's box, named for its row", !!r34, r34 ? r34.text : "not reached");
+  await page.keyboard.press("Space");
+  await page.waitForTimeout(200);
+  check("T36", "Space ticks it and the bar says 1 film selected", /^1 film selected$/.test(await page.locator("#selection-text").textContent()));
+  await picks34.nth(2).focus();
+  await page.keyboard.down("Shift"); await page.keyboard.press("Space"); await page.keyboard.up("Shift");
+  await page.waitForTimeout(200);
+  check("T36", "Shift and Space takes the run of rows", /^3 films selected$/.test(await page.locator("#selection-text").textContent()), await page.locator("#selection-text").textContent());
+  check("T36", "Select all is part ticked", await page.locator("#select-all").evaluate((b) => b.indeterminate));
+  const gone34 = await picks34.evaluateAll((boxes) => boxes.slice(0, 3).map((b) => b.getAttribute("aria-label")));
+  const b34 = await tabTo((f) => f.tag === "BUTTON" && f.text === "Stop following", 80);
+  check("T36", "Tab reaches the bar's Stop following after the list", !!b34, b34 ? b34.text : "not reached");
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  const d34 = await focus();
+  check("T36", "Stop following asks first, in a dialog", d34.inPanel, `${d34.tag} ${d34.text}`);
+  check("T36", "the question names the count", /Stop following 3 films\?/.test(await page.locator("dialog[open] h2").textContent()));
+  await page.locator("dialog[open] button[value=ok]").focus();
+  await page.keyboard.press("Enter");
+  await settle();
+  const f34 = await focus(), s34 = await said();
+  check("T36", "after it, focus is on Select all", f34.id === "select-all", `${f34.tag} ${f34.text}`);
+  check("T36", "the result is said", /no longer follows 3 films/.test(s34), s34);
+  const left34 = await picks34.evaluateAll((boxes) => boxes.map((b) => b.getAttribute("aria-label")));
+  check("T36", "the rows have left the list and the bar has closed", !gone34.some((n) => left34.includes(n)) && await page.locator("#selection-bar").isHidden(), left34.join(", "));
+  await page.locator("#select-all").focus();
+  await page.keyboard.press("Space");
+  await page.waitForTimeout(300);
+  check("T36", "Select all ticks every row and says how many", new RegExp(`${left34.length} films selected`).test(await said()), await said());
+  await page.locator("#selection-actions button", { hasText: "Clear selection" }).focus();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  const c34 = await focus();
+  check("T36", "Clear selection closes the bar, says so, and gives focus to Select all", c34.id === "select-all" && /Selection cleared/.test(await said()) && await page.locator("#selection-bar").isHidden(), c34.text);
+} else check("T36", "Wanted has rows with a box each", false);
+
 // T34 Restore a full backup on this server (DASH-387) by keyboard alone: Tab from the list's heading reaches Restore
 // beside the newest backup; Enter opens a danger dialog with focus on the backup's password; Tab reaches the
 // Starboard password, Restore this backup, then Cancel; Escape closes it with focus back on Restore and nothing

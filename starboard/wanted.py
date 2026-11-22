@@ -113,3 +113,24 @@ def search(all_services, which, kind, ids=None):
         return f"Reelix is searching for {len(ids)} {'film' if kind == 'movie' and len(ids) == 1 else 'films' if kind == 'movie' else 'episode' if len(ids) == 1 else 'episodes'} now"
     services._api(r, "/search", method="POST", body={"kind": which, "ids": [], "media": kind})
     return "Reelix is searching for everything on this list now. It goes a few at a time, so the sites are not overloaded"
+
+
+def stop(all_services, kind, ids):
+    """Stop following the ticked ones (DASH-524): Reelix no longer searches for them, so they leave the Wanted lists.
+    Nothing is deleted. One request to Reelix for them all. Returns a sentence."""
+    if kind not in KINDS:
+        raise ValueError("Choose films, episodes, albums, books or audiobooks")
+    ids = sorted({int(i) for i in ids or [] if str(i).isdigit()})[:500]
+    if not ids:
+        raise ValueError("Tick at least one")
+    r = _reelix(all_services)
+    if kind == "movie":
+        services._api(r, "/movies/bulk", method="PUT", body={"ids": ids, "edit": {"monitored": False}})
+    elif kind == "episode":
+        services._api(r, "/episodes/monitor", method="PUT", body={"episode_ids": ids, "monitored": False})
+    elif kind == "album":
+        services._api(r, "/albums/monitor", method="PUT", body={"album_ids": ids, "monitored": False})
+    else:
+        services._api(r, "/books/monitor", method="PUT", body={"book_ids": ids, "format": kind, "monitored": False})
+    one, many = NOUNS[kind]
+    return f"Reelix no longer follows {len(ids)} {one if len(ids) == 1 else many}"
