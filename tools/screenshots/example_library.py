@@ -224,7 +224,7 @@ def answer(path, q):
         rows = [{"id": n, "event_type": kinds[n % 6], "date": (TODAY - dt.timedelta(hours=5 * n)).isoformat() + "T12:00:00Z",
                  "media": {"kind": "movie", "id": FILMS[n]["id"], "title": FILMS[n]["title"], "year": FILMS[n]["year"]}, "episode": None,
                  "source_title": f"Made.Up.Release.{n}.1080p.WEB-DL", "quality": {"quality": "WEBDL-1080p"}, "indexer": "Example Torrents",
-                 "data": {"message": "The download app stopped answering" if kinds[n % 6] == "download_failed" else ""}} for n in range(12)]
+                 "data": {"message": "The download app stopped answering" if kinds[n % 6] == "download_failed" else "", "is_upgrade": n == 4}} for n in range(12)]
         if q.get("event_type"):
             rows = [r for r in rows if r["event_type"] == q["event_type"]]
         if q.get("movie_id"):

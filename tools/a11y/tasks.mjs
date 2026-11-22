@@ -886,6 +886,35 @@ check("T31", "the last part's button says what it does", start29.includes("Start
   await page.unroute(/\/api\/jellyfin\/restart$/, restart);
 }
 
+// T34 History, Across apps (DASH-68): the filter by arrow keys says the new count; Delete history asks first with focus
+// on Cancel, and afterwards focus is back on Delete history with the result said. Last, as it empties the list.
+{
+  await page.goto(`${base}/history-apps.html`);
+  await settle();
+  await page.locator("#across-list .chip").first().waitFor({ timeout: 10000 }).catch(() => {});
+  await page.locator("main h1").evaluate((h) => { h.tabIndex = -1; h.focus(); });
+  const f34 = await tabTo((f) => f.name === "across-show", 4);
+  check("T34", "Tab from the heading reaches the Show filter, on Everything", !!f34 && f34.id === "across-show-all", f34 ? f34.id : "not reached");
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  await page.waitForTimeout(1200);
+  const g34 = await focus(), s34 = await said();
+  const kinds = await page.locator("#across-list .chip").allTextContents();
+  check("T34", "the arrow keys choose Failed, focus stays on it, the list holds only Failed and the count is said",
+    g34.id === "across-show-failed" && kinds.length > 0 && kinds.every((k) => k.trim() === "Failed") && /entr(y|ies), newest first/.test(s34), `${g34.id} / ${kinds.length} / ${s34}`);
+  const d34 = await tabTo((f) => f.tag === "BUTTON" && f.text === "Delete history" && f.inMain, 60);
+  check("T34", "Tab reaches Delete history at the end of the page", !!d34, d34 ? d34.text : "not reached");
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(400);
+  const c34 = await focus();
+  check("T34", "Enter asks first, with focus on Cancel", c34.inPanel && c34.text === "Cancel", `${c34.tag} ${c34.text}`);
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(1500);
+  const e34 = await focus(), t34 = await said();
+  check("T34", "after deleting, focus is back on Delete history and the result is said", e34.text === "Delete history" && e34.inMain && /History across apps deleted/.test(t34), `${e34.text} / ${t34}`);
+}
+
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

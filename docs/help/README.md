@@ -101,6 +101,7 @@ Each guide is a journey through several topics, in order.
 - [Search for and add films, series, music and books](topics/search-and-add.md)
 - [Find and get what is missing](topics/get-what-is-missing.md)
 - [Pause, resume and remove downloads](topics/manage-downloads.md)
+- [Check what was added, failed and upgraded across your apps](topics/check-what-happened-across-your-apps.md)
 - [Copy download issues for an AI helper](topics/copy-download-issues.md)
 - [Download only at certain hours](topics/set-download-hours.md)
 - [Download without a VPN](topics/download-without-a-vpn.md)

@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **What was added, failed and upgraded across your apps, on one page (DASH-68):** Activity, History has a second page, Across apps. It lists what your apps added to the library, downloads and updates that failed, apps that stopped responding, and what was upgraded: a better copy of a film or episode, or a newer version of an app, a plug-in or Starboard. Added, Failed and Upgraded show one kind at a time, and Delete history empties the page. It is small on purpose: Starboard keeps the newest 500 entries in one file, usually under 100 KB. It costs nothing at rest: no new background check, entries are written by work Starboard already does, and each app's own history is read only when the page is opened. The weekly summary gains a line with the week's counts. Read [Check what was added, failed and upgraded across your apps](docs/help/topics/check-what-happened-across-your-apps.md).
+
 ### Fixed
 - **The VPN card said No VPN on a server that uses one (owner, 22 November 2026):** when Gluetun was kept from an earlier set-up, Starboard had no connection to ask it, and the dashboard and Downloads said No VPN although every download went through it. Starboard now reads the VPN's own health check from its container, so the card says Connected or Not connected. If the state cannot be read, it says Not known, never No VPN.
 
