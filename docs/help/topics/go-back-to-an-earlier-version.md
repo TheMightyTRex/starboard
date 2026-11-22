@@ -137,6 +137,9 @@ backed up first, and you can update again when you are ready.
      docker compose up -d
      ```
 
+  The backup holds your settings, without posters, icons, logs or the Library's lists. Starboard fetches the
+  pictures and makes the lists again as you open each page. The logs from before are in `data.newer/logs`.
+
   If you installed with `--native`, use `systemctl --user stop starboard` and `systemctl --user start starboard` in
   place of the two docker commands.
 - **Settings are wrong on the older version (ready-made image):** do the same with the copy you made before updating,

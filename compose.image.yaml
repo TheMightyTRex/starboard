@@ -2,7 +2,7 @@
 #
 #   mkdir -p data
 #   docker compose -f compose.image.yaml up -d
-#   docker logs starboard            # the one-time setup code
+#   docker logs starboard            # the one-time set-up code
 #
 # Then open http://<your server>:8095. To update: docker compose -f compose.image.yaml pull && ... up -d
 # Host networking lets Starboard reach your apps on their published ports (http://127.0.0.1:8989 for Sonarr)

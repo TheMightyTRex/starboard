@@ -1178,7 +1178,10 @@ async function startUpdatesPlace() {
       bar.setAttribute("aria-valuemax", String(v.count || 1));
       bar.setAttribute("aria-valuenow", String(v.ended));
       bar.setAttribute("aria-valuetext", `${v.finished ? batchEnd(v) : "Installing updates"}, ${v.ended} of ${v.count} done`);
-      bar.firstChild.style.width = `${v.count ? Math.round((100 * v.ended) / v.count) : 100}%`;
+      // DASH-489: while it runs the bar is never empty: 1% from the first moment, then each update that ends adds its
+      // share. The count in aria-valuenow and the words stay the true count (0 of 5 until the first one ends).
+      const share = v.count ? Math.round((100 * v.ended) / v.count) : 100;
+      bar.firstChild.style.width = `${v.finished ? share : Math.max(1, share)}%`;
       const changes = [];
       list.replaceChildren(...v.items.map((i) => {
         const [word, tone, ic] = BATCH_WORDS[i.state] || BATCH_WORDS.waiting;

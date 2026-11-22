@@ -77,6 +77,9 @@ To stop every calendar that uses the address, select **Add to your calendar**, t
 - Choosing **List** or **Calendar** on the page also saves it as the view the page opens with.
 - Starboard fetches posters from your own apps and keeps copies for a week. Your browser loads them from
   Starboard, so no image site receives them.
+- When an app keeps no small posters of its own, such as Reelix, Starboard uses the picture address the app gives
+  for the item, then TMDB's poster through the app's own search, at a small size. With no picture anywhere, the
+  item shows the app's icon, and Starboard asks again after an hour.
 - The **Small server** preset deactivates posters. Read
   [Make Starboard use less of your server](make-starboard-lighter.md).
 - The calendar address opens Coming up as a calendar and nothing else in Starboard. Anyone with the address can

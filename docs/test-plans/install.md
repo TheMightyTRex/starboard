@@ -26,18 +26,18 @@ These apply to every step on every system, as well as the step's own test.
 | GEN-01 | As little typing as possible | The start is one short command, copied from the README or the help. After that, every question can be answered with Enter alone, and the only things a person must type are their password and details only they know, such as a VPN key |
 | GEN-02 | The recommended answer comes first and is chosen already | In every list, in the terminal and in the browser, the recommended answer is at the top, marked "(recommended)" with its reason, and already selected or ticked. Enter (terminal) or Continue (browser) accepts it |
 | GEN-03 | The terminal's layout is never broken | Nothing from apt, Docker or another program prints into the frame: their output goes to the log. No line repeats down the window, nothing runs past the edge, the menu stays on the bottom line, and a resize draws the step again whole. Checked at 80 by 24, at 120 by 40 and while the window changes size |
-| GEN-04 | The hand-over has two branches, and the right one is recommended | With a desktop (a graphical session on this computer), the browser set-up is recommended: the terminal hands over as soon as Starboard answers, with the setup code filled in, then says the set-up continues in the browser and how to open it again. With no desktop (a server, Raspberry Pi OS Lite, or a sign-in over SSH), the terminal set-up is recommended and carries on in the same window. Either way the other branch is offered second, and the person never has to choose if they press Enter |
+| GEN-04 | The hand-over has two branches, and the right one is recommended | With a desktop (a graphical session on this computer), the browser set-up is recommended: the terminal hands over as soon as Starboard answers, with the set-up code filled in, then says the set-up continues in the browser and how to open it again. With no desktop (a server, Raspberry Pi OS Lite, or a sign-in over SSH), the terminal set-up is recommended and carries on in the same window. Either way the other branch is offered second, and the person never has to choose if they press Enter |
 | GEN-05 | Everything else just works | No step asks the person to fix something by hand that the script could do itself after a yes |
 
 ## 1. The installer
 
 | ID | Test | Systems | How | Passes when |
 |---|---|---|---|---|
-| INS-01 | The ready-made image starts | All | Machine | It prints the setup code; the right image for amd64 or arm64 is used |
+| INS-01 | The ready-made image starts | All | Machine | It prints the set-up code; the right image for amd64 or arm64 is used |
 | INS-02 | Every question answered No | All | Machine | Starboard starts; the first visit goes to set-up; `.env` and `data` are private; no Docker socket; the API refuses without signing in; another host name is refused |
 | INS-03 | Home network: Yes | All | Machine | Another computer on the network opens Starboard |
 | INS-04 | This computer only | All | Machine | Opens inside the machine, refused from outside |
-| INS-05 | Run again with Docker access | All | Machine | The setup code is kept and the Docker socket is added |
+| INS-05 | Run again with Docker access | All | Machine | The set-up code is kept and the Docker socket is added |
 | INS-06 | The quiet build | All | Machine | One line that turns, cut to the window; on a failure the line stays, marked, with the last lines of the build |
 | INS-07 | ufw active, on the systems that have it | Mint, Ubuntu | Machine | The installer says which port to open, with the exact command; Starboard opens once it is |
 | INS-08 | AppArmor active | Mint, Ubuntu, Debian | Machine | Starboard and the apps start with AppArmor on |
@@ -46,8 +46,8 @@ These apply to every step on every system, as well as the step's own test.
 
 | ID | Test | Systems | Wizard | How | Passes when |
 |---|---|---|---|---|---|
-| WIZ-01 | Browser branch: the set-up page opens with the setup code filled in | Mint, Pi | B | Machine, and by hand | The code from the link is used; it never appears in the page address after it is read |
-| WIZ-02 | Browser from another computer, for a server with no desktop | Debian, Ubuntu, Pi Lite | B | Machine | The setup code typed by hand from the server's screen is accepted; a wrong code is refused with the help link to find it |
+| WIZ-01 | Browser branch: the set-up page opens with the set-up code filled in | Mint, Pi | B | Machine, and by hand | The code from the link is used; it never appears in the page address after it is read |
+| WIZ-02 | Browser from another computer, for a server with no desktop | Debian, Ubuntu, Pi Lite | B | Machine | The set-up code typed by hand from the server's screen is accepted; a wrong code is refused with the help link to find it |
 | WIZ-03 | Terminal branch: the terminal set-up starts | Debian, Ubuntu, Pi Lite, and Mint over SSH | T | Machine | The first step, in the same frame as the script, with the menu fixed on the bottom line |
 | WIZ-05 | Both branches give the same result | All | B and T | Machine | The same answers in the browser and in the terminal write the same settings, compared file by file |
 | WIZ-04 | Plain mode in the terminal | All | T | Machine | Numbered lines only; nothing redrawn |

@@ -32,7 +32,7 @@ Lite, you finish it in the terminal or from a phone or another computer. It take
    Enter. Nothing appears as you enter it.
 5. At **How do you want to finish setting up?**:
    - **With the desktop:** press Enter for **In a browser (recommended)**. The Pi's browser opens Starboard's set-up
-     page with the setup code filled in.
+     page with the set-up code filled in.
    - **With Lite, or over SSH:** press Enter for **Here in the terminal (recommended)**. Read
      [Set up Starboard in the terminal, with no browser](set-up-in-the-terminal.md).
 

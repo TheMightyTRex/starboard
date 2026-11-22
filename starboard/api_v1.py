@@ -435,6 +435,7 @@ def routes():
     def status(h, m, q):
         cfg = h.app.config
         rows = services.cached("status", 15, lambda: services.status_all(cfg.data["services"]))
+        rows = [{k: v for k, v in r.items() if k != "check_every"} for r in rows]  # the dashboard's own detail (DASH-66)
         items, nxt = page(scrub(rows), q)
         return {"items": items, "next_cursor": nxt}
 

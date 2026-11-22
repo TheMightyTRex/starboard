@@ -234,11 +234,11 @@ class App:
             self._remove_setup_token(data_dir)
         else:
             self.setup_token = new_setup_token(data_dir)
-            print(f"[starboard] No password yet. Open the dashboard and enter this setup code: {self.setup_token}", flush=True)
+            print(f"[starboard] No password yet. Open the dashboard and enter this set-up code: {self.setup_token}", flush=True)
 
     def _reset_password(self, data_dir):
         """./reset-password.sh, run on the server itself, leaves a file asking for this: no password, everyone
-        signed out, and a new setup code at start-up. Apps and settings stay."""
+        signed out, and a new set-up code at start-up. Apps and settings stay."""
         with self.config.lock:
             self.config.data["auth"]["password_hash"] = ""
             self.config.data["auth"]["session_version"] = self.config.data["auth"].get("session_version", 1) + 1
@@ -246,7 +246,7 @@ class App:
         self.sessions.end_all()
         self._remove_setup_token(data_dir)  # an old code from before the first password must not work again
         os.remove(os.path.join(data_dir, "reset-password"))
-        logs.event("warning", "security", "The password was reset on the server. Everyone is signed out; a new setup code is in the log")
+        logs.event("warning", "security", "The password was reset on the server. Everyone is signed out; a new set-up code is in the log")
 
     @staticmethod
     def _remove_setup_token(data_dir):
@@ -1569,7 +1569,7 @@ class Handler(BaseHTTPRequestHandler):
                     if not cfg.service(one):
                         return self.error(404, "No app with that ID")
                     return self.json(200, {"items": services.status_one(cfg.data["services"], one), "recent": services.recent_checks(one)})
-                return self.json(200, {"items": services.cached("status", 15, lambda: services.status_all(cfg.data["services"]), fresh)})
+                return self.json(200, {"items": services.cached("status", 15, lambda: services.status_all(cfg.data["services"], fresh=fresh), fresh)})
             if path == "/api/search" and method == "GET":
                 query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("q", [""])[0]
                 return self.json(200, services.search(cfg.data["services"], query))
@@ -3734,7 +3734,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.error(429, "Too many attempts. Wait 15 minutes and try again")
         data = self.body()
         if not app.setup_token or not auth.hmac.compare_digest(str(data.get("token", "")).strip(), app.setup_token):
-            return self.error(403, "The setup code is not right. Find it in the installer's output or the server log")
+            return self.error(403, "The set-up code is not right. Find it in the installer's output or the server log")
         password = str(data.get("password", ""))
         problem = auth.password_problem(password)
         if problem:
