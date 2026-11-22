@@ -14,8 +14,16 @@ health of your disks and how full your folders are. It goes to the same place as
 ## Steps
 
 1. Go to **Settings**, then **Alerts**.
+
+   ![Settings, Alerts, with More settings (step 2) outlined, with example data](../images/weekly-summary-3-more.png)
+
 2. Activate **More settings**, if it is not active already.
+
+   ![Settings, Alerts, with the Weekly summary tab (step 3) outlined, with example data](../images/weekly-summary-1-tab.png)
+
 3. Under **Weekly summary**, activate **Weekly summary**. Starboard shows "Weekly summary activated".
+
+   ![Settings, Alerts, Weekly summary, with the switch (step 3) outlined, with example data](../images/weekly-summary-2-switch.png)
 
 The first summary comes on the next Monday, after 09:00 by the server's clock.
 

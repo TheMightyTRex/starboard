@@ -13,6 +13,8 @@ backed up first, and you can update again when you are ready.
 
 ## Steps if you used the installer
 
+![Settings, Updates, Restore, with Go back to an earlier version outlined, with example data](../images/go-back-to-an-earlier-version-1-page.png)
+
 1. Go to the Starboard folder:
 
    ```bash
@@ -34,7 +36,11 @@ backed up first, and you can update again when you are ready.
    The updater backs up your settings, installs that version and restarts Starboard. The last line says "Updated to"
    and the version you chose.
 
+   ![Go back to an earlier version, with the button that copies the command outlined, with example data](../images/go-back-to-an-earlier-version-2-copy.png)
+
 4. Reload Starboard in your browser.
+
+   ![Settings, Updates, Restore, with the choice of how many versions to keep outlined, with example data](../images/go-back-to-an-earlier-version-3-versions.png)
 
 ## Steps if you used the ready-made image
 

@@ -17,13 +17,22 @@ clean-up job. Add one so that Starboard shows whether it is running. It is liste
 1. Go to **System**, then **Apps**, then **Other services**.
 2. Select **Add a service**. **Manage apps** opens a side panel called **Add a background service**, with
    **Background service** already active.
+
+   ![System, Apps, Other services, with Add a service (step 2) outlined, with example data](../images/add-a-background-service-1-other-services.png)
+
 3. In **Kind of app**, choose the service if it is in the list, such as **Gluetun (VPN)**. Otherwise, leave
    **Other app**.
 4. In **Name**, enter a name, such as `VPN`.
+
+   ![The Add a background service panel, with Kind of app (step 3) and Name (step 4) outlined, with example data](../images/add-a-background-service-2-form.png)
+
 5. In **Address Starboard uses**, enter its address if it has one, such as `http://127.0.0.1:8000`. Leave it
    empty if it has none.
 6. If it has no address, choose an app in **Status follows**. Starboard then shows that app's status for the
    service, such as qBittorrent for a VPN that qBittorrent runs through.
+
+   ![The Add a background service panel, with Status follows (step 6) and Add app (step 7) outlined, with example data](../images/add-a-background-service-3-status.png)
+
 7. Select **Add app**.
 
 ## Things to note

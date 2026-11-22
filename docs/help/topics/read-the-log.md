@@ -34,6 +34,8 @@ q2: What do you want to do?
    - **Detailed**: the extra entries detailed logging adds.
 3. To find something, enter a word in **Search the log**, such as the name of an app.
 
+   ![System, Logs, with Problems (step 2) and Search the log (step 3) outlined, with example data](../images/read-the-log-1-levels.png)
+
 Each entry shows its **Time**, its **Level** (Error, Warning, Info or Detail), the **Area** of Starboard it
 came from and **What happened**. Select an entry's message to show more, when it has more. Select
 **Show older entries** to go further back.
@@ -61,6 +63,9 @@ file, or **Copy** to paste them somewhere else.
    apps.
 3. Do the thing that went wrong again.
 4. Select **Copy the details**. Starboard shows "Copied. Paste it into the issue".
+
+   ![System, Logs, Report a problem, with Detailed logging (step 2) and Copy the details (step 4) outlined, with example data](../images/read-the-log-2-report.png)
+
 5. Select **Open a new issue on GitHub**. Paste the details into the issue, and say what you expected to
    happen.
 6. When you have finished, set **Detailed logging** back to **Off**.
@@ -76,6 +81,8 @@ limit comes first removes the oldest days.
 2. Activate **More settings**, at the right of the page's heading.
 3. In **Logs**, choose in **Keep logs for**: 7, 14, 30, 60, 90 or 180 days, or a year.
 4. Choose in **No more than**: 10, 25, 50, 100, 250 or 500 MB.
+
+   ![Settings, General, Logs and feedback, with Keep logs for (step 3) and No more than (step 4) outlined, with example data](../images/read-the-log-3-limits.png)
 
 Starboard shows "Saved" beside each one. Older days go at once, and from then on when a new day starts or the logs
 reach the size. **What the limits cover** says what the logs take now and since when.

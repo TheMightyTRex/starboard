@@ -17,7 +17,12 @@ apps, their API keys, your categories and your other settings.
 1. Go to **Settings**, then **General**, then **Backup and restore**.
 2. Find **Starboard's settings**.
 3. Select **Download a backup**.
+
+   ![System, Backup and restore, Starboard's settings, with Download a backup (step 3) outlined, with example data](../images/back-up-settings-1-download.png)
+
 4. Starboard asks for **Your password**. Enter it and select **Download**.
+
+   ![The password question for Download a backup, with Your password (step 4) outlined, with example data](../images/back-up-settings-2-password.png)
 
 Your browser saves a file named like `starboard-settings-2026-11-03.json`, with the date you made it.
 Starboard shows "Backup downloaded" and how many apps it holds.
@@ -36,6 +41,8 @@ Starboard shows **Settings restored** and how many apps it put back.
 
 1. Go to **Settings**, then **General**, then **Backup and restore**.
 2. Under **When backups are made**, choose one. It saves at once and Starboard shows "Saved".
+
+   ![System, Backup and restore, When backups are made, with Weekly (step 2) outlined, with example data](../images/back-up-settings-3-when.png)
 
 | Choice | What Starboard does |
 |---|---|

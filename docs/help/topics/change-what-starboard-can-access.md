@@ -17,13 +17,19 @@ Starboard. Others you change by running the installer again, which keeps your se
 1. Go to **Settings**, then **Updates**.
 2. Select the **What Starboard can access** tab.
 
+   ![Settings, Updates, with the What Starboard can access tab (step 2) outlined, with example data](../images/change-what-starboard-can-access-1-tab.png)
+
 Each row names one kind of access, says what it is for and what it costs your server, and shows whether it is
 active. Each row also shows how to change it: a switch, a button such as **Change it**, or a command to run on the
 server.
 
+![The What Starboard can access tab, with its first row outlined, with example data](../images/change-what-starboard-can-access-2-rows.png)
+
 ## Change a switch in Starboard
 
 These apply at once:
+
+![A row of the What Starboard can access tab with its switch, outlined, with example data](../images/change-what-starboard-can-access-3-switch.png)
 
 - **Your home network:** go to **Settings**, then **Security**, and activate or deactivate **Phones and other
   computers on your home network**. Read [Choose who can open Starboard](choose-who-can-open-starboard.md).

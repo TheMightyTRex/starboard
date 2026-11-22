@@ -8,6 +8,8 @@ as `http://192.168.1.20:8095`. At the end, Starboard opens in the device's brows
 
 ## Before you begin
 
+![Settings, Security, with the switch that lets phones and other computers open Starboard outlined, with example data](../images/open-from-another-device-1-who.png)
+
 - Starboard is installed and you have chosen a password. Read
   [Create your password and sign in](create-your-password.md).
 - Starboard lets your home network open it. This is active unless you deactivated it. Read
@@ -29,7 +31,12 @@ as `http://192.168.1.20:8095`. At the end, Starboard opens in the device's brows
      hostname -I
      ```
 
+   ![Settings, Security, with the button that copies the address for phones and other computers (step 1) outlined, with example data](../images/open-from-another-device-2-address.png)
+
 2. On the phone or other computer, connect to your home Wi-Fi.
+
+   ![System, Network, with the line that gives the address Starboard opens at on the home network (step 1) outlined, with example data](../images/open-from-another-device-3-network.png)
+
 3. Open a browser, such as Safari, Chrome or Firefox.
 4. In the address bar, enter `http://`, the server's address, then `:8095`. For example:
 

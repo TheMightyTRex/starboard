@@ -19,6 +19,9 @@ approve or decline each one there. Reported problems with a film or series are i
 
 1. Go to **Activity**, then **Requests**, then **Requests**. The page says how many requests are waiting for
    approval.
+
+   ![Activity, Requests, with Waiting for approval (step 1) outlined, with example data](../images/approve-requests-1-requests.png)
+
 2. Find the request. Each one shows the title, the year, the kind, who asked for it and when.
 3. Select **Approve** to accept it. Starboard confirms with **Approved** and the title.
 4. Or select **Decline** to turn it down. Starboard asks you to confirm, because the person who asked is told that
@@ -34,8 +37,14 @@ People can report a problem with a film or series in Reelix. Starboard shows tho
 
 1. Go to **Activity**, then **Requests**, then **Issues**. The page shows **Open** issues first. Select
    **Resolved** or **All** to show the others.
+
+   ![Activity, Requests, Issues, with Open (step 1) and Resolve (step 4) outlined, with example data](../images/approve-requests-2-issues.png)
+
 2. Select **Comment** or **Comments** under an issue to read the thread.
 3. Optional: enter your answer in the box, then select **Add comment**.
+
+   ![An issue opened in its panel, with the box for an answer and Add comment (step 3) outlined, with example data](../images/approve-requests-3-comments.png)
+
 4. Select **Resolve** when it is sorted. To open it again, select **Reopen**.
 
 ## Things to note

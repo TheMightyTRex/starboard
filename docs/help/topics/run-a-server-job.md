@@ -18,13 +18,22 @@ them on System, Overview, shows how each one went, and lets you start one with *
 
 1. Go to **System**, then **Overview**.
 2. Find **Server jobs**. Each job shows its name, a short summary and when it last finished.
+
+   ![System, Overview, with Server jobs (step 2) outlined, with example data](../images/run-a-server-job-1-jobs.png)
+
 3. Read the job's state:
    - **Finished:** it ran and finished.
    - **Failed:** it ran and something went wrong.
    - **Running:** it is running now.
    - **Waiting to start:** Starboard has asked, and the runner has not started it yet.
    - **Not run yet:** it has no result yet.
+
+   ![Server jobs, with the state of a job that has not run yet (step 3) outlined, with example data](../images/run-a-server-job-3-state.png)
+
 4. To run a job now, select **Run now** beside it. The state changes to **Waiting to start**, then **Running**.
+
+   ![Server jobs, with Run now (step 4) outlined, with example data](../images/run-a-server-job-2-run.png)
+
 5. Wait. The page checks again every 5 seconds while a job runs, and shows the result when it finishes.
 6. If the job wrote a report, select **What it found** to read it.
 

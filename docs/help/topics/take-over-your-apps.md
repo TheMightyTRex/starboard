@@ -23,6 +23,9 @@ The steps on the page are numbered, and the numbers change with what your server
 
 1. Go to **Settings**, then **Apps**, then **Your install**, and find **Apps you already run**. Starboard lists the
    apps it takes over, the ones Reelix or NZBGet replaces, the ones it installs new and the ones it leaves as they are.
+
+   ![Settings, Apps, Your install, with the Apps you already run tab (step 1) outlined, with example data](../images/take-over-your-apps-1-tab.png)
+
 2. If the page has an 'install Reelix' step, select **Install apps** and choose **Full install**. Apps that already
    run are left as they are, so it adds only what your server does not have yet, such as Reelix and NZBGet. Then come
    back to **Your install**.
@@ -34,10 +37,16 @@ The steps on the page are numbered, and the numbers change with what your server
 5. Select **Move them into Reelix**. Films and series move in a minute or two. Reelix then finds their files, which
    takes about an hour for a big library. Leave **Hold the sites to search** selected, so only your old apps search
    until the next step.
+
+   ![Apps you already run, with Show what moves (step 4) and Move them into Reelix (step 5) outlined, with example data](../images/take-over-your-apps-2-move.png)
+
 6. In the 'Starboard runs your apps' step, check the **Settings folder**. The copies of your apps' settings go there.
    It must not be inside the folder your apps use now.
 7. Enter **Your password**, then select **Take over my apps**. Your apps stop for a few minutes while their settings
    are copied, then start again from Starboard's set-up.
+
+   ![Apps you already run, with Take over my apps (step 7) outlined, with example data](../images/take-over-your-apps-3-take.png)
+
 8. Go to **Settings**, then **Apps**, then **Reelix**. Under 'Sites to search', for each site select **More**, then
    **Change**, activate **Active** and select **Save**. Read [Choose the sites Reelix searches](choose-sites-to-search.md).
 

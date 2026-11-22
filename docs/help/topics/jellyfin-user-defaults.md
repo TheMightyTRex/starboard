@@ -14,9 +14,17 @@ default: Live TV opens on the Guide.
 ## Steps
 
 1. Go to **Settings**, then **Apps**, then **Jellyfin**.
+
+   ![Settings, Jellyfin, with the User defaults tab (step 1) outlined, with example data](../images/jellyfin-user-defaults-1-tab.png)
+
 2. In **User defaults**, activate **Give every Jellyfin user the defaults**.
+
+   ![User defaults, with Give every Jellyfin user the defaults (step 2) outlined, with example data](../images/jellyfin-user-defaults-2-switch.png)
+
 3. To apply them straight away, select **Run Defaults now**. Otherwise, Starboard applies them within the
    hour.
+
+   ![User defaults, with Run Defaults now (step 3) outlined, with example data](../images/jellyfin-user-defaults-3-run.png)
 
 Starboard shows **Last run worked** and what it did.
 

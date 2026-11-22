@@ -19,11 +19,18 @@ open it. The change takes effect at once, and Starboard shows the addresses that
 3. Activate or deactivate **Phones and other computers on your home network**:
    - Active: phones and other computers on your home network can reach the sign-in page.
    - Inactive: only the computer Starboard runs on can open it.
+
+   ![Settings, Security, Who can open the dashboard, with the switch for phones and other computers (step 3) outlined, with example data](../images/choose-who-can-open-starboard-1-switch.png)
+
 4. If you deactivated it, Starboard asks **Deactivate access from your home network?** Select
    **Deactivate network access** to go ahead, or close the dialog to keep things as they are.
 
+   ![The question Deactivate access from your home network?, with Deactivate network access (step 4) outlined, with example data](../images/choose-who-can-open-starboard-2-ask.png)
+
 Starboard confirms the change and lists the addresses that open it now: **This computer** and, when the switch
 is active, **Phones and other computers**. Each address has a button to copy it.
+
+![The addresses that open Starboard, with the button that copies the address for this computer outlined, with example data](../images/choose-who-can-open-starboard-3-addresses.png)
 
 ## Things to note
 

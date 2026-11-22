@@ -15,8 +15,17 @@ not erased. Do this before you replace an old disk or move it to another compute
 ## Steps
 
 1. Go to **System**, then **Storage**, then **Pool**.
+
+   ![System, Storage, Pool, with Disks in the pool (step 1) outlined, with example data](../images/take-a-drive-out-of-the-pool-3-pool.png)
+
 2. Under **Disks in the pool**, select **Take out of the pool** beside the disk.
+
+   ![System, Storage, Pool, with Take out of the pool beside a disk (step 2) outlined, with example data](../images/take-a-drive-out-of-the-pool-1-list.png)
+
 3. Read the check: how much it moves, and every change, in order. Nothing has changed yet.
+
+   ![The check before a disk is taken out of the pool, with example data](../images/take-a-drive-out-of-the-pool-2-check.png)
+
 4. Select **Continue to Confirm**, enter your Starboard password, and select **Take it out**.
 5. Wait for **Finished**. The disk is then unmounted, and you can switch the computer off and remove it.
 

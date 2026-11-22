@@ -18,7 +18,15 @@ takes about 600 MB more disk. You can switch either way at any time, and your li
 
 1. Go to **Settings**, then **Apps**, then **Your install**.
 2. Under **Reelix**, choose the version you want. **In use now** marks the one that runs.
+
+   ![Settings, Apps, Your install, with the Reelix tab (step 2) outlined, with example data](../images/switch-reelix-version-1-reelix.png)
+
+   ![Your install, Reelix, with the two versions (step 2) outlined, with example data](../images/switch-reelix-version-2-choice.png)
+
 3. Under **Make the change**, enter **Your password**, then select **Change my install**.
+
+   ![Your install, Make the change, with Change my install (step 3) outlined, with example data](../images/switch-reelix-version-3-make.png)
+
 4. Wait until Starboard shows that the version is running. Reelix is unavailable for a minute or two while the new
    version downloads and starts.
 

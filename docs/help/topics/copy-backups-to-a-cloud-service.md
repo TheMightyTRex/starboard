@@ -21,8 +21,17 @@ you can paste your own remote instead.
 
 1. Go to **Settings**, then **General**, then **Backup and restore**.
 2. Find **Copies off this computer** and select **A cloud service**.
+
+   ![Settings, General, Backup and restore, with A cloud service (step 2) outlined, with example data](../images/copy-backups-to-a-cloud-service-1-cloud.png)
+
 3. Select **Connect a cloud service**. A slide-out opens.
+
+   ![Copies off this computer with A cloud service chosen, with Connect a cloud service (step 3) outlined, with example data](../images/copy-backups-to-a-cloud-service-2-connect.png)
+
 4. **Choose a service**, then select **Continue**.
+
+   ![The Connect a cloud service panel, with a service chosen and Continue (step 4) outlined, with example data](../images/copy-backups-to-a-cloud-service-3-choose.png)
+
 5. **Sign in.** What you do depends on the service. Read [Signing in to each service](#signing-in-to-each-service).
 6. **Choose the folder.** **Make a new folder (recommended)** is chosen, named `starboard-backups`. You can change
    the name, or choose a folder that is there already. Select **Continue to the test**.

@@ -25,14 +25,23 @@ new, read [What a disk pool is](../basics/what-is-a-drive-pool.md).
 
 1. Go to **System**, then **Storage**, then **Pool**.
 2. Select **Add a disk**.
+
+   ![System, Storage, Pool, with Add a disk (step 2) outlined, with example data](../images/add-a-drive-to-the-pool-1-add.png)
+
 3. **Choose a disk:** select the disk. Check the end of its serial number against the label on the disk.
 4. Select **Continue to What it is for**.
+
+   ![Add a disk, Choose a disk, with Continue to What it is for (step 4) outlined, with example data](../images/add-a-drive-to-the-pool-2-choose.png)
+
 5. Under **Use it**, select **Add it to the pool (recommended)**. For a backup disk instead, read
    [Use a disk as a backup disk](use-a-drive-as-a-backup-drive.md).
 6. Under **What is on it now**, select one:
    - **Keep its files:** its files appear in the pool as they are. Only offered when the disk has files.
    - **Erase it and prepare it (ext4):** everything on the disk is erased.
 7. Select **Continue to Check**. The pool helper checks the plan on the server. Nothing has changed yet.
+
+   ![Add a disk, What it is for, with Continue to Check (step 7) outlined, with example data](../images/add-a-drive-to-the-pool-3-use.png)
+
 8. Read **Check before anything changes**. It lists every change, in order. To read the commands, select
    **The exact commands**.
 9. Select **Continue to Confirm**.

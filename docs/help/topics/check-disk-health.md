@@ -27,9 +27,17 @@ saves.
    - **Needs attention:** the disk has counted problems, such as damaged areas.
    - **Failing:** the disk failed its own health check.
    - **Not reported:** the report has no health result.
+
+   ![System, Storage, Disk health, with the tiles (step 2) and the table of disks (step 3) outlined, with example data](../images/check-disk-health-1-tiles.png)
+
 4. To read everything about one disk, select **SMART report** in its row. SMART is the disk's own health
    record.
+
+   ![The SMART report of a disk, with Download the full report (step 5) outlined, with example data](../images/check-disk-health-2-smart.png)
+
 5. Read the advice in the report. To keep a copy, select **Download the full report**.
+
+   ![Disk health, with the Temperature panel outlined, with example data](../images/check-disk-health-3-read.png)
 
 ### Read the disks now
 

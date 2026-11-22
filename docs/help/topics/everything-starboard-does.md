@@ -7,6 +7,8 @@ A short tour of what Starboard can do, by area. Each item links to the article t
 
 ## The dashboard
 
+![The Dashboard, with Edit dashboard outlined, with example data](../images/everything-starboard-does-1-dashboard.png)
+
 - **Your dashboard:** cards in one of four layouts, which you can change and add to. Read
   [Use and change the dashboard](use-the-dashboard.md).
 - **Still to set up:** a list of what is left after installing, with guided steps. Read
@@ -16,6 +18,8 @@ A short tour of what Starboard can do, by area. Each item links to the article t
   [Change text size, theme and other display settings](display-and-accessibility.md).
 
 ## Your media
+
+![Library, Films, with the search for your films outlined, with example data](../images/everything-starboard-does-2-library.png)
 
 - **Library, search and coming up.** Read [Browse your library](browse-your-library.md),
   [Search for and add films, series, music and books](search-and-add.md) and
@@ -29,6 +33,8 @@ A short tour of what Starboard can do, by area. Each item links to the article t
   [Copy listening progress into Audiobookshelf](copy-listening-progress.md).
 
 ## Your server
+
+![System, Overview, with Needs attention outlined, with example data](../images/everything-starboard-does-3-system.png)
 
 - **Install apps:** a complete media server, set up for you. Read [Install apps with Starboard](install-apps.md) and
   [Basics, Full install and Everything](install-types.md).

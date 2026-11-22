@@ -43,10 +43,19 @@ at once, and the first answer from the app puts it back to a check every 15 seco
 
 1. If the app opens in your browser, select **Edit app** in its details. The app's **Edit** panel opens in
    **Manage apps**.
+
+   ![An app's details panel, with Edit app (step 1) outlined, with example data](../images/app-not-responding-1-details.png)
+
 2. Check **Address Starboard uses**. Starboard uses your server's own network, so an app on the same server
    is at `http://127.0.0.1` and the app's port, such as `http://127.0.0.1:8096` for Jellyfin.
+
+   ![The Edit Jellyfin panel, with Address Starboard uses (step 2) and Test connection (step 3) outlined, with example data](../images/app-not-responding-2-address.png)
+
 3. Select **Test connection**. Starboard shows **Connected** and how quickly the app answered, or
    **Cannot connect** and the reason.
+
+   ![The Edit Jellyfin panel after Test connection says Connected, with Save app (step 4) outlined, with example data](../images/app-not-responding-3-connected.png)
+
 4. When the test says **Connected**, select **Save app**. For Sonarr, Radarr, Lidarr and Readarr, from an existing
    set-up, select **Save and continue**, then **Save adding options**.
 

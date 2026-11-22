@@ -77,16 +77,30 @@ async function take(shot, page) {
       if (!el) { missing.push(m.t); continue; }
       (Array.isArray(el) ? el[0] : el).scrollIntoView({ block: "nearest" });
     }
+    // side "auto", or a side with no room for its arrow: the first side that has room (the chosen one first, then right,
+    // left, bottom, top), so a control at the edge of the page never sends its arrow off the screen.
+    const auto = (el, tail, pref) => {
+      const r = (Array.isArray(el) ? el[0] : el).getBoundingClientRect();
+      const room = { right: innerWidth - r.right, left: r.left, bottom: innerHeight - r.bottom, top: r.top };
+      const order = [...new Set([pref, "right", "left", "bottom", "top"].filter(Boolean))];
+      return order.find((s) => room[s] >= tail + 30) || pref || "right";
+    };
     for (const m of marks) {
       const el = target(m.t);
-      if (el) window.Annotate.mark(el, { step: m.step ?? null, side: m.side || "right", tail: m.tail || 110 });
+      const tail = m.tail || 110;
+      if (el) window.Annotate.mark(el, { step: m.step ?? null, side: auto(el, tail, m.side === "auto" ? null : m.side), tail });
     }
     const v = window.Annotate.verify({ steps });
     if (missing.length) v.problems.unshift(`not on the page: ${missing.join(", ")}`), v.pass = false;
     return v;
   }, { marks: shot.marks, steps: shot.steps });
   await page.waitForTimeout(400);
-  if (!result.pass) { problems.push(`${shot.file}: ${result.problems.join("; ")}`); console.log(shot.file, "NOT TAKEN"); return; }
+  if (!result.pass) {
+    problems.push(`${shot.file}: ${result.problems.join("; ")}`); console.log(shot.file, "NOT TAKEN");
+    // KEEP_FAILED=1: the picture as it stood, with the mark-up, in failed/ (not copied into the help), to see what is wrong.
+    if (process.env.KEEP_FAILED) { fs.mkdirSync(`${out}/failed`, { recursive: true }); await page.screenshot({ path: `${out}/failed/${shot.file}` }); }
+    return;
+  }
   await page.screenshot({ path: `${out}/${shot.file}` });
   console.log(shot.file, "ok");
 }

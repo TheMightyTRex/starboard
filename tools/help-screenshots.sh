@@ -3,6 +3,7 @@
 #   tools/help-screenshots.sh [topic,topic...]     (all of tools/screenshots/help_shots.json and help_shots.d/*.json
 #                                                   when none is given)
 # Look at every picture before committing (docs/help/HOW-THIS-HELP-IS-WRITTEN.md, Screenshots).
+# KEEP_FAILED=1 keeps the pictures that fail the mark-up check, to look at, in KEEP_FAILED_DIR (default /tmp/help-shots-failed).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PORT="${SHOTS_PORT:-18792}"
@@ -18,14 +19,15 @@ for _ in $(seq 1 30); do grep -q READY "$work/server.log" 2>/dev/null && break; 
 grep -q READY "$work/server.log" || { cat "$work/server.log"; echo "The example server did not start" >&2; exit 1; }
 mkdir -p "$work/out"
 status=0
-docker run --rm --memory 3g --memory-swap 3g --cpus 4 --network host -u "$(id -u):$(id -g)" -e HOME=/tmp -e ONLY="${1:-}" \
+docker run --rm --memory 3g --memory-swap 3g --cpus 4 --network host -u "$(id -u):$(id -g)" -e HOME=/tmp -e ONLY="${1:-}" -e KEEP_FAILED="${KEEP_FAILED:-}" \
   -e BASE="http://127.0.0.1:$PORT" -e PASSWORD_FILE=/work/data/password -e OUT=/work/out \
   -v "$work:/work" -v "$PWD/tools/screenshots:/shots:ro" \
   ${cache:+-v "$cache:/cache:ro"} "mcr.microsoft.com/playwright:v$PLAYWRIGHT-noble" \
   sh -c "mkdir -p /tmp/s && cp -r /shots/help_shoot.mjs /shots/help_shots.json /shots/help_shots.d /shots/annotate.js /shots/terminal /tmp/s/ && cd /tmp/s && if [ -d /cache/node_modules/playwright ]; then ln -s /cache/node_modules node_modules; else npm init -y >/dev/null && npm i --silent playwright@$PLAYWRIGHT >/dev/null; fi && node help_shoot.mjs" || status=$?
 mkdir -p docs/help/images
 # Only this run's pictures are made smaller, so pictures already in the help are not written again.
-command -v pngquant >/dev/null && pngquant --force --ext .png --quality 70-90 "$work"/out/*.png 2>/dev/null || true
+if command -v pngquant >/dev/null; then pngquant --force --ext .png --quality 70-90 "$work"/out/*.png 2>/dev/null || true; else python3 tools/screenshots/shrink_pictures.py "$work"/out/*.png || true; fi
 cp "$work"/out/*.png docs/help/images/ 2>/dev/null || true
+[ -d "$work/out/failed" ] && { mkdir -p "${KEEP_FAILED_DIR:-/tmp/help-shots-failed}"; cp "$work"/out/failed/*.png "${KEEP_FAILED_DIR:-/tmp/help-shots-failed}/"; echo "Pictures that failed the mark-up check: ${KEEP_FAILED_DIR:-/tmp/help-shots-failed}"; } || true
 echo "Written to docs/help/images. Look at each one before committing."
 exit $status

@@ -23,12 +23,20 @@ At the end, films and episodes show as watched in Jellyfin, with resume points f
 ### Read the history
 
 1. Go to **Settings**, then **Apps**, then **Jellyfin**.
+
+   ![Settings, Jellyfin, with the Import watch history tab (step 1) outlined, with example data](../images/import-watch-history-3-tab.png)
+
 2. In **Import watch history**, choose where the history comes from in **Import from**.
+
+   ![Import watch history, with Import from (step 2) outlined, with example data](../images/import-watch-history-2-from.png)
+
 3. For a server, enter its **Server address**, such as `http://192.168.1.20:32400`, and its
    **Token or API key**.
 4. For a file, select it in **File**. For a Plex database, stop Plex before you copy the file, or copy its
    `-wal` file with it.
 5. Select **Read the history**.
+
+   ![Settings, Jellyfin, Import watch history, with Read the history (step 5) outlined, with example data](../images/import-watch-history-1-read.png)
 
 Starboard shows "Reading the history. This can take a few minutes." When it ends, it shows **History read**
 and a table of the accounts it found, with the films and episodes each one watched.

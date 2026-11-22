@@ -8,6 +8,8 @@ it needs. You can change from one to another later, either way: read [Change you
 
 ## At a glance
 
+![Your install, Change your install, with Basics outlined, with example data](../images/install-types-1-basics.png)
+
 | | Basics | Full install | Everything |
 |---|---|---|---|
 | Who it is for | Most homes: a complete media server that stays light | A household that wants watch statistics, logs and smaller files | Someone who wants every app Starboard offers |
@@ -73,6 +75,8 @@ Converting video comes on top of the figures in [At a glance](#at-a-glance):
 
 ## What you can do with each
 
+![Your install, Change your install, with Full install outlined, with example data](../images/install-types-2-full.png)
+
 | Feature | Basics | Full install | Everything |
 |---|---|---|---|
 | Find, download and sort films and series | ✓ | ✓ | ✓ |
@@ -103,6 +107,8 @@ Live TV is a plug-in that comes with Starboard, not an app in the install: read
 [Set up free Live TV in Jellyfin](set-up-live-tv.md#add-live-tv).
 
 ## The apps in each
+
+![Your install, Change your install, with Everything outlined, with example data](../images/install-types-3-everything.png)
 
 | App | What it does | Basics | Full install | Everything | Needs |
 |---|---|---|---|---|---|

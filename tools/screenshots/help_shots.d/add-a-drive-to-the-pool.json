@@ -1,0 +1,61 @@
+{
+ "shots": [
+  {
+   "topic": "add-a-drive-to-the-pool",
+   "file": "add-a-drive-to-the-pool-1-add.png",
+   "page": "system-pool.html",
+   "height": 800,
+   "run": "const wait=ms=>new Promise(r=>setTimeout(r,ms));const until=async(f,n=60)=>{for(let i=0;i<n&&!f();i++)await wait(250);return f();};const vis=e=>e&&e.getBoundingClientRect().width>0;const txt=(t,sel='button,a,label,summary,h2,h3,[role=tab]')=>[...document.querySelectorAll(sel)].find(e=>vis(e)&&(e.innerText.replace(/\\s+/g,' ').trim()===t||e.getAttribute('aria-label')===t));const starts=(t,sel='button,a,label,summary,h2,h3,[role=tab]')=>[...document.querySelectorAll(sel)].find(e=>vis(e)&&e.innerText.replace(/\\s+/g,' ').trim().startsWith(t));const tag=(e,n,c=true)=>{if(!e)throw new Error('no element for '+n);e.dataset.shot=n;if(c){document.body.style.paddingBottom='400px';e.scrollIntoView({block:'center'});}return e;};const click=async(t,sel)=>{await until(()=>txt(t,sel));const e=txt(t,sel);if(!e)throw new Error('no '+t);e.click();await wait(800);};const clickStarts=async(t,sel)=>{await until(()=>starts(t,sel));starts(t,sel).click();await wait(800);};const adv=async()=>{await until(()=>document.querySelector('#advanced-switch'));const s=document.querySelector('#advanced-switch');if(!s.checked){s.click();await wait(1000);}};const tab=async(t)=>{await until(()=>txt(t,'[role=tab]'));txt(t,'[role=tab]').click();await wait(700);};const fld=(t)=>{const l=txt(t,'label');if(!l)throw new Error('no field '+t);return l.closest('.field')||l.closest('.settings-row')||l;};const set=(el,v)=>{el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));};const top=()=>window.scrollTo(0,0);const pick=(sel,text)=>{const o=[...sel.options].find(x=>x.text.trim()===text||x.text.includes(text));if(!o)throw new Error('no option '+text);set(sel,o.value);};const sw1=()=>[...document.querySelectorAll('main input[type=checkbox]')].filter(x=>x.id!=='advanced-switch'&&vis(x.closest('label')||x))[0];const row=(e)=>e.closest('.setting')||e.closest('li')||e.closest('label')||e;await until(()=>document.querySelector('#add-drive'));",
+   "marks": [
+    {
+     "t": "Add a disk",
+     "step": 2,
+     "side": "auto",
+     "tail": 70
+    }
+   ],
+   "steps": [
+    2
+   ],
+   "alt": "System, Storage, Pool, with Add a disk (step 2) outlined"
+  },
+  {
+   "topic": "add-a-drive-to-the-pool",
+   "file": "add-a-drive-to-the-pool-2-choose.png",
+   "page": "system-pool.html",
+   "height": 800,
+   "run": "const wait=ms=>new Promise(r=>setTimeout(r,ms));const until=async(f,n=60)=>{for(let i=0;i<n&&!f();i++)await wait(250);return f();};const vis=e=>e&&e.getBoundingClientRect().width>0;const txt=(t,sel='button,a,label,summary,h2,h3,[role=tab]')=>[...document.querySelectorAll(sel)].find(e=>vis(e)&&(e.innerText.replace(/\\s+/g,' ').trim()===t||e.getAttribute('aria-label')===t));const starts=(t,sel='button,a,label,summary,h2,h3,[role=tab]')=>[...document.querySelectorAll(sel)].find(e=>vis(e)&&e.innerText.replace(/\\s+/g,' ').trim().startsWith(t));const tag=(e,n,c=true)=>{if(!e)throw new Error('no element for '+n);e.dataset.shot=n;if(c){document.body.style.paddingBottom='400px';e.scrollIntoView({block:'center'});}return e;};const click=async(t,sel)=>{await until(()=>txt(t,sel));const e=txt(t,sel);if(!e)throw new Error('no '+t);e.click();await wait(800);};const clickStarts=async(t,sel)=>{await until(()=>starts(t,sel));starts(t,sel).click();await wait(800);};const adv=async()=>{await until(()=>document.querySelector('#advanced-switch'));const s=document.querySelector('#advanced-switch');if(!s.checked){s.click();await wait(1000);}};const tab=async(t)=>{await until(()=>txt(t,'[role=tab]'));txt(t,'[role=tab]').click();await wait(700);};const fld=(t)=>{const l=txt(t,'label');if(!l)throw new Error('no field '+t);return l.closest('.field')||l.closest('.settings-row')||l;};const set=(el,v)=>{el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));};const top=()=>window.scrollTo(0,0);const pick=(sel,text)=>{const o=[...sel.options].find(x=>x.text.trim()===text||x.text.includes(text));if(!o)throw new Error('no option '+text);set(sel,o.value);};const sw1=()=>[...document.querySelectorAll('main input[type=checkbox]')].filter(x=>x.id!=='advanced-switch'&&vis(x.closest('label')||x))[0];const row=(e)=>e.closest('.setting')||e.closest('li')||e.closest('label')||e;document.querySelector('#add-drive').click(); await until(()=>txt('Continue to What it is for','button')); const r=document.querySelector('dialog input[type=radio],aside input[type=radio],[role=dialog] input[type=radio]'); if(r){r.click(); await wait(500);} ",
+   "marks": [
+    {
+     "t": "Continue to What it is for",
+     "step": 4,
+     "side": "auto",
+     "tail": 70
+    }
+   ],
+   "steps": [
+    4
+   ],
+   "alt": "Add a disk, Choose a disk, with Continue to What it is for (step 4) outlined"
+  },
+  {
+   "topic": "add-a-drive-to-the-pool",
+   "file": "add-a-drive-to-the-pool-3-use.png",
+   "page": "system-pool.html",
+   "height": 800,
+   "run": "const wait=ms=>new Promise(r=>setTimeout(r,ms));const until=async(f,n=60)=>{for(let i=0;i<n&&!f();i++)await wait(250);return f();};const vis=e=>e&&e.getBoundingClientRect().width>0;const txt=(t,sel='button,a,label,summary,h2,h3,[role=tab]')=>[...document.querySelectorAll(sel)].find(e=>vis(e)&&(e.innerText.replace(/\\s+/g,' ').trim()===t||e.getAttribute('aria-label')===t));const starts=(t,sel='button,a,label,summary,h2,h3,[role=tab]')=>[...document.querySelectorAll(sel)].find(e=>vis(e)&&e.innerText.replace(/\\s+/g,' ').trim().startsWith(t));const tag=(e,n,c=true)=>{if(!e)throw new Error('no element for '+n);e.dataset.shot=n;if(c){document.body.style.paddingBottom='400px';e.scrollIntoView({block:'center'});}return e;};const click=async(t,sel)=>{await until(()=>txt(t,sel));const e=txt(t,sel);if(!e)throw new Error('no '+t);e.click();await wait(800);};const clickStarts=async(t,sel)=>{await until(()=>starts(t,sel));starts(t,sel).click();await wait(800);};const adv=async()=>{await until(()=>document.querySelector('#advanced-switch'));const s=document.querySelector('#advanced-switch');if(!s.checked){s.click();await wait(1000);}};const tab=async(t)=>{await until(()=>txt(t,'[role=tab]'));txt(t,'[role=tab]').click();await wait(700);};const fld=(t)=>{const l=txt(t,'label');if(!l)throw new Error('no field '+t);return l.closest('.field')||l.closest('.settings-row')||l;};const set=(el,v)=>{el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));};const top=()=>window.scrollTo(0,0);const pick=(sel,text)=>{const o=[...sel.options].find(x=>x.text.trim()===text||x.text.includes(text));if(!o)throw new Error('no option '+text);set(sel,o.value);};const sw1=()=>[...document.querySelectorAll('main input[type=checkbox]')].filter(x=>x.id!=='advanced-switch'&&vis(x.closest('label')||x))[0];const row=(e)=>e.closest('.setting')||e.closest('li')||e.closest('label')||e;document.querySelector('#add-drive').click(); await until(()=>txt('Continue to What it is for','button')); const r=document.querySelector('dialog input[type=radio],aside input[type=radio],[role=dialog] input[type=radio]'); if(r){r.click(); await wait(500);} txt('Continue to What it is for','button').click(); await until(()=>txt('Continue to Check','button')); await wait(600); tag(txt('Continue to Check','button'),'cc');",
+   "marks": [
+    {
+     "t": "$[data-shot=cc]",
+     "step": 7,
+     "side": "auto",
+     "tail": 70
+    }
+   ],
+   "steps": [
+    7
+   ],
+   "alt": "Add a disk, What it is for, with Continue to Check (step 7) outlined"
+  }
+ ]
+}
