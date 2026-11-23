@@ -573,7 +573,7 @@ def routes():
             return {"available": False, "items": [], "next_cursor": None}
         out = containers.apps(h.app.config.data["services"])
         items, nxt = page(scrub(out.get("items") or []), q)
-        return {"available": True, "checked_at": out.get("checked_at"), "items": items, "next_cursor": nxt}
+        return {"available": True, "checked_at": out.get("checked_at"), "restored": bool(out.get("restored")), "items": items, "next_cursor": nxt}
 
     def version(h, m, q):
         cfg = h.app.config
@@ -813,7 +813,7 @@ def actions():
         if not containers.available():
             return 200, {"available": False, "items": []}
         out = containers.check(h.app.config.data["services"])
-        return 200, {"available": True, "checked_at": out.get("checked_at"), "items": scrub(out.get("items") or [])}
+        return 200, {"available": True, "checked_at": out.get("checked_at"), "restored": False, "items": scrub(out.get("items") or [])}
 
     def alerts_test(h, m, q, b):
         cfg = h.app.config

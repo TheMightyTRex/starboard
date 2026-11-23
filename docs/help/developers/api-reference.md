@@ -465,6 +465,7 @@ The answer:
 |---|---|---|
 | `available` | true or false | yes |
 | `checked_at` | a number or null | no |
+| `restored` | true or false | no |
 | `items` | a list of an object (its fields vary) | yes |
 | `next_cursor` | text or null | no |
 
@@ -513,6 +514,7 @@ The answer:
 |---|---|---|
 | `available` | true or false | yes |
 | `checked_at` | a number or null | no |
+| `restored` | true or false | no |
 | `items` | a list of an object (its fields vary) | yes |
 | `next_cursor` | text or null | no |
 

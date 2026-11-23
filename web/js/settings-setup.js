@@ -991,7 +991,9 @@ async function startUpdatesPlace() {
   // What Ready to update says (a polite live region): what is ready, and after Check for updates when it looked and
   // what it could not reach.
   const summaryText = (ready) => {
-    const when = checked ? `Checked at ${new Date(checked.checked_at * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}. ` : "";
+    const kept = data.apps_checked;  // the apps' last look, kept across a restart (DASH-548)
+    const when = checked ? `Checked at ${new Date(checked.checked_at * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}. `
+      : kept ? `The apps were last checked ${checkedWhen(kept.at, kept.restored)}. ` : "";
     const what = ready.length
       ? `${ready.length} ${ready.length === 1 ? "update is" : "updates are"} ready: ${ready.join(", ")}.`
       : checked ? "Everything is up to date." : "Everything Starboard knows about is up to date.";

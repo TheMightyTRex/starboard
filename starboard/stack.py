@@ -955,6 +955,27 @@ def save_keep(data_dir, keep):
     os.replace(path + ".new", path)
 
 
+def keep_image(data_dir, old, new):
+    """After an app pinned to a tag was updated (or put back): kept.json names `new` where it named `old`, so a later
+    change to Your install does not write the old tag back (DASH-547). Returns the services changed; nothing when
+    there is no kept.json or no service has that image."""
+    path = os.path.join(folder(data_dir), KEEP_FILE)
+    try:
+        with open(path, encoding="utf-8") as f:
+            saved = json.load(f)
+    except (OSError, ValueError):
+        return []
+    changed = [k for k, v in (saved.items() if isinstance(saved, dict) else []) if isinstance(v, dict) and v.get("image") == old]
+    if not changed:
+        return []
+    for k in changed:
+        saved[k]["image"] = new
+    with os.fdopen(os.open(path + ".new", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
+        json.dump(saved, f, indent=1)
+    os.replace(path + ".new", path)
+    return changed
+
+
 def read_keep(data_dir, env=None):
     """data/stack/kept.json with the secret values filled in from .env, ready for build(); {} when there is none."""
     try:

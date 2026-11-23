@@ -1981,6 +1981,9 @@
             "null"
            ]
           },
+          "restored": {
+           "type": "boolean"
+          },
           "items": {
            "type": "array",
            "items": {
@@ -2060,6 +2063,9 @@
             "number",
             "null"
            ]
+          },
+          "restored": {
+           "type": "boolean"
           },
           "items": {
            "type": "array",
