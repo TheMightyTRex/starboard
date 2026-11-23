@@ -9,12 +9,13 @@ once), and an ID token signed RS256 by hand.
 
 `mode` makes it misbehave in one way at a time, so each check Starboard makes can be seen to refuse: wrong_nonce,
 wrong_aud, expired, future, bad_signature, wrong_issuer, alg_none, hs256, unknown_kid, unverified, other_email,
-no_id_token, redirect_elsewhere. Run alone with: python3 tests/oidc_stand_in.py PORT
+no_id_token, redirect_elsewhere. Run alone with: python3 tests/oidc_stand_in.py PORT SECRET_FILE
 """
 import base64
 import hashlib
 import hmac
 import json
+import os
 import secrets
 import sys
 import threading
@@ -215,6 +216,11 @@ class Provider:
 
 
 if __name__ == "__main__":
+    # The client secret goes to a file only the owner can read (argument 2), never to the screen.
     p = Provider(port=int(sys.argv[1]) if len(sys.argv) > 1 else 0)
-    print(f"READY issuer={p.issuer} client_id={p.client_id} client_secret={p.client_secret} email={p.email}", flush=True)
+    if len(sys.argv) > 2:
+        fd = os.open(sys.argv[2], os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as f:
+            f.write(p.client_secret)
+    print(f"READY issuer={p.issuer} client_id={p.client_id} email={p.email}", flush=True)
     threading.Event().wait()
