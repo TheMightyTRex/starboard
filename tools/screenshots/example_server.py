@@ -2182,7 +2182,10 @@ def main():
         r, _ = call("POST", "/api/setup", {"token": app.setup_token, "password": password})
         cookie = r.getheader("Set-Cookie").split(";")[0]
         # A short server name, as Settings, General sets it: it starts the top row of the menu (DASH-237).
-        call("PUT", "/api/config/general", {"server_name": "Harbour", "setup_guide_done": True}, cookie)  # a set-up server (DASH-238)
+        # The example install is Reelix Lite, which starts with the shadows removed (DASH-536); the pictures in the README and the
+        # help show the shadows the full install has, so they are kept unless EXAMPLE_SHADOWS_OFF=1 (release 0.29.0).
+        call("PUT", "/api/config/general", {"server_name": "Harbour", "setup_guide_done": True,
+                                            "shadows_off": os.environ.get("EXAMPLE_SHADOWS_OFF") == "1"}, cookie)  # a set-up server (DASH-238)
         # Audio description ticked in the set-up (DASH-399), so the Plug-ins pages show the offer to install it.
         call("PUT", "/api/config/general", {"extras": {"audio_description": True}}, cookie)
         # Settings, Updates (DASH-422): the plug-ins update by themselves; the rest wait for you (the default).
