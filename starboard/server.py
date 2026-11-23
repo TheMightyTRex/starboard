@@ -163,6 +163,7 @@ class App:
         self.code_limits = auth.RateLimit()  # two-step codes: 5 wrong in 15 minutes from one address
         self.code_limits_all = auth.RateLimit(limit=10, window=900)  # and 10 from anywhere, so many addresses add nothing
         self.sso_limits = auth.RateLimit(limit=20, window=900)  # starting a single sign-on costs a request to the provider
+        self.sso_return_limits = auth.RateLimit(limit=10, window=900)  # coming back from it: its own, apart from the password's
         if os.path.exists(os.path.join(data_dir, "reset-sign-in")):
             self._reset_sign_in(data_dir)
         self.version = read_version()
@@ -3865,10 +3866,14 @@ class Handler(BaseHTTPRequestHandler):
         """The two-step code (or a recovery code) after the password. Limited per address and across all of them."""
         app = self.app
         address = self.client_address_text()
-        if not (app.code_limits.attempt(address) and app.code_limits_all.attempt("all")):
-            signin.audit(app, "sign_in_code_limited", address=address)
-            return self.error(429, "Too many attempts. Wait 15 minutes and try again")
         data = self.body()
+        # Only a request that carries a live challenge (the password was right) counts against the limits that are
+        # shared by everyone; one from nowhere is simply refused, so a flood of those cannot lock the owner out.
+        if not signin.challenge_valid(data.get("challenge"), address):
+            return self.error(401, "The password step has run out. Enter your password again")
+        if not (app.code_limits.attempt(address) and app.code_limits_all.attempt("all")):
+            self.audit_once("sign_in_code_limited", address)
+            return self.error(429, "Too many attempts. Wait 15 minutes and try again")
         try:
             remember = signin.check_code(app, data.get("challenge"), address, data.get("code"))
         except signin.SigninError as e:
@@ -3876,6 +3881,15 @@ class Handler(BaseHTTPRequestHandler):
         app.code_limits.clear(address)
         app.code_limits_all.clear("all")
         return self.json(200, {"ok": True}, self.new_session(remember))
+
+    _audited = {}
+
+    def audit_once(self, what, address, window=900):
+        """At most one audit line a window for each kind of refusal, so a flood cannot fill the audit log."""
+        now = time.time()
+        if now - Handler._audited.get(what, 0) >= window:
+            Handler._audited[what] = now
+            signin.audit(self.app, what, address=address)
 
     # Single sign-on (DASH-512) ----------------------------------------------
 
@@ -3896,10 +3910,10 @@ class Handler(BaseHTTPRequestHandler):
         if not app.sso_limits.attempt(address):
             return self.send(303, extra={"Location": "/login.html?sso=limited"})
         try:
-            where, binder = oidc.begin(cfg, remember=q.get("remember", [""])[0] == "1", test=test)
+            where, binder = oidc.begin(cfg, remember=q.get("remember", [""])[0] == "1", test=test, address=address)
         except oidc.SignInError as e:
             logs.event("warning", "sign-in", f"Single sign-on could not start: {e.reason}")
-            return self.send(303, extra={"Location": "/login.html?sso=failed" if not test else "/settings-security-signin.html?sso=failed"})
+            return self.send(303, extra={"Location": ("/login.html" if not test else "/settings-security-signin.html") + ("?sso=limited" if e.code == "limited" else "?sso=failed")})
         self.send(303, extra={"Location": where, "Set-Cookie": self.sso_cookie(binder, oidc.STATE_LIFE), "Cache-Control": "no-store"})
 
     def sso_callback(self):
@@ -3917,7 +3931,7 @@ class Handler(BaseHTTPRequestHandler):
             signin.audit(app, "sso_refused", address=address, reason=why),
             logs.event("warning", "sign-in", f"Single sign-on was refused: {why}"),
             self.send(303, extra={"Location": ("/settings-security-signin.html" if test else "/login.html") + f"?sso={code}", "Cache-Control": "no-store"}))[-1]
-        if not app.limits.attempt(address):
+        if not app.sso_return_limits.attempt(address):
             return fail("limited", "too many attempts")
         if not cfg.get("issuer"):
             return fail("off", "single sign-on is not set up")
@@ -3933,7 +3947,7 @@ class Handler(BaseHTTPRequestHandler):
             return fail("off", "single sign-on is deactivated")
         if not oidc.is_owner(claims, cfg.get("claim", "email"), cfg.get("value", "")):
             return fail("nomatch", f"the {cfg.get('claim', 'email')} did not match the one allowed" + (" or was not verified" if cfg.get("claim", "email") == "email" else ""), test)
-        app.limits.clear(address)
+        app.sso_return_limits.clear(address)
         if test:
             signin.mark_tested(app)
             signin.audit(app, "sso_tested", address=address)

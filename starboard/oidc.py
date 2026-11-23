@@ -16,20 +16,20 @@ import hashlib
 import hmac
 import ipaddress
 import json
+import re
 import secrets
 import socket
 import threading
 import time
-import urllib.error
 import urllib.parse
-import urllib.request
 
 from . import outside
 
 TIMEOUT = 10
 READ_LIMIT = 1024 * 1024
 STATE_LIFE = 600  # seconds from the start of a sign-in to its return
-MAX_PENDING = 20
+MAX_PENDING = 50
+MAX_PENDING_EACH = 5  # in-flight sign-ins from one address; more are refused, nobody else's is ever dropped
 SKEW = 120  # seconds of clock difference allowed
 KEYS_LIFE = 3600  # the provider's published keys are read again after this long, or once when a token names a new key
 KEYS_RETRY = 300  # but not more often than this
@@ -38,73 +38,127 @@ BINDER_COOKIE = "starboard_sso"
 _SHA256_PREFIX = bytes.fromhex("3031300d060960864801650304020105000420")
 
 
+def clean_text(text, limit=300):
+    """Text that came from a provider, for a log line or a message: control characters become spaces, and it is cut short."""
+    return re.sub(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]", " ", str(text))[:limit]
+
+
 class SignInError(Exception):
     """A sign-in that cannot go on. text is for the person; reason is for the log and never holds a secret."""
 
     def __init__(self, text, reason=None, code="failed"):
+        text, reason = clean_text(text), clean_text(reason or text)
         super().__init__(text)
-        self.text, self.reason, self.code = text, reason or text, code
+        self.text, self.reason, self.code = text, reason, code
 
 
 # Addresses ------------------------------------------------------------------------------------------------------
 
+def _loopback(host):
+    if host.lower() == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host.split("%", 1)[0]).is_loopback
+    except ValueError:
+        return False
+
+
 def check_address(url, what="address"):
-    """https always; http only for an address on this computer or your home network, where nothing crosses the internet."""
+    """https always. http only for an address on this computer itself (a developer's provider, the tests): on a home
+    network anyone could answer for the provider, hand out their own keys and sign in as you, and the client secret
+    would cross the network in the open."""
     parts = urllib.parse.urlsplit(str(url or ""))
     if parts.scheme not in ("http", "https") or not parts.hostname or parts.username or parts.password or parts.fragment:
-        raise ValueError(f"The {what} must be an address starting with https:// (or http:// on your home network)")
+        raise ValueError(f"The {what} must be an address starting with https://")
     try:
         outside.check_url(url)
     except ValueError as e:
         raise ValueError(str(e)) from None
-    if parts.scheme == "http" and not _on_home_network(parts.hostname, parts.port or 80):
-        raise ValueError(f"The {what} uses http:// across the internet, which would send the sign-in in the open. Use https://")
+    if parts.scheme == "http" and not _loopback(parts.hostname):
+        raise ValueError(f"The {what} uses http://, which anyone on the network could answer for and so sign in as you, and the client secret would cross it in the open. "
+                         "Use https://. Only http://localhost or 127.0.0.1 is allowed, for testing")
 
 
-def _on_home_network(host, port):
+DEADLINE = 15  # seconds for a whole request, so a server that sends a byte at a time cannot hold a thread
+
+
+def _addresses(host, port):
     try:
-        found = [host]
-        ipaddress.ip_address(host)
+        found = [host] if ipaddress.ip_address(host.split("%", 1)[0]) else []
     except ValueError:
         try:
             found = sorted({i[4][0] for i in socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)})
         except (OSError, UnicodeError):
-            return False
+            raise OSError("the name does not resolve") from None
     for ip in found:
-        a = ipaddress.ip_address(ip.split("%", 1)[0])
-        if not (a.is_private or a.is_loopback):
-            return False
-    return bool(found)
+        why = outside.bad_address(ip)
+        if why:
+            raise OSError(f"{host} is not allowed: {why}")
+    return found
 
 
-class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    """A provider's token address never sends the client secret anywhere else."""
-
-    def redirect_request(self, *a, **k):
-        return None
-
-
-_OPENER = urllib.request.build_opener(_NoRedirect)
+def _connect(parts, deadline):
+    """The address is looked up once, checked, and the connection made to that very address, with the name kept for the
+    Host header and for TLS: a name that answers differently a moment later (DNS rebinding) gets nothing."""
+    host, port = parts.hostname, parts.port or (443 if parts.scheme == "https" else 80)
+    last = None
+    for ip in _addresses(host, port):
+        try:
+            sock = socket.create_connection((ip, port), timeout=max(1, deadline - time.monotonic()))
+        except OSError as e:
+            last = e
+            continue
+        if parts.scheme == "https":
+            import ssl
+            try:
+                sock = ssl.create_default_context().wrap_socket(sock, server_hostname=host)
+            except (ssl.SSLError, OSError) as e:
+                sock.close()
+                raise OSError(f"TLS failed: {type(e).__name__}") from None
+        return sock
+    raise last or OSError("no address")
 
 
 def _fetch(url, form=None, basic=None, what="the provider"):
     check_address(url, "provider address")
-    headers = {"Accept": "application/json", "User-Agent": "Starboard"}
-    data = None
+    parts = urllib.parse.urlsplit(url)
+    headers = {"Accept": "application/json", "User-Agent": "Starboard", "Connection": "close"}
+    body = None
     if form is not None:
-        data = urllib.parse.urlencode(form).encode()
+        body = urllib.parse.urlencode(form).encode()
         headers["Content-Type"] = "application/x-www-form-urlencoded"
     if basic:
         pair = f"{urllib.parse.quote(basic[0], safe='')}:{urllib.parse.quote(basic[1], safe='')}"
         headers["Authorization"] = "Basic " + base64.b64encode(pair.encode()).decode()
-    req = urllib.request.Request(url, data=data, headers=headers, method="POST" if form is not None else "GET")
+    import http.client
+    deadline = time.monotonic() + DEADLINE
+    conn = None
     try:
-        with _OPENER.open(req, timeout=TIMEOUT) as r:  # nosec B310 - checked by check_address above
-            raw = r.read(READ_LIMIT + 1)
-    except urllib.error.HTTPError as e:
-        raise SignInError(f"{what.capitalize()} refused the request ({e.code})", f"{what} answered {e.code}") from None
-    except (urllib.error.URLError, OSError, ValueError) as e:
+        sock = _connect(parts, deadline)
+        conn = http.client.HTTPConnection(parts.hostname, parts.port or 80, timeout=DEADLINE)
+        conn.sock = sock
+        sock.settimeout(max(1, deadline - time.monotonic()))
+        path = (parts.path or "/") + ("?" + parts.query if parts.query else "")
+        conn.request("POST" if form is not None else "GET", path, body=body, headers=headers)
+        r = conn.getresponse()
+        raw = b""
+        while len(raw) <= READ_LIMIT and not r.isclosed():
+            left = deadline - time.monotonic()
+            if left <= 0:
+                raise OSError("too slow")
+            sock.settimeout(left)
+            chunk = r.read1(8192)
+            if not chunk:
+                break
+            raw += chunk
+        status = r.status
+    except (OSError, ValueError, http.client.HTTPException) as e:
         raise SignInError(f"Starboard could not reach {what}", f"could not reach {what}: {type(e).__name__}") from None
+    finally:
+        if conn:
+            conn.close()
+    if status >= 300:  # an error, or a redirect, which is never followed
+        raise SignInError(f"{what.capitalize()} refused the request ({status})", f"{what} answered {status}")
     if len(raw) > READ_LIMIT:
         raise SignInError(f"{what.capitalize()} sent too much")
     try:
@@ -287,7 +341,7 @@ def _hash(text):
     return hashlib.sha256(text.encode()).hexdigest()
 
 
-def begin(cfg, remember=False, test=False):
+def begin(cfg, remember=False, test=False, address=""):
     """(the address to send the browser to, the binder for its cookie). The state, nonce and PKCE verifier stay here."""
     meta = discover(cfg["issuer"])
     state, nonce, verifier, binder = (secrets.token_urlsafe(24) for _ in range(4))
@@ -296,9 +350,9 @@ def begin(cfg, remember=False, test=False):
     with _pending_lock:
         for k in [k for k, v in _pending.items() if v["until"] < now]:
             del _pending[k]
-        while len(_pending) >= MAX_PENDING:
-            del _pending[min(_pending, key=lambda k: _pending[k]["until"])]
-        _pending[_hash(state)] = {"nonce": nonce, "verifier": verifier, "binder": _hash(binder), "until": now + STATE_LIFE,
+        if len(_pending) >= MAX_PENDING or sum(1 for v in _pending.values() if v.get("address") == address) >= MAX_PENDING_EACH:
+            raise SignInError("Too many sign-ins are waiting. Try again in a few minutes", "too many pending sign-ins", "limited")
+        _pending[_hash(state)] = {"address": address, "nonce": nonce, "verifier": verifier, "binder": _hash(binder), "until": now + STATE_LIFE,
                                   "remember": bool(remember), "test": bool(test)}
     query = urllib.parse.urlencode({
         "response_type": "code", "client_id": cfg["client_id"], "redirect_uri": cfg["redirect_uri"],

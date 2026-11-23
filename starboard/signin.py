@@ -101,6 +101,14 @@ def new_challenge(address, remember):
     return token
 
 
+def challenge_valid(token, address):
+    """Whether this challenge is live and for this address: asked before anything is counted, so a request with no
+    password behind it never uses up a limit that belongs to the owner."""
+    with _challenge_lock:
+        item = _challenges.get(_hash(str(token or "")))
+        return bool(item and item["until"] >= time.time() and item["address"] == address)
+
+
 def check_code(app, token, address, code):
     """Returns whether the session should remember, when the code (or a recovery code) is right. Raises SigninError.
     The challenge allows 5 tries and then needs the password again; only the code is asked for here."""
@@ -220,12 +228,17 @@ def oidc_save(app, data, address, default_redirect):
     o = dict(section(app, "oidc"))
     issuer = _text(data, "issuer")
     client_id = _text(data, "client_id")
-    secret = str(data.get("client_secret") or "").strip()[:1000] or o.get("client_secret", "")
+    typed = str(data.get("client_secret") or "").strip()[:1000]
+    issuer_changed = bool(o.get("issuer")) and o.get("issuer") != issuer
+    # A blank field keeps the saved secret, but never hands it to a different provider
+    secret = typed or ("" if issuer_changed else o.get("client_secret", ""))
     redirect = _text(data, "redirect_uri") or default_redirect
     claim = _text(data, "claim", 40).lower() or "email"
     value = _text(data, "value")
     scopes = " ".join(_text(data, "scopes", 200).split()) or oidc.DEFAULT_SCOPES
     name = _text(data, "name", MAX_NAME) or "Single sign-on"
+    if issuer_changed and not typed:
+        raise SigninError(400, "The issuer address changed, so the saved client secret was cleared. Enter the client secret for the new provider")
     if not issuer or not client_id or not secret:
         raise SigninError(400, "Enter the issuer address, the client ID and the client secret")
     if not value:

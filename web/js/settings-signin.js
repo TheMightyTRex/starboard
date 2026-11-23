@@ -149,11 +149,11 @@ async function startSignin() {
     f.claim.addEventListener("change", () => { otherField.hidden = f.claim.value !== "other"; });
     const form = el("form", { class: "form-stack", id: "sso-form", novalidate: true },
       field("Name on the sign-in button", f.name, { hint: "For example Authentik, Authelia, Keycloak or Google." }),
-      field("Issuer address", f.issuer, { hint: "The OpenID Connect issuer of your provider. Starboard reads its description from there." }),
+      field("Issuer address", f.issuer, { hint: "The OpenID Connect issuer of your provider. It must start with https://, because anyone on a network could answer for a provider on http:// and sign in as you. Starboard reads its description from there." }),
       field("Client ID", f.client_id),
-      field("Client secret", f.client_secret, { hint: "Kept on this server like an app's key, and never shown again." }),
+      field("Client secret", f.client_secret, { hint: "Kept on this server like an app's key, and never shown again. If you change the issuer address, enter the secret again: the saved one is never given to a different provider." }),
       field("Redirect address", f.redirect_uri, { hint: "Give your provider exactly this address as the redirect (callback) address. Starboard sends people nowhere else." }),
-      field("Who may sign in", f.claim, { hint: "Starboard has one account. Choose how it recognises you in the provider's ID token." }),
+      field("Who may sign in", f.claim, { hint: "Starboard has one account. Choose how it recognises you in the provider's ID token. A verified email address is the strongest choice, and so is the subject (sub). A username or another claim is weaker: a provider may let people choose it for themselves." }),
       otherField,
       field("The value that is you", f.value, { hint: "For a verified email, your address. The provider must say it has checked it." }));
     const save = el("button", { type: "submit", class: "btn btn--primary", text: "Save and check the provider" });
@@ -197,7 +197,7 @@ async function startSignin() {
         settingRow("Allow single sign-on", el("span", { id: "sso-on-h", text: "Shows a button on the sign-in page. Needs a working test first." }), el("label", { class: "switch" }, allow), "sso-on-l")),
         el("div", { class: "actions" }, remove));
     }
-    return section("sc-sso", "Single sign-on", "Sign in with your own identity provider (OpenID Connect), such as Authentik, Authelia, Keycloak or Google. Off until you set it up and test it.", ...parts);
+    return section("sc-sso", "Single sign-on", "Sign in with your own identity provider (OpenID Connect), such as Authentik, Authelia, Keycloak or Google. Off until you set it up and test it. It does not ask for Starboard's two-step code: your provider's own checks apply.", ...parts);
   }
 
   // Password sign-in -------------------------------------------------------------------------------------------

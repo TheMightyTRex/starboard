@@ -29,7 +29,7 @@ Latest results: 3 November 2026.
   RS256 signature (against the provider's published keys, 2048 bits or more, checked with standard library code that
   builds the expected padding and compares in constant time) are all checked, and only the one owner's verified email, or
   a claim the owner chose, gets in. The provider's address is checked like any address Starboard calls (no link-local or
-  metadata addresses; https, or http only on a home network), and no redirect is followed with the client secret. Secrets
+  metadata addresses; https; http only for this computer itself, for testing; the address is looked up once and connected to, with a 15 second limit), and no redirect is followed with the client secret. Secrets
   live in the settings file under `auth` (never in a settings backup), are never sent to the browser, and are never
   written to a log or the audit log. Each change asks for the password again. The password works unless turned off on
   purpose, which needs single sign-on on and tested. `./reset-sign-in.sh` on the server turns both off.

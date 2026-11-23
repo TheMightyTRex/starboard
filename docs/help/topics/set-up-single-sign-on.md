@@ -58,9 +58,17 @@ the server. Read [Get back in when sign-in is locked](get-back-in-when-sign-in-i
 
 - Changing the issuer, client, secret, redirect address or who may sign in turns single sign-on off, and the
   password back on, until you test it again.
-- Your provider decides whether you need a second step. Starboard's own two-step code is asked for with the
-  password only.
-- Starboard calls only the provider you entered. It uses https, or http only for an address on your home network.
+- Single sign-on does not ask for Starboard's two-step code. Your provider decides whether you need a second step, so
+  turn on its own checks there. Starboard's code is asked for with the password only.
+- Matching by a verified email address or by the subject (`sub`) is the strongest choice. A username
+  (`preferred_username`), a name or another claim is weaker, because some providers let people choose or change it
+  themselves. Use the email, which Starboard accepts only when the provider says it has checked it.
+- Starboard calls only the provider you entered. The issuer must start with `https://`. An `http://` address is
+  refused, except `localhost` or `127.0.0.1` for testing, because anyone on your home network could answer for a
+  provider on `http://`, hand out their own keys and sign in as you, and the client secret would cross the network
+  in the open.
+- If you change the issuer address, Starboard clears the saved client secret, so it is never given to a different
+  provider. Enter it again.
 - A backup of Starboard's settings never holds these details.
 
 ## If it does not work

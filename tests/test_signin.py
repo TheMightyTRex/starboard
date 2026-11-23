@@ -132,7 +132,12 @@ class Rs256Test(unittest.TestCase):
         for bad in ("http://169.254.169.254/", "ftp://auth.example/", "http://user:pw@127.0.0.1/", "http://example.invalid/", "javascript:alert(1)"):
             with self.assertRaises(ValueError, msg=bad):
                 oidc.check_address(bad)
-        oidc.check_address("http://127.0.0.1:9/")  # home network or this computer: fine over http
+        oidc.check_address("http://127.0.0.1:9/")  # this computer, for testing: fine over http
+        oidc.check_address("http://localhost:9/")
+        for lan in ("http://192.168.1.5/", "http://10.0.0.2:8080/", "http://auth.home.arpa/"):
+            with self.assertRaises(ValueError, msg=lan):  # a home network is not safe over http
+                oidc.check_address(lan)
+        oidc.check_address("https://192.168.1.5/")
 
 
 class Server(unittest.TestCase):
@@ -190,7 +195,7 @@ class Server(unittest.TestCase):
         return dict((k.lower(), v) for k, v in headers).get("location", "")
 
     def setUp(self):
-        for lim in (self.app.limits, self.app.code_limits, self.app.code_limits_all, self.app.sso_limits):
+        for lim in (self.app.limits, self.app.code_limits, self.app.code_limits_all, self.app.sso_limits, self.app.sso_return_limits):
             lim.failures.clear()
         oidc.forget()
         oidc.forget_pending()
@@ -601,6 +606,110 @@ class Server(unittest.TestCase):
         self.save_sso()
         from starboard import backup
         self.assertIn("auth", backup.NEVER_KEYS)
+
+    def test_a_flood_with_no_password_behind_it_cannot_lock_the_owner_out(self):
+        secret, _ = self.turn_on_totp()
+        for _ in range(25):
+            self.app.code_limits.failures.clear()
+            self.assertEqual(self.api("POST", "/api/login/code", {"challenge": "made-up", "code": "000000"}, cookie=False)[0], 401)
+        data = self.api("POST", "/api/login", {"password": PASSWORD}, cookie=False)[1]
+        status, _, _ = self.api("POST", "/api/login/code", {"challenge": data["challenge"], "code": totp.code_at(secret, int(time.time() // 30) + 1)}, cookie=False)
+        self.assertEqual(status, 200)
+
+    def test_the_limit_is_audited_once_a_window_not_for_every_refusal(self):
+        self.turn_on_totp()
+        from starboard.server import Handler
+        Handler._audited.clear()
+        data = self.api("POST", "/api/login", {"password": PASSWORD}, cookie=False)[1]
+        for _ in range(10):
+            self.app.code_limits_all.attempt("all")
+        for _ in range(8):
+            self.assertEqual(self.api("POST", "/api/login/code", {"challenge": data["challenge"], "code": "123456"}, cookie=False)[0], 429)
+        with open(os.path.join(self.tmp.name, "logs", "audit.jsonl")) as f:
+            self.assertEqual(f.read().count("sign_in_code_limited"), 1)
+
+    def test_changing_the_issuer_clears_the_kept_secret(self):
+        self.assertEqual(self.save_sso()[0], 200)
+        other = oidc_stand_in.Provider()
+        try:
+            status, body, _ = self.save_sso(issuer=other.issuer, client_secret="")
+            self.assertEqual(status, 400)
+            self.assertIn("secret was cleared", body["error"])
+            self.assertEqual(self.app.config.data["auth"]["oidc"]["client_secret"], self.provider.client_secret)  # nothing was handed on
+            self.assertEqual(self.save_sso(issuer=other.issuer, client_secret=other.client_secret, client_id=other.client_id)[0], 200)
+        finally:
+            other.stop()
+
+    def test_coming_back_from_the_provider_does_not_touch_the_password_counter(self):
+        self.enable_sso()
+        for _ in range(3):
+            self.app.limits.attempt("127.0.0.1")
+        self.go_through_the_provider()
+        self.assertEqual(len(self.app.limits.failures.get("127.0.0.1", [])), 3)
+        self.assertGreaterEqual(len(self.app.sso_return_limits.failures.get("127.0.0.1", [])) + 1, 1)
+
+    def test_one_address_cannot_push_out_another_ones_sign_in(self):
+        self.enable_sso()
+        cfg = signin.section(self.app, "oidc")
+        where, binder = oidc.begin(cfg, address="198.51.100.1")
+        for _ in range(40):
+            try:
+                oidc.begin(cfg, address="203.0.113.9")
+            except oidc.SignInError as e:
+                self.assertEqual(e.code, "limited")
+        state = urllib.parse.parse_qs(urllib.parse.urlsplit(where).query)["state"][0]
+        self.assertIn(oidc._hash(state), oidc._pending)  # the first one is still waiting
+
+    def test_text_from_a_provider_is_made_safe_for_a_log(self):
+        e = oidc.SignInError("x\ny", "alg bad\r\nINJECTED\x1b[31m " + "a" * 500)
+        self.assertNotRegex(e.reason + e.text, r"[\x00-\x1f\x7f]")
+        self.assertLessEqual(len(e.reason), 300)
+
+    def test_a_server_that_sends_a_byte_at_a_time_is_cut_off(self):
+        import socket as _s
+        srv = _s.socket()
+        srv.bind(("127.0.0.1", 0))
+        srv.listen(1)
+        stop = threading.Event()
+
+        def drip():
+            c, _ = srv.accept()
+            c.recv(4096)
+            c.sendall(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 100000\r\n\r\n")
+            while not stop.is_set():
+                try:
+                    c.sendall(b" ")
+                except OSError:
+                    break
+                time.sleep(0.3)
+            c.close()
+        threading.Thread(target=drip, daemon=True).start()
+        old = oidc.DEADLINE
+        oidc.DEADLINE = 2
+        began = time.monotonic()
+        try:
+            with self.assertRaises(oidc.SignInError):
+                oidc._fetch(f"http://127.0.0.1:{srv.getsockname()[1]}/x")
+        finally:
+            oidc.DEADLINE = old
+            stop.set()
+            srv.close()
+        self.assertLess(time.monotonic() - began, 5)
+
+    def test_the_connection_goes_to_the_address_that_was_checked(self):
+        calls = []
+        real = oidc.socket.getaddrinfo
+
+        def lookup(host, port, *a, **k):
+            calls.append(host)
+            return real("127.0.0.1", port, *a, **k) if len(calls) < 2 else real("169.254.169.254", port, *a, **k)
+        p = oidc_stand_in.Provider()
+        from unittest import mock
+        with mock.patch.object(oidc.socket, "getaddrinfo", lookup), mock.patch("starboard.outside.socket.getaddrinfo", lookup):
+            oidc._addresses("rebind.test", p.port)
+            with self.assertRaises(OSError):  # a later answer that points at a metadata address is refused
+                oidc._addresses("rebind.test", p.port)
+        p.stop()
 
     def test_the_access_page_names_single_sign_on_when_it_is_on(self):
         from starboard import access
