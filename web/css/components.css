@@ -1669,6 +1669,16 @@
     color: var(--color-text-muted);
     font-size: var(--text-xs);
     text-align: center;
+    /* Every cover has the card's shading (owner, 23 November 2026, DASH-535: "Apply that to all covers"): the 1px
+       divider border, the 6px corner and the layered card shadow. High contrast keeps the border (the shadow token is
+       none there); a cover with no picture shows its title on the same tile. */
+    border: 1px solid var(--color-divider);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+  }
+  /* A cover in a card or row raises its border on hover, as a card does. */
+  :is(.media-card, .book-row):hover .cover {
+    border-color: var(--color-border);
   }
   .cover img {
     width: 100%;
@@ -2829,6 +2839,12 @@
   .media-card.cover-card:focus-within .cover {
     outline: none;
   }
+  /* Beside the art, the cover and its column read as one tile: the cover's right corners are square. */
+  .cover-card[data-actions="beside"] .cover-card__art > .cover {
+    border-right-width: 0;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
   .cover-card:has(> .cover-card__open:focus-visible) .cover-card__art > :first-child {
     outline: var(--focus-w) solid var(--color-focus);
     outline-offset: 2px;
@@ -2843,14 +2859,16 @@
   .cover-actions {
     position: absolute;
     z-index: 2;
-    top: 0;
-    right: 0;
-    bottom: 0;
+    /* Inside the cover's own 1px border and 6px corner, so the column is never square over a rounded edge. */
+    top: 1px;
+    right: 1px;
+    bottom: 1px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     background: var(--color-surface-raised);
     border-left: 1px solid var(--color-divider);
+    border-radius: 0 calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0;
     box-shadow: var(--shadow-raised);
     opacity: 0;
     transform: translateX(8px);
@@ -2893,6 +2911,7 @@
     contain: size;
     border: 1px solid var(--color-divider);
     border-left: 0;
+    border-radius: 0 var(--radius) var(--radius) 0;
     box-shadow: none;
     opacity: 1;
     transform: none;
@@ -3977,6 +3996,7 @@
   .item-header__art {
     width: 176px;
   }
+  /* People and artists: the round cover keeps its circle; its border and shadow follow the circle, never a square. */
   .item-header__art--round .cover {
     aspect-ratio: 1;
     border-radius: var(--radius-round);
@@ -4097,6 +4117,7 @@
     width: 128px;
     aspect-ratio: 2 / 3;
     border: 2px solid var(--color-surface);
+    border-radius: var(--radius);
     background: var(--color-surface-sunken);
     box-shadow: var(--shadow-raised);
     object-fit: cover;
@@ -4583,6 +4604,11 @@
   .cover--mini {
     width: 24px;
     flex: none;
+  }
+  /* Small covers (24px, 48px and a result's 64px) keep the border and the corner but not the big shadow, which
+     would swamp them; the shadow tokens have no lighter size. */
+  :is(.cover--mini, .cover--row, .cover--thumb, .cover--result) {
+    box-shadow: none;
   }
   .calendar__titles {
     margin-top: var(--space-1);
