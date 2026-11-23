@@ -111,7 +111,9 @@ def _connect(parts, deadline):
         if parts.scheme == "https":
             import ssl
             try:
-                sock = ssl.create_default_context().wrap_socket(sock, server_hostname=host)
+                context = ssl.create_default_context()
+                context.minimum_version = ssl.TLSVersion.TLSv1_2  # never the old protocol versions (CodeQL, 23 November 2026)
+                sock = context.wrap_socket(sock, server_hostname=host)
             except (ssl.SSLError, OSError) as e:
                 sock.close()
                 raise OSError(f"TLS failed: {type(e).__name__}") from None

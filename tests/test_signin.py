@@ -720,5 +720,29 @@ class Server(unittest.TestCase):
         self.assertIn("settings-security-signin.html", row()["link"])
 
 
+class TlsVersion(unittest.TestCase):
+    def test_the_provider_connection_refuses_old_tls(self):
+        """CodeQL (23 November 2026): the context for an https provider must not allow TLS 1.0 or 1.1."""
+        import ssl
+        import unittest.mock as mock
+        seen = {}
+
+        class Ctx:
+            def wrap_socket(self, sock, server_hostname=None):
+                seen["host"] = server_hostname
+                return sock
+
+            def __setattr__(self, k, v):
+                seen[k] = v
+
+        sock = mock.Mock()
+        with mock.patch.object(oidc, "_addresses", return_value=["93.184.216.34"]), \
+             mock.patch.object(oidc.socket, "create_connection", return_value=sock), \
+             mock.patch.object(ssl, "create_default_context", return_value=Ctx()):
+            oidc._connect(urllib.parse.urlparse("https://login.example.test/x"), time.monotonic() + 5)
+        self.assertEqual(seen.get("minimum_version"), ssl.TLSVersion.TLSv1_2)
+        self.assertEqual(seen.get("host"), "login.example.test")
+
+
 if __name__ == "__main__":
     unittest.main()
