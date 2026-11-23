@@ -24,3 +24,5 @@ d26b25b3b09322a733a032bc994e65d76188fe77:tests/test_api_v1.py:generic-api-key:31
 872a5d629824639ac971490e78015ce2e1df99a6:tests/test_read_keys.py:generic-api-key:53
 # A placeholder (sb_read_...) in the help's example command, not a key.
 9363c9a7ec959e0ca342ee91eb5a688d95ca9f7f:docs/help/topics/use-starboards-api.md:curl-auth-header:32
+# RFC 6238's public test secret (the ASCII digits 1234567890 repeated, in base 32) in the two-step code tests, not a real key.
+20bfa7b0ed3534643055e3297f255eace37e6c56:tests/test_signin.py:generic-api-key:21
