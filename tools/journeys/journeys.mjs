@@ -2704,6 +2704,21 @@ const asKey = await page.evaluate(async () => (await fetch("/api/security/signin
 check("SIGNIN-05", "an API key, or a made-up one, cannot read any of it", asKey === 401, String(asKey));
 problems.splice(problemsBefore, problems.length, ...problems.slice(problemsBefore).filter((m) => !/status of (401|409)/.test(m)));
 
+// DASH-515: the hardware video conversion check. Nothing at rest; the test runs only when Test now is pressed, through the
+// made-up Jellyfin (the example server answers as a chip where VAAPI works and Quick Sync does not).
+console.log("\n== TRANSCODE-01 Hardware video conversion check");
+await open("system.html");
+check("TRANSCODE-01", "the panel is there and offers Test now", await page.getByRole("button", { name: "Test now" }).count() === 1);
+check("TRANSCODE-01", "nothing has been tested before the button is pressed", (await api("/api/system/transcode-check")).result === null);
+await page.getByRole("button", { name: "Test now" }).click();
+await page.locator("#transcode li").first().waitFor({ timeout: 30000 });
+const tcRows = await page.locator("#transcode li").allInnerTexts();
+check("TRANSCODE-01", "a row for VAAPI, Intel Quick Sync, NVIDIA NVENC and software", tcRows.length === 4 && /VAAPI/.test(tcRows[0]) && /Quick Sync/.test(tcRows[1]) && /NVENC/.test(tcRows[2]) && /Software/.test(tcRows[3]), tcRows.join(" | ").slice(0, 200));
+check("TRANSCODE-01", "VAAPI works and names its device", /Works/.test(tcRows[0]) && /\/dev\/dri\/renderD128/.test(tcRows[0]));
+check("TRANSCODE-01", "Quick Sync says why not, with the fix, in words", /Does not work/.test(tcRows[1]) && /How to fix it/.test(tcRows[1]));
+check("TRANSCODE-01", "the result is a status the person is moved to", await page.evaluate(() => document.activeElement?.id === "transcode-status") && (await page.locator("#transcode-status").getAttribute("role")) === "status");
+check("TRANSCODE-01", "it says nothing was opened or changed", /No media was opened and nothing was changed/.test(await page.locator("#transcode").innerText()));
+
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
 const wide = [];

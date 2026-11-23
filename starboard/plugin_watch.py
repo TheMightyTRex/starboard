@@ -136,25 +136,31 @@ def used(pid, main):
                 time.sleep(0.5)
 
 
-_traffic = {}  # pid -> (bytes in and out last read, when they last moved)
+_traffic = {}  # pid -> (bytes in and out last read, processor time last read, when either last moved)
 QUIET_BYTES = 16 * 1024  # less than this in a minute is a health check, not someone using it
+QUIET_CPU_NS = 300_000_000  # less than 0.3 seconds of processor time since the last look is a health check too
 
 
 def _moved(pid, main, now):
-    """When the main container's network last moved by more than QUIET_BYTES. Unknown counts as now (busy), so a
+    """When the main container last did something: its network moved by more than QUIET_BYTES, or it used more than
+    QUIET_CPU_NS of processor time since the last look (DASH-516: a plug-in converting a file or shrinking pictures is
+    busy with no network traffic, and must never be put to rest in the middle). Unknown counts as now (busy), so a
     container Starboard cannot read never rests."""
     from . import containers
     try:
-        nets = containers.docker("GET", f"/containers/plugin-{pid}-{main['name']}/stats?stream=false&one-shot=true", timeout=5).get("networks") or {}
+        stats = containers.docker("GET", f"/containers/plugin-{pid}-{main['name']}/stats?stream=false&one-shot=true", timeout=5)
+        nets = stats.get("networks") or {}
         if not nets:  # on the VPN it shares Gluetun's network and Docker gives no figures: never rest it
             return now
         total = sum(int(n.get("rx_bytes", 0)) + int(n.get("tx_bytes", 0)) for n in nets.values())
+        cpu = int(((stats.get("cpu_stats") or {}).get("cpu_usage") or {}).get("total_usage") or 0)
     except (containers.DockerError, ValueError, AttributeError):
         return now
-    before, at = _traffic.get(pid, (None, _started))
-    if before is None or total - before > QUIET_BYTES or total < before:
-        at = now if before is not None else at
-    _traffic[pid] = (total, at)
+    before, cpu_before, at = _traffic.get(pid, (None, None, _started))
+    if before is not None and (total - before > QUIET_BYTES or total < before
+                               or (cpu_before is not None and (cpu - cpu_before > QUIET_CPU_NS or cpu < cpu_before))):
+        at = now
+    _traffic[pid] = (total, cpu, at)
     return at
 
 

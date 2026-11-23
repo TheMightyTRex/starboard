@@ -1081,6 +1081,23 @@ if (setUp) {
     const d6 = await focus();
     check("T-SIGNIN", "after deactivating, focus is not lost to the top of the page", !d6.lost, d6.text);
   }
+
+// T-TRANSCODE (DASH-515) Test hardware video conversion by keyboard alone: Test now is reached with Tab, nothing runs
+// until it is pressed, the wait is said, and focus ends on the result's summary, which is read out.
+await page.goto(`${base}/system.html`);
+await settle();
+const before = await page.evaluate(async () => (await api("/api/system/transcode-check")).result);
+check("T-TRANSCODE", "nothing has run before Test now is pressed", before === null);
+const testNow = await tabTo((f) => f.tag === "BUTTON" && /Test now/.test(f.text), 120);
+check("T-TRANSCODE", "Test now can be reached with Tab", !!testNow);
+if (testNow) {
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(() => /Hardware conversion works|Only software|No encoder worked/.test(document.getElementById("transcode-status")?.textContent || ""), null, { timeout: 30000 }).catch(() => {});
+  await page.waitForTimeout(500);
+  const f = await focus(), s = await said();
+  check("T-TRANSCODE", "focus moves to the result's summary, not lost to the top", f.id === "transcode-status", f.id || f.text);
+  check("T-TRANSCODE", "the result is said in a live region", /Hardware conversion works|Only software|No encoder worked/.test(s), s);
+  check("T-TRANSCODE", "the button now says Test again, and each way of converting has a row", (await page.locator("#transcode-go").innerText()).includes("Test again") && (await page.locator("#transcode li").count()) === 4);
 }
 
 await browser.close();

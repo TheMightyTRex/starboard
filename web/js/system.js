@@ -263,6 +263,59 @@ async function runJob(j) {
   catch (e) { problem(`Not started: ${e.message}`); }
 }
 
+// Hardware video conversion check (DASH-515): a 2 second test picture through Jellyfin's own ffmpeg, run only when
+// Test now is pressed. Nothing is asked at rest except the last answer this run of Starboard kept (no test).
+const TRANSCODE_STATUS = { works: ["Works", "success"], fails: ["Does not work", "danger"], skipped: ["Not available", "muted"] };
+
+function renderTranscode(r, note) {
+  const box = $("#transcode");
+  const go = el("button", { type: "button", class: "btn", id: "transcode-go" }, icon("play"), r ? "Test again" : "Test now");
+  go.addEventListener("click", () => runTranscode(go));
+  const status = el("p", { class: "small", id: "transcode-status", role: "status", tabindex: "-1" });
+  status.hidden = !note;  // an empty line would leave a gap; it is shown when there is something to say
+  if (note) status.textContent = note;
+  const parts = [el("div", { class: "actions" }, go), status];
+  if (r) {
+    status.hidden = false;
+    status.replaceChildren(el("strong", { text: r.summary }));
+    parts.push(el("ul", { class: "rows", "aria-label": "Result for each way of converting video" }, r.encoders.map((e) => {
+      const [words, chipTone] = TRANSCODE_STATUS[e.status] || TRANSCODE_STATUS.fails;
+      const meta = [e.device ? `Device ${e.device}` : "", e.seconds != null && e.status === "works" ? (e.seconds < 1 ? "under a second" : `${e.seconds} seconds`) : ""].filter(Boolean).join(" · ");
+      return el("li", { class: "row row--no-lead" },
+        el("div", {}, el("div", { class: "row__title", text: e.name }), meta ? el("div", { class: "row__meta", text: meta }) : null,
+          e.why ? el("p", { class: "small", text: e.why }) : null,
+          e.fix ? el("p", { class: "small" }, el("strong", { text: "How to fix it: " }), e.fix) : null,
+          e.detail && e.status === "fails" ? el("details", { class: "disclosure" }, el("summary", { text: "What ffmpeg said" }), el("div", { class: "disclosure__body" }, el("pre", { class: "code-block", text: e.detail }))) : null),
+        el("div", { class: "row__side" }, chip(words, chipTone)));
+    })));
+    parts.push(el("p", { class: "small muted", text: `Tested ${new Date(r.checked_at * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} in the ${r.container} container, as ${r.user}, with ${r.clip}. No media was opened and nothing was changed.` }));
+  } else {
+    parts.push(el("p", { class: "small muted", text: "Starboard runs a short test picture through Jellyfin's own ffmpeg, once for each way of converting video: VAAPI, Intel Quick Sync, NVIDIA NVENC and software. It opens no media and changes nothing. It runs only when you press the button." }));
+  }
+  box.replaceChildren(...parts);
+}
+
+async function runTranscode(button) {
+  button.disabled = true;
+  button.setAttribute("aria-busy", "true");
+  const wait = $("#transcode-status");
+  wait.hidden = false;
+  wait.textContent = "Testing. This takes up to a minute.";
+  try {
+    const { result } = await api("/api/system/transcode-check", { method: "POST" });
+    renderTranscode(result);
+    announce("Test finished. " + result.summary);
+  } catch (e) {
+    renderTranscode(null, `The test did not run: ${e.message}`);
+  }
+  const s = $("#transcode-status");
+  s.focus();  // the result is where the person's attention goes
+}
+
+async function loadTranscode() {
+  try { renderTranscode((await api("/api/system/transcode-check")).result); } catch { renderTranscode(null); }
+}
+
 // After an unexpected shutdown (DASH-88): Starboard's one check at start, as one notice until it is dismissed. Every
 // result is in words with an icon, never colour alone. The same report goes out through Alerts.
 async function loadRecovery() {
@@ -293,6 +346,7 @@ async function loadRecovery() {
 startPage().then(async () => {
   checkAgainLabel($("#refresh"));
   loadRecovery();
+  loadTranscode();
   range = rangePicker(() => load(), { live: true });
   $("#range-row").append(range.element);
   makeCharts();

@@ -49,6 +49,11 @@ def summary(app):
               "Lists your containers and installs new images on System, Apps, Updates. This is full control of Docker, "
               "which is the same as full control of the server.",
               containers.available(), "installer", on_flag="--docker", off_flag="--no-docker", cost="Nothing until you open System, Apps, Updates; a check reads a few small files from each registry."),
+        _item("transcode_check", "Jellyfin's video conversion test",
+              "When you select Test now on System, Overview, Starboard runs a 2 second test picture through Jellyfin's own ffmpeg, "
+              "inside Jellyfin's container, to say which way Jellyfin can convert video. It opens no media and changes nothing.",
+              containers.available(), "installer", on_flag="--docker", off_flag="--no-docker",
+              cost="Nothing until you select Test now; then a few seconds of processor, once."),
         _item("app_use", "Per-app processor and memory use",
               "Reads two small files per container from the server's cgroup folder, read-only, while System, Overview, Monitor is open.",
               bool(sysinfo.cgroup_dir()) and os.path.isdir(os.path.join(sysinfo.cgroup_dir(), "system.slice")),

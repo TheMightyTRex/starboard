@@ -117,6 +117,7 @@ Each guide is a journey through several topics, in order.
 
 - [Check free space and what is using it](topics/check-storage.md)
 - [Check your disks' health](topics/check-disk-health.md)
+- [Test hardware video conversion](topics/test-hardware-video-conversion.md)
 - [Add a disk to the pool](topics/add-a-drive-to-the-pool.md)
 - [Balance the files](topics/balance-the-files.md)
 - [Use a disk as a backup disk](topics/use-a-drive-as-a-backup-drive.md)
