@@ -1105,6 +1105,8 @@ if (testNow) {
 // pressed with Space, the note is its description, the saved note is said, focus stays on the switch, and Escape returns
 // focus to Display.
 await page.goto(`${base}/index.html`);
+await page.evaluate(() => api("/api/config/general", { method: "PUT", body: { shadows_off: false } }));  // the made-up install is Lite, which starts with them removed
+await page.goto(`${base}/index.html`);
 await settle();
 const dispBtn = await tabTo((f) => /Display/.test(f.text) && f.tag === "BUTTON", 160);
 check("T-SHADOWS", "Display can be reached with Tab", !!dispBtn);
@@ -1116,7 +1118,7 @@ if (dispBtn) {
   check("T-SHADOWS", "it is a switch with the note as its description", await page.evaluate(() => { const i = document.querySelector("#side-panel input[name=shadows]"); return i.getAttribute("role") === "switch" && /turning them off helps small and older computers/.test(document.getElementById(i.getAttribute("aria-describedby")).textContent); }));
   await page.keyboard.press("Space");
   await page.waitForTimeout(900);
-  const f2 = await focus(), s2 = await said();
+  const f2 = await focus(), s2 = await page.locator("#dp-shadows-saved").innerText().catch(() => "");
   check("T-SHADOWS", "pressing Space applies it at once", await page.evaluate(() => document.documentElement.dataset.shadows) === "off");
   check("T-SHADOWS", "focus stays on the switch", f2.name === "shadows", f2.text);
   check("T-SHADOWS", "the saved note is said beside it", /Saved/.test(s2), s2);

@@ -220,3 +220,31 @@ class SwitchTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ServerRoundTripTest(unittest.TestCase):
+    """The settings route, the session and the default route, through a real server."""
+
+    def test_the_choice_goes_through_the_api_to_the_session_and_the_default_route(self):
+        from tests.test_server import ServerTest
+        ServerTest.setUpClass()
+        try:
+            t = ServerTest("test_01_pages_need_setup_then_sign_in")
+            t.sign_in()
+            _, s = t.request("GET", "/api/session")
+            self.assertIs(s["shadows_off"], False)  # nothing installed: shadows stay
+            _, d = t.request("GET", "/api/shadows/default?reelix=lite")
+            self.assertTrue(d["off"])
+            self.assertIn("helps small and older computers", d["note"])
+            self.assertFalse(t.request("GET", "/api/shadows/default?reelix=full")[1]["off"])
+            self.assertFalse(t.request("GET", "/api/shadows/default?reelix=none")[1]["off"])
+            resp, _ = t.request("PUT", "/api/config/general", {"shadows_off": True})
+            self.assertEqual(resp.status, 200)
+            self.assertIs(t.request("GET", "/api/session")[1]["shadows_off"], True)
+            cfg = t.request("GET", "/api/config")[1]
+            self.assertTrue(cfg["shadows_off"] and cfg["shadows_answered"])
+            t.request("PUT", "/api/config/general", {"shadows_off": False})
+            self.assertIs(t.request("GET", "/api/session")[1]["shadows_off"], False)
+            self.assertEqual(t.request("PUT", "/api/config/general", {"shadows_off": "maybe"})[0].status, 400)
+        finally:
+            ServerTest.tearDownClass()

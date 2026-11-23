@@ -2722,25 +2722,31 @@ check("TRANSCODE-01", "it says nothing was opened or changed", /No media was ope
 // DASH-536: Remove drop shadows. Kept for everyone on the server, applied at once and before the page draws, with the
 // borders staying; the note says what it costs, in the owner's words.
 console.log("\n== SHADOWS-01 Remove drop shadows");
+// The made-up install runs Reelix Lite, so an unanswered setting starts with the shadows removed; the person's own answer is used after that.
+await open("index.html");
+check("SHADOWS-01", "an unanswered setting follows the Lite install: removed", (await api("/api/session")).shadows_off === true && (await api("/api/config")).shadows_answered === false);
+await api("/api/config/general", { method: "PUT", body: { shadows_off: false } });
+await page.evaluate(() => { try { localStorage.removeItem("starboard.display"); } catch { /* fine */ } });  // earlier journeys may have left High contrast on, which has no shadows
 await open("library-films.html");
 await page.locator("#lib-wall .media-card").first().waitFor({ timeout: 15000 });
-const shadowOf = () => page.evaluate(() => { const c = document.querySelector("#lib-wall .media-card .cover") || document.querySelector(".card"); const s = getComputedStyle(c); return { shadow: s.boxShadow, border: s.borderTopWidth }; });
-const before = await shadowOf();
-check("SHADOWS-01", "shadows are kept by default here, and the page says so", before.shadow !== "none" && !(await page.evaluate(() => document.documentElement.dataset.shadows)) && (await api("/api/session")).shadows_off === false, JSON.stringify(before));
+const shdShadowof = () => page.evaluate(() => { const c = document.querySelector("#lib-wall .media-card .cover:not(.is-wanted)") || document.querySelector(".card"); const s = getComputedStyle(c); return { shadow: s.boxShadow, border: s.borderTopWidth }; });
+const shdBefore = await shdShadowof();
+check("SHADOWS-01", "shadows are kept by default here, and the page says so", shdBefore.shadow !== "none" && !(await page.evaluate(() => document.documentElement.dataset.shadows)) && (await api("/api/session")).shadows_off === false, JSON.stringify(shdBefore));
 await page.locator("[data-display-toggle]").click();
-const sw = page.getByRole("switch", { name: "Remove drop shadows" });
-await sw.waitFor();
+const shdSw = page.getByRole("switch", { name: "Remove drop shadows" });
+await shdSw.waitFor();
 check("SHADOWS-01", "the switch has the note as its description", /^Drop shadows cost a little processor on every scroll; turning them off helps small and older computers/.test(await page.evaluate(() => document.getElementById(document.querySelector("#side-panel input[name=shadows]").getAttribute("aria-describedby")).textContent)));
-await sw.check();
+await shdSw.check();
 await page.waitForTimeout(600);
-const after = await shadowOf();
-check("SHADOWS-01", "turning it on removes the shadow at once and keeps the border", after.shadow === "none" && after.border === before.border && await page.evaluate(() => document.documentElement.dataset.shadows) === "off", JSON.stringify(after));
-check("SHADOWS-01", "it is kept on the server and in the browser for the first paint", (await api("/api/config")).shadows_off === true && (await api("/api/config")).shadows_answered === true && await page.evaluate(() => localStorage.getItem("starboard.shadows")) === "off");
-check("SHADOWS-01", "the saved note says so beside the switch", /Saved/.test(await page.locator("#side-panel [data-shadows-setting] .saved-note").first().textContent()));
+const shdAfter = await shdShadowof();
+check("SHADOWS-01", "turning it on removes the shadow at once and keeps the border", shdAfter.shadow === "none" && shdAfter.border === shdBefore.border && await page.evaluate(() => document.documentElement.dataset.shadows) === "off", JSON.stringify(shdAfter));
+const shdCfg = await api("/api/config");
+check("SHADOWS-01", "it is kept on the server and in the browser for the first paint", shdCfg.shadows_off === true && shdCfg.shadows_answered === true && await page.evaluate(() => localStorage.getItem("starboard.shadows")) === "off", JSON.stringify([shdCfg.shadows_off, shdCfg.shadows_answered]));
+check("SHADOWS-01", "the saved note says so beside the switch", /Saved/.test(await page.locator("#dp-shadows-saved").textContent()), await page.locator("#dp-shadows-saved").evaluate((n) => n.outerHTML.slice(0, 120)).catch((e) => String(e).slice(0, 80)));
 await page.keyboard.press("Escape");
 await page.goto(`${base}/library-films.html`, { waitUntil: "commit" });
 await page.waitForFunction(() => document.documentElement.dataset.shadows === "off" || document.readyState === "complete", null, { timeout: 5000 });
-check("SHADOWS-01", "after a reload the shadows are still gone, from the very first paint", await page.evaluate(() => document.documentElement.dataset.shadows) === "off");
+check("SHADOWS-01", "shdAfter a reload the shadows are still gone, from the very first paint", await page.evaluate(() => document.documentElement.dataset.shadows) === "off");
 await open("settings-general-appearance.html");
 check("SHADOWS-01", "Settings, General, Appearance has the same switch, on", await page.getByRole("switch", { name: "Remove drop shadows" }).isChecked());
 await open("index.html");
