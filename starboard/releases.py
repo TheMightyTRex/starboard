@@ -1987,6 +1987,25 @@ RELEASES = [
         ],
         "review": [],
         "settings": "Your settings stay as they are. Two-step code and single sign-on are off until you set them up. To go back, run ./update.sh --to v0.27.0."
+    },
+    {
+        "version": "0.29.0",
+        "date": "23 November 2026",
+        "added": [
+            ["Remove drop shadows", "A new switch in Display, and a question in the set-up, takes every drop shadow off the pages for everyone on the server, which helps small and older computers; cards, covers, menus and dialogs keep their borders."]
+        ],
+        "changed": [
+            ["Covers take the card shading everywhere", "Every cover, in the Library, Discover, Search, Wanted, item pages, collections, books, plug-ins and the help centre, now has the card's border, corner and shadow. The covers add about 630 bytes of CSS once compressed; scrolling a 200-cover wall in a software-rendered browser showed 236 frames over 17 ms with shadows against 180 without, which cannot see the cost on real graphics hardware."]
+        ],
+        "fixed": [
+            ["Updates now offers a newer qBittorrent build", "An app kept on one LinuxServer.io build tag, such as qBittorrent on libtorrentv1, was compared with itself and always called up to date. Starboard now offers the newer build on the same branch and never changes branch. An app on a pinned tag whose new version does not start or is not healthy now goes back to the old tag by itself, as other apps do."],
+            ["Updates remembers its last check across a restart", "Apps, Updates says when the apps were last checked, with the day when it was not today, even after Starboard restarts, and a busy registry (a 429 answer) gets one second try after the wait it asks for."]
+        ],
+        "security": [
+            ["Security scan", "Trivy (image and configuration), Gitleaks, Bandit, ShellCheck, Hadolint and ZAP signed out (58 passed) and signed in (111 passed) found nothing to fix. This release fixes no security problem. CodeQL alerts 77 to 79 (py/path-injection in starboard/posters.py, DASH-531) and 82 (py/full-ssrf in starboard/oidc.py, DASH-542) are still open: they are not fixed or dismissed here."]
+        ],
+        "review": [],
+        "settings": "Your settings stay as they are. Remove drop shadows is a new setting in Display: on an install from before it starts off, so your pages keep their shadows, and your first visit after the update says so once. A new Reelix Lite install starts with shadows removed, and any other new install keeps them; the set-up asks, and your own choice is never changed when you switch between Reelix Lite and the full Reelix. Updates keeps a small file, data/app-check.json, with the time of the last app check. To go back, run ./update.sh --to v0.28.0."
     }
 ]
 
