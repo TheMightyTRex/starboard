@@ -150,6 +150,7 @@ FIRST_PASSWORD_LOCK = threading.Lock()
 class App:
     def __init__(self, data_dir):
         self.data_dir = data_dir
+        containers.use_data_dir(data_dir)  # where the last look at the apps' registries is kept
         self.config = Config(data_dir)
         self.uxnotes = uxnotes.UxNotes(data_dir)
         self._feedback_keys = {}  # Snaglist's key -> the session it was given to
@@ -2843,7 +2844,7 @@ class Handler(BaseHTTPRequestHandler):
                     from . import update_check
                     return self.json(200, {"items": items, "auto": auto, "recent": runs,
                                            "running": next((r for r in runs if r["state"] == "running"), None),
-                                           "batch": update_batch.latest(app),
+                                           "batch": update_batch.latest(app), "apps_checked": containers.last_check(),
                                            "jellyfin_waiting": [{k: j[k] for k in ("id", "name", "current", "latest")} for j in update_check.jellyfin_waiting()]})
                 if path == "/api/updates/jellyfin" and method == "GET":  # asks Jellyfin, so only when the page shows it
                     return self.json(200, auto_updates.jellyfin_status(app))

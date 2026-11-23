@@ -311,6 +311,16 @@ function pluginLogo(p, { compact = false, alt = false } = {}) {
   return el("span", { class: `${cls} has-image`, ...(alt ? {} : { "aria-hidden": "true" }) }, img);
 }
 
+// "at 09:12", with the day when it was not today, and "before Starboard restarted" in words when the look is the one kept
+// from before a restart (DASH-548): the words carry it, not a colour.
+function checkedWhen(seconds, restored) {
+  const at = new Date(seconds * 1000);
+  const today = at.toDateString() === new Date().toDateString();
+  const time = at.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  const day = today ? "" : ` on ${at.toLocaleDateString("en-GB", { day: "numeric", month: "long" })}`;
+  return `at ${time}${day}${restored ? ", before Starboard restarted" : ""}`;
+}
+
 // How long ago, in words a screen reader reads as they are ("30 seconds ago", "2 minutes ago", "yesterday at 21:04").
 function timeAgo(when) {
   const secs = Math.max(0, Math.round((Date.now() - when) / 1000));

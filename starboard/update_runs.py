@@ -299,10 +299,8 @@ def _start_app(app, target, by):
         item = ((containers.job() or {}).get("items") or {}).get(row["container"]["name"]) or {}
         if item.get("phase") != "done":
             _step(app.data_dir, run, "install", "failed", item.get("error") or "")
-            if before and not pinned:
-                _step(app.data_dir, run, "going-back", "now")
-                containers.go_back(before, before["image_id"])
-                _step(app.data_dir, run, "going-back", "done")
+            if before and (not pinned or (item.get("error") or "").startswith("The restart did not finish")):  # a download that failed changed nothing
+                _back(app, run, before, row, pinned)
                 return _end(app.data_dir, run, "went-back", f"{row['name']} did not start on the new version, so it went back. {item.get('error') or ''}".strip(), app)
             return _end(app.data_dir, run, "failed", f"{row['name']} was not updated. {item.get('error') or ''}".strip(), app)
         _step(app.data_dir, run, "install", "done", item.get("version") or "")
@@ -311,17 +309,42 @@ def _start_app(app, target, by):
         if ok:
             if before:
                 containers.forget_old(before["image_id"])
+            if pinned and before:
+                _kept_image(app, before["image"], _new_ref(before["image"], row["target_tag"]))
             _step(app.data_dir, run, "health", "done", "It is running")
             return _end(app.data_dir, run, "updated", f"{row['name']} is updated and running", app)
         _step(app.data_dir, run, "health", "failed", why)
-        if before and not pinned:
-            _step(app.data_dir, run, "going-back", "now")
-            containers.go_back(before, before["image_id"])
-            _step(app.data_dir, run, "going-back", "done")
+        if before:
+            _back(app, run, before, row, pinned)
             return _end(app.data_dir, run, "went-back", f"{row['name']}'s new version {why.lower()}, so Starboard went back to the version before", app)
-        _end(app.data_dir, run, "failed", f"{row['name']}'s new version {why.lower()}. Its Compose file named the new version, so it was not put back by itself", app)
+        _end(app.data_dir, run, "failed", f"{row['name']}'s new version {why.lower()}, and the version before was not found to go back to", app)
     _go(app.data_dir, run, work)
     return run
+
+
+def _new_ref(image, tag):
+    return image.rsplit(":", 1)[0] + ":" + tag
+
+
+def _kept_image(app, old, new):
+    """The tag an update wrote into the Compose file goes into data/stack/kept.json too (DASH-547)."""
+    from . import stack
+    try:
+        stack.keep_image(app.data_dir, old, new)
+    except OSError:
+        pass
+
+
+def _back(app, run, before, row, pinned):
+    """Puts an app back on the version it ran: the old image under its tag, or, for an image pinned to a tag, the old
+    tag in the Compose file again (the old image was kept)."""
+    from . import containers
+    _step(app.data_dir, run, "going-back", "now")
+    if pinned:
+        containers.go_back_pinned(before, _new_ref(before["image"], row["target_tag"]))
+    else:
+        containers.go_back(before, before["image_id"])
+    _step(app.data_dir, run, "going-back", "done")
 
 
 # What is left out of an app's settings copy: what the app makes again by itself, and can be many gigabytes

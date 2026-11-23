@@ -136,8 +136,8 @@ HOURS = {"type": "object", "required": ["enabled"], "properties": {"enabled": {"
                                                                    "next_change": {"type": "string"}, "clients": {"type": "array", "items": {"type": "string"}},
                                                                    "now": {"type": "array", "items": ANY}, "errors": {"type": "array", "items": ANY}}}
 CONTAINERS = {"type": "object", "required": ["available", "items"],
-              "properties": {"available": {"type": "boolean"}, "checked_at": {"type": ["number", "null"]}, "items": {"type": "array", "items": ANY},
-                             "next_cursor": {"type": ["string", "null"]}}}
+              "properties": {"available": {"type": "boolean"}, "checked_at": {"type": ["number", "null"]}, "restored": {"type": "boolean"},
+                             "items": {"type": "array", "items": ANY}, "next_cursor": {"type": ["string", "null"]}}}
 
 spec["paths"].update({
     "/api/v1/calendar": {"get": {"operationId": "listCalendar", "summary": "Coming up: films, episodes, albums and books due, from the apps", "tags": ["Media"],

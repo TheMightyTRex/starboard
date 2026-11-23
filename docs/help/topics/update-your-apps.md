@@ -43,6 +43,11 @@ restarts for a moment while it updates, and so does anything that depends on it.
 - **Newer build** in **Latest** means there is a newer build with the same version number.
 - An app pinned to a version, such as `v1.4.2`, is offered the newest higher version. Starboard keeps a copy of
   the Compose file first, with `.bak-` in its name.
+- An app from LinuxServer.io pinned to one build, such as `libtorrentv1-5.3.0_v1.2.20-ls138` for qBittorrent, is
+  offered the newest build on the same branch, shown in **Latest** as `5.3.0_v1.2.20-ls144`. It never moves to
+  another branch, so qBittorrent on `libtorrentv1` is never offered the libtorrent version 2 build. Starboard
+  writes the new tag in the Compose file and in `data/stack/kept.json`, so a later change to **Your install**
+  keeps it.
 - Starboard finds each app's container by its name. If it shows **No container found**, edit the app in
   **Settings**, **Apps**, **Manage apps** and choose it in **Container**.
 - After an update, Starboard removes the old version's download if nothing else uses it.
@@ -79,8 +84,9 @@ A script or an AI assistant can update one app at a time through Starboard's API
 **Read and manage** and **Updates** ticked. Read [Use Starboard's API](use-starboards-api.md). Starboard then keeps
 the old version until the new one runs, and goes back to it by itself if the new one does not start, or is not
 healthy, within two minutes. Reelix is given five minutes, after a copy of its settings, as for its automatic
-updates. An app pinned to a version is not put back by itself: its Compose file names the new version, and the copy
-from before is beside it, with `.bak-` in its name.
+updates. An app pinned to a version is put back the same way: Starboard writes the old tag in the Compose file again
+and starts the app on the old image it kept. The copy of the Compose file from before is beside it, with `.bak-` in
+its name.
 
 ### Run a backup before an update
 
@@ -93,6 +99,9 @@ Replace `<service>` with the app's name in the Compose file. If the script fails
 
 - **Cannot check:** Starboard could not reach the place the image comes from, or the image was built on this
   computer. Try **Check again** later.
+- **The registry is busy, try again:** the place the image comes from (lscr.io for the LinuxServer.io images) asked
+  Starboard to slow down. Starboard waits a few seconds and asks once more before it says this. Select **Check
+  again** after a minute.
 - **Update failed:** open **What the last update did** to find out why. Fix what it says, then select
   **Update** again. If you need help, read [Report a problem](read-the-log.md#report-a-problem).
 

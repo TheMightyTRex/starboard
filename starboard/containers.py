@@ -35,12 +35,23 @@ ACCEPT = ", ".join(["application/vnd.oci.image.index.v1+json", "application/vnd.
                     "application/vnd.docker.distribution.manifest.v2+json", "application/vnd.oci.image.manifest.v1+json"])
 
 _lock = threading.Lock()
-_state = {"check": {}, "checked_at": None, "job": None}
+_state = {"check": {}, "checked_at": None, "job": None, "restored": False, "loaded": False}
 _tokens = {}
+# A LinuxServer.io tag: <branch>-<version>-ls<build>, such as libtorrentv1-5.3.0_v1.2.20-ls138, or <version>-ls<build>
+# (v1.6.2-ls373) when the image has no branches. The branch is a lower-case word before a version that starts with a digit.
+LS_TAG = re.compile(r"^(?:([a-z][a-z0-9]*)-)?(v?\d[^\s]*?)-ls(\d+)$")
+CHECK_FILE = "app-check.json"  # the last look at the apps' registries, so a restart does not forget it (DASH-548)
+BUSY_WORDS = "The registry is busy, try again"
+data_dir = None  # set once by the server (use_data_dir); the tests that never set it keep the look in memory only
+_sleep = time.sleep
 
 
 class DockerError(Exception):
     pass
+
+
+class RegistryBusy(DockerError):
+    """A registry answered 429 twice (DASH-548). Its words are for the owner as they are."""
 
 
 class ImageMissing(DockerError):
@@ -355,9 +366,19 @@ def parse_ref(ref):
     return "registry-1.docker.io", name if "/" in name else f"library/{name}", tag
 
 
+def _retry_after(e):
+    """How long a 429 asks to wait, in seconds: its Retry-After (when it is a number), else 2; never more than 10."""
+    try:
+        wait = float(e.headers.get("Retry-After", "")) if e.headers else 2.0
+    except (TypeError, ValueError):
+        wait = 2.0
+    return max(0.0, min(wait, 10.0))
+
+
 def _registry(reg, repo, path, accept=ACCEPT):
     url = f"https://{reg}/v2/{repo}/{path}"
-    for attempt in range(2):
+    signed_in = busy = False
+    while True:
         headers = {"Accept": accept, "User-Agent": "Starboard"}
         if _tokens.get((reg, repo)):
             headers["Authorization"] = f"Bearer {_tokens[(reg, repo)]}"
@@ -365,20 +386,39 @@ def _registry(reg, repo, path, accept=ACCEPT):
             with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=20) as r:  # a registry address Starboard builds, always https  # nosec B310
                 return r.headers, r.read(4_000_000)
         except urllib.error.HTTPError as e:
-            if e.code != 401 or attempt:
+            if e.code == 429:  # rate limited (lscr.io does this): one more try after a short pause, then say so
+                if busy:
+                    raise RegistryBusy(BUSY_WORDS) from None
+                busy = True
+                _sleep(_retry_after(e))
+                continue
+            if e.code != 401 or signed_in:
                 raise
+            signed_in = True
             params = dict(re.findall(r'(\w+)="([^"]*)"', e.headers.get("WWW-Authenticate", "")))
             if not params.get("realm", "").startswith("https://"):
                 raise
             q = urllib.parse.urlencode({"service": params.get("service", ""), "scope": params.get("scope", f"repository:{repo}:pull")})
-            with urllib.request.urlopen(f"{params['realm']}?{q}", timeout=20) as t:  # the realm is checked to start with https:// above  # nosec B310
-                j = json.load(t)
+            try:
+                with urllib.request.urlopen(f"{params['realm']}?{q}", timeout=20) as t:  # the realm is checked to start with https:// above  # nosec B310
+                    j = json.load(t)
+            except urllib.error.HTTPError as te:
+                if te.code != 429:
+                    raise
+                if busy:
+                    raise RegistryBusy(BUSY_WORDS) from None
+                busy = True
+                _sleep(_retry_after(te))
+                signed_in = False
+                continue
             _tokens[(reg, repo)] = j.get("token") or j.get("access_token")
-    raise DockerError("The registry did not accept the sign-in")
 
 
 def remote(ref):
-    reg, repo, tag = parse_ref(ref)
+    return remote_tag(*parse_ref(ref))
+
+
+def remote_tag(reg, repo, tag):
     headers, body = _registry(reg, repo, f"manifests/{tag}")
     digest = headers.get("Docker-Content-Digest", "")
     manifest = json.loads(body)
@@ -399,10 +439,52 @@ def remote(ref):
     return {"digest": digest, "version": version}
 
 
+def _numbers(text):
+    return tuple(int(x) for x in re.findall(r"\d+", text))
+
+
+def shown(tag):
+    """What a tag is called on the page: a LinuxServer.io tag without its branch (5.3.0_v1.2.20-ls144 for
+    libtorrentv1-5.3.0_v1.2.20-ls144); any other tag as it is."""
+    m = LS_TAG.match(tag or "")
+    return f"{m.group(2)}-ls{m.group(3)}" if m else tag
+
+
+def _newer_linuxserver(reg, repo, tag, m):
+    """For a LinuxServer.io build tag, the same branch's newest build, or None. The branch's own tag (libtorrentv1, or
+    latest where the image has no branches) is asked for its version label: one small answer, where the tag list may
+    not reach the newest tags (lscr.io returns the first 1,000 of thousands). The branch never changes, so a libtorrent
+    v1 install is never offered the v2 build (DASH-547)."""
+    branch, version, build = m.groups()
+    try:
+        label = remote_tag(reg, repo, branch or "latest")["version"]
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return None
+        raise
+    found = LS_TAG.match(label or "")
+    if not found or found.group(1):  # no label, or one that names another branch
+        return None
+    if (_numbers(found.group(2)), int(found.group(3))) <= (_numbers(version), int(build)):
+        return None
+    target = f"{branch}-{label}" if branch else label
+    try:
+        _registry(reg, repo, f"manifests/{target}")  # the build is really there to pull
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return None
+        raise
+    return target
+
+
 def newer_pinned(ref):
     """For an image pinned to a version tag, the newest higher stable tag in its registry, or None. A test build
-    (v0.4.9-dev.6) counts as older than its release, so v0.4.9 itself is offered too."""
+    (v0.4.9-dev.6) counts as older than its release, so v0.4.9 itself is offered too. A LinuxServer.io build tag
+    (libtorrentv1-5.3.0_v1.2.20-ls138) is offered the newest build of its own branch."""
     reg, repo, tag = parse_ref(ref)
+    ls = LS_TAG.match(tag)
+    if ls:
+        return _newer_linuxserver(reg, repo, tag, ls)
     now = PINNED.match(tag)
     if not now:
         return None
@@ -423,6 +505,13 @@ def _major(v):
     return m.group(1) if m else None
 
 
+def _pinned_answer(c, target):
+    """What an image pinned to a tag shows when a newer tag is offered: the build as the page names it, and the whole
+    tag to pull and write in the Compose file."""
+    return {"latest": shown(target), "target_tag": target, "update": True, "unknown": False, "pinned": True,
+            "big_change": _major(c["version"] or shown(parse_ref(c["image"])[2])) != _major(shown(target))}
+
+
 def _check_one(c):
     try:
         r = remote(c["image"])
@@ -432,19 +521,21 @@ def _check_one(c):
                                                         and _major(c["version"]) != _major(r["version"]))}
         target = newer_pinned(c["image"])
         if target:
-            out.update(latest=target, target_tag=target, update=True, unknown=False, pinned=True,
-                       big_change=_major(c["version"] or parse_ref(c["image"])[2]) != _major(target))
+            out = _pinned_answer(c, target)
         return out
+    except RegistryBusy as e:
+        return {"latest": "", "update": False, "unknown": True, "error": str(e)}
     except urllib.error.HTTPError as e:
         if e.code == 404:
             # A local or test build (v0.4.9-dev.6) is not in the registry, but a newer release may be.
             try:
                 target = newer_pinned(c["image"])
+            except RegistryBusy as busy:
+                return {"latest": "", "update": False, "unknown": True, "error": str(busy)}
             except (urllib.error.URLError, OSError, ValueError, KeyError, DockerError):
                 target = None
             if target:
-                return {"latest": target, "target_tag": target, "update": True, "unknown": False, "pinned": True,
-                        "big_change": _major(c["version"] or parse_ref(c["image"])[2]) != _major(target)}
+                return _pinned_answer(c, target)
         message = ("This tag is not in its registry, so it may be a local or test build" if e.code == 404
                    else f"The registry answered with error {e.code}")
         return {"latest": "", "update": False, "unknown": True, "error": message}
@@ -454,8 +545,70 @@ def _check_one(c):
 
 # The page --------------------------------------------------------------------------
 
+def use_data_dir(path):
+    """Names the folder where the last look is kept (the server does this once, at start)."""
+    global data_dir
+    data_dir = path
+    with _lock:
+        _state.update(loaded=False)
+
+
+def _file():
+    return os.path.join(data_dir, CHECK_FILE) if data_dir else None
+
+
+def _save():
+    """Writes the last look to data/app-check.json: a small file, replaced whole (written aside, then renamed), so a
+    stop half way never leaves half a file. A folder that cannot be written is not an error: the look stays in memory."""
+    path = _file()
+    if not path:
+        return
+    with _lock:
+        body = {"version": 1, "checked_at": _state["checked_at"], "check": _state["check"]}
+    try:
+        tmp = f"{path}.{os.getpid()}.new"
+        with os.fdopen(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
+            json.dump(body, f)
+        os.replace(tmp, path)
+    except (OSError, TypeError, ValueError):
+        pass
+
+
+def _restore():
+    """Reads the last look kept before a restart, once, and only while nothing has been looked at since the start. A
+    missing file, one that does not parse, one from another layout and a time in the future are all left alone."""
+    path = _file()
+    with _lock:
+        if _state["loaded"]:
+            return
+        _state["loaded"] = True
+        if not path or _state["checked_at"]:
+            return
+    try:
+        with open(path, encoding="utf-8") as f:
+            saved = json.load(f)
+        at, results = saved["checked_at"], saved["check"]
+        if saved.get("version") != 1 or isinstance(at, bool) or not isinstance(at, (int, float)) or at > time.time() + 300 \
+                or not isinstance(results, dict):
+            return
+        results = {k: v for k, v in results.items() if isinstance(k, str) and isinstance(v, dict)}
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return
+    with _lock:
+        if not _state["checked_at"]:
+            _state.update(check=results, checked_at=float(at), restored=True)
+
+
+def last_check():
+    """When the apps' registries were last asked, and whether that was before the last restart: {at, restored}, or None."""
+    _restore()
+    with _lock:
+        return {"at": _state["checked_at"], "restored": bool(_state["restored"])} if _state["checked_at"] else None
+
+
 def apps(services):
     """Every app on the Apps page with its container and what the last check found, in the Apps order."""
+    _restore()
     found = containers()
     with _lock:
         checked = dict(_state["check"])
@@ -474,7 +627,8 @@ def apps(services):
             row["container"]["compose"] = bool(c["folder"] and c["files"])
             row.update(checked.get(c["name"], {}))
         rows.append(row)
-    return {"available": True, "items": rows, "checked_at": _state["checked_at"], "job": job,
+    return {"available": True, "items": rows, "checked_at": _state["checked_at"],
+            "restored": bool(_state["checked_at"] and _state["restored"]), "job": job,
             "containers": sorted(c["name"] for c in found)}
 
 
@@ -486,7 +640,8 @@ def check(services):
     with cf.ThreadPoolExecutor(8) as pool:
         results = dict(zip(targets, pool.map(_check_one, targets.values())))
     with _lock:
-        _state.update(check=results, checked_at=time.time())
+        _state.update(check=results, checked_at=time.time(), restored=False, loaded=True)
+    _save()
     return apps(services)
 
 
@@ -537,6 +692,25 @@ def _pull(ref, item):
 
 def _quote(text):
     return "'" + text.replace("'", "'\\''") + "'"
+
+
+def _bre(text):
+    """A text as a basic regular expression for grep and sed (Alpine's are BusyBox's), escaping only what means
+    something there. An image such as lscr.io/linuxserver/qbittorrent:libtorrentv1-5.3.0_v1.2.20-ls138 is all plain
+    characters and dots."""
+    return re.sub(r"([.\[\]*^$\\#])", r"\\\1", text)
+
+
+def swap_image_steps(files, old, new, svc="", note="", stamp=""):
+    """Shell steps that change `image: <old>` to `image: <new>` in each Compose file that names it. With `note` a copy
+    of the file is kept first, beside it, as <file>.bak-<service>-<note>-<stamp>."""
+    steps = []
+    for f in files:
+        copy = f"cp {_quote(f)} {_quote(f + '.bak-' + svc + '-' + note + '-' + stamp)} && " if note else ""
+        end = r"\([[:space:]]\|$\)"  # the end of the tag: ls138 is not ls1380
+        steps.append(f"if grep -q {_quote('image: ' + _bre(old) + end)} {_quote(f)}; then {copy}"
+                     f"sed -i {_quote('s#image: ' + _bre(old) + end + '#image: ' + new + chr(92) + '1#')} {_quote(f)}; fi")
+    return steps
 
 
 HELPER_MISSING = ("Starboard could not download its Docker helper image (docker:27-cli, about 70 MB), which it needs to "
@@ -622,6 +796,17 @@ def go_back(before, old_image):
                    " ".join(f"-f {_quote(f)}" for f in before["files"]) + f" up -d {svc if re.match(r'^[A-Za-z0-9_.-]+$', svc) else _quote(svc)} 2>&1")
 
 
+def go_back_pinned(before, new_ref):
+    """After an update of an image pinned to a tag was not healthy: the Compose file names the old tag again and the
+    app starts on it. The old image was kept (keep_old), so nothing is downloaded. `new_ref` is the image the update
+    wrote into the file."""
+    svc = before.get("service") or before["name"]
+    steps = ["set -e", *swap_image_steps(before["files"], new_ref, before["image"]),
+             f"docker compose -p {_quote(before['project'])} " + " ".join(f"-f {_quote(f)}" for f in before["files"])
+             + f" up -d {svc if re.match(r'^[A-Za-z0-9_.-]+$', svc) else _quote(svc)} 2>&1"]
+    return _helper(before["folder"], " && ".join(steps))
+
+
 def _run(names, keep_old=False):
     job = _state["job"]
     try:
@@ -662,10 +847,7 @@ def _run(names, keep_old=False):
                 if n in targets:
                     old = found[n]["image"]
                     new = old.rsplit(":", 1)[0] + ":" + targets[n]
-                    for f in files:
-                        steps.append(f"if grep -q {_quote('image: ' + old)} {_quote(f)}; then "
-                                     f"cp {_quote(f)} {_quote(f + '.bak-' + svc + '-' + targets[n] + '-' + stamp)} && "
-                                     f"sed -i {_quote('s#image: ' + re.escape(old) + '#image: ' + new + '#')} {_quote(f)}; fi")
+                    steps += swap_image_steps(files, old, new, svc, targets[n], stamp)
             steps.append(f"docker compose -p {_quote(project)} " + " ".join(f"-f {_quote(f)}" for f in files) + " up -d 2>&1")
             try:
                 code, text = _helper(folder, " && ".join(steps)) if folder and files else (1, "Not started by Docker Compose")
@@ -707,6 +889,7 @@ def _run(names, keep_old=False):
             # (DASH-454, found by the end-to-end test) still knows the next app has a newer version.
             for name in names:
                 _state["check"].pop(name, None)
+        _save()
 
 
 def update(services, ids, keep_old=False):

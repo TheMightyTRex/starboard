@@ -125,10 +125,10 @@ function render() {
   $("span", updateAll).textContent = busy() ? "Updating…" : all.length ? `Update all (${all.length})` : "Update all";
   $("#check-updates").disabled = busy();
   $("span", $("#check-updates")).textContent = data.checked_at ? "Check again" : "Check"; // "again" only after a first check
-  const checked = data.checked_at ? new Date(data.checked_at * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : null;
+  const checked = data.checked_at ? checkedWhen(data.checked_at, data.restored) : null;
   const missing = rows.filter((r) => !r.container).length;
   $("#updates-summary").textContent = busy() ? "Updating. Apps restart for a moment as they update."
-    : [checked ? `Last checked at ${checked}` : "Not checked since Starboard started",
+    : [checked ? `Last checked ${checked}` : "Not checked yet",
       checked ? (available.length ? `${available.length} ${available.length === 1 ? "update" : "updates"} available` : "everything is up to date") : null,
       missing ? `${missing} ${missing === 1 ? "app has" : "apps have"} no container found` : null].filter(Boolean).join(" · ");
   $("#updates-log").hidden = !data.job?.finished || !data.job.log;
