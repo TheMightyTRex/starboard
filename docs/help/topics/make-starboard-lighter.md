@@ -29,6 +29,12 @@ and what is **Running**.
 
 ![Settings, Performance, Starboard now, showing the memory, processor and what is running, with example data](../images/make-starboard-lighter-3-now.png)
 
+## Remove drop shadows
+
+Drop shadows cost a little processor on every scroll, so removing them helps small and older computers. In **Display**, activate **Remove drop shadows**: cards, covers, menus and slide-outs keep their borders and lose
+their shadows. The set-up asks about it too, and a Reelix Lite install starts with the shadows removed. Read
+[Remove drop shadows](display-and-accessibility.md#remove-drop-shadows).
+
 ## What each item costs
 
 Each item on the page says what it costs, measured on a home server. In short:

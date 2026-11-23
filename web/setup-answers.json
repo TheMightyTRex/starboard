@@ -210,5 +210,20 @@
   "summary": "Automatic updates",
   "summary_none": "Deactivated",
   "summary_and": "and"
+ },
+ "shadows": {
+  "intro": "Drop shadows cost a little processor on every scroll; turning them off helps small and older computers. They give cards, covers and menus some depth; borders stay, so nothing loses its edge.",
+  "lite": "Reelix Lite is a light install, so it starts with the shadows removed.",
+  "full": "This install starts with the shadows kept.",
+  "remove": "Yes, remove the drop shadows",
+  "keep": "No, keep the drop shadows",
+  "remove_about": "Everything keeps its border; nothing else changes.",
+  "keep_about": "Cards, covers and menus keep their shadow.",
+  "reason_lite": "recommended for Reelix Lite",
+  "reason_full": "recommended",
+  "done_remove": "Drop shadows are removed. Change it later in Display, Remove drop shadows.",
+  "done_keep": "Drop shadows are kept. Change it later in Display, Remove drop shadows.",
+  "summary": "Drop shadows",
+  "note": "Drop shadows cost a little processor on every scroll; turning them off helps small and older computers"
  }
 }

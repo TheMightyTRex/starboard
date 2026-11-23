@@ -154,7 +154,7 @@ HELP_PAGES = {
     "sites": "topics/choose-sites-to-search.html", "films": "topics/choose-sites-to-search.html",
     "docker": "topics/install-apps.html", "place": "topics/run-first.html", "keyboard": "topics/run-first.html",
     "cleanup": "topics/remove-starboard.html", "keys": "topics/find-an-api-key.html", "storage-page": "topics/check-storage.html",
-    "auto-updates": "topics/update-starboard.html",
+    "auto-updates": "topics/update-starboard.html", "shadows": "topics/make-starboard-lighter.html",
 }
 
 HELP = {
@@ -199,6 +199,9 @@ HELP = {
              "need no account. Torznab and Newznab are the ways such sites answer searches: use your own address if "
              "you run Jackett or Prowlarr, or have an account with a Usenet search site. You can add, test and remove "
              "sites later in Starboard, Settings, Reelix, Sites to search.",
+    "shadows": "Drop shadows give cards, covers and menus some depth, and they cost a little processor on every scroll. "
+               "Removing them helps small and older computers; borders stay, so nothing loses its edge. Reelix Lite "
+               "starts with them removed, any other install with them kept. Change it later in Starboard, Display.",
     "docker": "Docker access lets Starboard start, update and change your apps, and move the apps you already run. "
               "It is full control of Docker, and so of this computer, so keep your Starboard password safe. Without "
               "it, each of those needs a command in a terminal on the server. Change it later by running "
@@ -565,7 +568,7 @@ def question(step_id):
     return STEP_TABLE[step_id]["question"]
 
 
-STEPS = [title(i) for i in ("password", "place", "keyboard", "start", "storage", "apps", "vpn", "usenet", "sites", "films", "preset", "check", "keys",
+STEPS = [title(i) for i in ("password", "place", "keyboard", "start", "storage", "apps", "vpn", "usenet", "sites", "films", "preset", "shadows", "check", "keys",
                             "extras", "hours", "updates", "alerts", "storage-page", "docker", "cleanup")]  # the move's own steps are counted by job_steps
 POOL_HELPER = "/usr/local/bin/starboard-pool"
 
@@ -1909,7 +1912,7 @@ def job_steps(state):
             ids.append("usenet")
         if apps is None or "reelix" in apps:
             ids += ["sites", "films"]
-    ids.append("preset")
+    ids += ["preset", "shadows"]  # DASH-536: Drop shadows straight after How much it does, as the browser set-up asks it
     if (job == "new" or (into and not state.get("reelix_there"))) and (apps is None or apps):
         ids.append("check")
     if into:
@@ -3785,6 +3788,56 @@ def step_preset(api, term, state):
     return True
 
 
+def step_shadows(api, term, state):
+    """Remove drop shadows (DASH-536): the same question, words and order as the browser set-up (web/setup-answers.json),
+    straight after How much it does. The default comes from Starboard (GET /api/shadows/default), the one place that
+    knows it: removed for Reelix Lite, kept for any other install. The recommended answer is at the top, as in every list.
+    A restore brought its own answer."""
+    if state.get("start") == "restore":
+        return False
+    from . import setup_answers
+    w = setup_answers.WORDS["shadows"]
+    choice = state.get("choice")  # the install this set-up is about to write; none yet, and the one that runs now counts
+    path = "/api/shadows/default"
+    if choice:
+        path += "?reelix=" + ((choice.get("reelix_edition") or "lite") if "reelix" in (choice.get("apps") or []) else "none")
+    try:
+        default_off = bool(api.call("GET", path).get("off"))
+    except Problem:
+        default_off = False
+    lite = default_off
+    remove = (w["remove"] + f" ({w['reason_lite'] if lite else w['reason_full']})", w["remove_about"])
+    keep = (w["keep"] + ("" if lite else f" ({w['reason_full']})"), w["keep_about"])
+    options = [remove, keep] if default_off else [keep, remove]
+    head(term, state, "shadows")
+    term.note(w["intro"])
+    term.note(w["lite"] if lite else w["full"])
+    was = state.get("shadows_off")
+    answered = None
+    if was is None:  # asked again: what is saved already is the default shown
+        try:
+            cfg = api.call("GET", "/api/config")
+            answered = bool(cfg["shadows_off"]) if cfg.get("shadows_answered") else None
+        except Problem:
+            answered = None
+        was = answered
+    wants = default_off if was is None else was
+    order = [True, False] if default_off else [False, True]
+    default = order.index(wants) + 1
+    while True:
+        picked = term.choose(question("shadows"), options, default, help_key="shadows")
+        off = order[picked]
+        try:
+            api.call("PUT", "/api/config/general", {"shadows_off": off})
+            break
+        except Problem as e:
+            refused(term, e)
+            default = picked + 1
+    state["shadows_off"] = off
+    term.ok(w["done_remove"] if off else w["done_keep"])
+    return True
+
+
 def step_cleanup(api, term, state):
     """Clean up (DASH-77), at the end of all three jobs: what earlier versions, removed plug-ins and old backups left
     behind, with sizes. The same words and answers as the browser set-up. Moving them to the holding folder deletes
@@ -3816,7 +3869,7 @@ def step_cleanup(api, term, state):
 
 
 STEP_FUNCTIONS = [step_password, step_place, step_keyboard, step_start, step_find, step_docker_move, step_movehow, step_storage, step_bring, step_apps, step_vpn,
-                  step_usenet, step_sites, step_films, step_preset, step_check, step_move, step_keys, step_connect, step_hours, step_updates, step_alerts,
+                  step_usenet, step_sites, step_films, step_preset, step_shadows, step_check, step_move, step_keys, step_connect, step_hours, step_updates, step_alerts,
                   step_storage_page, step_docker_end, step_cleanup]
 
 

@@ -187,6 +187,19 @@ const OWN_COLOURS_KEY = "starboard.own-colours";
 // browser moves to its new one.
 const RENAMED_COLOURS = { indigo: "dusk", plum: "rose", ember: "amber", forest: "lime" };
 let ownColours = (() => { try { const c = localStorage.getItem(OWN_COLOURS_KEY) || "blue"; return RENAMED_COLOURS[c] || c; } catch { return "blue"; } })();
+// Remove drop shadows (DASH-536, owner, 23 November 2026): one setting for everyone on this server, answered in the
+// set-up and in Display. Unanswered, it follows the install (a Lite install starts with no shadows; starboard/shadows.py
+// says so), and the server tells every page in /api/session. The last answer is kept here so the first paint is right
+// before that answers. It sets data-shadows="off" on <html>, where the design system turns every shadow token to none.
+const SHADOWS_KEY = "starboard.shadows";
+let shadowsOff = (() => { try { return localStorage.getItem(SHADOWS_KEY) === "off"; } catch { return false; } })();
+function setShadowsOff(value) {
+  shadowsOff = !!value;
+  try { localStorage.setItem(SHADOWS_KEY, shadowsOff ? "off" : "on"); } catch { /* private window */ }
+  applyPrefs();
+  document.dispatchEvent(new CustomEvent("shadowschange"));
+}
+const SHADOWS_NOTE = "Drop shadows cost a little processor on every scroll; turning them off helps small and older computers";
 function setOwnColours(value) {
   value = RENAMED_COLOURS[value] || value;
   ownColours = /^[a-z]+$/.test(value || "") ? value : "blue";
@@ -209,6 +222,7 @@ function applyPrefs(prefs = readPrefs()) {
   root.classList.toggle("pref-motion-off", prefs.motion === "off");
   root.classList.toggle("pref-underline", !!prefs.underline);
   root.classList.toggle("pref-spacing", !!prefs.spacing);
+  if (shadowsOff) root.dataset.shadows = "off"; else delete root.dataset.shadows;
   // A style from a plug-in (DASH-284): colours and shape Starboard checked and wrote itself. High contrast wins.
   if (prefs.style && /^[a-z0-9-]+\.[a-z0-9-]+$/.test(prefs.style)) {
     root.dataset.style = prefs.style;
@@ -1740,6 +1754,39 @@ function ownColoursChoice(idPrefix = "own") {
   return box;
 }
 
+// The Remove drop shadows switch with its note, saved at once for everyone on this server (settings pattern 3, the
+// saved note under it). Shown in Display and in Settings, General, Appearance, kept in step by "shadowschange".
+function shadowsSwitch(idPrefix = "sh") {
+  const id = `${idPrefix}-shadows`;
+  const box = el("input", { type: "checkbox", role: "switch", id, name: "shadows", "aria-describedby": `${id}-note` });
+  box.checked = shadowsOff;
+  const saved = el("span", { class: "saved-note", id: `${id}-saved`, hidden: true });
+  box.addEventListener("change", async () => {
+    const want = box.checked;
+    try {
+      await api("/api/config/general", { method: "PUT", body: { shadows_off: want } });
+      setShadowsOff(want);
+      window.SharedComponents.savedNote(saved);  // "Saved at 16:31" beside the switch
+    } catch (err) { box.checked = !want; problem(err.message, box); }
+  });
+  const onChange = () => (box.isConnected ? (box.checked = shadowsOff) : document.removeEventListener("shadowschange", onChange));
+  document.addEventListener("shadowschange", onChange);
+  return el("div", { class: "stack-2", "data-shadows-setting": "" },
+    el("label", { class: "switch", for: id }, el("span", { text: "Remove drop shadows" }), box),
+    el("p", { class: "hint", id: `${id}-note`, text: `${SHADOWS_NOTE}. For everyone on this server.` }),
+    saved);
+}
+
+// An install from before Remove drop shadows keeps its shadows; the first visit after the update says so once (DASH-536).
+// Showing it marks it as told, so it never comes back; Display has the switch.
+function shadowsKeptNote() {
+  if (!window.SharedComponents?.pageBanner) return;
+  const close = SharedComponents.pageBanner("Your drop shadows stay", { tone: "info",
+    text: "This update added a Remove drop shadows setting. Yours is off, so nothing changes. Turn it on in Display: drop shadows cost a little processor on every scroll.",
+    action: { label: "Got it", run: () => close() } });
+  api("/api/config/general", { method: "PUT", body: { shadows_note: false } }).catch(() => { /* told again next time */ });
+}
+
 function setUpDisplayPanel() {
   const template = $("#display-panel");
   const opener = $("[data-display-toggle]");
@@ -1784,6 +1831,7 @@ function openDisplayPanel(template, opener) {
     $$("input[name=design]", form).forEach((r) => { r.checked = r.value === p.design; }); // "" is the dashboard's default
     form.contrast.checked = p.contrast; form.underline.checked = p.underline; form.spacing.checked = p.spacing;
   };
+  form.spacing.closest("label").after(shadowsSwitch("dp"));
   const save = () => {
     const prefs = {
       theme: form.theme.value, text: form.text.value, motion: form.motion.value, design: form.design.value,
@@ -1840,6 +1888,7 @@ function accessibilityForm() {
     e.target.focus?.();
   });
   form.addEventListener("submit", (e) => e.preventDefault());
+  $(`input[name=spacing]`, form).closest("label").after(shadowsSwitch("ap"));
   const onChange = () => (form.isConnected ? fill() : document.removeEventListener("prefschange", onChange));
   document.addEventListener("prefschange", onChange);
   fill();
@@ -2025,6 +2074,8 @@ async function startPage() {
     const session = await api("/api/session");
     serverDesign = session.design || "health";
     if ((session.own_colours || "blue") !== ownColours) setOwnColours(session.own_colours); else applyPrefs();
+    if (typeof session.shadows_off === "boolean" && session.shadows_off !== shadowsOff) setShadowsOff(session.shadows_off);
+    if (session.shadows_note && !IN_PANEL && !session.first_setup) shadowsKeptNote();
     $$("[data-site-name]").forEach((n) => { n.textContent = session.site_name; });
     showServerName(session.server_name);
     listLoading = session.infinite_scroll === false ? "button" : "auto";

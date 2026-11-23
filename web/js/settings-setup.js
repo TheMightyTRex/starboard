@@ -425,6 +425,28 @@ async function stepContent(id, root, step = {}) {
       el("strong", { text: config.presets[k] + (k === rec ? " (recommended)" : "") }), el("small", { text: config.preset_about[k] })));
     nodes = [el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Preset" }), el("div", { class: "option-cards" }, radios))];
     save = async () => { await saveGeneral({ preset: root.querySelector(`input[name="${name}"]:checked`).value }); return true; };
+  } else if (id === "shadows") {
+    // Remove drop shadows (DASH-536): the same words, order and default as the terminal set-up (web/setup-answers.json).
+    // The default comes from Starboard (GET /api/shadows/default), the one place that knows it; always asked.
+    const w = (await setupWords()).shadows;
+    const edition = typeof step.reelix === "function" ? step.reelix() : "";
+    const d = await api(`/api/shadows/default${edition ? `?reelix=${encodeURIComponent(edition)}` : ""}`);
+    const name = `shadows-${Date.now()}`;
+    const wants = config.shadows_answered ? !!config.shadows_off : d.off;
+    const lite = d.off;
+    const choices = [[true, w.remove, w.remove_about], [false, w.keep, w.keep_about]];
+    if (!lite) choices.reverse();  // the recommended answer first
+    const cards = choices.map(([value, label, about]) => el("label", { class: "option-card" },
+      el("input", { type: "radio", name, value: String(value), checked: wants === value }),
+      el("strong", { text: label + (value === lite ? ` (${lite ? w.reason_lite : w.reason_full})` : "") }), el("small", { text: about })));
+    nodes = [el("p", { text: w.intro }), el("p", { class: "muted", text: lite ? w.lite : w.full }),
+      el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Remove drop shadows" }), el("div", { class: "option-cards" }, cards))];
+    save = async () => {
+      const off = root.querySelector(`input[name="${name}"]:checked`)?.value === "true";
+      await saveGeneral({ shadows_off: off });
+      setShadowsOff(off);
+      return true;
+    };
   } else if (id === "names") {
     nodes = [notice("info", "Starboard answers only to names it knows", "It opens at IP addresses (such as this server's), localhost and this computer's own name. If you open it with another name, such as your own domain, add that name to STARBOARD_ALLOWED_HOSTS in .env on the server and run ./update.sh."),
       el("p", { class: "small muted", text: "This stops a trick called DNS rebinding, where a web page reaches Starboard through a name it controls." })];
@@ -498,6 +520,10 @@ async function startGuide() {
   try { dockerAccess = !!(await api("/api/stack")).docker; } catch { /* not asked */ }
   // DASH-269: a new install runs Install apps' steps here, in this wizard, with one step count (install.js).
   let flow = null;
+  // DASH-536: Drop shadows, straight after How much it does. The install it is about to write decides the default, asked
+  // of Starboard (the terminal set-up asks the same): the chosen Reelix, "none" without one, nothing for the install that runs now.
+  const shadowsStep = () => ({ id: "shadows", ...stepNamed(T, "shadows"), intro: "You can change it later in Display.",
+    reelix: () => (flow ? (flow.state.apps.has("reelix") ? flow.state.reelix_edition || "lite" : "none") : "") });
   // DASH-266: a move into Reelix runs the same steps, to put Reelix beside the old apps first, unless Reelix is there.
   let reelixThere = config.services.some((x) => x.icon === "reelix");
   try { reelixThere = reelixThere || !!(await api("/api/reelix/move")).sources?.length; } catch { /* as if not */ }
@@ -556,7 +582,7 @@ async function startGuide() {
       if (flow) {
         // The agreed order (DASH-265): what to set up and its questions, How much it does, then Check and Start. No
         // Moving over here (DASH-271): the terminal set-up does not ask it, and the move is its own route.
-        list.push(...flow.before().filter((x) => x.id !== "moving"), { id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." },
+        list.push(...flow.before().filter((x) => x.id !== "moving"), { id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." }, shadowsStep(),
           ...flow.finish());
       }
     } else {
@@ -569,12 +595,12 @@ async function startGuide() {
         // move brings them); How much it does before Check, then the move (DASH-265, DASH-266).
         const beside = flow && !reelixThere;
         if (beside) list.push(...flow.before().filter((x) => !["sites", "moving"].includes(x.id)));
-        list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
+        list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." }, shadowsStep());
         if (beside) list.push(...flow.finish());
         list.push({ id: "move", ...stepNamed(T, "move"), skippable: false });
       } else {
         // Keep them as they are: How much it does straight after, as the terminal set-up asks it (DASH-271).
-        list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
+        list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." }, shadowsStep());
       }
     }
     if (types(Object.keys(KEY_PLACE)).some((s) => !s.has_api_key)) {
@@ -588,7 +614,7 @@ async function startGuide() {
     list.push({ id: "updates", ...stepNamed(T, "updates"), has: { reelix: coming(["reelix"]), jellyfin: coming(["jellyfin"]) } });
     list.push({ id: "alerts", ...stepNamed(T, "alerts"), intro: "Starboard checks your apps every few minutes and tells you when one stops answering or a disk has a problem." });
     if (hasDisks) list.push({ id: "storage", ...stepNamed(T, "storage-page"), intro: "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance." });
-    if (start === "new" && !flow) list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
+    if (start === "new" && !flow) list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." }, shadowsStep());
     if (!dockerAccess && start === "new") list.push({ id: "docker", ...stepNamed(T, "docker"), skippable: false });  // the last question
     if (leftOver) list.push({ id: "cleanup", ...stepNamed(T, "cleanup"), intro: "What earlier versions, removed plug-ins and old backups left behind." });
     list.push({ id: "finish", ...stepNamed(T, "finish"), skippable: false });
@@ -662,6 +688,7 @@ async function startGuide() {
         ["Download hours", config.download_hours.enabled ? `${String(config.download_hours.start).padStart(2, "0")}:00 to ${String(config.download_hours.end).padStart(2, "0")}:00` : "Deactivated", "/settings-downloads-hours.html"],
         ["Alerts", config.watch.enabled ? `Activated, to ${config.watch.channel.kind || "nowhere yet"}` : "Deactivated", "/settings-alerts.html"],
         ["How much it does", config.presets[config.performance.preset] || "Custom", "/settings-performance.html"],
+        ...(config.shadows_answered ? [[(await setupWords()).shadows.summary, config.shadows_off ? "Removed" : "Kept", "/settings-general-appearance.html"]] : []),
       ];
       step.nodes = [el("dl", { class: "facts" }, facts.flatMap(([k, v, href]) => [el("dt", { text: k }),
         el("dd", {}, v, " · ", el("a", { href }, "Change", el("span", { class: "visually-hidden", text: ` ${k.toLowerCase()}` })))]))];
