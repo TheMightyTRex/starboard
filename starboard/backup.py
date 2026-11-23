@@ -20,7 +20,7 @@ import time
 from .config import DEFAULTS, DESIGNS, SCHEMA, SERVICE_TYPES, UPCOMING_DAYS, UPCOMING_VIEWS, ConfigError, migrate, validate_service
 
 FORMAT = "starboard-settings"
-GENERAL_KEYS = ("site_name", "server_name", "design", "own_colours", "groups", "show_home_address", "show_outside_address",
+GENERAL_KEYS = ("site_name", "server_name", "design", "own_colours", "shadows_off", "groups", "show_home_address", "show_outside_address",
                 "session_days", "secure_cookies", "update_check", "network_access", "mcp_enabled", "upcoming_view", "upcoming_days", "download_hours",
                 "fetch_icons", "show_posters", "watch", "extras", "performance", "dashboard", "logs", "ux_notes", "settings_advanced",
                 "reelix_auto_update", "starboard_auto_update", "apps_auto_update", "plugins_auto_update",
@@ -29,7 +29,7 @@ GENERAL_KEYS = ("site_name", "server_name", "design", "own_colours", "groups", "
 OTHER_KEYS = ("history_keep_days", "history_cleared_at", "plugin_catalogues")
 # Never in a backup: the sign-in, and what belongs to this install only. tests/test_backup_layout.py fails when a
 # setting is in none of these three lists, so a new setting cannot be left out by mistake.
-NEVER_KEYS = ("auth", "schema", "last_version", "setup_guide_done", "feedback_default_on", "services", "first_setup_pending",
+NEVER_KEYS = ("shadows_note", "auth", "schema", "last_version", "setup_guide_done", "feedback_default_on", "services", "first_setup_pending",
               "version_since")
 SAVED_RE = re.compile(r"^config-\d{4}-\d{2}-\d{2}-\d{6}-[a-z]+(-[a-z]+)*\.json$")  # each part can match only one way
 

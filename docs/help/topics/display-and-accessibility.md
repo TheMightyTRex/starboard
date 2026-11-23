@@ -36,6 +36,7 @@ back to its default, including the design and the style, and says "Display setti
 | **High contrast** | Activated or deactivated (default) | Near-black or white text, solid borders, no shadows and a bolder focus colour. | [Light, dark and high contrast](../accessibility/light-dark-and-high-contrast.md) |
 | **Underline links** | Activated or deactivated (default) | Every link is underlined, not shown by colour alone. | [Underline links](../accessibility/underline-links.md) |
 | **Wider text spacing** | Activated or deactivated (default) | More space between lines, letters and words. | [Text size and spacing](../accessibility/text-size-and-spacing.md) |
+| **Remove drop shadows** | Activated or deactivated | Cards, covers, menus, slide-outs and dialogs lose their shadow and keep their border. For everyone on this server. | [Remove drop shadows](#remove-drop-shadows) |
 | **Style** | Only with a style plug-in | Colours and shape from a plug-in, checked for contrast. | [Choose a style from a plug-in](#choose-a-style-from-a-plug-in) |
 | **Design** | Five designs, or the dashboard's default | How the Apps page is laid out in this browser. | [Choose a design for the Apps page](choose-a-design.md) |
 
@@ -46,6 +47,37 @@ The same choices, apart from the design and the style, are also in **Settings**,
 There, each change says **Saved** beside the control, and focus stays where it was.
 
 ![Settings, General, Appearance, with its Accessibility part outlined: the same theme, text size, motion, contrast, link and spacing choices as Display](../images/display-and-accessibility-3-appearance.png)
+
+## Remove drop shadows
+
+Drop shadows cost a little processor on every scroll, so removing them helps small and older computers. Removing
+them leaves every border where it is, so nothing loses its edge, and nothing else changes.
+
+Unlike the other choices, this one is for everyone on this server, not only the browser you use, and it is saved at once.
+The set-up asks about it, straight after **How much it does**, in the browser and in the terminal:
+
+- **Reelix Lite** starts with the shadows **removed**, because Lite is for smaller computers.
+- Any other install starts with the shadows **kept**.
+- Your own choice is never changed. If you later switch between Reelix Lite and the full Reelix in **Settings**,
+  your choice stays, and only a setting you never answered follows the install.
+- A Starboard that was installed before this setting existed keeps its shadows. The first visit after the update
+  says so once.
+
+1. Select **Display** in the header.
+2. Activate **Remove drop shadows**. To bring them back, deactivate it. It also shows in **Settings**, **General**,
+   **Appearance**, under **Accessibility**.
+
+![The Display and accessibility slide-out with Remove drop shadows (step 2) outlined, and the note about processor use under it](../images/display-and-accessibility-4-shadows-switch.png)
+
+With the shadows kept, each cover and card stands off the page:
+
+![The Films library with example covers and Remove drop shadows off: each cover and card has its shadow, one cover outlined](../images/display-and-accessibility-5-shadows-kept.png)
+
+With them removed, the same covers keep their borders and sit flat:
+
+![The same Films library with Remove drop shadows on: the covers and cards keep their borders and have no shadow, one cover outlined](../images/display-and-accessibility-6-shadows-removed.png)
+
+High contrast already has no shadows.
 
 ## Choose a style from a plug-in
 

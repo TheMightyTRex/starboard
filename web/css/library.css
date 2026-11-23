@@ -126,6 +126,7 @@
   filter: blur(14px) saturate(1.2) brightness(0.7); }
 .collection-card__posters { position: relative; display: flex; align-items: flex-end; gap: var(--space-2); height: 100%; padding: var(--space-3); }
 .collection-card__poster { width: 58px; aspect-ratio: 2 / 3; object-fit: cover; border-radius: var(--radius); box-shadow: 0 2px 8px color-mix(in srgb, Canvas 60%, transparent); flex: none; }
+:root[data-shadows="off"] .collection-card__poster { box-shadow: none; }  /* its own small shadow follows Remove drop shadows (DASH-536) */
 .collection-card__poster.is-missing { background: repeating-linear-gradient(135deg, color-mix(in srgb, CanvasText 18%, transparent) 0 6px, color-mix(in srgb, CanvasText 6%, transparent) 6px 12px);
   border: 2px dashed color-mix(in srgb, CanvasText 70%, transparent); box-shadow: none; }
 .collection-card__poster.is-wanted { opacity: 0.55; border: 2px dashed color-mix(in srgb, CanvasText 85%, transparent); box-shadow: none; }

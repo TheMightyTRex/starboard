@@ -186,7 +186,13 @@
    "title": "How much it does",
    "question": "How much should Starboard do in the background?",
    "help": "topics/make-starboard-lighter.md"
+  },  {
+   "id": "shadows",
+   "title": "Drop shadows",
+   "question": "Remove drop shadows?",
+   "help": "topics/make-starboard-lighter.md"
   },
+
   {
    "id": "cleanup",
    "title": "Clean up",

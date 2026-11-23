@@ -1101,6 +1101,34 @@ if (testNow) {
   check("T-TRANSCODE", "the button now says Test again, and each way of converting has a row", (await page.locator("#transcode-go").innerText()).includes("Test again") && (await page.locator("#transcode li").count()) === 4);
 }
 
+// T-SHADOWS (DASH-536) Remove drop shadows by keyboard alone: Display opens with Enter, the switch is reached with Tab and
+// pressed with Space, the note is its description, the saved note is said, focus stays on the switch, and Escape returns
+// focus to Display.
+await page.goto(`${base}/index.html`);
+await settle();
+const dispBtn = await tabTo((f) => /Display/.test(f.text) && f.tag === "BUTTON", 160);
+check("T-SHADOWS", "Display can be reached with Tab", !!dispBtn);
+if (dispBtn) {
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(700);
+  const sw = await tabTo((f) => f.name === "shadows", 30);
+  check("T-SHADOWS", "Remove drop shadows can be reached with Tab inside the panel", !!sw && sw.inPanel);
+  check("T-SHADOWS", "it is a switch with the note as its description", await page.evaluate(() => { const i = document.querySelector("#side-panel input[name=shadows]"); return i.getAttribute("role") === "switch" && /turning them off helps small and older computers/.test(document.getElementById(i.getAttribute("aria-describedby")).textContent); }));
+  await page.keyboard.press("Space");
+  await page.waitForTimeout(900);
+  const f2 = await focus(), s2 = await said();
+  check("T-SHADOWS", "pressing Space applies it at once", await page.evaluate(() => document.documentElement.dataset.shadows) === "off");
+  check("T-SHADOWS", "focus stays on the switch", f2.name === "shadows", f2.text);
+  check("T-SHADOWS", "the saved note is said beside it", /Saved/.test(s2), s2);
+  await page.keyboard.press("Space");
+  await page.waitForTimeout(700);
+  check("T-SHADOWS", "Space again puts the shadows back", !(await page.evaluate(() => document.documentElement.dataset.shadows)));
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(500);
+  const f3 = await focus();
+  check("T-SHADOWS", "Escape returns focus to Display", /Display/.test(f3.text), f3.text);
+}
+
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
