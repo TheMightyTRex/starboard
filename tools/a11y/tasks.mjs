@@ -1081,6 +1081,7 @@ if (setUp) {
     const d6 = await focus();
     check("T-SIGNIN", "after deactivating, focus is not lost to the top of the page", !d6.lost, d6.text);
   }
+}
 
 // T-TRANSCODE (DASH-515) Test hardware video conversion by keyboard alone: Test now is reached with Tab, nothing runs
 // until it is pressed, the wait is said, and focus ends on the result's summary, which is read out.
