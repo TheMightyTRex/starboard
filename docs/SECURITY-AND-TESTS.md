@@ -20,6 +20,19 @@ Latest results: 3 November 2026.
 - Sign-in cookies are `HttpOnly` and `SameSite=Strict`, and can be HTTPS-only behind a reverse proxy.
 - Changing the password, or **Sign out everywhere**, signs out every other browser.
 - A forgotten password is reset only on the server itself (`./reset-password.sh`), which also signs everyone out.
+- **Two-step code (TOTP) and single sign-on (OpenID Connect), both off until set up** in Settings, Security, Sign-in methods
+  (DASH-512). The code is 6 digits, checked in constant time over a 90 second window, and a used code is never accepted
+  again. Wrong codes are limited to 5 in 15 minutes from one address and 10 from anywhere, and a half-finished sign-in
+  (the password was right) allows 5 tries, 5 minutes, from the address that made it. The 8 recovery codes are shown once
+  and kept only as PBKDF2 hashes. Single sign-on uses the authorisation code flow with PKCE (S256); the state is
+  single-use and tied to the browser that started it by a cookie, the nonce and the ID token's issuer, audience, expiry and
+  RS256 signature (against the provider's published keys, 2048 bits or more, checked with standard library code that
+  builds the expected padding and compares in constant time) are all checked, and only the one owner's verified email, or
+  a claim the owner chose, gets in. The provider's address is checked like any address Starboard calls (no link-local or
+  metadata addresses; https; http only for this computer itself, for testing; the address is looked up once and connected to, with a 15 second limit), and no redirect is followed with the client secret. Secrets
+  live in the settings file under `auth` (never in a settings backup), are never sent to the browser, and are never
+  written to a log or the audit log. Each change asks for the password again. The password works unless turned off on
+  purpose, which needs single sign-on on and tested. `./reset-sign-in.sh` on the server turns both off.
 - Send feedback (Snaglist) sends its reports without cookies, so **Save in Starboard** carries a key instead. The
   key is given only to a signed-in browser, works only while that sign-in does and while Send feedback is active,
   and needs Starboard's own header and `Origin` like every other change. A report is at most 512 KB.

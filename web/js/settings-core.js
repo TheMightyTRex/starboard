@@ -636,7 +636,7 @@ const settingsLoaded = new Promise((done) => {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", done, { once: true });
   else done();
 });
-const SETTINGS_STARTS = [["#app-sections", "startManageApps"], ["#general-sections", "startGeneral"], ["#security-sections", "startSecurity"],
+const SETTINGS_STARTS = [["#app-sections", "startManageApps"], ["#general-sections", "startGeneral"], ["#security-sections", "startSecurity"], ["#signin-sections", "startSignin"],
   ["#alerts-sections", "startAlerts"], ["#jellyfin-sections", "startJellyfin"], ["#listening-sections", "startListening"],
   ["#radio-sections", "startRadioSettings"], ["#performance-sections", "startPerformance"], ["#reelix-sections", "startReelix"],
   ["#install-sections", "startYourInstall"], ["#downloads-sections", "startDownloadsSettings"], ["#guide", "startGuide"],

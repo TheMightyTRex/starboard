@@ -44,7 +44,7 @@ class SettingsMenusTest(unittest.TestCase):
         "Downloads": ["VPN", "Usenet", "Download hours"],
         "Radio": ["Sources", "Add a show from a link", "Your podcast library", "Station logos"],
         "Performance": ["Preset", "Pictures"],
-        "Security": ["Who can open the dashboard", "Password", "API keys", "Sign out everywhere"],
+        "Security": ["Who can open the dashboard", "Password", "Sign-in methods", "API keys", "Sign out everywhere"],
     }
 
     BEFORE = {

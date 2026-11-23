@@ -483,6 +483,59 @@ if (!pages.length || pages.some((p) => p.includes("system-backup"))) {
   } catch (e) { add("system-backup.html, full backups and Reelix's backups", "page", "error", e.message.split("\n")[0]); }
 }
 
+// DASH-512: the sign-in page in each state it can be in: the two-step code after the password, a single sign-on button
+// beside the password, and single sign-on alone. Set up through the settings API (the example server takes 123456 as
+// the right code), looked at as someone who has not signed in, then put back.
+try {
+  await page.goto(`${base}/settings-security-signin.html`);
+  await settle();
+  const call = (path, body) => page.evaluate(([p, b]) => api(p, { method: "POST", body: b }), [path, body]);
+  await call("/api/security/totp/start", { password });
+  await call("/api/security/totp/confirm", { code: "123456" });
+  const anon = await (await browser.newContext({ viewport: { width: 1280, height: 860 }, bypassCSP: true })).newPage();
+  const axeOn = async (name, mode) => {
+    await anon.addScriptTag({ content: AXE });
+    const r = await anon.evaluate(async () => (await window.axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] }, resultTypes: ["violations"] }))
+      .violations.map((v) => ({ id: v.id, impact: v.impact, help: v.help, nodes: v.nodes.length, where: v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(" | ") })));
+    for (const v of r) add(name, `axe ${mode}`, v.id, `${v.impact}: ${v.help} (${v.where})`, v.nodes);
+  };
+  for (const scheme of ["light", "dark"]) {
+    await anon.emulateMedia({ colorScheme: scheme });
+    await anon.goto(`${base}/login.html`);
+    await anon.locator("#password").fill(password);
+    await anon.locator("#password").press("Enter");
+    await anon.locator("#code").waitFor({ state: "visible", timeout: 8000 });
+    await anon.waitForTimeout(400);
+    if (!(await anon.evaluate(() => document.activeElement?.id === "code"))) add("login.html, the two-step code", "keyboard", "focus-moves", "focus did not move to the code field");
+    if (!(await anon.evaluate(() => /Password accepted/.test(document.getElementById("announcer")?.textContent || "")))) add("login.html, the two-step code", "screen reader", "live-region", "the step is not announced");
+    await axeOn("login.html, the two-step code", scheme);
+    await anon.locator("#code").fill("000000");
+    await anon.locator("#code").press("Enter");
+    await anon.waitForTimeout(700);
+    if (!(await anon.evaluate(() => { const e = document.getElementById("code"); return e?.getAttribute("aria-invalid") === "true" && /code-error/.test(e.getAttribute("aria-describedby") || "") && document.activeElement === e; })))
+      add("login.html, the two-step code", "screen reader", "error-tied-to-field", "a wrong code is not tied to its field with focus on it");
+    await axeOn("login.html, the two-step code, with an error", scheme);
+  }
+  await call("/api/security/totp/off", { password });
+  await call("/api/security/oidc/enable", { password, enabled: true });
+  for (const [label, off] of [["a single sign-on button", false], ["single sign-on alone", true]]) {
+    if (off) await call("/api/security/password-login", { password, allowed: false });
+    await anon.emulateMedia({ colorScheme: "light" });
+    await anon.goto(`${base}/login.html`);
+    await anon.waitForTimeout(900);
+    if (!(await anon.getByRole("link", { name: /Sign in with Authentik/ }).count())) add(`login.html, ${label}`, "page", "sso-button", "no sign-in button for the provider");
+    if (off && (await anon.locator("#login-form").isVisible())) add(`login.html, ${label}`, "page", "password-form", "the password form is shown while the password is deactivated");
+    await axeOn(`login.html, ${label}`, "light");
+    await anon.emulateMedia({ colorScheme: "dark" });
+    await anon.reload();
+    await anon.waitForTimeout(700);
+    await axeOn(`login.html, ${label}`, "dark");
+  }
+  await call("/api/security/oidc/enable", { password, enabled: false });  // also allows the password again
+  await anon.context().close();
+  console.log("checked the sign-in page's states");
+} catch (e) { add("login.html, its states", "page", "error", e.message.split("\n")[0]); }
+
 // Slide-out and dialog behaviour (once; every page uses the same code): Display, then a confirm dialog.
 await page.goto(`${base}/settings-general.html`);
 await settle();

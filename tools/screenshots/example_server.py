@@ -650,6 +650,26 @@ _LIVETV_CHANNELS = [  # (name, section, list, region)
 _LIVETV_HIDDEN = ("Quiet Coast Comedy", "Station Eleven Classics", "Lighthouse Westerns", "Winter Map Weather", "Pier Retro")
 
 
+def _example_signin(app):
+    """Sign-in methods (DASH-512): single sign-on set up with made-up provider details and tested (nothing is called: the
+    pictures never press Test sign-in), and two stand-ins so the pictures can show the whole set-up: the password
+    "example-password" is taken for the changes in Settings, Security, Sign-in, and the code 123456 is a right code."""
+    from starboard import server as _server, totp as _totp
+    app.config.data["auth"]["oidc"] = {
+        "enabled": False, "name": "Authentik", "issuer": "https://auth.example.org/application/o/starboard/", "client_id": "starboard",
+        "client_secret": "made-up-client-secret", "redirect_uri": f"http://127.0.0.1:{PORT}/api/oidc/callback", "scopes": "openid email",
+        "claim": "email", "value": "you@example.org", "tested": True}
+    app.config.save()
+    real = _server.Handler.check_password
+
+    def check_password(self, data):
+        if data.get("password") == "example-password":
+            return None
+        return real(self, data)
+    _server.Handler.check_password = check_password
+    real_verify = _totp.verify
+    _totp.verify = lambda secret, code, last_step=0, now=None: (int(time.time() // 30) + 1 if str(code).strip() == "123456" else real_verify(secret, code, last_step, now))
+
 def _example_transcode():
     """Hardware video conversion check (DASH-515): the real check, with a made-up Jellyfin container whose answers are
     written here, so the help's pictures show a chip where VAAPI works and Quick Sync does not. Nothing runs."""
@@ -2154,6 +2174,7 @@ def main():
         reelix_direct_health._write(str(DATA), rec)
     server, app = make_server("127.0.0.1", PORT, str(DATA))
     _example_saved_copies(DATA)  # after the settings file is written
+    _example_signin(app)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     if app.needs_setup:
         password = secrets.token_urlsafe(12)

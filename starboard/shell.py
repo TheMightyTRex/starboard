@@ -107,6 +107,7 @@ MENU = [
         ("Performance", "gauge", [("settings-performance.html", "Preset", "gauge"), ("settings-performance-pictures.html", "Pictures", "eye")]),
         ("Security", "shield-check", [("settings-security.html", "Who can open the dashboard", "network"),
                                       ("settings-security-password.html", "Password", "key-round"),
+                                      ("settings-security-signin.html", "Sign-in methods", "shield-check"),
                                       ("settings-security-keys.html", "API keys", "lock"),
                                       ("settings-security-sessions.html", "Sign out everywhere", "log-out")]),
         # Level 2: Manage, Catalogue, then one tab per added plug-in, which common.js adds from /api/session (DASH-318).
@@ -201,6 +202,7 @@ HELP = {
     "settings-performance-pictures.html": ("topics/make-starboard-lighter.md#what-each-item-costs", "pictures and what they cost"),
     "settings-security.html": ("topics/choose-who-can-open-starboard.md", "choosing who can open Starboard"),
     "settings-security-password.html": ("topics/change-your-password.md", "changing your password"),
+    "settings-security-signin.html": ("topics/set-up-a-two-step-code.md", "setting up a two-step code"),
     "settings-security-keys.html": ("topics/use-starboards-api.md", "API keys for Starboard's API"),
     "settings-security-sessions.html": ("topics/sign-out-everywhere.md", "signing out everywhere"),
     "settings-downloads.html": ("topics/change-your-install.md", "your install and its VPN"),
