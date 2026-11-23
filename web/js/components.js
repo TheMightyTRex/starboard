@@ -457,7 +457,7 @@
   }
 
   /* Display and accessibility: theme, text size and reading aids are classes on <html>. Inputs carry
-     data-display="theme|text|motion|contrast|underline|spacing". Light is the default (owner, 18 November 2026);
+     data-display="theme|text|motion|contrast|underline|spacing|shadows" (shadows: a switch that sets data-shadows="off" on <html>). Light is the default (owner, 18 November 2026);
      theme "system" (Match device) sets data-theme to the device's choice and follows it when it changes.
      Reduce motion is a switch, or radios valued "device" (follows the device), "on" (always still) and
      "off" (full movement, even when the device asks for less). A form with data-display-save="<key>" keeps the choices in
@@ -493,6 +493,10 @@
     if (kind === "motion" && input.type === "radio") {
       html.classList.toggle("pref-motion", input.value === "on");
       html.classList.toggle("pref-motion-off", input.value === "off");
+    }
+    else if (kind === "shadows") {
+      if (input.checked) html.dataset.shadows = "off";
+      else delete html.dataset.shadows;
     }
     else if (["contrast", "spacing", "motion", "underline"].includes(kind))
       html.classList.toggle(`pref-${kind}`, input.checked);

@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Remove drop shadows (DASH-536; owner, 23 November 2026: "add a setting to remove the all drop shadows with a note about it helping with performance"):** a new Remove drop shadows switch in Display and in Settings, General, Appearance, with the note "Drop shadows cost a little processor on every scroll; turning them off helps small and older computers". It is for everyone on the server, applied at once and before the page draws, on every page, plug-in pages and the help centre included. Cards, covers, menus, slide-outs and dialogs keep their borders. The set-up asks it, in the browser and in the terminal, straight after How much it does, with the same words: a Reelix Lite install starts with the shadows removed, any other install with them kept. Your own choice is never changed when you switch between Reelix Lite and the full Reelix. An install from before keeps its shadows, and its first visit after the update says so once. The design system provides the switch (`data-shadows="off"`).
+
 ## [0.28.0] (23 November 2026)
 
 ### Added

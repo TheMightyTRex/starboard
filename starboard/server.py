@@ -22,7 +22,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from . import start as how_to_start
 from . import places  # location and keyboard, both set-ups' first questions (DASH-259)
 from . import library  # the Library and Search from Reelix (DASH-163, DASH-162)
-from . import access, activity_log, auth, backup, oidc, signin, helpdocs, setup_left, reelix_admin, reelix_move, reelix_setup, reelix_version, reelix_waiting, requests_route, tasklist, takeover, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
+from . import shadows, access, activity_log, auth, backup, oidc, signin, helpdocs, setup_left, reelix_admin, reelix_move, reelix_setup, reelix_version, reelix_waiting, requests_route, tasklist, takeover, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
 from .config import GENERAL_RIGHTS, Config, ConfigError, general_right, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -1346,6 +1346,8 @@ class Handler(BaseHTTPRequestHandler):
                     "first_setup": bool(app.config.data.get("first_setup_pending")) if signed_in else None,
                     "site_name": app.config.data["site_name"], "design": app.config.data["design"],
                     "own_colours": app.config.data.get("own_colours", "blue"),
+                    "shadows_off": shadows.effective_off(app.config.data, app.data_dir),  # DASH-536: kept in this browser too, for the first paint
+                    "shadows_note": bool(app.config.data.get("shadows_note")) if signed_in else None,
                     **({} if signed_in else signin.for_login_page(app)),  # the sign-in page: a single sign-on button, and whether a password works
                     # Not told to people who have not signed in.
                     "version": app.version if signed_in else None,
@@ -1474,6 +1476,12 @@ class Handler(BaseHTTPRequestHandler):
                 return reelix_admin.route(self, method, path)
             if path == "/api/config" and method == "GET":
                 return self.json(200, cfg.public())
+            if path == "/api/shadows/default" and method == "GET":
+                # DASH-536: the default for Remove drop shadows, from one place: ?reelix=lite|full for the Reelix a set-up is
+                # about to install, nothing for the install that runs now. Both set-ups and Settings ask this.
+                wanted = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("reelix", [None])[0]
+                edition = shadows.installed_edition(app.data_dir) if wanted is None else (wanted if wanted in ("lite", "full") else None)
+                return self.json(200, {"off": shadows.default_off(edition), "reelix": edition, "note": shadows.NOTE})
             if path == "/api/config/general" and method == "PUT":
                 before = cfg.data.get("network_access", True)
                 # Each key has its right (DASH-278); a signed-in person holds every right. An API key (DASH-274) will

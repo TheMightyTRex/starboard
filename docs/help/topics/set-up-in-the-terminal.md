@@ -49,7 +49,9 @@ hours. It takes about 10 minutes, plus the time to download the apps.
 9. **Sites to search** and **Films and series**, when you have Reelix: the sites Reelix searches, such as `1,4`, and
    a free TMDB key, which you can leave empty. Read [Choose the sites Reelix searches](choose-sites-to-search.md).
 10. **How much it does:** Balanced, Small server or Everything. The recommended one is first. Small server is
-    recommended on a computer with less than 1 GB of memory.
+    recommended on a computer with less than 1 GB of memory. Straight after it, **Remove drop shadows?** asks the
+    same question as the browser set-up: with Reelix Lite, the recommended answer, first, is to remove them; with
+    any other install, to keep them. Drop shadows cost a little processor on every scroll, so removing them helps small and older computers. Read [Remove drop shadows](display-and-accessibility.md#remove-drop-shadows).
 11. **Check:** read the list, then press Enter to write the apps' files, and again to start them. Downloading them
     can take several minutes. Starboard adds each app once it answers.
     ![The Check step in the terminal, with Write the apps' files now? (step 11) outlined](../images/set-up-in-the-terminal-3-check.png)

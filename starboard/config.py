@@ -8,7 +8,9 @@ import shutil
 import threading
 import time
 
-SCHEMA = 3
+from . import shadows
+
+SCHEMA = 4
 BACKUP_SCHEDULES = ("off", "manual", "monthly", "weekly", "nightly")
 KEEP_VERSIONS = (5, 10, 20)
 
@@ -57,6 +59,10 @@ DEFAULTS = {
     "server_name": "",
     "design": "health",
     "own_colours": "blue",
+    # Remove drop shadows (DASH-536): None until answered, then True or False. Unanswered follows the install (starboard/shadows.py).
+    "shadows_off": None,
+    # True for one visit after an update that kept an existing install's shadows, to say so once (DASH-536).
+    "shadows_note": False,
     "secure_cookies": False,
     "session_days": 7,
     "update_check": True,
@@ -356,6 +362,10 @@ class Config:
             "server_name_max": SERVER_NAME_MAX,
             "design": d["design"],
             "own_colours": d.get("own_colours", "blue"),
+            "shadows_off": shadows.effective_off(d, self.data_dir),
+            "shadows_answered": isinstance(d.get("shadows_off"), bool),
+            "shadows_default_off": shadows.default_off(shadows.installed_edition(self.data_dir)),
+            "shadows_note": bool(d.get("shadows_note")),
             "groups": d["groups"],
             "secure_cookies": d["secure_cookies"],
             "session_days": d["session_days"],
@@ -422,6 +432,13 @@ class Config:
                 if incoming["own_colours"] not in OWN_COLOURS:
                     raise ConfigError("Choose one of the colours")
                 d["own_colours"] = incoming["own_colours"]
+            if "shadows_off" in incoming:
+                if incoming["shadows_off"] is not None and not isinstance(incoming["shadows_off"], bool):  # None: follow the install again
+                    raise ConfigError("Choose whether to remove drop shadows")
+                d["shadows_off"] = incoming["shadows_off"]
+                d["shadows_note"] = False  # answered, so the note about the kept shadows is done
+            if "shadows_note" in incoming:
+                d["shadows_note"] = bool(incoming["shadows_note"])
             if "groups" in incoming:
                 groups = [str(g).strip()[:40] for g in incoming["groups"] if str(g).strip()]
                 d["groups"] = groups[:20] or DEFAULTS["groups"]
@@ -501,7 +518,7 @@ class Config:
 # signed-in person). A key that is not here is refused, so a new setting must be given its right before it works.
 GENERAL_RIGHTS = {
     # Everyday: names, designs, categories, pages, download hours, performance
-    "site_name": "manage", "server_name": "manage", "design": "manage", "own_colours": "manage", "groups": "manage", "move_apps": "manage",
+    "site_name": "manage", "server_name": "manage", "design": "manage", "own_colours": "manage", "shadows_off": "manage", "shadows_note": "manage", "groups": "manage", "move_apps": "manage",
     "dashboard": "manage", "upcoming_view": "manage", "upcoming_days": "manage", "show_home_address": "manage",
     "show_outside_address": "manage", "fetch_icons": "manage", "show_posters": "manage", "settings_advanced": "manage",
     "infinite_scroll": "manage", "download_hours": "manage", "preset": "manage", "performance": "manage",
@@ -846,6 +863,10 @@ def migrate(data):
         if data.get("own_colours", "teal") == "teal":
             data["own_colours"] = "blue"
         data["schema"] = 3
+    if version < 4:  # DASH-536: an install that exists today keeps its shadows, and is told once
+        data["shadows_off"] = False
+        data["shadows_note"] = True
+        data["schema"] = 4
     return data
 
 
