@@ -59,7 +59,7 @@ the server. Read [Get back in when sign-in is locked](get-back-in-when-sign-in-i
 - Changing the issuer, client, secret, redirect address or who may sign in turns single sign-on off, and the
   password back on, until you test it again.
 - Single sign-on does not ask for Starboard's two-step code. Your provider decides whether you need a second step, so
-  turn on its own checks there. Starboard's code is asked for with the password only.
+  activate its own checks there. Starboard's code is asked for with the password only.
 - Matching by a verified email address or by the subject (`sub`) is the strongest choice. A username
   (`preferred_username`), a name or another claim is weaker, because some providers let people choose or change it
   themselves. Use the email, which Starboard accepts only when the provider says it has checked it.
