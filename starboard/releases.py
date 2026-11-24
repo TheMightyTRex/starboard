@@ -2006,6 +2006,31 @@ RELEASES = [
         ],
         "review": [],
         "settings": "Your settings stay as they are. Remove drop shadows is a new setting in Display: on an install from before it starts off, so your pages keep their shadows, and your first visit after the update says so once. A new Reelix Lite install starts with shadows removed, and any other new install keeps them; the set-up asks, and your own choice is never changed when you switch between Reelix Lite and the full Reelix. Updates keeps a small file, data/app-check.json, with the time of the last app check. To go back, run ./update.sh --to v0.28.0."
+    },
+    {
+        "version": "0.30.0",
+        "date": "24 November 2026",
+        "added": [
+            ["Stallboard as a catalogue source", "Settings, Plug-ins, Catalogue has a Stallboard catalogue tick that reads Stallboard's catalogue once a day, says who reviews it, installs nothing by itself and never marks its plug-ins Recommended."],
+            ["Why is this here? for found apps", "System, Apps, Other services has a button that says what found each app (its usual port or a Docker port) and what it matched on, and for each app it did not find, which addresses it tried and why they did not match."],
+            ["A health line on Reelix's card", "When some of Reelix's sites to search are failing, its card on Apps says so, for example \"1 of 3 sites failing\", and links to Sites to search; when Reelix does not answer there is no line, never a wrong number."],
+            ["What is using the processor now", "System, Overview has a Busy now page that lists the busiest containers and processes by processor and memory when it is opened or when Check again is pressed, never on a timer, and it cannot stop or change anything."],
+            ["Limit the logs shown, with an Alerts only switch", "System, Logs has Lines shown (50, 100, 200, 500 or 1,000) and an Alerts only switch, kept for the account, and Download and Copy the details give the same newest lines; Show older entries is gone."]
+        ],
+        "fixed": [
+            ["The content check passes again", "Five lines that used words the check rejects are reworded with the same meaning, so the words check finds none."],
+            ["A plug-in's schedule control shows the real default", "Until a schedule was saved, the control showed Sunday at 03:30 while the job used the plug-in's own default; it now shows that default, which matters for a plug-in updated to a version that adds a schedule setting."],
+            ["Poster file names are checked outright", "A poster's file name is built only from a strict match of the app's id, a fixed picture kind and 1 to 10 ASCII digits, then resolved and refused unless it is inside the posters folder."],
+            ["The sign-in provider request has an explicit allowlist test", "Starboard now says which addresses are let through (public, home network or local), tests the resolved addresses and the address actually connected to, and refuses a request path with a space, line break or non-ASCII character."],
+            ["The full security scan needs no manual tuning", "tools/security-scan.sh --full now runs ZAP with 8 GB, the Java option that stopped the 0.28.0 crash and a 150 minute limit that ends the scan with a clear message."],
+            ["A browser journey checks the unanswered shadows setting again", "The journey for Remove drop shadows now clears the answer the example server gives, so it tests an unanswered setting as intended; this changes a test only."]
+        ],
+        "security": [
+            ["Poster file names stay inside the posters folder", "Poster file names are built from a strict match and refused unless they resolve inside the posters folder, in response to CodeQL alerts 77 to 79 (path injection in starboard/posters.py); GitHub now shows those three alerts as fixed."],
+            ["The sign-in provider request tests an allowlist first", "The request to the sign-in provider is sent only to an ordinary public, home network or local address, tested before and after the connection, in response to CodeQL alert 82 (server-side request forgery in starboard/oidc.py); GitHub now shows that alert as fixed. No alert was dismissed, and GitHub shows no open CodeQL alerts."]
+        ],
+        "review": [],
+        "settings": "Your settings stay as they are. Lines shown and Alerts only are new log settings: Lines shown starts at 200 and Alerts only starts off. Stallboard's catalogue is off until you tick it. Starboard keeps a few bytes in data/discovery-last.json (the last search for new apps) and data/reelix-sites.json (the number of Reelix sites), both only when they change. To go back, run ./update.sh --to v0.29.0."
     }
 ]
 
