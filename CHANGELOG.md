@@ -10,6 +10,9 @@ add features.
 ### Added
 - **A health line on Reelix's card (DASH-559; owner, 23 November 2026, from a look at Dashbrr's Prowlarr summary):** when some of Reelix's sites to search are failing, its card on Apps says so ("1 of 3 sites failing"), and the words link to Settings, Reelix, Sites to search. Which Reelix call gives the numbers: `GET /api/v1/system/health`, with the manager key Starboard already holds, names each site that is resting after failures or misconfigured (and says when all fail or none is on); it answers 503 when a check is an error, and the report is read then too. It does not say how many sites there are, and `GET /api/v1/indexers/stats` and `/indexers` do but need Reelix's admin rights, which the manager key lacks. So the total comes from the last time the admin password was used on Sites to search (kept in `data/reelix-sites.json`, a few bytes, written only when it changes, trusted for a week); without it the card says "1 site failing", and with nothing failing and no total it says nothing. It is read with the card numbers, once a minute at most, one small request, only when the cards refresh and card numbers are on. When Reelix does not answer, or answers oddly, there is no line, never a wrong number. The Reelix fork's own interface is unchanged. `GET /api/numbers` gains `sites` (internal, not the public API). Help: [Choose the sites Reelix searches](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/choose-sites-to-search.md), with a fourth marked-up picture.
 
+### Fixed
+- **The content check passes again (DASH-530; issue #272):** five lines used words the check rejects ("Below" and "Above" as directions, "just" and "see"): the Get what is missing and Search and add topics, the Test hardware video conversion topic and the VPN line on the dashboard. They are reworded with the same meaning, so `python3 tools/check_words.py` finds none.
+
 ## [0.29.0] (23 November 2026)
 
 ### Added
