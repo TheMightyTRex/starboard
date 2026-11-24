@@ -87,6 +87,43 @@ async function renderOwnJobs() {
   });
 }
 
+// Why is this here? (DASH-557, owner, 23 November 2026): what the last search for new apps learned, for each app it found
+// (what found it and what it matched on) and each app it did not (the addresses it tried, what answered, and why that
+// was not a match). It reads a small saved answer; it searches nothing again. Opened by a button, closed with Escape.
+async function openWhy(opener) {
+  const panel = sidePanel({ title: "Why is this here?", opener, wide: true, body: [el("p", { class: "muted", text: "Loading…" })],
+    foot: [helpCentreLink("topics/why-is-this-here.md")] });
+  let last;
+  try { last = (await api("/api/discover/last")).last; }
+  catch (e) { panel.body.replaceChildren(el("p", { role: "alert", text: `Could not load what the last search learned: ${e.message}` })); return; }
+  panel.body.replaceChildren(...whyBody(last));
+}
+
+function whyBody(last) {
+  if (!last) {
+    return [el("p", { text: "Starboard has not searched for apps on this server yet, so there is nothing to explain." }),
+      el("p", {}, "Search for them in ", el("a", { href: "/settings.html" }, "Settings, Apps, Manage apps"), ", then open this again.")];
+  }
+  const found = last.found || [], missing = last.missing || [];
+  const list = (rows) => el("ul", { class: "rows" }, rows);
+  return [
+    el("p", { class: "small muted", text: `Last search ${timeAgo(last.at * 1000)}. ${last.docker ? "Docker access was on, so every port a container publishes was tried as well as each app's usual port."
+      : "Docker access was off, so only each app's usual port was tried."} Opening this searches nothing again.` }),
+    el("h3", { text: `Found (${found.length})` }),
+    found.length ? list(found.map((f) => el("li", { class: "row row--no-lead" },
+      el("div", {}, el("div", { class: "row__title", text: f.name }),
+        el("div", { class: "row__meta", text: `Found by: ${(f.found_by || []).join("; ") || "its address"}` }),
+        el("div", { class: "row__meta", text: `Matched on: ${f.match || "its answer"}` }),
+        el("div", { class: "row__meta", text: `Address tried: ${f.url}${f.container ? ` · container ${f.container}` : ""}` })),
+      el("div", { class: "row__side" }, f.already ? chip("In Starboard", "success") : chip("Not added", "muted"))))) : el("p", { class: "small muted", text: "It found no app." }),
+    el("h3", { text: `Not found (${missing.length})` }),
+    el("p", { class: "small muted", text: "Each app Starboard knows that the search did not find, with the addresses it tried and what answered." }),
+    missing.length ? list(missing.map((m) => el("li", { class: "row row--no-lead" },
+      el("div", {}, el("div", { class: "row__title", text: m.name }),
+        (m.tried || []).map((t) => el("div", { class: "row__meta", text: `${t.url.replace("http://", "")}: ${t.answer || "not tried"}${t.reason ? `. ${t.reason}` : ""}` })))))) : null,
+  ].filter(Boolean);
+}
+
 startPage().then(async () => {
   try {
     await AppDetails.load("config", "status");
@@ -100,5 +137,6 @@ startPage().then(async () => {
   announce(summary(services()));
   AppDetails.openFromAddress();
   $("#check-now").addEventListener("click", check);
+  $("#why-here").addEventListener("click", (e) => openWhy(e.currentTarget));
   if (services().some((s) => s.url || s.outside_link)) AppDetails.load("outside");
 });

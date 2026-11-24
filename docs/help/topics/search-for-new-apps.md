@@ -36,7 +36,7 @@ do not need to enter each address, and with Docker access Starboard can fill in 
 
 ## Things to note
 
-- Starboard searches only when you select **Search for new apps**. Nothing runs in the background.
+- Starboard searches only when you select **Search for new apps**. Nothing runs in the background. To find out why an app was or was not found, read [Find out why an app is here, or why one was not found](why-is-this-here.md).
 - It tries the usual port of each app it knows, such as 8096 for Jellyfin. With Docker access it also tries every
   port a container makes available.
 - Apps already in **Manage apps** are left out. If everything is there, Starboard shows **Nothing new found**.

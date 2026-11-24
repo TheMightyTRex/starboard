@@ -106,38 +106,60 @@ def _get(url, limit=65536):
         return r.status, r.read(limit).decode("utf-8", "replace")
 
 
+_TRACE = {}  # port -> what the last look at it learned (the answer and why it did or did not match); see report()
+
+
 def _probe(port):
-    """What answers on this port: the matching catalogue keys (usually one), or none."""
+    """What answers on this port: the matching catalogue keys (usually one), or none. What it learned is kept in
+    _TRACE[port] (DASH-557): the address tried, the answer, and why it matched an app or did not."""
+    found, trace = _look(port)
+    _TRACE[port] = trace
+    return found
+
+
+def _look(port):
     base = f"http://127.0.0.1:{port}"
+    trace = {"port": port, "url": base, "answer": "", "match": "", "reason": ""}
     try:
-        _, page = _get(base + "/")
+        status, page = _get(base + "/")
+        trace["answer"] = f"A page answered ({status})"
     except urllib.error.HTTPError as e:
         page = (e.read(65536) or b"").decode("utf-8", "replace")
+        trace["answer"] = f"Answered with {e.code}"
         # An app that asks for a sign-in before any page (NZBGet: 401, Basic realm="NZBGet", no text) names itself
         # in the sign-in request: read that as its title.
         realm = re.search(r'realm="([^"]{1,60})"', e.headers.get("WWW-Authenticate", "") if e.headers else "")
         if realm and "<title>" not in page.lower():
             page = f"<title>{realm.group(1)}</title>" + page
+            trace["answer"] += f", signing in as {realm.group(1)[:40]}"
     except Exception:  # anything that is not a web page (another protocol, a closed port): nothing here
-        return []
+        trace.update(answer="No answer", reason="Nothing answered as a web page: the port is closed, or it is not a web service")
+        return [], trace
     title = (re.search(r"<title>([^<]*)</title>", page, re.I) or [None, ""])[1].lower()
     body = page.lower()
+    if title.strip():
+        trace["answer"] += f", titled \"{title.strip()[:60]}\""
     found = []
     for key, (_name, _kind, ports, rule, _needs_key, _background) in CATALOGUE.items():
         if port not in ports and rule[0] != "title":
             continue  # body and JSON checks only on the app's own ports, to keep guesses honest
         if rule[0] == "title" and rule[1] in title:
             found.append(key)
+            trace["match"] = trace["match"] or f"The page title contains \"{rule[1]}\""
         elif rule[0] == "body" and rule[1] in body:
             found.append(key)
+            trace["match"] = trace["match"] or f"The page says \"{rule[1]}\""
         elif rule[0] == "json":
             try:
                 status, text = _get(base + rule[1], 20000)
                 if status == 200 and rule[2] in json.loads(text):
                     found.append(key)
+                    trace["match"] = trace["match"] or f"{rule[1]} answers with \"{rule[2]}\""
             except Exception:  # not that app
                 pass
-    return found[:1]
+    if not found:
+        trace["reason"] = "It answered, but nothing on it matched an app Starboard knows"
+    return found[:1], trace
 
 
 def _known_ports(services):
@@ -184,8 +206,72 @@ def search(services):
             out.append({"key": key, "name": name, "type": kind, "url": f"http://127.0.0.1:{port}", "port": port,
                         "needs_key": needs_key, "background": background, "container": own,
                         "already": already, "can_read_key": key in READABLE and bool(own)})
+    _remember(sorted(ports), docker_names, results, out)
     # "known": every app this can recognise, so a set-up waiting for new apps knows which of them to wait for.
     return {"items": out, "docker": containers.available(), "known": sorted(CATALOGUE)}
+
+
+# Why is this here? (DASH-557, owner, 23 November 2026): what the last search learned, kept so the page can show it
+# without looking again. In memory always (a few small rows); on disk only when a person's own search asked for it
+# (save), so the set-up's repeated looks never write anything.
+LAST = None
+LAST_FILE = "discovery-last.json"
+
+
+def _remember(ports, docker_names, results, items):
+    import time
+    global LAST
+    by = {}
+    for port in ports:
+        why = [f"{CATALOGUE[k][0]}'s usual port" for k in sorted(CATALOGUE) if port in CATALOGUE[k][2]]
+        if port in docker_names:
+            why.append(f"Docker: the container {docker_names[port]} publishes it")
+        by[port] = why
+    tried = []
+    for port in ports:
+        t = _TRACE.get(port) or {}
+        hit = next((i for i in items if i["port"] == port), None)
+        tried.append({"port": port, "url": f"http://127.0.0.1:{port}", "found_by": by[port], "answer": t.get("answer", ""),
+                      "result": hit["name"] if hit else "", "match": t.get("match", ""), "reason": t.get("reason", "")})
+    found = [{"key": i["key"], "name": i["name"], "url": i["url"], "port": i["port"], "already": i["already"],
+              "found_by": by.get(i["port"], []), "match": next((t["match"] for t in tried if t["port"] == i["port"]), ""),
+              "container": i["container"]} for i in items]
+    got = {i["key"] for i in items}
+    # Each app it knows but did not find: the addresses tried for it and what each answered (DASH-557).
+    missing = []
+    for key in sorted(CATALOGUE):
+        if key in got:
+            continue
+        name, _kind, usual, _rule, _nk, _bg = CATALOGUE[key]
+        rows = [{"url": f"http://127.0.0.1:{p}", "answer": next((t["answer"] for t in tried if t["port"] == p), ""),
+                 "reason": next((t["reason"] for t in tried if t["port"] == p), "")} for p in usual]
+        missing.append({"key": key, "name": name, "tried": rows})
+    LAST = {"at": int(time.time()), "docker": containers.available(), "found": found, "tried": tried, "missing": missing}
+
+
+def save(data_dir):
+    """Keeps the last search on disk, a small file replaced whole. Called only after a person's own search."""
+    if not LAST:
+        return
+    path = os.path.join(data_dir, LAST_FILE)
+    try:
+        with open(path + ".tmp", "w", encoding="utf-8") as f:
+            json.dump(LAST, f)
+        os.replace(path + ".tmp", path)
+    except OSError:
+        pass
+
+
+def last(data_dir):
+    """What the last search learned, from memory or from the file the last person's search kept; None before any."""
+    if LAST:
+        return LAST
+    try:
+        with open(os.path.join(data_dir, LAST_FILE), encoding="utf-8") as f:
+            got = json.load(f)
+        return got if isinstance(got, dict) and isinstance(got.get("found"), list) else None
+    except (OSError, ValueError):
+        return None
 
 
 def _file(container_name, path, limit):
