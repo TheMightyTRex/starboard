@@ -9,6 +9,8 @@ add features.
 
 ### Fixed
 - **The content check passes again (DASH-530; issue #272):** five lines used words the check rejects ("Below" and "Above" as directions, "just" and "see"): the Get what is missing and Search and add topics, the Test hardware video conversion topic and the VPN line on the dashboard. They are reworded with the same meaning, so `python3 tools/check_words.py` finds none.
+- **A plug-in's schedule control shows the schedule the job really uses (DASH-533; issue #274):** until a schedule was saved, the control showed Sunday at 03:30, a guess in the page, while the job and System, Jobs used the plug-in's own default (Notifications 1.3.0: Monday at 09:00). It now shows that default, and it is saved as chosen once changed.
+
 
 ## [0.29.0] (23 November 2026)
 
