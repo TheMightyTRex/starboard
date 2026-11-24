@@ -117,6 +117,7 @@ Each guide is a journey through several topics, in order.
 ### Your server
 
 - [Check free space and what is using it](topics/check-storage.md)
+- [Find out what is using the processor](topics/find-out-what-is-using-the-processor.md)
 - [Check your disks' health](topics/check-disk-health.md)
 - [Test hardware video conversion](topics/test-hardware-video-conversion.md)
 - [Add a disk to the pool](topics/add-a-drive-to-the-pool.md)

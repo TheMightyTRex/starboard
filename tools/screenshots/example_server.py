@@ -184,6 +184,20 @@ def _offline_catalogue(address, opener=None):
 plugins_admin.fetch_catalogue = _offline_catalogue
 
 
+# System, Overview, Busy now (DASH-558): made-up figures, never a reading of this computer.
+from starboard import busy  # noqa: E402
+busy.read = lambda services, gap=1.0: (time.sleep(0.8), {
+    "at": time.time(), "seconds": 1.4, "span": 1.0, "cores": 4, "memory_total": 8 * 1024 ** 3, "source": "cgroup", "host": False,
+    "notes": ["Starboard runs in a container, so it can read only its own processes, not the server's. The containers show what the server is doing"],
+    "containers_total": 9, "processes": [], "processes_total": 0,
+    "containers": [{"name": "jellyfin", "cpu": 21.4, "memory": 1_340_000_000, "note": "Jellyfin, one of your apps in Starboard"},
+                   {"name": "tdarr", "cpu": 8.2, "memory": 620_000_000, "note": "Tdarr, one of your apps in Starboard"},
+                   {"name": "sonarr", "cpu": 1.3, "memory": 210_000_000, "note": "Sonarr, one of your apps in Starboard"},
+                   {"name": "plugin-disk-forecast-main", "cpu": 0.2, "memory": 31_000_000, "note": "A plug-in's container"},
+                   {"name": "netdata", "cpu": 0.05, "memory": 95_000_000, "note": "Not one of Starboard's apps"},
+                   {"name": "starboard", "cpu": 0.02, "memory": 24_000_000, "note": "Starboard itself"}]})[1]  # a real reading takes about a second and a half
+
+
 def _example_dispatcharr():
     """Dispatcharr (DASH-228), an add-on: set up by Starboard, with a made-up playlist of 48 streams read but no channels
     and no guide yet, and a made-up Jellyfin without its tuner, so Settings, Apps, Dispatcharr shows every part. Both
