@@ -1338,7 +1338,10 @@ The answer:
 |---|---|---|
 | `keep_days` | one of `7`, `14`, `30`, `60`, `90`, `180`, `365` | yes |
 | `max_mb` | one of `10`, `25`, `50`, `100`, `250`, `500` | yes |
+| `show_lines` | one of `50`, `100`, `200`, `500`, `1000` | no |
+| `alerts_only` | true or false | no |
 | `keep_days_choices` | a list of a whole number | yes |
+| `show_lines_choices` | a list of a whole number | no |
 | `max_mb_choices` | a list of a whole number | yes |
 | `summary` | an object | yes |
 | `covers` | a list of text | yes |
@@ -1392,7 +1395,10 @@ The answer:
 |---|---|---|
 | `keep_days` | one of `7`, `14`, `30`, `60`, `90`, `180`, `365` | yes |
 | `max_mb` | one of `10`, `25`, `50`, `100`, `250`, `500` | yes |
+| `show_lines` | one of `50`, `100`, `200`, `500`, `1000` | no |
+| `alerts_only` | true or false | no |
 | `keep_days_choices` | a list of a whole number | yes |
+| `show_lines_choices` | a list of a whole number | no |
 | `max_mb_choices` | a list of a whole number | yes |
 | `summary` | an object | yes |
 | `covers` | a list of text | yes |

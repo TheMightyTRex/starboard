@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Limit the logs shown, with an Alerts only switch (DASH-534; issue #277; owner, 23 November 2026: "limit the logging to 200 lines - with a setting for 50, 100, 200, 500, 1000. And a switch for Alerts only"):** System, Logs has **Lines shown**, a select of 50, 100, 200 (the default), 500 and 1,000, and **Alerts only**, a switch for errors and warnings that leaves out information and detail. Each applies at once with the saved note and is kept for the account (the log settings `show_lines` and `alerts_only`). The page says how many there are, "Showing the newest 200 of 3,412 entries", and with a search, a level or Alerts only, how many match out of all the log holds. **Download** and **Copy the details** give the same newest lines (Download starts with a line saying how many), so Download no longer saves up to 200,000 lines. **Show older entries** is gone: choose more lines instead. Reading stays light: each day's file is read from its end in 64 KB blocks and reading stops at the limit, and the total is counted without reading the lines as JSON and kept until a file changes (the old reader read every day file whole for a search). The stored log (days kept and total size, DASH-451) is not changed; if the owner meant limiting what is written, that is a follow-up. The API's `GET` and `POST /api/v1/logs/limits` gain `show_lines`, `show_lines_choices` and `alerts_only`. Help: [Read the log and report a problem](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/read-the-log.md), with a fourth marked-up picture.
+
 ## [0.29.0] (23 November 2026)
 
 ### Added
