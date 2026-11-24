@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **What is using the processor now (DASH-558; owner, 23 November 2026, from a look at Dashbrr, Compass and Monitee):** System, Overview has a Busy now page: a short list of the busiest containers and processes by processor and memory, with the container's name and a note of what Starboard thinks it is (one of your apps, a plug-in, Starboard itself, or not one of its apps). It is read when the page is opened and when Check again is pressed, never kept and never on a timer; it has no action that stops or changes anything, and a test checks the module cannot (no signals, no writes, no Docker change). It reads each container's processor and memory from the host's cgroup files (two small files each) when the installer's option is on, or from Docker's one-shot statistics, each with a 3 second limit and a 4 second share of an 8 second deadline, and processes from /proc, all twice a second apart. A Starboard running in a container reads only its own processes, and says so. Measured on the author's server (743 processes, 30 containers, Docker's statistics): 1.4 seconds a reading, 0.22 seconds of processor time, 0.65 MB of Python memory at its peak, nothing at rest. Listed in What Starboard can access. New route `GET /api/busy` (not part of the public API). Help: [Find out what is using the processor](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/find-out-what-is-using-the-processor.md), with three marked-up pictures.
+
 ## [0.29.0] (23 November 2026)
 
 ### Added

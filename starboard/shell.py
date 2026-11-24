@@ -72,7 +72,8 @@ MENU = [
         ("History", "history", [("history.html", "History", "history"), ("history-apps.html", "Across apps", "layout-grid")]),
     ]),
     ("system", "System", "server", [
-        ("Overview", "layout-dashboard", [("system.html", "Overview", "layout-dashboard"), ("system-monitor.html", "Monitor", "gauge")]),
+        ("Overview", "layout-dashboard", [("system.html", "Overview", "layout-dashboard"), ("system-monitor.html", "Monitor", "gauge"),
+                                                                                   ("system-busy.html", "Busy now", "activity")]),
         ("Apps", "layout-grid", [("index.html", "Apps", "layout-grid"), ("apps-services.html", "Other services", "server-cog"),
                                  ("apps-updates.html", "Updates", "circle-arrow-up"), ("install-apps.html", "Install apps", "download")]),
         ("Storage", "hard-drive", [("system-storage.html", "Storage", "hard-drive"), ("system-pool.html", "Pool", "layers"),
@@ -172,6 +173,7 @@ HELP = {
     "history-apps.html": ("topics/check-what-happened-across-your-apps.md", "checking what was added, failed and upgraded across your apps"),
     "system.html": ("README.md#your-server", "your server"),
     "system-monitor.html": ("topics/monitor-apps.md", "finding out what each app is using"),
+    "system-busy.html": ("topics/find-out-what-is-using-the-processor.md", "finding out what is using the processor"),
     "index.html": ("README.md#apps", "apps"),
     "apps-services.html": ("topics/add-a-background-service.md", "adding a background service"),
     "apps-updates.html": ("topics/update-your-apps.md", "updating your apps"),

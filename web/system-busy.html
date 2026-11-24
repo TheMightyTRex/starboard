@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<title>Busy now · System · Starboard</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#323a77">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/designs.css">
+<link rel="stylesheet" href="/css/system.css">
+<script src="/js/components.js" data-manual></script>
+<script src="/js/common.js"></script>
+<script src="/js/system-busy.js" defer></script>
+</head>
+<body class="page-system-busy with-rail">
+<!-- shell:start (filled in by starboard/shell.py; edit the menus there) -->
+<!-- shell:end -->
+<main id="main" tabindex="-1">
+<div class="page">
+  <div class="page-head">
+    <div class="page-head__text">
+      <h1>Busy now</h1>
+      <p class="page-head__summary" id="busy-summary" aria-busy="true">Reading what is using the processor…</p>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn" id="busy-again"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-refresh-cw"/></svg>Check again</button>
+    </div>
+  </div>
+  <p class="small muted">The heaviest containers and processes by processor and memory, in the last second. Starboard reads them when you open this page or select Check again, and not otherwise. It never stops or changes anything. Each processor figure is a share of the whole processor.</p>
+  <div id="busy-notes"></div>
+  <section class="panel" id="busy-containers" aria-labelledby="busy-containers-h" hidden>
+    <div class="panel__head"><h2 id="busy-containers-h">Containers</h2><span class="small muted" id="busy-containers-detail"></span></div>
+    <div id="busy-containers-list"></div>
+  </section>
+  <section class="panel" id="busy-processes" aria-labelledby="busy-processes-h" hidden>
+    <div class="panel__head"><h2 id="busy-processes-h">Processes</h2><span class="small muted" id="busy-processes-detail"></span></div>
+    <div id="busy-processes-list"></div>
+  </section>
+</div>
+</main>
+</body>
+</html>

@@ -58,6 +58,12 @@ def summary(app):
               "Reads two small files per container from the server's cgroup folder, read-only, while System, Overview, Monitor is open.",
               bool(sysinfo.cgroup_dir()) and os.path.isdir(os.path.join(sysinfo.cgroup_dir(), "system.slice")),
               "installer", on_flag="--app-use", off_flag="--no-app-use", cost="Two small files per container every 2 seconds, only while Monitor is open."),
+        _item("busy_now", "What is using the processor now",
+              "When you open System, Overview, Busy now, or select Check again, Starboard reads the server's process list (/proc) and each container's "
+              "processor and memory twice, a second apart, from the cgroup files or Docker, read only. A Starboard that runs in a container reads only its own processes. "
+              "It stops, signals and changes nothing, and keeps nothing.",
+              bool(sysinfo.cgroup_dir()) or containers.available(), "installer", on_flag="--app-use", off_flag="--no-app-use",
+              cost="Under a second and a quarter of a processor core's time for each reading, about 1 MB of memory, and nothing when the page is closed."),
         _item("livetv", "Jellyfin's Live TV folder",
               "Starboard writes channel playlists, guides and logos there once a day while the Live TV plug-in is active (Settings, Plug-ins). "
               "Jellyfin can fetch logos and Pluto streams from Starboard without signing in, and only while the Live TV plug-in is active.",

@@ -2553,6 +2553,13 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/releases/seen" and method == "POST":
                 cfg.update_general({"last_version": app.version})
                 return self.json(200, {"ok": True})
+            if path == "/api/busy" and method == "GET":
+                # What is using the processor now (DASH-558): read when the page is opened or Check again is pressed, never kept.
+                from . import busy
+                try:
+                    return self.json(200, busy.read(cfg.data["services"]))
+                except busy.Busy as e:
+                    return self.error(429, str(e))
             if path == "/api/self" and method == "GET":
                 return self.json(200, sysinfo.self_usage())
             if path == "/api/uptime" and method == "GET":

@@ -36,6 +36,7 @@ disks. With one install option, it also lists how much processor and memory each
 - With Docker access as well, the **Apps** list shows each app's name. Without it, it shows a short ID for each
   app instead. Read [Change what Starboard can access](change-what-starboard-can-access.md).
 - **Processor threads** shows how busy each part of the processor is.
+- To list the busiest containers and processes only when you ask, use [Find out what is using the processor](find-out-what-is-using-the-processor.md).
 - **Processor temperature** appears only when the server reports one.
 - To find out how much Starboard itself uses, go to **Settings**, then **Performance**. Activate **More
   settings**, then read **Starboard now**.
