@@ -2723,6 +2723,8 @@ check("TRANSCODE-01", "it says nothing was opened or changed", /No media was ope
 // borders staying; the note says what it costs, in the owner's words.
 console.log("\n== SHADOWS-01 Remove drop shadows");
 // The made-up install runs Reelix Lite, so an unanswered setting starts with the shadows removed; the person's own answer is used after that.
+// The example server answers the setting when it sets the install up (so the pictures keep their shadows), so first clear the answer: null means follow the install again.
+await api("/api/config/general", { method: "PUT", body: { shadows_off: null } });
 await open("index.html");
 check("SHADOWS-01", "an unanswered setting follows the Lite install: removed", (await api("/api/session")).shadows_off === true && (await api("/api/config")).shadows_answered === false);
 await api("/api/config/general", { method: "PUT", body: { shadows_off: false } });
