@@ -36,9 +36,23 @@ q2: What do you want to do?
 
    ![System, Logs, with Problems (step 2) and Search the log (step 3) outlined, with example data](../images/read-the-log-1-levels.png)
 
+4. In **Lines shown**, choose 50, 100, 200, 500 or 1,000 lines. Starboard shows the newest ones and says how many
+   there are beside **Log**, such as "Showing the newest 200 of 3,412 entries". It shows "Saved at" and the time
+   beside your choice, and keeps it for your account. It starts at 200.
+5. To leave out information and detail, activate **Alerts only**. Starboard shows only errors and warnings, and
+   keeps your choice in the same way.
+
+   ![System, Logs, with Lines shown (step 4) and Alerts only (step 5) outlined, with example data](../images/read-the-log-4-lines.png)
+
 Each entry shows its **Time**, its **Level** (Error, Warning, Info or Detail), the **Area** of Starboard it
-came from and **What happened**. Select an entry's message to show more, when it has more. Select
-**Show older entries** to go further back.
+came from and **What happened**. Select an entry's message to show more, when it has more. To go further back,
+choose more in **Lines shown**.
+
+**Lines shown** and **Alerts only** work with **Everything**, **Problems**, **Detailed** and the search. With a
+search or **Alerts only**, the count is of the entries that match, out of all the log holds, such as "Showing the
+newest 50 matching entries, of 3,412 in the log". Alerts only with **Detailed** shows nothing, as detail entries
+are not alerts. They change only what is shown: the stored log (how long it is kept and how much it may take) is
+not changed.
 
 ## Read an app's log
 
@@ -111,7 +125,9 @@ key, and when. This cannot be undone. The apps' own logs, which Docker keeps, ar
 - Starboard removes personal details before anything is written to its log: passwords, API keys and tokens,
   IP addresses, host and computer names, email addresses, the user name in folder paths and the dashboard's
   name. Read the text before you post it all the same.
-- **Download** saves the whole log as a text file, for example to attach it to an issue.
+- **Download** saves the newest lines as a text file, for example to attach it to an issue: as many as **Lines
+  shown** says, and only errors and warnings when **Alerts only** is active. Its first line says how many it holds.
+  **Copy the details** gives the same number of lines.
 - To suggest something or report a problem with one page, use **Feedback** in the side menu instead. Read
   [Send feedback about a page](send-feedback.md).
 - **Detailed logging** is also in **Settings**, **General**, **Logs and feedback**, in the **Logs** section.
