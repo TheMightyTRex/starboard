@@ -45,8 +45,8 @@ podcasts have **Follow** instead.
 
 Use this to narrow every row on a Discover page at once, such as to films you do not have, from one decade.
 
-1. Go to **Discover**, then **Films**, **TV**, **Music**, **Radio**, **Books** or **Audiobooks**. Above the rows, a
-   bar of filters appears once the first row has loaded.
+1. Go to **Discover**, then **Films**, **TV**, **Music**, **Radio**, **Books** or **Audiobooks**. A bar of
+   filters appears once the first row has loaded.
 2. Choose **In your library** or **Not in your library**, then choose a **Year** (a decade), **Released** or **Not
    released**, or a **Language**. A filter shows only when the rows have something to tell apart, and each choice says
    how many covers it leaves.

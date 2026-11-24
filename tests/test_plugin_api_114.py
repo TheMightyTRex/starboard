@@ -217,6 +217,27 @@ class Schedule(unittest.TestCase):
             jobs = plugin_life.jobs(d)
             self.assertTrue(jobs[0]["when"].startswith("Every month on the 1st at 02:00, next "), jobs[0]["when"])
 
+    def test_the_page_shows_the_default_the_job_uses_until_one_is_saved(self):
+        # DASH-533: a plug-in update that adds a schedule setting leaves it unsaved; the page showed its own Sunday 03:30
+        # while the job ran on the manifest's Monday 09:00.
+        monday = {"every": "week", "day": "monday", "time": "09:00"}
+        with tempfile.TemporaryDirectory() as d:
+            where = pa.folder(d, "on-demand")
+            os.makedirs(where)
+            m = schedule_manifest(monday)
+            for name, data in (("manifest.json", m), ("state.json", {"state": "enabled"}), ("settings.json", {})):
+                with open(os.path.join(where, name), "w") as f:
+                    json.dump(data, f)
+            shown = {s["key"]: s for s in pa.public_settings(d, "on-demand")}["when"]
+            self.assertEqual(shown["value"], monday)
+            self.assertFalse(shown["set"])
+            self.assertEqual(plugin_life.schedule_of(d, "on-demand", m, m["jobs"][0]), monday)
+            with mock.patch.object(pa.api_v1, "audit"):
+                pa.save_settings(d, "on-demand", {"when": {"every": "day", "time": "02:00"}})
+            shown = {s["key"]: s for s in pa.public_settings(d, "on-demand")}["when"]
+            self.assertEqual(shown["value"], {"every": "day", "time": "02:00"})
+            self.assertTrue(shown["set"])
+
     def test_install_warning_says_who_chooses(self):
         runs = plugins.install_warning(schedule_manifest())["runs"]
         self.assertIn("A job, Shrink pictures, on the schedule you choose in its settings (every week on sunday at 03:30 to start with)", runs)
