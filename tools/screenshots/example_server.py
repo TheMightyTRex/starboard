@@ -169,6 +169,15 @@ def _offline_catalogue(address, opener=None):
     journeys see the same catalogue with or without internet (DASH-411: the Apps you can add group)."""
     if address == plugins_admin.CATALOGUE_URL:
         raise ValueError("Example data: the shipped copy is used")
+    if address == plugins_admin.BUILTIN_SOURCES[0]["url"]:  # the recorded copy of Stallboard's catalogue (DASH-563), never a live request
+        import io
+        recorded = os.path.join(os.path.dirname(__file__), "..", "..", "tests", "fixtures", "stallboard-catalogue.json")
+
+        class _Recorded:
+            def open(self, req, timeout=None):
+                with open(recorded, "rb") as f:
+                    return io.BytesIO(f.read())
+        return _real_fetch_catalogue(address, _Recorded())
     return _real_fetch_catalogue(address, opener)
 
 
