@@ -53,8 +53,8 @@ After **Stop following**, Reelix stops searching for those titles, so they leave
 you can follow them again in the Library. Read
 [Browse your library](browse-your-library.md#get-follow-or-delete-a-title).
 
-**Select all** ticks the rows the page shows so far. Choosing the other list, **Not in library** or **Below the
-quality wanted**, clears the ticks.
+**Select all** ticks the rows the page shows so far. Choosing the other list, **Not in library** or
+**Below the quality wanted**, clears the ticks.
 
 ### Download one item outside download hours
 
