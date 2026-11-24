@@ -82,6 +82,26 @@ def check_address(url, what="address"):
 DEADLINE = 15  # seconds for a whole request, so a server that sends a byte at a time cannot hold a thread
 
 
+def allowed_peer(ip):
+    """An explicit allowlist test on a resolved address (DASH-542), the last word before a request is sent: True only
+    for an ordinary public address, an address on a home network or this computer's own, and never for a link-local,
+    multicast, unspecified, reserved or cloud metadata one. outside.bad_address names what is refused and why; this
+    says what is let through, so an address neither list thought of is not called."""
+    if outside.bad_address(str(ip)):
+        return False
+    a = ipaddress.ip_address(str(ip).split("%", 1)[0])
+    if isinstance(a, ipaddress.IPv6Address) and a.ipv4_mapped:
+        a = a.ipv4_mapped
+    if a.is_loopback:  # checked first: ::1 sits in the reserved block
+        return True
+    if a.is_link_local or a.is_multicast or a.is_unspecified or a.is_reserved:
+        return False
+    return bool(a.is_global or a.is_private)
+
+
+_REQUEST_PATH = re.compile(r"/[\x21-\x7e]*")  # printable ASCII, no space, no line break: nothing that could start another request
+
+
 def _addresses(host, port):
     try:
         found = [host] if ipaddress.ip_address(host.split("%", 1)[0]) else []
@@ -94,6 +114,8 @@ def _addresses(host, port):
         why = outside.bad_address(ip)
         if why:
             raise OSError(f"{host} is not allowed: {why}")
+        if not allowed_peer(ip):
+            raise OSError(f"{host} is not allowed: it is not an ordinary public, home network or local address")
     return found
 
 
@@ -137,10 +159,15 @@ def _fetch(url, form=None, basic=None, what="the provider"):
     conn = None
     try:
         sock = _connect(parts, deadline)
+        if not allowed_peer(sock.getpeername()[0]):  # the address really connected to, checked once more before anything is sent
+            sock.close()
+            raise OSError("the connection went to an address that is not allowed")
         conn = http.client.HTTPConnection(parts.hostname, parts.port or 80, timeout=DEADLINE)
         conn.sock = sock
         sock.settimeout(max(1, deadline - time.monotonic()))
         path = (parts.path or "/") + ("?" + parts.query if parts.query else "")
+        if not _REQUEST_PATH.fullmatch(path):
+            raise ValueError("the address has characters a request path cannot hold")
         conn.request("POST" if form is not None else "GET", path, body=body, headers=headers)
         r = conn.getresponse()
         raw = b""
