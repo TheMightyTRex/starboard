@@ -18,7 +18,7 @@ class Reading(unittest.TestCase):
                 mock.patch.object(busy, "_cgroup_sample", lambda: next(samples)), mock.patch.object(busy, "_procs", lambda: next(procs)), \
                 mock.patch.object(busy, "_sees_the_host", lambda: host), mock.patch.object(busy.containers, "available", lambda: docker), \
                 mock.patch.object(busy.sysinfo, "_container_names", lambda: {k: v for k, v in DOCKER_IDS.items()}), \
-                mock.patch.object(busy, "_container_of", lambda pid: "a" * 64 if pid == 7 else ""):
+                mock.patch.object(busy, "_container_of", lambda pid: "a" * 64 if pid == 70007 else ""):
             return busy.read(SERVICES, gap)
 
     def test_containers_from_the_cgroup_files_are_a_share_of_the_whole_processor(self):
@@ -41,15 +41,15 @@ class Reading(unittest.TestCase):
 
     def test_processes_on_the_host_name_their_container_and_what_they_are(self):
         hz = busy._hz()
-        p1 = {7: ("sonarr", 0, 10_000_000), 8: ("radarr", 0, 5), 9: ("sleep", 0, 4_000), os.getpid(): ("python3", 0, 1)}
-        p2 = {7: ("sonarr", hz * 2, 10_000_000), 8: ("radarr", hz // 10, 5), 9: ("sleep", 0, 4_000), os.getpid(): ("python3", 0, 1)}
+        p1 = {70007: ("sonarr", 0, 10_000_000), 70008: ("radarr", 0, 5), 70009: ("sleep", 0, 4_000), os.getpid(): ("python3", 0, 1)}
+        p2 = {70007: ("sonarr", hz * 2, 10_000_000), 70008: ("radarr", hz // 10, 5), 70009: ("sleep", 0, 4_000), os.getpid(): ("python3", 0, 1)}
         out = self.read({}, {}, host=True, p1=p1, p2=p2)
         rows = {p["pid"]: p for p in out["processes"]}
-        self.assertEqual(out["processes"][0]["pid"], 7)  # busiest first
-        self.assertEqual(rows[7]["container"], "sonarr")
-        self.assertEqual(rows[7]["note"], "Sonarr, one of your apps in Starboard")
-        self.assertEqual(rows[8]["note"], "Radarr, not added to Starboard yet")
-        self.assertEqual(rows[9]["note"], "")
+        self.assertEqual(out["processes"][0]["pid"], 70007)  # busiest first
+        self.assertEqual(rows[70007]["container"], "sonarr")
+        self.assertEqual(rows[70007]["note"], "Sonarr, one of your apps in Starboard")
+        self.assertEqual(rows[70008]["note"], "Radarr, not added to Starboard yet")
+        self.assertEqual(rows[70009]["note"], "")
         self.assertEqual(rows[os.getpid()]["note"], "Starboard itself")
 
     def test_docker_statistics_are_used_without_the_cgroup_files(self):
