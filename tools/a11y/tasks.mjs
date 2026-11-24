@@ -1039,6 +1039,29 @@ if (await show35.count()) {
   check("T36", "after deleting, focus is back on Delete history and the result is said", e34.text === "Delete history" && e34.inMain && /History across apps deleted/.test(t34), `${e34.text} / ${t34}`);
 }
 
+// T-WHY (DASH-557) Why is this here? by keyboard alone: the button is reached with Tab, Enter opens the panel with focus on
+// its Close button, the panel names what the last search found and did not find, and Escape gives focus back to the button.
+await page.goto(`${base}/apps-services.html`);
+await settle();
+const whyBtn = await tabTo((f) => f.id === "why-here", 60);
+check("T-WHY", "Why is this here? can be reached with Tab", !!whyBtn);
+if (whyBtn) {
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(() => document.querySelector("#side-panel .rows"), null, { timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(500);
+  const inside = await focus();
+  check("T-WHY", "the panel opens with focus inside it", inside.inPanel, inside.text);
+  check("T-WHY", "it lists what was found and what was not, with a heading for each", await page.evaluate(() => {
+    const h = [...document.querySelectorAll("#side-panel h3")].map((x) => x.textContent);
+    return h.some((x) => x.startsWith("Found")) && h.some((x) => x.startsWith("Not found")) && document.querySelector("#side-panel h2")?.textContent === "Why is this here?";
+  }));
+  check("T-WHY", "each app says what found it and what it matched on", await page.evaluate(() => /Found by: .+/.test(document.querySelector("#side-panel").textContent) && /Matched on: .+/.test(document.querySelector("#side-panel").textContent)));
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(500);
+  const out = await focus();
+  check("T-WHY", "Escape gives focus back to Why is this here?", out.id === "why-here", out.id || out.text);
+}
+
 // T-SIGNIN (DASH-512) Set up a two-step code by keyboard alone: the dialog asks for the password first, the slide-out
 // starts in the code field, the recovery codes end on I have saved them, and focus is never lost to the top.
 await page.goto(`${base}/settings-security-signin.html`);
