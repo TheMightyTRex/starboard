@@ -13,6 +13,7 @@
 .card__ms:empty, .card__version:empty, .card__desc:empty, .card__activity:empty, .card__notes:empty { display: none; }
 .card__desc, .card__activity { margin: 0; }
 .card__actions { align-items: center; }
+.card__activity a { position: relative; z-index: 1; }  /* Reelix's line about its sites links above the card's whole-card target (DASH-559) */
 .card__address { min-width: 0; font-size: var(--text-sm); overflow-wrap: anywhere; }  /* a link to the app, in the link colour */
 
 /* Toolbar: the filter chips scroll sideways on phones instead of filling the screen. */

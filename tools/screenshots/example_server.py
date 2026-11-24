@@ -169,6 +169,15 @@ def _offline_catalogue(address, opener=None):
     journeys see the same catalogue with or without internet (DASH-411: the Apps you can add group)."""
     if address == plugins_admin.CATALOGUE_URL:
         raise ValueError("Example data: the shipped copy is used")
+    if address == plugins_admin.BUILTIN_SOURCES[0]["url"]:  # the recorded copy of Stallboard's catalogue (DASH-563), never a live request
+        import io
+        recorded = os.path.join(os.path.dirname(__file__), "..", "..", "tests", "fixtures", "stallboard-catalogue.json")
+
+        class _Recorded:
+            def open(self, req, timeout=None):
+                with open(recorded, "rb") as f:
+                    return io.BytesIO(f.read())
+        return _real_fetch_catalogue(address, _Recorded())
     return _real_fetch_catalogue(address, opener)
 
 
@@ -1423,6 +1432,18 @@ discovery.search = lambda services: {"docker": False, "items": [
     {"key": k, "name": n, "type": discovery.CATALOGUE[k][1], "url": f"http://127.0.0.1:{p}", "port": p, "needs_key": discovery.CATALOGUE[k][4], "background": False,
      "container": "", "already": False, "can_read_key": False} for k, n, p in (("seerr", "Seerr", 5055), ("jellystat", "Jellystat", 3000))]}
 
+# What the last search learned, for Why is this here? (DASH-557): made-up answers, never a look at this computer.
+discovery.LAST = {"at": int(time.time()) - 300, "docker": True,
+    "found": [{"key": "seerr", "name": "Seerr", "url": "http://127.0.0.1:5055", "port": 5055, "already": True, "container": "seerr",
+               "found_by": ["Seerr's usual port", "Docker: the container seerr publishes it"], "match": 'The page title contains "seerr"'},
+              {"key": "jellystat", "name": "Jellystat", "url": "http://127.0.0.1:3000", "port": 3000, "already": False, "container": "jellystat",
+               "found_by": ["Docker: the container jellystat publishes it"], "match": 'The page title contains "jellystat"'}],
+    "tried": [],
+    "missing": [{"key": "lidarr", "name": "Lidarr", "tried": [{"url": "http://127.0.0.1:8686", "answer": "No answer",
+                                                              "reason": "Nothing answered as a web page: the port is closed, or it is not a web service"}]},
+               {"key": "bazarr", "name": "Bazarr", "tried": [{"url": "http://127.0.0.1:6767", "answer": 'A page answered (200), titled "my notes"',
+                                                              "reason": "It answered, but nothing on it matched an app Starboard knows"}]}]}
+
 KEY = "example-key"
 today = dt.date.today()
 
@@ -1435,6 +1456,11 @@ for _name, _impl, _state in (("Internet Archive", "definition:internetarchive", 
     _site["status"]["failure_count"] = _state
     if _state:
         _site["status"]["last_failure_reason"] = "connection: the site took too long to answer"
+# How many sites the made-up Reelix has, as the last visit to Settings, Reelix, Sites to search would have kept it (DASH-559).
+from starboard import reelix_site_health  # noqa: E402
+os.makedirs(DATA, exist_ok=True)
+reelix_site_health.record(str(DATA), [{"enabled": True}, {"enabled": True}, {"enabled": True}, {"enabled": False}])
+
 REELIX_ADMIN.add("mediaservers", "jellyfin", "Jellyfin", {"url": "http://jellyfin:8096", "api_key": "made-up"})
 REELIX_ADMIN.add("downloadclients", "qbittorrent", "qBittorrent", {"host": "gluetun", "port": 8080, "password": "made-up"})
 REELIX_ADMIN.search.update(proxy={"kind": "http", "host": "gluetun", "port": 8888}, allow_private_addresses=True)
@@ -1741,6 +1767,9 @@ def example_reelix(path, query=None):
     """Reelix's own radio and queue answers, with made-up shows."""
     if path == "/indexers/search":
         return example_sites_search(query)
+    if path == "/system/health":  # Reelix's own checks, for the line on its card (DASH-559): one of its sites is backed off after failures
+        return {"status": "warning", "checks": [{"source": "indexers", "level": "warning", "message":
+                                                  "Indexer YTS is unavailable due to failures until 2026-11-25 09:00 UTC (connection: the site took too long to answer)"}]}
     shows = [{"id": 1, "title": "The Example Hour"}, {"id": 2, "title": "Sample Science Weekly"}] + RADIO_ADDED
     if path == "/radio/library/review":
         added = {a["external_id"] for a in RADIO_ADDED}

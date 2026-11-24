@@ -972,6 +972,20 @@ if (r34) {
   check("T34", "when it ends the result is in the polite region and focus is still on the same Restore", /Restored the full backup/.test(await page.locator("#full-restore-state[aria-live=polite]").innerText())
     && /^Restore the full backup from /.test(h34.text) && !h34.lost, h34.text);
 }
+// T-REELIXSITES (DASH-559) The Reelix card's line about failing sites by keyboard alone: the link is in the Tab order inside
+// the card, has a name that says what it does, and Enter goes to Sites to search.
+await page.goto(`${base}/index.html`);
+await settle();
+await page.waitForFunction(() => document.querySelector(".card__activity a[href*=rx-indexers]"), null, { timeout: 10000 }).catch(() => {});
+const sitesLink = await tabTo((f) => f.tag === "A" && /sites? failing/.test(f.text), 160);
+check("T-REELIXSITES", "the line about failing sites can be reached with Tab", !!sitesLink, "");
+if (sitesLink) {
+  check("T-REELIXSITES", "it says how many and what it is about", /^\d+ (of \d+ )?sites? failing$|^All /.test(sitesLink.text), sitesLink.text);
+  await page.keyboard.press("Enter");
+  await page.waitForURL(/settings-reelix\.html/, { timeout: 8000 }).catch(() => {});
+  check("T-REELIXSITES", "Enter opens Settings, Reelix", /settings-reelix\.html#rx-indexers/.test(page.url()), page.url());
+}
+
 // T35 Reelix's backup settings (DASH-385, DASH-386) by keyboard alone: the selects change with the arrow keys and
 // save at once, focus stays on the select and the saved note says so; choosing the media folder says Reelix must
 // restart, with focus still on the select.
@@ -1037,6 +1051,29 @@ if (await show35.count()) {
   await page.waitForTimeout(1500);
   const e34 = await focus(), t34 = await said();
   check("T36", "after deleting, focus is back on Delete history and the result is said", e34.text === "Delete history" && e34.inMain && /History across apps deleted/.test(t34), `${e34.text} / ${t34}`);
+}
+
+// T-WHY (DASH-557) Why is this here? by keyboard alone: the button is reached with Tab, Enter opens the panel with focus on
+// its Close button, the panel names what the last search found and did not find, and Escape gives focus back to the button.
+await page.goto(`${base}/apps-services.html`);
+await settle();
+const whyBtn = await tabTo((f) => f.id === "why-here", 60);
+check("T-WHY", "Why is this here? can be reached with Tab", !!whyBtn);
+if (whyBtn) {
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(() => document.querySelector("#side-panel .rows"), null, { timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(500);
+  const inside = await focus();
+  check("T-WHY", "the panel opens with focus inside it", inside.inPanel, inside.text);
+  check("T-WHY", "it lists what was found and what was not, with a heading for each", await page.evaluate(() => {
+    const h = [...document.querySelectorAll("#side-panel h3")].map((x) => x.textContent);
+    return h.some((x) => x.startsWith("Found")) && h.some((x) => x.startsWith("Not found")) && document.querySelector("#side-panel h2")?.textContent === "Why is this here?";
+  }));
+  check("T-WHY", "each app says what found it and what it matched on", await page.evaluate(() => /Found by: .+/.test(document.querySelector("#side-panel").textContent) && /Matched on: .+/.test(document.querySelector("#side-panel").textContent)));
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(500);
+  const out = await focus();
+  check("T-WHY", "Escape gives focus back to Why is this here?", out.id === "why-here", out.id || out.text);
 }
 
 // T-SIGNIN (DASH-512) Set up a two-step code by keyboard alone: the dialog asks for the password first, the slide-out
@@ -1120,6 +1157,34 @@ if (testNow) {
   check("T-TRANSCODE", "focus moves to the result's summary, not lost to the top", f.id === "transcode-status", f.id || f.text);
   check("T-TRANSCODE", "the result is said in a live region", /Hardware conversion works|Only software|No encoder worked/.test(s), s);
   check("T-TRANSCODE", "the button now says Test again, and each way of converting has a row", (await page.locator("#transcode-go").innerText()).includes("Test again") && (await page.locator("#transcode li").count()) === 4);
+}
+
+// T-STALLBOARD (DASH-563) Add the Stallboard catalogue by keyboard alone: the Catalogue sources tab opens with Enter, the
+// tick is reached with Tab and pressed with Space, its note is its description, "Stallboard catalogue added" is said, a Stallboard
+// tab appears, the page stays on Catalogue sources, focus stays on the tick, and Space again turns it off.
+await page.goto(`${base}/settings-plugins-catalogue.html`);
+await page.evaluate(() => api("/api/plugins/catalogues", { method: "POST", body: { action: "builtin", id: "stallboard", on: false } }));
+await page.goto(`${base}/settings-plugins-catalogue.html`);
+await settle();
+const srcTab = page.getByRole("tab", { name: "Catalogue sources" });
+await srcTab.focus();
+await page.keyboard.press("Enter");
+await page.waitForTimeout(500);
+const tick = await tabTo((f) => f.id === "pl-builtin-stallboard", 30);
+check("T-STALLBOARD", "the Stallboard tick can be reached with Tab", !!tick);
+if (tick) {
+  check("T-STALLBOARD", "the tick has its note as its description", await page.evaluate(() => { const i = document.getElementById("pl-builtin-stallboard"); return /Reviewed mark/.test(document.getElementById(i.getAttribute("aria-describedby")).textContent) && !i.checked; }));
+  await page.keyboard.press("Space");
+  await page.waitForTimeout(2000);
+  const f = await focus(), s = await said();
+  check("T-STALLBOARD", "focus stays on the tick after the page is drawn again", f.id === "pl-builtin-stallboard", f.id || f.text);
+  check("T-STALLBOARD", "Stallboard catalogue added is said in a live region", /Stallboard catalogue added/.test(s), s);
+  check("T-STALLBOARD", "the page stays on Catalogue sources and a Stallboard tab has appeared", await page.evaluate(() => document.querySelector("#topic-tabs [aria-selected=true]")?.textContent.trim() === "Catalogue sources"
+    && [...document.querySelectorAll("#topic-tabs [role=tab]")].some((t) => t.textContent.trim() === "Stallboard")));
+  await page.keyboard.press("Space");
+  await page.waitForTimeout(2000);
+  const f2 = await focus(), s2 = await said();
+  check("T-STALLBOARD", "Space again clears it, with focus on the tick", f2.id === "pl-builtin-stallboard" && /Stallboard catalogue removed/.test(s2), `${f2.id} ${s2}`);
 }
 
 // T-SHADOWS (DASH-536) Remove drop shadows by keyboard alone: Display opens with Enter, the switch is reached with Tab and

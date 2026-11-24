@@ -2023,7 +2023,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, {**{k: progress.get(k) for k in ("state", "n", "of", "name")}, "log": log,
                                        "window": stack.starter_waiting(app.data_dir)})
             if path == "/api/discover" and method == "GET":
-                return self.json(200, discovery.search(cfg.data["services"]))
+                got = discovery.search(cfg.data["services"])
+                discovery.save(app.data_dir)  # a person's own search: kept, so Why is this here? shows it after a restart
+                return self.json(200, got)
+            if path == "/api/discover/last" and method == "GET":
+                # Why is this here? (DASH-557): what the last search learned. Nothing is looked at again.
+                return self.json(200, {"last": discovery.last(app.data_dir)})
             if path == "/api/discover/add" and method == "POST":
                 return self.json(200, self.add_found(self.body().get("items")))
             if path == "/api/stack" and method == "GET":
@@ -2673,7 +2678,11 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/transfer" and method == "GET":
                 return self.json(200, services.cached("transfer", 5, lambda: transfer_with_vpn(app.data_dir, cfg.data["services"]), fresh))
             if path == "/api/numbers" and method == "GET":
-                return self.json(200, {"items": services.cached("numbers", 60, lambda: services.numbers(cfg.data["services"]), fresh)})
+                # "sites": the line on Reelix's card, such as "3 of 40 sites failing" with the page that lists them (DASH-559); it
+                # is read with the numbers, no more often, and left out when Reelix does not answer.
+                from . import reelix_site_health
+                return self.json(200, {"items": services.cached("numbers", 60, lambda: services.numbers(cfg.data["services"]), fresh),
+                                       "sites": services.cached("reelix-sites", 60, lambda: reelix_site_health.line(cfg.data["services"], app.data_dir), fresh)})
             if path == "/api/requests" and method == "GET":
                 pending = "pending=1" in urllib.parse.urlparse(self.path).query
                 return self.json(200, services.cached(f"requests-{pending}", 20, lambda: services.requests(cfg.data["services"], pending), fresh))
@@ -3405,11 +3414,15 @@ class Handler(BaseHTTPRequestHandler):
             # The Catalogue page (DASH-318): the Starboard plug-ins collection, each marked when already added.
             have = {p["id"] for p in pa.added(app.data_dir)}
             cats, items = pa.catalogue(app.config)
-            return self.json(200, {"catalogues": cats, "plugins": [{**e, "added": e["id"] in have} for e in items]})
+            return self.json(200, {"catalogues": cats, "choices": pa.builtin_choices(app.config),
+                                   "plugins": [{**e, "added": e["id"] in have} for e in items]})
         if path == "/api/plugins/catalogues" and method == "POST":
             # Catalogue sources added from a link (owner, 12 November 2026). Adding one installs nothing.
             body = self.body()
             try:
+                if body.get("action") == "builtin":  # a built-in choice, such as Stallboard: ticked or unticked, nothing installed
+                    b = pa.set_builtin(app.config, str(body.get("id") or ""), body.get("on") is True)
+                    return self.json(200, {"said": f"{b['name']} catalogue added" if body.get("on") is True else f"{b['name']} catalogue removed. Plug-ins you added from it stay"})
                 if body.get("action") == "remove":
                     pa.remove_source(app.config, str(body.get("url") or ""))
                     return self.json(200, {"said": "Catalogue removed. Plug-ins you added from it stay"})
