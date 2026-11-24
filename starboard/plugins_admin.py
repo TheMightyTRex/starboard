@@ -292,6 +292,14 @@ def added(data_dir):
 CATALOGUE_URL = "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/catalogue.json"
 CATALOGUE_FILE = os.path.join(plugins.BUILTIN_DIR, "catalogue.json")  # the copy Starboard ships, used until the first fetch
 MAX_SOURCES = 10
+# Built-in catalogue choices (DASH-563, owner, 23 November 2026): switched on with one tick, never on by themselves, and
+# kept in the plugin_catalogues_on setting by id. Starboard's own collection is always read; these are other people's
+# lists, so a plug-in from one is shown with the same warning as any other and never recommends itself.
+BUILTIN_SOURCES = (
+    {"id": "stallboard", "name": "Stallboard", "url": "https://themightytrex.github.io/stallboard/catalogue.json",
+     "note": "Run by TheMightyTRexUK, who reads each plug-in's files and what it asks for before it is listed. "
+             "The Reviewed mark on its pages names who read it and when. Turning it on installs nothing."},
+)
 _catalogues = {}  # address -> {"at", "name", "items", "error"}
 
 
@@ -361,13 +369,42 @@ def fetch_catalogue(address, opener=None):
     return {"name": str(data.get("name") or address.split("/")[2])[:60], "items": items}
 
 
+def _builtin_on(cfg):
+    on = cfg.data.get("plugin_catalogues_on")
+    return [b for b in BUILTIN_SOURCES if isinstance(on, list) and b["id"] in on]
+
+
 def sources(cfg):
-    """The catalogues Starboard reads: its own collection first (always), then the ones added from a link."""
-    extra = [x for x in cfg.data.get("plugin_catalogues") or [] if isinstance(x, dict) and x.get("url")]
-    return [{"url": CATALOGUE_URL, "own": True}] + [{"url": x["url"], "own": False} for x in extra][:MAX_SOURCES]
+    """The catalogues Starboard reads: its own collection first (always), then the built-in choices that are ticked,
+    then the ones added from a link (an address already read as a built-in choice is read once)."""
+    built = _builtin_on(cfg)
+    seen = {CATALOGUE_URL} | {b["url"] for b in built}
+    extra = [x for x in cfg.data.get("plugin_catalogues") or [] if isinstance(x, dict) and x.get("url") and x["url"] not in seen]
+    return ([{"url": CATALOGUE_URL, "own": True}] + [{"url": b["url"], "own": False, "builtin": b["id"]} for b in built]
+            + [{"url": x["url"], "own": False} for x in extra][:MAX_SOURCES])
+
+
+def builtin_choices(cfg):
+    """The built-in choices for the Catalogue sources section, each with whether it is on."""
+    on = {b["id"] for b in _builtin_on(cfg)}
+    return [{"id": b["id"], "name": b["name"], "url": b["url"], "note": b["note"], "on": b["id"] in on} for b in BUILTIN_SOURCES]
+
+
+def set_builtin(cfg, cid, on):
+    """Ticks or unticks a built-in catalogue. Reads nothing and installs nothing: the catalogue is read when the
+    Catalogue page is drawn, like any other."""
+    b = next((x for x in BUILTIN_SOURCES if x["id"] == cid), None)
+    if not b:
+        raise LookupError("That is not a built-in catalogue")
+    have = [i for i in cfg.data.get("plugin_catalogues_on") or [] if isinstance(i, str) and i != cid]
+    cfg.data["plugin_catalogues_on"] = have + [cid] if on else have
+    cfg.save()
+    return b
 
 
 def add_source(cfg, address, opener=None):
+    if any(address.strip() == b["url"] for b in BUILTIN_SOURCES):
+        raise ValueError("That catalogue is a built-in choice. Tick it under Catalogue sources instead")
     got = fetch_catalogue(address, opener)
     have = [x for x in cfg.data.get("plugin_catalogues") or [] if isinstance(x, dict)]
     if address.strip() == CATALOGUE_URL or any(x.get("url") == address.strip() for x in have):
@@ -413,7 +450,7 @@ def catalogue(cfg=None, opener=None, now=None):
                 else:
                     hit = {**(hit or {"name": url.split("/")[2], "items": []}), "at": now, "error": str(e)[:200]}
             _catalogues[url] = hit
-        out_sources.append({"url": url, "name": hit["name"], "own": src["own"], "count": len(hit["items"]), "error": hit["error"]})
+        out_sources.append({"url": url, "name": hit["name"], "own": src["own"], "builtin": src.get("builtin", ""), "count": len(hit["items"]), "error": hit["error"]})
         # Only Starboard's own collection may recommend: a catalogue added from a link cannot put itself first.
         out_items += [{**x, "catalogue": hit["name"], "own": src["own"], "recommended": bool(x.get("recommended")) and src["own"]}
                       for x in hit["items"]]

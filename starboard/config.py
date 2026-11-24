@@ -52,6 +52,8 @@ DEFAULTS = {
     "site_name": "Starboard",
     # Plug-in catalogues added from a link (12 November 2026): [{"url", "name"}]. Starboard's own is always read too.
     "plugin_catalogues": [],
+    # Built-in catalogue choices switched on (DASH-563, 23 November 2026): ids such as "stallboard". None is on by default.
+    "plugin_catalogues_on": [],
     # History (12 November 2026): days of Reelix history to show (0 = all), and when Delete history was last used.
     "history_keep_days": 0,
     "history_cleared_at": "",

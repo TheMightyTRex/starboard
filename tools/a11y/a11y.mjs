@@ -159,6 +159,36 @@ for (const name of ALL) {
   } catch (e) { add(name, "page", "error", e.message.split("\n")[0]); }
 }
 
+// Catalogue sources with the Stallboard tick on, and the Stallboard tab it adds (DASH-563), in Light, Dark and High contrast.
+if (!pages.length || pages.some((p) => p.includes("settings-plugins-catalogue"))) {
+  const scan = async (name) => {
+    await axe(name, "light");
+    await structure(name);
+    await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+    await page.waitForTimeout(150);
+    await axe(name, "dark");
+    await page.evaluate(() => { document.documentElement.removeAttribute("data-theme"); document.documentElement.classList.add("pref-contrast"); });
+    await page.waitForTimeout(150);
+    await axe(name, "high contrast");
+    await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
+  };
+  try {
+    await page.goto(`${base}/settings-plugins-catalogue.html`);
+    await settle();
+    await page.evaluate(() => api("/api/plugins/catalogues", { method: "POST", body: { action: "builtin", id: "stallboard", on: true } }));
+    await page.goto(`${base}/settings-plugins-catalogue.html`);
+    await settle();
+    await page.getByRole("tab", { name: "Catalogue sources", exact: true }).click();
+    await page.waitForTimeout(300);
+    await scan("settings-plugins-catalogue.html, Catalogue sources with Stallboard on");
+    await page.getByRole("tab", { name: "Stallboard", exact: true }).click();
+    await page.waitForTimeout(300);
+    await scan("settings-plugins-catalogue.html, the Stallboard tab");
+    await page.evaluate(() => api("/api/plugins/catalogues", { method: "POST", body: { action: "builtin", id: "stallboard", on: false } }));
+    console.log("checked the Stallboard catalogue");
+  } catch (e) { add("settings-plugins-catalogue.html, Stallboard", "page", "error", e.message.split("\n")[0]); }
+}
+
 // Search with its results and More filters open (DASH-301): the filters only show once something is searched for.
 if (!pages.length || pages.includes("search.html")) {
   const name = "search.html?q=harbour, More filters";

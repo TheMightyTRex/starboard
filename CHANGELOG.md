@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Stallboard as a catalogue source (DASH-563; owner, 23 November 2026):** Settings, Plug-ins, Catalogue, under Catalogue sources, has a Stallboard catalogue tick. One tick reads Stallboard's catalogue (https://themightytrex.github.io/stallboard/catalogue.json), with a note saying who reviews it: TheMightyTRexUK reads each plug-in's files and what it asks for before it is listed, and the Reviewed mark on Stallboard's pages names who and when. It is off until ticked, ticking installs nothing (each plug-in still shows what it asks for first), it is read at most once a day like any catalogue, and its plug-ins are never marked Recommended (only Starboard's own collection recommends). The choice is in the settings backup, checked on restore. Costs nothing at rest: nothing is read until the Catalogue page is opened with the tick on. Checked once against the live file with Starboard's own `fetch_catalogue` (33 plug-ins, all read); the tests use a recorded copy. Help: [Add a plug-in](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/add-a-plugin.md), with two new marked-up pictures.
+
 ## [0.29.0] (23 November 2026)
 
 ### Added

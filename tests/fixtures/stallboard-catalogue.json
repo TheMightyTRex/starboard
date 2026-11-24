@@ -1,0 +1,106 @@
+{
+ "catalogue_version": 1,
+ "name": "Stallboard",
+ "site": "https://themightytrex.github.io/stallboard/",
+ "generated": "2026-11-23",
+ "plugins": [
+  {
+   "id": "audio-description",
+   "name": "Audio description",
+   "description": "Finds and tags films and series in Jellyfin with a described sound track for blind and partially sighted people, plays it for the people who choose it, and prefers releases with one in Reelix.",
+   "kind": "Accessibility",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "jellyfin:key",
+    "reelix:key",
+    "media:read",
+    "network:lan"
+   ],
+   "version": "1.5.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/ef67f0c273140fd80637bd3b9c8feb7ed15b648f/audio-description/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "versions": [
+    {
+     "version": "1.5.0",
+     "starboard_api": ">=1.14 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/ef67f0c273140fd80637bd3b9c8feb7ed15b648f/audio-description/starboard-plugin.json",
+     "changelog": "Films to list and Series to list: how many Titles with audio description lists of each: All, or the last 10, 20, 50, 100 or 500 added to Jellyfin, newest first. Last 20 by default. A series counts by its newest described episode and still lists all its described episodes. The page says how many it shows, such as \"Showing the last 20 of 143 films\", and where to change it. Newest first: the films and series are listed by when they were added to Jellyfin, newest first. The nightly check keeps that date; select Check for described titles now once after updating.",
+     "released": "2026-11-17",
+     "manifest_sha256": "1319aa5c4987f563c9b7e6df21ca59c9a33bdbf103a429ef3a431aa8f5f3d9db"
+    },
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.12 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/audio-description/starboard-plugin.json",
+     "manifest_sha256": "86c3741f9e4784d6bd8d6b91fc151ba37bc176d3e02540ebd64776299f234c59"
+    }
+   ],
+   "logo": "data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNDggNDgiIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgcm9sZT0iaW1nIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjx0aXRsZT5BdWRpbyBkZXNjcmlwdGlvbiBsb2dvPC90aXRsZT48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0iIzBiNjY3MCIgLz48cmVjdCB4PSI2IiB5PSI4IiB3aWR0aD0iMjgiIGhlaWdodD0iMjEiIHJ4PSIzIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiAvPjxwYXRoIGQ9Ik0xMSAxMi41aDJNMTcgMTIuNWgyTTIzIDEyLjVoMk0yOSAxMi41aDAuNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiAvPjxwYXRoIGQ9Ik0yMyAyMWgxNmE0IDQgMCAwIDEgNCA0djhhNCA0IDAgMCAxLTQgNGgtOWwtNSA0LjV2LTQuNWgtMmE0IDQgMCAwIDEtNC00di04YTQgNCAwIDAgMSA0LTR6IiBmaWxsPSIjZmZmZmZmIiBzdHJva2U9IiMwYjY2NzAiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWpvaW49InJvdW5kIiAvPjxwYXRoIGQ9Ik0yNS41IDI3aDNsNC0zLjV2MTFsLTQtMy41aC0zeiIgZmlsbD0iIzBiNjY3MCIgLz48cGF0aCBkPSJNMzUgMjYuNWE0IDQgMCAwIDEgMCA2IiBmaWxsPSJub25lIiBzdHJva2U9IiMwYjY2NzAiIHN0cm9rZS13aWR0aD0iMi4yIiBzdHJva2UtbGluZWNhcD0icm91bmQiIC8+PC9zdmc+",
+   "logo_alt": "Audio description logo"
+  },
+  {
+   "id": "audio-description-tracks",
+   "name": "Audio description tracks",
+   "description": "Adds a description track you already have, such as one from AudioVault, to its film or episode in Jellyfin, after checking that the lengths match.",
+   "kind": "Accessibility",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "jellyfin:key",
+    "network:lan"
+   ],
+   "version": "1.2.1",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/ef67f0c273140fd80637bd3b9c8feb7ed15b648f/audio-description-tracks/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "versions": [
+    {
+     "version": "1.2.1",
+     "starboard_api": ">=1.14 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/ef67f0c273140fd80637bd3b9c8feb7ed15b648f/audio-description-tracks/starboard-plugin.json",
+     "changelog": "Films in a collection: on Jellyfin 12, a film in a collection was not found, because Jellyfin answered the search with the collection in its place. It now asks Jellyfin for the films themselves, so a track for a film in a collection is added. The same goes for series.",
+     "released": "2026-11-19",
+     "manifest_sha256": "78a74af61ff530a49d6cb61a2761f94fb9d1cd09afd8fff60325c4936816e5d4"
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.12 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/audio-description-tracks/starboard-plugin.json",
+     "manifest_sha256": "fcfce26e63b4e7a1e6dff6fcb7c58280511be9037a28c40baa1578c85e2dbcc3"
+    }
+   ],
+   "logo": "data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNDggNDgiIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgcm9sZT0iaW1nIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjx0aXRsZT5BdWRpbyBkZXNjcmlwdGlvbiB0cmFja3MgbG9nbzwvdGl0bGU+PHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iMTEiIGZpbGw9IiMyZDVhODciIC8+PHBhdGggZD0iTTggMjBoNmw4LTd2MjJsLTgtN0g4eiIgZmlsbD0iI2ZmZmZmZiIgLz48cGF0aCBkPSJNMzMgMTh2MTJNMjcgMjRoMTIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIzLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgLz48L3N2Zz4=",
+   "logo_alt": "Audio description tracks logo"
+  },
+  {
+   "id": "backups-watch",
+   "name": "Backups watch",
+   "description": "The last run, size and failures of your Backrest or Kopia backups on a card, and an alert when one is overdue.",
+   "kind": "System",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "network:lan",
+    "alerts:send"
+   ],
+   "version": "0.1.0",
+   "starboard_api": ">=1.17 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/ef67f0c273140fd80637bd3b9c8feb7ed15b648f/backups-watch/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "versions": [
+    {
+     "version": "0.1.0",
+     "starboard_api": ">=1.17 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/ef67f0c273140fd80637bd3b9c8feb7ed15b648f/backups-watch/starboard-plugin.json",
+     "changelog": "One card for your backups: the last run, the size and the failures of each Backrest plan or Kopia source. Alerts: once when a backup is overdue or its last run failed, and once when it is fine again, through Starboard. You choose the tool, its address and password, and how many hours count as overdue. Light: it wakes once an hour, asks the tool once and rests; its cards read what it kept.",
+     "released": "2026-11-22",
+     "manifest_sha256": "4f72abde30cadf24ce7d5bcf8c560c2f4cf852a95a3ca75c642ea0d1353d415a"
+    }
+   ],
+   "logo": "data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNDggNDgiIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgcm9sZT0iaW1nIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjx0aXRsZT5CYWNrdXBzIHdhdGNoIGxvZ288L3RpdGxlPjxyZWN0IHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgcng9IjExIiBmaWxsPSIjMWY2YjRhIiAvPjxlbGxpcHNlIGN4PSIyMiIgY3k9IjE0IiByeD0iMTIiIHJ5PSI1IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiAvPjxwYXRoIGQ9Ik0xMCAxNHY5YzAgMi44IDUuNCA1IDEyIDVNMTAgMjN2OWMwIDIuOCA1LjQgNSAxMiA1TTM0IDE0djYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIC8+PGNpcmNsZSBjeD0iMzQiIGN5PSIzMyIgcj0iOCIgZmlsbD0iI2ZmZmZmZiIgLz48cGF0aCBkPSJNMzAgMzNsMyAzIDUtNiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMWY2YjRhIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgLz48L3N2Zz4=",
+   "logo_alt": "Backups watch logo"
+  }
+ ]
+}

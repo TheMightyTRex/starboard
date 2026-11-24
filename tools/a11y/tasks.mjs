@@ -1101,6 +1101,34 @@ if (testNow) {
   check("T-TRANSCODE", "the button now says Test again, and each way of converting has a row", (await page.locator("#transcode-go").innerText()).includes("Test again") && (await page.locator("#transcode li").count()) === 4);
 }
 
+// T-STALLBOARD (DASH-563) Turn on the Stallboard catalogue by keyboard alone: the Catalogue sources tab opens with Enter, the
+// tick is reached with Tab and pressed with Space, its note is its description, "Stallboard is on" is said, a Stallboard
+// tab appears, the page stays on Catalogue sources, focus stays on the tick, and Space again turns it off.
+await page.goto(`${base}/settings-plugins-catalogue.html`);
+await page.evaluate(() => api("/api/plugins/catalogues", { method: "POST", body: { action: "builtin", id: "stallboard", on: false } }));
+await page.goto(`${base}/settings-plugins-catalogue.html`);
+await settle();
+const srcTab = page.getByRole("tab", { name: "Catalogue sources" });
+await srcTab.focus();
+await page.keyboard.press("Enter");
+await page.waitForTimeout(500);
+const tick = await tabTo((f) => f.id === "pl-builtin-stallboard", 30);
+check("T-STALLBOARD", "the Stallboard tick can be reached with Tab", !!tick);
+if (tick) {
+  check("T-STALLBOARD", "the tick has its note as its description", await page.evaluate(() => { const i = document.getElementById("pl-builtin-stallboard"); return /Reviewed mark/.test(document.getElementById(i.getAttribute("aria-describedby")).textContent) && !i.checked; }));
+  await page.keyboard.press("Space");
+  await page.waitForTimeout(2000);
+  const f = await focus(), s = await said();
+  check("T-STALLBOARD", "focus stays on the tick after the page is drawn again", f.id === "pl-builtin-stallboard", f.id || f.text);
+  check("T-STALLBOARD", "Stallboard is on is said in a live region", /Stallboard is on/.test(s), s);
+  check("T-STALLBOARD", "the page stays on Catalogue sources and a Stallboard tab has appeared", await page.evaluate(() => document.querySelector("#topic-tabs [aria-selected=true]")?.textContent.trim() === "Catalogue sources"
+    && [...document.querySelectorAll("#topic-tabs [role=tab]")].some((t) => t.textContent.trim() === "Stallboard")));
+  await page.keyboard.press("Space");
+  await page.waitForTimeout(2000);
+  const f2 = await focus(), s2 = await said();
+  check("T-STALLBOARD", "Space again turns it off, with focus on the tick", f2.id === "pl-builtin-stallboard" && /Stallboard is off/.test(s2), `${f2.id} ${s2}`);
+}
+
 // T-SHADOWS (DASH-536) Remove drop shadows by keyboard alone: Display opens with Enter, the switch is reached with Tab and
 // pressed with Space, the note is its description, the saved note is said, focus stays on the switch, and Escape returns
 // focus to Display.

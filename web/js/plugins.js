@@ -1670,12 +1670,13 @@ async function startCatalogue() {
         const rows = c.plugins.filter((e) => e.catalogue === cat.name && e.own === cat.own);
         return section(`pl-cat-${n}`, cat.own ? "The Starboard plug-ins collection" : cat.name,
           cat.own ? "Made by TheMightyTRexUK and tested with each Starboard release."
+            : cat.builtin ? `From ${cat.url.split("/")[2]}, turned on by you. Check each plug-in's warning before you install it.`
             : `From ${cat.url.split("/")[2]}, added by you. Starboard did not make these: check each one's warning before you install it.`,
           cat.error ? notice("warning", "This catalogue did not answer", `${cat.error}. Showing the list from the last time it did.`) : null,
           ...recommended(rows),
           rows.length ? byKind(rows.filter((e) => !e.recommended)) : el("p", { class: "small muted", text: "It lists no plug-ins." }));
       }),
-      sourcesSection(c.catalogues, draw),
+      sourcesSection(c.catalogues, draw, c.choices || []),
       addPluginSection(draw), zipSection(), testerSection()].filter(Boolean));
   };
   draw();
@@ -1683,7 +1684,27 @@ async function startCatalogue() {
 
 // Catalogue sources (owner, 12 November 2026): other catalogues added from a link, listed above with their plug-ins.
 // Adding a catalogue installs nothing; each plug-in still shows its warning before it is installed.
-function sourcesSection(cats, redraw) {
+function sourcesSection(cats, redraw, choices = []) {
+  // Built-in choices (DASH-563, owner, 23 November 2026): one tick turns one on, with a note on who reviews it. Applied
+  // at once; nothing is installed. The list is drawn again and focus goes back to the same tick.
+  const ticks = choices.map((b) => {
+    const box = el("input", { type: "checkbox", id: `pl-builtin-${b.id}`, checked: b.on, "aria-describedby": `pl-builtin-${b.id}-note` });
+    box.addEventListener("change", async () => {
+      box.disabled = true;
+      try {
+        const said = (await api("/api/plugins/catalogues", { method: "POST", body: { action: "builtin", id: b.id, on: box.checked } })).said;
+        await redraw();
+        // The page is drawn again, with or without the new tab: stay on Catalogue sources, and on the same tick.
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        const here = document.getElementById("pl-sources-h")?.closest("section")?.id;
+        if (here) document.querySelector(`#topic-tabs [role=tab][aria-controls="${here}"]`)?.click();
+        document.getElementById(`pl-builtin-${b.id}`)?.focus();
+        announce(said);
+      } catch (err) { box.checked = !box.checked; box.disabled = false; problem(err.message, box); }
+    });
+    return el("li", { class: "setting" }, el("div", { class: "check" }, box, el("label", { for: box.id, class: "check__text" },
+      el("strong", { text: `${b.name} catalogue` }), el("span", { class: "check__hint", id: `${box.id}-note`, text: b.note }))));
+  });
   const input = el("input", { class: "input", id: "pl-cat-address", type: "url", placeholder: "https://", autocomplete: "off", spellcheck: "false" });
   const go = el("button", { type: "submit", class: "btn btn--primary" }, icon("plus"), "Add catalogue");
   const form = el("form", { class: "form-stack", novalidate: true },
@@ -1701,7 +1722,7 @@ function sourcesSection(cats, redraw) {
     finally { go.disabled = false; }
   });
   const rows = cats.map((cat) => {
-    const side = cat.own ? chip("Always here", "muted") : (() => {
+    const side = cat.own ? chip("Always here", "muted") : cat.builtin ? chip("Built-in choice", "muted") : (() => {
       const b = el("button", { type: "button", class: "btn btn--quiet btn--compact btn--danger" }, icon("trash-2"), "Remove",
         el("span", { class: "visually-hidden", text: ` ${cat.name}` }));
       b.addEventListener("click", async () => {
@@ -1717,6 +1738,7 @@ function sourcesSection(cats, redraw) {
       el("div", { class: "row__side" }, side));
   });
   return section("pl-sources", "Catalogue sources", "Where this page finds plug-ins. Add another catalogue by its link; each is read at most once a day.",
+    ticks.length ? el("ul", { class: "settings-rows", "aria-label": "Built-in catalogues" }, ticks) : null,
     el("ul", { class: "rows" }, rows), form);
 }
 
