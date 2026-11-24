@@ -10,6 +10,9 @@ add features.
 ### Added
 - **Why is this here? for found apps (DASH-557; owner, 23 November 2026, from a look at Dashbrr, Compass and Monitee):** System, Apps, Other services has a Why is this here? button that opens a panel with what the last search for new apps learned. Each app it found says what found it (the app's usual port, or the Docker container that publishes a port) and what it matched on (a page title, the text of a page or a status address that answered), with the address tried and whether it is already in Starboard. Each app it knows but did not find lists the addresses it tried, what answered ("No answer", or a page that matched nothing) and why that was not a match. Nothing new runs when it is opened: the answer is read from memory or from `data/discovery-last.json`, a small file written only when a person's own search finishes (the set-up's repeated looks write nothing). Starboard finds apps by usual port and Docker's published ports only, and the panel says so. New route `GET /api/discover/last` (not part of the public API). Help: [Find out why an app is here, or why one was not found](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/why-is-this-here.md), with three marked-up pictures.
 
+### Fixed
+- **The content check passes again (DASH-530; issue #272):** five lines used words the check rejects ("Below" and "Above" as directions, "just" and "see"): the Get what is missing and Search and add topics, the Test hardware video conversion topic and the VPN line on the dashboard. They are reworded with the same meaning, so `python3 tools/check_words.py` finds none.
+
 ## [0.29.0] (23 November 2026)
 
 ### Added
