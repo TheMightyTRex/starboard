@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Fixed
+- **The content check passes again (DASH-530; issue #272):** five lines used words the check rejects ("Below" and "Above" as directions, "just" and "see"): the Get what is missing and Search and add topics, the Test hardware video conversion topic and the VPN line on the dashboard. They are reworded with the same meaning, so `python3 tools/check_words.py` finds none.
+
 ## [0.29.0] (23 November 2026)
 
 ### Added
