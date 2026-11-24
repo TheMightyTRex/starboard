@@ -8,7 +8,10 @@ add features.
 ## [Unreleased]
 
 ### Fixed
+- **The content check passes again (DASH-530; issue #272):** five lines used words the check rejects ("Below" and "Above" as directions, "just" and "see"): the Get what is missing and Search and add topics, the Test hardware video conversion topic and the VPN line on the dashboard. They are reworded with the same meaning, so `python3 tools/check_words.py` finds none.
+- **A plug-in's schedule control shows the schedule the job really uses (DASH-533; issue #274):** until a schedule was saved, the control showed Sunday at 03:30, a guess in the page, while the job and System, Jobs used the plug-in's own default (Notifications 1.3.0: Monday at 09:00). It now shows that default, and it is saved as chosen once changed.
 - **Poster file names are checked outright (DASH-531; issue #271):** CodeQL alerts 77 to 79 (py/path-injection in `starboard/posters.py`) were false positives, since the name was never taken from the request, but the check is now explicit. A poster's file name is built only from a strict match of the app's id, one of the fixed picture kinds and 1 to 10 ASCII digits (other scripts' digits and a trailing new line no longer pass), then resolved with `os.path.realpath` and refused unless `os.path.commonpath` says it is inside the posters folder, so a link that leaves the folder is never followed. No alert is dismissed; the alerts should close on the next scan.
+
 
 ## [0.29.0] (23 November 2026)
 
