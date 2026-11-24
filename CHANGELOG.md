@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Fixed
+- **Poster file names are checked outright (DASH-531; issue #271):** CodeQL alerts 77 to 79 (py/path-injection in `starboard/posters.py`) were false positives, since the name was never taken from the request, but the check is now explicit. A poster's file name is built only from a strict match of the app's id, one of the fixed picture kinds and 1 to 10 ASCII digits (other scripts' digits and a trailing new line no longer pass), then resolved with `os.path.realpath` and refused unless `os.path.commonpath` says it is inside the posters folder, so a link that leaves the folder is never followed. No alert is dismissed; the alerts should close on the next scan.
+
 ## [0.29.0] (23 November 2026)
 
 ### Added

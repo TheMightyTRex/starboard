@@ -29,19 +29,45 @@ MAX_BYTES = 400_000
 _lock = threading.Lock()
 
 
+_SERVICE_ID = re.compile(r"[a-z0-9][a-z0-9-]{0,39}")  # the shape config.py gives every app id
+_ITEM_ID = re.compile(r"[0-9]{1,10}")  # ASCII digits only: str.isdigit and \d accept other scripts, and $ accepts a trailing newline
+
+
+def poster_path(folder, service_id, kind, item_id):
+    """The one file a poster is kept in, or None. The name is built only from a strict match of each part: the app's
+    id, one of the fixed picture kinds (taken from KINDS itself) and 1 to 10 ASCII digits. The finished path is then
+    resolved, symbolic links included, and refused unless it is inside the posters folder."""
+    sid, num = str(service_id), str(item_id)
+    if not _SERVICE_ID.fullmatch(sid) or not _ITEM_ID.fullmatch(num):
+        return None
+    known = next((k for k in KINDS if k == kind), None)
+    if known is None:
+        return None
+    root = os.path.realpath(folder)
+    path = os.path.realpath(os.path.join(root, f"{sid}-{known}-{int(num)}.jpg"))
+    try:
+        if os.path.commonpath([root, path]) != root or os.path.dirname(path) != root:
+            return None
+    except ValueError:
+        return None
+    return path
+
+
 def address(service, kind, item_id):
     """The address a page uses for this poster, or "" when the app keeps none."""
-    if kind not in KINDS or KINDS[kind][0] != service["type"] or not str(item_id).isdigit():
+    if kind not in KINDS or KINDS[kind][0] != service["type"] or not _ITEM_ID.fullmatch(str(item_id)):
         return ""
     return f"/api/posters/{service['id']}/{kind}/{item_id}"
 
 
 def get(service, kind, item_id, folder):
     """(bytes, content type) or None."""
-    if kind not in KINDS or KINDS[kind][0] != service["type"] or not re.match(r"^\d{1,10}$", str(item_id)):
+    if kind not in KINDS or KINDS[kind][0] != service["type"] or not _ITEM_ID.fullmatch(str(item_id)):
         return None
     os.makedirs(folder, mode=0o700, exist_ok=True)
-    path = os.path.join(folder, f"{service['id']}-{kind}-{item_id}.jpg")
+    path = poster_path(folder, service["id"], kind, item_id)
+    if path is None:
+        return None
     try:
         if time.time() - os.path.getmtime(path) < KEEP:
             with open(path, "rb") as f:
@@ -50,7 +76,7 @@ def get(service, kind, item_id, folder):
         pass
     if _missing.get(path, 0) > time.monotonic():  # no picture anywhere when last asked (DASH-65)
         return None
-    url = service["url"].rstrip("/") + KINDS[kind][1].format(id=item_id)
+    url = service["url"].rstrip("/") + KINDS[kind][1].format(id=int(item_id))
     req = urllib.request.Request(url, headers={"X-Api-Key": service.get("api_key", ""), "User-Agent": "Starboard"})
     data = None
     try:
