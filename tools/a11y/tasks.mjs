@@ -972,6 +972,20 @@ if (r34) {
   check("T34", "when it ends the result is in the polite region and focus is still on the same Restore", /Restored the full backup/.test(await page.locator("#full-restore-state[aria-live=polite]").innerText())
     && /^Restore the full backup from /.test(h34.text) && !h34.lost, h34.text);
 }
+// T-REELIXSITES (DASH-559) The Reelix card's line about failing sites by keyboard alone: the link is in the Tab order inside
+// the card, has a name that says what it does, and Enter goes to Sites to search.
+await page.goto(`${base}/index.html`);
+await settle();
+await page.waitForFunction(() => document.querySelector(".card__activity a[href*=rx-indexers]"), null, { timeout: 10000 }).catch(() => {});
+const sitesLink = await tabTo((f) => f.tag === "A" && /sites? failing/.test(f.text), 160);
+check("T-REELIXSITES", "the line about failing sites can be reached with Tab", !!sitesLink, "");
+if (sitesLink) {
+  check("T-REELIXSITES", "it says how many and what it is about", /^\d+ (of \d+ )?sites? failing$|^All /.test(sitesLink.text), sitesLink.text);
+  await page.keyboard.press("Enter");
+  await page.waitForURL(/settings-reelix\.html/, { timeout: 8000 }).catch(() => {});
+  check("T-REELIXSITES", "Enter opens Settings, Reelix", /settings-reelix\.html#rx-indexers/.test(page.url()), page.url());
+}
+
 // T35 Reelix's backup settings (DASH-385, DASH-386) by keyboard alone: the selects change with the arrow keys and
 // save at once, focus stays on the select and the saved note says so; choosing the media folder says Reelix must
 // restart, with focus still on the select.

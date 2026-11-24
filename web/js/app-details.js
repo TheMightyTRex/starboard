@@ -39,7 +39,10 @@ const AppDetails = (() => {
     },
     uptime: async () => { state.uptime = await api("/api/uptime"); },
     numbers: async () => {  // the small numbers on cards: off in Settings, Performance saves a request per app
-      state.numbers = state.config?.performance?.card_numbers === false ? {} : (await api(fresh("/api/numbers"))).items;
+      if (state.config?.performance?.card_numbers === false) { state.numbers = {}; state.sites = {}; return; }
+      const got = await api(fresh("/api/numbers"));
+      state.numbers = got.items;
+      state.sites = got.sites || {};  // Reelix's line, such as "3 of 40 sites failing", with the page that lists them (DASH-559)
     },
     health: async () => {
       if (!hasUpdates() && !state.config?.services.some((s) => s.enabled && s.icon === "reelix")) { state.warnings = {}; return; }

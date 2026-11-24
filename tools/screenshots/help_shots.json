@@ -550,6 +550,25 @@
       "alt": "How Reelix searches, with Search through the VPN activated (step 7) outlined"
     },
     {
+      "topic": "choose-sites-to-search",
+      "file": "choose-sites-to-search-4-card.png",
+      "page": "index.html",
+      "height": 800,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); for (let i = 0; i < 60 && !document.querySelector('.card__activity a[href*=rx-indexers]'); i++) await wait(250); const a = document.querySelector('.card__activity a[href*=rx-indexers]'); a.closest('.app-card').dataset.shot = 'card'; a.scrollIntoView({ block: 'center' }); await wait(300);",
+      "marks": [
+        {
+          "t": "$[data-shot=card] .card__activity a",
+          "step": 8,
+          "side": "right",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        8
+      ],
+      "alt": "Apps, with the Reelix card, whose line says 1 of 3 sites failing and links to Sites to search (step 8) outlined"
+    },
+    {
       "topic": "connect-reelix-to-media-servers",
       "file": "connect-reelix-to-media-servers-1-connect.png",
       "page": "settings-reelix.html",

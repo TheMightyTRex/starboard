@@ -1421,6 +1421,11 @@ for _name, _impl, _state in (("Internet Archive", "definition:internetarchive", 
     _site["status"]["failure_count"] = _state
     if _state:
         _site["status"]["last_failure_reason"] = "connection: the site took too long to answer"
+# How many sites the made-up Reelix has, as the last visit to Settings, Reelix, Sites to search would have kept it (DASH-559).
+from starboard import reelix_site_health  # noqa: E402
+os.makedirs(DATA, exist_ok=True)
+reelix_site_health.record(str(DATA), [{"enabled": True}, {"enabled": True}, {"enabled": True}, {"enabled": False}])
+
 REELIX_ADMIN.add("mediaservers", "jellyfin", "Jellyfin", {"url": "http://jellyfin:8096", "api_key": "made-up"})
 REELIX_ADMIN.add("downloadclients", "qbittorrent", "qBittorrent", {"host": "gluetun", "port": 8080, "password": "made-up"})
 REELIX_ADMIN.search.update(proxy={"kind": "http", "host": "gluetun", "port": 8888}, allow_private_addresses=True)
@@ -1727,6 +1732,9 @@ def example_reelix(path, query=None):
     """Reelix's own radio and queue answers, with made-up shows."""
     if path == "/indexers/search":
         return example_sites_search(query)
+    if path == "/system/health":  # Reelix's own checks, for the line on its card (DASH-559): one of its sites is backed off after failures
+        return {"status": "warning", "checks": [{"source": "indexers", "level": "warning", "message":
+                                                  "Indexer YTS is unavailable due to failures until 2026-11-25 09:00 UTC (connection: the site took too long to answer)"}]}
     shows = [{"id": 1, "title": "The Example Hour"}, {"id": 2, "title": "Sample Science Weekly"}] + RADIO_ADDED
     if path == "/radio/library/review":
         added = {a["external_id"] for a in RADIO_ADDED}

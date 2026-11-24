@@ -289,6 +289,9 @@ def route(handler, method, path):
         with Visit(base, str(body.get("password") or ""), str(body.get("user") or reelix_setup.ADMIN)) as reelix:
             app.limits.clear(address)
             out = _act(app, reelix, base, kind, action, body)
+            if kind == "indexers" and isinstance(out, dict) and isinstance(out.get("items"), list):
+                from . import reelix_site_health  # how many sites Reelix has, for the line on its card (DASH-559)
+                reelix_site_health.record(app.data_dir, out["items"])
     except WrongPassword as e:
         return handler.error(401, str(e), reason="password")
     return handler.json(200, out)
