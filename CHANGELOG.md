@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Fixed
+- **The full security scan needs no manual tuning (DASH-543; issue #282):** `tools/security-scan.sh --full` now runs ZAP with 8 GB (`ZAP_MEMORY`, was 6 GB), the Java option that stopped the 0.28.0 run's crash (`-XX:CompileCommand=exclude,java.net.URLDecoder::decode`, `ZAP_JVM_EXTRA`) and a time limit of 150 minutes (`ZAP_TIME_LIMIT`) after which the scan fails with a clear message and removes ZAP's container. `--dry-run` prints the settings without starting anything. 8 GB is about half of a 16 GB server, inside the heavy-job limit of about two thirds.
+
 ## [0.29.0] (23 November 2026)
 
 ### Added
