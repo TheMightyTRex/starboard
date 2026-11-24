@@ -38,6 +38,11 @@ download app. Nothing is added unless you add it. Add, test and remove sites in 
 
    ![How Reelix searches, with Search through the VPN (step 7) outlined, with example data](../images/choose-sites-to-search-3-vpn.png)
 
+8. Optional: to check on the sites later without signing in to Reelix, open **Apps**. When some sites are failing,
+   the **Reelix** card says so, such as "1 of 3 sites failing". Select those words to go to **Sites to search**.
+
+   ![Apps, with the Reelix card's line about failing sites (step 8) outlined, with example data](../images/choose-sites-to-search-4-card.png)
+
 ## Add your own search site
 
 For your own Jackett or Prowlarr, or a Usenet search site you have an account with:
@@ -52,6 +57,11 @@ For your own Jackett or Prowlarr, or a Usenet search site you have an account wi
   out without it. Starboard activates it when it installs Reelix with the VPN.
 - **Addresses on your network** lets Reelix reach a site at home, such as your own Jackett. Searching through
   the VPN needs it too. Otherwise, leave it inactive.
+- The line on the **Reelix** card is read from Reelix's own health checks each time the card refreshes, and nothing
+  more often. They name each site that is resting after failures, so Starboard can count them. They do not say how
+  many sites there are, so the total in "1 of 3" is the number you had the last time you opened **Sites to search**
+  and signed in, and it is left out after a week. Without it, the card says "1 site failing". When Reelix does not
+  answer, the card says nothing about its sites rather than guess.
 - **Resting until** means the site failed several times, so Reelix waits before it tries again.
 - The **Sites to search** step in Install apps and the terminal set-up offers a short list of public sites and
   your own address. Nothing is ticked for you.

@@ -60,13 +60,14 @@ function card(s, old) {
     // Never a number (DASH-309, R3): the warnings themselves are in the app's slide-out.
     el("span", { class: "card__notes" }, warn.length ? second("warn") : null, o && !o.reachable ? second("outside") : null));
   const numbers = addUp(familyOf(s).flatMap((x) => AppDetails.state.numbers?.[x.id] || []));
-  const activity = down ? (s.type === "gluetun" && /^The VPN/.test(st?.message || "") ? AppDetails.sentence(st.message) : "Cannot reach it") : numbers?.length ? numbers.join(" · ") : numbersOff || !st ? "" : "Nothing to report";
+  const sites = !down && !numbersOff && s.icon === "reelix" ? familyOf(s).map((x) => AppDetails.state.sites?.[x.id]).find(Boolean) : null;
+  const activity = down ? (s.type === "gluetun" && /^The VPN/.test(st?.message || "") ? AppDetails.sentence(st.message) : "Cannot reach it") : numbers?.length ? numbers.join(" · ") : numbersOff || !st || sites ? "" : "Nothing to report";
   // Every card has the same parts in the same order, so each line sits in the same place on every card.
   return el("li", { class: "card app-card", "data-state": words.state, "data-tone": down ? "danger" : null },
     el("div", { class: "card__top" }, AppDetails.iconFor(s, old), el("h3", { class: "card__title" }, AppDetails.opener(s)),
       el("span", { class: "card__top-state" }, chip(words.label, words.tone))),
     el("p", { class: "small muted card__desc", text: s.description || "" }),
-    el("p", { class: `small card__activity${down || !numbers?.length ? " muted" : ""}`, text: activity }),
+    el("p", { class: `small card__activity${down || !numbers?.length && !sites ? " muted" : ""}` }, activity, sites ? [activity ? " · " : "", sitesLink(sites)] : null),
     el("div", { class: "card__meta card__status" }, chips,
       versionCell(u ? u.installed : st?.version),
       el("span", { class: "card__ms num", text: st?.ms !== undefined ? `${st.ms} ms` : down ? "N/A" : "" }),
@@ -79,6 +80,9 @@ function card(s, old) {
       home && config.show_home_address ? el("a", { class: "card__address", href: home, target: "_blank", rel: "noopener noreferrer" },
         el("code", { text: shortUrl(home) }), el("span", { class: "visually-hidden", text: `, opens ${s.name} in a new tab` })) : null));
 }
+
+// Reelix's health line on its card (DASH-559): the words are a link to the page that lists the sites to search.
+const sitesLink = (sites) => el("a", { href: sites.href, text: sites.text });
 
 // The version, which may break onto a second line only after a dot (2.7.0. then 5723), never inside a number.
 function versionCell(version) {

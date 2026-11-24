@@ -2671,7 +2671,11 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/transfer" and method == "GET":
                 return self.json(200, services.cached("transfer", 5, lambda: transfer_with_vpn(app.data_dir, cfg.data["services"]), fresh))
             if path == "/api/numbers" and method == "GET":
-                return self.json(200, {"items": services.cached("numbers", 60, lambda: services.numbers(cfg.data["services"]), fresh)})
+                # "sites": the line on Reelix's card, such as "3 of 40 sites failing" with the page that lists them (DASH-559); it
+                # is read with the numbers, no more often, and left out when Reelix does not answer.
+                from . import reelix_site_health
+                return self.json(200, {"items": services.cached("numbers", 60, lambda: services.numbers(cfg.data["services"]), fresh),
+                                       "sites": services.cached("reelix-sites", 60, lambda: reelix_site_health.line(cfg.data["services"], app.data_dir), fresh)})
             if path == "/api/requests" and method == "GET":
                 pending = "pending=1" in urllib.parse.urlparse(self.path).query
                 return self.json(200, services.cached(f"requests-{pending}", 20, lambda: services.requests(cfg.data["services"], pending), fresh))
