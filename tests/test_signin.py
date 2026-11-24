@@ -711,6 +711,42 @@ class Server(unittest.TestCase):
                 oidc._addresses("rebind.test", p.port)
         p.stop()
 
+    def test_only_listed_kinds_of_address_are_ever_called(self):  # DASH-542: the explicit test before the request
+        for ok in ("93.184.216.34", "192.168.1.5", "10.0.0.2", "127.0.0.1", "::1", "fd12:3456::1", "2606:4700::1111", "::ffff:192.168.1.5"):
+            self.assertTrue(oidc.allowed_peer(ok), ok)
+        for bad in ("169.254.169.254", "fe80::1", "fd00:ec2::254", "0.0.0.0", "::", "224.0.0.1", "ff02::1", "255.255.255.255",
+                    "240.0.0.1", "::ffff:169.254.169.254", "not an address", ""):
+            self.assertFalse(oidc.allowed_peer(bad), bad)
+
+    def test_a_request_path_cannot_carry_a_second_request(self):
+        from unittest import mock
+        p = oidc_stand_in.Provider()
+        try:
+            with mock.patch.object(oidc, "_connect", side_effect=AssertionError("must not connect")):
+                for url in (f"http://127.0.0.1:{p.port}/a b", f"http://127.0.0.1:{p.port}/a\r\nHost: x", f"http://127.0.0.1:{p.port}/\u00e9"):
+                    with self.assertRaises((oidc.SignInError, AssertionError, ValueError)):
+                        oidc._fetch(url)
+        finally:
+            p.stop()
+
+    def test_a_connection_that_lands_on_a_refused_address_is_closed_before_anything_is_sent(self):
+        from unittest import mock
+
+        class Sock:
+            closed = False
+            sent = []
+
+            def getpeername(self):
+                return ("169.254.169.254", 80)
+
+            def close(self):
+                self.closed = True
+        sock = Sock()
+        with mock.patch.object(oidc, "_connect", return_value=sock):
+            with self.assertRaises(oidc.SignInError):
+                oidc._fetch("http://127.0.0.1:9/.well-known/openid-configuration")
+        self.assertTrue(sock.closed)
+
     def test_the_access_page_names_single_sign_on_when_it_is_on(self):
         from starboard import access
         row = lambda: next(a for a in access.summary(self.app) if a["key"] == "sso")  # noqa: E731

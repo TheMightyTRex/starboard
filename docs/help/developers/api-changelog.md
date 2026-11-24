@@ -28,6 +28,9 @@ the next major version.
   plug-in's own key, while the plug-in is active and approved `alerts:send`; any other key gets `404 not_found`. Up to
   30 new alerts an hour for each plug-in, then `429 rate_limited` with `Retry-After`. Read
   [Sending alerts](plugin-api-reference.md#sending-alerts-api-117).
+- **Added:** `GET /api/v1/logs/limits` answers `show_lines` (50, 100, 200, 500 or 1000; 200 by default), `show_lines_choices`
+  and `alerts_only` (errors and warnings only), and `POST /api/v1/logs/limits` sets them: what System, Logs, Copy and
+  Download show, not what is stored.
 - **Changed:** in `openapi.json`, `x-right` may be `plugin`, for an address answered only to a plug-in's own key.
 - Nothing was taken away: every earlier address and card answers as before. Name `>=1.17` in `starboard_api` to use
   either.

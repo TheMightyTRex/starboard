@@ -106,7 +106,7 @@ DEFAULTS = {
                     "storage_refresh": 0, "usage_every": "ask", "space_log": True},
     # Starboard's own logs (System, Logs): days to keep and the most they may take together (DASH-451), and detailed
     # logging for reporting a problem. A Starboard from before 0.20 keeps the 60 days it had.
-    "logs": {"keep_days": 30, "max_mb": 50, "detail": "off", "detail_until": 0},
+    "logs": {"keep_days": 30, "max_mb": 50, "detail": "off", "detail_until": 0, "show_lines": 200, "alerts_only": False},
     # Scheduled backups (DASH-17, owner, 9 November 2026): off, manual (by hand only, with a reminder when the newest
     # is a month old), monthly (the 1st at 03:00, keeping 6; owner, 16 November 2026), weekly (Sunday 03:00, keeping 4) or
     # nightly (03:00, keeping 7). Settings, General, Backup and restore.
@@ -632,7 +632,7 @@ def clean_performance(incoming, current):
 
 
 def clean_logs(incoming, current):
-    from .logs import DETAIL_CHOICES, KEEP_CHOICES, SIZE_CHOICES
+    from .logs import DETAIL_CHOICES, KEEP_CHOICES, SHOW_CHOICES, SIZE_CHOICES
     if not isinstance(incoming, dict):
         raise ConfigError("Send the log settings as an object")
     out = dict(current)
@@ -652,6 +652,18 @@ def clean_logs(incoming, current):
         if most not in SIZE_CHOICES:
             raise ConfigError("Choose the most the logs can take from the list")
         out["max_mb"] = most
+    if "show_lines" in incoming:  # DASH-534: how many lines System, Logs, Copy and Download give
+        try:
+            lines = int(incoming["show_lines"])
+        except (TypeError, ValueError):
+            lines = None
+        if lines not in SHOW_CHOICES:
+            raise ConfigError("Choose how many lines to show from the list")
+        out["show_lines"] = lines
+    if "alerts_only" in incoming:
+        if not isinstance(incoming["alerts_only"], bool):
+            raise ConfigError("Alerts only is on or off")
+        out["alerts_only"] = incoming["alerts_only"]
     if "detail" in incoming:
         if incoming["detail"] not in DETAIL_CHOICES:
             raise ConfigError("Choose Off, For 24 hours or Until I deactivate it")

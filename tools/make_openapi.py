@@ -362,9 +362,12 @@ APP_LIMITS = {"type": "object", "required": ["available", "driver", "max_size", 
                              "capped": {"type": "integer"}, "uncapped": {"type": "array", "items": {"type": "string"},
                                                                          "description": "Containers whose log has no size limit."}}}
 LIMITS = {"keep_days": {"type": "integer", "enum": [7, 14, 30, 60, 90, 180, 365], "description": "Days kept (30 by default)."},
-          "max_mb": {"type": "integer", "enum": [10, 25, 50, 100, 250, 500], "description": "The most every log may take together, in MB (50 by default)."}}
+          "max_mb": {"type": "integer", "enum": [10, 25, 50, 100, 250, 500], "description": "The most every log may take together, in MB (50 by default)."},
+          "show_lines": {"type": "integer", "enum": [50, 100, 200, 500, 1000], "description": "The most lines System, Logs, Copy and Download give, the newest ones (200 by default). Added in 1.8.0 (DASH-534); it does not change what is stored."},
+          "alerts_only": {"type": "boolean", "description": "Only errors and warnings in System, Logs, Copy and Download, leaving out information and detail (off by default). Added in 1.8.0 (DASH-534)."}}
 LOG_LIMITS = {"type": "object", "required": ["keep_days", "max_mb", "keep_days_choices", "max_mb_choices", "summary", "covers"],
               "properties": {**LIMITS, "keep_days_choices": {"type": "array", "items": {"type": "integer"}},
+                             "show_lines_choices": {"type": "array", "items": {"type": "integer"}, "description": "The choices for show_lines (50, 100, 200, 500, 1000)."},
                              "max_mb_choices": {"type": "array", "items": {"type": "integer"}}, "summary": LOG_SUMMARY,
                              "covers": {"type": "array", "items": {"type": "string"}}, "apps": APP_LIMITS,
                              "removed": {"type": "integer", "description": "After a change: files removed by the new limits."},

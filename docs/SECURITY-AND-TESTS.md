@@ -198,6 +198,8 @@ false alarms:
 
 `SCAN_REPORTS=folder tools/security-scan.sh --full` now keeps ZAP's reports, with each warning's address.
 
+The full scan needs no tuning since DASH-543: ZAP gets 8 GB (`ZAP_MEMORY`), the Java option that leaves `URLDecoder.decode` to the interpreter (`ZAP_JVM_EXTRA`, the fault in ZAP's own Java that stopped the 0.28.0 run) and a time limit of 150 minutes (`ZAP_TIME_LIMIT`), after which the scan fails with "did not finish in time". On a 16 GB server 8 GB is about half, inside the heavy-job limit of about two thirds. `tools/security-scan.sh --full --dry-run` prints the settings without starting anything.
+
 ## Security review of the set-up wizards, 5 November 2026 (0.9.0)
 
 Two independent reviews read every set-up path: the Run first script, `install.sh`, the terminal set-up, the browser

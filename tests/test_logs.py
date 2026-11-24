@@ -12,6 +12,130 @@ from starboard import logs
 from starboard.config import Config, ConfigError
 
 
+class ShownTest(unittest.TestCase):
+    """DASH-534: the newest N lines, Alerts only, how many there are, and reading only the end of a file."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.settings = {"keep_days": 60, "max_mb": 50, "detail": "on", "detail_until": 0, "show_lines": 200, "alerts_only": False}
+        self.log = logs.Log(self.dir.name, lambda: self.settings, lambda: [])
+        self.addCleanup(self.dir.cleanup)
+
+    def fill(self, n, every=10):
+        for i in range(n):
+            level = "error" if i % every == 0 else "warning" if i % every == 1 else "detail" if i % every == 2 else "info"
+            self.log.write(level, "area", f"line {i}")
+
+    def test_the_newest_lines_up_to_the_limit_and_how_many_there_are(self):
+        self.fill(120)
+        self.settings["show_lines"] = 50
+        v = self.log.view()
+        self.assertEqual((len(v["entries"]), v["total"], v["limit"], v["all_found"], v["filtered"]), (50, 120, 50, False, False))
+        self.assertEqual([e["message"] for e in v["entries"]][:2], ["line 119", "line 118"])
+        self.assertEqual(v["entries"][-1]["message"], "line 70")  # the newest 50, not the oldest
+        self.settings["show_lines"] = 200
+        v = self.log.view()
+        self.assertEqual((len(v["entries"]), v["all_found"]), (120, True))
+
+    def test_every_choice_works_and_a_wrong_one_means_the_default(self):
+        for n in logs.SHOW_CHOICES:
+            self.settings["show_lines"] = n
+            self.assertEqual(self.log.show_lines(), n)
+        for bad in (0, 7, "x", None, 100000):
+            self.settings["show_lines"] = bad
+            self.assertEqual(self.log.show_lines(), 200)
+        self.assertEqual(logs.SHOW_CHOICES, (50, 100, 200, 500, 1000))
+        self.assertEqual(logs.DEFAULTS["show_lines"], 200)
+
+    def test_alerts_only_keeps_errors_and_warnings_and_combines_with_the_rest(self):
+        self.fill(100)
+        self.settings["alerts_only"] = True
+        v = self.log.view()
+        self.assertEqual({e["level"] for e in v["entries"]}, {"error", "warning"})
+        self.assertEqual((len(v["entries"]), v["filtered"]), (20, True))
+        self.assertEqual(len(self.log.view(limit=5)["entries"]), 5)  # with the line limit
+        self.settings["show_lines"] = 50
+        self.assertEqual(len(self.log.view(query="line 9")["entries"]), 2)  # line 90 (error) and 91 (warning), with the search
+        self.assertEqual({e["level"] for e in self.log.view("problems")["entries"]}, {"error", "warning"})  # with the level
+        self.assertEqual(self.log.view("detail")["entries"], [])  # detail entries are not alerts
+        self.assertEqual(len(self.log.view(alerts_only=False)["entries"]), 50)  # and off, everything again
+
+    def test_a_search_that_matches_a_few_still_finds_them_far_back(self):
+        self.fill(600)
+        self.settings["show_lines"] = 50
+        v = self.log.view(query="line 13")
+        self.assertEqual(len(v["entries"]), 11)  # line 13 and 130 to 139 are all found, however far back
+        self.assertTrue(v["all_found"])
+
+    def test_only_the_end_of_a_file_is_read(self):
+        self.fill(6000)
+        path = os.path.join(self.dir.name, "logs", self.log.files()[0])
+        size = os.path.getsize(path)
+        self.assertGreater(size, 4 * logs.BLOCK)
+        read = []
+
+        class Counting:
+            def __init__(self, f):
+                self.f = f
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                self.f.close()
+
+            def read(self, n=-1):
+                data = self.f.read(n)
+                read.append(len(data))
+                return data
+
+            def __getattr__(self, name):
+                return getattr(self.f, name)
+        with mock.patch.object(logs, "open", lambda p, mode="r", *a, **k: Counting(open(p, mode)), create=True):
+            got = self.log.read(limit=50)
+        self.assertEqual(len(got), 50)
+        self.assertEqual(got[0]["message"], "line 5999")
+        self.assertLessEqual(sum(read), 2 * logs.BLOCK)  # a block or two of a file many times larger
+
+    def test_lines_that_cross_a_block_are_whole(self):
+        self.log.write("info", "area", "x" * 5000)
+        self.fill(2000)
+        path = os.path.join(self.dir.name, "logs", self.log.files()[0])
+        lines = list(logs._lines_backwards(path))
+        self.assertEqual(len(lines), 2001)
+        self.assertTrue(all(json.loads(line) for line in lines))
+        with open(path, "rb") as f:
+            self.assertEqual(list(reversed(lines)), [x for x in f.read().split(b"\n") if x])
+
+    def test_the_count_is_kept_until_a_file_changes(self):
+        self.fill(30)
+        self.assertEqual(self.log.total(), 30)
+        with mock.patch.object(logs, "_count_lines", side_effect=AssertionError("counted again")):
+            self.assertEqual(self.log.total(), 30)
+        self.log.write("info", "area", "one more")
+        self.assertEqual(self.log.total(), 31)
+        self.assertEqual(logs._count_lines(os.path.join(self.dir.name, "logs", self.log.files()[0])), 31)
+
+    def test_a_file_that_does_not_end_in_a_new_line_is_counted_and_read(self):
+        path = os.path.join(self.dir.name, "logs", "2026-01-01.log")
+        with open(path, "w") as f:
+            f.write(json.dumps({"t": 1, "level": "error", "area": "a", "message": "first"}) + "\n"
+                    + json.dumps({"t": 2, "level": "error", "area": "a", "message": "second"}))
+        self.assertEqual(self.log.total(), 2)
+        self.assertEqual([e["message"] for e in self.log.read()], ["second", "first"])
+
+    def test_the_report_uses_the_limit_and_alerts_only(self):
+        self.fill(60)
+        self.settings.update(show_lines=50, alerts_only=True)
+        app = mock.Mock()
+        app.config.data = {}
+        app.version = "x"
+        text = logs.report(app, self.log)
+        self.assertIn("line 50", text)
+        self.assertNotIn("line 52", text)  # an information line
+        self.assertNotIn("line 3\n", text)  # older than the newest 50 alerts allow? line 3 is info
+
+
 class RedactTest(unittest.TestCase):
     def test_personal_details_are_removed(self):
         cases = {
