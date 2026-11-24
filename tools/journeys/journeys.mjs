@@ -2755,6 +2755,34 @@ await api("/api/config/general", { method: "PUT", body: { shadows_off: false } }
 await open("index.html");
 check("SHADOWS-01", "putting the shadows back works for everyone too", (await api("/api/session")).shadows_off === false && !(await page.evaluate(() => document.documentElement.dataset.shadows)));
 
+// LOG-02: System, Logs limits what it shows (DASH-534): Lines shown and Alerts only, kept for the account, applied at once
+// with the saved note beside them, by keyboard, with how many are shown said in a live region.
+console.log("\n== LOG-02 Logs shown");
+await api("/api/config/general", { method: "PUT", body: { logs: { show_lines: 200, alerts_only: false } } });
+await open("system-logs.html");
+const logSelect = page.getByLabel("Lines shown");
+check("LOG-02", "Lines shown offers 50, 100, 200, 500 and 1,000 and starts at 200",
+  JSON.stringify(await logSelect.locator("option").allTextContents()) === JSON.stringify(["50 lines", "100 lines", "200 lines", "500 lines", "1,000 lines"]) && await logSelect.inputValue() === "200");
+check("LOG-02", "the count is a polite live region and says how many there are", /^Showing (all|the newest) [\d,]+/.test(await page.locator("#entries-count").textContent()) && await page.locator("#entries-count").getAttribute("role") === "status");
+await logSelect.focus();
+await page.keyboard.press("ArrowUp");  // by keyboard: 100 lines
+await page.getByText(/^Saved at \d\d:\d\d$/).waitFor({ timeout: 5000 }).catch(() => {});
+const logCfg = await api("/api/config");
+check("LOG-02", "choosing 100 lines is saved for the account at once, with the saved note, and keeps focus on the select",
+  logCfg.logs.show_lines === 100 && await page.locator("#logs-limit-note").isVisible() && await page.evaluate(() => document.activeElement.id) === "logs-limit", JSON.stringify(logCfg.logs));
+await page.reload({ waitUntil: "networkidle" });
+check("LOG-02", "it is still 100 after a reload", await page.getByLabel("Lines shown").inputValue() === "100");
+const alertsSwitch = page.getByRole("switch", { name: "Alerts only" });
+check("LOG-02", "Alerts only is a switch, off to start with", await alertsSwitch.isVisible() && !(await alertsSwitch.isChecked()));
+await alertsSwitch.focus();
+await page.keyboard.press("Space");
+await page.waitForFunction(() => document.querySelector("#logs-alerts-only")?.checked && /Saved at/.test(document.querySelector("#logs-limit-note")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
+const onlyRows = await page.evaluate(() => [...document.querySelectorAll("#entries tbody tr td:nth-child(2)")].map((td) => td.textContent.trim()));
+check("LOG-02", "Alerts only shows errors and warnings and nothing else, and is saved", onlyRows.every((l) => /Error|Warning/.test(l)) && (await api("/api/config")).logs.alerts_only === true && await page.evaluate(() => document.activeElement.id) === "logs-alerts-only", JSON.stringify(onlyRows));
+const downloaded = await page.evaluate(async () => (await fetch("/api/logs/download")).text());
+check("LOG-02", "Download gives the same: a line saying how many, then alerts only", /^# Starboard log: the newest \d+ of [\d,]+ entries, alerts only/.test(downloaded) && !/ INFO /.test(downloaded), downloaded.slice(0, 120));
+await api("/api/config/general", { method: "PUT", body: { logs: { show_lines: 200, alerts_only: false } } });
+
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
 const wide = [];

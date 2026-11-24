@@ -2523,12 +2523,15 @@ class Handler(BaseHTTPRequestHandler):
                 q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
                 level = q.get("level", ["all"])[0]
                 before = float(q.get("before", ["0"])[0] or 0) or None
-                return self.json(200, {"entries": app.log.read(level if level in ("all", "problems", "detail") else "all",
-                                                               q.get("q", [""])[0][:100], before),
-                                       "summary": app.log.summary(), "detailed": app.log.detailed(), "settings": cfg.data["logs"],
+                seen = app.log.view(level if level in ("all", "problems", "detail") else "all", q.get("q", [""])[0][:100], before)
+                return self.json(200, {**seen, "summary": app.log.summary(), "detailed": app.log.detailed(), "settings": cfg.data["logs"],
                                        "repo": app.repo if re.match(r"^[\w.-]+/[\w.-]+$", app.repo or "") else None})
             if path == "/api/logs/download" and method == "GET":
-                body = app.log.text(app.log.read("all", limit=200000)).encode()
+                # DASH-534: the newest lines up to the account's limit, only alerts when that is on, with a first line saying so.
+                seen = app.log.view()
+                head = (f"# Starboard log: the newest {len(seen['entries']):,} of {seen['total']:,} entries"
+                        + (", alerts only (errors and warnings)" if seen["alerts_only"] else "") + f"; the most shown is {seen['limit']:,}\n")
+                body = (head + app.log.text(seen["entries"])).encode()
                 return self.send(200, body, "text/plain; charset=utf-8",
                                  {"Content-Disposition": f'attachment; filename="starboard-log-{time.strftime("%Y-%m-%d")}.txt"'})
             if path == "/api/logs/report" and method == "GET":
