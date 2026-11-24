@@ -3403,11 +3403,15 @@ class Handler(BaseHTTPRequestHandler):
             # The Catalogue page (DASH-318): the Starboard plug-ins collection, each marked when already added.
             have = {p["id"] for p in pa.added(app.data_dir)}
             cats, items = pa.catalogue(app.config)
-            return self.json(200, {"catalogues": cats, "plugins": [{**e, "added": e["id"] in have} for e in items]})
+            return self.json(200, {"catalogues": cats, "choices": pa.builtin_choices(app.config),
+                                   "plugins": [{**e, "added": e["id"] in have} for e in items]})
         if path == "/api/plugins/catalogues" and method == "POST":
             # Catalogue sources added from a link (owner, 12 November 2026). Adding one installs nothing.
             body = self.body()
             try:
+                if body.get("action") == "builtin":  # a built-in choice, such as Stallboard: ticked or unticked, nothing installed
+                    b = pa.set_builtin(app.config, str(body.get("id") or ""), body.get("on") is True)
+                    return self.json(200, {"said": f"{b['name']} catalogue added" if body.get("on") is True else f"{b['name']} catalogue removed. Plug-ins you added from it stay"})
                 if body.get("action") == "remove":
                     pa.remove_source(app.config, str(body.get("url") or ""))
                     return self.json(200, {"said": "Catalogue removed. Plug-ins you added from it stay"})

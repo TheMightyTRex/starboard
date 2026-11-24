@@ -110,3 +110,79 @@ class Catalogues(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@mock.patch("starboard.outside.check_url", lambda url: None)
+class StallboardChoice(unittest.TestCase):
+    """DASH-563 (owner, 23 November 2026): Stallboard is a built-in choice, one tick, never on by itself. The recorded
+    copy in tests/fixtures is the real catalogue.json as it was served on 24 November 2026, cut to 3 plug-ins; the
+    full 33 were checked once against the live file with fetch_catalogue, and no test makes a live request."""
+
+    def setUp(self):
+        import os
+        pa._catalogues.clear()
+        self.url = pa.BUILTIN_SOURCES[0]["url"]
+        with open(os.path.join(os.path.dirname(__file__), "fixtures", "stallboard-catalogue.json"), encoding="utf-8") as f:
+            self.recorded = json.load(f)
+
+    def test_the_recorded_copy_reads_with_the_real_fetch(self):
+        got = pa.fetch_catalogue(self.url, Opener({self.url: self.recorded}))
+        self.assertEqual((got["name"], len(got["items"])), ("Stallboard", 3))
+        first = got["items"][0]
+        self.assertTrue(first["manifest"].startswith("https://") and first["sha256"] is not None)
+        self.assertTrue(first["permissions"] and set(first["permissions"]) <= set(pa.plugins.PERMISSIONS))
+
+    def test_off_until_ticked_then_read_and_never_recommended(self):
+        cfg = Cfg()
+        op = Opener({self.url: {**self.recorded, "plugins": [{**self.recorded["plugins"][0], "recommended": True}]},
+                     pa.CATALOGUE_URL: {"name": "Starboard plug-ins", "plugins": []}})
+        self.assertEqual([s["url"] for s in pa.sources(cfg)], [pa.CATALOGUE_URL])
+        self.assertEqual([(c["id"], c["on"]) for c in pa.builtin_choices(cfg)], [("stallboard", False)])
+        pa.set_builtin(cfg, "stallboard", True)
+        self.assertEqual(cfg.data["plugin_catalogues_on"], ["stallboard"])
+        cats, items = pa.catalogue(cfg, op, now=1000)
+        self.assertEqual([(c["name"], c["own"], c["builtin"]) for c in cats],
+                         [("Starboard plug-ins", True, ""), ("Stallboard", False, "stallboard")])
+        self.assertTrue(items and not any(e["recommended"] for e in items if not e["own"]))  # only the own collection recommends
+        pa.set_builtin(cfg, "stallboard", False)
+        self.assertEqual(cfg.data["plugin_catalogues_on"], [])
+        self.assertEqual(len(pa.sources(cfg)), 1)
+
+    def test_ticking_reads_nothing_and_installs_nothing(self):
+        cfg, op = Cfg(), Opener({})
+        pa.set_builtin(cfg, "stallboard", True)
+        self.assertEqual(op.asked, [])
+        with self.assertRaises(LookupError):
+            pa.set_builtin(cfg, "made-up", True)
+
+    def test_added_by_link_and_ticked_is_read_once(self):
+        cfg = Cfg()
+        cfg.data["plugin_catalogues"] = [{"url": self.url, "name": "Stallboard"}]
+        pa.set_builtin(cfg, "stallboard", True)
+        self.assertEqual([s["url"] for s in pa.sources(cfg)].count(self.url), 1)
+        with self.assertRaises(ValueError):
+            pa.add_source(Cfg(), self.url, Opener({}))  # offered as a choice instead
+
+    def test_a_catalogue_that_does_not_answer_says_so(self):
+        cfg = Cfg()
+        pa.set_builtin(cfg, "stallboard", True)
+        cats, _ = pa.catalogue(cfg, Opener({pa.CATALOGUE_URL: {"name": "x", "plugins": []}}), now=1000)
+        self.assertTrue(cats[1]["error"])
+
+    def test_the_choice_is_backed_up_and_checked_on_restore(self):
+        import tempfile
+
+        from starboard import backup
+        from starboard.config import Config
+        with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
+            one = Config(a)
+            one.data["plugin_catalogues_on"] = ["stallboard"]
+            one.save()
+            out = backup.export(one, "0.30.0", a)
+            self.assertEqual(out["settings"]["plugin_catalogues_on"], ["stallboard"])
+            two = Config(b)
+            backup.restore(two, out)
+            self.assertEqual(two.data["plugin_catalogues_on"], ["stallboard"])
+            out["settings"]["plugin_catalogues_on"] = ["stallboard", "<script>"]
+            backup.restore(two, out)
+            self.assertEqual(two.data["plugin_catalogues_on"], ["stallboard"])

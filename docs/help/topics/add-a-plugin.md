@@ -48,6 +48,24 @@ is ready to use.
 tab, **General**, has a card each for **State**, **Versions**, **Jobs** (when it has any), **What it may do** and
 **Remove**. Its other tabs hold its settings, its own screens and its styles.
 
+### Add the Stallboard catalogue
+
+Stallboard is a second catalogue, run by TheMightyTRexUK, that lists plug-ins made by other people. A person reads
+each plug-in's files and what it asks for before it is listed, and the **Reviewed** mark on Stallboard's own pages
+names who read it and when. It is off until you tick it, and ticking it installs nothing: each plug-in still
+shows what it asks for before you install it.
+
+1. Go to **Settings**, then **Plug-ins**, then **Catalogue**.
+2. Under **Catalogue sources**, tick **Stallboard catalogue**. Starboard says "Stallboard catalogue added".
+3. Open the new **Stallboard** tab, which lists its plug-ins by kind. Select **Install** next to one to read its warning.
+
+![Settings, Plug-ins, Catalogue, Catalogue sources, with the Stallboard catalogue tick outlined (step 2)](../images/add-a-plugin-5-stallboard-tick.png)
+
+![The Stallboard tab of the Catalogue, with its plug-ins outlined (step 3)](../images/add-a-plugin-6-stallboard-list.png)
+
+To stop reading it, clear the tick. Plug-ins you already installed from it stay. Starboard reads it at most once a day,
+like any other catalogue.
+
 ### Add a catalogue from a link
 
 A catalogue is a list of plug-ins that someone publishes as one file, `catalogue.json`. Add one, and its

@@ -892,6 +892,44 @@
       "alt": "Test a plug-in, with a style that fails contrast: the list of issues, each with how to fix it, is outlined"
     },
     {
+      "topic": "add-a-plugin",
+      "file": "add-a-plugin-5-stallboard-tick.png",
+      "page": "settings-plugins-catalogue.html",
+      "height": 900,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); for (let i = 0; i < 40 && !document.querySelector('#pl-builtin-stallboard'); i++) await wait(250); if (!document.querySelector('#pl-builtin-stallboard').checked) document.querySelector('#pl-builtin-stallboard').click(); await wait(1500); [...document.querySelectorAll('#topic-tabs [role=tab]')].find((t) => t.textContent.trim() === 'Catalogue sources').click(); await wait(400); document.querySelector('#pl-builtin-stallboard').closest('li').dataset.shot = 'tick';",
+      "marks": [
+        {
+          "t": "$[data-shot=tick]",
+          "step": 2,
+          "side": "right",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        2
+      ],
+      "alt": "Settings, Plug-ins, Catalogue, Catalogue sources, with the Stallboard catalogue tick (step 2) outlined and ticked"
+    },
+    {
+      "topic": "add-a-plugin",
+      "file": "add-a-plugin-6-stallboard-list.png",
+      "page": "settings-plugins-catalogue.html",
+      "height": 1150,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); for (let i = 0; i < 40 && !document.querySelector('#pl-builtin-stallboard'); i++) await wait(250); if (!document.querySelector('#pl-builtin-stallboard').checked) document.querySelector('#pl-builtin-stallboard').click(); await wait(1500); const h = [...document.querySelectorAll('h2')].find((x) => x.textContent.trim() === 'Stallboard'); h.closest('section').dataset.shot = 'stall'; [...document.querySelectorAll('#topic-tabs [role=tab]')].find((t) => t.textContent.trim() === 'Stallboard').click(); await wait(400);",
+      "marks": [
+        {
+          "t": "$[data-shot=stall]",
+          "step": 3,
+          "side": "left",
+          "tail": 60
+        }
+      ],
+      "steps": [
+        3
+      ],
+      "alt": "The Stallboard section of the Catalogue with its plug-ins by kind, outlined (step 3)"
+    },
+    {
       "topic": "plugin-collection",
       "file": "plugin-collection-1-styles.png",
       "page": "settings-plugin.html?id=styles",
