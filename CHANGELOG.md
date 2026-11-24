@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Fixed
+- **The sign-in provider request has an explicit allowlist test (DASH-542; issue #281):** CodeQL alert 82 (py/full-ssrf in `starboard/oidc.py`) named the request to the provider the owner chose, which already refused http (except this computer), link-local and metadata addresses and pinned one lookup. Starboard now also says what is let through, not only what is refused: `oidc.allowed_peer` accepts only an ordinary public, home network or local address, tests the resolved addresses with it, and tests the address actually connected to once more before anything is sent; a request path with a space, line break or non-ASCII character is refused. Whether CodeQL then closes alert 82 is known after the next scan; no alert is dismissed.
+
 ## [0.29.0] (23 November 2026)
 
 ### Added
