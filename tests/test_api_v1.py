@@ -405,6 +405,13 @@ class ApiV1Test(unittest.TestCase):
         r, out = self.send_json("POST", "/api/v1/logs/limits", {"keep_days": 14, "max_mb": 25}, key=key)
         self.assertEqual((r.status, out["keep_days"], out["max_mb"], out["removed"]), (200, 14, 25, 0))
         self.assertEqual(self.app.config.data["logs"]["max_mb"], 25)
+        for bad in ({"show_lines": 75}, {"show_lines": "many"}, {"alerts_only": "yes"}):  # DASH-534
+            r, out = self.send_json("POST", "/api/v1/logs/limits", bad, key=key)
+            self.assertEqual((r.status, out["code"]), (400, "bad_request"), bad)
+        r, out = self.send_json("POST", "/api/v1/logs/limits", {"show_lines": 500, "alerts_only": True}, key=key)
+        self.assertEqual((r.status, out["show_lines"], out["alerts_only"], out["show_lines_choices"]), (200, 500, True, [50, 100, 200, 500, 1000]))
+        r, out = self.get("/api/v1/logs/limits", key=self.logs_key)
+        self.assertEqual((out["show_lines"], out["alerts_only"]), (500, True))
         logs.event("warning", "apps", "Something to delete")
         for body in ({}, {"confirm": "yes"}):
             r, out = self.send_json("POST", "/api/v1/logs/delete", body, key=key)

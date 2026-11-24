@@ -847,11 +847,12 @@ def actions():
         return 202, {"accepted": True, "run": update_runs.public(run), "status": f"/api/v1/updates/runs/{run['id']}"}
 
     def log_limits_set(h, m, q, b):
-        """Changes the log limits (DASH-451): keep_days and max_mb, from the same choices as the page."""
+        """Changes the log limits (DASH-451) and what is shown (DASH-534): keep_days, max_mb, show_lines and alerts_only,
+        from the same choices as the page."""
         from .config import ConfigError
-        wanted = {k: b[k] for k in ("keep_days", "max_mb") if k in b}
+        wanted = {k: b[k] for k in ("keep_days", "max_mb", "show_lines", "alerts_only") if k in b}
         if not wanted:
-            raise ValueError("Send keep_days, max_mb or both")
+            raise ValueError("Send keep_days, max_mb, show_lines or alerts_only")
         try:
             h.app.config.update_general({"logs": wanted})
         except ConfigError as e:

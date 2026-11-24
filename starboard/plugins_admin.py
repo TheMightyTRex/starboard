@@ -1177,10 +1177,13 @@ def public_settings(data_dir, pid, manifest=None):
     out = []
     for s in m.get("settings") or []:
         v = values.get(s["key"])
+        shown = v
+        if v is None and s.get("type") == "schedule" and not plugins.schedule_problem(s.get("default")):
+            shown = s["default"]  # the schedule the job really uses until one is saved (plugin_life.schedule_of), not a guess in the page
         out.append({**{k: s[k] for k in ("key", "label", "type", "hint", "min", "max", "unit", "required", "group") if k in s},
                     **({"choices": [{"value": v, "label": w} for v, w in plugins.choices(s)]} if s["type"] == "choice"
                        else {"choices": s["choices"]} if "choices" in s else {}),
-                    "value": (None if s["type"] == "secret" else v), "set": v not in (None, "")})
+                    "value": (None if s["type"] == "secret" else shown), "set": v not in (None, "")})
     return out
 
 

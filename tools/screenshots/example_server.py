@@ -2238,6 +2238,11 @@ def main():
         ("upgraded", "Starboard", "Starboard is updated", "Starboard v0.26.0 is installed and answering.", now - 30 * hour, ""),
         ("failed", "qBittorrent", "qBittorrent was not updated", "The new version did not start, so Starboard went back to the one before.", now - 50 * hour, ""),
         ("upgraded", "Audiobookshelf", "Audiobookshelf updated from 2.30.0 to 2.31.0", "", now - 75 * hour, "")])
+    # System, Logs (DASH-534): a few alerts among the information lines, so Alerts only and the problems filter have rows.
+    from starboard import logs as own_logs
+    own_logs.event("warning", "apps", "Kavita did not answer for 2 minutes")
+    own_logs.event("error", "backup", "The weekly backup could not write to the copy folder")
+    own_logs.event("warning", "disk", "The media disk is 91% full")
     print("READY", flush=True)
     threading.Event().wait()
 

@@ -32,7 +32,8 @@ LEVELS = ("error", "warning", "info", "detail")
 KEEP_CHOICES = (7, 14, 30, 60, 90, 180, 365)
 SIZE_CHOICES = (10, 25, 50, 100, 250, 500)  # MB, for every log Starboard keeps together
 DETAIL_CHOICES = ("off", "day", "on")
-DEFAULTS = {"keep_days": 30, "max_mb": 50, "detail": "off", "detail_until": 0}
+SHOW_CHOICES = (50, 100, 200, 500, 1000)  # DASH-534: the most lines System, Logs, Copy and Download give
+DEFAULTS = {"keep_days": 30, "max_mb": 50, "detail": "off", "detail_until": 0, "show_lines": 200, "alerts_only": False}
 DAY_FILE = re.compile(r"^\d{4}-\d{2}-\d{2}\.log$")
 AUDIT_FILE = re.compile(r"^audit\.jsonl(\.\d{1,2})?$")  # api_v1.audit: audit.jsonl and audit.jsonl.1 to .5
 UPDATE_LOG = "self-update.log"  # in the data folder: the last Starboard update's lines (self_update.py)
@@ -103,23 +104,44 @@ def redact(text, words=()):
     return text
 
 
-# The words a line of a level must hold (see Log.read).
-_LEVEL_WORDS = {"problems": ('"error"', '"warning"'), "detail": ('"detail"',)}
+# The words a line of a level must hold (see Log.read): checked on the raw bytes, so a line of another level is passed
+# over before it is read as JSON.
+_LEVEL_WORDS = {"problems": (b'"error"', b'"warning"'), "detail": (b'"detail"',)}
+BLOCK = 64 * 1024
 
 
-def _lines_with(text, words):
-    """The lines of text that hold any of words, in order: found with str.find, so the other lines are never looked at
-    one by one."""
-    spans = set()
-    for w in words:
-        i = text.find(w)
-        while i != -1:
-            start = text.rfind("\n", 0, i) + 1
-            end = text.find("\n", i)
-            end = len(text) if end == -1 else end
-            spans.add((start, end))
-            i = text.find(w, end)
-    return [text[a:b] for a, b in sorted(spans)]
+def _lines_backwards(path):
+    """The lines of a file, last first, as bytes, read from the end in blocks: only as much of the file as is asked
+    for is ever read, and none of it is kept once passed."""
+    with open(path, "rb") as f:
+        f.seek(0, os.SEEK_END)
+        pos = f.tell()
+        rest = b""
+        while pos > 0:
+            step = min(BLOCK, pos)
+            pos -= step
+            f.seek(pos)
+            chunk = f.read(step) + rest
+            parts = chunk.split(b"\n")
+            rest = parts[0]  # may be the end of a line that starts in the block before
+            for line in reversed(parts[1:]):
+                if line:
+                    yield line
+        if rest:
+            yield rest
+
+
+def _count_lines(path):
+    """How many lines a file holds, counted in blocks without reading any of them as JSON."""
+    n, last = 0, b"\n"
+    with open(path, "rb") as f:
+        while True:
+            chunk = f.read(1024 * 1024)
+            if not chunk:
+                break
+            n += chunk.count(b"\n")
+            last = chunk[-1:]
+    return n + (0 if last == b"\n" else 1)
 
 
 def size_words(n):
@@ -143,6 +165,7 @@ class Log:
         self.lock = threading.Lock()
         self.pruned = None
         self.room = None  # bytes that can be written before the size limit is looked at again (None: not known yet)
+        self._counts = {}  # day file path -> ((size, time), lines), for total()
 
     def _words(self):
         try:
@@ -311,38 +334,82 @@ class Log:
                                    f"{files} {'file' if files == 1 else 'files'}")
         return {"removed": removed, "emptied": emptied, "freed": freed}
 
-    def read(self, level="all", query="", before=None, limit=300):
-        """Newest first. level: all, problems (warnings and errors) or detail. before: a time, for the next page."""
+    def read(self, level="all", query="", before=None, limit=300, alerts_only=False):
+        """Newest first. level: all, problems (warnings and errors) or detail. alerts_only (DASH-534) keeps only errors
+        and warnings, on top of the level, so with detail it finds nothing. before: a time, for the next page. Each day
+        file is read from its end, and reading stops as soon as limit entries are found."""
         out = []
         query = query.strip().lower()
+        if alerts_only and level == "detail":
+            return out
         # A line can only be of a level if that word is in it, so other lines are passed over before they are read as
         # JSON. The dashboard's Alerts card asks for problems every minute, and with few problems every day kept (60
         # by default) was read line by line: 250 ms each time over 60 days (optimisation review, 16 November 2026).
-        wanted = _LEVEL_WORDS.get(level)
+        problems = alerts_only or level == "problems"
+        wanted = _LEVEL_WORDS["problems"] if problems else _LEVEL_WORDS.get(level)
         for name in self.files():
             try:
-                with open(os.path.join(self.dir, name), encoding="utf-8") as f:
-                    text = f.read()
+                for raw in _lines_backwards(os.path.join(self.dir, name)):
+                    if wanted and not any(w in raw for w in wanted):
+                        continue
+                    try:
+                        e = json.loads(raw)
+                    except ValueError:
+                        continue
+                    if not isinstance(e, dict):
+                        continue
+                    if before and e.get("t", 0) >= before:
+                        continue
+                    if problems and e.get("level") not in ("error", "warning"):
+                        continue
+                    if level == "detail" and e.get("level") != "detail":
+                        continue
+                    if query and query not in (e.get("message", "") + " " + e.get("area", "")).lower():
+                        continue
+                    out.append(e)
+                    if len(out) >= limit:
+                        return out
             except OSError:
                 continue
-            lines = _lines_with(text, wanted) if wanted else text.split("\n")
-            for line in reversed(lines):
-                try:
-                    e = json.loads(line)
-                except ValueError:
-                    continue
-                if before and e.get("t", 0) >= before:
-                    continue
-                if level == "problems" and e.get("level") not in ("error", "warning"):
-                    continue
-                if level == "detail" and e.get("level") != "detail":
-                    continue
-                if query and query not in (e.get("message", "") + " " + e.get("area", "")).lower():
-                    continue
-                out.append(e)
-                if len(out) >= limit:
-                    return out
         return out
+
+    def total(self):
+        """How many entries the day files hold (lines, not read as JSON). A file's count is kept until its size or its
+        time changes, so asking again costs a look at each file, not a read: only today's file is counted again."""
+        cache = self._counts
+        n = 0
+        for name in self.files():
+            path = os.path.join(self.dir, name)
+            try:
+                st = os.stat(path)
+                key = (st.st_size, st.st_mtime_ns)
+                if cache.get(path, (None,))[0] != key:
+                    cache[path] = (key, _count_lines(path))
+                n += cache[path][1]
+            except OSError:
+                cache.pop(path, None)
+        for gone in [p for p in cache if os.path.basename(p) not in self.files()]:
+            del cache[gone]
+        return n
+
+    def view(self, level="all", query="", before=None, alerts_only=None, limit=None):
+        """What System, Logs, Copy and Download show: the newest entries up to the account's limit (Settings kept in
+        logs.show_lines, 200 by default), only alerts when that is on, and how many there are to show from."""
+        shown_max = limit or self.show_lines()
+        only = self.alerts_only() if alerts_only is None else bool(alerts_only)
+        entries = self.read(level, query, before, shown_max, only)
+        return {"entries": entries, "limit": shown_max, "alerts_only": only, "total": self.total(),
+                "all_found": len(entries) < shown_max, "filtered": bool(query.strip() or level != "all" or only)}
+
+    def show_lines(self):
+        try:
+            n = int(self.settings().get("show_lines", DEFAULTS["show_lines"]))
+        except (TypeError, ValueError):
+            n = DEFAULTS["show_lines"]
+        return n if n in SHOW_CHOICES else DEFAULTS["show_lines"]
+
+    def alerts_only(self):
+        return self.settings().get("alerts_only") is True
 
     def text(self, entries):
         lines = []
@@ -387,7 +454,7 @@ def report(app, log):
         "## Recent problems and detail (personal details removed)",
         "",
         "```",
-        log.text(log.read("all", limit=200)).rstrip(),
+        log.text(log.read("all", limit=log.show_lines(), alerts_only=log.alerts_only())).rstrip(),
         "```",
     ]
     return redact("\n".join(lines), [d.get("site_name", ""), socket.gethostname()]) + "\n"
@@ -405,7 +472,8 @@ def limits_answer(app, apps=None):
     """The limits, their choices, what the logs take now, what they cover, and the apps' own limit from Docker."""
     s = app.config.data["logs"]
     return {"keep_days": s.get("keep_days", DEFAULTS["keep_days"]), "max_mb": s.get("max_mb", DEFAULTS["max_mb"]),
-            "keep_days_choices": list(KEEP_CHOICES), "max_mb_choices": list(SIZE_CHOICES),
+            "show_lines": app.log.show_lines(), "alerts_only": app.log.alerts_only(),  # DASH-534: what the page, Copy and Download give
+            "keep_days_choices": list(KEEP_CHOICES), "max_mb_choices": list(SIZE_CHOICES), "show_lines_choices": list(SHOW_CHOICES),
             "summary": app.log.summary(),
             "covers": ["Starboard's own log, one file a day, with its jobs, updates and plug-ins' lines",
                        "the API's audit log", "the last Starboard update's log"],
