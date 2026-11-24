@@ -3403,7 +3403,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 if body.get("action") == "builtin":  # a built-in choice, such as Stallboard: ticked or unticked, nothing installed
                     b = pa.set_builtin(app.config, str(body.get("id") or ""), body.get("on") is True)
-                    return self.json(200, {"said": f"{b['name']} is on" if body.get("on") is True else f"{b['name']} is off. Plug-ins you added from it stay"})
+                    return self.json(200, {"said": f"{b['name']} catalogue added" if body.get("on") is True else f"{b['name']} catalogue removed. Plug-ins you added from it stay"})
                 if body.get("action") == "remove":
                     pa.remove_source(app.config, str(body.get("url") or ""))
                     return self.json(200, {"said": "Catalogue removed. Plug-ins you added from it stay"})

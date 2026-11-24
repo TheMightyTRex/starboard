@@ -1670,7 +1670,7 @@ async function startCatalogue() {
         const rows = c.plugins.filter((e) => e.catalogue === cat.name && e.own === cat.own);
         return section(`pl-cat-${n}`, cat.own ? "The Starboard plug-ins collection" : cat.name,
           cat.own ? "Made by TheMightyTRexUK and tested with each Starboard release."
-            : cat.builtin ? `From ${cat.url.split("/")[2]}, turned on by you. Check each plug-in's warning before you install it.`
+            : cat.builtin ? `From ${cat.url.split("/")[2]}, chosen by you. Check each plug-in's warning before you install it.`
             : `From ${cat.url.split("/")[2]}, added by you. Starboard did not make these: check each one's warning before you install it.`,
           cat.error ? notice("warning", "This catalogue did not answer", `${cat.error}. Showing the list from the last time it did.`) : null,
           ...recommended(rows),

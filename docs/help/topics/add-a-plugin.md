@@ -56,7 +56,7 @@ names who read it and when. It is off until you tick it, and ticking it installs
 shows what it asks for before you install it.
 
 1. Go to **Settings**, then **Plug-ins**, then **Catalogue**.
-2. Under **Catalogue sources**, tick **Stallboard catalogue**. Starboard says "Stallboard is on".
+2. Under **Catalogue sources**, tick **Stallboard catalogue**. Starboard says "Stallboard catalogue added".
 3. Open the new **Stallboard** tab, which lists its plug-ins by kind. Select **Install** next to one to read its warning.
 
 ![Settings, Plug-ins, Catalogue, Catalogue sources, with the Stallboard catalogue tick outlined (step 2)](../images/add-a-plugin-5-stallboard-tick.png)

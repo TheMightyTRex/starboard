@@ -298,7 +298,7 @@ MAX_SOURCES = 10
 BUILTIN_SOURCES = (
     {"id": "stallboard", "name": "Stallboard", "url": "https://themightytrex.github.io/stallboard/catalogue.json",
      "note": "Run by TheMightyTRexUK, who reads each plug-in's files and what it asks for before it is listed. "
-             "The Reviewed mark on its pages names who read it and when. Turning it on installs nothing."},
+             "The Reviewed mark on its pages names who read it and when. Ticking it installs nothing."},
 )
 _catalogues = {}  # address -> {"at", "name", "items", "error"}
 
