@@ -2023,7 +2023,8 @@ RELEASES = [
             ["Poster file names are checked outright", "A poster's file name is built only from a strict match of the app's id, a fixed picture kind and 1 to 10 ASCII digits, then resolved and refused unless it is inside the posters folder."],
             ["The sign-in provider request has an explicit allowlist test", "Starboard now says which addresses are let through (public, home network or local), tests the resolved addresses and the address actually connected to, and refuses a request path with a space, line break or non-ASCII character."],
             ["The full security scan needs no manual tuning", "tools/security-scan.sh --full now runs ZAP with 8 GB, the Java option that stopped the 0.28.0 crash and a 150 minute limit that ends the scan with a clear message."],
-            ["A browser journey checks the unanswered shadows setting again", "The journey for Remove drop shadows now clears the answer the example server gives, so it tests an unanswered setting as intended; this changes a test only."]
+            ["A browser journey checks the unanswered shadows setting again", "The journey for Remove drop shadows now clears the answer the example server gives, so it tests an unanswered setting as intended; this changes a test only."],
+            ["The Busy now test passes in a fresh container", "The test used made-up process numbers 7 to 9, and in a clean container the test run itself is process 9, so it failed there; it now uses numbers a clean container never has, and this changes a test only."]
         ],
         "security": [
             ["Poster file names stay inside the posters folder", "Poster file names are built from a strict match and refused unless they resolve inside the posters folder, in response to CodeQL alerts 77 to 79 (path injection in starboard/posters.py); GitHub now shows those three alerts as fixed."],
