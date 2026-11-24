@@ -159,6 +159,28 @@ for (const name of ALL) {
   } catch (e) { add(name, "page", "error", e.message.split("\n")[0]); }
 }
 
+// Why is this here? open on Other services (DASH-557), in Light, Dark and High contrast.
+if (!pages.length || pages.some((p) => p.includes("apps-services"))) {
+  try {
+    await page.goto(`${base}/apps-services.html`);
+    await settle();
+    await page.locator("#why-here").click();
+    await page.waitForFunction(() => document.querySelector("#side-panel .rows"), null, { timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(500);
+    const name = "apps-services.html, Why is this here?";
+    await axe(name, "light");
+    await structure(name);
+    await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+    await page.waitForTimeout(150);
+    await axe(name, "dark");
+    await page.evaluate(() => { document.documentElement.removeAttribute("data-theme"); document.documentElement.classList.add("pref-contrast"); });
+    await page.waitForTimeout(150);
+    await axe(name, "high contrast");
+    await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
+    console.log("checked Why is this here?");
+  } catch (e) { add("apps-services.html, Why is this here?", "page", "error", e.message.split("\n")[0]); }
+}
+
 // Search with its results and More filters open (DASH-301): the filters only show once something is searched for.
 if (!pages.length || pages.includes("search.html")) {
   const name = "search.html?q=harbour, More filters";

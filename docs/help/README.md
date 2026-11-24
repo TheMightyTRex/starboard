@@ -69,6 +69,7 @@ Each guide is a journey through several topics, in order.
 - [Choose a Usenet provider and add it](topics/choose-a-usenet-provider.md)
 - [Find an app's API key](topics/find-an-api-key.md)
 - [Search for apps already on your server](topics/search-for-new-apps.md)
+- [Find out why an app is here, or why one was not found](topics/why-is-this-here.md)
 - [Change or remove an app](topics/change-or-remove-an-app.md)
 - [Add a background service](topics/add-a-background-service.md)
 - [Organise apps into categories](topics/organise-categories.md)

@@ -1409,6 +1409,18 @@ discovery.search = lambda services: {"docker": False, "items": [
     {"key": k, "name": n, "type": discovery.CATALOGUE[k][1], "url": f"http://127.0.0.1:{p}", "port": p, "needs_key": discovery.CATALOGUE[k][4], "background": False,
      "container": "", "already": False, "can_read_key": False} for k, n, p in (("seerr", "Seerr", 5055), ("jellystat", "Jellystat", 3000))]}
 
+# What the last search learned, for Why is this here? (DASH-557): made-up answers, never a look at this computer.
+discovery.LAST = {"at": int(time.time()) - 300, "docker": True,
+    "found": [{"key": "seerr", "name": "Seerr", "url": "http://127.0.0.1:5055", "port": 5055, "already": True, "container": "seerr",
+               "found_by": ["Seerr's usual port", "Docker: the container seerr publishes it"], "match": 'The page title contains "seerr"'},
+              {"key": "jellystat", "name": "Jellystat", "url": "http://127.0.0.1:3000", "port": 3000, "already": False, "container": "jellystat",
+               "found_by": ["Docker: the container jellystat publishes it"], "match": 'The page title contains "jellystat"'}],
+    "tried": [],
+    "missing": [{"key": "lidarr", "name": "Lidarr", "tried": [{"url": "http://127.0.0.1:8686", "answer": "No answer",
+                                                              "reason": "Nothing answered as a web page: the port is closed, or it is not a web service"}]},
+               {"key": "bazarr", "name": "Bazarr", "tried": [{"url": "http://127.0.0.1:6767", "answer": 'A page answered (200), titled "my notes"',
+                                                              "reason": "It answered, but nothing on it matched an app Starboard knows"}]}]}
+
 KEY = "example-key"
 today = dt.date.today()
 

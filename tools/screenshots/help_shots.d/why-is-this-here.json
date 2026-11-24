@@ -1,0 +1,61 @@
+{
+ "shots": [
+  {
+   "topic": "why-is-this-here",
+   "file": "why-is-this-here-1-button.png",
+   "page": "apps-services.html",
+   "height": 800,
+   "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); for (let i = 0; i < 40 && !document.querySelector('#why-here'); i++) await wait(250); document.querySelector('#why-here').dataset.shot = 'why'; await wait(300);",
+   "marks": [
+    {
+     "t": "$[data-shot=why]",
+     "step": 2,
+     "side": "bottom",
+     "tail": 60
+    }
+   ],
+   "steps": [
+    2
+   ],
+   "alt": "System, Apps, Other services, with Why is this here? (step 2) outlined, with example data"
+  },
+  {
+   "topic": "why-is-this-here",
+   "file": "why-is-this-here-2-found.png",
+   "page": "apps-services.html",
+   "height": 900,
+   "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); for (let i = 0; i < 40 && !document.querySelector('#why-here'); i++) await wait(250); document.querySelector('#why-here').click(); for (let i = 0; i < 40 && !document.querySelector('#side-panel .row'); i++) await wait(250); await wait(400); const h = [...document.querySelectorAll('#side-panel h3')].find((x) => x.textContent.startsWith('Found')); const ul = h.nextElementSibling; ul.dataset.shot = 'found';",
+   "marks": [
+    {
+     "t": "$[data-shot=found]",
+     "step": 3,
+     "side": "left",
+     "tail": 60
+    }
+   ],
+   "steps": [
+    3
+   ],
+   "alt": "The Why is this here? panel with example data: the Found list, each app with Found by, Matched on and Address tried (step 3) outlined"
+  },
+  {
+   "topic": "why-is-this-here",
+   "file": "why-is-this-here-3-not-found.png",
+   "page": "apps-services.html",
+   "height": 900,
+   "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); for (let i = 0; i < 40 && !document.querySelector('#why-here'); i++) await wait(250); document.querySelector('#why-here').click(); for (let i = 0; i < 40 && !document.querySelector('#side-panel .row'); i++) await wait(250); await wait(400); const h = [...document.querySelectorAll('#side-panel h3')].find((x) => x.textContent.startsWith('Not found')); const ul = h.nextElementSibling.nextElementSibling; ul.dataset.shot = 'nf'; h.scrollIntoView({ block: 'start' }); await wait(300);",
+   "marks": [
+    {
+     "t": "$[data-shot=nf]",
+     "step": 4,
+     "side": "left",
+     "tail": 60
+    }
+   ],
+   "steps": [
+    4
+   ],
+   "alt": "The Why is this here? panel with example data: the Not found list, each app with the address tried and what answered (step 4) outlined"
+  }
+ ]
+}
