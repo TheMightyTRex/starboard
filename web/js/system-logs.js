@@ -3,6 +3,7 @@
 
 const LEVEL_WORDS = { error: ["Error", "danger"], warning: ["Warning", "warning"], info: ["Info", "neutral", "info"], detail: ["Detail", "muted"] };
 const DETAIL_WORDS = { off: "Off", day: "For 24 hours", on: "Until I deactivate it" };
+const SHOW_LINES = [50, 100, 200, 500, 1000];  // DASH-534: the most lines shown, the same in Copy and Download
 let level = "all";
 let query = "";
 let entries = [];
@@ -10,14 +11,57 @@ let state = null;
 
 const when = (t) => new Date(t * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
-async function load(more = false) {
-  const before = more && entries.length ? entries[entries.length - 1].t : "";
-  const r = await api(`/api/logs?level=${level}&q=${encodeURIComponent(query)}${before ? `&before=${before}` : ""}`);
+async function load() {
+  const r = await api(`/api/logs?level=${level}&q=${encodeURIComponent(query)}`);
   state = r;
-  entries = more ? entries.concat(r.entries) : r.entries;
-  render(r.entries.length === 300);
+  entries = r.entries;
+  render();
   renderHead();
   renderReport();
+  renderLimits();
+}
+
+// The most lines shown and Alerts only (DASH-534), kept for the account with the other log settings, applied at once
+// with the saved note beside the control. They are drawn once, so each keeps focus while the list is drawn again.
+const number = (n) => Number(n).toLocaleString("en-GB");
+async function saveShown(change, control) {
+  try { await api("/api/config/general", { method: "PUT", body: { logs: change } }); }
+  catch (e) { problem(e.message, control); await load(); return; }
+  await load();
+  const note = $("#logs-limit-note");
+  note.replaceChildren();
+  window.SharedComponents.savedNote(note);
+}
+
+function renderLimits() {
+  if ($("#logs-limit")) {
+    $("#logs-limit").value = String(state.limit);
+    $("#logs-alerts-only").checked = !!state.alerts_only;
+    return;
+  }
+  const select = el("select", { class: "select", id: "logs-limit" },
+    SHOW_LINES.map((n) => el("option", { value: String(n), text: `${number(n)} lines`, selected: n === state.limit })));
+  select.addEventListener("change", () => saveShown({ show_lines: Number(select.value) }, select));
+  const only = el("input", { type: "checkbox", role: "switch", id: "logs-alerts-only", "aria-describedby": "logs-alerts-hint", checked: !!state.alerts_only });
+  only.addEventListener("change", () => saveShown({ alerts_only: only.checked }, only));
+  $("#logs-shown").replaceChildren(
+    el("div", { class: "toolbar__row" },
+      el("label", { class: "switch", for: "logs-limit" }, el("span", { class: "nowrap", text: "Lines shown" }), select),
+      el("label", { class: "switch", for: "logs-alerts-only" }, el("span", { class: "nowrap", text: "Alerts only" }), only),
+      el("span", { class: "saved-note", id: "logs-limit-note", hidden: true })),
+    el("p", { class: "small muted", id: "logs-alerts-hint", text: "Alerts only shows errors and warnings and leaves out information and detail." }));
+}
+
+// "Showing the newest 200 of 3,412 entries": what is shown, out of what the log holds. With a search, a level or Alerts
+// only, it counts the entries that match, out of all the log holds.
+function showingText() {
+  const n = entries.length;
+  if (!n) return state.filtered ? `No entries match, out of ${number(state.total)} in the log` : "";
+  const word = (k) => (k === 1 ? "entry" : "entries");
+  const total = number(state.total);
+  if (!state.filtered) return state.all_found ? `Showing all ${number(n)} ${word(n)}` : `Showing the newest ${number(n)} of ${total} entries`;
+  return state.all_found ? `Showing all ${number(n)} matching ${word(n)}, of ${total} in the log`
+    : `Showing the newest ${number(n)} matching entries, of ${total} in the log`;
 }
 
 function renderHead() {
@@ -103,12 +147,13 @@ function renderReport() {
     details);
 }
 
-function render(hasMore) {
+function render() {
   const list = $("#entries");
   list.removeAttribute("aria-busy");
-  $("#entries-count").textContent = entries.length ? `${entries.length}${hasMore ? "+" : ""} ${entries.length === 1 ? "entry" : "entries"}, newest first` : "";
+  const said = showingText();
+  if ($("#entries-count").textContent !== said) $("#entries-count").textContent = said;  // a live region: only a real change is said
   if (!entries.length) {
-    list.replaceChildren(el("p", { class: "muted", text: query || level !== "all" ? "Nothing matches." : "Nothing logged yet." }));
+    list.replaceChildren(el("p", { class: "muted", text: query || level !== "all" || state.alerts_only ? "Nothing matches." : "Nothing logged yet." }));
     return;
   }
   const rows = entries.map((e) => {
@@ -125,8 +170,7 @@ function render(hasMore) {
   list.replaceChildren(el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" },
     el("caption", { class: "visually-hidden", text: "Log, newest first" }),
     el("thead", {}, el("tr", {}, ["Time", "Level", "Area", "What happened"].map((h) => el("th", { scope: "col", text: h })))),
-    el("tbody", {}, rows))),
-  hasMore ? el("div", { class: "actions" }, el("button", { type: "button", class: "btn", onclick: () => load(true) }, "Show older entries")) : null);
+    el("tbody", {}, rows))));
 }
 
 function toolbar() {

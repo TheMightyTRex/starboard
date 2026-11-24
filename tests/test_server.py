@@ -163,6 +163,35 @@ class ServerTest(unittest.TestCase):
         resp, _ = self.request("PUT", "/api/config/general", {"logs": {"max_mb": 7}}, {"Origin": f"http://127.0.0.1:{self.port}"})
         self.assertEqual(resp.status, 400)
 
+    def test_logs_shown_are_limited_and_can_be_alerts_only(self):  # DASH-534
+        from starboard import logs
+        origin = {"Origin": f"http://127.0.0.1:{self.port}"}
+        self.sign_in()
+        for i in range(70):
+            logs.event("error" if i % 10 == 0 else "info", "test", f"entry {i}")
+        resp, data = self.request("GET", "/api/logs")
+        self.assertEqual((data["limit"], data["alerts_only"], data["settings"]["show_lines"]), (200, False, 200))
+        self.assertGreaterEqual(data["total"], 70)
+        resp, data = self.request("PUT", "/api/config/general", {"logs": {"show_lines": 50}}, origin)
+        self.assertEqual(resp.status, 200, data)
+        resp, data = self.request("GET", "/api/logs")
+        self.assertEqual((len(data["entries"]), data["limit"], data["all_found"]), (50, 50, False))
+        resp, text = self.request("GET", "/api/logs/download")
+        self.assertTrue(text.startswith(b"# Starboard log: the newest 50 of "), text[:80])
+        self.assertEqual(text.count(b"\n"), 51)
+        self.request("PUT", "/api/config/general", {"logs": {"alerts_only": True}}, origin)
+        resp, data = self.request("GET", "/api/logs")
+        self.assertTrue(data["entries"] and all(e["level"] in ("error", "warning") for e in data["entries"]))
+        self.assertTrue(data["filtered"])
+        resp, text = self.request("GET", "/api/logs/download")
+        self.assertIn(b"alerts only (errors and warnings)", text.split(b"\n")[0])
+        self.assertNotIn(b"INFO", text)
+        resp, report = self.request("GET", "/api/logs/report")
+        self.assertNotIn(b" INFO ", report)
+        for bad in ({"show_lines": 75}, {"alerts_only": "yes"}):
+            resp, _ = self.request("PUT", "/api/config/general", {"logs": bad}, origin)
+            self.assertEqual(resp.status, 400, bad)
+
     def test_05_security_headers(self):
         resp, _ = self.request("GET", "/login.html", cookie=False)
         self.assertIn("default-src 'self'", resp.getheader("Content-Security-Policy"))
