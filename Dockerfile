@@ -20,6 +20,13 @@ RUN apk upgrade --no-cache && apk add --no-cache tzdata \
  && addgroup -S -g 10001 starboard && adduser -S -u 10001 -G starboard -H -h /app starboard \
  && mkdir -p /data && chown starboard:starboard /data && chmod 700 /data
 
+# The page scripts and style sheets without their comments and indentation (DASH-573): about 35 KB less on a page's first
+# visit and about 0.4 MB less in the image. Done in its own stage so the image holds only the result, not both.
+FROM system AS web
+COPY tools/minify.py /minify.py
+COPY web /web
+RUN python /minify.py /web
+
 # The system above as one layer. Removing files in a later layer only hides them (the base image's layers still
 # hold them), and apk upgrade kept a second copy of every package it replaced: one layer keeps neither.
 FROM scratch
@@ -31,7 +38,7 @@ LABEL org.opencontainers.image.source="https://github.com/TheMightyTRex/starboar
 WORKDIR /app
 COPY --chown=root:root VERSION ./
 COPY --chown=root:root starboard ./starboard
-COPY --chown=root:root web ./web
+COPY --from=web --chown=root:root /web ./web
 # Plug-ins that ship inside Starboard, such as Live TV (DASH-285).
 COPY --chown=root:root plugins ./plugins
 # Compiled once here, so Python does not compile Starboard again at every start (start-up 430 ms to 204 ms), then

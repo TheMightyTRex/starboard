@@ -43,6 +43,7 @@ from . import backup_copies, logs, qr
 REMOTE = "starboard-cloud"
 PORT = 53682
 SIGNIN_LIMIT = 600     # 10 minutes to sign in, on either device
+PHONE_PAUSE = 1.0      # times the service's own poll interval; the tests make it small so they do not wait seconds
 PHONE_LIMIT = 600      # the device code lives 15 (Microsoft) or 30 (Google) minutes; Starboard waits 10
 STEP_LIMIT = 120       # a folder list, a folder made, a test
 LINK_WAIT = 45         # for rclone to say its sign-in address
@@ -524,7 +525,7 @@ def _poll_phone(sess):
     """Asks the service every few seconds whether the person approved, until they do, refuse, or time runs out."""
     d, c = _device(sess["service"]), client(sess["service"])
     while sess["state"] == "phone":
-        time.sleep(sess["interval"])
+        time.sleep(sess["interval"] * PHONE_PAUSE)
         if sess["state"] != "phone":
             return
         if time.time() > sess["deadline"]:
