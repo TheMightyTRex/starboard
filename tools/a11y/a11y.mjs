@@ -222,6 +222,8 @@ if (!pages.length || pages.some((p) => p.includes("apps-services"))) {
     await page.locator("#jc-ask").click();
     await page.waitForSelector("#jc-filter", { timeout: 8000 }).catch(() => {});
     await page.waitForTimeout(500);
+    await page.evaluate(() => window.scrollTo(0, 0));  // Playwright scrolled the page to reach the row; axe is run from the top as for the other panels
+    await page.waitForTimeout(200);
     const name = "apps-services.html, custom card";
     await axe(name, "light");
     await structure(name);
