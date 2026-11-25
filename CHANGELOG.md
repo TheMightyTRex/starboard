@@ -8,9 +8,10 @@ add features.
 ## [Unreleased]
 
 ## [0.31.0] (25 November 2026)
-
-### Added
 - **Host alerts (DASH-556; owner, 23 November 2026, from a look at Dashbrr, Compass and Monitee):** Settings, Alerts has a section, The server itself, with alerts for the processor's temperature, how busy the processor is, memory in use, a folder that stays nearly full and the disks' read and write speed, each when it stays at or over a limit for a chosen time (1 minute to 2 hours), and two more with no limit: the server's outside address changing (the No-IP updater's and each VPN's, told without ever saying the address) and a container stopping with an error. Each is deactivated until you activate it; they work without Watch in the background and go where the alerts already go, once until they clear. Nothing runs while all are deactivated; with every reading on, one thread reads /proc and /sys once a minute: measured 2 milliseconds of processor a reading on the author's computer (0.003% of one core) and no extra memory. The outside address is looked at every 10 minutes from the No-IP updater's log and Gluetun's own status, so nothing is sent to any other server. A container stopped on purpose (exit code 0), resting or removed is not an alert. Disk temperatures, the apps' health and the folders' fullness were already alerts; the new folder alert is for one that stays full. Help: [Activate alerts](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/activate-alerts.md), with a fourth marked-up picture.
+
+### Changed
+- **Two small savings from the full optimisation check (DASH-523; owner, 22 November 2026):** the dashboard asks for the settings once when it opens instead of twice (one request and about 2 KB fewer), and the Bring in progress page stops asking for its status while its tab is hidden, as every other page does. The measurements and the larger proposals are in the optimisation check report.
 
 ### Fixed
 - **A sparkline card with nothing to draw yet is accepted:** a plug-in that is not set up, or has no checks or backups yet, such as Uptime and status or Backups watch, answers a sparkline card with an empty list of series and a note. Starboard refused that with "A sparkline card needs series, a list" although the dashboard already drew the note; it now accepts it and the card shows the note.
