@@ -133,7 +133,7 @@ def _clean(card_type, data):
         return {"items": out, "note": _text(data.get("note"), 120)}
     if card_type == "sparkline":  # a small line for each series, such as response times (API 1.17)
         series = data.get("series")
-        if not isinstance(series, list) or not series:
+        if not isinstance(series, list):  # an empty list is allowed: a plug-in not set up yet, or with nothing to draw, says so in its note
             raise ValueError("A sparkline card needs series, a list")
         out = []
         for s in series[:SPARK_SERIES]:
