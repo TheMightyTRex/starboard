@@ -211,6 +211,32 @@ if (!pages.length || pages.some((p) => p.includes("settings-plugins-catalogue"))
   } catch (e) { add("settings-plugins-catalogue.html, Stallboard", "page", "error", e.message.split("\n")[0]); }
 }
 
+// Alerts, The server itself (DASH-556): the host alerts' switches, limits and times, with More settings on, in Light, Dark and High contrast.
+if (!pages.length || pages.includes("settings-alerts.html")) {
+  const name = "settings-alerts.html, The server itself";
+  try {
+    await page.goto(`${base}/settings-alerts.html`);
+    await settle();
+    await page.evaluate(() => api("/api/config/general", { method: "PUT", body: { settings_advanced: true } }));
+    await page.goto(`${base}/settings-alerts.html`);
+    await settle();
+    await page.getByRole("tab", { name: "The server itself", exact: true }).click();
+    await page.waitForTimeout(300);
+    await axe(name, "light");
+    await structure(name);
+    await keyboard(name);
+    await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+    await page.waitForTimeout(150);
+    await axe(name, "dark");
+    await page.evaluate(() => { document.documentElement.removeAttribute("data-theme"); document.documentElement.classList.add("pref-contrast"); });
+    await page.waitForTimeout(150);
+    await axe(name, "high contrast");
+    await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
+    await page.evaluate(() => api("/api/config/general", { method: "PUT", body: { settings_advanced: false } }));
+    console.log("checked the host alerts");
+  } catch (e) { add(name, "page", "error", e.message.split("\n")[0]); }
+}
+
 // Search with its results and More filters open (DASH-301): the filters only show once something is searched for.
 if (!pages.length || pages.includes("search.html")) {
   const name = "search.html?q=harbour, More filters";
