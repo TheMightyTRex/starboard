@@ -61,6 +61,14 @@
 /* Other services ---------------------------------------------------------------------------- */
 .page-other-services .empty h2 { font-size: var(--text-lg); }
 
+/* Custom cards (DASH-555): the fields an address answers with, to tick, and each chosen field's own settings. */
+.json-card__choices { max-height: 18rem; overflow: auto; border: 1px solid var(--color-border); }
+.json-card__choices .check__text { display: grid; gap: 0; }
+.json-card__choices .row { padding-block: var(--space-1); min-height: 0; }
+.json-card__field { border: 1px solid var(--color-border); padding: var(--space-3); margin: 0; min-inline-size: 0; }
+.json-card__field legend { padding-inline: var(--space-2); font-family: var(--font-mono, ui-monospace, monospace); overflow-wrap: anywhere; }
+.json-card__facts dd { overflow-wrap: anywhere; }
+
 /* Network ------------------------------------------------------------------------------------ */
 .stat .chip { justify-self: start; }
 .access-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }

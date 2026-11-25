@@ -54,6 +54,8 @@ DEFAULTS = {
     "plugin_catalogues": [],
     # Built-in catalogue choices switched on (DASH-563, 23 November 2026): ids such as "stallboard". None is on by default.
     "plugin_catalogues_on": [],
+    # Custom cards for any service's JSON (DASH-555): {"allow_outside": False, "cards": [...]}, kept by starboard/json_cards.py.
+    "json_cards": {"allow_outside": False, "cards": []},
     # History (12 November 2026): days of Reelix history to show (0 = all), and when Delete history was last used.
     "history_keep_days": 0,
     "history_cleared_at": "",
@@ -698,7 +700,7 @@ def clean_dashboard(incoming):
         raise ConfigError("Too many cards")
     out, seen = [], set()
     for c in cards:
-        plugin_card = isinstance(c, dict) and re.match(r"^plugin:[a-z0-9-]{3,40}:[A-Za-z0-9_-]{1,40}$", str(c.get("id", "")))
+        plugin_card = isinstance(c, dict) and re.match(r"^(plugin:[a-z0-9-]{3,40}:[A-Za-z0-9_-]{1,40}|json:jc[0-9a-f]{8})$", str(c.get("id", "")))
         if not isinstance(c, dict) or (c.get("id") not in DASHBOARD_CARDS and not plugin_card) or c.get("size") not in DASHBOARD_SIZES or c["id"] in seen:
             raise ConfigError("A card on the dashboard is not one Starboard knows")
         seen.add(c["id"])

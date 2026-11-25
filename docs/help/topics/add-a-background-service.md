@@ -47,6 +47,7 @@ clean-up job. Add one so that Starboard shows whether it is running. It is liste
 - [Add an app](add-an-app.md)
 - [Change or remove an app](change-or-remove-an-app.md)
 - [Find out what each app is using](monitor-apps.md)
+- [Show any service's JSON on a dashboard card](show-any-services-json-on-a-card.md)
 - [The apps Starboard works with](../basics/the-apps.md)
 
 <!-- footer: download rights -->
