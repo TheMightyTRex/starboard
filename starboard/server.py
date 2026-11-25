@@ -186,8 +186,11 @@ class App:
         if os.environ.get("STARBOARD_RECOVERY", "1") != "0":
             recovery.start(self)
         self.watch = watch.Watch(self)
+        from . import host_alerts  # host alerts (DASH-556): no thread while every one is off
+        self.host_alerts = host_alerts.HostWatch(self)
         if os.environ.get("STARBOARD_WATCH", "1") != "0":
             self.watch.start()
+            self.host_alerts.ensure()
             watch.keep_vpn_apps()  # apps on the VPN rejoin it after it restarts (12 November 2026)
         self.jobs = jobs.Jobs(self)
         from . import bring_in  # a copy of media that was running when Starboard stopped carries on (DASH-455)
@@ -1501,6 +1504,7 @@ class Handler(BaseHTTPRequestHandler):
                     app.jobs.ensure()
                 if os.environ.get("STARBOARD_WATCH", "1") != "0":
                     app.watch.ensure()
+                    app.host_alerts.ensure()
                 if os.environ.get("STARBOARD_SCHEDULE", "1") != "0":
                     app.schedule.ensure()
                     if "backup_schedule" in incoming:

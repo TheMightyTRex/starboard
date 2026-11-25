@@ -96,7 +96,12 @@ DEFAULTS = {
     "watch": {"enabled": False, "every": 5, "weekly": False, "releases": True,
               "channel": {"kind": "", "url": "", "token": ""},
               "alerts": {"apps_down": True, "disk_problem": True, "disk_full": 90, "download_stuck": True,
-                         "backup_failed": True, "cert_days": 14}},
+                         "backup_failed": True, "cert_days": 14},
+              # Host alerts (host_alerts.py, DASH-556): each off until switched on with a limit and a time.
+              "host": {"cpu_temp": {"on": False, "limit": 85, "minutes": 10}, "load": {"on": False, "limit": 90, "minutes": 10},
+                       "memory": {"on": False, "limit": 90, "minutes": 10}, "disk_space": {"on": False, "limit": 95, "minutes": 60},
+                       "disk_rate": {"on": False, "limit": 200, "minutes": 10}, "address": {"on": False},
+                       "container": {"on": False}}},
     # Hourly jobs (jobs.py): each off until turned on in Settings, Apps, Jellyfin or Settings, Apps, Audiobookshelf.
     "extras": {"livetv": False, "livetv_address": "", "livetv_jellyfin_folder": "", "import_keep": False, "defaults": False,
                "listening_keep": False, "jellyfin_user": "",
@@ -260,6 +265,8 @@ class Config:
             data["performance"].setdefault(key, value)
         for key, value in DEFAULTS["logs"].items():
             data["logs"].setdefault(key, value)
+        for key, value in DEFAULTS["watch"]["host"].items():  # host alerts, added in 0.31.0
+            data["watch"].setdefault("host", {}).setdefault(key, json.loads(json.dumps(value)))
         tdarr_links = [s for s in data.get("services") or [] if s.get("type") == "link" and (s.get("icon") or "") == "tdarr"]
         for s in tdarr_links:  # DASH-306: Tdarr is set up from Starboard now, with a key it gives Tdarr
             s["type"] = "tdarr"
@@ -784,6 +791,10 @@ def clean_watch(incoming, current):
             if not 0 <= days <= 60:
                 raise ConfigError("Choose from 0 to 60 days")
             out["alerts"]["cert_days"] = days
+    host = incoming.get("host")
+    if isinstance(host, dict):
+        from . import host_alerts
+        out["host"] = host_alerts.clean(host, out.get("host") or {})
     return out
 
 

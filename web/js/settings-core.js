@@ -236,6 +236,7 @@ const COSTS = {
   upcoming: "Costs about: one request to each app when Coming up opens, kept for 10 minutes. Further ahead means a bigger answer, still well under a second.",
   watch: "Costs about: 0.02 seconds of processor per check (every 5 minutes, under 0.01% overall) and under 1 MB of memory for the history. Deactivating it saves that, and keeps nothing running in the background.",
   every: "Every minute costs five times as much as every 5 minutes; every hour, a twelfth.",
+  host: "Costs about: 2 milliseconds of processor a minute (0.003% overall) for all the readings together, measured with every one on, and no extra memory. Nothing runs while every one is deactivated.",
   weekly: "Costs about: one message a week. Nothing noticeable.",
   livetv: "Costs about: under 2 seconds of processor a day to refresh the guides, and about a minute once a week (or when a channel list changes) to test every stream, using up to 35 MB more memory while it runs. Nothing in between. Deactivating it saves all of that.",
   importKeep: "Costs about: 1 second of processor and up to 40 MB more memory for about 20 seconds an hour, while it reads your Jellyfin library. Deactivating it saves that; Apply now still works.",
@@ -482,7 +483,7 @@ const ADVANCED_SECTIONS = new Set([
   "rx-notifications", "rx-importlists", "rx-people", "rx-books", "rx-music",  // Reelix
   "jf-defaults", "jf-import", "jf-missing", "jf-you",  // Jellyfin
   "ls-copy", "ls-missing",  // Audiobookshelf
-  "al-what", "al-week", "al-watch",  // Alerts
+  "al-what", "al-week", "al-watch", "al-host",  // Alerts
   "pf-bg", "pf-pages", "pf-now",  // Performance
 ]);
 
