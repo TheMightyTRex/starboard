@@ -2994,6 +2994,18 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added].
 
+## Plug-in API 1.19.0 (not released yet), 25 November 2026
+
+- **Added:** `requires`, the system a plug-in needs, as a list of up to four needs: `"jellyfin"`, `"jellyfin only"`,
+  `"plex or emby"`, `"reelix"`. Starboard shows it as a tag in words on the Catalogue, the plug-in's page, Manage and
+  Ready to update, and says why when the system is not on this Starboard. An empty list says it needs nothing. Read
+  [What it needs].
+- **Changed:** nothing a plug-in relies on. A manifest without `requires` gets its tag from the permissions it already
+  asks for: `jellyfin:key`, `jellyfin:metadata` and `jellyfin:libraries` mean Jellyfin, `reelix:key` means Reelix and
+  `usenet:servers` means SABnzbd or NZBGet. No plug-in is stopped, refused or failed because its system is missing.
+- Version 1.18 is kept for the `power:hold` permission and the time setting type (DASH-572). Name `>=1.19` in
+  `starboard_api` to use `requires`.
+
 ## Plug-in API 1.17.0 and Starboard API 1.8.0 (not released yet), 20 November 2026
 
 - **Added:** the `sparkline` card type. A card answers `series`, up to 8, each with a `title` and 1 to 96 `points`
@@ -3615,7 +3627,7 @@ Source: docs/help/developers/plugin-manifest-reference.md
 # Plug-in manifest reference
 
 Every field of `starboard-plugin.json`, version 1, with the check Starboard runs on it and why. Starboard refuses
-any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.17.0
+any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.19.0
 (`API_VERSION` in `starboard/plugins.py`).
 
 The same rules are in a JSON Schema, `starboard/plugin-manifest.schema.json`, for editors and other tools. The
@@ -3645,6 +3657,7 @@ runs it too. For a first plug-in, read [Make your first plug-in].
 | `actions` | no | Its buttons | Read [Actions] |
 | `health` | no | A path that answers 200 while it works | A path such as `/health` |
 | `needs` | no | Apps it needs, shown before install | A list of app names such as `jellyfin`: 2 to 30 lower case letters, numbers and hyphens |
+| `requires` | no | The system it works with, shown as a tag | A list of up to four needs. Read [What it needs]. API 1.19 |
 | `styles` | no | Styles for **Display** | Read [Styles] |
 | `notices` | no | Things people must know before install | Read [Notices]. API 1.4 |
 | `events` | no | Events Starboard sends it | Read [Events]. API 1.4 |
@@ -3654,6 +3667,39 @@ runs it too. For a first plug-in, read [Make your first plug-in].
 | `logo` | no | A small logo, shown in **Settings**, **Plug-ins** and on its dashboard cards | Read [Logo]. API 1.14 |
 | `update` | no | How it updates safely: a step before and after, the health wait and settings migrations | Read [Updates]. API 1.14 |
 | `jellyfin_libraries` | no | Jellyfin libraries for folders it fills, which Starboard adds with real-time monitoring deactivated | Read [Jellyfin libraries]. API 1.15 |
+
+## What it needs (requires)
+
+From API 1.19, a plug-in that works with one system says so in `requires`. Starboard shows it as a tag in words on the
+Catalogue, on the plug-in's page (the **What it needs** line of its **State** card), in **Manage** and in **Ready to update**, and says why when that
+system is not on this Starboard.
+
+```json
+"requires": ["jellyfin only"]
+```
+
+| A need | Shown as | Meaning |
+|---|---|---|
+| `"jellyfin"` or `"jellyfin only"` | Jellyfin only | Works with that media server, and no other |
+| `"plex or emby"` | Plex or Emby | Works with either; one is enough |
+| `"reelix"` | Needs Reelix | Works with an app that is not a media server |
+| `["jellyfin", "reelix"]` | Jellyfin only, needs Reelix | Every need in the list must be met |
+| `[]` | no tag | Needs nothing named, even if its permissions would suggest a system |
+
+- Systems Starboard knows: `jellyfin`, `plex`, `emby`, `reelix`, `qbittorrent`, `sabnzbd`, `nzbget`, `sonarr`, `radarr`,
+  `lidarr`, `readarr`, `prowlarr`, `bazarr`, `audiobookshelf`, `kavita`, `calibre-web`, `navidrome`, `gluetun`, `slskd`,
+  `tdarr`, `seerr` and `dispatcharr`. Any other name is refused.
+- `only` goes after one system and means the same as naming it alone; it is there so the manifest reads as the tag does.
+  Alternatives are joined with `or`, up to six, and cannot end in `only`.
+- **Older manifests keep working.** Without `requires`, Starboard works the tag out from the permissions: `jellyfin:key`,
+  `jellyfin:metadata` and `jellyfin:libraries` mean Jellyfin, `reelix:key` means Reelix and `usenet:servers` means SABnzbd
+  or NZBGet. A catalogue entry may carry `requires` too; without it, its permissions are used. Name `>=1.19` in
+  `starboard_api` to use the field.
+- **A plug-in is never stopped for it.** When the system is not on this Starboard, the catalogue says "Needs Jellyfin,
+  which this Starboard does not use" and an installed plug-in says it is waiting, keeps its settings and carries on when
+  the system is there. Installing is still possible, because a person may add the system next.
+- A system is there when Starboard has an active app of that type with an address (Reelix by its icon), or, from
+  the media server plug-ins of DASH-565, an active media server plug-in.
 
 ## Permissions
 
@@ -4339,6 +4385,7 @@ it is missing, because What is new then cannot say what changed. Say when settin
 | 1.12 | 13 November 2026 | `"user": "media"` on a container that mounts `media/<one folder>`; `link` and `state_label` on a custom setting's item; `file_only` on its add box |
 | 1.13 | 13 November 2026 | App plug-ins: `network:port` and `publish` on `lan` with `host_port`, `{secret:...}` and `{jellyfin:...}` in `env`, `tmpfs`, `data:<path>` and `media/<one folder>:ro`, `pids`, and `adopt` |
 | 1.14 | 14 November 2026 | A card's own refresh time, `refresh_seconds`, in the manifest and in its answer, 10 seconds at the quickest; `recommended` on a catalogue entry; `logo` (and `logo`, `logo_alt` on a catalogue entry); every card drawn with a grey band holding the logo, the name, a status chip and when it last updated (`status`, `status_label` and `updated` in its answer); a `schedule` setting and a job's `schedule`; the `jellyfin:metadata` permission with the `jellyfin-metadata` volume; `update` (a `before` and an `after` step, `health_wait_seconds` and settings `migrations`), with the health wait and an automatic Roll back after every update, and **What is new** shown before an update too |
+| 1.19 | 25 November 2026 | `requires`: the system a plug-in needs, shown as a tag (Jellyfin only, Plex or Emby, Needs Reelix), worked out from the permissions of older manifests; 1.18 is DASH-572's |
 | 1.17 | 20 November 2026 | The `sparkline` card: a small line for each series, with the latest, lowest and highest value in words; the `alerts:send` permission, with `POST /api/v1/plugin/alerts` to raise and clear alerts through Starboard's own |
 | 1.16 | 19 November 2026 | The `disk.changed` event; a plug-in is activated when installed; a custom setting's `add` box and an item's `attach` form take plain text; `STARBOARD_HOME_ADDRESS` for a container with `publish` on the `lan` network |
 | 1.15 | 15 November 2026 | `build` on a container, for an image Starboard builds from the `Dockerfile` in the plug-in's zip file, installed with **Upload a zip file** and updated with **Update from a zip file**; `jellyfin_libraries` with the `jellyfin:libraries` permission; the `library:holding` permission with the `media:holding` volume (the media folder, read and write, for its holding folder `media/.holding/<id>`), and `restore` on a custom setting's item, drawn as **Put back**; `titles` on a card, a title for each card size that fits on one line in that size |

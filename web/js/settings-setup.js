@@ -945,7 +945,9 @@ async function startUpdatesPlace() {
         el("span", { class: "setting__label", id: `up-${t.id}-l`, text: t.name }),
         el("span", { class: "setting__hint" }, `${facts}.`, why ? ` ${why}.`.replace(/\.\.$/, ".") : "", note ? ` ${note}` : ""),
         el("span", { class: "chips" }, ready ? chip(...STATUS.updateAvailable) : unknown ? chip(...STATUS.notChecked) : chip(...STATUS.upToDate),
-          ready ? (t.automatic ? chip("Updates by itself", "muted", "clock") : chip("Waits for you", "warning", "user")) : null)),
+          ready ? (t.automatic ? chip("Updates by itself", "muted", "clock") : chip("Waits for you", "warning", "user")) : null,
+          t.kind === "plugin" ? systemChip(t.system) : null),
+        t.kind === "plugin" ? systemLine(t.system, true) : null),
       el("div", { class: "setting__control" }, action(t)));
   };
   const jellyRow = () => {

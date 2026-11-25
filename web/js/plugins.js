@@ -57,6 +57,7 @@ function installWarning(s, { builtin = false, opener, verb = "Install" } = {}) {
           w.risk ? chip(`${RISK[w.risk][0]} risk`, RISK[w.risk][1]) : null),
         el("p", { class: "small install-warning__by", text: [s.author && `By ${s.author}`, s.licence, s.homepage].filter(Boolean).join(" · ") }),
         s.description ? el("p", { text: s.description }) : null,
+        s.system?.tag ? el("p", { class: "small" }, systemChip(s.system), s.system.ok === false ? ` ${s.system.reason}.` : "") : null,
         // An update (DASH-330): what changed, and anything it may do that the installed version may not.
         s.whats_new?.length ? null : s.changelog ? el("p", { class: "small" }, el("strong", { text: `New in ${s.version}: ` }), s.changelog) : null,
         updateBefore(s),
@@ -677,6 +678,10 @@ function pluginPage(p, redraw) {
   const stateSec = section(`pl-${p.id}-state`, "State", stateWords(p),
     headChip(...chipOf(p)), fix || healthNote(p) || (p.message ? el("p", { class: "small", text: p.message }) : null));
   $(".settings-section__head", stateSec).after(el("div", { class: "actions" }, first));
+  // What it needs (DASH-567): the system its tag names, in words, in the State card (General keeps its five cards); when
+  // that system is not here it says the plug-in is waiting.
+  if (p.system?.tag) stateSec.append(...[el("p", { class: "small" }, "What it needs: ", systemChip(p.system)),
+    p.system.ok === false ? el("p", { class: "small", text: p.system.waiting }) : null].filter(Boolean));
   const news = whatsNew(p);
   if (news) stateSec.append(news);
   if (offerSaid) { stateSec.append(notice("success", offerSaid)); offerSaid = ""; }
@@ -1588,7 +1593,8 @@ async function startPlugins() {
       section("pl-yours", "Your plug-ins", `${r.plugins.length} added, ${active} active. Each one's settings are in its own tab.`,
         el("ul", { class: "rows" }, r.plugins.map((p) => el("li", { class: "row" }, pluginLogo(p),  // its logo or initials (API 1.14)
           el("div", {}, el("h3", { class: "row__title" }, el("a", { href: `/settings-plugin.html?id=${encodeURIComponent(p.id)}`, text: p.name })),
-            el("div", { class: "row__meta", text: [`Version ${p.version}`, p.builtin ? "Built into Starboard" : p.author && `By ${p.author}`, p.message].filter(Boolean).join(" · ") })),
+            el("div", { class: "row__meta", text: [`Version ${p.version}`, p.builtin ? "Built into Starboard" : p.author && `By ${p.author}`, p.message].filter(Boolean).join(" · ") }),
+            systemChip(p.system) ? el("div", { class: "row__meta" }, systemChip(p.system)) : null, systemLine(p.system, true)),
           // Four fixed columns, so the chips, Open, Settings and the state button line up from row to row (issue #10;
           // owner, 13 November 2026: a plug-in with its own page, such as Jellystat, pushed its row out of line). The
           // Open column is there, empty, for a plug-in without a page of its own.
@@ -1658,6 +1664,7 @@ async function startCatalogue() {
           el("div", { class: "row__meta", text: e.description }),
           // Versions for this Starboard only (DASH-330): newer ones that need a newer Starboard are said, not offered.
           // An app plug-in (DASH-411): what it uses when nobody is using it, measured, so a small server can choose.
+          systemChip(e.system) ? el("div", { class: "row__meta" }, systemChip(e.system)) : null, systemLine(e.system),
           e.rest ? el("div", { class: "row__meta", text: `At rest: about ${e.rest.memory_mb} MB of memory and ${e.rest.cpu_percent}% of a processor` }) : null,
           e.version || e.hidden ? el("div", { class: "row__meta", text: [e.version ? `Version ${e.version}` : "",
             e.hidden ? `${e.hidden} newer ${e.hidden === 1 ? "version needs" : "versions need"} Starboard's API ${e.hidden_needs}` : ""].filter(Boolean).join(" · ") }) : null),

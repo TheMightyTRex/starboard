@@ -275,6 +275,12 @@ function chip(text, tone, iconName) {
   return el("span", { class: "chip", "data-tone": tone }, icon(name, 14), el("span", { text }));
 }
 
+// What a plug-in needs (DASH-567, plug-in API 1.19): its tag as a chip ("Jellyfin only", "Plex or Emby", "Needs Reelix"), with
+// a warning shape when that system is not here, and a line saying why, in words, so colour never says it alone. An
+// installed plug-in says it is waiting, and is never stopped for it.
+function systemChip(s) { return s?.tag ? chip(s.tag, s.ok === false ? "warning" : "muted", s.ok === false ? "triangle-alert" : "plug") : null; }
+function systemLine(s, installed = false) { return s?.ok === false ? el("div", { class: "row__meta", text: installed ? s.waiting : `${s.reason}.` }) : null; }
+
 // Starboard's status words (design system COMPONENTS.md section 6, 17 November 2026): one word and one tone for each
 // state, for every chip, band, row and notice on every page. Each is [word, tone] or [word, tone, icon], ready for
 // chip(...STATUS.running). A word means one state only: "Running" is an app that answers; a job that runs is
