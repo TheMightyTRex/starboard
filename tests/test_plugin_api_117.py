@@ -48,9 +48,14 @@ class SparklineCard(unittest.TestCase):
             with self.assertRaises(ValueError) as e:
                 plugin_cards.clean("sparkline", {"series": [{"title": "Router", "points": [1, bad]}]})
             self.assertEqual(str(e.exception), "Each point in a sparkline card must be a number of 0 or more, or null for a gap")
-        for bad in ({}, {"series": []}, {"series": "Router"}, {"series": [{"points": [1]}]}, {"series": ["Router"]}):
+        for bad in ({}, {"series": "Router"}, {"series": [{"points": [1]}]}, {"series": ["Router"]}):
             with self.assertRaises(ValueError):
                 plugin_cards.clean("sparkline", bad)
+
+    def test_an_empty_list_of_series_is_allowed_with_its_note(self):
+        # A plug-in not set up yet, or with no checks or backups to draw, answers an empty list; the dashboard says why (DASH-556 release check).
+        self.assertEqual(plugin_cards.clean("sparkline", {"series": [], "note": "Add checks in the plug-in's settings"}),
+                         {"series": [], "note": "Add checks in the plug-in's settings"})
 
     def test_long_text_is_cut_and_only_8_series_are_kept(self):
         one = {"title": "t" * 200, "points": [1], "unit": "requests", "detail": "d" * 300}

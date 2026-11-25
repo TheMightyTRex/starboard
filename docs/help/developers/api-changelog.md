@@ -27,6 +27,11 @@ the next major version.
 - Version 1.18 is kept for the `power:hold` permission and the time setting type (DASH-572). Name `>=1.19` in
   `starboard_api` to use `requires`.
 
+## Plug-in API 1.17.0, Starboard 0.31.0, 25 November 2026
+
+- **Fixed:** a `sparkline` card may answer an empty list of `series`, with a `note` that says why, for a plug-in that is
+  not set up yet. Before, Starboard refused it although the dashboard already showed the note.
+
 ## Plug-in API 1.17.0 and Starboard API 1.8.0 (not released yet), 20 November 2026
 
 - **Added:** the `sparkline` card type. A card answers `series`, up to 8, each with a `title` and 1 to 96 `points`

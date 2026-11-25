@@ -9,7 +9,18 @@ add features.
 
 ### Added
 - **Plug-ins say which system they need (DASH-567; owner, 23 November 2026):** a plug-in that works with one system now says so in words, as a tag: **Jellyfin only**, **Plex or Emby** or **Needs Reelix**. It shows on the Catalogue, on the plug-in's own page (a What it needs line in its State card), in Manage and in Ready to update, and when that system is not on this Starboard a line says why ("Needs Jellyfin, which this Starboard does not use"). A plug-in already installed whose system has gone says it is waiting; it is never stopped, refused or failed, and keeps its settings. A manifest names the system in a new `requires` list (plug-in API 1.19; 1.18 is kept for DASH-572): `"jellyfin only"`, `"plex or emby"`, `"reelix"`, or `[]` for none. Older manifests change nothing and get their tag from what they already ask for: `jellyfin:key`, `jellyfin:metadata` and `jellyfin:libraries` mean Jellyfin, `reelix:key` means Reelix and `usenet:servers` means SABnzbd or NZBGet. Installing stays possible. Costs nothing at rest: the tag is worked out when a list is read, from data already in memory, and the page scripts grew by about 1 KB. Help: [Add a plug-in](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/add-a-plugin.md), with a seventh marked-up picture, and the [manifest reference](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/developers/plugin-manifest-reference.md#what-it-needs-requires).
+
+## [0.31.0] (25 November 2026)
+
+### Added
 - **Host alerts (DASH-556; owner, 23 November 2026, from a look at Dashbrr, Compass and Monitee):** Settings, Alerts has a section, The server itself, with alerts for the processor's temperature, how busy the processor is, memory in use, a folder that stays nearly full and the disks' read and write speed, each when it stays at or over a limit for a chosen time (1 minute to 2 hours), and two more with no limit: the server's outside address changing (the No-IP updater's and each VPN's, told without ever saying the address) and a container stopping with an error. Each is deactivated until you activate it; they work without Watch in the background and go where the alerts already go, once until they clear. Nothing runs while all are deactivated; with every reading on, one thread reads /proc and /sys once a minute: measured 2 milliseconds of processor a reading on the author's computer (0.003% of one core) and no extra memory. The outside address is looked at every 10 minutes from the No-IP updater's log and Gluetun's own status, so nothing is sent to any other server. A container stopped on purpose (exit code 0), resting or removed is not an alert. Disk temperatures, the apps' health and the folders' fullness were already alerts; the new folder alert is for one that stays full. Help: [Activate alerts](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/activate-alerts.md), with a fourth marked-up picture.
+
+### Changed
+- **Two small savings from the full optimisation check (DASH-523; owner, 22 November 2026):** the dashboard asks for the settings once when it opens instead of twice (one request and about 2 KB fewer), and the Bring in progress page stops asking for its status while its tab is hidden, as every other page does. The measurements and the larger proposals are in the optimisation check report.
+
+### Fixed
+- **A sparkline card with nothing to draw yet is accepted:** a plug-in that is not set up, or has no checks or backups yet, such as Uptime and status or Backups watch, answers a sparkline card with an empty list of series and a note. Starboard refused that with "A sparkline card needs series, a list" although the dashboard already drew the note; it now accepts it and the card shows the note.
+
 
 ## [0.30.0] (24 November 2026)
 
@@ -1650,7 +1661,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused. Help: [Pause, resume and remove downloads](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/manage-downloads.md).
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.30.0...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.31.0...HEAD
+[0.31.0]: https://github.com/TheMightyTRex/starboard/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/TheMightyTRex/starboard/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/TheMightyTRex/starboard/compare/v0.28.0...v0.29.0
 [0.28.0]: https://github.com/TheMightyTRex/starboard/compare/v0.27.0...v0.28.0
