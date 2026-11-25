@@ -10,7 +10,7 @@ is ready to use.
 ## Before you begin
 
 - The plug-in is in the **Catalogue**, or you have its manifest address, its `starboard-plugin.json` file or its
-  installer. Plug-ins you can add are also listed in [The plug-in collection](../basics/plugin-collection.md).
+  installer. Plug-ins you can add are also listed in [The plug-in collection](../basics/plugin-collection.md), and you can browse them in the [Stallboard plug-in store](https://themightytrex.github.io/stallboard/).
 - You know your Starboard password. Adding and removing a plug-in ask for it.
 - To understand what a plug-in can and cannot do first, read
   [What a plug-in can change](../basics/what-plugins-can-change.md).
