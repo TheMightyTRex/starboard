@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Changed
+- **Two small savings from the full optimisation check (DASH-523; owner, 22 November 2026):** the dashboard asks for the settings once when it opens instead of twice (one request and about 2 KB fewer), and the Bring in progress page stops asking for its status while its tab is hidden, as every other page does. The measurements and the larger proposals are in the optimisation check report.
+
 ## [0.30.0] (24 November 2026)
 
 ### Added

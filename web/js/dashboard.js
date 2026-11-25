@@ -461,7 +461,7 @@ function startEdit() {
 
 startPage().then(async (session) => {
   if (!session) return;
-  try { const cfg = await api("/api/config"); dash = cfg.dashboard || dash; services = cfg.services || []; } catch { /* the default layout */ }
+  try { const cfg = await ask("/api/config"); dash = cfg.dashboard || dash; services = cfg.services || []; } catch { /* the default layout */ }
   try {
     for (const c of (await api("/api/plugins/cards")).cards) { pluginCards[c.id] = c; CARD_TITLES[c.id] = `${c.title} (${c.plugin})`; }
   } catch { /* no plug-in cards */ }
