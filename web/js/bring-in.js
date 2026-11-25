@@ -480,7 +480,7 @@ function bringProgress(box, job, ctx = {}) {
   carry.addEventListener("click", async () => { try { draw(await api("/api/bring-in/carry-on", { method: "POST" })); pause.focus(); } catch (e) { problem(e.message, carry); } });
   box.replaceChildren(el("div", { class: "wizard-job stack-2" }, el("div", { class: "wizard-job__head" }, words, count), bar), problemBox, actions, live);
   draw(job);
-  timer = setInterval(async () => { try { draw(await api("/api/bring-in/status")); } catch { /* the next look */ } }, 4000);
+  timer = setInterval(async () => { if (document.hidden) return; try { draw(await api("/api/bring-in/status")); } catch { /* the next look */ } }, 4000);
 }
 
 // The end report: copied, needs a look, left where it is, each with what to do.
