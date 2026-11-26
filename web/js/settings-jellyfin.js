@@ -176,7 +176,7 @@ async function startJellyfin() {
 
   const plugins = el("div", { class: "stack-4", "aria-busy": "true", id: "jf-plugins-list" }, el("p", { class: "muted", text: "Asking Jellyfin…" }));
   drawJellyfinPlugins(plugins);
-  const metadataBox = el("div", { class: "stack-4", "aria-busy": "true" }, el("p", { class: "muted", text: "Loading…" }));
+  const metadataBox = el("div", { class: "stack-4", "aria-busy": "true" }, SharedComponents.wait("Loading the metadata choices"));
   drawJellyfinMetadata(metadataBox);
 
   root.removeAttribute("aria-busy");

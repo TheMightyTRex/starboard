@@ -31,7 +31,7 @@ async function loadSetupAnswers() {
 // A Test button and the line that says how it went, for the TMDB key and the Usenet server.
 function testButton(label, run) {
   const said = el("div", { role: "status", "aria-live": "polite" });
-  const button = el("button", { type: "button", class: "btn btn--secondary" }, label);
+  const button = el("button", { type: "button", class: "btn" }, label);
   button.addEventListener("click", async () => {
     button.disabled = true;
     said.replaceChildren(el("p", { class: "small muted", text: "Testing…" }));
@@ -158,7 +158,7 @@ async function startInstall() {
     const step = steps[index];
     let save = async () => true;
     let loading = true;
-    step.nodes = [el("p", { class: "muted", text: "Loading…" })];
+    step.nodes = [SharedComponents.wait("Loading this step")];
     const frame = () => wizardFrame({ root, steps, index, busy: loading,
       continueText: { welcome: "Begin", review: "Write the files", start: fromGuide ? "Back to the set-up guide" : "Go to Apps" }[step.id] || "Continue",
       // On the last step, Start the apps (then Add the ticked apps, or Try again) is the one primary; leaving is plain.

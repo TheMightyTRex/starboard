@@ -531,7 +531,7 @@ async function startBringIn() {
   const go = async (id) => {
     const index = Math.max(0, steps.findIndex((s) => s.id === id));
     const step = steps[index];
-    step.nodes = [el("p", { class: "muted", text: "Loading…" })];
+    step.nodes = [SharedComponents.wait("Loading this step")];
     let save = async () => true, cont = "Continue";
     const frame = (busy) => wizardFrame({ root, steps, index, busy, continueText: cont,
       onBack: () => go(steps[index - 1].id), onSkip: () => {},

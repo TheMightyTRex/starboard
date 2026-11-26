@@ -187,16 +187,12 @@ const AppDetails = (() => {
         el("span", { class: "notice__title", text: `Starboard could not reach ${s.name}` }),
         el("p", { text: `${sentence(st.message || "It did not answer")}${st.down_since ? ` Not responding for ${since(st.down_since)}.` : ""}${st.check_every ? ` Starboard checks it every ${every(st.check_every)} until it answers.` : ""} Check that it is running, then select Check again.` }))));
     } else if (st?.state === "unknown" || (!st && state.loaded.has("status"))) {
-      out.push(el("div", { class: "notice", role: "status", "data-tone": "warning" }, icon("triangle-alert"), el("div", { class: "notice__body" },
-        el("span", { class: "notice__title", text: "Starboard cannot check this service" }),
-        el("p", { text: "It has no address and follows no other app. Give it an address, or choose an app for it to follow, in Edit." }))));
+      out.push(notice("warning", "Starboard cannot check this service", "It has no address and follows no other app. Give it an address, or choose an app for it to follow, in Edit."));
     }
 
     const u = state.updates[s.id];
     if (u?.available) {
-      out.push(el("div", { class: "notice", role: "status" }, icon("circle-arrow-up"), el("div", { class: "notice__body" },
-        el("span", { class: "notice__title", text: "Update available" }),
-        el("p", { text: `Version ${u.latest} is out. You have ${u.installed}. ${s.name} updates when its container image is updated.` }))));
+      out.push(notice("info", "Update available", `Version ${u.latest} is out. You have ${u.installed}. ${s.name} updates when its container image is updated.`, null, { icon: "circle-arrow-up" }));
     }
 
     // Addresses
@@ -298,7 +294,7 @@ const AppDetails = (() => {
     const rows = state.recent[s.id];
     if (!rows) {
       api(`/api/status?recent=${encodeURIComponent(s.id)}`).then((r) => { state.recent[s.id] = r.recent; if (current?.id === s.id) fill(); }).catch(() => {});
-      return el("p", { class: "muted", text: "Loading…" });
+      return SharedComponents.wait("Loading the recent checks");
     }
     if (!rows.length) return el("p", { class: "muted", text: "None since Starboard started." });
     return el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" },
@@ -313,7 +309,7 @@ const AppDetails = (() => {
 
   function uptimeBlock(s) {
     const u = state.uptime;
-    if (!u) return el("p", { class: "muted", text: state.errors.uptime ? `Could not load the history: ${state.errors.uptime}` : "Loading…" });
+    if (!u) return state.errors.uptime ? el("p", { class: "muted", text: `Could not load the history: ${state.errors.uptime}` }) : SharedComponents.wait("Loading the history");
     const row = u.items[s.id];
     if (!u.enabled && !row?.pct7 && row?.pct7 !== 0) {
       return el("p", { class: "muted" }, "Starboard keeps uptime history only while it watches in the background. Activate it in ",

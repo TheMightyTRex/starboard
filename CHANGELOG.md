@@ -23,6 +23,8 @@ add features.
 
 ### Changed
 - **One way to ask for your Starboard password.** Every box that asks for it says "Your Starboard password", and an empty one says "Enter your Starboard password", in Backups, Reelix, Pool, Downloads, Jellyfin, Logs, Security, Clean-up and sign-in settings.
+- **One way to write a count and a time.** System, Storage, Disks, Pool, Monitor, Downloads, Library and On demand history share one count in words and one clock, so a count over a thousand has its comma on every page.
+- **One look for a short wait.** Loading lines in help, release notes, set-up steps, Discover, radio settings and a few more now show the waiting ring with words that say what is loading, in place of a plain "Loading…".
 - **One tab for your media server.** Settings, Apps has one tab named for the media server in use, so the separate Media server tab and plug-in tab are gone. The old address still opens the right page.
 - **Alerts and Performance are part of General.** Settings, General has new Alerts, Performance and Pictures tabs, and the old addresses still open the right page.
 - **Lighter pages and quicker tests.** Page scripts and style sheets are now built without comments and blank lines, so a first visit sends about 38 KB less. The parallel test runner cuts a full run from 5 minutes 18 seconds to 53 seconds.
@@ -30,6 +32,7 @@ add features.
 - **Plain English pilot.** The README and the help topics Add an app and How lean Starboard is now use shorter sentences and the active voice.
 
 ### Fixed
+- **Spacing and error lines that were never styled.** The Bring in and cloud service pages now have the gap between their blocks, and number fields such as the number of backups to keep are narrow.
 - **A full backup that was not made is now reported.** A scheduled backup with no saved backup password used to say it had run. It now says "No full backup was made", raises an alert and shows a warning in Settings.
 
 ## [0.31.0] (25 November 2026)

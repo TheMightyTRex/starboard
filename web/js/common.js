@@ -84,7 +84,7 @@ function helpCentreLink(page, text = "Read it in the help centre") {
 
 async function openHelp(title, { body = null, page = "", back = "", opener } = {}) {
   const close = back ? el("button", { type: "button", class: "btn", text: back }) : null;
-  const panel = sidePanel({ title, opener, wide: true, body: body ? [].concat(body) : [el("p", { class: "muted", text: "Loading…" })],
+  const panel = sidePanel({ title, opener, wide: true, body: body ? [].concat(body) : [SharedComponents.wait("Loading the help")],
     foot: [close, page ? helpCentreLink(page) : null].filter(Boolean) });
   close?.addEventListener("click", () => panel.close());
   // The star's key when the form or step this help belongs to has a required field.
@@ -614,6 +614,11 @@ function announce(message) {
   if (node) { node.textContent = ""; setTimeout(() => { node.textContent = message; }, 50); }
 }
 
+// "3 disks", "1 series" (the library's SharedComponents.plural: plural(n, one, many), many left out adds an s, or one
+// array [one, many]) and the time of day, 14:05.
+function plural(n, one, many) { return SharedComponents.plural(n, one, many); }
+function timeNow() { return SharedComponents.clock(); }
+
 function formatBytes(n) {
   if (!n) return "0 B";
   const units = ["B", "KB", "MB", "GB", "TB", "PB"];
@@ -1133,7 +1138,7 @@ function releaseNotes(rel, level = 3) {
 }
 
 async function openReleaseNotes(opener) {
-  const panel = sidePanel({ title: "Release notes", opener, wide: true, body: [el("p", { class: "muted", text: "Loading…" })] });
+  const panel = sidePanel({ title: "Release notes", opener, wide: true, body: [SharedComponents.wait("Loading the release notes")] });
   try {
     const r = await api("/api/releases");
     const newer = isNewer(r.latest, r.current);
@@ -1170,7 +1175,7 @@ function appChanges(result, level = 3) {
 
 async function openAppChanges({ app, name, from = "", to = "", opener }) {
   const title = `What is new in ${name}`;
-  const panel = sidePanel({ title, opener, wide: true, body: [el("p", { class: "muted", text: "Loading…" })] });
+  const panel = sidePanel({ title, opener, wide: true, body: [SharedComponents.wait("Loading the changes")] });
   try {
     const r = await api(`/api/app-changes?${new URLSearchParams({ app, from, to })}`);
     const span = r.from && r.to ? `From ${r.from} to ${r.to}` : r.to ? `Version ${r.to}` : `Newer than ${r.from}`;
@@ -1400,6 +1405,12 @@ function statTile(value, label, tone = null, extra = null) {
   const [t, word] = Array.isArray(tone) ? tone : [tone, null];
   return el("div", { class: "stat", "data-tone": t || null },
     el("span", { class: "stat__value", text: value }), el("span", { class: "stat__label", text: label }), word ? chip(word, t) : extra);
+}
+
+// A notice in the page (the library's SharedComponents.notice): tone, title, text, then a button or link for the
+// third column. options: after, icon, alert, id, tabindex, heading.
+function notice(tone, title, text, action = null, options = {}) {
+  return window.SharedComponents.notice(tone, title, text, { ...options, actions: action });
 }
 
 // Settings pattern 7: what is missing and the one thing to do.
