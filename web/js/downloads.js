@@ -7,7 +7,7 @@ let filter = null; // a state word, or null for everything
 let sort = "attention";
 let grouped = false;
 let paused = false;
-let every = 15; // seconds between updates; Settings, Performance (0: only when you press Check again)
+let every = 15; // seconds between updates; Settings, General, Performance (0: only when you press Check again)
 let timer = null;
 let services = new Map(); // app name -> app from /api/config, for "Open in" links
 let panel = null;
@@ -1119,7 +1119,7 @@ async function scheduleAct(action, button) {
 function setPaused(on) {
   paused = on;
   clearInterval(timer);
-  // Every few seconds (Settings, Performance) while the tab is in view; a hidden tab asks nothing and catches up
+  // Every few seconds (Settings, General, Performance) while the tab is in view; a hidden tab asks nothing and catches up
   // when shown again.
   timer = on || !every ? null : setInterval(() => { if (!document.hidden) { load(); loadSchedule(); loadTransfer(); } }, every * 1000);
   $("#auto-refresh").setAttribute("aria-pressed", String(on));

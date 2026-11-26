@@ -492,6 +492,8 @@ def _installer_started_since(app, since):
         return False
 
 
+MOVED_PAGES = {"/settings-alerts.html": "/settings-general-alerts.html", "/settings-performance.html": "/settings-general-performance.html",
+               "/settings-performance-pictures.html": "/settings-general-pictures.html"}  # DASH-584: Alerts and Performance are in General now
 MOVED_BY_REELIX = ("radarr", "sonarr", "lidarr", "bookshelf", "prowlarr", "seerr")  # what Reelix's migrator reads
 
 
@@ -1161,6 +1163,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(404, b"Not found", "text/plain; charset=utf-8")
         if path == "/":
             path = "/dashboard.html"  # the landing page (DASH-239)
+        if path in MOVED_PAGES:  # an address that moved: the old one answers 301 with the new one, keeping what follows the page
+            query = urllib.parse.urlsplit(self.path).query
+            return self.send(301, extra={"Location": MOVED_PAGES[path] + ("?" + query if query else ""), "Cache-Control": "no-cache"})
         if not path.endswith(".html") and "." not in posixpath.basename(path):
             path += ".html"
         public = path in PUBLIC_PAGES or path in PUBLIC_FILES or path.startswith(PUBLIC_PREFIXES)
@@ -1571,7 +1576,7 @@ class Handler(BaseHTTPRequestHandler):
                 candidate = validate_service(incoming)
                 candidate["id"] = candidate.get("id") or "test"
                 return self.json(200, services.check(candidate))
-            if path == "/api/pictures" and method == "GET":  # Settings, Performance, Pictures (12 November 2026)
+            if path == "/api/pictures" and method == "GET":  # Settings, General, Performance, Pictures (12 November 2026)
                 from . import picture_cache
                 return self.json(200, picture_cache.stats(cfg.data_dir))
             if path == "/api/pictures/clear" and method == "POST":

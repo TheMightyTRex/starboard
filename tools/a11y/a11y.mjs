@@ -291,13 +291,13 @@ if (!pages.length || pages.some((p) => p.includes("settings-plugin"))) {
 }
 
 // Alerts, The server itself (DASH-556): the host alerts' switches, limits and times, with More settings on, in Light, Dark and High contrast.
-if (!pages.length || pages.includes("settings-alerts.html")) {
-  const name = "settings-alerts.html, The server itself";
+if (!pages.length || pages.includes("settings-general-alerts.html")) {
+  const name = "settings-general-alerts.html, The server itself";
   try {
-    await page.goto(`${base}/settings-alerts.html`);
+    await page.goto(`${base}/settings-general-alerts.html`);
     await settle();
     await page.evaluate(() => api("/api/config/general", { method: "PUT", body: { settings_advanced: true } }));
-    await page.goto(`${base}/settings-alerts.html`);
+    await page.goto(`${base}/settings-general-alerts.html`);
     await settle();
     await page.getByRole("tab", { name: "The server itself", exact: true }).click();
     await page.waitForTimeout(300);

@@ -53,7 +53,7 @@ The **Library** and a few other places say they come with Reelix. They fill in o
 Starboard is built for smaller servers, such as a Raspberry Pi or an old laptop. It uses about 16 MB of memory
 while it is idle, and very little of the processor, so your server's power goes to your apps.
 
-**Settings**, then **Performance**, shows what Starboard uses and lets you deactivate each piece of background
+**Settings**, then **General**, then **Performance**, shows what Starboard uses and lets you deactivate each piece of background
 work. Read [Make Starboard use less of your server](../topics/make-starboard-lighter.md).
 
 ## Safe by default
