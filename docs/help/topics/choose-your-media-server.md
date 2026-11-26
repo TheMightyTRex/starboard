@@ -63,7 +63,7 @@ Starboard sends the key in a header, never in an address, so it does not reach a
 ### Switch with the wizard
 
 The wizard is for moving over from one media server to another. It changes nothing until its last button, and the way
-back below still lasts 24 hours.
+back, set out under Go back, still lasts 24 hours.
 
 1. Under **Choose a media server**, select **Switch with help**. A panel opens.
 2. On **Step 1**, choose how to switch, then **Next**:
