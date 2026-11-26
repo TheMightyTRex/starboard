@@ -78,8 +78,8 @@ KEY_FILES = {
     "readarr": ("/config/config.xml", r"<ApiKey>([A-Za-z0-9]{20,64})</ApiKey>"),
     "prowlarr": ("/config/config.xml", r"<ApiKey>([A-Za-z0-9]{20,64})</ApiKey>"),
     "sabnzbd": ("/config/sabnzbd.ini", r"(?m)^api_key\s*=\s*([A-Za-z0-9]{16,64})\s*$"),
-    # Plex: the server owner's token, from its preferences file (DASH-566). Emby has none to read: its keys are made in its dashboard.
-    "plex": ("/config/Library/Application Support/Plex Media Server/Preferences.xml", r'PlexOnlineToken="([A-Za-z0-9_-]{15,40})"'),
+    # Plex is not here on purpose (DASH-595, owner, 26 November 2026): Starboard does not read the owner's token from the
+    # Plex container. People sign in with Plex's link code (starboard/plex_link.py) or paste the token. Emby has none to read either.
     "seerr": ("/app/config/settings.json", r'"apiKey"\s*:\s*"([A-Za-z0-9=+/]{20,120})"'),
     # Bazarr's own key, under auth: (its config also holds Sonarr's and Radarr's keys, under their own names).
     "bazarr": ("/config/config/config.yaml", r"(?m)^auth:[ \t]*\n(?:[ \t]+.*\n)*?[ \t]+apikey:[ \t]*['\"]?([A-Za-z0-9]{32})['\"]?[ \t]*$"),

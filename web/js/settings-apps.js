@@ -186,6 +186,69 @@ function setAddress(s, background) {
   history.replaceState(null, "", u);
 }
 
+// Sign in with Plex's own link code (DASH-595). Returns { node, pin(), stop() }. The page asks the server for the answer every
+// two seconds only while it is open and visible; Cancel, a closed panel, a page that is left or the code running out all stop it.
+function plexLinkBox({ onApproved, onReset, focusSave }) {
+  const POLL = 2000;
+  let pin = null, timer = null, until = 0, running = false;
+  const start = el("button", { type: "button", class: "btn" }, icon("link"), "Sign in with Plex");
+  const out = el("div", { "aria-live": "polite" });
+  const cancel = el("button", { type: "button", class: "btn btn--quiet" }, "Cancel");
+  const node = el("div", { class: "plex-link", "data-span": "all", hidden: true },
+    el("p", { class: "small muted", text: "Sign in with Plex's own link code, or paste the token in the Plex token field. The token stays on this server and is never shown again." }),
+    el("div", { class: "actions" }, start), out);
+
+  const stop = (said = null) => {
+    clearTimeout(timer);
+    removeEventListener("pagehide", stop);
+    if (running && pin) api(`/api/plex/link/${pin}/cancel`, { method: "POST" }).catch(() => {});
+    running = false;
+    if (said !== null) out.replaceChildren(said);
+    start.hidden = false;
+  };
+  const again = (words) => { stop(notice("warning", words, "Select Sign in with Plex to get a new code, or paste the token.")); onReset(); start.focus(); };
+
+  const poll = async () => {
+    if (!running) return;
+    if (Date.now() >= until) { again("The code ran out"); return; }
+    if (!document.hidden) {
+      try {
+        const r = await api(`/api/plex/link/${pin}`);
+        if (!running) return;
+        if (r.state === "approved") {
+          running = false;
+          stop(notice("success", "Signed in with Plex", "Press Save to keep it. Starboard never shows the token."));
+          onApproved();
+          focusSave();
+          return;
+        }
+        if (r.state !== "waiting") { again(r.state === "cancelled" ? "Sign-in cancelled" : "The code ran out"); return; }
+      } catch (e) { /* a missed answer: ask again at the next turn, until the time is up */ }
+    }
+    timer = setTimeout(poll, POLL);
+  };
+
+  start.addEventListener("click", async () => {
+    start.disabled = true;
+    try {
+      const r = await api("/api/plex/link", { method: "POST" });
+      pin = r.id; running = true; until = Date.now() + r.expires_in * 1000;
+      start.hidden = true;
+      out.replaceChildren(el("div", { class: "notice", role: "status" }, icon("info"), el("div", { class: "notice__body" },
+        el("span", { class: "notice__title", text: "Approve this code in Plex" }),
+        el("p", {}, "Go to ", el("a", { href: r.link, target: "_blank", rel: "noopener noreferrer", text: "plex.tv/link" }), " and enter the code ",
+          el("strong", { class: "plex-code", text: r.code.split("").join(" ") }), `. It works for ${Math.round(r.expires_in / 60)} minutes. Starboard waits here.`), cancel)));
+      addEventListener("pagehide", stop);
+      cancel.onclick = () => { stop(notice("info", "Sign-in cancelled", "Select Sign in with Plex to start again, or paste the token.")); start.focus(); };
+      cancel.focus();
+      timer = setTimeout(poll, POLL);
+    } catch (e) {
+      out.replaceChildren(notice("danger", "No code from Plex", e.message));
+    } finally { start.disabled = false; }
+  });
+  return { node, pin: () => pin, stop: () => { if (running) stop(); } };
+}
+
 function openService(s = null, opener = null, { background = false, preset = null } = {}) {
   const isNew = !s;
   let current = s ? { ...s } : null;
@@ -200,6 +263,11 @@ function openService(s = null, opener = null, { background = false, preset = nul
   const keyLabel = keyField.querySelector("label");
   const testButton = el("button", { type: "button", class: "btn" }, icon("zap"), "Test connection");
   const testResult = el("div", { "aria-live": "polite" });
+  // Plex's own link code (DASH-595): an owner's choice beside pasting the token. Starboard asks plex.tv for a code, shows it with
+  // plex.tv/link and asks for the answer every two seconds while this panel is open. The token never reaches this page.
+  const plexLink = plexLinkBox({ onApproved: () => { linked = true; key.value = ""; key.disabled = true; key.placeholder = "Signed in with Plex"; testButton.disabled = false; },
+    onReset: () => { linked = false; key.disabled = false; key.placeholder = ""; }, focusSave: () => saveButton.focus() });
+  let linked = false;
 
   const groups = [...config.groups];
   if (s?.group && !groups.includes(s.group)) groups.push(s.group);
@@ -234,6 +302,7 @@ function openService(s = null, opener = null, { background = false, preset = nul
         field("Kind of app", type),
         field("Name", name, { required: true }),
         field("Address Starboard uses", url, { required: true, hint: "For an app on this computer, 127.0.0.1 and the app's port, such as http://127.0.0.1:8096 for Jellyfin. For another computer, its address. Optional for a background service.", span: true }),
+        plexLink.node,
         keyField),
       el("div", { class: "actions" }, testButton),
       testResult),
@@ -276,6 +345,8 @@ function openService(s = null, opener = null, { background = false, preset = nul
   const updateFields = () => {
     const t = type.value;
     keyField.hidden = NO_KEY.includes(t);
+    plexLink.node.hidden = t !== "plex";
+    if (t !== "plex") plexLink.stop();
     const where = { qbittorrent: "Options, Web UI, API key (version 5.2 or later)", sabnzbd: "Config, General, API Key",
       jellyfin: "Dashboard, API keys. Optional: it adds Jellyfin's state, what is playing and recently added to System",
       audiobookshelf: "Settings, API Keys, for an admin user. Optional: it is needed only to copy listening progress (Settings, Apps, Audiobookshelf)",
@@ -283,7 +354,7 @@ function openService(s = null, opener = null, { background = false, preset = nul
       nzbget: "Settings, Security: enter its control user name and password as user:password",
       slskd: "Options, web, authentication, API keys (in its slskd.yml)",
       emby: "Dashboard, Advanced, API Keys, then New API Key. It adds Emby's state, what is playing and recently added to the dashboard, Library and Activity",
-      plex: "open any item in the Plex web app, then Get Info, then View XML, and copy what follows X-Plex-Token= in the address. It adds Plex's state, what is playing and recently added to the dashboard, Library and Activity" }[t] || "Settings, General";
+      plex: "paste it here, or use Sign in with Plex and leave this blank. To find it, open any item in the Plex web app, then Get Info, then View XML, and copy what follows X-Plex-Token= in the address. It adds Plex's state, what is playing and recently added to the dashboard, Library and Activity" }[t] || "Settings, General";
     keyLabel.firstChild.textContent = t === "plex" ? "Plex token" : "API key";
     url.placeholder = MEDIA_ADDRESS[t] || "http://127.0.0.1:8096";
     if (isNew && (!name.value || name.dataset.auto)) {
@@ -298,7 +369,7 @@ function openService(s = null, opener = null, { background = false, preset = nul
 
   const values = () => ({
     id: current?.id, type: type.value, name: name.value, url: url.value, link: link.value, outside_link: outside.value,
-    icon: iconInput.value, api_key: key.value, group: group.value, background: bg.checked, follows: bg.checked ? follows.value : "",
+    icon: iconInput.value, api_key: key.value, plex_pin: linked && !key.value ? plexLink.pin() : undefined, group: group.value, background: bg.checked, follows: bg.checked ? follows.value : "",
     description: desc.value, enabled: enabled.checked, container: container.value,
     quality_profile_id: current?.quality_profile_id ?? null, root_folder: current?.root_folder || "",
     metadata_profile_id: current?.metadata_profile_id ?? null, search_on_add: current ? current.search_on_add !== false : true,
@@ -309,6 +380,7 @@ function openService(s = null, opener = null, { background = false, preset = nul
     body: [steps, form],
     foot: [saveButton, cancel, remove].filter(Boolean),
     onClose: () => {
+      plexLink.stop();  // nothing is asked of plex.tv once the panel is closed
       setAddress(null, false);
       // Saving redraws the list, so the button that opened the slide-out may be gone: go to the app's new row.
       if (document.activeElement === document.body || !document.activeElement) {

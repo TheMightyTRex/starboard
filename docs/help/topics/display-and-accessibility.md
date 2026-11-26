@@ -101,7 +101,7 @@ spacing, underlined links and reduced motion always win over a style.
   clears them.
 - **Settings for everyone on the server:** two related settings are kept on the server instead. The accent
   colour is in **Settings**, then **General**, then **Appearance**. **Load more as you scroll** is in
-  **Settings**, then **General**, then **Pages and lists**, under **Long lists**.
+  **Settings**, then **General**, then **Lists**, under **Long lists**.
 - **Match device** uses the light, dark and motion settings of your phone or computer, so Starboard changes when
   they do.
 - Starboard is built to WCAG 2.2 AA (Web Content Accessibility Guidelines), with large controls. Its typeface,

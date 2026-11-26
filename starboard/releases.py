@@ -49,7 +49,7 @@ RELEASES = [
                ("Upgrade guide", "After an upgrade with something to choose, a short guide shows what is new and asks only those questions.")],
      "changed": [], "fixed": [],
      "review": ["apps", "storage"],
-     "settings": "Adds a record of the set-up guide and the last upgrade, and three Storage settings in Settings, Performance (sorting by type only when you ask, a daily record of used space, and page updates only when you press Check again). To go back, run ./update.sh --to v0.4.0."},
+     "settings": "Adds a record of the set-up guide and the last upgrade, and three Storage settings in Settings, Performance (sorting by type only when you ask, a daily record of used space, and page updates only when you press Check now). To go back, run ./update.sh --to v0.4.0."},
     {"version": "0.5.1", "date": "2 November 2026",
      "added": [], "changed": [],
      "fixed": [("Upgrade available", "Looks for the newest version tag, which is what ./update.sh installs, and no longer offers an older version as an upgrade.")],
@@ -73,7 +73,7 @@ RELEASES = [
      "review": [], "settings": "Adds log settings: kept for 60 days, detailed logging off. To go back, run ./update.sh --to v0.5.4."},
     {"version": "0.5.6", "date": "2 November 2026",
      "added": [], "changed": [
-        ("One name for refresh", "Check again everywhere; Storage's slower job is Sort by type."),
+        ("One name for refresh", "Check now everywhere; Storage's slower job is Sort by type."),
         ("Settings save one way", "Choices save as soon as they change; text fields keep a Save button; one main button per page."),
         ("Buttons and dialogs", "Full-size buttons outside dense tables; danger buttons before danger dialogs, with Cancel and the bin icon."),
         ("Charts", "Text follows the Text size setting; media colours come from the shared library, with a high contrast set.")],
@@ -91,7 +91,7 @@ RELEASES = [
                ("Copy app settings", "Copies tags, custom formats, quality profiles, root folders, download clients and naming from one Sonarr, Radarr or Lidarr into another, and asks for the passwords the old app keeps hidden."),
                ("Storyarr in Install apps", "Offered by default, with a database backup before each update."),
                ("Upgrade now from Storyarr", "Apps, Updates opens on one app (apps-updates.html?app=storyarr), checks at once and goes to its row."),
-               ("More detail", "Recent checks and Check again for one app; how long an app has been down; Remove and Find another for downloads; overviews and app links on Coming up, with a month at a time; links from Search into the app; the full SMART table, self-tests and report download; what each saved settings copy holds, and downloads of copies and server backups; the date this version started.")],
+               ("More detail", "Recent checks and Check now for one app; how long an app has been down; Remove and Find another for downloads; overviews and app links on Coming up, with a month at a time; links from Search into the app; the full SMART table, self-tests and report download; what each saved settings copy holds, and downloads of copies and server backups; the date this version started.")],
      "changed": [("Slide-outs", "Display and accessibility is now a slide-out. Every slide-out has its header in the page colour over a white (or dark) body."),
                  ("Categories", "Renaming or removing one moves its apps in a single save."),
                  ("Wrong passwords", "A wrong password in a dialog or Install apps stays on the page instead of signing you out."),
@@ -142,7 +142,7 @@ RELEASES = [
     {"version": "0.7.5", "date": "3 November 2026",
      "added": [("Send feedback", "In place of Note issues, activate it in Settings, General to report a problem, suggest something or check a page for accessibility problems. Each report opens as an issue on Starboard's GitHub page or is saved in Starboard, listed under Testing.")],
      "changed": [("Errors where they happened", "A problem saving a setting or running an action shows beside that switch or button, and clears on your next try. An error with nothing on the page to belong to stays in the corner until you close it."),
-                 ("Updates", "The button says Check until the first check, then Check again."),
+                 ("Updates", "The button says Check until the first check, then Check now."),
                  ("Watch history files", "A history file can be up to 80 MB, which is more than 250,000 films and episodes. Reading one takes about four and a half times its size in memory.")],
      "removed": [("Note issues", "Send feedback takes its place, and your notes are listed with the new reports.")],
      "fixed": [],
@@ -1200,7 +1200,7 @@ RELEASES = [
             ],
             [
                 "Discover by area",
-                "Discover has a page each for Films, TV, Music, Radio, Books and Audiobooks, from Reelix's own lists. Settings, General, Discover rows chooses each area's rows and their order, including a row for each genre (such as Comedy or Science fiction) for films, series and radio. Recently added follows what arrived, so new episodes come first, On demand history shows what you started watching, with Add to wanted and Remove, and pictures are kept for four weeks, with Clear the picture cache in Settings, Performance."
+                "Discover has a page each for Films, TV, Music, Radio, Books and Audiobooks, from Reelix's own lists. Settings, General, Discover chooses each area's rows and their order, including a row for each genre (such as Comedy or Science fiction) for films, series and radio. Recently added follows what arrived, so new episodes come first, On demand history shows what you started watching, with Add to wanted and Remove, and pictures are kept for four weeks, with Clear the picture cache in Settings, Performance."
             ],
             [
                 "Discover, Radio",
@@ -1340,7 +1340,7 @@ RELEASES = [
         "removed": [
             [
                 "Note an issue",
-                "The old Note an issue tester has gone; Send feedback replaced it. Notes it saved are still listed in Settings, General, Logs and feedback."
+                "The old Note an issue tester has gone; Send feedback replaced it. Notes it saved are still listed in Settings, General, Backup/Logs."
             ],
             [
                 "Storyarr",
@@ -1678,7 +1678,7 @@ RELEASES = [
             ],
             [
                 "Connect a cloud service",
-                "Settings, General, Backup and restore has a wizard that signs in to Google Drive, OneDrive, Dropbox and other services, chooses the folder and tests it, so copies of your backups can go off this computer."
+                "Settings, General, Backup/Logs has a wizard that signs in to Google Drive, OneDrive, Dropbox and other services, chooses the folder and tests it, so copies of your backups can go off this computer."
             ],
             [
                 "Test connection",
@@ -1690,7 +1690,7 @@ RELEASES = [
             ],
             [
                 "Log limits and Delete all logs",
-                "Settings, General, Logs and feedback sets how long Starboard keeps its logs and the most they may take, and Delete all logs removes them after your password."
+                "Settings, General, Backup/Logs sets how long Starboard keeps its logs and the most they may take, and Delete all logs removes them after your password."
             ]
         ],
         "changed": [
@@ -1732,7 +1732,7 @@ RELEASES = [
             ]
         ],
         "review": [],
-        "settings": "Your settings stay as they are. Logs keep your number of days, now with a 50 MB limit as well, which you can change in Settings, General, Logs and feedback. Starboard's built-in plug-ins restart once after the update to take the apps' log limit of 3 files of 10 MB. To go back, run ./update.sh --to v0.19.1."
+        "settings": "Your settings stay as they are. Logs keep your number of days, now with a 50 MB limit as well, which you can change in Settings, General, Backup/Logs. Starboard's built-in plug-ins restart once after the update to take the apps' log limit of 3 files of 10 MB. To go back, run ./update.sh --to v0.19.1."
     },
     {
         "version": "0.20.1",
@@ -2014,7 +2014,7 @@ RELEASES = [
             ["Stallboard as a catalogue source", "Settings, Plug-ins, Catalogue has a Stallboard catalogue tick that reads Stallboard's list once a day. Installing from it still shows what each plug-in asks for first."],
             ["Why is this here? for found apps", "System, Apps, Other services has a button that says what found each app, and why an app was not found."],
             ["A health line on Reelix's card", "When some of Reelix's sites to search fail, its card on Apps says so, for example \"1 of 3 sites failing\". The words link to Sites to search."],
-            ["What is using the processor now", "System, Overview has a Busy now page that lists the containers and processes using the most processor and memory. It reads only when you open it or select Check again, and it cannot stop or change anything."],
+            ["What is using the processor now", "System, Overview has a Busy now page that lists the containers and processes using the most processor and memory. It reads only when you open it or select Check now, and it cannot stop or change anything."],
             ["Limit the logs shown", "System, Logs has Lines shown (50, 100, 200, 500 or 1,000) and an Alerts only switch. Download now saves only those lines, and Show older entries is gone."]
         ],
         "fixed": [

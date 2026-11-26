@@ -771,7 +771,7 @@ function sidePanel({ title, body = [], foot = [], wide = false, opener = documen
     layer, body: bodyNode, foot: footNode, close: shut,
     setTitle(text) { heading.textContent = text; close.setAttribute("aria-label", `Close ${text}`); },
     setFoot(nodes) { footNode.replaceChildren(...nodes); footNode.hidden = !nodes.length; },
-    // Draws the body again (Check again); a headChip goes on the title's line, as when it opened.
+    // Draws the body again (Check now); a headChip goes on the title's line, as when it opened.
     setBody(nodes) {
       const next = [nodes].flat().filter(Boolean);
       const c = next.find((n) => n?.dataset?.headChip);
@@ -1906,9 +1906,9 @@ function wireDialog(dialog) {
   $$("[data-dialog-close]", dialog).forEach((b) => b.addEventListener("click", () => dialog.close()));
 }
 
-// Send feedback (Settings, General, Logs and feedback): Snaglist's Send feedback button (web/js/snaglist.js, from
+// Send feedback (Settings, General, Backup/Logs): Snaglist's Send feedback button (web/js/snaglist.js, from
 // github.com/TheMightyTRex/snaglist; copy a new version in, never edit it here). Each report goes as a GitHub
-// issue on Starboard's repository, or is saved in Starboard (data/ux-notes.json, listed in Settings, General, Logs and feedback).
+// issue on Starboard's repository, or is saved in Starboard (data/ux-notes.json, listed in Settings, General, Backup/Logs).
 // It sends without cookies, so a key given while signed in stands in. The script loads only while it is on.
 async function startFeedback(session) {
   if (IN_PANEL) return;  // the page around the slide-out has it
@@ -2135,7 +2135,7 @@ function shelfScroller(list, name) {
   return outer;
 }
 
-// Delete all logs (DASH-451): the danger dialog, with the password, from Settings, General, Logs and feedback and
+// Delete all logs (DASH-451): the danger dialog, with the password, from Settings, General, Backup/Logs and
 // System, Logs. Says what goes (with the size) and what stays. Resolves the server's answer, or null when cancelled;
 // a wrong password throws, for the page to say beside its button.
 const logBytes = (n) => (n < 1024 ? "less than 1 KB" : formatBytes(n));
