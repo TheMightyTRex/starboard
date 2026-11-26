@@ -74,7 +74,7 @@ class Check(unittest.TestCase):
 
     def test_the_warning_says_the_page_and_the_read_only_folder(self):
         w = plugins.install_warning(app_manifest())
-        self.assertTrue(any("anyone on your home network can open it" in r for r in w["reach"]))
+        self.assertTrue(any("Anyone on your home network can open it" in r for r in w["reach"]))
         self.assertIn("Files in your media folder under music (read only)", w["see"])
         w = plugins.install_warning(app_manifest(adopt={"app": "tdarr", "name": "Tdarr", "into": "app", "copy": {"/a": "a"}}))
         self.assertTrue(any("never changed" in c for c in w["change"]))

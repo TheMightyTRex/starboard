@@ -28,8 +28,8 @@ def summary(app):
               d.get("mcp_enabled", False), "setting", link="/settings-security-keys.html#sc-mcp-h",
               cost="Nothing until an assistant asks; each question reads the same saved answers as the pages."),
         _item("sso", "Your single sign-on provider",
-              "When single sign-on is on, the sign-in page sends people to the provider you chose (Authentik, Keycloak, Google or another), "
-              "and Starboard asks it for the sign-in's result and its published keys. It sends the client ID and the client secret you gave it, "
+              "When single sign-on is on, the sign-in page sends people to the provider you chose (Authentik, Keycloak, Google or another). "
+              "Starboard asks the provider for the sign-in result and its published keys. It sends the client ID and the client secret you gave it, "
               "and nothing else about you or your server. The password keeps working unless you turn it off.",
               signin.sso_on(app), "setting", link="/settings-security-signin.html",
               cost="Nothing until someone signs in this way; then two small requests to the provider."),
@@ -43,7 +43,7 @@ def summary(app):
                  "You have allowed addresses outside your home network. ")
               + "It never follows a redirect, waits at most 8 seconds, reads at most 256 KB and keeps only the chosen fields.",
               (d.get("json_cards") or {}).get("cards"), "setting", link="/apps-services.html#custom-cards-h",
-              cost="Nothing until a dashboard shows the card or you select Ask now; then one small request, at most once in the card's refresh time (one minute to one hour)."),
+              cost="Nothing until a dashboard shows the card or you select Ask now. Then one small request, at most once in the card's refresh time (one minute to one hour)."),
         _item("download_hours", "Pausing and resuming downloads",
               "Outside your download hours, Starboard pauses qBittorrent, NZBGet and SABnzbd"
               + (f" ({' and '.join(clients)})" if clients else "") + ".",
@@ -58,7 +58,7 @@ def summary(app):
               containers.available(), "installer", on_flag="--docker", off_flag="--no-docker", cost="Nothing until you open System, Apps, Updates; a check reads a few small files from each registry."),
         _item("transcode_check", "Jellyfin's video conversion test",
               "When you select Test now on System, Overview, Starboard runs a 2 second test picture through Jellyfin's own ffmpeg, "
-              "inside Jellyfin's container, to say which way Jellyfin can convert video. It opens no media and changes nothing.",
+              "inside Jellyfin's container. This shows which way Jellyfin can convert video. It opens no media and changes nothing.",
               containers.available(), "installer", on_flag="--docker", off_flag="--no-docker",
               cost="Nothing until you select Test now; then a few seconds of processor, once."),
         _item("app_use", "Per-app processor and memory use",
@@ -66,11 +66,11 @@ def summary(app):
               bool(sysinfo.cgroup_dir()) and os.path.isdir(os.path.join(sysinfo.cgroup_dir(), "system.slice")),
               "installer", on_flag="--app-use", off_flag="--no-app-use", cost="Two small files per container every 2 seconds, only while Monitor is open."),
         _item("busy_now", "What is using the processor now",
-              "When you open System, Overview, Busy now, or select Check again, Starboard reads the server's process list (/proc) and each container's "
-              "processor and memory twice, a second apart, from the cgroup files or Docker, read only. A Starboard that runs in a container reads only its own processes. "
+              "When you open System, Overview, Busy now, or select Check again, Starboard reads the server's process list (/proc). It reads each container's "
+              "processor and memory twice, a second apart, from the cgroup files or Docker. It only reads. A Starboard that runs in a container reads only its own processes. "
               "It stops, signals and changes nothing, and keeps nothing.",
               bool(sysinfo.cgroup_dir()) or containers.available(), "installer", on_flag="--app-use", off_flag="--no-app-use",
-              cost="Under a second and a quarter of a processor core's time for each reading, about 1 MB of memory, and nothing when the page is closed."),
+              cost="Each reading uses under a second and a quarter of a processor core's time, and about 1 MB of memory. Nothing runs when the page is closed."),
         _item("livetv", "Jellyfin's Live TV folder",
               "Starboard writes channel playlists, guides and logos there once a day while the Live TV plug-in is active (Settings, Plug-ins). "
               "Jellyfin can fetch logos and Pluto streams from Starboard without signing in, and only while the Live TV plug-in is active.",
@@ -79,8 +79,8 @@ def summary(app):
               "With Jellyfin's API key, Starboard marks imported history as watched and sets defaults for users who have not chosen their own.",
               d["extras"].get("import_keep") or d["extras"].get("defaults"), "setting", link="/settings-jellyfin.html", cost="About 1 second of processor and up to 40 MB of memory for 20 seconds an hour (import); defaults, nothing noticeable."),
         _item("listening", "Audiobookshelf: listening progress",
-              "With an admin API key, Starboard makes a key that acts as each person for up to 15 minutes, writes their progress "
-              "and deletes the key. Progress a person already has is never changed.",
+              "With an admin API key, Starboard makes a key for each person. The key works for up to 15 minutes. Starboard writes their progress "
+              "and then deletes the key. Progress a person already has is never changed.",
               d["extras"].get("listening_keep"), "setting", link="/settings-audiobookshelf.html", cost="Reads your Audiobookshelf library once an hour: about a second of processor."),
         _item("disks", "Your folders, for free space",
               "Reads how full the folders you chose are, on System, Storage. Read-only.",

@@ -1466,7 +1466,7 @@ async function startYourInstall() {
     if (!r.started) {
       status.replaceChildren(notice("info", "One step on the server", "Starboard wrote the new set-up but cannot start apps itself. Run this in a terminal on the server:"),
         el("pre", { class: "code-block", text: r.command }), copyButton(r.command, "Copy the command"),
-        el("p", { class: "muted", text: "Once the apps have started, Starboard finishes off by itself within a minute: it updates the dashboard and Reelix, and moves Usenet servers if you changed the Usenet app. Keep this page open, or come back to it, to find out what was done." }));
+        el("p", { class: "muted", text: "Once the apps have started, Starboard finishes off by itself within a minute. It updates the dashboard and Reelix, and moves Usenet servers if you changed the Usenet app. Keep this page open, or come back to it, to find out what was done." }));
       // DASH-141: the page shows when the command has run and Starboard is finishing off, then what was done,
       // so it never looks stuck. Starboard writes change-result.json when it has finished (data/stack).
       const waiting = el("div", { class: "meter", role: "status" },
@@ -1690,7 +1690,7 @@ function takeoverSection() {
             { hint: `${a.app} hides it and Starboard could not read it from ${a.app}'s own settings. Copy it from the site's own pages, usually under your account or API.` });
         });
         return el("fieldset", { class: "form-stack" }, el("legend", { text: `Keys to type for ${a.app}` }), ...rows,
-          el("p", { class: "small muted", text: "Choose Show what moves again to check them, or leave one empty: that site moves without its key and stays deactivated until you add it in Settings, Reelix, Sites to search." }));
+          el("p", { class: "small muted", text: "Choose Show what moves again to check them. If you leave one empty, that site moves without its key and stays deactivated until you add it in Settings, Reelix, Sites to search." }));
       };
       const body = () => ({ password: p2.value, qbittorrent_password: qbit.value, hold: hold.checked, secrets: typed() });
       preview.addEventListener("click", async () => {
@@ -1740,7 +1740,7 @@ function takeoverSection() {
           // DASH-129: the old apps may have needed no password, because qBittorrent lets their addresses in.
           q.allow_list?.length ? notice("info", "Your old apps did not need qBittorrent's password",
             `qBittorrent lets in addresses from ${q.allow_list.join(", ")} without one (its allow list in Options, Web UI). Reelix reaches qBittorrent by its name, from an address that may not be on that list, so give the password in this section.`) : null,
-          field("qBittorrent's password (optional)", qbit, { hint: `What it is for: Reelix sends each download to qBittorrent, so it needs qBittorrent's password. ${userLine} Starboard checks it with qBittorrent first and keeps it only in Reelix. Leave it empty to connect qBittorrent later in Settings, Reelix, Download apps; a fixed address Reelix has for it, such as Gluetun's IP address, still becomes its name.` }),
+          field("qBittorrent's password (optional)", qbit, { hint: `What it is for: Reelix sends each download to qBittorrent, so it needs qBittorrent's password. ${userLine} Starboard checks it with qBittorrent first and keeps it only in Reelix. Leave it empty to connect qBittorrent later in Settings, Reelix, Download apps. A fixed address Reelix has for it, such as Gluetun's IP address, still becomes its name.` }),
           el("label", { class: "check" }, hold, el("span", { class: "check__text" }, el("strong", { text: "Hold the sites to search" }),
             el("span", { class: "check__hint", text: "Deactivated in Reelix after the move, so only your old apps search until Starboard runs your apps. Activate them in the review step." })))),
         el("div", { class: "actions" }, preview), shown,
@@ -1950,12 +1950,12 @@ function takeoverSection() {
         again.disabled = false;
       });
       return section("tk-waiting", `Titles waiting for a match (${t.waiting_count})`,
-        "Films and series the move into Reelix could not match. Starboard keeps the ids Radarr and Sonarr had for them and adds each to Reelix once it matches: every six hours, and as soon as a TMDB key is added.",
+        "Films and series the move into Reelix could not match. Starboard keeps the ids Radarr and Sonarr had for them. It adds each to Reelix once it matches: every six hours, and as soon as you add a TMDB key.",
         rows, more, el("div", { class: "actions" }, again), said);
     }
   };
   draw();
-  return pageSection("in-takeover", "Apps you already run", "Apps on this server from your own Compose file: moved into Reelix where Reelix replaces them, and run by Starboard from then on, with a way back.", box);
+  return pageSection("in-takeover", "Apps you already run", "Apps on this server from your own Compose file. Starboard moves them into Reelix where Reelix replaces them, and runs them from then on, with a way back.", box);
 }
 
 // Make the change now (owner, 10 November 2026): the set-up's change to the server, made by the Run first window,

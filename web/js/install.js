@@ -248,7 +248,7 @@ async function installStep(id, state, data, apps, go) {
     nodes = [
       el("p", { text: "A media server is a few apps that work together. Each one does one job, and they pass work to each other:" }),
       el("ol", { class: "stack-1" },
-        el("li", {}, el("strong", { text: "Find and choose. " }), "Reelix keeps a list of the films, series, books, music and radio you want, searches the sites that list them, and picks the best copy when it appears. The people you share with can ask for things in it too."),
+        el("li", {}, el("strong", { text: "Find and choose. " }), "Reelix keeps a list of the films, series, books, music and radio you want. It searches the sites that list them and picks the best copy when it appears. The people you share with can ask for things in it too."),
         el("li", {}, el("strong", { text: "Download. " }), "qBittorrent (or SABnzbd) downloads it, through your VPN if you have one."),
         el("li", {}, el("strong", { text: "Sort. " }), "Reelix renames the finished file and moves it into your library."),
         el("li", {}, el("strong", { text: "Watch and listen. " }), "Jellyfin plays your films and series on TVs, phones and browsers; Audiobookshelf plays audiobooks.")),

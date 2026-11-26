@@ -385,7 +385,7 @@ const VIEWS = {
       if (flow.pause === undefined) flow.pause = true;
       return [[heading("How to balance"),
         el("p", { text: "Balancing moves whole folders from fuller disks to emptier ones, under the pool. The pool shows every file in the same place all the time, so the apps notice nothing." }),
-        el("figure", {}, sized(el("img", { src: "/images/balance.svg", alt: "Before balancing, disk 1 is 85% full and disk 4 is empty. After, folder B has moved to disk 4 and folder C to disk 3, so each disk is between 22% and 48% full, and every folder is still whole on one disk.", width: 640, height: 580 }), { maxWidth: "100%", height: "auto" })),
+        el("figure", {}, sized(el("img", { src: "/images/balance.svg", alt: "Before balancing, disk 1 is 85% full and disk 4 is empty. After, folder B has moved to disk 4 and folder C to disk 3. Each disk is between 22% and 48% full, and every folder is still whole on one disk.", width: 640, height: 580 }), { maxWidth: "100%", height: "auto" })),
         optionCards("Balancer", "engine", [
           { value: "starboard", title: "Starboard's balancer (recommended)", text: "Moves whole series, film and book folders, so a failed disk takes whole series, not a few episodes of each. Shows each disk before and after first. Nothing to install." },
           { value: "mergerfs.balance", title: "mergerfs.balance", text: hasTool ? "Moves single files until the disks are even. A series can end up spread over several disks." : "Not installed. It is an extra download from the mergerfs-tools project; the help says how.", disabled: !hasTool },
