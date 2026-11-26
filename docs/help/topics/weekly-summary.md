@@ -13,17 +13,17 @@ health of your disks and how full your folders are. It goes to the same place as
 
 ## Steps
 
-1. Go to **Settings**, then **Alerts**.
+1. Go to **Settings**, then **General**, then **Alerts**.
 
-   ![Settings, Alerts, with More settings (step 2) outlined, with example data](../images/weekly-summary-3-more.png)
+   ![Settings, General, Alerts, with More settings (step 2) outlined, with example data](../images/weekly-summary-3-more.png)
 
 2. Activate **More settings**, if it is not active already.
 
-   ![Settings, Alerts, with the Weekly summary tab (step 3) outlined, with example data](../images/weekly-summary-1-tab.png)
+   ![Settings, General, Alerts, with the Weekly summary tab (step 3) outlined, with example data](../images/weekly-summary-1-tab.png)
 
 3. Under **Weekly summary**, activate **Weekly summary**. Starboard shows "Weekly summary activated".
 
-   ![Settings, Alerts, Weekly summary, with the switch (step 3) outlined, with example data](../images/weekly-summary-2-switch.png)
+   ![Settings, General, Alerts, Weekly summary, with the switch (step 3) outlined, with example data](../images/weekly-summary-2-switch.png)
 
 The first summary comes on the next Monday, after 09:00 by the server's clock.
 
@@ -43,12 +43,12 @@ The first summary comes on the next Monday, after 09:00 by the server's clock.
 - The summary uses the uptime history that watching keeps, so a new install has little to say in its first
   week.
 - It is sent once a week. It costs nothing noticeable.
-- The **Everything** preset in **Settings**, **Performance** also activates the weekly summary. Read
+- The **Everything** preset in **Settings**, **General**, **Performance** also activates the weekly summary. Read
   [Make Starboard use less of your server](make-starboard-lighter.md#steps).
 
 ## If it does not work
 
-- **No summary on Monday:** check that **Watch in the background** is active in **Settings**, **Alerts**, under
+- **No summary on Monday:** check that **Watch in the background** is active in **Settings**, **General**, **Alerts**, under
   **More settings**, and that **Send a test alert** reaches you. If both are fine, Starboard's log says why
   the summary was not sent. Read [Read the log and report a problem](read-the-log.md).
 - **The summary says no history yet:** watching has not been on long enough. Wait a week.

@@ -582,7 +582,7 @@ async function startGuide() {
       if (flow) {
         // The agreed order (DASH-265): what to set up and its questions, How much it does, then Check and Start. No
         // Moving over here (DASH-271): the terminal set-up does not ask it, and the move is its own route.
-        list.push(...flow.before().filter((x) => x.id !== "moving"), { id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." }, shadowsStep(),
+        list.push(...flow.before().filter((x) => x.id !== "moving"), { id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, General, Performance." }, shadowsStep(),
           ...flow.finish());
       }
     } else {
@@ -595,12 +595,12 @@ async function startGuide() {
         // move brings them); How much it does before Check, then the move (DASH-265, DASH-266).
         const beside = flow && !reelixThere;
         if (beside) list.push(...flow.before().filter((x) => !["sites", "moving"].includes(x.id)));
-        list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." }, shadowsStep());
+        list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, General, Performance." }, shadowsStep());
         if (beside) list.push(...flow.finish());
         list.push({ id: "move", ...stepNamed(T, "move"), skippable: false });
       } else {
         // Keep them as they are: How much it does straight after, as the terminal set-up asks it (DASH-271).
-        list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." }, shadowsStep());
+        list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, General, Performance." }, shadowsStep());
       }
     }
     if (types(Object.keys(KEY_PLACE)).some((s) => !s.has_api_key)) {
@@ -613,8 +613,8 @@ async function startGuide() {
     // DASH-417: after Download hours, so it can name the quiet hours; Reelix's choice only when Reelix is being installed.
     list.push({ id: "updates", ...stepNamed(T, "updates"), has: { reelix: coming(["reelix"]), jellyfin: coming(["jellyfin"]) } });
     list.push({ id: "alerts", ...stepNamed(T, "alerts"), intro: "Starboard checks your apps every few minutes and tells you when one stops answering or a disk has a problem." });
-    if (hasDisks) list.push({ id: "storage", ...stepNamed(T, "storage-page"), intro: "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance." });
-    if (start === "new" && !flow) list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." }, shadowsStep());
+    if (hasDisks) list.push({ id: "storage", ...stepNamed(T, "storage-page"), intro: "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, General, Performance." });
+    if (start === "new" && !flow) list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, General, Performance." }, shadowsStep());
     if (!dockerAccess && start === "new") list.push({ id: "docker", ...stepNamed(T, "docker"), skippable: false });  // the last question
     if (leftOver) list.push({ id: "cleanup", ...stepNamed(T, "cleanup"), intro: "What earlier versions, removed plug-ins and old backups left behind." });
     list.push({ id: "finish", ...stepNamed(T, "finish"), skippable: false });
@@ -686,8 +686,8 @@ async function startGuide() {
         ["Jellyfin extras", ["livetv", "import_keep", "defaults", "audio_description"].filter((k) => config.extras[k]).map((k) => ({ livetv: "Live TV", import_keep: "history import", defaults: "user defaults", audio_description: "audio description (to install in Settings, Plug-ins)" })[k]).join(", ") || "None", "/settings-jellyfin.html"],
         [uw.summary, updatesSummary(uw, config), "/settings-updates.html"],
         ["Download hours", config.download_hours.enabled ? `${String(config.download_hours.start).padStart(2, "0")}:00 to ${String(config.download_hours.end).padStart(2, "0")}:00` : "Deactivated", "/settings-downloads-hours.html"],
-        ["Alerts", config.watch.enabled ? `Activated, to ${config.watch.channel.kind || "nowhere yet"}` : "Deactivated", "/settings-alerts.html"],
-        ["How much it does", config.presets[config.performance.preset] || "Custom", "/settings-performance.html"],
+        ["Alerts", config.watch.enabled ? `Activated, to ${config.watch.channel.kind || "nowhere yet"}` : "Deactivated", "/settings-general-alerts.html"],
+        ["How much it does", config.presets[config.performance.preset] || "Custom", "/settings-general-performance.html"],
         ...(config.shadows_answered ? [[(await setupWords()).shadows.summary, config.shadows_off ? "Removed" : "Kept", "/settings-general-appearance.html"]] : []),
       ];
       step.nodes = [el("dl", { class: "facts" }, facts.flatMap(([k, v, href]) => [el("dt", { text: k }),

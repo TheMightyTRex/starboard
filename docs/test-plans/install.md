@@ -81,7 +81,7 @@ Each row is one step, in the agreed order (DASH-103). The browser and the termin
 | WIZ-70 | Download hours | All | B and T | Machine | The schedule is saved; outside the hours the download apps are paused |
 | WIZ-71 | Alerts | All | B and T | Machine | A test alert arrives at a test address |
 | WIZ-72 | Disk health | All | B and T | Machine, and by hand | smartmontools is installed if missing; in a virtual machine (no SMART data) the step says so plainly; on real disks each disk's health shows |
-| WIZ-80 | How much Starboard does | All | B and T | Machine | The chosen preset is saved and shown on Settings, Performance |
+| WIZ-80 | How much Starboard does | All | B and T | Machine | The chosen preset is saved and shown on Settings, General, Performance |
 | WIZ-81 | The summary | All | B and T | Machine | What was set and what was skipped, with where to change each later |
 
 ## 4. After the set-up

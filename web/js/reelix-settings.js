@@ -449,7 +449,7 @@ function rxLibrarySection() {
       el("p", { class: "small muted" }, "Words in braces are filled in by Reelix, such as ", el("code", { text: "{Movie Title}" }), " and ",
         el("code", { text: "{season}" }), ". Changes apply to files Reelix moves from now on."),
       ...rows, errors,
-      field("Background work", pace, { hint: "How hard Reelix works on scans and refreshes. Light suits a small server: playing stays smooth. Changing How much it does in Settings, Performance does not change this." }),
+      field("Background work", pace, { hint: "How hard Reelix works on scans and refreshes. Light suits a small server: playing stays smooth. Changing How much it does in Settings, General, Performance does not change this." }),
       el("div", { class: "actions" }, save, note));
   };
   locked();

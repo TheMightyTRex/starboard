@@ -113,7 +113,7 @@ DEFAULTS = {
                "listening_keep": False, "jellyfin_user": "",
                # The set-up's Audio description tick (DASH-399): a wish to install the plug-in, unticked until chosen.
                "audio_description": False},
-    # How much Starboard does in the background and how often (Settings, Performance).
+    # How much Starboard does in the background and how often (Settings, General, Performance).
     "performance": {"preset": "balanced", "history": True, "history_every": 300, "schedule_every": 60,
                     "downloads_refresh": 15, "monitor_refresh": 2, "card_numbers": True,
                     "storage_refresh": 0, "usage_every": "ask", "space_log": True},
@@ -594,7 +594,7 @@ USAGE_CHOICES = ("off", "ask", "open", "nightly", "weekly")
 
 # Presets set every optional piece of background work at once. Features you choose for what they do (Live TV,
 # download hours, the import itself) are left as they are; only how often and how much changes.
-# What each preset does, in words: shown by the browser and terminal set-ups and Settings, Performance.
+# What each preset does, in words: shown by the browser and terminal set-ups and Settings, General, Performance.
 PRESET_ABOUT = {
     "small": "For a small or busy server: no history, no watching, no card numbers, no posters, no hourly "
              "Jellyfin or Audiobookshelf jobs, slower pages. Live TV and download hours stay as you set them.",

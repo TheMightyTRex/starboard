@@ -20,7 +20,7 @@ Choose where alerts go. Starboard can send them to one of these:
 
 ### Choose where alerts go
 
-1. Go to **Settings**, then **Alerts**.
+1. Go to **Settings**, then **General**, then **Alerts**.
 2. Under **Where alerts go**, in **Send alerts to**, choose **ntfy**, **Gotify** or **A webhook (JSON)**.
 3. In **Address**, enter the full address. For ntfy, that is the topic's address, such as
    `https://ntfy.sh/` followed by your topic's name.
@@ -29,7 +29,7 @@ Choose where alerts go. Starboard can send them to one of these:
 5. Select **Save where alerts go**. Starboard shows the time it saved, such as "Saved at 16:31".
 6. Select **Send a test alert**. Starboard shows "Test alert sent. Check that it arrived."
 
-   ![Settings, Alerts, Where alerts go, with Send alerts to (step 2), Save where alerts go (step 5) and Send a test alert (step 6) outlined, with example data](../images/activate-alerts-1-where.png)
+   ![Settings, General, Alerts, Where alerts go, with Send alerts to (step 2), Save where alerts go (step 5) and Send a test alert (step 6) outlined, with example data](../images/activate-alerts-1-where.png)
 
 7. Check your phone. The test message says that alerts from Starboard reach you there.
 
@@ -41,13 +41,13 @@ The rest of the Alerts page is under **More settings**.
 2. Under **Watching**, activate **Watch in the background**. Starboard now checks your apps with no page open.
 3. In **How often**, choose how often it checks. **Every 5 minutes** is plenty for a home server.
 
-   ![Settings, Alerts, Watching, with Watch in the background (step 2) and How often (step 3) outlined, with example data](../images/activate-alerts-2-watching.png)
+   ![Settings, General, Alerts, Watching, with Watch in the background (step 2) and How often (step 3) outlined, with example data](../images/activate-alerts-2-watching.png)
 
 ### Choose what to alert on
 
 Under **What to alert on**, each alert is active unless you deactivate it. Each change applies at once.
 
-![Settings, Alerts, What to alert on, the list of alerts that can be active or inactive, with example data](../images/activate-alerts-3-what.png)
+![Settings, General, Alerts, What to alert on, the list of alerts that can be active or inactive, with example data](../images/activate-alerts-3-what.png)
 
 - **An app stops answering:** after two checks in a row, so a restart does not alert. Another message comes
   when it answers again.
@@ -66,7 +66,7 @@ Under **What to alert on**, each alert is active unless you deactivate it. Each 
 Under **The server itself**, each alert is deactivated until you activate it. Each has a limit and a time, so a
 short spike never alerts: it alerts only when the value stays at or over the limit for the whole time.
 
-![Settings, Alerts, The server itself, with The processor is too hot, its switch, limit and time outlined, with example data](../images/activate-alerts-4-server.png)
+![Settings, General, Alerts, The server itself, with The processor is too hot, its switch, limit and time outlined, with example data](../images/activate-alerts-4-server.png)
 
 - **The processor is too hot:** its temperature, from 60 to 100 °C.
 - **The processor is too busy:** how busy it is, from 70% to 100%.

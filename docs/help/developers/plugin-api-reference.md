@@ -443,7 +443,7 @@ The rules for every key, such as 120 requests a minute, are in [Authentication a
 ## Sending alerts (API 1.17)
 
 A plug-in with the `alerts:send` permission may send alerts through Starboard, to where Starboard sends its own:
-ntfy, Gotify or a webhook, set in Settings, Alerts, and plug-ins that pass them on, such as Notifications. It sends
+ntfy, Gotify or a webhook, set in Settings, General, Alerts, and plug-ins that pass them on, such as Notifications. It sends
 `POST /api/v1/plugin/alerts` (Starboard API 1.8.0) with its own key, through `STARBOARD_API_SOCKET`, or over HTTP
 for a plug-in on the `lan` network.
 
@@ -461,12 +461,12 @@ for a plug-in on the `lan` network.
 | `level` | `problem`, `warning` or `info` | `problem` when left out. It sets the alert's priority, as for Starboard's own |
 
 The answer is `{"ok": true, "sent": true}`, or `"sent": false` when nothing was sent: the alert was already raised,
-there was nothing to clear, or alerts are off in Settings, Alerts.
+there was nothing to clear, or alerts are off in Settings, General, Alerts.
 
 - **Once until cleared.** Each `key` is raised once. Send `raised` as often as you check: it is sent again only after
   you send `cleared`. Then it is sent as Starboard's own alerts are: to the alert channel, as the `alert.raised` and
   `alert.cleared` events, and in Starboard's log.
-- **Alerts off.** When alerts are off in Settings, Alerts, nothing is sent, as for Starboard's own.
+- **Alerts off.** When alerts are off in Settings, General, Alerts, nothing is sent, as for Starboard's own.
 - **Limits.** Up to 30 new alerts an hour for each plug-in. Beyond that the answer is `429 rate_limited` with
   `Retry-After`, the seconds to wait. Raising one that is already raised, and clearing, never count.
 - **Errors.** A body that does not follow the rules gets `400 bad_request` saying what to change. Any key but the
