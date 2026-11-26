@@ -614,6 +614,11 @@ function announce(message) {
   if (node) { node.textContent = ""; setTimeout(() => { node.textContent = message; }, 50); }
 }
 
+// "3 disks", "1 series" (the library's SharedComponents.plural: plural(n, one, many), many left out adds an s, or one
+// array [one, many]) and the time of day, 14:05.
+function plural(n, one, many) { return SharedComponents.plural(n, one, many); }
+function timeNow() { return SharedComponents.clock(); }
+
 function formatBytes(n) {
   if (!n) return "0 B";
   const units = ["B", "KB", "MB", "GB", "TB", "PB"];

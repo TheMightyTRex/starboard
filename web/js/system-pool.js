@@ -7,7 +7,6 @@ let state = null;
 let flow = null;   // the job in progress: { kind, step, steps, ... }
 let watching = 0;  // timer while a job runs
 
-const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const ROLE = { pool: "In the pool", parity: "Parity disk", copy: "Copy disk" };
 const nameOf = (d) => `${d.model || d.name} ${formatBytes(d.size)}`;
 const serialOf = (d) => (d.ends ? `serial ends ${d.ends}` : "no serial number");

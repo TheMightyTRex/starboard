@@ -3,7 +3,6 @@
 // into your own library; Remove takes it out of the history.
 
 let odKind = "all";
-const plural = (n, [one, many]) => `${n.toLocaleString("en-GB")} ${n === 1 ? one : many}`;
 const notice = (tone, title, text) => el("div", { class: "notice", "data-tone": tone === "info" ? null : tone, role: "status" },
   icon(tone === "danger" ? "circle-x" : "info"), el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text })));
 
