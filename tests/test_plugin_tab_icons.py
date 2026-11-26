@@ -54,6 +54,9 @@ class PluginTabIcons(unittest.TestCase):
         self.assertIn('nav.classList.add("menu-tabs--scroll")', read("web", "js", "common.js"))
         self.assertIn("a.title = name", read("web", "js", "components.js"))
 
+    def test_a_notice_with_buttons_puts_them_on_their_own_row_on_a_phone(self):
+        self.assertRegex(read("web", "css", "app.css"), r"max-width: 600px\) \{\s*\.notice > \.actions \{ grid-column: 2 / -1; \}")
+
 
 if __name__ == "__main__":
     unittest.main()

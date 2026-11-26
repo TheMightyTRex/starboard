@@ -2798,6 +2798,8 @@ await page.keyboard.press("Tab");
 const ptiFocus = await page.evaluate(() => { const a = document.activeElement; return { name: a.textContent.trim(), shown: (a.querySelector(".menu-tabs__label")?.getBoundingClientRect().width || 0) > 8, ring: getComputedStyle(a).outlineStyle !== "none" }; });
 check("PTI-06", "Tab moves along the tabs, and the tab with focus shows its name and a focus ring", ptiFocus.shown && ptiFocus.ring && ptiFocus.name.length > 0, JSON.stringify(ptiFocus));
 check("PTI-07", "the row scrolls inside itself, not the page", await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+await open("settings-plugins.html");
+check("PTI-09", "at 375 wide a notice with buttons keeps its words readable (DASH-602)", await page.evaluate(() => [...document.querySelectorAll(".notice")].every((n) => (n.querySelector(".notice__body")?.getBoundingClientRect().width || 999) > 150)));
 await page.setViewportSize({ width: 1280, height: 860 });
 await open("settings-plugin.html?id=notifications");
 await page.waitForFunction(() => document.querySelectorAll('nav[aria-label="Plug-ins"] a').length > 4, null, { timeout: 5000 }).catch(() => {});
