@@ -90,6 +90,11 @@ class SocketAnswers(unittest.TestCase):
         cls.server.server_close()
         shutil.rmtree(cls.tmp, ignore_errors=True)
 
+    def own_key(self):
+        """The key file as it is now: Starboard makes a new key each time the plug-in starts (DASH-603), and a plug-in reads the file."""
+        with open(os.path.join(pa.folder(self.tmp, "on-demand"), "key")) as f:
+            return f.read().strip()
+
     def ask(self, path, key=None, method="GET"):
         c = UnixConnection(self.path)
         try:
@@ -107,7 +112,7 @@ class SocketAnswers(unittest.TestCase):
         self.assertEqual(os.stat(pa.folder(self.tmp, "on-demand")).st_mode & 0o777, 0o700)  # nobody else
 
     def test_its_own_key_reads_what_was_approved(self):
-        status, body = self.ask("/api/v1/me", self.key)
+        status, body = self.ask("/api/v1/me", self.own_key())
         self.assertEqual(status, 200, body)
         self.assertEqual(json.loads(body)["scopes"], ["media"])
 
@@ -116,9 +121,9 @@ class SocketAnswers(unittest.TestCase):
         status, body = self.ask("/api/v1/me", self.person_key)
         self.assertEqual(status, 401)
         self.assertIn(b"own key", body)
-        self.assertEqual(self.ask("/api/status", self.key)[0], 404)  # only the API, never the dashboard's own
-        self.assertEqual(self.ask("/", self.key)[0], 404)
-        self.assertEqual(self.ask("/api/v1/plugins/on-demand/enable", self.key, "POST")[0] // 100, 4)  # a read key
+        self.assertEqual(self.ask("/api/status", self.own_key())[0], 404)  # only the API, never the dashboard's own
+        self.assertEqual(self.ask("/", self.own_key())[0], 404)
+        self.assertEqual(self.ask("/api/v1/plugins/on-demand/enable", self.own_key(), "POST")[0] // 100, 4)  # a read key
 
     def test_disable_closes_it_and_enable_opens_it_again(self):
         pa.disable(self.tmp, "on-demand", helper=lambda folder, script, *a: (0, ""))
@@ -126,7 +131,15 @@ class SocketAnswers(unittest.TestCase):
         with mock.patch("starboard.plugin_life.can_enable"):
             pa.enable(self.tmp, "on-demand", helper=lambda folder, script, *a: (0, ""))
         self.assertTrue(stat.S_ISSOCK(os.lstat(self.path).st_mode))
-        self.assertEqual(self.ask("/api/v1/me", self.key)[0], 200)
+        self.assertEqual(self.ask("/api/v1/me", self.own_key())[0], 200)
+
+    def test_the_key_from_before_a_start_no_longer_works(self):
+        before = self.own_key()
+        with mock.patch("starboard.plugin_life.can_enable"):
+            pa.enable(self.tmp, "on-demand", helper=lambda folder, script, *a: (0, ""))
+        self.assertNotEqual(before, self.own_key())
+        self.assertEqual(self.ask("/api/v1/me", before)[0], 401)
+        self.assertEqual(self.ask("/api/v1/me", self.own_key())[0], 200)
 
     def test_a_stale_socket_from_a_previous_start_is_replaced(self):
         plugin_socket.stop("on-demand")
@@ -134,7 +147,7 @@ class SocketAnswers(unittest.TestCase):
         stale.bind(self.path)
         stale.close()  # the file stays, as after Starboard stopped without tidying up
         self.assertTrue(plugin_socket.serve(self.tmp, "on-demand"))
-        self.assertEqual(self.ask("/api/v1/me", self.key)[0], 200)
+        self.assertEqual(self.ask("/api/v1/me", self.own_key())[0], 200)
 
     def test_nothing_but_a_socket_is_ever_removed(self):
         other = os.path.join(pa.folder(self.tmp, "on-demand"), "run", "not-a-socket")

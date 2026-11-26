@@ -357,7 +357,7 @@ only, so any user a container runs as can read these files:
 | In the container | What it is |
 |---|---|
 | `/run/starboard/settings.json` | The settings, as one JSON object of `key` and value, secrets included. A `schedule` setting is an object, such as `{"every": "month", "date": 31, "time": "03:30"}` (API 1.14) |
-| `/run/starboard/key` | The plug-in's own API key, as one line of text |
+| `/run/starboard/key` | The plug-in's own API key, as one line of text. Starboard makes a new one each time the plug-in starts or updates and revokes the old one, so read the file for each call, not once at start-up (Starboard's helper does). The key ends 30 days after it was last used |
 | `/run/starboard/jellyfin.json` | Only with `jellyfin:key`: `{"url": ..., "api_key": ...}`. An address on the server itself is given as `host.docker.internal` |
 | `/run/starboard/reelix.json` | Only with `reelix:key` (API 1.6): `{"url": ..., "api_key": ...}`, Reelix's address and key |
 | `/run/starboard/usenet.json` | Only with `usenet:servers` (API 1.6): `{"servers": [{"name", "host", "port", "ssl", "user", "password", "connections", "level"}]}`, the active news servers from NZBGet (or SABnzbd), first choice first. Use fewer connections than `connections`: the download app uses the same account |
@@ -377,7 +377,7 @@ Starboard runs on the server's own network, so it cannot join a plug-in's own ne
 plug-in on the `default` network can reach nothing outside it, Starboard's port included. Starboard listens for it
 on a Unix socket in its run folder instead, `STARBOARD_API_SOCKET`. Send the same HTTP requests to that socket, with
 the path from `STARBOARD_API`, any `Host` and the plug-in's own key. The socket answers only `/api/v1`, and only to
-that plug-in's key: another key is refused with `401`. A plug-in on the `lan` network may use either. The helper
+that plug-in's key: another key is refused with `401`. A plug-in with no container on the `lan` network can reach no other address, so its key works on the socket alone, and the port refuses it. A plug-in on the `lan` network may use either. The helper
 `sbplugin.py` in the example plug-ins uses the socket whenever `STARBOARD_API_SOCKET` names one that is there.
 
 Starboard writes `reelix.json` and `usenet.json` again each time it starts and each time the plug-in is activated,

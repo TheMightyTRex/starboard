@@ -17,6 +17,10 @@ the next major version.
 
 ## Plug-in API 1.20.0 (not released yet), 26 November 2026
 
+- **Changed (security):** a plug-in's own key is new each time the plug-in starts or updates (the old one is revoked), and ends
+  30 days after it was last used, so a copied key stops working. A plug-in must read `/run/starboard/key` for each call, as
+  Starboard's helper does. The key of a plug-in with no container on the `lan` network works on its socket only. Keys made
+  before get 30 days from the first start of this version and stay the same until the plug-in next starts.
 - **Added:** `first_sign_in`, a password Starboard makes for an app plug-in and shows once on its page, so the app does
   not start with a default one that everyone knows. The manifest names the sign-in name, the `{secret:name}` the app
   reads from its environment and a file the app's start-up writes once it has set the password. Starboard offers

@@ -809,6 +809,7 @@ def _move_livetv(app):
             again += [n for n in plugins_admin.upgrade_all(app.data_dir, app.config.data["services"]) if n not in again]
             if again:
                 logs.event("info", "plug-ins", f"Started again with this version of Starboard: {', '.join(again)}")
+            plugins_admin.renew_old_keys(app.data_dir)  # keys made before 30 day keys: given an end date once (DASH-603)
     except Exception as e:  # Live TV carries on inside Starboard
         logs.error("live tv", f"Live TV stays in Starboard for now: {e}", e)
 

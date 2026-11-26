@@ -43,6 +43,9 @@ add features.
 - **An even row of controls on a Library item page.** On a radio show, the Following list now sits in the same frame and height as the buttons beside it, and every control on a film, series, artist, book, audiobook or radio show page is one height and wraps on a phone.
 - **A full backup that was not made is now reported.** A scheduled backup with no saved backup password used to say it had run. It now says "No full backup was made", raises an alert and shows a warning in Settings.
 
+### Security
+- **A plug-in's own key changes each time it starts, and ends when it is not used.** The key is new at every start and update, ends 30 days after its last use, and works on the plug-in's socket only when the plug-in cannot reach Starboard's port anyway. A copied key stops working soon.
+
 ## [0.31.0] (25 November 2026)
 
 ### Added
