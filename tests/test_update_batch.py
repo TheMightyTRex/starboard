@@ -126,6 +126,23 @@ class BatchTest(unittest.TestCase):
         update_runs._go(app.data_dir, run, work)
         return run
 
+    def test_only_plug_ins_when_asked(self):
+        """Settings, Plug-ins, Manage and Updates, Plug-ins start the same batch for plug-ins alone: no app, Reelix,
+        Jellyfin or Starboard in the plan, and the same hold-backs."""
+        plan = update_batch.plan(self.app, ["plugin"])
+        self.assertEqual({i["kind"] for i in plan["items"]}, {"plugin"})
+        self.assertEqual([i["target"] for i in plan["items"]], ["plugin:picture-shrinker", "plugin:watch-stats"])
+        everything = update_batch.plan(self.app)
+        self.assertGreater(len(everything["items"]), len(plan["items"]))
+        run = None
+        with mock.patch.object(update_batch, "WATCH_LOOK", 0):
+            run = update_batch.start(self.app, kinds=["plugin"])
+            for _ in range(300):
+                if update_runs.get(self.app, run["id"])["state"] != "running" and not update_runs._busy():
+                    break
+                time.sleep(0.05)
+        self.assertEqual(self.order, ["plugin:picture-shrinker", "plugin:watch-stats"])
+
     def run_batch(self, **k):
         with mock.patch.object(update_batch, "WATCH_LOOK", 0):
             run = update_batch.start(self.app, **k)
@@ -386,8 +403,8 @@ class PanelPage(unittest.TestCase):
     """The panel's words and Close in settings.js (#161, DASH-473), checked as text: no browser in the unit tests."""
     def setUp(self):
         import pathlib
-        js = "".join(p.read_text(encoding="utf-8") for p in sorted((pathlib.Path(__file__).resolve().parent.parent / "web" / "js").glob("settings-*.js")))
-        self.js = js[js.index("const showBatch"):js.index("updatesRefresh = refresh;")]
+        js = "".join(p.read_text(encoding="utf-8") for p in sorted((pathlib.Path(__file__).resolve().parent.parent / "web" / "js").glob("update-run.js")))
+        self.js = js[js.index("const showBatch"):js.index("return { install: installAll")]  # shared by every page that starts updates
 
     def test_the_words_say_whether_it_is_still_working(self):
         self.assertNotIn('"Updates finished"', self.js)
@@ -406,6 +423,10 @@ class PanelPage(unittest.TestCase):
         self.assertIn('"Close"', self.js)
         self.assertIn("/api/updates/all/${id}/close", self.js)
         close = self.js[self.js.index("const closeBatch"):]
-        self.assertIn("batchShown = null", close)
-        self.assertIn('document.getElementById("up-list-h")', close)
-        self.assertIn("announce(", close)
+        self.assertIn("shown = null", close)
+        self.assertIn("onClosed(id)", close)
+        import pathlib
+        page = (pathlib.Path(__file__).resolve().parent.parent / "web" / "js" / "settings-setup.js").read_text(encoding="utf-8")
+        page = page[page.index("onClosed: (id)"):][:500]  # the page puts focus on Ready to update and says it
+        self.assertIn('document.getElementById("up-list-h")', page)
+        self.assertIn("announce(", page)
