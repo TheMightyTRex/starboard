@@ -1,4 +1,4 @@
-// Backup and restore: the whole server (the server's own backup job), then Starboard's settings (download,
+// Settings, General, Backup/Logs, the backup half: the whole server (the server's own backup job), then Starboard's settings (download,
 // restore from a file or from a copy Starboard saved). The password is asked once, in the dialog that confirms.
 
 let serverTimer = null;
@@ -632,7 +632,7 @@ async function showGoBack() {
 
 startPage().then((session) => {
   if (!session) return;
-  // The same script runs Settings, General, Backup and restore and Settings, Updates, Restore (no download or server there).
+  // The same script runs Settings, General, Backup/Logs and Settings, Updates, Restore (no download or server there).
   if ($("#back-command")) { showGoBack(); loadSaved(); showKeepVersions(); }
   const picker = $("#restore-input");
   $("#restore-file").addEventListener("click", () => picker.click());

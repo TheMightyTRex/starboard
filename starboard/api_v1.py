@@ -11,7 +11,7 @@ Rules from starboard/DEVELOPER-BEST-PRACTICE-2026-11-09.md (A1 to A19, AS1 to AS
   address), roll a plug-in back and (1.5.0, DASH-454) install every waiting update as one batch, each with the
   same backup, health check and way back as the pages. The second, since API 1.4.0 (DASH-451): a manage key with
   the logs scope, also never given unless ticked, may change the log limits (days and size) and delete all logs, as
-  Settings, General, Logs and feedback does. The third, since API 1.8.0 (plug-in API 1.17): a plug-in's own key,
+  Settings, General, Backup/Logs does. The third, since API 1.8.0 (plug-in API 1.17): a plug-in's own key,
   which only reads, may raise and clear alerts with POST /api/v1/plugin/alerts, while the plug-in is active and its
   approved permissions include alerts:send; any other key gets 404 (AS6), and a plug-in may raise 30 new alerts an
   hour at most. They go out once until cleared, through the same channel, events and log as Starboard's own;

@@ -3,7 +3,7 @@ stack comparison's recommendation 5): after each Full without media backup, Star
 one other place and keeps only the newest N there, so a failed disk, a theft or a fire does not take every copy (the
 3-2-1 rule: three copies, two kinds of storage, one somewhere else).
 
-The other place, chosen in Settings, General, Backup and restore, Copies off this computer:
+The other place, chosen in Settings, General, Backup/Logs, Copies off this computer:
 - Another disk: a USB disk or a second disk in this computer, as a folder under the usual places (/mnt, /media...).
 - A network share: SMB (Windows, a NAS) or NFS. Docker's own local volume driver mounts it for the moment of the copy,
   so no container needs extra rights, then the volume is let go (the share's files stay).
