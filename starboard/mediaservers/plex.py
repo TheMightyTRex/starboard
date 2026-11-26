@@ -1,5 +1,5 @@
 """Plex as a media server (DASH-566). Plex answers in its own shapes, so each answer is turned into the contract's here.
-The address and token are kept in Settings, Manage apps, as an "Other app" with the icon plex; the token is sent in the
+The address and token are kept in Settings, Manage apps, as an app of the kind Plex; the token is sent in the
 X-Plex-Token header, never in an address, so it does not reach a log."""
 import datetime as dt
 import urllib.request
@@ -28,8 +28,7 @@ def _when(epoch):
 class Plex(mediaserver.MediaServer):
     id = "plex"
     name = "Plex"
-    service_type = "link"
-    service_icon = "plex"
+    service_type = "plex"
     page = ""  # no page of its own yet: its address and token are in Settings, Manage apps
     capabilities = ()  # read only for now
 
@@ -38,6 +37,16 @@ class Plex(mediaserver.MediaServer):
             "X-Plex-Token": service.get("api_key", ""), "Accept": "application/json", "X-Plex-Client-Identifier": "starboard",
             "X-Plex-Product": "Starboard", "User-Agent": services.USER_AGENT})
         return services._fetch(service, req, services.TIMEOUT)
+
+    def public_version(self, service):
+        """The version it tells anyone, with no token (/identity)."""
+        got = self._send(dict(service, api_key=""), "GET", "/identity")
+        box = got.get("MediaContainer") if isinstance(got, dict) else None
+        return str(box.get("version") or "").split("-")[0] if isinstance(box, dict) else ""
+
+    def check_key(self, service):
+        """Asks for something only a token allows; raises ServiceError (the token was refused) when it does not answer."""
+        self._send(service, "GET", "/library/sections")
 
     def _identity(self, found):
         box = (self._send(found, "GET", "/") or {}).get("MediaContainer") or {}
@@ -110,4 +119,4 @@ class Plex(mediaserver.MediaServer):
 
     def keys_needed(self):
         return [{"what": "Plex token", "where": "Plex's web app: open an item, Get info, View XML, and copy X-Plex-Token from the address",
-                 "kept": "Settings, Manage apps, as an Other app with the icon plex"}]
+                 "kept": "Settings, Manage apps"}]

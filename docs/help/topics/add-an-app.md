@@ -24,7 +24,7 @@ Tip: if the app is on the same computer as Starboard,
 
    ![Settings, Apps, Manage apps, with Manage apps (step 1) and Add an app (step 2) outlined](../images/add-an-app-1-manage-apps.png)
 
-3. In **Kind of app**, choose the app, such as **Jellyfin**. For an app that is not in the list, choose
+3. In **Kind of app**, choose the app, such as **Jellyfin**, **Plex** or **Emby**. For an app that is not in the list, choose
    **Other app**.
 4. In **Name**, enter the name for its card, such as `Jellyfin`.
 5. In **Address Starboard uses**, enter the address with `http://` and the port. For an app on the same
