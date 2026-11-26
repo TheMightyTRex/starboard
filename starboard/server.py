@@ -495,7 +495,9 @@ def _installer_started_since(app, since):
 # Pages whose address changed: the old address answers 301 with the new one (a link from a bookmark, a plug-in or an older help page).
 MOVED_PAGES = {"/settings-media-server.html": "/settings-jellyfin.html",  # Settings, Apps: the media server tab (DASH-565)
                "/settings-alerts.html": "/settings-general-alerts.html", "/settings-performance.html": "/settings-general-performance.html",
-               "/settings-performance-pictures.html": "/settings-general-pictures.html",  # DASH-584: Alerts and Performance are in General now
+               "/settings-performance-pictures.html": "/settings-general-performance.html#pf-pictures-h",  # DASH-584: Alerts and Performance are in General now
+               # Owner, 26 November 2026: General has seven tabs. Discover rows are part of Lists, and Pictures is part of Performance.
+               "/settings-general-discover.html": "/settings-general-lists.html#dr-films-h", "/settings-general-pictures.html": "/settings-general-performance.html#pf-pictures-h",
                # DASH-595: Backup and restore, and Logs and feedback, are one tab, Settings, General, Backup/Logs
                "/system-backup.html": "/settings-general-backup.html", "/settings-general-logs.html": "/settings-general-backup.html",
                # Pages that moved on 12 November 2026 (they were a page with a script that sent the browser on): now a 301 too
@@ -1171,8 +1173,9 @@ class Handler(BaseHTTPRequestHandler):
             path = "/dashboard.html"  # the landing page (DASH-239)
         if path in MOVED_PAGES:  # an address that moved (DASH-565, DASH-584): the old one answers 301 with the new one, keeping what follows the page
             query = urllib.parse.urlsplit(self.path).query
-            where = MOVED_PAGES[path]
-            return self.send(301, extra={"Location": where + (("&" if "?" in where else "?") + query if query else ""), "Cache-Control": "no-cache"})
+            where, _, section = MOVED_PAGES[path].partition("#")  # a section in the new place; what the old address had after # is kept by the browser only when this has none
+            where += ("?" + query) if query else ""
+            return self.send(301, extra={"Location": where + (("#" + section) if section else ""), "Cache-Control": "no-cache"})
         if not path.endswith(".html") and "." not in posixpath.basename(path):
             path += ".html"
         public = path in PUBLIC_PAGES or path in PUBLIC_FILES or path.startswith(PUBLIC_PREFIXES)

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
-<title>Pages and lists · General · Settings · Starboard</title>
+<title>Lists and Discover rows · General · Settings · Starboard</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#323a77">
@@ -28,12 +28,27 @@
 <div class="page page--settings">
   <div class="page-head">
     <div class="page-head__text">
-      <h1>Pages and lists</h1>
-      <p class="page-head__summary">What Coming up shows, how long lists load, and the Library's views.</p>
+      <h1>Lists and Discover rows</h1>
+      <p class="page-head__summary">What Coming up shows, how long lists load, the Library's views, and which rows each area of Discover shows. Changes apply at once.</p>
     </div>
   </div>
+  <nav class="page-links" aria-label="On this page">
+    <p class="page-links__title" id="page-links-h">On this page</p>
+    <ul class="page-links__list" aria-labelledby="page-links-h">
+      <li><a href="#gn-up-h">Coming up</a></li>
+      <li><a href="#gn-scroll-h">Long lists</a></li>
+      <li><a href="#library-views-s-h">Library views</a></li>
+      <li><a href="#dr-films-h">Discover, Films</a></li>
+      <li><a href="#dr-tv-h">Discover, TV</a></li>
+      <li><a href="#dr-music-h">Discover, Music</a></li>
+      <li><a href="#dr-radio-h">Discover, Radio</a></li>
+      <li><a href="#dr-books-h">Discover, Books</a></li>
+      <li><a href="#dr-audiobooks-h">Discover, Audiobooks</a></li>
+    </ul>
+  </nav>
   <div class="settings-sections" id="general-sections" data-parts="gn-up gn-scroll" aria-busy="true"></div>
   <div class="settings-sections" id="library-views"></div>
+  <div class="settings-sections" id="discover-areas" data-parts="dr-films dr-tv dr-music dr-radio dr-books dr-audiobooks"></div>
 </div>
 </main>
 </body>

@@ -23,11 +23,11 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "settings-dispatcharr.html",  // Settings, Apps, Dispatcharr (DASH-228)
   // General's level 2 pages (DASH-389)
   "settings-general-appearance.html", "settings-general-lists.html", "settings-general-hours.html", "settings-general-backup.html",
-  "settings-general-discover.html", "discover-tv.html", "discover-books.html",  // Discover rows, a section per area (DASH-396)
+  "discover-tv.html", "discover-books.html",  // Discover rows are sections of Lists, one per area (DASH-396)
   // Downloads' level 2 pages (DASH-390)
   "settings-downloads.html", "settings-downloads-usenet.html", "settings-downloads-hours.html",
   // Radio's, Performance's and Security's level 2 pages (DASH-391)
-  "settings-radio-link.html", "settings-radio-library.html", "settings-radio-logos.html", "settings-general-pictures.html",
+  "settings-radio-link.html", "settings-radio-library.html", "settings-radio-logos.html", "settings-general-performance.html",
   "settings-security-password.html", "settings-security-signin.html", "settings-security-keys.html", "settings-security-sessions.html",
   "settings-plugins.html", "settings-plugins-catalogue.html", "settings-plugin.html?id=direct-play", "settings-plugin.html?id=jellyfin"];  // with the set-up's Audio description offer (DASH-399)
 const SECRET = "made-up-journey-key-7f3a9c1e5b";
@@ -940,7 +940,7 @@ console.log("\n== MENU2 General on the level 2 menu");
 const level2 = async (p) => { await open(p); return (await page.locator(".site-header__tabs .menu-tabs a").evaluateAll((as) => as.map((a) => a.textContent.trim()))).join("|"); };
 const headings = () => page.locator("main .settings-sections h2").evaluateAll((hs) => hs.map((h) => h.textContent.trim()).join("|"));
 check("MENU2-01", "General has General, Appearance, Lists, Discover, Hours, Alerts, Performance, Pictures, Backup/Logs",
-  (await level2("settings-general.html")) === "General|Appearance|Lists|Discover|Hours|Alerts|Performance|Pictures|Backup/Logs", await level2("settings-general.html"));
+  (await level2("settings-general.html")) === "General|Appearance|Lists|Hours|Alerts|Performance|Backup/Logs", await level2("settings-general.html"));
 check("MENU2-01", "each page shows only its own parts", (await headings()) === "Names|Categories|App cards|Set-up guide", await headings());
 await open("settings-general-appearance.html");
 check("MENU2-02", "Appearance holds style and colours, the default design and accessibility", (await headings()) === "Style and colours|Default design|Accessibility", await headings());
@@ -957,7 +957,7 @@ await page.waitForTimeout(300);
 check("MENU2-02", "and a change in Display shows on the page", !(await page.locator("#ap-pref-underline").isChecked()));
 for (const [from, to] of [["settings-general.html#download-hours", "/settings-general-hours.html#download-hours"],
   ["settings-general.html#gn-style-h", "/settings-general-appearance.html#gn-style-h"], ["settings-general.html#logs", "/settings-general-backup.html#logs"],
-  ["settings-general.html?discover=films#discover-rows-s", "/settings-general-discover.html#dr-films"]]) {
+  ["settings-general.html?discover=films#discover-rows-s", "/settings-general-lists.html#dr-films-h"]]) {
   await open("index.html");
   await open(from);
   const at = await page.evaluate(() => location.pathname + location.search + location.hash);
@@ -989,11 +989,12 @@ console.log("\n== MENU2 Radio, Performance and Security on the level 2 menu");
 check("MENU2-05", "Radio has Sources, Add a show from a link, Your podcast library, Station logos",
   (await level2("settings-radio.html")) === "Sources|Add a show from a link|Your podcast library|Station logos", await level2("settings-radio.html"));
 check("MENU2-05", "Sources shows only the sources", (await headings()) === "Sources", await headings());
-check("MENU2-05", "Performance and Pictures are tabs of General", (await level2("settings-general-performance.html")) === "General|Appearance|Lists|Discover|Hours|Alerts|Performance|Pictures|Backup/Logs");
-check("MENU2-05", "Pictures has the picture cache and its Clear", (await level2("settings-general-pictures.html")) && (await headings()) === "Pictures|Clear", await headings());
+check("MENU2-05", "General has seven tabs: Discover is part of Lists and Pictures is part of Performance", (await level2("settings-general-performance.html")) === "General|Appearance|Lists|Discover|Hours|Alerts|Performance|Pictures|Backup/Logs");
+await open("settings-general-performance.html#pf-pictures-h");
+check("MENU2-05", "Performance has the picture cache and its Clear", (await page.locator("#pf-pictures-h").isVisible()) && (await page.locator("#pf-danger-h").count()) === 1, await headings());
 check("MENU2-05", "Security has Who can open the dashboard, Password, Sign-in methods, API keys, Sign out everywhere",
   (await level2("settings-security.html")) === "Who can open the dashboard|Password|Sign-in methods|API keys|Sign out everywhere", await level2("settings-security.html"));
-for (const [from, to] of [["settings-radio.html#radio-logos-h", "/settings-radio-logos.html"], ["settings-general-performance.html#pf-pictures-h", "/settings-general-pictures.html"],
+for (const [from, to] of [["settings-radio.html#radio-logos-h", "/settings-radio-logos.html"], ["settings-general-pictures.html", "/settings-general-performance.html"], ["settings-general-discover.html", "/settings-general-lists.html"],
   ["settings-security.html#sc-keys-h", "/settings-security-keys.html"], ["settings-security.html#sc-pw-h", "/settings-security-password.html"]]) {
   await open("index.html");
   await open(from);
@@ -1004,6 +1005,42 @@ await open("settings-security-sessions.html");
 check("MENU2-06", "Sign out everywhere shows its parts with Advanced settings inactive",
   await page.locator("#sc-ses-h").isVisible() && await page.locator("#sc-danger-h").isVisible());
 await api("/api/config/general", { method: "PUT", body: { settings_advanced: true } });
+
+// Owner, 26 November 2026: every 2nd level row condenses to icons with the current tab in full; General has seven tabs; the
+// old addresses of Discover and Pictures answer 301 to the section that holds them.
+console.log("\n== MENU3 Rows that condense, and General's seven tabs");
+const redirect = async (path) => { const r = await page.request.get(base + path, { maxRedirects: 0 }); return [r.status(), r.headers().location || ""]; };
+for (const [from, to] of [["/settings-general-discover.html", "/settings-general-lists.html#dr-films-h"], ["/settings-general-discover.html?x=1", "/settings-general-lists.html?x=1#dr-films-h"],
+  ["/settings-general-pictures.html", "/settings-general-performance.html#pf-pictures-h"], ["/settings-performance-pictures.html", "/settings-general-performance.html#pf-pictures-h"]]) {
+  const [status, where] = await redirect(from);
+  check("MENU3-01", `${from} answers 301 to ${to}`, status === 301 && where === to, `${status} ${where}`);
+}
+await page.setViewportSize({ width: 375, height: 812 });
+await open("settings-general-hours.html");
+await page.waitForTimeout(600);
+const row = await page.evaluate(() => {
+  const nav = document.querySelector('.site-header__tabs nav[aria-label="General"]');
+  const as = [...nav.querySelectorAll("a")];
+  const label = (a) => a.querySelector(".menu-tabs__label").getBoundingClientRect().width > 2;
+  return { compact: nav.classList.contains("is-compact"), tabs: as.length, minW: Math.min(...as.map((a) => a.getBoundingClientRect().width)),
+    named: as.filter(label).map((a) => a.textContent.trim()), current: as.filter((a) => a.getAttribute("aria-current") === "page").map((a) => a.textContent.trim()) };
+});
+check("MENU3-02", "General has seven tabs and at 375 px shows icons only", row.tabs === 7 && row.compact, JSON.stringify(row));
+check("MENU3-02", "every tab is at least 44 px wide", row.minW >= 43.9, String(row.minW));
+check("MENU3-02", "only the current tab, Hours, shows its name", row.named.join() === "Hours" && row.current.join() === "Hours", JSON.stringify(row));
+await page.locator('.site-header__tabs nav[aria-label="General"] a').first().focus();
+await page.keyboard.press("ArrowRight");
+const moved = await page.evaluate(() => ({ text: document.activeElement.textContent.trim(), named: document.activeElement.querySelector(".menu-tabs__label").getBoundingClientRect().width > 2 }));
+check("MENU3-03", "the right arrow moves focus to the next tab, which shows its name", moved.text === "Appearance" && moved.named, JSON.stringify(moved));
+await page.keyboard.press("End");
+check("MENU3-03", "End goes to the last tab, in view", await page.evaluate(() => { const a = document.activeElement, n = a.closest("nav"); const r = a.getBoundingClientRect(), b = n.getBoundingClientRect(); return a.textContent.trim() === "Backup/Logs" && r.right <= b.right + 1 && r.left >= b.left - 1; }));
+await page.keyboard.press("Home");
+check("MENU3-03", "Home goes to the first tab", await page.evaluate(() => document.activeElement.textContent.trim()) === "General");
+check("MENU3-04", "an icon-only tab has a tooltip, and the page does not scroll sideways",
+  await page.evaluate(() => document.querySelector('.site-header__tabs nav[aria-label="General"] a:not([aria-current]):not(:focus)').dataset.tooltip.length > 0) && await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 0);
+await page.setViewportSize({ width: 1280, height: 860 });
+await page.waitForTimeout(500);
+check("MENU3-05", "at 1280 px General shows every name", await page.evaluate(() => !document.querySelector('.site-header__tabs nav[aria-label="General"]').classList.contains("is-compact")));
 
 // DASH-595: Plex signs in with its own link code, or the token is pasted. Starboard never reads it from Plex's container;
 // the token stays on the server; nothing is asked of plex.tv once the panel is closed. plex.tv is a made-up stand-in here.
@@ -1262,7 +1299,7 @@ check("NT-02", "each channel has its own section", (await page.getByRole("tab", 
 // row (fetched when shown) and no longer as a chip. DASH-396: each area is its own section on Discover rows.
 console.log("\n== GEN Genre rows");
 await api("/api/library/discover-layout?tab=films", { method: "DELETE" });
-await open("settings-general-discover.html#dr-films");
+await open("settings-general-lists.html#dr-films");
 await page.locator("#dr-films-list").waitFor({ timeout: 10000 });
 const genreTicks = await page.locator("#dr-films-list li").evaluateAll((ls) => ls.map((l) => ({
   id: l.dataset.value, on: l.querySelector("input").checked, words: l.querySelector("label").textContent })));
@@ -1318,9 +1355,10 @@ await api("/api/library/discover-filters?tab=films", { method: "POST", body: { f
 // separate section for each in the settings"): Discover rows has a section per area; with topic tabs, only the area
 // shown asks Reelix; each Discover page opens its own section; Radio offers its shared genres as rows.
 console.log("\n== DR Discover rows by area");
-await open("settings-general-discover.html");
-check("DR-01", "Discover rows has a section for each area, in the Discover menu's order",
-  (await headings()) === "Films|TV|Music|Radio|Books|Audiobooks", await headings());
+await open("settings-general-lists.html#dr-films");
+await page.locator("#dr-films-list").waitFor({ timeout: 10000 });
+check("DR-01", "Lists has a section for each Discover area, after its own, in the Discover menu's order",
+  (await page.locator("#topic-tabs [role=tab]").allTextContents()).join("|").endsWith("Films|TV|Music|Radio|Books|Audiobooks"), (await page.locator("#topic-tabs [role=tab]").allTextContents()).join("|"));
 await page.evaluate(() => localStorage.removeItem("starboard.topic-tabs"));
 const asked = [];
 const askedFor = (r) => { const m = r.url().match(/discover-layout\?tab=(\w+)/); if (m) asked.push(m[1]); };
@@ -1330,7 +1368,7 @@ await page.click("text=Change these rows");
 await page.locator("#dr-tv-list").waitFor({ timeout: 10000 });
 await page.waitForTimeout(500);
 check("DR-02", "Discover, TV's Change these rows opens TV's section, with its tab chosen",
-  await page.evaluate(() => location.pathname + location.hash) === "/settings-general-discover.html#dr-tv"
+  await page.evaluate(() => location.pathname + location.hash) === "/settings-general-lists.html#dr-tv"
   && (await page.locator("#topic-tabs [aria-selected=true]").textContent()) === "TV" && await page.locator("#dr-films").isHidden(),
   await page.evaluate(() => location.pathname + location.hash));
 check("DR-02", "and only TV's rows were asked for", asked.join(",") === "tv", asked.join(","));
@@ -1339,15 +1377,15 @@ await page.locator("#dr-radio-list").waitFor({ timeout: 10000 });
 check("DR-02", "choosing the Radio tab asks for Radio's rows then", asked.join(",") === "tv,radio", asked.join(","));
 page.off("request", askedFor);
 await page.evaluate(() => localStorage.setItem("starboard.topic-tabs", "off"));
-for (const [from, to] of [["settings-general-lists.html?discover=radio#discover-rows-s", "/settings-general-discover.html#dr-radio"],
-  ["settings-general-lists.html#discover-rows-s", "/settings-general-discover.html"], ["settings-general-discover.html?discover=books", "/settings-general-discover.html#dr-books"]]) {
+for (const [from, to] of [["settings-general-lists.html?discover=radio#discover-rows-s", "/settings-general-lists.html#dr-radio-h"],
+  ["settings-general-lists.html#discover-rows-s", "/settings-general-lists.html#dr-films-h"], ["settings-general-discover.html?discover=books", "/settings-general-lists.html#dr-books-h"]]) {
   await open("index.html");
   await open(from);
   const at = await page.evaluate(() => location.pathname + location.search + location.hash);
   check("DR-03", `the old address ${from} opens its area`, at === to, at);
 }
 await api("/api/library/discover-layout?tab=radio", { method: "DELETE" });
-await open("settings-general-discover.html#dr-radio");
+await open("settings-general-lists.html#dr-radio");
 await page.locator("#dr-radio-list").scrollIntoViewIfNeeded();
 await page.locator("#dr-radio-list").waitFor({ timeout: 10000 });
 const radioTicks = await page.locator("#dr-radio-list li").evaluateAll((ls) => ls.map((l) => ({ id: l.dataset.value, on: l.querySelector("input").checked })));
@@ -1365,7 +1403,7 @@ check("DR-05", "Discover, Radio shows Comedy as a row, and not as a chip", radio
 await page.locator(".discover-row", { hasText: "Comedy" }).scrollIntoViewIfNeeded();
 await page.locator(".discover-row", { hasText: "Comedy" }).locator(".discover-card").first().waitFor({ timeout: 10000 });
 check("DR-05", "the Comedy row loads its shows when it comes into view", (await page.locator(".discover-row", { hasText: "Comedy" }).locator(".discover-card").count()) > 0);
-await open("settings-general-discover.html#dr-radio");
+await open("settings-general-lists.html#dr-radio");
 await page.locator("#dr-radio-reset").scrollIntoViewIfNeeded();
 await page.click("#dr-radio-reset");
 await page.waitForTimeout(600);

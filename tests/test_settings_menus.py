@@ -23,7 +23,7 @@ def read(*parts):
 
 
 SHELL = load_shell()
-TITLES = {"Lists": "Pages and lists", "Discover": "Discover rows", "Hours": "Download hours"}  # tab name: page heading (DASH-595)
+TITLES = {"Lists": "Lists and Discover rows", "Performance": "Performance and pictures", "Hours": "Download hours"}  # tab name: page heading (DASH-595)
 SCRIPTS = "".join(read(WEB, "js", name) for name in (*sorted(n for n in os.listdir(os.path.join(WEB, "js")) if n.startswith("settings-")),  # settings.js, split by page
                                                      "radio-settings.js", "library-settings.js"))
 
@@ -40,7 +40,7 @@ def parts_of(page):
 
 class SettingsMenusTest(unittest.TestCase):
     WANT = {
-        "General": ["General", "Appearance", "Lists", "Discover", "Hours", "Alerts", "Performance", "Pictures", "Backup/Logs"],
+        "General": ["General", "Appearance", "Lists", "Hours", "Alerts", "Performance", "Backup/Logs"],
         "Downloads": ["VPN", "Usenet", "Download hours"],
         "Radio": ["Sources", "Add a show from a link", "Your podcast library", "Station logos"],
         "Security": ["Who can open the dashboard", "Password", "Sign-in methods", "API keys", "Sign out everywhere"],
@@ -117,7 +117,7 @@ class DiscoverRowsPageTest(unittest.TestCase):
     AREAS = ["films", "tv", "music", "radio", "books", "audiobooks"]
 
     def test_one_section_per_area_in_the_discover_menu_order(self):
-        self.assertEqual(parts_of("settings-general-discover.html"), [f"dr-{a}" for a in self.AREAS])
+        self.assertIn(" ".join(f"dr-{a}" for a in self.AREAS), read(WEB, "settings-general-lists.html"))
         order = [p[0][0].replace("discover-", "").replace(".html", "") for label, _, p in
                  next(s for s in SHELL.MENU if any(pg[0] == "discover-films.html" for _, _, pages in s[3] for pg in pages))[3]
                  if p[0][0].replace("discover-", "").replace(".html", "") in self.AREAS]
@@ -126,12 +126,12 @@ class DiscoverRowsPageTest(unittest.TestCase):
 
     def test_each_discover_page_opens_its_own_section(self):
         for area in self.AREAS:
-            self.assertIn(f'href="/settings-general-discover.html#dr-{area}">Change these rows', read(WEB, f"discover-{area}.html"))
+            self.assertIn(f'href="/settings-general-lists.html#dr-{area}">Change these rows', read(WEB, f"discover-{area}.html"))
 
     def test_old_addresses_go_to_the_page(self):
         block = SCRIPTS.split("const MOVED_PARTS = {", 1)[1].split("\n};", 1)[0]
-        self.assertIn('"discover-rows-s": "settings-general-discover.html"', block)
-        self.assertIn("#dr-${area}", SCRIPTS)
+        self.assertIn('"discover-rows-s": "settings-general-lists.html"', block)
+        self.assertIn("#dr-${/^[a-z]{2,12}$/.test(area || \"\") ? area : \"films\"}-h", SCRIPTS)
 
 
 if __name__ == "__main__":
@@ -171,13 +171,13 @@ class BackupLogsTabTest(unittest.TestCase):
             self.assertEqual(server.MOVED_PAGES.get("/" + old), "/" + self.PAGE)
         # Every address that moved ends on a page that exists (no chain of moves, none to a missing page).
         for old, new in server.MOVED_PAGES.items():
-            self.assertTrue(os.path.isfile(os.path.join(WEB, new.lstrip("/").split("?")[0])), f"{old} moves to a missing page {new}")
-            self.assertNotIn(new.split("?")[0], server.MOVED_PAGES, f"{old} moves to {new}, which moved again")
+            self.assertTrue(os.path.isfile(os.path.join(WEB, new.lstrip("/").split("?")[0].split("#")[0])), f"{old} moves to a missing page {new}")
+            self.assertNotIn(new.split("?")[0].split("#")[0], server.MOVED_PAGES, f"{old} moves to {new}, which moved again")
 
     def test_pages_that_moved_in_earlier_work_answer_301_too(self):
         server = load_server()
         want = {"/settings-alerts.html": "/settings-general-alerts.html", "/settings-performance.html": "/settings-general-performance.html",
-                "/settings-performance-pictures.html": "/settings-general-pictures.html", "/settings-media-server.html": "/settings-jellyfin.html",
+                "/settings-performance-pictures.html": "/settings-general-performance.html#pf-pictures-h", "/settings-media-server.html": "/settings-jellyfin.html",
                 "/wanted.html": "/wanted-films.html", "/wanted-quality.html": "/wanted-films.html?list=cutoff", "/discover-trending.html": "/discover-films.html"}
         for old, new in want.items():
             self.assertEqual(server.MOVED_PAGES.get(old), new, old)

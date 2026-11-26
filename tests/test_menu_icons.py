@@ -22,7 +22,6 @@ class MenuIcons(unittest.TestCase):
 
     def test_the_three_swaps(self):
         rows = {p: ic for _, _, _, items in shell.MENU for _, _, pages in items for p, _, ic in pages}
-        self.assertEqual(rows["settings-general-pictures.html"], "image")
         self.assertEqual(rows["settings-tdarr.html"], "cpu")
         self.assertEqual(rows["settings-updates.html"], "circle-arrow-up")
 
