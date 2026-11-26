@@ -2,7 +2,7 @@
  * Made by tools/parts.py from components.js in github.com/TheMightyTRex/design-system: change it there, not here. */
 (() => {
   const S = window.SharedComponents;
-  const { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus } = S.kit;
+  const { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus, notice } = S.kit;
 
   /* Sparkline: sparkline(svg, values, { period, unit, min, max }) draws a small line in a stat tile and writes the
      numbers in words into the tile's .stat__trend ("Last hour: 18% to 42%, lowest 12%, highest 61%"), which is what

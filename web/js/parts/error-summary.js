@@ -2,7 +2,7 @@
  * Made by tools/parts.py from components.js in github.com/TheMightyTRex/design-system: change it there, not here. */
 (() => {
   const S = window.SharedComponents;
-  const { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus } = S.kit;
+  const { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus, notice } = S.kit;
 
   /* Error summary (after GOV.UK) and field errors. showErrors(form, [{ field: "id", message }]) writes each field's
      .field-error ("Error: " for screen readers), ties it with aria-describedby, sets aria-invalid, fills the form's
