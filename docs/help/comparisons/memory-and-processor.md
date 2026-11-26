@@ -10,11 +10,13 @@ before it has a library. [How the tests were run](how-the-tests-were-run.md) has
 ## In short
 
 - **Starboard and Reelix Lite together idle in about 35 MiB.** The apps they replace (Radarr, Sonarr, Lidarr,
-  Readarr, Prowlarr and Jellyseerr) idle in about 645 MiB: about 18 times as much, from 6 containers instead of 2.
+  Readarr, Prowlarr and Jellyseerr) idle in about 645 MiB. That is about 18 times as much, from 6 containers instead
+  of 2.
 - **At rest, both use almost no processor:** 0.03% of one core for Starboard and Reelix Lite, against 0.39% for the
   six apps they replace.
 - **On a whole stack,** with Jellyfin, Audiobookshelf, qBittorrent and NZBGet added to each, Starboard's stack idles
-  in about 798 MiB, a classic stack in about 1,409 MiB and a stack led by a dashboard in about 1,644 to 1,668 MiB.
+  in about 798 MiB. A classic stack idles in about 1,409 MiB, and a stack led by a dashboard in about 1,644 to 1,668
+  MiB.
 - **Jellyfin is the largest part of every stack.** Starboard saves memory on everything around it.
 
 ## Read these figures with care
@@ -22,24 +24,24 @@ before it has a library. [How the tests were run](how-the-tests-were-run.md) has
 > [!IMPORTANT]
 > The computer was very busy during the tests. Another program was converting a video on 6 to 9 of its 12
 > processor threads, and its memory was nearly full. When memory runs short, Linux takes back file cache that Docker
-> counts as an app's memory, so **every memory figure here is lower than it would be on a quiet computer.** Every app
+> counts as an app's memory. So **every memory figure here is lower than it would be on a quiet computer.** Every app
 > ran under the same conditions, so the apps compare fairly with each other. Compare figures within this page, not
 > with figures measured on another day.
 
 - **Units.** Memory is in mebibytes (MiB), as Docker reports it; 1 MiB is about 1.05 megabytes. Processor is a
   percentage of one processor core, so 100% is one core fully busy.
-- **Median and peak.** Each app was read 36 times over 3 minutes. The median is the middle reading; the peak is the
-  highest.
+- **Median and peak.** We read each app 36 times over 3 minutes. The median is the middle reading, and the peak is
+  the highest.
 - **Empty apps.** Memory with a real library is higher for every app. For the figures on a real server, read
   [Basics, Full install and Everything](../topics/install-types.md#memory-and-processor).
-- **Readarr** could not be measured, because it has no image that can be pulled. Its figures are an estimate from
+- **Readarr** could not be measured, because it has no image to pull. Its figures are an estimate from
   4 November 2026: about 120 MB and 0.07% of a core.
 
 ## Whole stacks
 
-Each stack has its own apps plus four apps every stack shares: Jellyfin, Audiobookshelf, qBittorrent and NZBGet. The
-shared apps were read on a real server on the same day, with real libraries: 763.5 MiB and 1.60% of a core together,
-counted the same way for every stack.
+Each stack has its own apps plus four apps every stack shares: Jellyfin, Audiobookshelf, qBittorrent and NZBGet. We
+read the shared apps on a real server on the same day, with real libraries. Together they used 763.5 MiB and 1.60%
+of a core, and we counted them the same way for every stack.
 
 <table>
 <caption>Whole stacks at rest, 13 November 2026, including the four shared apps</caption>
@@ -56,7 +58,7 @@ counted the same way for every stack.
 </tbody>
 </table>
 
-Leaving out the shared apps, which every stack has, Starboard's stack uses about 18 times less memory than the
+Leave out the shared apps, which every stack has, and Starboard's stack uses about 18 times less memory than the
 classic stack and about 25 to 26 times less than a stack led by a dashboard. On the whole stack it saves about 610 MiB
 against the classic stack and about 845 to 870 MiB against a stack led by a dashboard.
 
@@ -143,12 +145,12 @@ internet it rests at almost nothing, so the figure with internet is the fair one
 </tbody>
 </table>
 
-Recyclarr does its work in short runs. One run without internet stopped after 2.4 seconds at 61 MiB; with internet
+Recyclarr does its work in short runs. One run without internet stopped after 2.4 seconds at 61 MiB. With internet
 it took 17.3 seconds and peaked at 138 MiB and 82% of a core.
 
 ## Compared with 4 November 2026
 
-The same test on 4 November 2026, on a quieter computer, gave higher figures for every app: Radarr used 163.0 MB
+The same test on 4 November 2026, on a quieter computer, gave higher figures for every app. Radarr used 163.0 MB
 then and 106.3 MiB now. Reelix against the five apps it replaces was about 33 times smaller then and about 29 times
 smaller now, so the gap is about the same. Treat 13 November as a fair comparison between apps, and 4 November as
 closer to what a quiet computer shows.

@@ -3,16 +3,16 @@
 
 # How the tests were run, and how to repeat them
 
-This page says how the comparison tests of 13 November 2026 measured each app, on what computer and under what
+This page says how the comparison tests of 13 November 2026 measured each app. It covers the computer, the
 conditions, and how to run the same tests on your own computer. The results are in
 [Memory and processor](memory-and-processor.md).
 
 ## What was measured
 
 How much memory and processor each app uses at rest, on a fresh, empty set-up: 26 apps in all. These were Starboard,
-both versions of Reelix and the On demand plug-in; the apps Reelix replaces; five other dashboards; and ten apps
-people often add to a media stack. Four apps every stack shares (Jellyfin, Audiobookshelf, qBittorrent and NZBGet)
-were read on a real server on the same day.
+both versions of Reelix and the On demand plug-in, the apps Reelix replaces, five other dashboards, and ten apps
+people often add to a media stack. We read four apps that every stack shares (Jellyfin, Audiobookshelf, qBittorrent
+and NZBGet) on a real server on the same day.
 
 ## The method
 
@@ -20,18 +20,19 @@ were read on a real server on the same day.
 2. Every app ran on a Docker network with no way out to the internet, so no app could fetch anything during the test.
    No app had a memory or processor limit.
 3. Three apps ran at a time. Each had 120 seconds to settle.
-4. Then Docker's own figures (`docker stats`) were read every 5 seconds for 3 minutes: 36 readings for each app.
-5. For each app, the median and the highest of the 36 readings were kept, for memory and for processor, with its
+4. Then we read Docker's own figures (`docker stats`) every 5 seconds for 3 minutes. That gave 36 readings for each
+   app.
+5. For each app, we kept the median and the highest of the 36 readings, for memory and for processor, with its
    number of threads.
-6. After each group of three, each app's log was kept, and its container and volume were removed.
-7. The whole stacks were made by adding up the medians. Each stack has the same four shared apps, from the reading
+6. After each group of three, we kept each app's log and removed its container and volume.
+7. We made the whole stacks by adding up the medians. Each stack has the same four shared apps, from the reading
    on the real server.
 
 Every image was pulled by its exact digest, so the versions are known and can be tested again.
 
-A few apps needed something to start at all. Homarr and Jellystat needed a made-up secret key, Jellystat needed its
-own database beside it (the two are measured together), and Organizr needed internet once, to fetch its own code,
-before it was measured without internet like the others.
+A few apps needed something to start at all. Homarr and Jellystat needed a made-up secret key. Jellystat needed its
+own database beside it, so we measured the two together. Organizr needed internet once, to fetch its own code,
+before we measured it without internet like the others.
 
 ## The computer
 
@@ -48,8 +49,8 @@ before it was measured without internet like the others.
 
 ## The conditions, which matter
 
-The computer was very busy. A video conversion was running the whole time, other work was building software and
-testing in a browser, and the swap was full, with 3.0 to 6.7 GiB of memory free.
+The computer was very busy. A video conversion ran the whole time, other work built software and tested in a browser, and the swap was full.
+Between 3.0 and 6.7 GiB of memory was free.
 
 - **Memory figures are lower than on a quiet computer.** When memory runs short, Linux takes back file cache that
   Docker counts as an app's memory. This happened to every app, so the apps still compare fairly with each other.

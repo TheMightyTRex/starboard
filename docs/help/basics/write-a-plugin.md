@@ -34,7 +34,7 @@ Every manifest has these fields:
 }
 ```
 
-`id` uses lower case letters, numbers and hyphens. `permissions` lists what it may do; people read each one, with
+`id` uses lower case letters, numbers and hyphens. `permissions` lists what it may do. People read each one, with
 its risk level, before they add it. The full list is in [What a plug-in can change](what-plugins-can-change.md).
 
 ## Styles
@@ -46,16 +46,16 @@ colours, written as `#rrggbb`:
 `accent_text`, `accent_soft` and `focus`.
 
 It can also set `radius` (0 to 24), `font` (`hyperlegible`, `system`, `rounded`, `serif` or `mono`) and `shadow`
-(`none`, `soft` or `strong`). Starboard checks every style in light and dark before it can be added: text needs a
-contrast of at least 4.5 to 1 with what is behind it, and borders and the focus ring 3 to 1 (WCAG 2.2). The Styles
+(`none`, `soft` or `strong`). Starboard checks every style in light and dark before anyone can add it. Text needs a
+contrast of at least 4.5 to 1 with what is behind it, and borders and the focus ring need 3 to 1 (WCAG 2.2). The Styles
 plug-in in [The plug-in collection](plugin-collection.md) is a full example to copy.
 
 ## Dashboard cards
 
 ### What cards are for
 
-A card puts one small piece of your plug-in on the dashboard, next to Starboard's own cards: how many titles it has,
-the last few things it did, or whether it is working. People add your card with **Edit dashboard**, choose its
+A card puts one small piece of your plug-in on the dashboard, next to Starboard's own cards. It might show how many
+titles the plug-in has, the last few things it did, or whether it is working. People add your card with **Edit dashboard**, choose its
 size and move it. Use a card for something worth knowing at a glance. Long lists, settings and anything people act
 on belong in the plug-in's own section of **Settings**, then **Plug-ins**. Read
 [Use and change the dashboard](../topics/use-the-dashboard.md) for how people add cards.
@@ -65,7 +65,7 @@ on belong in the plug-in's own section of **Settings**, then **Plug-ins**. Read
 A setting of type `folder` lets people choose a folder for your plug-in with Browse, as they do everywhere else in
 Starboard. It needs plug-in API 1.3 (`"starboard_api": ">=1.3 <2.0"`) and a container that mounts the media folder,
 `media:ro`, or one folder in it, `media/<folder>`. The folder is always inside what you mount, and your plug-in reads
-it by its path inside the plug-in, such as `/media/music`. Nothing outside the media folder can be chosen.
+it by its path inside the plug-in, such as `/media/music`. People cannot choose anything outside the media folder.
 
 ### The three kinds
 
@@ -100,22 +100,26 @@ it by its path inside the plug-in, such as `/media/music`. Nothing outside the m
 
 - It asks your path at most once a minute, and only while someone has a dashboard with your card open.
 - It waits 3 seconds at most and reads 64 KB at most.
-- It shows your text as text, never as HTML, and cuts it to length: labels 40 characters, notes 80, list titles 80,
-  details 120 and status text 160.
+- It shows your text as text, never as HTML, and cuts it to length. The limits are 40 characters for labels, 80 for
+  notes, 80 for list titles, 120 for details and 160 for status text.
 - Links must start with `http://` or `https://`, and open in a new tab.
 - If your page does not answer, or answers the wrong shape, the card says "No answer from" your plug-in.
-- From plug-in API 1.14, it draws every plug-in card with a grey band across the top: your logo (or your plug-in's
-  initials), your plug-in's name as the heading, and at the right a status chip, with when it last updated in a lighter footer. Add
-  `status` and `updated` to your answer to fill them, and a small `logo` to the manifest. Read
+- From plug-in API 1.14, it draws every plug-in card with a grey band across the top. The band holds your logo (or
+  your plug-in's initials), your plug-in's name as the heading, and at the right a status chip. A lighter footer
+  shows when the card last updated. Add `status` and `updated` to your answer to fill them, and a small `logo` to the
+  manifest. Read
   [The card band](../developers/plugin-api-reference.md#the-card-band-api-114) and
   [Logo](../developers/plugin-manifest-reference.md#logo).
 
 ## When you make a new version
 
 People update your plug-in from its page, after reading what is new. From plug-in API 1.14, the manifest can make
-that safe: `changes` says what is new, `update.migrations` moves settings you renamed or removed, `update.before`
-lets the plug-in finish its work first, and Starboard waits for its `health` path and goes back by itself if the new
-version does not answer. Read [Write a plug-in that updates safely](../developers/update-a-plugin-safely.md).
+that safe:
+
+- `changes` says what is new.
+- `update.migrations` moves settings you renamed or removed.
+- `update.before` lets the plug-in finish its work first.
+- Starboard waits for the plug-in's `health` path and goes back by itself if the new version does not answer. Read [Write a plug-in that updates safely](../developers/update-a-plugin-safely.md).
 
 ## Test your plug-in
 
@@ -123,7 +127,7 @@ In **Settings**, then **Plug-ins**, under **Test a plug-in**, choose your `starb
 On a computer with Starboard's files, run `python3 -m starboard.plugin_tester path/to/your-plugin`. Each issue says
 where it is, what is wrong and how to fix it:
 
-- **Errors** stop the plug-in being added.
+- **Errors** stop Starboard adding the plug-in.
 - **Warnings** should be fixed.
 - **Tips** are worth reading.
 

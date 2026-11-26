@@ -3,7 +3,7 @@
 
 # Set up your dashboard after installing
 
-This guide takes you from a new password to a working media server with the default install: Starboard and
+This guide takes you from a new password to a working media server with the default install. That is Starboard and
 Reelix Lite, with the apps they need to find, download and play your films, series, books, audiobooks, music and
 radio. It takes about 20 minutes, most of it waiting for downloads.
 
@@ -12,9 +12,9 @@ can change later is in [More options](#more-options).
 
 ## Before you begin
 
-- Starboard is installed and you have chosen your password. If not, start with
+- You have installed Starboard and chosen your password. If not, start with
   [Quick start: one command sets up everything](quick-start.md).
-- An account with a VPN (virtual private network) provider is recommended. Downloads go through it, so your
+- We recommend an account with a VPN (virtual private network) provider. Downloads go through it, so your
   internet provider and other people sharing torrents cannot tell what you download or find your home internet address.
   You can continue without one and add it later: read [Download without a VPN](../topics/download-without-a-vpn.md).
 - Optional: a free TMDB key from themoviedb.org, for film and series posters. You can add it later.
@@ -100,14 +100,14 @@ something to watch: follow [Search for and add films, series, music and books](.
 The default install is complete on its own. Add these only when you want what they do.
 
 - **An app Starboard offers,** such as Jellystat for watch statistics, Kavita for reading ebooks, Wizarr for
-  invitations or Tdarr for smaller files: go to **System**, then **Apps**, then **Install apps**, and select **Add**
+  invitations or Tdarr for smaller files: go to **System**, then **Apps**, then **Install apps**. Select **Add**
   beside it under **You can add**. Read [Install apps with Starboard](../topics/install-apps.md).
-- **A bigger install,** Full install or Everything, or the version of Reelix with YouTube and Spotify downloads:
-  read [Basics, Full install and Everything](../topics/install-types.md), then
+- **A bigger install,** Full install or Everything, or the version of Reelix with YouTube and Spotify downloads.
+  Read [Basics, Full install and Everything](../topics/install-types.md), then
   [Change your install](../topics/change-your-install.md).
 - **An app you already run yourself,** such as Plex: read
-  [Search for apps already on your server](../topics/search-for-new-apps.md) or [Add an app](../topics/add-an-app.md),
-  then give it its API key with [Find an app's API key](../topics/find-an-api-key.md).
+  [Search for apps already on your server](../topics/search-for-new-apps.md) or [Add an app](../topics/add-an-app.md).
+  Then give it its API key with [Find an app's API key](../topics/find-an-api-key.md).
 - **An existing set-up with Sonarr, Radarr, Prowlarr or Seerr:** Reelix does their work, so a new install does not
   have them. Read [Move from Radarr, Sonarr and the others to Reelix](../topics/move-your-apps-to-reelix.md).
 - **A plug-in,** such as free Live TV in Jellyfin: read [Add a plug-in](../topics/add-a-plugin.md) and
@@ -129,8 +129,9 @@ The default install works with all of these as they are. Change them when you wa
   then [Change or remove an app](../topics/change-or-remove-an-app.md#change-an-apps-details).
 - **Reelix's sites and settings:** [Choose the sites Reelix searches](../topics/choose-sites-to-search.md) and
   [Change Reelix's settings in Starboard](../topics/change-reelix-settings.md).
-- **The set-up guide again:** go to **Settings**, then **General**, then **Names and apps**, activate **More
-  settings**, and select **Run the set-up guide again** under **Set-up guide**. Nothing changes until you select **Continue**.
+- **The set-up guide again:** go to **Settings**, then **General**, then **Names and apps**. Activate **More
+  settings**, then select **Run the set-up guide again** under **Set-up guide**. Nothing changes until you select
+  **Continue**.
 
 ## What next
 

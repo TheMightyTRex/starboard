@@ -3,13 +3,13 @@
 
 # Update a plug-in and roll it back
 
-When a plug-in has a newer version, update it from its own page. Starboard shows what is new and how the update is
-kept safe before anything changes, keeps the version you had, and goes back to it by itself if the new one does not
-work. You can roll back to the version you had at any time.
+When a plug-in has a newer version, update it from its own page. Before anything changes, Starboard shows what is
+new and how it keeps the update safe. It keeps the version you had and goes back to it if the new one does not work.
+You can roll back to the version you had at any time.
 
 ## Before you begin
 
-- The plug-in is added. Read [Add a plug-in](add-a-plugin.md) if it is not.
+- You have added the plug-in. If you have not, read [Add a plug-in](add-a-plugin.md).
 - You know your Starboard password. Updating and rolling back ask for it.
 - Starboard reads the plug-in catalogues again every 6 hours. To check now, select **Check for updates now**. It is on
   **Settings**, **Updates**, **Plug-ins**, on **Settings**, **Plug-ins**, **Manage**, on the **Catalogue** and on each
@@ -58,19 +58,20 @@ On **Settings**, **Updates**, **Plug-ins**, **Update by themselves** activates a
    have may not is marked **New**. Read the rest:
    - **What is new since** your version: each version's changes, under **Added**, **Changed**, **Fixed** and other
      headings.
-   - **How the update is kept safe**: which of your settings move to the new version, whether Starboard asks the
-     plug-in to finish its work first, and how long Starboard waits for the new version to answer.
+   - **How the update is kept safe**: which of your settings move to the new version. It also says whether
+     Starboard asks the plug-in to finish its work first, and how long Starboard waits for the new version to
+     answer.
 
    ![The Update Picture shrinker to 1.1.0 slide-out, with What is new since 1.0.0 (step 4) outlined, and How the update is kept safe under it, with example data](../images/update-a-plugin-3-warning.png)
 
 5. To go ahead, enter your Starboard password and select **Update** and the plug-in's name. To stop, select
    **Cancel**: nothing changes.
-6. A dialog shows each step with its state: **Asking it to get ready**, **Moving its settings**, **Installing the
-   new version**, **Waiting for it to answer** and **Asking it to tidy up**. A step the plug-in does not need is left
-   out. It takes a few seconds, or up to a few minutes for a large plug-in.
+6. A dialog shows each step with its state. The steps are **Asking it to get ready**, **Moving its settings**,
+   **Installing the new version**, **Waiting for it to answer** and **Asking it to tidy up**. The dialog leaves out any step the
+   plug-in does not need. The update takes a few seconds, or up to a few minutes for a large plug-in.
 7. When it ends, the dialog says **is updated** and the plug-in's name. Select **Done**.
-8. The plug-in's **State**, in **General**, shows **What is new** and the new version. Select **Got it** when you have read it: it is
-   then hidden on every device.
+8. The plug-in's **State**, in **General**, shows **What is new** and the new version. Select **Got it** when you have read it. Starboard then hides it on every
+   device.
 
    ![The Styles plug-in's State after an update, with What is new in 1.1.0 and Got it (step 8) outlined, with example data](../images/update-a-plugin-4-state.png)
 
@@ -98,21 +99,21 @@ For a plug-in that is not in a catalogue, such as one from its maker's own page:
 3. Select **What is new**. The same slide-out opens: go on from step 4 of
    [Update a plug-in](#update-a-plug-in).
 
-A plug-in you added from a zip file has **Update from a zip file** there instead: choose the new version's zip, then
+A plug-in you added from a zip file has **Update from a zip file** there instead. Choose the new version's zip, then
 select **What is new**. Read [Add a plug-in from a zip file](add-a-plugin-from-a-zip-file.md#update-it-from-a-newer-zip).
 
 ## Things to note
 
-- **If the new version does not work:** when it does not start, or does not answer within the time its maker set,
-  Starboard goes back to the version you had by itself, with your settings as they were. The dialog says
-  **went back to** and why, the plug-in's **State** says so, and you get an alert if alerts are active. Nothing is
-  lost: the plug-in carries on as before.
+- **If the new version does not work:** if it does not start or does not answer in the time its maker set,
+  Starboard goes back to the version you had, with your settings as they were. The dialog says **went back to** and
+  why. The plug-in's **State** says so too, and you get an alert if alerts are active. Nothing is lost, and the
+  plug-in carries on as before.
 - **If the plug-in is not ready:** a plug-in can ask Starboard to wait, for example while it is half way through a
   job. Nothing changes, and the dialog says why. Try again later.
-- **Your settings:** when a setting is renamed or removed in the new version, its maker says how it moves, and the
-  slide-out lists it before you update. A setting you never changed may take the new version's default.
+- **Your settings:** if the new version renames or removes a setting, its maker says how the setting moves. The
+  slide-out lists this before you update. A setting you never changed may take the new version's default.
 - **Only one earlier version is kept.** Updating again replaces it with the version you are on now.
-- **Inactive plug-ins** are updated straight away, with no steps: the new version starts when you activate it.
+- **Inactive plug-ins** update straight away, with no steps. The new version starts when you activate it.
 - **Plug-ins built into Starboard,** such as Live TV, update with Starboard. Read [Update Starboard](update-starboard.md).
 - One update runs at a time, for Starboard, its apps and its plug-ins. To install every waiting update in one go, read
   [Install all updates at once](update-starboard.md#install-all-updates-at-once).

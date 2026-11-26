@@ -1992,55 +1992,55 @@ RELEASES = [
         "version": "0.29.0",
         "date": "23 November 2026",
         "added": [
-            ["Remove drop shadows", "A new switch in Display, and a question in the set-up, takes every drop shadow off the pages for everyone on the server, which helps small and older computers; cards, covers, menus and dialogs keep their borders."]
+            ["Remove drop shadows", "A new switch in Display takes every drop shadow off every page for everyone on the server, which helps small and older computers. A new Reelix Lite install starts with shadows removed, and an older install keeps its shadows."]
         ],
         "changed": [
-            ["Covers take the card shading everywhere", "Every cover, in the Library, Discover, Search, Wanted, item pages, collections, books, plug-ins and the help centre, now has the card's border, corner and shadow. The covers add about 630 bytes of CSS once compressed; scrolling a 200-cover wall in a software-rendered browser showed 236 frames over 17 ms with shadows against 180 without, which cannot see the cost on real graphics hardware."]
+            ["Covers take the card shading everywhere", "Every cover now has the card's border, corner and shadow, in the Library, Discover, Search, Wanted, item pages, collections, books, plug-ins and the help centre. Activate Remove drop shadows if a small or older computer scrolls badly."]
         ],
         "fixed": [
-            ["Updates now offers a newer qBittorrent build", "An app kept on one LinuxServer.io build tag, such as qBittorrent on libtorrentv1, was compared with itself and always called up to date. Starboard now offers the newer build on the same branch and never changes branch. An app on a pinned tag whose new version does not start or is not healthy now goes back to the old tag by itself, as other apps do."],
-            ["Updates remembers its last check across a restart", "Apps, Updates says when the apps were last checked, with the day when it was not today, even after Starboard restarts, and a busy registry (a 429 answer) gets one second try after the wait it asks for."]
+            ["Updates offers a newer qBittorrent build", "An app kept on one LinuxServer.io build tag now gets the newer build on the same branch, and never changes branch. An app on a pinned tag whose new version is not healthy goes back to the old tag by itself."],
+            ["Updates remembers its last check across a restart", "Apps, Updates now says when apps were last checked, even after Starboard restarts, and tries once more when the registry is busy."]
         ],
         "security": [
-            ["Security scan", "Trivy (image and configuration), Gitleaks, Bandit, ShellCheck, Hadolint and ZAP signed out (58 passed) and signed in (111 passed) found nothing to fix. This release fixes no security problem. CodeQL alerts 77 to 79 (py/path-injection in starboard/posters.py, DASH-531) and 82 (py/full-ssrf in starboard/oidc.py, DASH-542) are still open: they are not fixed or dismissed here."]
+            ["Security scan", "Trivy, Gitleaks, Bandit, ShellCheck, Hadolint and ZAP found nothing to fix, and this release fixes no security problem. CodeQL alerts 77 to 79 and 82 are still open, neither fixed nor dismissed here."]
         ],
         "review": [],
-        "settings": "Your settings stay as they are. Remove drop shadows is a new setting in Display: on an install from before it starts off, so your pages keep their shadows, and your first visit after the update says so once. A new Reelix Lite install starts with shadows removed, and any other new install keeps them; the set-up asks, and your own choice is never changed when you switch between Reelix Lite and the full Reelix. Updates keeps a small file, data/app-check.json, with the time of the last app check. To go back, run ./update.sh --to v0.28.0."
+        "settings": "Your settings stay as they are, and your own shadows choice never changes when you switch between Reelix Lite and the full Reelix. Remove drop shadows is new in Display: a new Reelix Lite install removes them, and an older install keeps them and says so once. Updates keeps a small file, data/app-check.json, with the time of the last app check. To go back, run ./update.sh --to v0.28.0."
     },
     {
         "version": "0.30.0",
         "date": "24 November 2026",
         "added": [
-            ["Stallboard as a catalogue source", "Settings, Plug-ins, Catalogue has a Stallboard catalogue tick that reads Stallboard's catalogue once a day, says who reviews it, installs nothing by itself and never marks its plug-ins Recommended."],
-            ["Why is this here? for found apps", "System, Apps, Other services has a button that says what found each app (its usual port or a Docker port) and what it matched on, and for each app it did not find, which addresses it tried and why they did not match."],
-            ["A health line on Reelix's card", "When some of Reelix's sites to search are failing, its card on Apps says so, for example \"1 of 3 sites failing\", and links to Sites to search; when Reelix does not answer there is no line, never a wrong number."],
-            ["What is using the processor now", "System, Overview has a Busy now page that lists the busiest containers and processes by processor and memory when it is opened or when Check again is pressed, never on a timer, and it cannot stop or change anything."],
-            ["Limit the logs shown, with an Alerts only switch", "System, Logs has Lines shown (50, 100, 200, 500 or 1,000) and an Alerts only switch, kept for the account, and Download and Copy the details give the same newest lines; Show older entries is gone."]
+            ["Stallboard as a catalogue source", "Settings, Plug-ins, Catalogue has a Stallboard catalogue tick that reads Stallboard's list once a day. Installing from it still shows what each plug-in asks for first."],
+            ["Why is this here? for found apps", "System, Apps, Other services has a button that says what found each app, and why an app was not found."],
+            ["A health line on Reelix's card", "When some of Reelix's sites to search fail, its card on Apps says so, for example \"1 of 3 sites failing\". The words link to Sites to search."],
+            ["What is using the processor now", "System, Overview has a Busy now page that lists the containers and processes using the most processor and memory. It reads only when you open it or select Check again, and it cannot stop or change anything."],
+            ["Limit the logs shown", "System, Logs has Lines shown (50, 100, 200, 500 or 1,000) and an Alerts only switch. Download now saves only those lines, and Show older entries is gone."]
         ],
         "fixed": [
-            ["The content check passes again", "Five lines that used words the check rejects are reworded with the same meaning, so the words check finds none."],
-            ["A plug-in's schedule control shows the real default", "Until a schedule was saved, the control showed Sunday at 03:30 while the job used the plug-in's own default; it now shows that default, which matters for a plug-in updated to a version that adds a schedule setting."],
-            ["Poster file names are checked outright", "A poster's file name is built only from a strict match of the app's id, a fixed picture kind and 1 to 10 ASCII digits, then resolved and refused unless it is inside the posters folder."],
-            ["The sign-in provider request has an explicit allowlist test", "Starboard now says which addresses are let through (public, home network or local), tests the resolved addresses and the address actually connected to, and refuses a request path with a space, line break or non-ASCII character."],
-            ["The full security scan needs no manual tuning", "tools/security-scan.sh --full now runs ZAP with 8 GB, the Java option that stopped the 0.28.0 crash and a 150 minute limit that ends the scan with a clear message."],
-            ["A browser journey checks the unanswered shadows setting again", "The journey for Remove drop shadows now clears the answer the example server gives, so it tests an unanswered setting as intended; this changes a test only."],
-            ["The Busy now test passes in a fresh container", "The test used made-up process numbers 7 to 9, and in a clean container the test run itself is process 9, so it failed there; it now uses numbers a clean container never has, and this changes a test only."]
+            ["The content check passes again", "Five lines that used words the check rejects are reworded, so the check finds none."],
+            ["A plug-in's schedule control shows the real schedule", "The control now shows the schedule the job uses, not a guessed Sunday at 03:30."],
+            ["Poster file names are checked outright", "A poster's file name is refused unless it resolves inside the posters folder."],
+            ["The sign-in provider request has an allowlist test", "Starboard now tests the provider's address against public, home network and local addresses before and after it connects."],
+            ["The full security scan needs no manual tuning", "It now runs ZAP with 8 GB and a 150 minute limit."],
+            ["A browser journey tests an unanswered shadows setting again", "This changes a test only."],
+            ["The Busy now test passes in a fresh container", "This changes a test only."]
         ],
         "security": [
-            ["Poster file names stay inside the posters folder", "Poster file names are built from a strict match and refused unless they resolve inside the posters folder, in response to CodeQL alerts 77 to 79 (path injection in starboard/posters.py); GitHub now shows those three alerts as fixed."],
-            ["The sign-in provider request tests an allowlist first", "The request to the sign-in provider is sent only to an ordinary public, home network or local address, tested before and after the connection, in response to CodeQL alert 82 (server-side request forgery in starboard/oidc.py); GitHub now shows that alert as fixed. No alert was dismissed, and GitHub shows no open CodeQL alerts."]
+            ["Poster file names stay inside the posters folder", "This answers CodeQL alerts 77 to 79, and GitHub now shows them as fixed."],
+            ["The sign-in provider request tests an allowlist first", "This answers CodeQL alert 82, and GitHub now shows it as fixed. No alert was dismissed."]
         ],
         "review": [],
-        "settings": "Your settings stay as they are. Lines shown and Alerts only are new log settings: Lines shown starts at 200 and Alerts only starts off. Stallboard's catalogue is off until you tick it. Starboard keeps a few bytes in data/discovery-last.json (the last search for new apps) and data/reelix-sites.json (the number of Reelix sites), both only when they change. To go back, run ./update.sh --to v0.29.0."
+        "settings": "Your settings stay as they are. Lines shown starts at 200, Alerts only starts off and Stallboard's catalogue is off until you tick it. Starboard keeps data/discovery-last.json (the last search for new apps) and data/reelix-sites.json (the number of Reelix sites), and writes them only when they change. To go back, run ./update.sh --to v0.29.0."
     },
     {
         "version": "0.31.0",
         "date": "25 November 2026",
         "added": [
-            ["Host alerts", "Settings, Alerts has a section, The server itself, with alerts for the processor's temperature, how busy the processor is, memory in use, a folder that stays nearly full and the disks' read and write speed, each when it stays at or over a limit for a chosen time, and two more with no limit: the server's outside address changing, told without ever saying the address, and a container stopping with an error. Each is deactivated until you activate it, and nothing runs while all are deactivated."]
+            ["Host alerts", "Settings, Alerts has a section, The server itself, that warns about processor load, memory, disks, full folders, a changed outside address and stopped containers. Each is deactivated until you activate it."]
         ],
         "fixed": [
-            ["A sparkline card with nothing to draw yet is accepted", "A plug-in that is not set up, or has no checks or backups yet, answers a sparkline card with an empty list of series and a note, and the dashboard card shows the note instead of an error."]
+            ["A sparkline card with nothing to draw yet is accepted", "A plug-in that is not set up yet can now send an empty sparkline card, and the dashboard shows its note instead of an error."]
         ],
         "review": [],
         "settings": "Your settings stay as they are. Every host alert is deactivated until you activate it. To go back, run ./update.sh --to v0.30.0."

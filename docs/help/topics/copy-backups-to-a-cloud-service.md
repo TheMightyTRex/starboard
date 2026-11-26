@@ -3,18 +3,26 @@
 
 # Copy backups to a cloud service
 
-Starboard can copy each new full backup to a cloud service, and to several other places at once, so a failed disk, a
-theft or a fire does not take every copy. **Where backups go** lists every place: a folder on this server or the pool,
-an SMB share, an NFS share, and each cloud service you connect. Each place has its own switch, its own number of
-backups to keep, and its own last copy, shown in words and with a shape. The backups are encrypted with your backup
-password before they leave this computer.
+Starboard can copy each new full backup to a cloud service. It can also copy to several other places at once, so a
+failed disk, a theft or a fire does not take every copy. **Where backups go** lists every place: a folder on this
+server or the pool, an SMB share, an NFS share, and each cloud service you connect. Each place has its own switch, its
+own number of backups to keep, and its own last copy, shown in words and with a shape. Starboard encrypts the backups
+with your backup password before they leave this computer.
 
 You can connect more than one cloud service, and the same service more than once. Each connection keeps its own rclone
 remote, so connecting OneDrive never replaces Google Drive.
 
-The services: Google Drive, OneDrive, Dropbox, Backblaze B2, an S3-compatible service (such as Amazon S3,
-Cloudflare R2, Wasabi or MinIO), Nextcloud or another WebDAV server, and an SFTP server. If you already use rclone,
-you can use your own remote instead.
+These services work:
+
+- Google Drive
+- OneDrive
+- Dropbox
+- Backblaze B2
+- an S3-compatible service (such as Amazon S3, Cloudflare R2, Wasabi or MinIO)
+- Nextcloud or another WebDAV server
+- an SFTP server
+
+If you already use rclone, you can use your own remote instead.
 
 ## Before you begin
 
@@ -40,15 +48,15 @@ you can use your own remote instead.
 
    ![The OneDrive sign-in, with Complete in this browser (step 4) outlined, with example data](../images/copy-backups-to-a-cloud-service-3-signin.png)
 
-5. **Choose the folder.** **Make a new folder (recommended)** is chosen, named `starboard-backups`. You can change
-   the name, or choose a folder that is there already. Select **Continue to the test**.
+5. **Choose the folder.** Starboard chooses **Make a new folder (recommended)** and names it `starboard-backups`. You
+   can change the name, or choose a folder that is there already. Select **Continue to the test**.
 6. **Test the connection.** Starboard makes the folder, writes a small file, reads it back and removes it. Each
    check shows **Done** when it works. Starboard then shows **Connected**. Select **Continue**.
 7. **Check and save.** Enter how many backups to keep there in **Keep the newest** (5 unless you change it) and
    **Your Starboard password**. Select **Save and finish**.
 
-The slide-out closes and the service is in the list, activated. Each new full backup is copied to it, and the oldest
-there is removed once there are more than you keep. To add another service, select it under **Add a place** and go
+The slide-out closes and the service is in the list, activated. Starboard copies each new full backup to it. When
+there are more backups than you keep, Starboard removes the oldest. To add another service, select it under **Add a place** and go
 through the steps again.
 
 ## When a backup counts as safe
@@ -73,8 +81,8 @@ The server's own backup job writes a zip of the apps' settings. It holds API key
 to the same places only after encrypting it with rclone crypt. The plain file is never uploaded.
 
 1. Under **Server settings backup, encrypted**, select **Make the key**. Starboard asks for your password.
-2. Starboard shows the key once. Select **Copy the key** or **Save the key as a file**, store it in your password manager and
-   on paper, then select **I have stored it**. Without it the copies cannot be opened.
+2. Starboard shows the key once. Select **Copy the key** or **Save the key as a file**. Store it in your password manager and
+   on paper, then select **I have stored it**. Without it, you cannot open the copies.
 3. The server's backup job asks Starboard to send each new zip. You can also select **Copy the newest server settings
    backup now**. Each place shows **Encrypted, copied and read back** or the reason it failed.
 
@@ -158,17 +166,18 @@ part of your `rclone.conf` from `[name]` to the next `[`. The command `rclone co
   and when you close the slide-out part way.
 - Closing the slide-out before **Save and finish** saves nothing.
 - To stop copying to a place, deactivate it, or select **Remove**. The copies already there stay.
-- Each step of signing in goes to Starboard's log, on **System**, **Logs**: when it started, when the sign-in page was
-  ready, when the address was pasted back, and why one did not finish. The sign-in's address, code and token are never
-  written.
+- Each step of signing in goes to Starboard's log, on **System**, **Logs**. The log shows when the sign-in started,
+  when the sign-in page was ready, when you pasted the address back, and why a sign-in did not finish. Starboard never
+  writes the sign-in's address, code or token.
 
 ## Detailed log for backup connections
 
 **Detailed log for backup connections**, at the end of **Where backups go**, adds the service's own words for
-each step to Starboard's log: each **Test connection**, each copy, and each step of connecting a cloud service, such
-as the reason Microsoft or Google gave for refusing a sign-in. Lines with a password, a key, a token or a sign-in code
-are left out, and the log takes out addresses and names as it does everywhere. It is off unless you choose it, and it
-saves as soon as you change it. Use it to find out why a connection does not work, then deactivate it.
+each step to Starboard's log. This covers each **Test connection**, each copy, and each step of connecting a cloud
+service, such as the reason Microsoft or Google gave for refusing a sign-in. The log leaves out lines with a
+password, a key, a token or a sign-in code. It also takes out addresses and names, as it does everywhere. It is off
+unless you choose it, and it saves as soon as you change it. Use it to find out why a connection does not work, then
+deactivate it.
 
 ## If it does not work
 
@@ -183,9 +192,9 @@ saves as soon as you change it. Use it to find out why a connection does not wor
 - **"The service did not accept those keys or that password":** check the keys at the service, then select **Try
   again**.
 - **"Starboard could not reach the service":** check the address, and that the server or NAS is on.
-- **The sign-in stops at a two-step check, or it is not clear why it did not work:** activate **Detailed log for
-  backup connections**, try again, then read the lines for **cloud sign-in** and **backup connection** on **System**,
-  **Logs**. They say which step it reached and what the service said.
+- **The sign-in stops at a two-step check, or you cannot tell why it did not work:** activate **Detailed log for
+  backup connections** and try again. Then read the lines for **cloud sign-in** and **backup connection** on
+  **System**, **Logs**. They say which step the sign-in reached and what the service said.
 
 ## Find out more
 
