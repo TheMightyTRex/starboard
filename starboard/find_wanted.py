@@ -16,6 +16,7 @@ import json
 import os
 import threading
 import time
+import traceback
 
 from . import library, services, wanted
 
@@ -188,6 +189,9 @@ def _work(all_services, data_dir, tab, todo, paused, sleep):
                 _nap(GAP, sleep)
     except (services.ServiceError, ValueError) as e:
         state, said = "failed", str(e)
+    except Exception as e:  # a bug must end the run, not leave it "running" for ever
+        traceback.print_exc()
+        state, said = "failed", f"Starboard could not finish the search ({type(e).__name__})"
     after = None
     try:
         after = _candidates(all_services, tab)[0]

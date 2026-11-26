@@ -7,6 +7,7 @@
 const FIND_NOUN = { films: ["film", "films"], tv: ["episode", "episodes"], music: ["album", "albums"], books: ["book", "books"],
   audiobooks: ["audiobook", "audiobooks"], radio: ["episode", "episodes"] };
 const FIND_KIND = { films: "movie", tv: "episode", music: "album", books: "ebook", audiobooks: "audiobook" };
+const findWanted = ([one, many]) => [`wanted ${one}`, `wanted ${many}`];
 const findPlural = (n, [one, many]) => `${n.toLocaleString("en-GB")} ${n === 1 ? one : many}`;
 
 // The button, with the count when Reelix can say it cheaply (one small request; radio says it in the dialog).
@@ -42,7 +43,7 @@ async function findAllWanted(tab, button) {
     return;
   }
   const noun = plan.noun;
-  const what = tab === "radio" ? `the wanted episodes of ${findPlural(plan.to_search, ["show", "shows"])}` : `${findPlural(plan.to_search, noun)}`;
+  const what = tab === "radio" ? `the wanted episodes of ${findPlural(plan.to_search, ["show", "shows"])}` : findPlural(plan.to_search, findWanted(noun));
   const minutes = plan.minutes <= 1 ? "about a minute" : `about ${plan.minutes} minutes`;
   const lines = [
     `${findPlural(plan.wanted, noun)} ${plan.wanted === 1 ? "is" : "are"} wanted.${plan.left_out ? ` Starboard left out ${plan.left_out} that it searched for in the last day.` : ""}`,
@@ -50,7 +51,7 @@ async function findAllWanted(tab, button) {
     `Starboard asks for ${plan.group} at a time, with one minute between groups. This takes ${minutes}.`,
     "You can stop at any time and leave this page. The search carries on without it.",
   ].filter(Boolean);
-  const ok = await confirmDialog({ title: `Find ${what}?`, confirm: tab === "radio" ? `Find ${findPlural(plan.to_search, ["show", "shows"])}` : `Find ${findPlural(plan.to_search, noun)}`,
+  const ok = await confirmDialog({ title: `Find ${what}?`, confirm: tab === "radio" ? `Find ${findPlural(plan.to_search, ["show", "shows"])}` : `Find ${findPlural(plan.to_search, findWanted(noun))}`,
     message: el("div", { class: "stack-2" },
       el("p", { text: tab === "radio" ? "Reelix searches for the wanted episodes of each show, a few shows at a time." : `Reelix searches its sites for each wanted ${noun[0]}, a few at a time, and sends the best match it finds to your download app.` }),
       el("ul", {}, lines.map((t) => el("li", { text: t })))) });
@@ -67,7 +68,7 @@ function findShow(tab, button, first) {
   let last = -1, timer = null;
   const draw = (run) => {
     const noun = FIND_NOUN[tab];
-    const unit = tab === "radio" ? ["show", "shows"] : noun;
+    const unit = tab === "radio" ? ["show", "shows"] : findWanted(noun);
     if (run.state === "running") {
       const pct = run.total ? Math.round((100 * run.searched) / run.total) : 0;
       const text = run.waiting_for_hours ? "Waiting for download hours to start. The search carries on then."

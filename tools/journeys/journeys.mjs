@@ -389,7 +389,7 @@ if (!(await findAll.isDisabled())) {
   const dlg = page.locator("dialog.dialog[open]");
   await dlg.waitFor({ timeout: 8000 }).catch(() => {});
   const title = (await dlg.locator(".panel-header__title").textContent().catch(() => "")) || "";
-  check("LIB-08", "the dialog says how many", /^Find \d+ films?\?$/.test(title.trim()), title);
+  check("LIB-08", "the dialog says how many", /^Find \d+ wanted films?\?$/.test(title.trim()), title);
   const said = (await dlg.textContent().catch(() => "")) || "";
   check("LIB-08", "and what Reelix is asked, how fast and that it can be stopped", /sends the best match/.test(said) && /10 at a time/.test(said) && /stop at any time/.test(said));
   await dlg.locator('button[value="cancel"]').first().click();
@@ -399,7 +399,7 @@ if (!(await findAll.isDisabled())) {
   await page.locator("#find-panel").waitFor({ timeout: 8000 }).catch(() => {});
   await page.waitForFunction(() => /Searched|Stopped|The search stopped/.test(document.getElementById("find-panel")?.textContent || ""), null, { timeout: 15000 }).catch(() => {});
   const panel = (await page.locator("#find-panel").textContent().catch(() => "")) || "";
-  check("LIB-08", "the panel says what was searched", /Searched \d+ film/.test(panel) || /Searched \d+ of/.test(panel), panel.slice(0, 120));
+  check("LIB-08", "the panel says what was searched", /Searched \d+ wanted film/.test(panel) || /Searched \d+ of/.test(panel), panel.slice(0, 120));
   check("LIB-08", "and has a way to Open Downloads", (await page.locator("#find-panel a", { hasText: "Open Downloads" }).count()) === 1 || /Searched \d+ of/.test(panel));
 }
 await open("wanted-films.html");

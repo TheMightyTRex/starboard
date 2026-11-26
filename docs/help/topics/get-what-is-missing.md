@@ -18,13 +18,16 @@ and stop following the ones you no longer want.
 2. Choose the kind: **Films**, **TV**, **Music**, **Books** or **Audiobooks**. The page says how many there are,
    such as **12 films wanted**. Select a film or episode to open its details.
 3. Search in one of these ways:
-   - For one title, select **Search** beside it.
-   - For a few, tick the box at the start of each row, then select **Search** in the bar at the foot of the
+   - For one title, select **Find** beside it.
+   - For a few, tick the box at the start of each row, then select **Find** in the bar at the foot of the
      list. Read [Act on several at once](#act-on-several-at-once).
-   - For the whole list, select **Search all**, then **Search all** again to confirm. Reelix searches a few at a
-     time, so a long list can take a while.
+   - For the whole list, select **Find all wanted**. A question says how many Reelix will search for, how fast and
+     that you can stop. Select the button in the question to start. Starboard asks for 10 at a time, with a minute
+     between groups, and at most 100 in one go. It leaves out anything it searched for in the last day. Its progress
+     appears under the page heading, with **Stop**, and a summary when it ends. It carries on if you leave the page.
+     **Find all wanted** is also at the top of each Library tab.
 
-   ![Activity, Wanted with example films, with Wanted (step 1), Films (step 2) and Search beside one film (step 3) outlined](../images/get-what-is-missing-1-missing.png)
+   ![Activity, Wanted with example films, with Wanted (step 1), Films (step 2) and Find beside one film (step 3) outlined](../images/get-what-is-missing-1-missing.png)
 
 4. Starboard says what Reelix is doing. What Reelix finds appears in **Activity**, then **Downloads**. Read
    [Pause, resume and remove downloads](manage-downloads.md).
@@ -35,13 +38,13 @@ Use this to search for several titles together, or to stop following titles you 
 
 1. Tick the box at the start of each row. To tick a run of rows, tick the first, then hold **Shift** and tick the
    last. To tick every row on the list, tick **Select all**.
-2. A bar at the foot of the list says how many are selected and shows what you can do with them: **Search**,
+2. A bar at the foot of the list says how many are selected and shows what you can do with them: **Find**,
    **Stop following** and **Clear selection**. While download hours pause downloads, films and episodes also have
    **Download now**.
 
    ![Wanted with two films ticked, with Select all (step 1) and the bar of actions (step 2) outlined, with example data](../images/get-what-is-missing-2-several.png)
 
-3. Select an action. **Search** starts at once. **Stop following** and **Download now** ask first and say how
+3. Select an action. **Find** starts at once. **Stop following** and **Download now** ask first and say how
    many titles they act on.
 4. For **Stop following**, select **Stop following** again to confirm.
 
