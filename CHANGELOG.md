@@ -25,6 +25,8 @@ add features.
 ### Changed
 - **One look for a notice.** A message in the page (an error, a warning, a note) is drawn by one function, so an error notice in Downloads, Search, Search the sites and On demand history now has the same circle-with-exclamation icon as everywhere else.
 - **Lighter pages again.** Styles for parts of the design system that no page uses (cover cards, the logo editor, the decision tree and more) are no longer sent with every page, so each page's style sheet is about 14 KB smaller.
+- **A notice with buttons reads properly on a phone.** On Settings, Plug-ins the offer to install a plug-in chosen in the set-up no longer squeezes its title to one letter a line, because its buttons now sit on their own row.
+- **Each plug-in's tab has its own icon.** Settings, Plug-ins now draws a different line icon on each plug-in's tab, and where the tabs show icons only, such as on a phone, the tab you are on and the tab with focus also show their name.
 - **Starboard no longer reads Plex's token.** Search for new apps does not look inside the Plex container for the token any more.
 - **The shared styles now define the names Starboard already used.** `--radius-sm`, `--radius-md`, `--font-mono`, `--color-success-text`, `--color-danger-text`, `stack-3`, `stack-5`, `input--narrow`, `select--compact`, `field__error` and `btn--secondary` had no style, so a few boxes in Bring in, Backup and restore and the dashboard editor gained their intended spacing and width.
 - **One name for asking again: Check now.** Every Check again button and line of help now says Check now, as plug-ins do, and the Updates button says Check now before and after the first check (owner, 26 November 2026).
