@@ -17,7 +17,7 @@ Every part keeps the same promises, through the update run it already has (updat
 
 Lightweight (DASH-421): one job each, woken hourly by Starboard's jobs thread only while a part is activated; outside
 the update hours a look costs nothing (no request); inside them, once a day: the registries for the apps (the same
-look as Check on Apps, Updates), the catalogues (read at most once a day anyway), each plug-in's own address, and
+look as Check on Apps, Updates), the catalogues (read again for this look), each plug-in's own address, and
 Jellyfin's Update plugins task. Starboard (GitHub, at most every 6 hours) and Reelix keep their own jobs.
 """
 import datetime as dt
@@ -225,11 +225,11 @@ def apps(app, now=None, force=False):
 
 
 def _plugin_candidates(app):
-    """Plug-ins with a newer version: from the catalogues (read at most once a day) or the plug-in's own address.
+    """Plug-ins with a newer version: from the catalogues (read again now, at most every 30 seconds) or the plug-in's own address.
     Returns [(pid, name, current, manifest, address)], and the ones that wait for the owner, in words."""
     from . import plugin_life, plugins_admin as pa
     try:
-        pa.catalogue(app.config)
+        pa.refresh(app.config)  # the day's look reads them again, so a release made since the last read is found
     except Exception as e:  # noqa: BLE001  a catalogue that does not answer leaves the rest to update
         logs.event("warning", "updates", f"The plug-in catalogues were not read: {e}")
     known = plugin_life.updates_known(app.data_dir)

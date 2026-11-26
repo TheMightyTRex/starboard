@@ -26,9 +26,8 @@ function row(r) {
 function render(d) {
   if (!d.configured) {
     $("#requests-summary").textContent = "No Reelix or Seerr app with an API key yet.";
-    $("#requests-notice").replaceChildren(el("div", { class: "notice", role: "status" }, icon("info"), el("div", { class: "notice__body" },
-      el("span", { class: "notice__title", text: "Add Reelix or Seerr to show requests here" }),
-      el("p", {}, "In ", el("a", { href: "/settings.html", text: "Manage apps" }), ", add Reelix, or your Seerr, Jellyseerr or Overseerr app, with its API key."))));
+    $("#requests-notice").replaceChildren(notice("info", "Add Reelix or Seerr to show requests here",
+      ["In ", el("a", { href: "/settings.html", text: "Manage apps" }), ", add Reelix, or your Seerr, Jellyseerr or Overseerr app, with its API key."]));
     $("#requests").replaceChildren();
     return;
   }

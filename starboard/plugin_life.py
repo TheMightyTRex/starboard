@@ -139,7 +139,7 @@ def best_version(versions):
 
 def updates_known(data_dir):
     """For each added plug-in, a newer version from a catalogue Starboard has already read (nothing is fetched here):
-    {id: {version, changelog, manifest, sha256}}."""
+    {id: {version, changelog, manifest, sha256, permissions (what the catalogue says it asks for), released}}."""
     out = {}
     have = {p["id"]: p for p in pa.basics(data_dir)}
     for hit in list(pa._catalogues.values()):
@@ -147,7 +147,8 @@ def updates_known(data_dir):
             p = have.get(e["id"])
             v = (e.get("versions") or [None])[0] if e.get("versions") else None
             if p and v and _newer(v["version"], p.get("version") or "0") and (e["id"] not in out or _newer(v["version"], out[e["id"]]["version"])):
-                out[e["id"]] = {k: v[k] for k in ("version", "changelog", "manifest", "sha256")}
+                out[e["id"]] = {**{k: v[k] for k in ("version", "changelog", "manifest", "sha256")},
+                                "permissions": e.get("permissions") or [], "released": v.get("released", "")}
     return out
 
 

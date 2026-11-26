@@ -124,7 +124,7 @@ function dDrawFilters() {
 }
 
 function dRow(r, { open = false } = {}) {
-  const list = el("ul", { class: "discover-shelf", "aria-label": r.title }, el("li", { class: "muted small", text: "Loading…" }));
+  const list = el("ul", { class: "discover-shelf", "aria-label": r.title }, el("li", {}, SharedComponents.wait("Loading the shelf")));
   const sec = el("section", { class: "discover-row", "aria-labelledby": `d-${r.id.replace(/[^a-z0-9]/gi, "-")}` },
     el("div", { class: "discover-row__head" }, el("h2", { id: `d-${r.id.replace(/[^a-z0-9]/gi, "-")}`, text: r.title }),
       r.source ? el("span", { class: "small muted", text: r.source }) : null), shelfScroller(list, r.title));

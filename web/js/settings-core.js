@@ -27,7 +27,7 @@ function setError(control, message) {
   const error = control.fieldError;
   const ids = [control.fieldHint?.id, ...(control.moreHints || [])];
   if (message) {
-    error.replaceChildren(icon("circle-alert"), el("span", { text: message }));
+    errorWords(error, message);
     error.hidden = false;
     control.setAttribute("aria-invalid", "true");
     ids.push(error.id);
@@ -68,11 +68,6 @@ function settingRow(label, hint, control, labelId) {
     el("div", { class: "setting__control" }, control));
 }
 
-function notice(tone, title, text, action) {
-  const icons = { success: "circle-check", warning: "triangle-alert", danger: "circle-alert", info: "info" };
-  return el("div", { class: "notice", "data-tone": tone === "info" ? null : tone, role: "status" },
-    icon(icons[tone] || "info"), el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), text ? el("p", {}, text) : null), action || null);
-}
 
 function section(id, title, description, ...content) {
   const chipNode = content.find((n) => n?.dataset?.headChip);  // the rule: a state chip on the title's line
