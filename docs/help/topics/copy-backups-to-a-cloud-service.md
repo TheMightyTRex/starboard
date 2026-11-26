@@ -75,11 +75,10 @@ to the same places only after encrypting it with rclone crypt. The plain file is
 1. Under **Server settings backup, encrypted**, select **Make the key**. Starboard asks for your password.
 2. Starboard shows the key once. Select **Copy the key** or **Save the key as a file**, store it in your password manager and
    on paper, then select **I have stored it**. Without it the copies cannot be opened.
-
-   ![Server settings backup, encrypted, with Make the key (step 1) outlined, with example data](../images/copy-backups-to-a-cloud-service-4-key.png)
-
 3. The server's backup job asks Starboard to send each new zip. You can also select **Copy the newest server settings
    backup now**. Each place shows **Encrypted, copied and read back** or the reason it failed.
+
+   ![Server settings backup, encrypted, with Copy the newest server settings backup now (step 3) outlined, with example data](../images/copy-backups-to-a-cloud-service-4-key.png)
 
 Each place keeps the newest 2 settings zips unless you change it with **Change**, because each is large.
 

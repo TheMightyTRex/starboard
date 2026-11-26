@@ -2290,13 +2290,13 @@ await page.locator(".side-panel").waitFor({ state: "detached" });
 await page.waitForTimeout(600);
 check("CLD-10", "saved: the slide-out closes and focus is on Add a place", ["places-add", "place-add-drive"].includes(await activeId()), await activeId());
 const savedCopies = await api("/api/backup/copies");
-const added = savedCopies.destinations.filter((d) => !placesBefore.includes(d.id));
+const addedPlaces = savedCopies.destinations.filter((d) => !placesBefore.includes(d.id));
 check("CLD-10", "the second Google Drive is a new place with its own rclone remote, and the first keeps its own",
-  added.length === 1 && added[0].service === "drive" && added[0].remote.startsWith("starboard-drive:")
-  && savedCopies.destinations.find((d) => d.id === "d1a2b3").remote.startsWith("starboard-cloud:"), JSON.stringify(added.map((d) => d.remote)));
+  addedPlaces.length === 1 && addedPlaces[0].service === "drive" && added[0].remote.startsWith("starboard-drive:")
+  && savedCopies.destinations.find((d) => d.id === "d1a2b3").remote.startsWith("starboard-cloud:"), JSON.stringify(addedPlaces.map((d) => d.remote)));
 check("CLD-10", "the page is never sent the sign-in", !JSON.stringify(savedCopies).includes("standin-") && !JSON.stringify(savedCopies).includes("token"));
 // Test connection: busy while it runs, then the result beside the place, kept for next time.
-const newId = added[0]?.id;
+const newId = addedPlaces[0]?.id;
 const testBtn = page.locator(`#place-test-${newId}`);
 await testBtn.click();
 await page.waitForFunction((i) => !document.querySelector(`#place-test-${i}`)?.disabled, newId);
