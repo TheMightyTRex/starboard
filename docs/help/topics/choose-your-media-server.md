@@ -18,7 +18,8 @@ in one step for 24 hours. Starboard never switches by itself.
 
 ### Check that your media server answers
 
-1. Go to **Settings**, then **Apps**, then **Media server**.
+1. Go to **Settings**, then **Apps**, then the tab named for your media server: **Jellyfin**, **Plex** or **Emby**, or
+   **Media server** when none is in use. Find **In use**.
 2. Under **In use**, read the name and the state: **In use**, **Not set up** or **None**.
 3. Select **Check it now**. Starboard asks the media server to answer and says what it found: its version and its libraries.
 
@@ -54,7 +55,7 @@ Jellyfin tools stay with Jellyfin.
 
    ![Manage apps with Plex in the list, with its Edit button (step 2) outlined, with example data](../images/choose-your-media-server-8-plex-listed.png)
 
-3. Go to **Settings**, then **Apps**, then **Media server**, choose it and select **Use this media server**. Starboard
+3. Go to **Settings**, then **Apps**, then the media server tab, choose it and select **Use this media server**. Starboard
    checks that it answers first.
 
 Starboard sends the key in a header, never in an address, so it does not reach a log.
@@ -75,7 +76,7 @@ For 24 hours after a change, **The way back** says which media server you had.
    ![Manage, with Jellyfin and its In use as media server state (step 2) outlined, with example data](../images/choose-your-media-server-1-manage.png)
 
 3. Select **Settings** beside it. The **Media server** card says what Jellyfin does for Starboard. Select
-   **Open Jellyfin settings** for its address, your user, Live TV, metadata and its own plug-ins.
+   **Open Jellyfin settings** for the media server tab, where Jellyfin's address, your user, Live TV, metadata and its own plug-ins are.
 
    ![Jellyfin's page, with the Media server card and Open Jellyfin settings (step 3) outlined, with example data](../images/choose-your-media-server-2-page.png)
 

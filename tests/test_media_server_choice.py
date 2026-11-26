@@ -256,7 +256,7 @@ class Routes(unittest.TestCase):
     def test_none_then_jellyfin_may_be_removed_in_use_may_not(self):
         r, _ = self.call("POST", "/api/plugins/jellyfin/disable", {})
         self.assertEqual(r.status, 409)
-        self.assertIn("Settings, Media server", self.call("POST", "/api/plugins/jellyfin/disable", {})[1]["error"])
+        self.assertIn("Settings, Apps, the media server tab", self.call("POST", "/api/plugins/jellyfin/disable", {})[1]["error"])
         self.assertEqual(self.call("POST", "/api/media-server/choose", {"id": ""})[0].status, 200)
         self.assertEqual(self.call("POST", "/api/plugins/jellyfin/disable", {})[0].status, 200)
         self.assertEqual(self.call("POST", "/api/plugins/jellyfin/enable", {})[0].status, 200)

@@ -693,7 +693,7 @@ if (mv) {
 // T37 Choose the media server by keyboard (DASH-565): Settings, Apps, Media server. Check it now keeps focus and says what
 // it found; choosing None asks first (focus in the box), and after it focus is on what was said; Go back to Jellyfin
 // does the same and leaves Jellyfin in use.
-await page.goto(`${base}/settings-media-server.html`);
+await page.goto(`${base}/settings-jellyfin.html`);
 await settle();
 const ck = await tabTo((f) => f.tag === "BUTTON" && /^Check it now/.test(f.text), 80);
 check("T37", "Tab reaches Check it now, named for a screen reader", !!ck, ck ? ck.text : "not reached");

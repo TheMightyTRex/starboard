@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
-<title>Jellyfin · Settings · Starboard</title>
+<title>Media server · Settings · Starboard</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#323a77">
@@ -19,6 +19,7 @@
 <script src="/js/common.js"></script>
 <script src="/js/settings-core.js" defer></script>
 <script src="/js/settings-jellyfin.js" defer></script>
+<script src="/js/settings-media-server.js" defer></script>
 </head>
 <body class="page-settings with-rail">
 <!-- shell:start (filled in by starboard/shell.py; edit the menus there) -->
@@ -27,10 +28,11 @@
 <div class="page page--settings">
   <div class="page-head">
     <div class="page-head__text">
-      <h1>Jellyfin</h1>
-      <p class="page-head__summary">Live TV, moving your watch history to Jellyfin, and defaults for every user. Each one is inactive until you activate it.</p>
+      <h1 id="ms-title">Jellyfin</h1>
+      <p class="page-head__summary" id="ms-summary">Your media server: which one Starboard uses, a check that it answers, and its own settings.</p>
     </div>
   </div>
+  <div class="settings-sections" id="media-server-sections" aria-busy="true"></div>
   <div class="settings-sections" id="jellyfin-sections" aria-busy="true"></div>
 </div>
 </main>

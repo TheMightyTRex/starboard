@@ -9,7 +9,7 @@ class Emby(mediaserver.MediaBrowser):
     name = "Emby"
     service_type = "emby"
     prefix = "/emby"
-    page = ""  # no page of its own yet: its address and key are in Settings, Manage apps
+    page = mediaserver.PAGE
     capabilities = ()  # read only for now
 
     def public_version(self, service):

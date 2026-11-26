@@ -285,7 +285,7 @@ def added(data_dir):
     out = []
     for p in names:
         m = _read_kept(os.path.join(folder(data_dir, p), "manifest.json")) if re.match(plugins.ID, p) else None
-        if isinstance(m, dict):
+        if isinstance(m, dict) and not is_media_server(m):  # a media server plug-in shows in Manage and the Catalogue only (DASH-565)
             out.append({"id": p, "name": str(m.get("name") or p)[:40]})
     return sorted(out, key=lambda x: x["name"].lower())
 

@@ -16,6 +16,7 @@ import time
 from . import services
 
 DEFAULT = "jellyfin"
+PAGE = "/settings-jellyfin.html"  # Settings, Apps: the active media server's tab, whichever it is (its address is kept for older links)
 
 # What a media server may offer beyond the nine required calls; a page draws a part only when it is listed.
 CAPABILITIES = ("play", "watched", "restart", "own_plugins", "conversion_test", "live_tv", "libraries_add", "first_run",
@@ -138,7 +139,7 @@ class Jellyfin(MediaBrowser):
     id = "jellyfin"
     name = "Jellyfin"
     service_type = "jellyfin"
-    page = "/settings-jellyfin.html"
+    page = PAGE
     capabilities = ("play", "watched", "restart", "own_plugins", "conversion_test", "live_tv", "libraries_add", "first_run",
                     "history_import", "user_defaults", "metadata_folder", "detect", "updates")
 
@@ -212,7 +213,7 @@ def status_for_pages(data):
 
 def in_use(data, pid):
     """True when the plug-in `pid` is the media server in use (the active one). A media server plug-in that is in use
-    cannot be deactivated or removed: choose another one, or none, first (Settings, Media server)."""
+    cannot be deactivated or removed: choose another one, or none, first (Settings, Apps, the media server tab)."""
     return bool(pid) and active_id(data) == pid
 
 

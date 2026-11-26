@@ -369,7 +369,7 @@ function dropStyleOf(p) {
 
 // Activate or Deactivate one plug-in.
 // The media server slot (DASH-565): a plug-in that fills it is in use or not, in words and with a shape, never by colour
-// alone. The one in use stays on until another is chosen (Settings, Media server), so it has no Deactivate or Remove.
+// alone. The one in use stays on until another is chosen (Settings, Apps, the media server tab), so it has no Deactivate or Remove.
 const SLOT_IN_USE = ["In use as media server", "success", "circle-check"];
 const SLOT_NOT_IN_USE = ["Not in use", "muted", "minus"];
 const inUse = (p, ms) => !!(p.media_server && ms && ms.active === p.id);
@@ -705,7 +705,7 @@ function pluginPage(p, redraw, ms = null) {
   const may = section(`pl-${p.id}-may`, "What it may do", "What you allowed when you installed it.", pluginPermissions(p.permissions));
   const remove = inUse(p, ms)
     ? section(`pl-${p.id}-remove`, "Remove", `${p.name} is your media server, so it stays added and active. Choose another media server, or none, first.`,
-      el("div", { class: "actions" }, el("a", { class: "btn", href: "/settings-media-server.html" }, "Open Settings, Media server")))
+      el("div", { class: "actions" }, el("a", { class: "btn", href: "/settings-jellyfin.html" }, "Open the media server settings")))
     : dangerSection(`pl-${p.id}-remove`, "Remove", "Stops it and takes it off this Starboard. Its folder is kept.",
       el("div", { class: "actions" }, removeButton(p, () => { location.href = "/settings-plugins.html"; })));
   const slot = p.media_server ? mediaServerSection(p, ms) : null;
@@ -1405,12 +1405,12 @@ function mediaServerSection(p, ms) {
   const using = inUse(p, ms);
   return section(`pl-${p.id}-slot`, "Media server",
     using ? `${p.name} answers for the dashboard panel, Library, Activity and System. Starboard uses one media server at a time.${mine?.page ? "" : ` Its address and key are in Settings, Manage apps, as an Other app with the icon ${p.id}.`}`
-      : `${p.name} is added but another media server is in use, or none. Nothing changes until you choose it in Settings, Media server.`,
+      : `${p.name} is added but another media server is in use, or none. Nothing changes until you choose it in Settings, Apps, the media server tab.`,
     using && ms.configured === false ? notice("warning", `${p.name} is not set up yet`, "Add its address and key in Settings, Apps, and the dashboard panel will show it.") : null,
     el("div", { class: "actions" },
       mine?.page ? el("a", { class: "btn", href: mine.page }, icon("settings"), `Open ${p.name} settings`)
         : el("a", { class: "btn", href: "/settings.html" }, icon("settings"), "Open Settings, Manage apps"),
-      el("a", { class: "btn btn--quiet", href: "/settings-media-server.html" }, "Open Settings, Media server")));
+      el("a", { class: "btn btn--quiet", href: "/settings-jellyfin.html" }, "Open the media server settings")));
 }
 
 // Media servers in the catalogue (DASH-565): the ones that come with Starboard, with Jellyfin recommended. Starboard

@@ -161,7 +161,24 @@ class Routes(unittest.TestCase):
         r, got = self.call("GET", "/api/session")
         self.assertEqual(r.status, 200)
         self.assertTrue(os.path.isdir(d))
-        self.assertIn("jellyfin", [p["id"] if isinstance(p, dict) else p for p in got["plugins"]])
+        # It is in Manage and the Catalogue only: no tab of its own in Settings, Plug-ins, and the menu names the media server (DASH-565).
+        self.assertNotIn("jellyfin", [p["id"] if isinstance(p, dict) else p for p in got["plugins"]])
+        self.assertEqual(got["media_server"], "Jellyfin")
+        self.assertIsNone(self.call("GET", "/api/session", cookie=False)[1].get("media_server"))
+        self.assertTrue(any(p["id"] == "jellyfin" for p in self.call("GET", "/api/plugins")[1]["plugins"]))
+        self.app.config.data["extras"]["media_server"] = ""
+        self.assertEqual(self.call("GET", "/api/session")[1]["media_server"], "")
+        self.app.config.data["extras"]["media_server"] = "plex"
+        self.assertEqual(self.call("GET", "/api/session")[1]["media_server"], "Plex")
+        self.app.config.data["extras"].pop("media_server", None)
+
+    def test_the_old_address_of_the_media_server_page_moves_to_the_tab(self):
+        import http.client
+        host, port = self.server.server_address[:2]
+        c = http.client.HTTPConnection(host, port)
+        c.request("GET", "/settings-media-server.html?x=1")
+        r = c.getresponse()
+        self.assertEqual((r.status, r.getheader("Location")), (301, "/settings-jellyfin.html?x=1"))
 
     def test_the_list_has_it_with_the_slot_beside_it(self):
         r, got = self.call("GET", "/api/plugins")
