@@ -247,6 +247,8 @@ function openService(s = null, opener = null, { background = false, preset = nul
         switchRow("Show on the dashboard", null, enabled),
         switchRow("Background service", "It has no web page, so it is listed under System, Apps, Other services.", bg)),
       followsField),
+    s && /calibre/i.test(`${s.name} ${s.icon || ""}`) && typeof phoneApps === "function"
+      ? el("section", { class: "step-section", "aria-labelledby": "svc-phone-h" }, el("h3", { id: "svc-phone-h", text: "Read on your phone" }), phoneApps("h4")) : null,
     formError);
 
   const steps = el("ol", { class: "steps", "aria-label": "Steps" }, el("li", { "aria-current": "step", text: "Connection" }), el("li", { text: "Adding options" }));
