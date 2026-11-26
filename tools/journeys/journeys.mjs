@@ -317,6 +317,43 @@ check("LIB-04", "with no address a browser can open there is no Play",
 const addLink = page.locator(".series-head .notice a", { hasText: "Add Jellyfin's address" });
 check("LIB-04", "and the page says where to add it", await addLink.count() === 1 && (await addLink.getAttribute("href")) === `/settings.html?edit=${encodeURIComponent(jfApp.id)}`);
 await api("/api/services", { method: "POST", body: jfSaved });
+// LIB-05: the row of controls on every item page: each control is one height (the --control-h token, 44px), those in one
+// row start at the same line, the Following choice looks like the buttons beside it, and a phone wraps without sideways scrolling.
+console.log("\n== LIB-05 one control height on item pages");
+const ITEM_PAGES = ["library-film.html?id=3", "library-tv-show.html?id=8", "library-artist.html?id=2", "library-book.html?id=4",
+  "library-audiobook.html?id=6", "library-radio-show.html?id=1", "library-radio-show.html?id=7", "library-radio-show.html?id=13"];
+const rowFacts = () => page.evaluate(() => {
+  const kids = [...document.querySelectorAll(".series-head__actions > *")].map((c) => c.getBoundingClientRect());
+  const token = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--control-h"));
+  const rows = {};
+  kids.forEach((r) => { (rows[Math.round(r.top)] ||= []).push(r.bottom); });
+  return { count: kids.length, heights: kids.map((r) => Math.round(r.height * 10) / 10), token,
+    sameBottoms: Object.values(rows).every((b) => Math.max(...b) - Math.min(...b) < 1),
+    sideways: document.documentElement.scrollWidth > document.documentElement.clientWidth };
+});
+for (const [w, h] of [[1280, 860], [375, 812]]) {
+  await page.setViewportSize({ width: w, height: h });
+  for (const p of ITEM_PAGES) {
+    await open(p);
+    await page.locator(".series-head__actions").waitFor({ timeout: 8000 }).catch(() => {});
+    const f = await rowFacts();
+    check("LIB-05", `${p} at ${w}px: every control is the ${f.token}px token`, f.count > 0 && f.heights.every((x) => Math.abs(x - f.token) < 1), f.heights.join(","));
+    check("LIB-05", `${p} at ${w}px: controls in one row line up and the page does not scroll sideways`, f.sameBottoms && !f.sideways);
+  }
+}
+await open("library-radio-show.html?id=1");
+await page.setViewportSize({ width: 1280, height: 860 });
+const follow = await page.evaluate(() => {
+  const l = document.querySelector(".series-head__follow"), s = l?.querySelector("select"), b = getComputedStyle(l || document.body);
+  const btn = getComputedStyle(document.querySelector(".series-head__actions .btn"));
+  return { label: l?.querySelector(".field__label")?.textContent, name: s?.getAttribute("aria-label"), border: b.borderTopColor === btn.borderTopColor,
+    radius: b.borderTopLeftRadius === btn.borderTopLeftRadius, weight: getComputedStyle(s).fontWeight === btn.fontWeight };
+});
+check("LIB-05", "Following keeps its label and name for screen readers", follow.label === "Following" && follow.name === "Following");
+check("LIB-05", "and is framed like the buttons beside it", follow.border && follow.radius && follow.weight);
+await page.locator("#radio-follow").focus();
+check("LIB-05", "the Following choice shows a focus outline", await page.evaluate(() => getComputedStyle(document.querySelector(".series-head__follow")).outlineStyle !== "none"));
+await page.setViewportSize({ width: 1280, height: 860 });
 // DASH-261: narrator pages, and Narrated by on an audiobook's summary links to them.
 await open("library-audiobooks-narrators.html");
 check("LIB-02", "Narrators lists each narrator", await page.locator("#groups .collection-card__link").count() >= 3);

@@ -221,3 +221,20 @@
 /* Play in Jellyfin (DASH-480): above the card's stretched title link, so it is its own target; 44px, never compact. */
 .lib-card > .play-link { position: relative; z-index: 1; justify-self: start; }
 .series-head__actions + .small, .series-head__actions + .notice { margin-top: var(--space-3, 12px); }
+/* The Following choice on a radio show sits in the row of buttons as one control: the word and its list in one frame
+   with the same height token as every button beside it (owner, 26 November 2026). The list inside has no frame of its
+   own, so the row has one height, and it shrinks and wraps on a phone. The label stays a real label for screen readers. */
+.series-head__follow {
+  display: inline-flex; align-items: center; gap: var(--space-1, 4px); min-width: 0; max-width: 100%;
+  min-height: var(--control-h); padding-left: var(--space-4);
+  border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-surface-raised);
+}
+.series-head__follow:hover { background: color-mix(in srgb, var(--color-text) 6%, var(--color-surface-raised)); }
+.series-head__follow:focus-within { outline: var(--focus-w, 3px) solid var(--color-focus); outline-offset: 2px; }
+.series-head__follow .field__label { margin: 0; font-size: var(--text-sm); font-weight: var(--weight-strong); white-space: nowrap; }
+.series-head__follow .select {
+  inline-size: auto; min-width: 0; align-self: stretch; min-height: 0; border: 0; border-radius: 0 var(--radius) var(--radius) 0;
+  background-color: transparent; font-size: var(--text-sm); font-weight: var(--weight-strong); text-overflow: ellipsis;
+}
+.series-head__follow .select:focus-visible { outline: none; }
+@media (max-width: 560px) { .series-head__follow { flex: 1 1 100%; } .series-head__follow .select { flex: 1 1 auto; } }
