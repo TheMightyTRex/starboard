@@ -749,20 +749,22 @@ def ensure_default(data_dir, services):
 
 
 _default_seen = set()
+_default_lock = threading.Lock()
 
 
 def ensure_default_once(data_dir, services):
     """ensure_default() once for each data folder and run, for the pages that already load this module: it is not asked
     at start-up (nothing is loaded for it until someone opens a page, DASH-565), and costs nothing after the first time."""
-    if data_dir in _default_seen:
-        return False
-    _default_seen.add(data_dir)
-    try:
-        added = ensure_default(data_dir, services)
-    except (OSError, ValueError) as e:  # a record only: never stops a page
-        import logging
-        logging.getLogger("starboard").warning("The Jellyfin media server plug-in was not added: %s", e)
-        return False
+    with _default_lock:  # two pages asking together: the second waits for the first, and then finds it done
+        if data_dir in _default_seen:
+            return False
+        try:
+            added = ensure_default(data_dir, services)
+        except (OSError, ValueError) as e:  # a record only: never stops a page
+            import logging
+            logging.getLogger("starboard").warning("The Jellyfin media server plug-in was not added: %s", e)
+            return False
+        _default_seen.add(data_dir)
     if added:
         from . import logs
         logs.event("info", "plug-ins", "Jellyfin was added as the media server plug-in, with its settings as they were")
