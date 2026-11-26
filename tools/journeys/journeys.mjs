@@ -374,6 +374,36 @@ for (const p of ["library-film.html?id=3", "library-book.html?id=4", "library-ar
   await open(p);
   check("LIB-07", `${p}: no Get it`, (await page.locator(".series-head__actions").textContent()).search(/\bGet it\b/) === -1);
 }
+// LIB-08: Find all wanted (owner, 26 November 2026): the count first, a dialog that says how many and what happens, focus
+// back on the button after Cancel, then progress and a summary in a live region.
+console.log("\n== LIB-08 Find all wanted");
+await open("library-films.html");
+const findAll = page.locator("#lib-actions [data-find-all]");
+await findAll.waitFor({ timeout: 8000 }).catch(() => {});
+check("LIB-08", "every tab has Find all wanted first in the row", (await page.locator("#lib-actions > :first-child").getAttribute("data-find-all")) === "films");
+await page.waitForTimeout(600);
+const findText = (await findAll.textContent()).trim();
+check("LIB-08", "the button carries the count", /^Find all wanted \(\d+\)$/.test(findText), findText);
+if (!(await findAll.isDisabled())) {
+  await findAll.click();
+  const dlg = page.locator("dialog.dialog[open]");
+  await dlg.waitFor({ timeout: 8000 }).catch(() => {});
+  const title = (await dlg.locator(".panel-header__title").textContent().catch(() => "")) || "";
+  check("LIB-08", "the dialog says how many", /^Find \d+ films?\?$/.test(title.trim()), title);
+  const said = (await dlg.textContent().catch(() => "")) || "";
+  check("LIB-08", "and what Reelix is asked, how fast and that it can be stopped", /sends the best match/.test(said) && /10 at a time/.test(said) && /stop at any time/.test(said));
+  await dlg.locator('button[value="cancel"]').first().click();
+  check("LIB-08", "Cancel puts focus back on the button", await page.evaluate(() => document.activeElement?.dataset?.findAll === "films"));
+  await findAll.click();
+  await page.locator("dialog.dialog[open] .dialog__foot .btn--primary").click();
+  await page.locator("#find-panel").waitFor({ timeout: 8000 }).catch(() => {});
+  await page.waitForFunction(() => /Searched|Stopped|The search stopped/.test(document.getElementById("find-panel")?.textContent || ""), null, { timeout: 15000 }).catch(() => {});
+  const panel = (await page.locator("#find-panel").textContent().catch(() => "")) || "";
+  check("LIB-08", "the panel says what was searched", /Searched \d+ film/.test(panel) || /Searched \d+ of/.test(panel), panel.slice(0, 120));
+  check("LIB-08", "and has a way to Open Downloads", (await page.locator("#find-panel a", { hasText: "Open Downloads" }).count()) === 1 || /Searched \d+ of/.test(panel));
+}
+await open("wanted-films.html");
+check("LIB-08", "the Wanted page says Find all wanted", (await page.locator("#wanted-all").textContent()).trim() === "Find all wanted");
 // DASH-261: narrator pages, and Narrated by on an audiobook's summary links to them.
 await open("library-audiobooks-narrators.html");
 check("LIB-02", "Narrators lists each narrator", await page.locator("#groups .collection-card__link").count() >= 3);

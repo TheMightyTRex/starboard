@@ -997,7 +997,7 @@ const picks34 = page.locator("#wanted-list .dl-pick__box");
 if (await picks34.count() >= 3) {
   await page.locator("#wanted-all").focus();
   const a34 = await tabTo((f) => f.id === "select-all", 12);
-  check("T36", "Tab from Search all reaches Select all before the list", !!a34, a34 ? a34.text : "not reached");
+  check("T36", "Tab from Find all wanted reaches Select all before the list", !!a34, a34 ? a34.text : "not reached");
   const r34 = await tabTo((f) => /^Select /.test(f.text) && f.tag === "INPUT" && f.id !== "select-all", 6);
   check("T36", "then each row's box, named for its row", !!r34, r34 ? r34.text : "not reached");
   await page.keyboard.press("Space");

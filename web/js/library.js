@@ -505,6 +505,7 @@ startPage().then(async () => {
   applyView(saved);
   showGroup();
   setUpBulk();
+  if (typeof findButton === "function" && !state.group) { const f = findButton(TAB); $("#lib-actions")?.prepend(f); findResume(TAB, f); }
   $("#lib-q").value = state.q;
   let typing = 0;
   $("#lib-q").addEventListener("input", () => {

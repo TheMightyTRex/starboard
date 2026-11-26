@@ -1828,6 +1828,25 @@ class Handler(BaseHTTPRequestHandler):
                     return self.error(400, str(e))
                 except services.ServiceError as e:
                     return self.error(502, f"Reelix said no: {e}")
+            if path == "/api/find-wanted" and method in ("GET", "POST"):  # Find all wanted (26 November 2026)
+                from . import find_wanted
+                try:
+                    if method == "GET":
+                        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                        if q.get("tab", [""])[0]:
+                            return self.json(200, find_wanted.preview(cfg.data["services"], app.data_dir, q["tab"][0]))
+                        return self.json(200, {"run": find_wanted.status()})
+                    b = self.body()
+                    if str(b.get("action")) == "stop":
+                        return self.json(200, {"run": find_wanted.stop()})
+                    run = find_wanted.start(cfg.data["services"], app.data_dir, str(b.get("tab", "")),
+                                            paused=lambda: app.schedule.status().get("mode") == "pause")
+                    logs.event("info", "wanted", f"Find all wanted started on {b.get('tab')}")
+                    return self.json(200, {"run": run})
+                except ValueError as e:
+                    return self.error(400, str(e))
+                except services.ServiceError as e:
+                    return self.error(502, f"Reelix said no: {e}")
             if path == "/api/queue" and method == "GET":
                 return self.json(200, services.cached("queue", 10, lambda: services.queue(cfg.data["services"]), fresh))
             if path == "/api/queue/issues" and method == "GET":  # Copy issues for an AI helper (DASH-434): only when asked

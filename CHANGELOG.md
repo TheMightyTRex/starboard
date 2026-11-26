@@ -8,6 +8,7 @@ add features.
 ## [Unreleased]
 
 ### Added
+- **Find all wanted.** Every Library tab and every Wanted page has Find all wanted. It counts what is wanted, asks you to confirm how many and what Reelix will be asked, then searches 10 at a time with a minute between groups, up to 100 in a run, leaving out anything searched in the last day, with progress, Stop and a summary. It waits while Download hours pause downloads. Radio searches each show that has wanted episodes.
 - **Sign in to Plex with a link code.** Manage apps has Sign in with Plex, which shows a code to enter at plex.tv/link, or you can still paste the token.
 - **A first sign-in for app plug-ins.** A plug-in can now set its app's first password, and the plug-in's page shows it once after you enter your Starboard password. Calibre-Web uses this from version 1.2.0. Find out more in the [manifest reference](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/developers/plugin-manifest-reference.md#a-first-sign-in-shown-once-first_sign_in).
 - **A wizard for switching media server.** The media server tab in Settings, Apps has Switch with help, which says what moves, what cannot and what keeps working before anything changes. Find out more in [Choose your media server](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/choose-your-media-server.md).
