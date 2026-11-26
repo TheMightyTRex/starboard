@@ -40,6 +40,7 @@ add features.
 - **Plain English pilot.** The README and the help topics Add an app and How lean Starboard is now use shorter sentences and the active voice.
 
 ### Fixed
+- **An artist's Get it searches for every wanted album, up to 100.** It used to stop at 20 without saying so. Now it sends one request, and says how many are left when there are more than 100.
 - **An even row of controls on a Library item page.** On a radio show, the Following list now sits in the same frame and height as the buttons beside it, and every control on a film, series, artist, book, audiobook or radio show page is one height and wraps on a phone.
 - **A full backup that was not made is now reported.** A scheduled backup with no saved backup password used to say it had run. It now says "No full backup was made", raises an alert and shows a warning in Settings.
 
