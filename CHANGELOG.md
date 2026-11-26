@@ -24,6 +24,7 @@ add features.
 ### Changed
 - **Display opens as a slide-out on Sign in and Set up too.** The sign-in page had its own copy of Display as a dialog; it now uses the same template as every other page.
 - **Error lines under fields use the shared `field-error` class.** Three messages (app details, Reelix system and plug-ins) had a class name with no style.
+- **The shared styles now define the names Starboard already used.** `--radius-sm`, `--radius-md`, `--font-mono`, `--color-success-text`, `--color-danger-text`, `stack-3`, `stack-5`, `input--narrow`, `select--compact`, `field__error` and `btn--secondary` had no style, so a few boxes in Bring in, Backup and restore and the dashboard editor gained their intended spacing and width.
 - **One tab for your media server.** Settings, Apps has one tab named for the media server in use, so the separate Media server tab and plug-in tab are gone. The old address still opens the right page.
 - **Alerts and Performance are part of General.** Settings, General has new Alerts, Performance and Pictures tabs, and the old addresses still open the right page.
 - **Lighter pages and quicker tests.** Page scripts and style sheets are now built without comments and blank lines, so a first visit sends about 38 KB less. The parallel test runner cuts a full run from 5 minutes 18 seconds to 53 seconds.
