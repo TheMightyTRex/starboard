@@ -8,8 +8,9 @@ instead: the manifest names it in `first_sign_in`, and the app's own start-up se
 - `secret` is a `{secret:name}` the plug-in uses in its container's `env`. Starboard makes it once and keeps it
   owner-only in `data/plugins/<id>/secrets.json`, as for every secret. It is never put in a log or a listing.
 - `ready_file` is a file the app's start-up writes in its own data folder (a path inside `data/plugins/<id>/data/`)
-  once it has set the password. Until it is there, Starboard offers nothing to show, so a plug-in that was already set
-  up before it had this is never shown a password that was not set.
+  once it has set the password, and makes that folder 711 (a container's data folder is 700 for the user it runs as, and
+  Starboard is another user, which could not otherwise check the file is there). Until it is there, Starboard offers
+  nothing to show, so a plug-in that was already set up before it had this is never shown a password that was not set.
 - The page offers **Show the password**; it asks for the Starboard password, shows the password once and keeps only
   the date it was shown. The password is kept as it was, so removing the plug-in and adding it again, with its folder
   moved to the holding folder, makes a new one.
