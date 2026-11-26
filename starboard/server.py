@@ -2730,6 +2730,15 @@ class Handler(BaseHTTPRequestHandler):
                     return self.json(200, mediaserver.check(cfg.data, str(self.body().get("id") or "")))
                 except LookupError as e:
                     return self.error(404, str(e))
+            if path == "/api/media-server/plan" and method == "POST":  # the switch wizard: what would happen; changes nothing (DASH-565)
+                from . import mediaserver_switch, plugins_admin as pa
+                body = self.body()
+                try:
+                    return self.json(200, mediaserver_switch.plan(cfg.data, str(body.get("id") or ""), str(body.get("mode") or ""), pa.listing(app.data_dir)))
+                except LookupError as e:
+                    return self.error(404, str(e))
+                except ValueError as e:
+                    return self.error(400, str(e))
             if path in ("/api/media-server/choose", "/api/media-server/back") and method == "POST":
                 from . import mediaserver
                 try:
