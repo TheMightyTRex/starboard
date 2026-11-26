@@ -13,6 +13,7 @@ DNS names, email addresses, keys and the words you list in `.private-words` (als
 ```bash
 STARBOARD_DATA=./data python3 -m starboard     # http://127.0.0.1:8095
 python3 -m unittest discover -s tests
+python3 tools/run-tests.py                     # the same tests, one file per process, 8 at once: about a fifth of the time
 bash tools/check-api.sh                        # after any change: the API contract, plug-in tests and smoke test
 tools/checks.sh                                # likely bugs, the writing rules, spelling and the workflows (15 seconds)
 python3 tools/apply_shell.py                   # after adding a page to the menu (starboard/shell.py)

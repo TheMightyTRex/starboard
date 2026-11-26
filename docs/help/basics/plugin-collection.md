@@ -3,7 +3,7 @@
 
 # The plug-in collection
 
-The plug-ins you can add to Starboard, what each one does, and what it may do on your server. They live in the [Starboard plug-ins repository](https://github.com/TheMightyTRex/starboard-plugins). Each one has passed
+The plug-ins you can add to Starboard, what each one does, and what it may do on your server. To browse them with a page for each, use the [Stallboard plug-in store](https://themightytrex.github.io/stallboard/). They live in the [Starboard plug-ins repository](https://github.com/TheMightyTRex/starboard-plugins). Each one has passed
 Starboard's plug-in tester, accessibility included. To add one, read [Add a plug-in](../topics/add-a-plugin.md).
 
 ## Styles

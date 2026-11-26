@@ -11,6 +11,7 @@ Everything is explained in plain steps in the **[help centre](https://themightyt
 - [The three installs](#the-three-installs)
 - [Reelix](#reelix)
 - [Install](#install)
+- [Plug-in store](#plug-in-store)
 - [Security](#security)
 
 ## Quick start
@@ -89,6 +90,7 @@ In the help centre: [Quick start guide](https://themightytrex.github.io/starboar
   background work can be paused or slowed.
 - **Accessible to everyone.** Built to WCAG 2.2 AA: keyboard first, screen readers, text up to 175%, high contrast,
   and a plain terminal mode for software that reads text aloud.
+- **Plug-ins.** Add more with plug-ins from the **[Stallboard plug-in store](https://themightytrex.github.io/stallboard/)**: live TV, notifications, backups watch and more, each with its page, what it may do and what it needs.
 - **Works with what you have.** It finds the media apps already on your server and adds them, and runs on 64-bit
   Intel, AMD and ARM, such as a Raspberry Pi 4 or 5.
 
@@ -169,6 +171,10 @@ Update with `./update.sh`: it backs up your settings, installs the newest releas
 had if the new one does not start.
 
 In the help centre: [Install with the installer](https://themightytrex.github.io/starboard/help/topics/install-with-the-installer.html) · [What the installer asks](https://themightytrex.github.io/starboard/help/topics/what-the-installer-asks.html) · [The ready-made image](https://themightytrex.github.io/starboard/help/topics/install-from-the-ready-made-image.html) · [Update Starboard](https://themightytrex.github.io/starboard/help/topics/update-starboard.html) · [Remove Starboard](https://themightytrex.github.io/starboard/help/topics/remove-starboard.html)
+
+## Plug-in store
+
+Browse the plug-ins for Starboard in the **[https://themightytrex.github.io/stallboard](https://themightytrex.github.io/stallboard/), the Stallboard plug-in store**. Each plug-in has a page that says what it does, what it needs and what it may change on your server. Add one from **Settings**, **Plug-ins**, **Catalogue**.
 
 ## Security
 

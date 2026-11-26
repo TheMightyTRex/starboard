@@ -72,6 +72,7 @@ Each guide is a journey through several topics, in order.
 - [Find out why an app is here, or why one was not found](topics/why-is-this-here.md)
 - [Change or remove an app](topics/change-or-remove-an-app.md)
 - [Add a background service](topics/add-a-background-service.md)
+- [Show any service's JSON on a dashboard card](topics/show-any-services-json-on-a-card.md)
 - [Organise apps into categories](topics/organise-categories.md)
 - [Change an app's icon](topics/change-an-icon.md)
 - [Update your apps](topics/update-your-apps.md)
