@@ -2714,7 +2714,27 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, services.cached("jellyfin", 20, lambda: mediaserver.status_for_pages(cfg.data), fresh))
             if path == "/api/media-server" and method == "GET":  # DASH-565: which media server is active, from settings alone
                 from . import mediaserver
-                return self.json(200, mediaserver.state(cfg.data))
+                return self.json(200, mediaserver.state(cfg.data, self.media_servers_added()))
+            if path == "/api/media-server/check" and method == "POST":  # asks one to answer; changes nothing
+                from . import mediaserver
+                try:
+                    return self.json(200, mediaserver.check(cfg.data, str(self.body().get("id") or "")))
+                except LookupError as e:
+                    return self.error(404, str(e))
+            if path in ("/api/media-server/choose", "/api/media-server/back") and method == "POST":
+                from . import mediaserver
+                try:
+                    if path.endswith("/back"):
+                        got = mediaserver.go_back(cfg)
+                    else:
+                        got = mediaserver.choose(cfg, str(self.body().get("id") or ""), self.media_servers_added())
+                except LookupError as e:
+                    return self.error(404, str(e))
+                except ValueError as e:
+                    return self.error(409, str(e))
+                if got["changed"]:
+                    logs.event("info", "media server", got["said"])
+                return self.json(200, {**got, **mediaserver.state(cfg.data, self.media_servers_added())})
             if path == "/api/health" and method == "GET":
                 return self.json(200, services.cached("health", 300, lambda: services.health(cfg.data["services"], stack.chosen_keys(app.data_dir), app.data_dir), fresh))
             if path == "/api/history" and method == "GET":
@@ -3346,6 +3366,13 @@ class Handler(BaseHTTPRequestHandler):
         token = app.sessions.create(days, app.session_version, remember)
         return {"Set-Cookie": self.session_cookie(token, days * 86400 if remember else None)}
 
+    def media_servers_added(self):
+        """The ids of the media server plug-ins that are added and active (DASH-565): a media server can be chosen only then."""
+        from . import mediaserver, plugins_admin as pa
+        pa.ensure_default_once(self.app.data_dir, self.app.config.data["services"])
+        ids = set(mediaserver.ADAPTERS)
+        return sorted(p["id"] for p in pa.basics(self.app.data_dir) if p["id"] in ids and p["state"] == "enabled")
+
     def plugins_route(self, method, path):
         """Settings, Plug-ins (DASH-149): add (password), enable, disable, remove (password), Stop all, settings."""
         from . import plugins_admin as pa
@@ -3370,7 +3397,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.json(200, {"plugins": [{**p, "update": updates.get(p["id"]), "health": well.get(p["id"]),
                                                 "system": plugin_systems.judge(p.get("system"), here),
                                                 "resting": plugin_watch.resting(app.data_dir, p["id"])} for p in listed], "builtin": built,
-                                   "media_server": mediaserver.state(app.config.data),
+                                   "media_server": mediaserver.state(app.config.data, self.media_servers_added()),
                                    "wanted": pa.wanted_from_setup(app.config, {p["id"] for p in listed})})
         if path == "/api/plugins/wanted" and method == "POST":  # Not now on a plug-in chosen in the set-up (DASH-399)
             said = pa.drop_wanted(app.config, str(self.body().get("id") or ""))
@@ -3676,7 +3703,7 @@ class Handler(BaseHTTPRequestHandler):
             from . import mediaserver
             if mediaserver.in_use(app.config.data, pid):  # DASH-565: Starboard would be left with no media server by accident
                 return self.error(409, f"{next(p['name'] for p in pa.basics(app.data_dir) if p['id'] == pid)} is your media server, so it stays on. "
-                                       "Starboard uses it for the dashboard panel, Library, Activity and System")
+                                       "Choose another one, or none, in Settings, Media server first")
         if what == "settings" and method == "PUT":
             return self.json(200, {"settings": pa.save_settings(app.data_dir, pid, self.body().get("settings") or {})})
         if method != "POST":

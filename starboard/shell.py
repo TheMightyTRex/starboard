@@ -96,7 +96,7 @@ MENU = [
                                            ("system-backup.html", "Backup and restore", "archive-restore")]),
         ("Apps", "app-window", [("settings.html", "Manage apps", "app-window"), ("settings-install.html", "Your install", "layers"),
                                 ("settings-reelix.html", "Reelix", "film"),
-                                ("settings-jellyfin.html", "Jellyfin", "tv"), ("settings-audiobookshelf.html", "Audiobookshelf", "headphones"),
+                                ("settings-media-server.html", "Media server", "server"), ("settings-jellyfin.html", "Jellyfin", "tv"), ("settings-audiobookshelf.html", "Audiobookshelf", "headphones"),
                                 ("settings-tdarr.html", "Tdarr", "film"), ("settings-dispatcharr.html", "Dispatcharr", "radio")]),
         # Level 2 (owner, 13 November 2026: "VPN, Usenet and Download hours should be on menu 2"; DASH-390).
         ("Downloads", "download", [("settings-downloads.html", "VPN", "lock"), ("settings-downloads-usenet.html", "Usenet", "server"),
@@ -195,6 +195,7 @@ HELP = {
     "settings.html": ("topics/change-or-remove-an-app.md", "changing or removing an app"),
     "settings-install.html": ("topics/change-your-install.md", "changing your install"),
     "settings-reelix.html": ("topics/change-reelix-settings.md", "changing Reelix's settings"),
+    "settings-media-server.html": ("topics/choose-your-media-server.md", "choosing your media server"),
     "settings-jellyfin.html": ("README.md#jellyfin-and-audiobookshelf", "Jellyfin and Audiobookshelf"),
     "settings-audiobookshelf.html": ("README.md#jellyfin-and-audiobookshelf", "Jellyfin and Audiobookshelf"),
     "settings-tdarr.html": ("README.md#jellyfin-and-audiobookshelf", "Jellyfin and Audiobookshelf"),

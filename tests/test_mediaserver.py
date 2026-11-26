@@ -118,7 +118,7 @@ class Slot(unittest.TestCase):
         self.assertEqual(mediaserver.active({"extras": {}}).id, "jellyfin")
 
     def test_none_and_unknown_are_no_media_server_never_an_error(self):
-        for chosen in ("", "plex", "Jellyfin", 5, ["jellyfin"]):
+        for chosen in ("", "kodi", "Jellyfin", 5, ["jellyfin"]):
             self.assertEqual(mediaserver.active_id({"extras": {"media_server": chosen}}), "", chosen)
             self.assertIsNone(mediaserver.active({"extras": {"media_server": chosen}}))
         self.assertEqual(mediaserver.active_id({"extras": {"media_server": "jellyfin"}}), "jellyfin")
@@ -127,7 +127,8 @@ class Slot(unittest.TestCase):
         with mock.patch.object(services, "_fetch", side_effect=AssertionError("nothing is asked of the server")):
             got = mediaserver.state({"services": [JF], "extras": {}})
             self.assertEqual((got["active"], got["name"], got["configured"], got["page"]), ("jellyfin", "Jellyfin", True, "/settings-jellyfin.html"))
-            self.assertEqual(got["available"], [{"id": "jellyfin", "name": "Jellyfin", "page": "/settings-jellyfin.html"}])
+            self.assertEqual([a["id"] for a in got["available"]], ["jellyfin", "emby", "plex"])
+            self.assertEqual(got["available"][0], {"id": "jellyfin", "name": "Jellyfin", "page": "/settings-jellyfin.html"})
             self.assertIn("restart", got["capabilities"])
             self.assertFalse(mediaserver.state({"services": [], "extras": {}})["configured"])
             none = mediaserver.state({"services": [JF], "extras": {"media_server": ""}})
