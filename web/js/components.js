@@ -1025,6 +1025,14 @@
   const num = (n) => Number(n).toLocaleString("en-GB");
   const fold = (s) => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const andList = (list) => (list.length < 2 ? list.join("") : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`);
+  /* Counts and clock times in words. plural(3, "disk") is "3 disks"; plural(1, "series", "series") is "1 series"; the
+     words may be one array, plural(n, ["film", "films"]). The number has its thousands separator (1,250 files).
+     clock(date) is the time of day as 14:05, the same everywhere; with no date it is now. */
+  const plural = (n, one, many) => {
+    const [single, several] = Array.isArray(one) ? one : [one, many || `${one}s`];
+    return `${num(n)} ${Number(n) === 1 ? single : several}`;
+  };
+  const clock = (when = new Date()) => new Date(when).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   /* Say something through the shared polite region (or the alert region when urgent). Never put a secret in it. */
   function say(text, urgent = false) {
     const region = announcer(urgent ? "toast-alert" : "toast-status", urgent ? "alert" : "status");
@@ -1254,6 +1262,7 @@
     kit: { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus, notice } };
   Object.assign(window.SharedComponents, { wait }); // the waiting mark builder
   Object.assign(window.SharedComponents, { notice }); // the notice builder
+  Object.assign(window.SharedComponents, { plural, clock, num }); // counts and clock times in words
   // An app that wires its own behaviour (Starboard's page scripts) loads this file with data-manual, or
   // sets window.SharedComponentsManual = true first, and calls setup() or openLayer() itself.
   const manual = window.SharedComponentsManual || document.currentScript?.hasAttribute("data-manual");
