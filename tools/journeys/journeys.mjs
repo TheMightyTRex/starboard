@@ -364,6 +364,16 @@ for (const tab of ["films", "tv", "music", "radio", "books", "audiobooks"]) {
   check("LIB-06", `${tab}: the filter says Wanted`, chips.includes("Wanted"), chips.join(" | "));
   check("LIB-06", `${tab}: none of the old words`, !chips.some((c) => /not in library|tracks not|has episodes|complete/i.test(c)), chips.join(" | "));
 }
+// LIB-07: one verb for searching (owner, 26 November 2026): Find it, Find wanted episodes (n), never Get it.
+console.log("\n== LIB-07 one verb for searching");
+await open("library-tv-show.html?id=8");
+const findTv = page.locator(".series-head__actions .btn--primary");
+check("LIB-07", "a series says Find wanted episodes with the count", /^Find wanted episodes? \(\d+\)$/.test((await findTv.first().textContent()).trim()), (await findTv.first().textContent()).trim());
+check("LIB-07", "a series page has no Get it or Get the", (await page.locator("#item").textContent()).search(/\bGet (it|the)\b/) === -1);
+for (const p of ["library-film.html?id=3", "library-book.html?id=4", "library-artist.html?id=2"]) {
+  await open(p);
+  check("LIB-07", `${p}: no Get it`, (await page.locator(".series-head__actions").textContent()).search(/\bGet it\b/) === -1);
+}
 // DASH-261: narrator pages, and Narrated by on an audiobook's summary links to them.
 await open("library-audiobooks-narrators.html");
 check("LIB-02", "Narrators lists each narrator", await page.locator("#groups .collection-card__link").count() >= 3);

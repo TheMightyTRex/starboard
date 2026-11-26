@@ -23,6 +23,7 @@ add features.
 - **Emby and Plex as media servers.** Both are now built-in plug-ins that the dashboard can show, read only for now. They cannot play, mark watched, show Live TV or use the Jellyfin tools.
 
 ### Changed
+- **One verb for searching in the Library.** Get it, Get the missing episodes, Get the n missing and Search are now Find it, Find wanted episodes with a count, Find wanted albums and Find n wanted episodes, and a radio show has Find wanted episodes too. Choose a download keeps its name, and its buttons are Use this one and Use it anyway.
 - **One set of words for what you have and want in the Library.** Every tab now says In library, Partly in library, Wanted, Downloading, Below quality, Not followed, Not added or Not released, where it said Not in library, Episodes not in library, Tracks not in library, Not wanted, Not requested and more. Wanted is now a neutral chip, not a warning.
 - **A notice with buttons reads properly on a phone.** On Settings, Plug-ins the offer to install a plug-in chosen in the set-up no longer squeezes its title to one letter a line, because its buttons now sit on their own row.
 - **Each plug-in's tab has its own icon.** Settings, Plug-ins now draws a different line icon on each plug-in's tab, and where the tabs show icons only, such as on a phone, the tab you are on and the tab with focus also show their name.

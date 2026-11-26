@@ -42,7 +42,7 @@ function wantedRow(w) {
   const when = w.date ? new Date(w.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
   const meta = [w.detail, when, WHICH === "cutoff" && w.quality ? `Has ${w.quality}, wants ${w.cutoff || "better"}` : ""].filter(Boolean).join(" · ");
   const search = el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => wantedSearch([w.id], e.currentTarget) },
-    icon("search"), "Search", el("span", { class: "visually-hidden", text: ` for ${name}` }));
+    icon("search"), "Find", el("span", { class: "visually-hidden", text: ` ${name}` }));
   // DASH-171: while download hours pause downloads, Download now gets this one straight away.
   const now = wantedState.paused && ["movie", "episode"].includes(wantedState.kind) ? el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => downloadNow(w, name, e.currentTarget) },
     icon("zap"), "Download now", el("span", { class: "visually-hidden", text: ` ${name}` })) : null;
@@ -76,7 +76,7 @@ async function wantedDetail(w, name, opener) {
     try {
       const r = await api(`/api/library/releases?${p}`);
       results.replaceChildren(r.releases.length ? el("ul", { class: "rows" }, r.releases.map((x) => {
-        const take = el("button", { type: "button", class: x.accepted ? "btn btn--compact" : "btn btn--quiet btn--compact" }, x.accepted ? "Get this one" : "Get it anyway",
+        const take = el("button", { type: "button", class: x.accepted ? "btn btn--compact" : "btn btn--quiet btn--compact" }, x.accepted ? "Use this one" : "Use it anyway",
           el("span", { class: "visually-hidden", text: ` ${x.title}` }));
         take.addEventListener("click", async () => {
           take.disabled = true;
@@ -201,7 +201,7 @@ function wantedSelection() {
     return b;
   };
   $("#selection-actions").replaceChildren(...[
-    button("search", "Search", wantedBulkSearch, "btn btn--primary"),
+    button("search", "Find", wantedBulkSearch, "btn btn--primary"),
     st.paused && ["movie", "episode"].includes(st.kind) ? button("zap", "Download now", wantedBulkNow) : null,
     button("eye-off", "Stop following", wantedBulkStop),
     button("x", "Clear selection", () => { wantedClear(); announce("Selection cleared"); })].filter(Boolean));
