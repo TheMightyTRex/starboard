@@ -1120,7 +1120,10 @@ await page.keyboard.press("ArrowRight");
 const mmoved = await page.evaluate(() => ({ text: document.activeElement.textContent.trim(), named: document.activeElement.querySelector(".menu-tabs__label").getBoundingClientRect().width > 2 }));
 check("MENU3-03", "the right arrow moves focus to the next tab, which shows its name", mmoved.text === "Appearance" && mmoved.named, JSON.stringify(mmoved));
 await page.keyboard.press("End");
-check("MENU3-03", "End goes to the last tab, in view", await page.evaluate(() => { const a = document.activeElement, n = a.closest("nav"); const r = a.getBoundingClientRect(), b = n.getBoundingClientRect(); return a.textContent.trim() === "Backup/Logs" && r.right <= b.right + 1 && r.left >= b.left - 1; }));
+// The row scrolls the focused tab into view a frame after the focus (and the name opens a little wider), so wait for that, not for a time.
+const lastInView = () => page.evaluate(() => { const a = document.activeElement, n = a.closest("nav"); const r = a.getBoundingClientRect(), b = n.getBoundingClientRect(); return a.textContent.trim() === "Backup/Logs" && r.right <= b.right + 1 && r.left >= b.left - 1; });
+await page.waitForFunction(() => { const a = document.activeElement, n = a.closest("nav"); if (!n) return false; const r = a.getBoundingClientRect(), b = n.getBoundingClientRect(); return a.textContent.trim() === "Backup/Logs" && r.right <= b.right + 1 && r.left >= b.left - 1; }, null, { timeout: 3000 }).catch(() => {});
+check("MENU3-03", "End goes to the last tab, in view", await lastInView());
 await page.keyboard.press("Home");
 check("MENU3-03", "Home goes to the first tab", await page.evaluate(() => document.activeElement.textContent.trim()) === "General");
 check("MENU3-04", "an icon-only tab has a tooltip, and the page does not scroll sideways",
