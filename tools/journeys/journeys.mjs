@@ -1030,8 +1030,8 @@ check("MENU3-02", "every tab is at least 44 px wide", mrow.minW >= 43.9, String(
 check("MENU3-02", "only the current tab, Hours, shows its name", mrow.named.join() === "Hours" && mrow.current.join() === "Hours", JSON.stringify(mrow));
 await page.locator('.site-header__tabs nav[aria-label="General"] a').first().focus();
 await page.keyboard.press("ArrowRight");
-const moved = await page.evaluate(() => ({ text: document.activeElement.textContent.trim(), named: document.activeElement.querySelector(".menu-tabs__label").getBoundingClientRect().width > 2 }));
-check("MENU3-03", "the right arrow moves focus to the next tab, which shows its name", moved.text === "Appearance" && moved.named, JSON.stringify(moved));
+const mmoved = await page.evaluate(() => ({ text: document.activeElement.textContent.trim(), named: document.activeElement.querySelector(".menu-tabs__label").getBoundingClientRect().width > 2 }));
+check("MENU3-03", "the right arrow moves focus to the next tab, which shows its name", mmoved.text === "Appearance" && mmoved.named, JSON.stringify(mmoved));
 await page.keyboard.press("End");
 check("MENU3-03", "End goes to the last tab, in view", await page.evaluate(() => { const a = document.activeElement, n = a.closest("nav"); const r = a.getBoundingClientRect(), b = n.getBoundingClientRect(); return a.textContent.trim() === "Backup/Logs" && r.right <= b.right + 1 && r.left >= b.left - 1; }));
 await page.keyboard.press("Home");

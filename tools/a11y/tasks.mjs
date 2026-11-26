@@ -1420,6 +1420,7 @@ await page.keyboard.press("ArrowRight");
 f = await rowFocus();
 check("T-ROW1", "the right arrow moves to the next tab, in view, with its name", f.text === "Appearance" && f.named && f.inView, JSON.stringify(f));
 await page.keyboard.press("End");
+await page.waitForTimeout(300);
 f = await rowFocus();
 check("T-ROW1", "End goes to the last tab, in view", f.text === "Backup/Logs" && f.inView, JSON.stringify(f));
 await page.keyboard.press("Home");
