@@ -3,16 +3,17 @@
 
 # Choose your media server
 
-Starboard shows one media server at a time: its panel on the dashboard, what is playing in Activity, Play and Watched in
-Library, and its status in System. Jellyfin is that media server, as a plug-in built into Starboard that is added for
-you, with the address and key you already saved. You can check that it answers, choose another one or none, and go back
-in one step for 24 hours. Starboard never switches by itself.
+Starboard shows one media server at a time. It shows that server's panel on the dashboard, what is playing in
+Activity, Play and Watched in Library, and its status in System. Jellyfin is that media server. It is a plug-in built
+into Starboard, and Starboard adds it for you with the address and key you already saved. You can check that it
+answers, choose another server or none, and go back in one step for 24 hours. Starboard never switches by itself.
 
 ## Before you begin
 
 - You can sign in to Starboard.
-- To use Emby or Plex, add its plug-in from the catalogue's **Media servers** tab, and add the app itself in **Manage
-  apps** with its address and key, as set out under **Use Emby or Plex**. Read [Add a plug-in](add-a-plugin.md).
+- To use Emby or Plex, add its plug-in from the **Media servers** tab of the catalogue. Then add the app itself in
+  **Manage apps** with its address and key, as set out under **Use Emby or Plex**. Read
+  [Add a plug-in](add-a-plugin.md).
 
 ## Steps
 
@@ -27,7 +28,7 @@ in one step for 24 hours. Starboard never switches by itself.
 
 ### Choose another media server, or none
 
-1. Under **Choose a media server**, select the one to use. One that is not added yet cannot be selected, and says so.
+1. Under **Choose a media server**, select the one to use. You cannot select a server that is not added yet, and the page says so.
 2. Select **Use this media server**, then **Use** in the box that opens.
 3. Starboard asks the new media server to answer first. If it does not, nothing changes and the page says why. If it does,
    it becomes your media server and the old one stays added, with its address and key.
@@ -36,22 +37,24 @@ in one step for 24 hours. Starboard never switches by itself.
 
 ### Use Emby or Plex
 
-Emby and Plex are built into Starboard like Jellyfin, and each is a kind of app in Manage apps with its own form, check
-and icon. They are read only for now: Starboard shows their status, libraries, what is
-playing and what was added, on the dashboard, in Activity and in System. Play in Jellyfin, Watched, Live TV and the other
-Jellyfin tools stay with Jellyfin.
+Emby and Plex are built into Starboard like Jellyfin. Each is a kind of app in Manage apps with its own form, check
+and icon. They are read only for now. On the dashboard, in Activity and in System, Starboard shows their status,
+libraries, what is playing and what was added. Play in Jellyfin, Watched, Live TV and the other Jellyfin tools stay
+with Jellyfin.
 
 1. Go to **Settings**, then **Plug-ins**, then **Catalogue**, then the **Media servers** tab. Select **Install** beside
    **Emby** or **Plex**, read **What it may do**, enter your Starboard password and select **Install**.
 2. Go to **Settings**, then **Apps**, then **Manage apps** and select **Add an app**. In **Kind of app**, choose **Emby** or
    **Plex**. Starboard names it for you and shows the usual address. Enter the address Starboard uses to reach it and its
-   key. For Emby, make a key in its dashboard under **API keys**. For Plex, use its token: in Plex's web app open an item,
-   then **Get info**, then **View XML**, and copy the value after `X-Plex-Token=` from the address.
+   key.
+   - For Emby, make a key in its dashboard under **API keys**.
+   - For Plex, use its token. In Plex's web app, open an item, then **Get info**, then **View XML**. Copy the value
+     after `X-Plex-Token=` from the address.
 
    ![The Add an app panel with Kind of app set to Plex (step 2) outlined, with example data](../images/choose-your-media-server-7-add-plex.png)
 
-   Select **Test connection**. Starboard asks the server for its version, then asks for something only the key allows, so a
-   wrong key shows as a problem here and not later. Select **Add app**.
+   Select **Test connection**. Starboard asks the server for its version. Then it asks for something only the key
+   allows, so a wrong key shows as a problem here and not later. Select **Add app**.
 
    ![Manage apps with Plex in the list, with its Edit button (step 2) outlined, with example data](../images/choose-your-media-server-8-plex-listed.png)
 
@@ -62,13 +65,13 @@ Starboard sends the key in a header, never in an address, so it does not reach a
 
 ### Install Plex or Emby with Starboard
 
-You can run all three media servers side by side to try them. Only one is your media server at a time; the others are
-installed and not in use. Plex and Emby are not part of Basics or Full install; you add them here.
+You can run all three media servers side by side to try them. Only one is your media server at a time, and the others are
+installed but not in use. Plex and Emby are not part of Basics or Full install; you add them here.
 
 1. Go to **System**, then **Apps**, then **Install apps**.
 2. Under **You can add**, select **Add** beside **Plex** or **Emby**, then follow the set-up's steps to the end. Add the
-   other one afterwards if you want both. Starboard gives each its own folders in your settings folder and mounts your
-   media folder in each as **read only**, so neither can change your files. Each is capped at 2 GB of memory and at 4
+   other one afterwards if you want both. Starboard gives each its own folders in your settings folder. It mounts your
+   media folder in each as **read only**, so neither can change your files. Each can use at most 2 GB of memory and 4
    processors, or fewer if this computer has fewer. Plex uses port 32400 and Emby uses port 8097, because Jellyfin has 8096.
 
    ![Install apps, under You can add, with Add beside Plex and Emby (step 2) outlined, with example data](../images/choose-your-media-server-9-install.png)
@@ -99,15 +102,19 @@ back, set out under Go back, still lasts 24 hours.
    ![The Switch media server panel, step 1, with the three ways to switch (step 2) outlined, with example data](../images/choose-your-media-server-10-wizard-start.png)
 
 3. On **Step 2**, choose the media server, or **None**, then **Next**. Only media servers that are added are listed.
-4. On **Step 3**, read what Starboard found. It asks the new media server to answer first. Then it lists what moves, what
-   cannot move (collections, hand-made artwork, Live TV settings and each server's own plug-ins), what keeps working with no
-   change (your download apps, Reelix and anything else that saves into your media folders, and your files), and each
-   plug-in that needs a media server marked **Works after the switch** or **Waits after the switch**, with the reason.
+4. On **Step 3**, read what Starboard found. It asks the new media server to answer first. Then it lists:
+   - what moves;
+   - what cannot move (collections, hand-made artwork, Live TV settings and each server's own plug-ins);
+   - what keeps working with no change (your download apps, Reelix and anything else that saves into your media
+     folders, and your files);
+   - each plug-in that needs a media server, marked **Works after the switch** or **Waits after the switch**, with
+     the reason.
 
    ![The Switch media server panel, step 3, with the plug-ins that wait or work after the switch (step 4) outlined, with example data](../images/choose-your-media-server-11-wizard-plan.png)
 
-5. Parts that keep their own link to the old media server, such as Reelix, Seerr, On demand and a forward for remote
-   access, are marked **Needs pointing at the new media server**: change them in those apps after the switch.
+5. Some parts keep their own link to the old media server, such as Reelix, Seerr, On demand and a forward for
+   remote access. Starboard marks them **Needs pointing at the new media server**. Change them in those apps after
+   the switch.
 6. Select **Switch to** and the name. If the new media server did not answer, the button is not available and nothing has changed.
 
    ![The Switch media server panel, step 3, with Switch to Plex (step 5) outlined, with example data](../images/choose-your-media-server-12-wizard-switch.png)
@@ -146,8 +153,8 @@ For 24 hours after a change, **The way back** says which media server you had.
   one or none. **Deactivate all plug-ins** leaves it on.
 - With **None**, the dashboard panel, Library's **Play** and **Watched** and Activity's now playing are not drawn.
   Nothing is removed.
-- If you added Plex or Emby earlier as an **Other app** with its icon, Starboard turns it into a Plex or Emby app by
-  itself when it starts, with the same name, address and key. A Starboard that never had one is not changed.
+- If you added Plex or Emby earlier as an **Other app** with its icon, Starboard turns it into a Plex or Emby app
+  when it starts. The name, address and key stay the same. A Starboard that never had one does not change.
 - If you never had Jellyfin, it is added but not active, and says it is not set up. If you removed it on purpose,
   Starboard does not add it again.
 - Nothing runs for a media server plug-in, so it uses no extra container and no memory of its own. Your Jellyfin settings and backups restore
@@ -172,8 +179,8 @@ For 24 hours after a change, **The way back** says which media server you had.
 
 ---
 
-**Download only what you have the right to.** Use the download apps only for files you have the right to download,
-such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+**Download only what you have the right to.** Use the download apps only for files you have the right to download.
+Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 

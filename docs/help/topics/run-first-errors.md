@@ -4,13 +4,17 @@
 # Run first and installer error numbers
 
 When the Run first script or Starboard's installer (`./install.sh`) stops, it shows an error number, such as
-`Error RF-11` or `Error IN-21`, with a link to this page. RF numbers come from the
-[Run first script](run-first.md), IN numbers from the installer and the terminal set-up. When the installer stops
-inside the Run first script, the script ends on the installer's number, so there is only one number.
+`Error RF-11` or `Error IN-21`. It also shows a link to this page. RF numbers come from the
+[Run first script](run-first.md). IN numbers come from the installer and the terminal set-up.
 
-Find the number on this page for what it means and how to put it right. Then run the script again: it carries on
-from what is missing. If you ask for help or report a problem, give the error number. The message also says where
-the log is: a file called `run-first.log` in a `starboard-run-first` folder in `/tmp`.
+If the installer stops inside the Run first script, the script ends on the installer's number, so you get only one
+number.
+
+Find your number on this page to learn what it means and how to put it right. Then run the script again. It carries
+on from what is missing. If you ask for help or report a problem, give the error number.
+
+The message also says where the log is. It is a file called `run-first.log` in a `starboard-run-first` folder in
+`/tmp`.
 
 ```flow
 title: Find your error number
@@ -30,19 +34,22 @@ q: Which number did it give?
 
 ## What an error says
 
-1. When the script or the installer stops, its last lines say why, then give the error number and the address of
-   its help on this page.
+1. When the script or the installer stops, its last lines say why. They then give the error number and the address
+   of its help on this page.
 
    ![The installer stopped, with the error number IN-16 and the address of its help (step 1) outlined](../images/run-first-errors-1-stop.png)
 
-2. In accessible mode, the same lines come as plain text: the error number, then the address on a line of its own.
+2. In accessible mode, the same lines come as plain text. You get the error number, then the address on a line of
+   its own.
 
    ![Accessible mode, with Error IN-33 and the address of its help (step 2) outlined](../images/run-first-errors-2-plain.png)
 
-3. When one job does not finish, such as starting the apps, the next line says what went wrong, with the error
-   number and the address of its help. Then it asks what to do. **Try again** is recommended. **Show the details**
-   shows the last lines of the job's log. **Report this problem** helps you send a report. Read
-   [Send feedback from the terminal](set-up-in-the-terminal.md#send-feedback-from-the-terminal).
+3. When one job does not finish, such as starting the apps, the next line says what went wrong. It gives the error
+   number and the address of its help. Then it asks what to do.
+   - **Try again** is the choice we recommend.
+   - **Show the details** shows the last lines of the job's log.
+   - **Report this problem** helps you send a report. Read
+     [Send feedback from the terminal](set-up-in-the-terminal.md#send-feedback-from-the-terminal).
 
    ![A job that did not finish, with its error number IN-33, the address of its help and What do you want to do? (step 3) outlined](../images/run-first-errors-3-choices.png)
 
@@ -51,14 +58,14 @@ q: Which number did it give?
 ### RF-01
 
 **An option the script does not know.** The command has a word after `bash` that the script does not use, often a
-spelling mistake. Run it with no options, or with one of `--browser`, `--terminal`, `--plain`, `--yes`, `--dir` or
-`--check`. Run it with `--help` for what each does.
+spelling mistake. Run it with no options, or with one of these: `--browser`, `--terminal`, `--plain`, `--yes`,
+`--dir` or `--check`. Run it with `--help` to learn what each one does.
 
 ### RF-02
 
-**No terminal to enter answers in.** The script was started somewhere it cannot ask questions, such as from another
-program or a scheduled job. Run it in a terminal window, or add `--yes` to accept every safe answer without being
-asked.
+**No terminal to enter answers in.** Something started the script in a place where it cannot ask questions, such as
+another program or a scheduled job. Run it in a terminal window, or add `--yes` so that it accepts every safe answer
+without asking.
 
 ### RF-03
 
@@ -78,12 +85,12 @@ Install Docker by hand with [Install Docker](install-docker.md), then run the sc
 ### RF-06
 
 **A 32-bit system.** Starboard and most of its apps need a 64-bit system. On a Raspberry Pi, install Raspberry Pi
-OS (64-bit) with Raspberry Pi Imager, then run the script again. Nothing was installed.
+OS (64-bit) with Raspberry Pi Imager, then run the script again. The script installed nothing.
 
 ### RF-07
 
 **Not enough free space.** A first install needs at least 10 GB free in your home folder, for Docker, Starboard
-and the apps. Free some space, or use a bigger disk, then run the script again. Nothing was installed.
+and the apps. Free some space, or use a bigger disk, then run the script again. The script installed nothing.
 
 ## Installing what is missing
 
@@ -92,7 +99,7 @@ These happen while the script installs Docker and the other things Starboard nee
 
 ### RF-10
 
-**curl is installed as a snap.** The snap version of curl is sandboxed and cannot save Docker's installer where
+**You installed curl as a snap.** The snap version of curl runs in a sandbox, so it cannot save Docker's installer where
 the script needs it. Choose **Stop**, then install the usual curl and run the script again:
 
 ```bash
@@ -106,18 +113,17 @@ Wi-Fi, then choose **Try again**.
 
 ### RF-12
 
-**Another program is still installing updates.** This often happens soon after Linux is installed, when it
-updates itself. The script waits for the updates by itself, with a progress bar called **Waiting for Linux to
-finish installing its updates**. The bar shows what is installing, how many are done and how much is downloaded.
-When the updates finish, the script carries on. If updates start part-way through an install, it waits and tries
-again by itself.
+**Another program is still installing updates.** This often happens soon after you install Linux, when it updates
+itself. The script waits for the updates and shows a progress bar called **Waiting for Linux to finish installing
+its updates**. The bar shows what is installing, how many are done and how much is downloaded. When the updates
+finish, the script carries on, and if updates start part-way through an install, it waits and tries again.
 
 You get this error only when the updates take more than 45 minutes. Wait until they finish, or restart the
 computer, then choose **Try again**.
 
 ### RF-13
 
-**A software source has a signing key Linux no longer accepts.** The list of software could not be updated.
+**A software source has a signing key Linux no longer accepts.** Linux could not update its list of software.
 Choose **Show the details** for the name of the source. Install that source's new key, or deactivate the source, then
 choose **Try again**.
 
@@ -132,9 +138,9 @@ install Docker by hand with [Install Docker](install-docker.md).
 
 ### RF-16
 
-**Your user is not allowed to install software.** Run the script as the user you made when installing Linux, or
-ask the person who manages this computer to add you to the `sudo` group. On Debian, this happens when a root
-password was set while installing: read [RF-18](#rf-18).
+**Your user is not allowed to install software.** Run the script as the user you made when you installed Linux. Or
+ask the person who manages this computer to add you to the `sudo` group. On Debian, this happens when you set a
+root password during the install. Read [RF-18](#rf-18).
 
 ### RF-17
 
@@ -143,13 +149,13 @@ nothing shows as you enter it. Then choose **Try again**.
 
 ### RF-18
 
-**Your user cannot use sudo yet.** On Debian this happens when a root password was set while installing. Type
-`su -` and the root password, then `apt install sudo` (if it is missing) and `usermod -aG sudo` followed by your
-user name, then `exit`. Sign out and back in, and run the script again. Nothing was installed.
+**Your user cannot use sudo yet.** On Debian this happens when you set a root password during the install. Type
+`su -` and the root password. Then type `apt install sudo` (if it is missing) and `usermod -aG sudo` followed by
+your user name. Finish with `exit`, sign out and back in, and run the script again. The script installed nothing.
 
 ### RF-19
 
-**Something else went wrong.** Choose **Try again**. If it happens again, choose **Show the details**, and give
+**Something else went wrong.** Choose **Try again**. If it happens again, choose **Show the details** and give
 the last lines when you ask for help.
 
 ### RF-20
@@ -173,10 +179,10 @@ permissions were changed. Move it aside, then run the script again to download a
 
 ### RF-40
 
-**Starboard's installer stopped without giving an error number.** It stopped suddenly, for example because the
-computer ran out of memory or the connection to it closed. The lines before the error number are the last it wrote.
-Run the script again: it carries on from what is missing. If RF-40 comes back, choose **Report this problem**, or
-[read the log and report a problem](read-the-log.md), with those lines.
+**Starboard's installer stopped without giving an error number.** It stopped suddenly, for example because the computer
+ran out of memory or the connection to it closed. The lines before the error number are the last lines it wrote.
+Run the script again, and it carries on from what is missing. If RF-40 comes back, include those lines when you
+choose **Report this problem** or [read the log and report a problem](read-the-log.md).
 
 If those lines say `sg: command not found`, your copy of the script is an old one. Run the script again: the
 current one works without `sg`.
@@ -185,9 +191,9 @@ If you stop the installer yourself, with `q` or Ctrl+C, that is not an error and
 
 ### RF-50
 
-**The apps did not start.** The set-up in the browser asked this window to download and start your apps, and
-that did not finish. The line before the error number says why. Most often this computer could not reach the
-internet, or the disk is full. Put that right, then select **Try again** in the browser.
+**The apps did not start.** The set-up in the browser asked this window to download and start your apps, but that did
+not finish. The line before the error number says why. Most often this computer could not reach the internet, or
+the disk is full. Put that right, then select **Try again** in the browser.
 
 ## Starboard's installer
 
@@ -223,8 +229,8 @@ for you.
 
 ### IN-07
 
-**Docker could not be installed.** The installer adds Docker by itself when it is missing, and this error means
-that did not work: there was no terminal to ask for your password, the password was not given, or the download or
+**Docker could not be installed.** The installer adds Docker when it is missing. This error means that did not
+work. There was no terminal to ask for your password, you did not give the password, or the download or
 install failed. Run the installer again in a terminal, or install Docker by hand with
 [Install Docker](install-docker.md).
 
@@ -365,8 +371,8 @@ with `python3 -m starboard.terminal_setup` in the Starboard folder, or finish in
 ### IN-38
 
 **The terminal set-up stopped on a fault of its own.** Python wrote what went wrong before the number. Run the
-set-up again with `python3 -m starboard.terminal_setup` in the Starboard folder, or finish in a browser, and
-choose **Report this problem** with those lines so it can be fixed.
+set-up again with `python3 -m starboard.terminal_setup` in the Starboard folder, or finish in a browser. Choose
+**Report this problem** and include those lines so that we can fix it.
 
 ### IN-39
 
@@ -385,8 +391,8 @@ keyboard layout (`--timezone` or `--keyboard`), and `timedatectl` or `localectl`
 
 ---
 
-**Download only what you have the right to.** Use the download apps only for files you have the right to download,
-such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+**Download only what you have the right to.** Use the download apps only for files you have the right to download.
+Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 
