@@ -94,7 +94,7 @@ MENU = [
                                            # Their old addresses move here (MOVED_PAGES in server.py).
                                            ("settings-general-alerts.html", "Alerts", "bell"),
                                            ("settings-general-performance.html", "Performance", "gauge"),
-                                           ("settings-general-pictures.html", "Pictures", "eye"),
+                                           ("settings-general-pictures.html", "Pictures", "image"),
                                            # Owner, 26 November 2026 (DASH-595): Backup and restore (it was System, Backup, then
                                            # General) and Logs and feedback are one tab. The names are short so every tab keeps its
                                            # name at 1280 pixels wide. The old addresses move here (MOVED_PAGES in server.py).
@@ -102,7 +102,7 @@ MENU = [
         ("Apps", "app-window", [("settings.html", "Manage apps", "app-window"), ("settings-install.html", "Your install", "layers"),
                                 ("settings-reelix.html", "Reelix", "film"),
                                 ("settings-jellyfin.html", "Jellyfin", "tv"), ("settings-audiobookshelf.html", "Audiobookshelf", "headphones"),
-                                ("settings-tdarr.html", "Tdarr", "film"), ("settings-dispatcharr.html", "Dispatcharr", "radio")]),
+                                ("settings-tdarr.html", "Tdarr", "cpu"), ("settings-dispatcharr.html", "Dispatcharr", "radio")]),
         # Level 2 (owner, 13 November 2026: "VPN, Usenet and Download hours should be on menu 2"; DASH-390).
         ("Downloads", "download", [("settings-downloads.html", "VPN", "lock"), ("settings-downloads-usenet.html", "Usenet", "server"),
                                    ("settings-downloads-hours.html", "Download hours", "clock")]),
@@ -117,7 +117,7 @@ MENU = [
         # Level 2: Manage, Catalogue, then one tab per added plug-in, which common.js adds from /api/session (DASH-318).
         ("Plug-ins", "puzzle", [("settings-plugins.html", "Manage", "list-checks"),
                                 ("settings-plugins-catalogue.html", "Catalogue", "layout-grid")]),
-        ("Updates", "circle-arrow-up", [("settings-updates.html", "Updates", "sliders-horizontal"),
+        ("Updates", "circle-arrow-up", [("settings-updates.html", "Updates", "circle-arrow-up"),
                                          ("settings-updates-plugins.html", "Plug-ins", "puzzle"),
                                          ("settings-releases.html", "Releases", "scroll-text"),
                                          ("settings-restore.html", "Restore", "archive-restore")]),
