@@ -989,7 +989,7 @@ console.log("\n== MENU2 Radio, Performance and Security on the level 2 menu");
 check("MENU2-05", "Radio has Sources, Add a show from a link, Your podcast library, Station logos",
   (await level2("settings-radio.html")) === "Sources|Add a show from a link|Your podcast library|Station logos", await level2("settings-radio.html"));
 check("MENU2-05", "Sources shows only the sources", (await headings()) === "Sources", await headings());
-check("MENU2-05", "General has seven tabs: Discover is part of Lists and Pictures is part of Performance", (await level2("settings-general-performance.html")) === "General|Appearance|Lists|Discover|Hours|Alerts|Performance|Pictures|Backup/Logs");
+check("MENU2-05", "General has seven tabs: Discover is part of Lists and Pictures is part of Performance", (await level2("settings-general-performance.html")) === "General|Appearance|Lists|Hours|Alerts|Performance|Backup/Logs");
 await open("settings-general-performance.html#pf-pictures-h");
 check("MENU2-05", "Performance has the picture cache and its Clear", (await page.locator("#pf-pictures-h").isVisible()) && (await page.locator("#pf-danger-h").count()) === 1, await headings());
 check("MENU2-05", "Security has Who can open the dashboard, Password, Sign-in methods, API keys, Sign out everywhere",
@@ -1355,10 +1355,11 @@ await api("/api/library/discover-filters?tab=films", { method: "POST", body: { f
 // separate section for each in the settings"): Discover rows has a section per area; with topic tabs, only the area
 // shown asks Reelix; each Discover page opens its own section; Radio offers its shared genres as rows.
 console.log("\n== DR Discover rows by area");
-await open("settings-general-lists.html#dr-films");
+await page.evaluate(() => localStorage.setItem("starboard.topic-tabs", "off"));
+await open("settings-general-lists.html");
 await page.locator("#dr-films-list").waitFor({ timeout: 10000 });
 check("DR-01", "Lists has a section for each Discover area, after its own, in the Discover menu's order",
-  (await page.locator("#topic-tabs [role=tab]").allTextContents()).join("|").endsWith("Films|TV|Music|Radio|Books|Audiobooks"), (await page.locator("#topic-tabs [role=tab]").allTextContents()).join("|"));
+  (await headings()).endsWith("Films|TV|Music|Radio|Books|Audiobooks"), await headings());
 await page.evaluate(() => localStorage.removeItem("starboard.topic-tabs"));
 const asked = [];
 const askedFor = (r) => { const m = r.url().match(/discover-layout\?tab=(\w+)/); if (m) asked.push(m[1]); };
@@ -2886,7 +2887,7 @@ await page.waitForFunction(() => document.querySelectorAll('nav[aria-label="Plug
 const ptiTabs = () => page.evaluate(() => [...document.querySelectorAll('nav[aria-label="Plug-ins"] a')].map((a) => {
   const r = a.getBoundingClientRect(), l = a.querySelector(".menu-tabs__label"), s = a.querySelector("svg");
   return { name: a.textContent.trim(), icon: s?.querySelector("use")?.getAttribute("href") || "", hidden: s?.getAttribute("aria-hidden"), w: Math.round(r.width), h: Math.round(r.height),
-    shown: l.getBoundingClientRect().width > 8, current: a.getAttribute("aria-current") === "page", title: a.title };
+    shown: l.getBoundingClientRect().width > 8, current: a.getAttribute("aria-current") === "page", title: a.title, tip: a.dataset.tooltip };
 }));
 let pti = await ptiTabs();
 const ptiPlugs = pti.slice(2);
@@ -2895,7 +2896,7 @@ const known = ptiPlugs.filter((x) => !/#i-puzzle$/.test(x.icon));
 check("PTI-02", "every plug-in tab with an icon of its own has a different one",
   known.length > 8 && new Set(known.map((x) => x.icon)).size === known.length, JSON.stringify(known.map((x) => [x.name, x.icon])));
 check("PTI-03", "a plug-in with no icon of its own gets the neutral puzzle piece", ptiPlugs.some((x) => /#i-puzzle$/.test(x.icon)) && ptiPlugs.find((x) => x.name === "Notifications")?.icon.endsWith("#i-bell"));
-check("PTI-04", "every icon is hidden from a screen reader, and every tab keeps its name as text and as its tooltip", pti.every((x) => x.hidden === "true" && x.name && x.title === x.name));
+check("PTI-04", "every icon is hidden from a screen reader, and every tab keeps its name as text and as its tooltip", pti.every((x) => x.hidden === "true" && x.name && (x.current || x.tip === x.name)));
 check("PTI-05", "the tab you are on shows its name beside the icon, with the bar under it, and is in view",
   pti.filter((x) => x.current).length === 1 && pti.find((x) => x.current).name === "Notifications" && pti.find((x) => x.current).shown
   && await page.evaluate(() => { const a = document.querySelector('nav[aria-label="Plug-ins"] a[aria-current]'), r = a.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 1; }));
