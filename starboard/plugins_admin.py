@@ -485,11 +485,19 @@ def listing(data_dir):
                         "message": st.get("message", ""), "settings": public_settings(data_dir, pid, m),
                         "web": web_pages(data_dir, pid, m, st), "publishes": bool(plugins.published_lan(m)),
                         "adopt": adopt_info(m), "adopted": st.get("adopted"),
+                        "first_sign_in": _first_sign_in(data_dir, pid, m),  # API 1.20 (DASH-590): the user and whether it can be shown, never the password
                         # API 1.15: added from a zip (DASH-414), so it updates from one; its Jellyfin libraries (DASH-430)
                         "from_zip": bool(plugins.builds(m)) or os.path.isdir(os.path.join(where, "zips")),
                         "media_server": is_media_server(m),  # DASH-565: it fills the media server slot
                         "libraries": st.get("libraries")})
     return out
+
+
+def _first_sign_in(data_dir, pid, m):
+    if not m.get("first_sign_in"):
+        return None
+    from . import plugin_first_sign_in
+    return plugin_first_sign_in.info(data_dir, pid, m)
 
 
 def job_lines(data_dir, pid, m):

@@ -15,6 +15,16 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Plug-in API 1.20.0 (not released yet), 26 November 2026
+
+- **Added:** `first_sign_in`, a password Starboard makes for an app plug-in and shows once on its page, so the app does
+  not start with a default one that everyone knows. The manifest names the sign-in name, the `{secret:name}` the app
+  reads from its environment and a file the app's start-up writes once it has set the password. Starboard offers
+  **Show the password** only after that file is there, asks for the Starboard password, shows it once and keeps only
+  the date. Read [A first sign-in shown once](plugin-manifest-reference.md#a-first-sign-in-shown-once-first_sign_in).
+- **Changed:** nothing a plug-in relies on. A plug-in that does not use it is drawn as before. Name `>=1.20` in
+  `starboard_api` to use it, so an older Starboard offers the earlier version instead of one whose password nobody is shown.
+
 ## Plug-in API 1.19.0 (not released yet), 25 November 2026
 
 - **Added:** `requires`, the system a plug-in needs, as a list of up to four needs: `"jellyfin"`, `"jellyfin only"`,
