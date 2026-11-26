@@ -1,0 +1,72 @@
+/* page-topics: a part of the shared components. Load it after components.css, on the pages that use it.
+ * Made by tools/parts.py from components.css in github.com/TheMightyTRex/design-system: change it there, not here. */
+@layer shared {
+  .settings-sections {
+    display: grid;
+    gap: var(--space-8);
+  }
+  .page--settings > * {
+    width: 100%;
+  }
+  .page--settings .page-head__summary,
+  .page--settings .field .hint {
+    max-width: 75ch;
+  }
+  .page--settings > .page-head {
+    margin-bottom: var(--space-2);
+  }
+  .page--settings .settings-sections {
+    gap: var(--space-10);
+  }
+  .topic-tabs {
+    margin-block: 0 var(--space-6);
+    border-bottom: 1px solid var(--color-divider);
+  }
+  .topic-tabs [role="tablist"] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+  .topic-tabs__tab {
+    min-height: var(--control-h);
+    padding: var(--space-2) var(--space-3);
+    border: 0;
+    border-bottom: 3px solid transparent;
+    border-radius: var(--radius) var(--radius) 0 0;
+    background: none;
+    color: var(--color-text-muted);
+    font: inherit;
+    font-weight: var(--weight-strong);
+    cursor: pointer;
+  }
+  .topic-tabs__tab:hover {
+    background: var(--color-hover);
+    box-shadow: inset 0 0 0 1px var(--color-hover-edge);
+    color: var(--color-text);
+  }
+  .topic-tabs__tab[aria-selected="true"] {
+    background: var(--color-control-active);
+    border-bottom-color: var(--color-accent);
+    color: var(--color-text);
+  }
+  .topic-off {
+    display: none !important;
+  }
+  @media (min-width: 768px) and (min-height: 640px) {
+    .topic-tabs {
+      position: sticky;
+      top: calc(var(--header-h) + 1px);
+      z-index: 2;
+      background: var(--color-bg);
+    }
+    :root:has(.site-header__tabs) .topic-tabs {
+      top: calc(var(--header-h) + var(--tabs-h) + 1px);
+    }
+    :root:has(#topic-tabs) {
+      scroll-padding-top: calc(var(--header-h) + var(--topic-tabs-h, 48px) + var(--space-4));
+    }
+    :root:has(.site-header__tabs):has(#topic-tabs) {
+      scroll-padding-top: calc(var(--header-h) + var(--tabs-h) + var(--topic-tabs-h, 48px) + var(--space-4));
+    }
+  }
+}
