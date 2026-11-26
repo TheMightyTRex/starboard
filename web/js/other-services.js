@@ -125,6 +125,7 @@ function whyBody(last) {
 }
 
 startPage().then(async () => {
+  jsonCardsStart();  // custom cards (DASH-555): the list asks no service; it shows what was last learned
   try {
     await AppDetails.load("config", "status");
   } catch (e) {

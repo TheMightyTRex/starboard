@@ -18,6 +18,7 @@
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
 <script src="/js/app-details.js" defer></script>
+<script src="/js/json-cards.js" defer></script>
 <script src="/js/other-services.js" defer></script>
 </head>
 <body class="page-other-services with-rail">
@@ -41,6 +42,14 @@
     <h2 class="group-heading" id="own-jobs-h">Starboard's own jobs</h2>
     <p class="small muted">Work Starboard does in the background. Each is inactive until you activate it in Settings.</p>
     <ul class="rows" id="own-jobs"></ul>
+  </section>
+  <section class="media-section" id="custom-cards-section" aria-labelledby="custom-cards-h">
+    <h2 class="group-heading" id="custom-cards-h">Custom cards</h2>
+    <p class="small muted">Show fields from any service's JSON on a dashboard card. You choose the address, the fields, and a rule for each one's status. A card asks only when the dashboard shows it, and no more often than you choose.</p>
+    <ul class="rows" id="json-cards"></ul>
+    <p class="small muted" id="json-cards-empty" hidden>No custom cards yet.</p>
+    <div class="actions"><button type="button" class="btn" id="add-json-card" aria-haspopup="dialog"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-plus"/></svg>Add a custom card</button><span class="saved-note" id="json-cards-saved" hidden></span></div>
+    <ul class="settings-rows" id="json-cards-settings"></ul>
   </section>
   <div class="empty" id="services-empty" hidden>
     <svg class="i i-xl empty__icon" width="32" height="32" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-server-cog"/></svg>

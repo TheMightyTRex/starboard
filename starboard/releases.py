@@ -2032,6 +2032,18 @@ RELEASES = [
         ],
         "review": [],
         "settings": "Your settings stay as they are. Lines shown and Alerts only are new log settings: Lines shown starts at 200 and Alerts only starts off. Stallboard's catalogue is off until you tick it. Starboard keeps a few bytes in data/discovery-last.json (the last search for new apps) and data/reelix-sites.json (the number of Reelix sites), both only when they change. To go back, run ./update.sh --to v0.29.0."
+    },
+    {
+        "version": "0.31.0",
+        "date": "25 November 2026",
+        "added": [
+            ["Host alerts", "Settings, Alerts has a section, The server itself, with alerts for the processor's temperature, how busy the processor is, memory in use, a folder that stays nearly full and the disks' read and write speed, each when it stays at or over a limit for a chosen time, and two more with no limit: the server's outside address changing, told without ever saying the address, and a container stopping with an error. Each is deactivated until you activate it, and nothing runs while all are deactivated."]
+        ],
+        "fixed": [
+            ["A sparkline card with nothing to draw yet is accepted", "A plug-in that is not set up, or has no checks or backups yet, answers a sparkline card with an empty list of series and a note, and the dashboard card shows the note instead of an error."]
+        ],
+        "review": [],
+        "settings": "Your settings stay as they are. Every host alert is deactivated until you activate it. To go back, run ./update.sh --to v0.30.0."
     }
 ]
 

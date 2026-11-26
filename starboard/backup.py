@@ -26,7 +26,7 @@ GENERAL_KEYS = ("site_name", "server_name", "design", "own_colours", "shadows_of
                 "reelix_auto_update", "starboard_auto_update", "apps_auto_update", "plugins_auto_update",
                 "jellyfin_plugins_auto_update", "auto_update_hours", "infinite_scroll", "backup_schedule", "backup_keep_versions")
 # Settings kept with their own checks when restored (DASH-350, catalogue sources).
-OTHER_KEYS = ("history_keep_days", "history_cleared_at", "plugin_catalogues", "plugin_catalogues_on")
+OTHER_KEYS = ("history_keep_days", "history_cleared_at", "plugin_catalogues", "plugin_catalogues_on", "json_cards")
 # Never in a backup: the sign-in, and what belongs to this install only. tests/test_backup_layout.py fails when a
 # setting is in none of these three lists, so a new setting cannot be left out by mistake.
 NEVER_KEYS = ("shadows_note", "auth", "schema", "last_version", "setup_guide_done", "feedback_default_on", "services", "first_setup_pending",
@@ -111,6 +111,10 @@ def _restore_others(config, settings):
     if isinstance(on, list):
         from .plugins_admin import BUILTIN_SOURCES
         d["plugin_catalogues_on"] = [b["id"] for b in BUILTIN_SOURCES if b["id"] in on]
+    if "json_cards" in settings:  # DASH-555: custom cards, with their keys, checked again
+        from . import json_cards
+        d["json_cards"] = json_cards.clean_all(settings["json_cards"])
+        json_cards.forget()
     cats = settings.get("plugin_catalogues")
     if isinstance(cats, list):
         d["plugin_catalogues"] = [{"url": str(c["url"])[:300], "name": str(c.get("name", ""))[:80]} for c in cats[:20]

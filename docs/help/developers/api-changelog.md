@@ -15,6 +15,11 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Plug-in API 1.17.0, Starboard 0.31.0, 25 November 2026
+
+- **Fixed:** a `sparkline` card may answer an empty list of `series`, with a `note` that says why, for a plug-in that is
+  not set up yet. Before, Starboard refused it although the dashboard already showed the note.
+
 ## Plug-in API 1.17.0 and Starboard API 1.8.0 (not released yet), 20 November 2026
 
 - **Added:** the `sparkline` card type. A card answers `series`, up to 8, each with a `title` and 1 to 96 `points`
