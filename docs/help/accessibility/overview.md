@@ -33,7 +33,7 @@ These are always on. Nothing needs to be activated.
 - **Nothing moves by itself:** no slide-out opens on its own, and focus never jumps to the top of the page after a
   save or a delete.
 
-![The Apps page with Check again focused: a thick outline with a small gap round the button shows where the keyboard is](../images/a11y-focus.png)
+![The Apps page with Check now focused: a thick outline with a small gap round the button shows where the keyboard is](../images/a11y-focus.png)
 
 ## Change it for you
 

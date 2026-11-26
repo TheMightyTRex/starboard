@@ -66,7 +66,7 @@ def summary(app):
               bool(sysinfo.cgroup_dir()) and os.path.isdir(os.path.join(sysinfo.cgroup_dir(), "system.slice")),
               "installer", on_flag="--app-use", off_flag="--no-app-use", cost="Two small files per container every 2 seconds, only while Monitor is open."),
         _item("busy_now", "What is using the processor now",
-              "When you open System, Overview, Busy now, or select Check again, Starboard reads the server's process list (/proc). It reads each container's "
+              "When you open System, Overview, Busy now, or select Check now, Starboard reads the server's process list (/proc). It reads each container's "
               "processor and memory twice, a second apart, from the cgroup files or Docker. It only reads. A Starboard that runs in a container reads only its own processes. "
               "It stops, signals and changes nothing, and keeps nothing.",
               bool(sysinfo.cgroup_dir()) or containers.available(), "installer", on_flag="--app-use", off_flag="--no-app-use",

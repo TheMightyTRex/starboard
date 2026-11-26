@@ -1291,7 +1291,7 @@
       "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); document.querySelector('#check-now').focus();",
       "marks": [],
       "steps": [],
-      "alt": "The Apps page with Check again focused: a thick outline with a small gap round the button shows where the keyboard is"
+      "alt": "The Apps page with Check now focused: a thick outline with a small gap round the button shows where the keyboard is"
     },
     {
       "topic": "accessibility",

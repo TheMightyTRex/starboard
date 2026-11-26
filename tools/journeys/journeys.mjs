@@ -108,7 +108,7 @@ check("CON-01", "with nothing in use, an error toast", await page.locator('#toas
 await open("apps-updates.html");
 const summary = await page.locator("#updates-summary").textContent();
 const label = (await page.locator("#check-updates").textContent()).trim();
-check("DASH-50", "the Updates button says Check until the first check", /Not checked/.test(summary) ? label === "Check" : /Last checked/.test(summary) ? label === "Check again" : true, `${label} / ${summary}`);
+check("DASH-50", "the Updates button says Check now, before and after the first check", label === "Check now", `${label} / ${summary}`);
 
 // APP-01: What is new in Reelix, from its changelog (the example server's made-up Reelix: seen at 0.7.0, now 0.7.1,
 // with 0.7.2 waiting)

@@ -771,7 +771,7 @@ function sidePanel({ title, body = [], foot = [], wide = false, opener = documen
     layer, body: bodyNode, foot: footNode, close: shut,
     setTitle(text) { heading.textContent = text; close.setAttribute("aria-label", `Close ${text}`); },
     setFoot(nodes) { footNode.replaceChildren(...nodes); footNode.hidden = !nodes.length; },
-    // Draws the body again (Check again); a headChip goes on the title's line, as when it opened.
+    // Draws the body again (Check now); a headChip goes on the title's line, as when it opened.
     setBody(nodes) {
       const next = [nodes].flat().filter(Boolean);
       const c = next.find((n) => n?.dataset?.headChip);
