@@ -158,7 +158,7 @@ async function startInstall() {
     const step = steps[index];
     let save = async () => true;
     let loading = true;
-    step.nodes = [el("p", { class: "muted", text: "Loading…" })];
+    step.nodes = [SharedComponents.wait("Loading this step")];
     const frame = () => wizardFrame({ root, steps, index, busy: loading,
       continueText: { welcome: "Begin", review: "Write the files", start: fromGuide ? "Back to the set-up guide" : "Go to Apps" }[step.id] || "Continue",
       // On the last step, Start the apps (then Add the ticked apps, or Try again) is the one primary; leaving is plain.
@@ -807,7 +807,7 @@ async function installStep(id, state, data, apps, go) {
     nodes.push(field("Your Starboard password", writePassword, { required: true, hint: "Needed to write the files: they decide which apps run on this computer." }));
     save = async () => {
       setError(writePassword, "");
-      if (!writePassword.value) { setError(writePassword, "Enter your Starboard password"); writePassword.focus(); return false; }
+      if (!writePassword.value) { setError(writePassword, NEED_PASSWORD); writePassword.focus(); return false; }
       try {
         state.written = await api("/api/stack/write", { method: "POST", body: { ...body(state), password: writePassword.value } });
         state.heldPassword = writePassword.value;  // for Start the apps a minute later; kept in this page only, never stored
@@ -876,7 +876,7 @@ async function installStep(id, state, data, apps, go) {
         el("div", { class: "actions" }, startBtn));
       startBtn.addEventListener("click", async () => {
         clearError(pw);
-        if (!pw.value) { stop(pw, "Enter your Starboard password"); return; }
+        if (!pw.value) { stop(pw, NEED_PASSWORD); return; }
         startBtn.disabled = true;
         try {
           await api("/api/stack/start", { method: "POST", body: { password: pw.value } });

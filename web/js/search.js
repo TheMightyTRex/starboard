@@ -7,11 +7,6 @@ const KINDS = { Series: ["Series", "tv"], Film: ["Films", "film"], Artist: ["Mus
 
 const resultKey = (r) => `${r.service}|${r.key}`;
 
-function notice(tone, title, text, extra = null) {
-  const iconName = { success: "circle-check", warning: "triangle-alert", danger: "circle-x" }[tone] || "info";
-  return el("div", { class: "notice", "data-tone": tone, role: "status" }, icon(iconName),
-    el("div", { class: "notice__body" }, title ? el("span", { class: "notice__title", text: title }) : null, text ? el("p", { text }) : null), extra);
-}
 
 async function getConfig() {
   if (!config) config = await api("/api/config");

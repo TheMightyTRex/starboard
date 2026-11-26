@@ -2,7 +2,7 @@
  * Made by tools/parts.py from components.js in github.com/TheMightyTRex/design-system: change it there, not here. */
 (() => {
   const S = window.SharedComponents;
-  const { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus } = S.kit;
+  const { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus, notice } = S.kit;
 
   /* Tag input: .tag-input[data-tag-input] > ul.tag-input__list + input.tag-input__field, and a hidden input that
      holds the words joined with commas. Enter or a comma adds what is in the box (several at once when pasted with

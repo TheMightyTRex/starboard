@@ -9,8 +9,6 @@ function checkAgainLabel(button) { button.replaceChildren(icon("refresh-cw"), el
 
 const tempTone = (c) => (c == null ? null : c >= 85 ? ["danger", "Very hot"] : c >= 75 ? ["warning", "Hot"] : null);
 const busyTone = (pct, word) => (pct >= 90 ? ["warning", word] : null);
-const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-const timeNow = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
 function uptime(seconds) {
   if (!seconds) return "Up for an unknown time";

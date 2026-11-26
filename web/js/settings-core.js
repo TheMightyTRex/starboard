@@ -27,7 +27,7 @@ function setError(control, message) {
   const error = control.fieldError;
   const ids = [control.fieldHint?.id, ...(control.moreHints || [])];
   if (message) {
-    error.replaceChildren(icon("circle-alert"), el("span", { text: message }));
+    errorWords(error, message);
     error.hidden = false;
     control.setAttribute("aria-invalid", "true");
     ids.push(error.id);
@@ -68,11 +68,6 @@ function settingRow(label, hint, control, labelId) {
     el("div", { class: "setting__control" }, control));
 }
 
-function notice(tone, title, text, action) {
-  const icons = { success: "circle-check", warning: "triangle-alert", danger: "circle-alert", info: "info" };
-  return el("div", { class: "notice", "data-tone": tone === "info" ? null : tone, role: "status" },
-    icon(icons[tone] || "info"), el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), text ? el("p", {}, text) : null), action || null);
-}
 
 function section(id, title, description, ...content) {
   const chipNode = content.find((n) => n?.dataset?.headChip);  // the rule: a state chip on the title's line
@@ -113,16 +108,15 @@ function onlyParts(holder, nodes) {
 const MOVED_PARTS = {
   "/settings-general.html": Object.fromEntries([
     ...["gn-up", "coming-up", "gn-scroll", "library-views", "library-views-s"].map((k) => [k, "settings-general-lists.html"]),
-    ...["discover-rows", "discover-rows-s"].map((k) => [k, "settings-general-discover.html"]),
+    ...["discover-rows", "discover-rows-s"].map((k) => [k, "settings-general-lists.html"]),
     ...["gn-dh", "download-hours"].map((k) => [k, "settings-general-hours.html"]),
     ...["gn-logs", "logs", "gn-test", "testing", "feedback-list", "gn-logdel", "delete-logs"].map((k) => [k, "settings-general-backup.html"]),
     ...["gn-style", "gn-design", "gn-access", "style", "appearance"].map((k) => [k, "settings-general-appearance.html"]),
   ]),
-  // DASH-396: Discover rows is its own page, a section per area.
-  "/settings-general-lists.html": { "discover-rows": "settings-general-discover.html", "discover-rows-s": "settings-general-discover.html" },
+  // Owner, 26 November 2026: Discover rows are a part of Lists (a section per area, DASH-396), and the old part names open the first area.
+  "/settings-general-lists.html": { "discover-rows": "settings-general-lists.html", "discover-rows-s": "settings-general-lists.html" },
   "/settings-downloads.html": { "dl-usenet": "settings-downloads-usenet.html", "dl-hours": "settings-downloads-hours.html" },
   "/settings-radio.html": { "radio-link": "settings-radio-link.html", "radio-library": "settings-radio-library.html", "radio-logos": "settings-radio-logos.html" },
-  "/settings-general-performance.html": { "pf-pictures": "settings-general-pictures.html", "pf-danger": "settings-general-pictures.html" },
   "/settings-security.html": { "sc-pw": "settings-security-password.html", "sc-keys": "settings-security-keys.html", "sc-mcp": "settings-security-keys.html",
     "sc-ses": "settings-security-sessions.html", "sc-danger": "settings-security-sessions.html" },
 };
@@ -132,9 +126,9 @@ function followMovedPart(path = location.pathname, hash = location.hash, search 
   if (!moved) return null;
   let to = moved[decodeURIComponent(hash.slice(1)).replace(/-h$/, "")];
   const area = new URLSearchParams(search).get("discover");
-  if (!to && area && ["/settings-general.html", "/settings-general-lists.html"].includes(path)) to = "settings-general-discover.html";
-  // ?discover=tv#discover-rows-s, Discover's old link, opens that area's section (DASH-396).
-  if (to === "settings-general-discover.html") return `/${to}${/^[a-z]{2,12}$/.test(area || "") ? `#dr-${area}` : ""}`;
+  if (!to && area && ["/settings-general.html", "/settings-general-lists.html"].includes(path)) to = "settings-general-lists.html";
+  // ?discover=tv#discover-rows-s, Discover's old link, opens that area's section on Lists (DASH-396).
+  if (to === "settings-general-lists.html" && (area || /^discover-rows/.test(decodeURIComponent(hash.slice(1))))) return `/${to}#dr-${/^[a-z]{2,12}$/.test(area || "") ? area : "films"}-h`;
   return to ? `/${to}${search}${hash}` : null;
 }
 

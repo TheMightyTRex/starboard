@@ -9,7 +9,7 @@ const password = fs.readFileSync(process.env.PASSWORD_FILE, "utf8").trim();
 const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.html", "downloads.html", "downloads-requests.html",
   "upcoming.html", "system.html", "system-storage.html", "system-disks.html", "system-monitor.html", "system-busy.html", "system-network.html",
   "system-logs.html", "settings-general-backup.html", "settings.html", "settings-general.html", "settings-security.html",
-  "settings-general-alerts.html", "settings-updates.html", "settings-releases.html", "settings-restore.html", "settings-general-performance.html", "settings-jellyfin.html",
+  "settings-general-alerts.html", "settings-updates.html", "settings-updates-plugins.html", "settings-releases.html", "settings-restore.html", "settings-general-performance.html", "settings-jellyfin.html",
   "settings-audiobookshelf.html", "copy-settings.html", "install-apps.html", "setup-guide.html", "bring-in.html", "upgrade.html", "settings-install.html",
   // The Library, from the made-up Reelix (DASH-163)
   "library-tv.html", "library-tv-networks.html", "library-films.html", "library-films-collections.html", "library-music.html",
@@ -23,11 +23,11 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "settings-dispatcharr.html",  // Settings, Apps, Dispatcharr (DASH-228)
   // General's level 2 pages (DASH-389)
   "settings-general-appearance.html", "settings-general-lists.html", "settings-general-hours.html", "settings-general-backup.html",
-  "settings-general-discover.html", "discover-tv.html", "discover-books.html",  // Discover rows, a section per area (DASH-396)
+  "discover-tv.html", "discover-books.html",  // Discover rows are sections of Lists, one per area (DASH-396)
   // Downloads' level 2 pages (DASH-390)
   "settings-downloads.html", "settings-downloads-usenet.html", "settings-downloads-hours.html",
   // Radio's, Performance's and Security's level 2 pages (DASH-391)
-  "settings-radio-link.html", "settings-radio-library.html", "settings-radio-logos.html", "settings-general-pictures.html",
+  "settings-radio-link.html", "settings-radio-library.html", "settings-radio-logos.html", "settings-general-performance.html",
   "settings-security-password.html", "settings-security-signin.html", "settings-security-keys.html", "settings-security-sessions.html",
   "settings-plugins.html", "settings-plugins-catalogue.html", "settings-plugin.html?id=direct-play", "settings-plugin.html?id=jellyfin"];  // with the set-up's Audio description offer (DASH-399)
 const SECRET = "made-up-journey-key-7f3a9c1e5b";
@@ -997,7 +997,7 @@ console.log("\n== MENU2 General on the level 2 menu");
 const level2 = async (p) => { await open(p); return (await page.locator(".site-header__tabs .menu-tabs a").evaluateAll((as) => as.map((a) => a.textContent.trim()))).join("|"); };
 const headings = () => page.locator("main .settings-sections h2").evaluateAll((hs) => hs.map((h) => h.textContent.trim()).join("|"));
 check("MENU2-01", "General has General, Appearance, Lists, Discover, Hours, Alerts, Performance, Pictures, Backup/Logs",
-  (await level2("settings-general.html")) === "General|Appearance|Lists|Discover|Hours|Alerts|Performance|Pictures|Backup/Logs", await level2("settings-general.html"));
+  (await level2("settings-general.html")) === "General|Appearance|Lists|Hours|Alerts|Performance|Backup/Logs", await level2("settings-general.html"));
 check("MENU2-01", "each page shows only its own parts", (await headings()) === "Names|Categories|App cards|Set-up guide", await headings());
 await open("settings-general-appearance.html");
 check("MENU2-02", "Appearance holds style and colours, the default design and accessibility", (await headings()) === "Style and colours|Default design|Accessibility", await headings());
@@ -1014,7 +1014,7 @@ await page.waitForTimeout(300);
 check("MENU2-02", "and a change in Display shows on the page", !(await page.locator("#ap-pref-underline").isChecked()));
 for (const [from, to] of [["settings-general.html#download-hours", "/settings-general-hours.html#download-hours"],
   ["settings-general.html#gn-style-h", "/settings-general-appearance.html#gn-style-h"], ["settings-general.html#logs", "/settings-general-backup.html#logs"],
-  ["settings-general.html?discover=films#discover-rows-s", "/settings-general-discover.html#dr-films"]]) {
+  ["settings-general.html?discover=films#discover-rows-s", "/settings-general-lists.html#dr-films-h"]]) {
   await open("index.html");
   await open(from);
   const at = await page.evaluate(() => location.pathname + location.search + location.hash);
@@ -1046,11 +1046,12 @@ console.log("\n== MENU2 Radio, Performance and Security on the level 2 menu");
 check("MENU2-05", "Radio has Sources, Add a show from a link, Your podcast library, Station logos",
   (await level2("settings-radio.html")) === "Sources|Add a show from a link|Your podcast library|Station logos", await level2("settings-radio.html"));
 check("MENU2-05", "Sources shows only the sources", (await headings()) === "Sources", await headings());
-check("MENU2-05", "Performance and Pictures are tabs of General", (await level2("settings-general-performance.html")) === "General|Appearance|Lists|Discover|Hours|Alerts|Performance|Pictures|Backup/Logs");
-check("MENU2-05", "Pictures has the picture cache and its Clear", (await level2("settings-general-pictures.html")) && (await headings()) === "Pictures|Clear", await headings());
+check("MENU2-05", "General has seven tabs: Discover is part of Lists and Pictures is part of Performance", (await level2("settings-general-performance.html")) === "General|Appearance|Lists|Hours|Alerts|Performance|Backup/Logs");
+await open("settings-general-performance.html#pf-pictures-h");
+check("MENU2-05", "Performance has the picture cache and its Clear", (await page.locator("#pf-pictures-h").isVisible()) && (await page.locator("#pf-danger-h").count()) === 1, await headings());
 check("MENU2-05", "Security has Who can open the dashboard, Password, Sign-in methods, API keys, Sign out everywhere",
   (await level2("settings-security.html")) === "Who can open the dashboard|Password|Sign-in methods|API keys|Sign out everywhere", await level2("settings-security.html"));
-for (const [from, to] of [["settings-radio.html#radio-logos-h", "/settings-radio-logos.html"], ["settings-general-performance.html#pf-pictures-h", "/settings-general-pictures.html"],
+for (const [from, to] of [["settings-radio.html#radio-logos-h", "/settings-radio-logos.html"], ["settings-general-pictures.html", "/settings-general-performance.html"], ["settings-general-discover.html", "/settings-general-lists.html"],
   ["settings-security.html#sc-keys-h", "/settings-security-keys.html"], ["settings-security.html#sc-pw-h", "/settings-security-password.html"]]) {
   await open("index.html");
   await open(from);
@@ -1061,6 +1062,42 @@ await open("settings-security-sessions.html");
 check("MENU2-06", "Sign out everywhere shows its parts with Advanced settings inactive",
   await page.locator("#sc-ses-h").isVisible() && await page.locator("#sc-danger-h").isVisible());
 await api("/api/config/general", { method: "PUT", body: { settings_advanced: true } });
+
+// Owner, 26 November 2026: every 2nd level row condenses to icons with the current tab in full; General has seven tabs; the
+// old addresses of Discover and Pictures answer 301 to the section that holds them.
+console.log("\n== MENU3 Rows that condense, and General's seven tabs");
+const redirect = async (path) => { const r = await page.request.get(base + path, { maxRedirects: 0 }); return [r.status(), r.headers().location || ""]; };
+for (const [from, to] of [["/settings-general-discover.html", "/settings-general-lists.html#dr-films-h"], ["/settings-general-discover.html?x=1", "/settings-general-lists.html?x=1#dr-films-h"],
+  ["/settings-general-pictures.html", "/settings-general-performance.html#pf-pictures-h"], ["/settings-performance-pictures.html", "/settings-general-performance.html#pf-pictures-h"]]) {
+  const [status, where] = await redirect(from);
+  check("MENU3-01", `${from} answers 301 to ${to}`, status === 301 && where === to, `${status} ${where}`);
+}
+await page.setViewportSize({ width: 375, height: 812 });
+await open("settings-general-hours.html");
+await page.waitForTimeout(600);
+const mrow = await page.evaluate(() => {
+  const nav = document.querySelector('.site-header__tabs nav[aria-label="General"]');
+  const as = [...nav.querySelectorAll("a")];
+  const label = (a) => a.querySelector(".menu-tabs__label").getBoundingClientRect().width > 2;
+  return { compact: nav.classList.contains("is-compact"), tabs: as.length, minW: Math.min(...as.map((a) => a.getBoundingClientRect().width)),
+    named: as.filter(label).map((a) => a.textContent.trim()), current: as.filter((a) => a.getAttribute("aria-current") === "page").map((a) => a.textContent.trim()) };
+});
+check("MENU3-02", "General has seven tabs and at 375 px shows icons only", mrow.tabs === 7 && mrow.compact, JSON.stringify(mrow));
+check("MENU3-02", "every tab is at least 44 px wide", mrow.minW >= 43.9, String(mrow.minW));
+check("MENU3-02", "only the current tab, Hours, shows its name", mrow.named.join() === "Hours" && mrow.current.join() === "Hours", JSON.stringify(mrow));
+await page.locator('.site-header__tabs nav[aria-label="General"] a').first().focus();
+await page.keyboard.press("ArrowRight");
+const mmoved = await page.evaluate(() => ({ text: document.activeElement.textContent.trim(), named: document.activeElement.querySelector(".menu-tabs__label").getBoundingClientRect().width > 2 }));
+check("MENU3-03", "the right arrow moves focus to the next tab, which shows its name", mmoved.text === "Appearance" && mmoved.named, JSON.stringify(mmoved));
+await page.keyboard.press("End");
+check("MENU3-03", "End goes to the last tab, in view", await page.evaluate(() => { const a = document.activeElement, n = a.closest("nav"); const r = a.getBoundingClientRect(), b = n.getBoundingClientRect(); return a.textContent.trim() === "Backup/Logs" && r.right <= b.right + 1 && r.left >= b.left - 1; }));
+await page.keyboard.press("Home");
+check("MENU3-03", "Home goes to the first tab", await page.evaluate(() => document.activeElement.textContent.trim()) === "General");
+check("MENU3-04", "an icon-only tab has a tooltip, and the page does not scroll sideways",
+  await page.evaluate(() => document.querySelector('.site-header__tabs nav[aria-label="General"] a:not([aria-current]):not(:focus)').dataset.tooltip.length > 0) && await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 0);
+await page.setViewportSize({ width: 1280, height: 860 });
+await page.waitForTimeout(500);
+check("MENU3-05", "at 1280 px General shows every name", await page.evaluate(() => !document.querySelector('.site-header__tabs nav[aria-label="General"]').classList.contains("is-compact")));
 
 // DASH-595: Plex signs in with its own link code, or the token is pasted. Starboard never reads it from Plex's container;
 // the token stays on the server; nothing is asked of plex.tv once the panel is closed. plex.tv is a made-up stand-in here.
@@ -1280,6 +1317,35 @@ check("AP-08", "the catalogue groups the apps together, each with what it uses a
   (await apGroup.count()) === 1 && /At rest: about \d+ MB of memory/.test(await apGroup.innerText()));
 await open("settings-plugin.html?id=tdarr");
 check("AP-07", "an app plug-in that is not active says a port is chosen when it is", /chooses a free port/.test(await page.locator('section[aria-labelledby="pl-tdarr-web-h"]').innerText()));
+// Check for updates now and the plug-in update list (owner, 26 November 2026).
+await open("settings-updates-plugins.html");
+const pu = page.locator("#plugin-updates");
+check("PU-01", "Updates, Plug-ins lists each plug-in in a table with the version you have beside the new one, and a check button, Update all and When they update",
+  (await pu.locator("table.updates-table th", { hasText: "Installed" }).count()) === 1 && (await pu.locator("table.updates-table th", { hasText: "Latest" }).count()) === 1
+  && (await page.locator("#plu-check").count()) === 1 && (await page.locator("#plu-update-all").count()) === 1);
+await page.locator("#plu-check").focus();
+await page.keyboard.press("Enter");
+await page.waitForFunction(() => /Read \d+ catalogue|Try again in/.test(document.getElementById("plu-check-result")?.textContent || ""), null, { timeout: 15000 }).catch(() => {});
+check("PU-02", "Check now says what it read, keeps focus on the button and writes the summary again",
+  /Read \d+ catalogue|Try again in/.test(await page.locator("#plu-check-result").innerText()) && (await page.evaluate(() => document.activeElement?.id)) === "plu-check"
+  && /Last checked at/.test(await page.locator("#plu-summary").innerText()));
+await page.locator("#plu-check").click();
+await page.waitForTimeout(800);
+check("PU-03", "pressed again at once it says how long to wait and reads nothing more", /Try again in \d+ seconds/.test(await page.locator("#plu-check-result").innerText()));
+const puRow = pu.locator("tbody tr").first();
+check("PU-04", "the first row has a tick and What is new, and Update chosen shows only after a tick",
+  (await puRow.locator("input.updates-choose").count()) === 1 && (await puRow.getByRole("button", { name: /What is new/ }).count()) === 1 && (await page.locator("#plu-chosen").isHidden()));
+await puRow.locator("input.updates-choose").check();
+check("PU-05", "ticking a plug-in shows Update chosen with the count", (await page.locator("#plu-chosen").isVisible()) && /1 chosen/.test(await page.locator("#plu-chosen-text").innerText()));
+check("PU-06", "Update by themselves and History are on the page, and the menu has a Plug-ins entry under Updates",
+  (await page.locator("#plu-auto").count()) === 1 && (await page.locator("#plu-history-h").count()) === 1
+  && (await page.locator('nav a[href="/settings-updates-plugins.html"]').count()) >= 1);
+await open("settings-plugins.html");
+check("PU-07", "Manage has the same update list and check button above the plug-ins", (await page.locator("#plugin-updates table.updates-table").count()) === 1 && (await page.locator("#plu-check").count()) === 1);
+await open("settings-plugins-catalogue.html");
+check("PU-08", "the Catalogue has Check now and says when the catalogues were read", (await page.locator("#pl-check-now").count()) === 1 && /catalogues/.test(await page.locator("#pl-check-now-when").innerText()));
+await open("settings-plugin.html?id=picture-shrinker");
+check("PU-09", "a plug-in's Versions tab has Check now", (await page.locator("#pl-picture-shrinker-check-now").count()) === 1);
 // DASH-410: plug-in API 1.12 on the example Audio description plug-ins: a row's link opens in a new tab and says so,
 // the plug-in's own words for each state, and an upload that takes only a file.
 console.log("\n== AD Audio description sources");
@@ -1319,7 +1385,7 @@ check("NT-02", "each channel has its own section", (await page.getByRole("tab", 
 // row (fetched when shown) and no longer as a chip. DASH-396: each area is its own section on Discover rows.
 console.log("\n== GEN Genre rows");
 await api("/api/library/discover-layout?tab=films", { method: "DELETE" });
-await open("settings-general-discover.html#dr-films");
+await open("settings-general-lists.html#dr-films");
 await page.locator("#dr-films-list").waitFor({ timeout: 10000 });
 const genreTicks = await page.locator("#dr-films-list li").evaluateAll((ls) => ls.map((l) => ({
   id: l.dataset.value, on: l.querySelector("input").checked, words: l.querySelector("label").textContent })));
@@ -1375,9 +1441,11 @@ await api("/api/library/discover-filters?tab=films", { method: "POST", body: { f
 // separate section for each in the settings"): Discover rows has a section per area; with topic tabs, only the area
 // shown asks Reelix; each Discover page opens its own section; Radio offers its shared genres as rows.
 console.log("\n== DR Discover rows by area");
-await open("settings-general-discover.html");
-check("DR-01", "Discover rows has a section for each area, in the Discover menu's order",
-  (await headings()) === "Films|TV|Music|Radio|Books|Audiobooks", await headings());
+await page.evaluate(() => localStorage.setItem("starboard.topic-tabs", "off"));
+await open("settings-general-lists.html");
+await page.locator("#dr-films-list").waitFor({ timeout: 10000 });
+check("DR-01", "Lists has a section for each Discover area, after its own, in the Discover menu's order",
+  (await headings()).endsWith("Films|TV|Music|Radio|Books|Audiobooks"), await headings());
 await page.evaluate(() => localStorage.removeItem("starboard.topic-tabs"));
 const asked = [];
 const askedFor = (r) => { const m = r.url().match(/discover-layout\?tab=(\w+)/); if (m) asked.push(m[1]); };
@@ -1387,7 +1455,7 @@ await page.click("text=Change these rows");
 await page.locator("#dr-tv-list").waitFor({ timeout: 10000 });
 await page.waitForTimeout(500);
 check("DR-02", "Discover, TV's Change these rows opens TV's section, with its tab chosen",
-  await page.evaluate(() => location.pathname + location.hash) === "/settings-general-discover.html#dr-tv"
+  await page.evaluate(() => location.pathname + location.hash) === "/settings-general-lists.html#dr-tv"
   && (await page.locator("#topic-tabs [aria-selected=true]").textContent()) === "TV" && await page.locator("#dr-films").isHidden(),
   await page.evaluate(() => location.pathname + location.hash));
 check("DR-02", "and only TV's rows were asked for", asked.join(",") === "tv", asked.join(","));
@@ -1396,15 +1464,15 @@ await page.locator("#dr-radio-list").waitFor({ timeout: 10000 });
 check("DR-02", "choosing the Radio tab asks for Radio's rows then", asked.join(",") === "tv,radio", asked.join(","));
 page.off("request", askedFor);
 await page.evaluate(() => localStorage.setItem("starboard.topic-tabs", "off"));
-for (const [from, to] of [["settings-general-lists.html?discover=radio#discover-rows-s", "/settings-general-discover.html#dr-radio"],
-  ["settings-general-lists.html#discover-rows-s", "/settings-general-discover.html"], ["settings-general-discover.html?discover=books", "/settings-general-discover.html#dr-books"]]) {
+for (const [from, to] of [["settings-general-lists.html?discover=radio#discover-rows-s", "/settings-general-lists.html#dr-radio-h"],
+  ["settings-general-lists.html#discover-rows-s", "/settings-general-lists.html#dr-films-h"], ["settings-general-discover.html?discover=books", "/settings-general-lists.html#dr-books-h"]]) {
   await open("index.html");
   await open(from);
   const at = await page.evaluate(() => location.pathname + location.search + location.hash);
   check("DR-03", `the old address ${from} opens its area`, at === to, at);
 }
 await api("/api/library/discover-layout?tab=radio", { method: "DELETE" });
-await open("settings-general-discover.html#dr-radio");
+await open("settings-general-lists.html#dr-radio");
 await page.locator("#dr-radio-list").scrollIntoViewIfNeeded();
 await page.locator("#dr-radio-list").waitFor({ timeout: 10000 });
 const radioTicks = await page.locator("#dr-radio-list li").evaluateAll((ls) => ls.map((l) => ({ id: l.dataset.value, on: l.querySelector("input").checked })));
@@ -1422,7 +1490,7 @@ check("DR-05", "Discover, Radio shows Comedy as a row, and not as a chip", radio
 await page.locator(".discover-row", { hasText: "Comedy" }).scrollIntoViewIfNeeded();
 await page.locator(".discover-row", { hasText: "Comedy" }).locator(".discover-card").first().waitFor({ timeout: 10000 });
 check("DR-05", "the Comedy row loads its shows when it comes into view", (await page.locator(".discover-row", { hasText: "Comedy" }).locator(".discover-card").count()) > 0);
-await open("settings-general-discover.html#dr-radio");
+await open("settings-general-lists.html#dr-radio");
 await page.locator("#dr-radio-reset").scrollIntoViewIfNeeded();
 await page.click("#dr-radio-reset");
 await page.waitForTimeout(600);
@@ -1949,7 +2017,7 @@ console.log("\n== UPD Settings, Updates");
 await open("settings-updates.html");
 await page.locator("#updates-list:not([aria-busy])").waitFor({ timeout: 5000 }).catch(() => {});
 const ready = await page.locator("#up-list-summary").textContent();
-check("UPD-05", "Ready to update says in a live region what is ready", /updates are ready: .*Starboard/.test(ready)
+check("UPD-05", "Ready to update says in a live region what is ready", /^Last checked at \d\d:\d\d · \d+ updates available: .*Starboard|^Not checked yet · \d+ updates available: .*Starboard/.test(ready)
   && (await page.locator("#up-list-summary[role=status]").count()) === 1, ready);
 check("UPD-05", "Starboard waits for you; the plug-in updates by itself", (await page.locator('[data-key="starboard"]').textContent()).includes("Waits for you")
   && (await page.locator('[data-key="plugin:picture-shrinker"]').textContent()).includes("Updates by itself"));
@@ -1968,12 +2036,12 @@ check("UPD-09", "Ready to update has Check for updates", (await checkBtn.count()
 check("UPD-09", "nothing asks Jellyfin which plug-ins are new before it is pressed", !(await page.locator("#up-list-summary").textContent()).includes("Playback Reporting"));
 await checkBtn.focus();
 await page.keyboard.press("Enter");
-await page.locator("#up-list-summary", { hasText: "Checked at" }).waitFor({ timeout: 30000 }).catch(() => {});
+await page.locator("#up-list-summary", { hasText: "Last checked at" }).waitFor({ timeout: 30000 }).catch(() => {});
 const checkedSays = await page.locator("#up-list-summary").textContent();
-check("UPD-09", "it says in the live region when it checked and what is ready, Jellyfin's plug-ins too", /^Checked at \d\d:\d\d\. \d+ updates are ready: .*Playback Reporting 20\.0\.0\.0 for Jellyfin/.test(checkedSays), checkedSays);
+check("UPD-09", "it says in the live region when it checked and what is ready, Jellyfin's plug-ins too", /^Last checked at \d\d:\d\d · \d+ updates available: .*Playback Reporting 20\.0\.0\.0 for Jellyfin/.test(checkedSays), checkedSays);
 check("UPD-09", "focus stays on Check for updates", await page.evaluate(() => document.activeElement?.id === "check-updates-now"));
-check("UPD-09", "Jellyfin's row names the new version", (await page.locator('[data-key="jellyfin-plugins"]').textContent()).includes("New versions: Playback Reporting 20.0.0.0"));
-const readyNow = (checkedSays.match(/(\d+) updates are ready/) || [])[1];
+check("UPD-09", "Jellyfin's row names the new version", (await page.locator('[data-key="jellyfin-plugins"]').textContent()).includes("Playback Reporting 20.0.0.0"));
+const readyNow = (checkedSays.match(/(\d+) updates available/) || [])[1];
 check("UPD-09", "Install all updates counts what the check found", (await page.locator("#install-all").textContent()).trim() === `Install all ${readyNow} updates`, readyNow);
 
 // UPD-10 What is new (DASH-462): one slide-out with the notes of every waiting update, by item, under Added, Changed,
@@ -2009,6 +2077,7 @@ await page.route("**/api/updates", async (route) => {
   let kept = false;
   body.items = body.items.map((t) => { if (t.update_available && !kept) { kept = true; return t; } return { ...t, update_available: false }; });
   body.jellyfin_waiting = [];
+  body.counts = { total: body.items.filter((t) => t.update_available).length, by_kind: {} };  // the one count (update_runs.counts)
   await route.fulfill({ response: r, json: body });
 });
 await open("settings-updates.html");
@@ -2897,6 +2966,21 @@ const downloaded = await page.evaluate(async () => (await fetch("/api/logs/downl
 check("LOG-02", "Download gives the same: a line saying how many, then alerts only", /^# Starboard log: the newest \d+ of [\d,]+ entries, alerts only/.test(downloaded) && !/ INFO /.test(downloaded), downloaded.slice(0, 120));
 await api("/api/config/general", { method: "PUT", body: { logs: { show_lines: 200, alerts_only: false } } });
 
+console.log("\n== One notice");
+await open("index.html");
+const built = await page.evaluate(() => {
+  const n = (t, title, text, o) => { const e = SharedComponents.notice(t, title, text, o); document.body.append(e); return e; };
+  const danger = n("danger", "Not saved", "The folder is missing.", { alert: true, id: "t-notice" });
+  const info = n("info", "Version 2 is out", ["Read ", Object.assign(document.createElement("a"), { href: "/x", textContent: "the notes" })], { actions: Object.assign(document.createElement("button"), { textContent: "Update" }) });
+  const bare = n("muted", "", "Only words");
+  const out = { dangerRole: danger.getAttribute("role"), dangerTone: danger.dataset.tone, dangerIcon: danger.querySelector("use").getAttribute("href"), dangerTitle: danger.querySelector(".notice__title").textContent,
+    infoRole: info.getAttribute("role"), infoTone: info.dataset.tone ?? null, infoLink: !!info.querySelector("p a"), infoButtonLast: info.lastElementChild.tagName, bareTitle: !!bare.querySelector(".notice__title"), bareIcon: bare.querySelector("use").getAttribute("href"),
+    app: typeof notice === "function" && notice("warning", "T", "x").dataset.tone, appRole: notice("warning", "T", "x").getAttribute("role") };
+  [danger, info, bare].forEach((e) => e.remove());
+  return out;
+});
+check("UI-01", "the library's notice builder gives the right role, icon and tone", built.dangerRole === "alert" && built.dangerTone === "danger" && built.dangerIcon.endsWith("#i-circle-alert") && built.dangerTitle === "Not saved"
+  && built.infoRole === "status" && built.infoTone === null && built.infoLink && built.infoButtonLast === "BUTTON" && !built.bareTitle && built.bareIcon.endsWith("#i-info") && built.app === "warning" && built.appRole === "status", JSON.stringify(built));
 // Settings, Plug-ins: each plug-in's tab has its own icon, and icons only still name the current and focused tab (owner, 26 November 2026).
 console.log("\n== PTI Plug-in tab icons");
 await page.setViewportSize({ width: 375, height: 812 });
@@ -2905,7 +2989,7 @@ await page.waitForFunction(() => document.querySelectorAll('nav[aria-label="Plug
 const ptiTabs = () => page.evaluate(() => [...document.querySelectorAll('nav[aria-label="Plug-ins"] a')].map((a) => {
   const r = a.getBoundingClientRect(), l = a.querySelector(".menu-tabs__label"), s = a.querySelector("svg");
   return { name: a.textContent.trim(), icon: s?.querySelector("use")?.getAttribute("href") || "", hidden: s?.getAttribute("aria-hidden"), w: Math.round(r.width), h: Math.round(r.height),
-    shown: l.getBoundingClientRect().width > 8, current: a.getAttribute("aria-current") === "page", title: a.title };
+    shown: l.getBoundingClientRect().width > 8, current: a.getAttribute("aria-current") === "page", title: a.title, tip: a.dataset.tooltip };
 }));
 let pti = await ptiTabs();
 const ptiPlugs = pti.slice(2);
@@ -2914,7 +2998,7 @@ const known = ptiPlugs.filter((x) => !/#i-puzzle$/.test(x.icon));
 check("PTI-02", "every plug-in tab with an icon of its own has a different one",
   known.length > 8 && new Set(known.map((x) => x.icon)).size === known.length, JSON.stringify(known.map((x) => [x.name, x.icon])));
 check("PTI-03", "a plug-in with no icon of its own gets the neutral puzzle piece", ptiPlugs.some((x) => /#i-puzzle$/.test(x.icon)) && ptiPlugs.find((x) => x.name === "Notifications")?.icon.endsWith("#i-bell"));
-check("PTI-04", "every icon is hidden from a screen reader, and every tab keeps its name as text and as its tooltip", pti.every((x) => x.hidden === "true" && x.name && x.title === x.name));
+check("PTI-04", "every icon is hidden from a screen reader, and every tab keeps its name as text and as its tooltip", pti.every((x) => x.hidden === "true" && x.name && (x.current || x.tip === x.name)));
 check("PTI-05", "the tab you are on shows its name beside the icon, with the bar under it, and is in view",
   pti.filter((x) => x.current).length === 1 && pti.find((x) => x.current).name === "Notifications" && pti.find((x) => x.current).shown
   && await page.evaluate(() => { const a = document.querySelector('nav[aria-label="Plug-ins"] a[aria-current]'), r = a.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 1; }));
@@ -2942,6 +3026,22 @@ for (const p of PAGES) {
   if (over > 0) wide.push(`${p} by ${over}px`);
 }
 check("USE-01", "no page scrolls sideways at 375 wide", wide.length === 0, wide.join(", "));
+console.log("\n== One waiting mark");
+await page.setViewportSize({ width: 1280, height: 860 });
+await open("index.html");
+const waited = await page.evaluate(() => {
+  const w = SharedComponents.wait("Loading the releases", { status: true });
+  document.body.append(w);
+  const plain = SharedComponents.wait("Loading the help");
+  const out = { cls: w.className, mark: w.firstElementChild.className, markHidden: w.firstElementChild.getAttribute("aria-hidden"), words: w.lastElementChild.textContent, role: w.lastElementChild.getAttribute("role"), plainRole: plain.lastElementChild.getAttribute("role"),
+    ring: getComputedStyle(w.firstElementChild).borderRadius, shown: w.firstElementChild.getBoundingClientRect().width };
+  w.remove();
+  return out;
+});
+check("UI-02", "the library's waiting mark is a hidden ring with words, and a status only when asked", waited.cls === "wait" && waited.mark === "wait__mark" && waited.markHidden === "true" && waited.words === "Loading the releases" && waited.role === "status" && waited.plainRole === null && waited.shown === 16, JSON.stringify(waited));
+await open("discover-ondemand.html");
+check("UI-02", "a page that waits shows the ring, not a plain Loading line", await page.locator(".wait .wait__mark").count() > 0 || await page.locator("#od-list .rows li, #od-list li").count() > 0);
+
 check("ALL", "no script errors on any page", problems.length === 0, problems.slice(0, 5).join(" | "));
 
 console.log(`\n== ${passed} passed, ${failed} failed`);

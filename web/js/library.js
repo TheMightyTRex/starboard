@@ -17,7 +17,6 @@ const state = { q: params.get("q") || "", chip: params.get("chip") || "", sort: 
   group: params.get("group") || "", by: params.get("by") || "", start: 0, offset: 0, shown: 0, total: 0, loading: false };
 let saved = {};
 
-const plural = (n, [one, many]) => `${n.toLocaleString("en-GB")} ${n === 1 ? one : many}`;
 const itemHref = (id) => `/${ITEM_PAGE[TAB]}?id=${encodeURIComponent(id)}`;
 
 // Something with nothing in your library yet (wanted, searching, not released) has its cover faded behind a dashed
