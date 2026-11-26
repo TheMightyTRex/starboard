@@ -704,7 +704,8 @@ function pluginPage(p, redraw, ms = null) {
     el("ul", {}, p.jobs.map((j) => el("li", { text: j }))), el("a", { class: "btn btn--quiet", href: "/system.html#jobs-panel" }, "Open System, Jobs")) : null;
   const may = section(`pl-${p.id}-may`, "What it may do", "What you allowed when you installed it.", pluginPermissions(p.permissions));
   const remove = inUse(p, ms)
-    ? section(`pl-${p.id}-remove`, "Remove", `${p.name} is your media server, so it stays added and active.`)
+    ? section(`pl-${p.id}-remove`, "Remove", `${p.name} is your media server, so it stays added and active. Choose another media server, or none, first.`,
+      el("div", { class: "actions" }, el("a", { class: "btn", href: "/settings-media-server.html" }, "Open Settings, Media server")))
     : dangerSection(`pl-${p.id}-remove`, "Remove", "Stops it and takes it off this Starboard. Its folder is kept.",
       el("div", { class: "actions" }, removeButton(p, () => { location.href = "/settings-plugins.html"; })));
   const slot = p.media_server ? mediaServerSection(p, ms) : null;
@@ -1404,10 +1405,11 @@ function mediaServerSection(p, ms) {
   const using = inUse(p, ms);
   return section(`pl-${p.id}-slot`, "Media server",
     using ? `${p.name} answers for the dashboard panel, Library, Activity and System. Starboard uses one media server at a time.`
-      : `${p.name} is added but another media server is in use, or none.`,
+      : `${p.name} is added but another media server is in use, or none. Nothing changes until you choose it in Settings, Media server.`,
     using && ms.configured === false ? notice("warning", `${p.name} is not set up yet`, "Add its address and key in Settings, Apps, and the dashboard panel will show it.") : null,
     el("div", { class: "actions" },
-      mine?.page ? el("a", { class: "btn", href: mine.page }, icon("settings"), `Open ${p.name} settings`) : null));
+      mine?.page ? el("a", { class: "btn", href: mine.page }, icon("settings"), `Open ${p.name} settings`) : null,
+      el("a", { class: "btn btn--quiet", href: "/settings-media-server.html" }, "Open Settings, Media server")));
 }
 
 // Media servers in the catalogue (DASH-565): the ones that come with Starboard, with Jellyfin recommended. Starboard
