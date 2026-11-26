@@ -1,7 +1,7 @@
-// Wanted (DASH-207): Missing, and Below the quality wanted, for films and episodes, from Reelix. Tick some and act
+// Wanted (DASH-207): Wanted, and Below quality, for films and episodes, from Reelix. Tick some and act
 // on them in the selection bar (DASH-524), or search for everything on the list. A page at a time, with Show more. A film or episode row opens its details in a slide-out (DASH-309, R1: a row that opens).
 
-// 12 November 2026: one page per media type (the level 2 menu), with Missing and Below the quality wanted as tabs.
+// 12 November 2026: one page per media type (the level 2 menu), with Wanted and Below quality as tabs.
 let WHICH = new URLSearchParams(location.search).get("list") === "cutoff" ? "cutoff" : "missing";
 const W_KIND = document.querySelector("[data-wanted-kind]")?.dataset.wantedKind;
 const wantedState = { kind: W_KIND || "movie", page: 1, total: 0, items: [], paused: false,
@@ -12,7 +12,7 @@ const W_NOUN = { movie: ["film", "films"], episode: ["episode", "episodes"], alb
   audiobook: ["audiobook", "audiobooks"] };
 
 function wantedTabs() {
-  const tabs = [["missing", "Not in library"], ["cutoff", "Below the quality wanted"]];
+  const tabs = [["missing", "Wanted"], ["cutoff", "Below quality"]];
   const list = el("div", { role: "tablist", "aria-label": "Which list" }, tabs.map(([v, t]) => {
     const b = el("button", { type: "button", role: "tab", class: "topic-tabs__tab", "aria-selected": String(v === WHICH), "aria-controls": "wanted-list", text: t });
     b.addEventListener("click", () => {
@@ -117,9 +117,9 @@ async function wantedLoad(more = false) {
     if (!more) list.replaceChildren();
     const added = r.items.map(wantedRow);
     list.append(...added);
-    if (!wantedState.items.length) list.replaceChildren(el("li", { class: "empty", id: "wanted-empty", tabindex: "-1", text: WHICH === "missing" ? "Nothing is missing." : "Everything is at the quality wanted." }));
+    if (!wantedState.items.length) list.replaceChildren(el("li", { class: "empty", id: "wanted-empty", tabindex: "-1", text: WHICH === "missing" ? "Nothing is wanted." : "Everything is at the quality wanted." }));
     const noun = W_NOUN[wantedState.kind] || ["item", "items"];
-    $("#wanted-summary").textContent = `${r.total.toLocaleString("en-GB")} ${r.total === 1 ? noun[0] : noun[1]}${WHICH === "missing" ? " not in library" : " below the quality wanted"}`;
+    $("#wanted-summary").textContent = `${r.total.toLocaleString("en-GB")} ${r.total === 1 ? noun[0] : noun[1]}${WHICH === "missing" ? " wanted" : " below quality"}`;
     if (!more) announce($("#wanted-summary").textContent);  // Show more says its own (SharedComponents.loadMore)
     $("#wanted-more").hidden = wantedState.items.length >= r.total;
     $("#wanted-all").disabled = !r.total;

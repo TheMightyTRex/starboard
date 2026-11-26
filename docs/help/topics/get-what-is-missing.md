@@ -14,9 +14,9 @@ and stop following the ones you no longer want.
 
 ## Steps
 
-1. Go to **Activity**, then **Wanted**. Choose **Not in library**, or **Below the quality wanted**.
+1. Go to **Activity**, then **Wanted**. Choose **Wanted**, or **Below quality**.
 2. Choose the kind: **Films**, **TV**, **Music**, **Books** or **Audiobooks**. The page says how many there are,
-   such as **12 films missing**. Select a film or episode to open its details.
+   such as **12 films wanted**. Select a film or episode to open its details.
 3. Search in one of these ways:
    - For one title, select **Search** beside it.
    - For a few, tick the box at the start of each row, then select **Search** in the bar at the foot of the
@@ -24,7 +24,7 @@ and stop following the ones you no longer want.
    - For the whole list, select **Search all**, then **Search all** again to confirm. Reelix searches a few at a
      time, so a long list can take a while.
 
-   ![Activity, Wanted with example films, with Not in library (step 1), Films (step 2) and Search beside one film (step 3) outlined](../images/get-what-is-missing-1-missing.png)
+   ![Activity, Wanted with example films, with Wanted (step 1), Films (step 2) and Search beside one film (step 3) outlined](../images/get-what-is-missing-1-missing.png)
 
 4. Starboard says what Reelix is doing. What Reelix finds appears in **Activity**, then **Downloads**. Read
    [Pause, resume and remove downloads](manage-downloads.md).
@@ -53,8 +53,8 @@ After **Stop following**, Reelix stops searching for those titles, so they leave
 you can follow them again in the Library. Read
 [Browse your library](browse-your-library.md#get-follow-or-delete-a-title).
 
-**Select all** ticks the rows the page shows so far. Choosing the other list, **Not in library** or
-**Below the quality wanted**, clears the ticks.
+**Select all** ticks the rows the page shows so far. Choosing the other list, **Wanted** or
+**Below quality**, clears the ticks.
 
 ### Download one item outside download hours
 
@@ -70,7 +70,7 @@ hours start. The **Download hours** panel on the Queue page names what is downlo
 
 ## Things to note
 
-- **Below the quality wanted** shows the quality each item has and the quality you want, such as **Has** 720p,
+- **Below quality** shows the quality each item has and the quality you want, such as **Has** 720p,
   **wants** 1080p.
 - The list shows a page at a time. Select **Show more** for the next page.
 - To choose a copy yourself, open the title in the Library and select **Choose a download**. Read
@@ -80,7 +80,7 @@ hours start. The **Download hours** panel on the Queue page names what is downlo
 
 - **Reelix could not be asked:** Reelix did not answer, or Starboard has no Reelix with its key. Check Reelix on
   the **Apps** page. Read [An app shows as not responding](app-not-responding.md).
-- **Nothing is missing.** or **Everything is at the quality wanted.**: there is nothing to search for.
+- **Nothing is wanted.** or **Everything is at the quality wanted.**: there is nothing to search for.
 
 ## Find out more
 

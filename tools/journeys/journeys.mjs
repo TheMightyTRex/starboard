@@ -354,6 +354,16 @@ check("LIB-05", "and is framed like the buttons beside it", follow.border && fol
 await page.locator("#radio-follow").focus();
 check("LIB-05", "the Following choice shows a focus outline", await page.evaluate(() => getComputedStyle(document.querySelector(".series-head__follow")).outlineStyle !== "none"));
 await page.setViewportSize({ width: 1280, height: 860 });
+// LIB-06: one vocabulary on every tab (owner, 26 November 2026): Wanted, never Not in library, Episodes not in library or
+// Tracks not in library, and In library, never Has episodes or Complete.
+console.log("\n== LIB-06 one vocabulary");
+for (const tab of ["films", "tv", "music", "radio", "books", "audiobooks"]) {
+  await open(`library-${tab}.html`);
+  await page.locator("#lib-chips label").first().waitFor({ timeout: 8000 }).catch(() => {});
+  const chips = (await page.locator("#lib-chips label").allTextContents()).map((t) => t.replace(/[\s\d,]+$/, "").trim());
+  check("LIB-06", `${tab}: the filter says Wanted`, chips.includes("Wanted"), chips.join(" | "));
+  check("LIB-06", `${tab}: none of the old words`, !chips.some((c) => /not in library|tracks not|has episodes|complete/i.test(c)), chips.join(" | "));
+}
 // DASH-261: narrator pages, and Narrated by on an audiobook's summary links to them.
 await open("library-audiobooks-narrators.html");
 check("LIB-02", "Narrators lists each narrator", await page.locator("#groups .collection-card__link").count() >= 3);

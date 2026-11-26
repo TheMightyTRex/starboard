@@ -285,7 +285,7 @@ async function groupComplete() {
   const strip = el("ol", { class: "group-complete__strip" }, d.items.map((i) => el("li", { class: i.have ? "" : "is-missing" },
     i.poster ? el("img", { src: i.poster, alt: "", loading: "lazy" }) : el("span", { class: "group-complete__blank", "aria-hidden": "true" }),
     el("span", { class: "group-complete__title", text: i.title }),
-    el("span", { class: "small muted", text: [i.when, i.have ? "" : i.wanted ? STATUS.wanted[0] : "Not requested"].filter(Boolean).join(" · ") }))));
+    el("span", { class: "small muted", text: [i.when, i.have ? "" : i.wanted ? STATUS.wanted[0] : "Not added"].filter(Boolean).join(" · ") }))));
   // Add missing at the right of the heading's line (issue #14), where a page's own buttons go.
   $(".page-head").append(el("div", { class: "actions", id: "lib-add-missing" }, add));
   box.replaceChildren(
