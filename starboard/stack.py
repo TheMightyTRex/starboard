@@ -126,6 +126,19 @@ APPS = {
     "jellyfin": {"name": "Jellyfin", "groups": ["watching"], "image": "lscr.io/linuxserver/jellyfin:latest",
                  "ports": ["8096:8096"], "volumes": [f"{CFG}/jellyfin:/config", f"{CFG}/jellyfin-metadata:/metadata", f"{DATA}/media:/data/media"],
                  "env": LSIO, "memory": 600},
+    # Plex and Emby (DASH-566, owner, 26 November 2026): installable beside Jellyfin so all three can be run and tried. Each has
+    # its own port and folders (Emby's own port is 8097 because Jellyfin has 8096), the media folder is mounted read only, and a
+    # cap on memory and on processors (`limits`, written by build as mem_limit and cpus) so a test server cannot starve the rest.
+    # Only one is the active media server (Settings, Apps, the media server tab); the others are "installed, not in use".
+    "plex": {"name": "Plex", "groups": ["watching"], "image": "lscr.io/linuxserver/plex:latest", "ports": ["32400:32400"],
+             "volumes": [f"{CFG}/plex:/config", f"{DATA}/media:/data/media:ro"],
+             "env": {**LSIO, "VERSION": "docker", "PLEX_CLAIM": "${PLEX_CLAIM:-}"}, "memory": 500,
+             "limits": {"memory": "2g", "cpus": 4}, "default": False,
+             "notes": "A media server to try beside Jellyfin. It asks for a Plex account the first time you open it."},
+    "emby": {"name": "Emby", "groups": ["watching"], "image": "lscr.io/linuxserver/emby:latest", "ports": ["8097:8096"],
+             "volumes": [f"{CFG}/emby:/config", f"{DATA}/media:/data/media:ro"], "env": LSIO, "memory": 400,
+             "limits": {"memory": "2g", "cpus": 4}, "default": False,
+             "notes": "A media server to try beside Jellyfin. Its own port is 8097, because Jellyfin uses 8096."},
     "seerr": {"name": "Seerr", "groups": ["watching"], "image": "ghcr.io/seerr-team/seerr:latest", "ports": ["5055:5055"],
               "volumes": [f"{CFG}/seerr:/app/config"], "env": {"TZ": "${TZ}"}, "memory": 200,
               "notes": "People ask for films and series; it sends them to Radarr and Sonarr."},
@@ -716,6 +729,8 @@ def build(choice):
         if a.get("later"):
             lines.append('    profiles: ["later"]  # needs its own settings file first: docker compose --profile later up -d')
             later.append(a["name"])
+        if a.get("limits"):  # a cap on memory and processors (DASH-566): never more processors than this computer has
+            lines += [f"    mem_limit: {a['limits']['memory']}", f"    cpus: {min(int(a['limits']['cpus']), os.cpu_count() or 1)}"]
         devices = (["/dev/net/tun:/dev/net/tun"] if a.get("gluetun") else []) + list(keep.get("devices") or [])
         if key == "jellyfin" and graphics:  # the graphics chip converts video instead of the processor (DASH-82)
             devices.append("/dev/dri:/dev/dri")
