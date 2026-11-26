@@ -8,7 +8,7 @@ title: Find your answer
 start: A style is not showing as it should
 q: What does its tab say?
   Not active -> 1
-  Not supported -> 2
+  Needs an update -> 2
   Active -> q2
 q2: What happens?
   No Style in Display -> 3

@@ -21,8 +21,8 @@ from . import plugins_admin as pa
 # Each state: one sentence and one button (the button's action, for the page).
 STATES = {
     "needs-setup": ("Fill in its settings, then activate it.", "Set it up", "settings"),
-    "not-supported": ("This Starboard is newer than this version was made for, so it is stopped. An update may fix it.",
-                      "Check for an update", "update"),
+    "not-supported": ("Starboard cannot run it as it is, so it is stopped. Its settings and data are kept. An update may fix it.",
+                      "Check for an update", "update"),  # shown as "Needs an update" (DASH-603)
     "failed": ("It did not start, or stopped answering.", "Try again", "enable"),
 }
 
@@ -44,7 +44,8 @@ def status(data_dir, pid, manifest=None, st=None):
     values = pa._read_kept(os.path.join(where, "settings.json"), {}) or {}
     state = st.get("state", "installed")
     missing = missing_settings(m, values)
-    if m.get("starboard_api") and not plugins._range_ok(m["starboard_api"], plugins.API_VERSION):
+    why = does_not_fit(m)
+    if why:
         state = "not-supported"
     elif state != "enabled" and (missing or (m.get("setup_required") and not st.get("set_up"))):
         state = "needs-setup"
@@ -53,6 +54,8 @@ def status(data_dir, pid, manifest=None, st=None):
            "previous_version": (previous or {}).get("version")}
     if state in STATES:
         sentence, button, action = STATES[state]
+        if state == "not-supported":
+            sentence = f"{why} It is stopped. Its settings and data are kept. An update may fix it."
         if state == "needs-setup" and missing:
             sentence = f"Fill in {', '.join(missing)}, then activate it."
         if state == "failed" and st.get("message"):
@@ -62,6 +65,49 @@ def status(data_dir, pid, manifest=None, st=None):
         if state == "failed" and previous and time.time() - float(st.get("updated_at") or 0) < 600:
             out.update(button=f"Roll back to {previous.get('version')}", action="rollback")
     return out
+
+
+def does_not_fit(manifest):
+    """Why this Starboard cannot run a plug-in, in words, or "" when it can (DASH-603): its `starboard_api` range leaves out
+    this Starboard's plug-in API, or it uses something this Starboard no longer has (a manifest field, permission, card type,
+    setting type, event or container option). Reads the manifest only; nothing is run."""
+    if not isinstance(manifest, dict):
+        return ""
+    if manifest.get("starboard_api") and not plugins._range_ok(manifest["starboard_api"], plugins.API_VERSION):
+        return (f"It was made for Starboard's plug-in API {manifest['starboard_api']}, and this Starboard has "
+                f"{plugins.API_VERSION}.")
+    gone = []
+    gone += [f"the manifest field {k}" for k in sorted(set(manifest) - plugins.TOP)]
+    gone += [f"the permission {p}" for p in (manifest.get("permissions") or []) if isinstance(p, str) and p not in plugins.PERMISSIONS]
+    gone += [f"the {c['type']} card" for c in manifest.get("cards") or [] if isinstance(c, dict) and c.get("type") not in plugins.CARD_TYPES]
+    gone += [f"the {c['type']} setting type" for c in manifest.get("settings") or [] if isinstance(c, dict) and c.get("type") not in plugins.SETTING_TYPES]
+    gone += [f"the event {e}" for e in (manifest.get("events") or []) if isinstance(e, str) and e not in plugins.EVENTS]
+    gone += [f"the container option {k}" for c in manifest.get("containers") or [] if isinstance(c, dict) for k in sorted(set(c) - plugins.CONTAINER)]
+    return f"It uses {', '.join(gone[:3])}{' and more' if len(gone) > 3 else ''}, which this Starboard does not have." if gone else ""
+
+
+def stop_unfit(data_dir, helper=None):
+    """Stops every plug-in that is on but that this Starboard cannot run (DASH-603), once, at start-up and after a range check
+    fails. Its containers are stopped (never removed), its settings, data and key are kept, and it shows as Needs an update with
+    the reason. A stopped container is not started again by Docker, whatever its restart policy says. Returns the names stopped.
+    Nothing here runs when every plug-in fits: a look at each manifest already on disk."""
+    done = []
+    for p in pa.basics(data_dir):
+        if p["state"] not in ("enabled", "failed"):
+            continue
+        m = pa._read_kept(os.path.join(pa.folder(data_dir, p["id"]), "manifest.json"), {})
+        why = does_not_fit(m)
+        if not why:
+            continue
+        try:
+            pa.disable(data_dir, p["id"], helper=helper)
+        except Exception as e:  # noqa: BLE001  (logged; the state still shows it as Needs an update)
+            logs.error("plug-ins", f"{p['name']} could not be stopped: {e}", e)
+        pa.set_state(data_dir, p["id"], "disabled", f"Stopped: {why}")
+        api_v1.audit(data_dir, "plugin_stopped_unfit", plugin=p["id"], reason=why[:200])
+        logs.event("warning", "plug-ins", f"{p['name']} was stopped because Starboard cannot run it: {why} Its settings and data are kept.")
+        done.append(p["name"])
+    return done
 
 
 def can_enable(data_dir, pid):

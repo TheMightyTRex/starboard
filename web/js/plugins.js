@@ -4,7 +4,7 @@
 
 const RISK = { low: ["Low", "success"], medium: ["Medium", "warning"], high: ["High", "danger"] };
 const STATE = { installed: ["Added, not active", "muted"], enabled: STATUS.active, disabled: STATUS.inactive, failed: ["Did not start", "danger"],
-  "needs-setup": ["Needs setting up", "warning"], "not-supported": ["Not supported", "danger"] };  // DASH-330
+  "needs-setup": ["Needs setting up", "warning"], "not-supported": ["Needs an update", "warning"] };  // DASH-330, DASH-603: fixable, so a warning
 const stateOf = (p) => p.status?.state || p.state;
 // An active plug-in that is not answering its health path, or resting after idle stop (DASH-357).
 const chipOf = (p) => {

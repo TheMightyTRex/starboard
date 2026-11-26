@@ -506,10 +506,12 @@ Starboard keeps one state for each plug-in, and shows each with one sentence and
 | `disabled` | Deactivated: stopped, with its settings and data kept | **Activate** |
 | `failed` | It did not start, or stopped answering. The message says why | **Try again**, or **Roll back** to the version before within 10 minutes of an update |
 | `needs-setup` | A required setting is empty, or `setup_required` and it has never been set up | **Finish setting up** |
-| `not-supported` | This Starboard's plug-in API is outside the plug-in's `starboard_api`, so it is stopped | **Check for an update** |
+| `not-supported` | Shown as **Needs an update**. This Starboard cannot run the plug-in: its `starboard_api` leaves out this Starboard's plug-in API, or it uses something this Starboard no longer has. Starboard stops it, keeps its settings and data, and says why | **Check for an update** |
 
 The first four are stored in the plug-in's `state.json`. Starboard works out `needs-setup` and `not-supported` each
-time, and a plug-in in either cannot be activated. **Deactivate all plug-ins** stops every active plug-in at once.
+time, and a plug-in in either cannot be activated. When Starboard starts, it stops every active plug-in that is
+**Needs an update**. It stops the containers, never removes them, and keeps the settings, data and key. Docker does not
+start a stopped container again, whatever its restart policy says. **Deactivate all plug-ins** stops every active plug-in at once.
 
 ## Updates and Roll back
 
