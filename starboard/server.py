@@ -3343,6 +3343,7 @@ class Handler(BaseHTTPRequestHandler):
     def plugins_route(self, method, path):
         """Settings, Plug-ins (DASH-149): add (password), enable, disable, remove (password), Stop all, settings."""
         from . import plugins_admin as pa
+        from . import plugin_systems
         app = self.app
         media = (stack.env_values(app.data_dir).get("DATA_DIR") or "").rstrip("/")
         media = f"{media}/media" if media else "/nonexistent-media-folder"
@@ -3357,7 +3358,10 @@ class Handler(BaseHTTPRequestHandler):
             from . import plugin_watch
             listed = pa.listing(app.data_dir)
             well = plugin_watch.health(app.data_dir, listed)  # asked now, at most once a minute each (DASH-357)
+            here = plugin_systems.present_in(app.config.data["services"])  # DASH-567: is the system each one needs here
+            built = [{**b, "system": plugin_systems.judge(b.get("system"), here)} for b in built]
             return self.json(200, {"plugins": [{**p, "update": updates.get(p["id"]), "health": well.get(p["id"]),
+                                                "system": plugin_systems.judge(p.get("system"), here),
                                                 "resting": plugin_watch.resting(app.data_dir, p["id"])} for p in listed], "builtin": built,
                                    "wanted": pa.wanted_from_setup(app.config, {p["id"] for p in listed})})
         if path == "/api/plugins/wanted" and method == "POST":  # Not now on a plug-in chosen in the set-up (DASH-399)
@@ -3420,8 +3424,9 @@ class Handler(BaseHTTPRequestHandler):
             # The Catalogue page (DASH-318): the Starboard plug-ins collection, each marked when already added.
             have = {p["id"] for p in pa.added(app.data_dir)}
             cats, items = pa.catalogue(app.config)
+            here = plugin_systems.present_in(app.config.data["services"])  # DASH-567
             return self.json(200, {"catalogues": cats, "choices": pa.builtin_choices(app.config),
-                                   "plugins": [{**e, "added": e["id"] in have} for e in items]})
+                                   "plugins": [{**e, "added": e["id"] in have, "system": plugin_systems.judge(e.get("system"), here)} for e in items]})
         if path == "/api/plugins/catalogues" and method == "POST":
             # Catalogue sources added from a link (owner, 12 November 2026). Adding one installs nothing.
             body = self.body()
@@ -3551,6 +3556,7 @@ class Handler(BaseHTTPRequestHandler):
             if path.endswith("preview"):
                 from . import plugin_logo
                 return self.json(200, {**pa.summary(manifest), "test": plugin_tester.report(manifest, logo_problem=logo_why),
+                                       "system": plugin_systems.judge(plugin_systems.describe(manifest), plugin_systems.present_in(app.config.data["services"])),
                                        "logo": {"url": plugin_logo.as_data(*logo), "alt": manifest["logo"]["alt"]} if logo else None})
             self.check_password(body)
             if not plugin_tester.report(manifest)["ok"]:

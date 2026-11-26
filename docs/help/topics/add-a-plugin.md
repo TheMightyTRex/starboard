@@ -48,6 +48,24 @@ is ready to use.
 tab, **General**, has a card each for **State**, **Versions**, **Jobs** (when it has any), **What it may do** and
 **Remove**. Its other tabs hold its settings, its own screens and its styles.
 
+### Check which system a plug-in needs
+
+Some plug-ins work with one system only, such as a plug-in for Jellyfin. Starboard says so in words, next to the
+plug-in's name, so you know before you install it. Read the tag in three places: the **Catalogue**, the list under
+**Settings**, **Plug-ins**, **Manage**, and the plug-in's own **General** tab, in the **State** card, on the **What it needs** line.
+
+1. In the **Catalogue**, find the tag under the plug-in's description, such as **Jellyfin only**, **Plex or Emby** or
+   **Needs Reelix**.
+2. When that system is not on this Starboard, a line under the tag says why, such as "Needs Jellyfin, which this
+   Starboard does not use". You can still install the plug-in, for example to add Jellyfin next.
+3. A plug-in you already installed whose system has gone says **Waiting** on its **General** tab and in **Manage**. It is not
+   stopped, and it keeps its settings. It carries on when that system is back. **Ready to update** shows the same tag.
+
+![Settings, Plug-ins, Catalogue, with a plug-in row that says Jellyfin only (step 1) outlined](../images/add-a-plugin-7-needs.png)
+
+A plug-in's maker can name the system in its manifest. For older plug-ins Starboard works it out from what they may use,
+such as Jellyfin's key. Read [The `requires` field](../developers/plugin-manifest-reference.md#what-it-needs-requires).
+
 ### Add the Stallboard catalogue
 
 Stallboard is a second catalogue, run by TheMightyTRexUK, that lists plug-ins made by other people. A person reads
