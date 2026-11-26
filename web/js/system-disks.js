@@ -71,8 +71,7 @@ function reportBody(d) {
   const events = eventsFor(d);
   return [
     tone === "danger" || tone === "warning"
-      ? el("div", { class: "notice", "data-tone": tone, role: "status" }, icon("triangle-alert"),
-        el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: `${word}: ${reason}` }), advice ? el("p", { text: advice }) : null))
+      ? notice(tone, `${word}: ${reason}`, advice)
       : headChip(word, tone),
     el("dl", { class: "facts" }, facts.flatMap(([k, v]) => [el("dt", { text: k }), el("dd", { class: "numeric" }, v)])),
     el("section", { class: "sys-block", "aria-labelledby": "smart-counters" },

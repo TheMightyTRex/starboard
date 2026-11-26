@@ -41,9 +41,7 @@ function folderBody(d) {
   const [tone, word] = status(d);
   if (d.missing) {
     return [headChip(word, tone),
-      el("div", { class: "notice", "data-tone": "warning", role: "status" }, icon("triangle-alert"),
-        el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "Starboard cannot find this folder" }),
-          el("p", { text: `Check the path for ${d.label} in STARBOARD_DISKS and that the folder is mounted into Starboard, then restart Starboard.` }))),
+      notice("warning", "Starboard cannot find this folder", `Check the path for ${d.label} in STARBOARD_DISKS and that the folder is mounted into Starboard, then restart Starboard.`),
       repo ? guideLink("Open the set-up guide", "free-space-on-the-system-page") : null];
   }
   const pct = pctUsed(d);
@@ -52,9 +50,7 @@ function folderBody(d) {
     el("div", { class: "meter" },
       el("div", { class: "meter__label" }, el("span", { class: "numeric", text: `${sizePair(d.used, d.total)} used (${pct}%)` })),
       bar(pct, tone)),
-    pct >= 90 ? el("div", { class: "notice", "data-tone": tone, role: "status" }, icon("triangle-alert"),
-      el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: `${formatBytes(d.free)} left` }),
-        el("p", { text: "Free some space or add a disk before it fills. Downloads stop when there is no room." }))) : null,
+    pct >= 90 ? notice(tone, `${formatBytes(d.free)} left`, "Free some space or add a disk before it fills. Downloads stop when there is no room.") : null,
     el("dl", { class: "facts" },
       el("dt", { text: "Folder" }), el("dd", {}, d.path ? el("code", { text: d.path }) : "Not reported"),
       el("dt", { text: "Filesystem" }), el("dd", {}, d.filesystem ? el("span", { class: "tag", text: d.filesystem }) : "Not reported"),

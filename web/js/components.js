@@ -1084,6 +1084,31 @@
     };
   }
 
+  /* Notice builder: notice(tone, title, text, options) returns a .notice, so every page draws one in the same way.
+     tone: success, info (no data-tone), warning, danger or muted; one icon each. text is words or nodes, and may be
+     left out. options: actions (a button or link, or an array, in the third column), after (nodes under the text),
+     icon (another icon name), alert (role="alert", for an error that blocks; the default is role="status"), id,
+     tabindex, heading ("h3": the title is a heading). */
+  const NOTICE_ICONS = { success: "circle-check", info: "info", warning: "triangle-alert", danger: "circle-alert", muted: "info" };
+  function notice(tone, title, text, options = {}) {
+    const box = document.createElement("div");
+    box.className = "notice";
+    if (tone && tone !== "info") box.dataset.tone = tone;
+    box.setAttribute("role", options.alert ? "alert" : "status");
+    if (options.id) box.id = options.id;
+    if (options.tabindex != null) box.tabIndex = options.tabindex;
+    box.innerHTML = `${sprite(options.icon || NOTICE_ICONS[tone] || "info")}<div class="notice__body"></div>`;
+    const body = box.lastChild;
+    if (title) body.append(Object.assign(document.createElement(options.heading || "span"), { className: "notice__title", textContent: title }));
+    if (text) {
+      const p = body.appendChild(document.createElement("p"));
+      p.append(...[].concat(text).map((x) => (x instanceof Node ? x : String(x))));
+    }
+    body.append(...[].concat(options.after || []).filter(Boolean));
+    box.append(...[].concat(options.actions || []).filter(Boolean));
+    return box;
+  }
+
   /* Tooltip: data-tooltip="Connected" on anything that shows only an icon (an icon button, a .status-icon with
      tabindex="0"). It shows on hover after a moment and at once on keyboard focus, stays while the pointer is on it
      or on the tooltip, and Escape closes it (WCAG 1.4.13). The words must already be the thing's name (aria-label or
@@ -1209,7 +1234,8 @@
   window.SharedComponents = { setup, applyTheme, creepProgress, setupHeaderFit, fitHeader, motionStill,
     setupSideTrees, setupSolvers, setupSearch, setupSearchIcons, setupSortables, openLayer, toast, savedNote,
     copyText, azLetter, azJump, azGo, loadMore, pageBanner, setupTooltips, say, addSetup, 
-    kit: { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus } };
+    kit: { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus, notice } };
+  Object.assign(window.SharedComponents, { notice }); // the notice builder
   // An app that wires its own behaviour (Starboard's page scripts) loads this file with data-manual, or
   // sets window.SharedComponentsManual = true first, and calls setup() or openLayer() itself.
   const manual = window.SharedComponentsManual || document.currentScript?.hasAttribute("data-manual");

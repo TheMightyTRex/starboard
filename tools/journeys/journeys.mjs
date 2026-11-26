@@ -2907,6 +2907,21 @@ const downloaded = await page.evaluate(async () => (await fetch("/api/logs/downl
 check("LOG-02", "Download gives the same: a line saying how many, then alerts only", /^# Starboard log: the newest \d+ of [\d,]+ entries, alerts only/.test(downloaded) && !/ INFO /.test(downloaded), downloaded.slice(0, 120));
 await api("/api/config/general", { method: "PUT", body: { logs: { show_lines: 200, alerts_only: false } } });
 
+console.log("\n== One notice");
+await open("index.html");
+const built = await page.evaluate(() => {
+  const n = (t, title, text, o) => { const e = SharedComponents.notice(t, title, text, o); document.body.append(e); return e; };
+  const danger = n("danger", "Not saved", "The folder is missing.", { alert: true, id: "t-notice" });
+  const info = n("info", "Version 2 is out", ["Read ", Object.assign(document.createElement("a"), { href: "/x", textContent: "the notes" })], { actions: Object.assign(document.createElement("button"), { textContent: "Update" }) });
+  const bare = n("muted", "", "Only words");
+  const out = { dangerRole: danger.getAttribute("role"), dangerTone: danger.dataset.tone, dangerIcon: danger.querySelector("use").getAttribute("href"), dangerTitle: danger.querySelector(".notice__title").textContent,
+    infoRole: info.getAttribute("role"), infoTone: info.dataset.tone ?? null, infoLink: !!info.querySelector("p a"), infoButtonLast: info.lastElementChild.tagName, bareTitle: !!bare.querySelector(".notice__title"), bareIcon: bare.querySelector("use").getAttribute("href"),
+    app: typeof notice === "function" && notice("warning", "T", "x").dataset.tone, appRole: notice("warning", "T", "x").getAttribute("role") };
+  [danger, info, bare].forEach((e) => e.remove());
+  return out;
+});
+check("UI-01", "the library's notice builder gives the right role, icon and tone", built.dangerRole === "alert" && built.dangerTone === "danger" && built.dangerIcon.endsWith("#i-circle-alert") && built.dangerTitle === "Not saved"
+  && built.infoRole === "status" && built.infoTone === null && built.infoLink && built.infoButtonLast === "BUTTON" && !built.bareTitle && built.bareIcon.endsWith("#i-info") && built.app === "warning" && built.appRole === "status", JSON.stringify(built));
 // Settings, Plug-ins: each plug-in's tab has its own icon, and icons only still name the current and focused tab (owner, 26 November 2026).
 console.log("\n== PTI Plug-in tab icons");
 await page.setViewportSize({ width: 375, height: 812 });

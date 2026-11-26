@@ -6,7 +6,6 @@ let server = null;
 
 // Small helpers ------------------------------------------------------------
 
-// notice() comes from settings-core.js, which this page loads first.
 
 function facts(pairs) {
   return el("dl", { class: "facts" }, pairs.filter(([, v]) => v !== null && v !== undefined && v !== "").flatMap(([k, v]) => [el("dt", { text: k }), el("dd", {}, v)]));

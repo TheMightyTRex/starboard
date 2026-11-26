@@ -91,10 +91,6 @@ function renderHead() {
     : []));
 }
 
-function notice(tone, title, text) {
-  return el("div", { class: "notice", "data-tone": tone, role: "status" }, icon(tone === "info" ? "info" : "triangle-alert"),
-    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text })));
-}
 
 // A saved setting says so beside its control (DASH-309, R5): the select is drawn again, keeps focus, and has the note.
 async function setDetail(mode) {

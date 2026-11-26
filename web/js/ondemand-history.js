@@ -4,8 +4,6 @@
 
 let odKind = "all";
 const plural = (n, [one, many]) => `${n.toLocaleString("en-GB")} ${n === 1 ? one : many}`;
-const notice = (tone, title, text) => el("div", { class: "notice", "data-tone": tone === "info" ? null : tone, role: "status" },
-  icon(tone === "danger" ? "circle-x" : "info"), el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text })));
 
 function odRow(it) {
   const when = it.last ? `Last watched ${new Date(it.last.replace(" ", "T")).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}` : "";
