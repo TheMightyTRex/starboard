@@ -482,10 +482,10 @@ const go32 = await tabTo((f) => f.tag === "BUTTON" && f.id === "check-updates-no
 check("T32", "Tab reaches Check for updates", !!go32, "not reached");
 if (go32) {
   await page.keyboard.press("Enter");
-  await page.locator("#up-list-summary", { hasText: "Checked at" }).waitFor({ timeout: 30000 }).catch(() => {});
+  await page.locator("#up-list-summary", { hasText: "Last checked at" }).waitFor({ timeout: 30000 }).catch(() => {});
   const f32 = await focus();
   check("T32", "focus stays on Check for updates", f32.id === "check-updates-now", `${f32.id} ${f32.text}`);
-  check("T32", "what it found is said in a polite live region", /Checked at \d\d:\d\d\./.test(await page.locator("#up-list-summary[role=status][aria-live=polite]").textContent()));
+  check("T32", "what it found is said in a polite live region", /Last checked at \d\d:\d\d/.test(await page.locator("#up-list-summary[role=status][aria-live=polite]").textContent()));
   await page.keyboard.down("Shift"); await page.keyboard.press("Tab"); await page.keyboard.up("Shift");
   const wn32 = await focus();
   check("T32", "What is new is just before it in the Tab order", wn32.id === "whats-new", `${wn32.id} ${wn32.text}`);
@@ -1402,6 +1402,73 @@ check("T-GEN1", "the page has one h1 and every section a heading", await page.lo
 await page.goto(`${base}/system-backup.html`);
 await settle();
 check("T-GEN1", "the old address opens it", new URL(page.url()).pathname === "/settings-general-backup.html");
+
+// T-ROW1 A row of tabs under the header at phone width (owner, 26 November 2026), by keyboard alone: Tab reaches a tab, the arrow keys, Home and
+// End move along the row, the tab with focus shows its name, focus is never lost and stays in view, Enter opens the page, and a
+// change of text size keeps focus on the same link.
+await page.setViewportSize({ width: 375, height: 812 });
+await page.goto(`${base}/settings-general-hours.html`);
+await settle();
+const rowNav = page.locator('.site-header__tabs nav[aria-label="General"]');
+const rowFocus = () => page.evaluate(() => { const a = document.activeElement, n = a.closest("nav"); const r = a.getBoundingClientRect(), b = n ? n.getBoundingClientRect() : r;
+  return { text: a.textContent.trim(), inNav: !!n, named: !!a.querySelector(".menu-tabs__label") && a.querySelector(".menu-tabs__label").getBoundingClientRect().width > 2, inView: r.left >= b.left - 1 && r.right <= b.right + 1 }; });
+const rowReached = await tabTo((f) => f.tag === "A" && /^General$/.test(f.text), 40);
+check("T-ROW1", "Tab reaches the first tab of the row", !!rowReached);
+let f = await rowFocus();
+check("T-ROW1", "the tab with focus shows its name", f.named && f.inNav, JSON.stringify(f));
+await page.keyboard.press("ArrowRight");
+f = await rowFocus();
+check("T-ROW1", "the right arrow moves to the next tab, in view, with its name", f.text === "Appearance" && f.named && f.inView, JSON.stringify(f));
+await page.keyboard.press("End");
+await page.waitForTimeout(300);
+f = await rowFocus();
+check("T-ROW1", "End goes to the last tab, in view", f.text === "Backup/Logs" && f.inView, JSON.stringify(f));
+await page.keyboard.press("Home");
+check("T-ROW1", "Home goes to the first tab", (await rowFocus()).text === "General");
+await page.evaluate(() => document.documentElement.classList.add("pref-text-175"));
+await page.waitForTimeout(500);
+f = await rowFocus();
+check("T-ROW1", "a larger text size keeps focus on the same link, in view", f.text === "General" && f.inView, JSON.stringify(f));
+await page.evaluate(() => document.documentElement.classList.remove("pref-text-175"));
+await page.keyboard.press("ArrowRight");
+await page.keyboard.press("Enter");
+await page.waitForLoadState("domcontentloaded");
+await settle();
+check("T-ROW1", "Enter opens the page, and its row shows that tab as current", new URL(page.url()).pathname === "/settings-general-appearance.html" && await rowNav.locator("a[aria-current=page]").textContent() === "Appearance");
+await page.setViewportSize({ width: 1280, height: 860 });
+
+// T-PLU Plug-in updates by keyboard (owner, 26 November 2026): Tab reaches Check now; Enter reads the
+// catalogues, says what it found in a polite live region and focus stays on the button; Tab then reaches a tick, Space
+// ticks it and the count is said; Update all asks for the password with focus in the field, and Escape gives focus back.
+await page.goto(`${base}/settings-updates-plugins.html`);
+await settle();
+const chk = await tabTo((f) => f.id === "plu-check", 80);
+check("T-PLU", "Tab reaches Check now", !!chk, "not reached");
+if (chk) {
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(() => /Read \d+ catalogue|Try again in/.test(document.getElementById("plu-check-result")?.textContent || ""), null, { timeout: 15000 }).catch(() => {});
+  const after = await focus();
+  check("T-PLU", "after the check, focus is still on the button", after.id === "plu-check", `${after.id} ${after.text}`);
+  await page.waitForFunction(() => /Read \d+ catalogue|Try again in/.test([...document.querySelectorAll("[role=status], [aria-live=polite]")].map((n) => n.textContent).join(" | ")), null, { timeout: 4000 }).catch(() => {});
+  const said = await page.evaluate(() => [...document.querySelectorAll("[role=status], [aria-live=polite]")].map((n) => n.textContent).join(" | "));
+  check("T-PLU", "what it found is said in a polite live region", /Read \d+ catalogue|Try again in/.test(said), said);
+  const tick = await tabTo((f) => /^choose-plugin:/.test(f.id), 30);
+  check("T-PLU", "Tab reaches a plug-in's tick", !!tick, "not reached");
+  if (tick) {
+    await page.keyboard.press("Space");
+    await page.waitForTimeout(300);
+    check("T-PLU", "Space ticks it and the count is said", /1 chosen/.test(await page.locator("#plu-chosen-text").textContent()) && (await page.locator("#plu-chosen-text").getAttribute("aria-live")) === "polite");
+  }
+  await page.locator("#plu-update-all").focus();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(600);
+  const pwP = await focus();
+  check("T-PLU", "Update all asks for the password with focus in the field", pwP.inPanel && pwP.tag === "INPUT", `${pwP.tag} ${pwP.text}`);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(400);
+  const backP = await focus();
+  check("T-PLU", "Escape closes it and focus returns to Update all", backP.id === "plu-update-all", `${backP.id} ${backP.text}`);
+}
 
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);

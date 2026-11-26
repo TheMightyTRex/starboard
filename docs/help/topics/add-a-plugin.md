@@ -59,7 +59,7 @@ the tabs show icons only. The names are still there:
 2. Move to a tab with the keyboard (press **Tab**). The tab with focus shows its name too.
 3. On a computer, point at an icon to read its name as a tooltip. A screen reader reads the name of every tab.
 
-Each tab is at least 44 pixels wide, the size of a fingertip. Scroll the row sideways to reach the rest.
+Each tab is at least 44 pixels wide, the size of a fingertip. Scroll the row sideways to reach the rest. Every row of tabs under the header works this way: see [Use menus that show icons only](../accessibility/menus-with-icons.md).
 
 ![Settings, Plug-ins, on a computer: the tab for each plug-in has its own icon, and the Styles tab is outlined (step 1)](../images/add-a-plugin-8-tabs-computer.png)
 

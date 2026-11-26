@@ -82,15 +82,16 @@ def _plugin_hold(app, t, known):
     return ""
 
 
-def plan(app):
+def plan(app, kinds=None):
     """What Install all updates would do now: {items: [...in order], held: [...], count}. Each item: target, kind,
     name, from, to, order; a held one has why. count is the number that will install (Jellyfin's plug-ins, whose
-    new versions only Jellyfin knows, are not counted)."""
+    new versions only Jellyfin knows, are not counted). kinds: only these kinds of update, such as ("plugin",) for
+    Starboard's plug-ins (Settings, Plug-ins, Manage and Updates, Plug-ins); None for everything."""
     from . import auto_updates, plugin_life
     items, held = [], []
     known = None
     for t in update_runs.targets(app):
-        if not t.get("update_available"):
+        if not t.get("update_available") or (kinds is not None and t["kind"] not in kinds):
             continue
         item = {"target": t["id"], "kind": t["kind"], "name": t["name"], "from": t.get("current") or "",
                 "to": t.get("latest") or "", "order": ORDER.get(t["kind"], 1)}
@@ -107,7 +108,7 @@ def plan(app):
             why = f"Version {t.get('latest')} is a big change. Read what is new and update it on its own"
         (held if why else items).append({**item, "why": why} if why else item)
     count = len(items)
-    if auto_updates._jf(app.config.data.get("services") or []):
+    if (kinds is None or "jellyfin-plugins" in kinds) and auto_updates._jf(app.config.data.get("services") or []):
         # Check for updates may have asked Jellyfin which of its plug-ins have new versions: then they are named and
         # counted, so Install all updates is offered for them alone too.
         from . import update_check
@@ -138,12 +139,12 @@ def running(app):
     return None
 
 
-def start(app, by="you", targets=None):
+def start(app, by="you", targets=None, kinds=None):
     """Starts Install all updates. targets: the ones the person saw and confirmed (others that appeared since are
     left for next time). Returns the batch run. Raises update_runs.Busy or update_runs.Refused."""
     if update_runs._busy() or update_runs._starboard_running(app):
         raise update_runs.Busy("An update is already running. Wait for it to finish")
-    p = plan(app)
+    p = plan(app, kinds)
     items = p["items"]
     if targets is not None:
         want = {str(t) for t in targets}

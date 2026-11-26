@@ -34,14 +34,13 @@ where a setting lives.
   and the set-up guide. Read [Organise apps into categories](organise-categories.md).
 - **Appearance:** Starboard's own style and its colours, the default design and the accessibility choices for this
   browser. Read [Choose a design for the Apps page](choose-a-design.md).
-- **Lists:** long lists and Library views. With **More settings**: Coming up. Read
-  [Find out what is coming up](coming-up.md).
-- **Discover:** which rows each Discover page shows.
+- **Lists:** long lists and Library views, and which rows each Discover page shows (one section for each of Films, TV,
+  Music, Radio, Books and Audiobooks). With **More settings**: Coming up. Read [Find out what is coming up](coming-up.md).
 - **Hours:** when downloads run. Read [Download only at certain hours](set-download-hours.md).
 - **Alerts:** where alerts go. With **More settings**: what to alert on, a weekly summary and watching. Read
   [Activate alerts](activate-alerts.md) and [Get a weekly summary](weekly-summary.md).
-- **Performance** and **Pictures:** **Performance** is for how much Starboard does. With **More settings**: each part
-  of the background work, and how often pages update. Read [Make Starboard use less of your server](make-starboard-lighter.md).
+- **Performance:** how much Starboard does, and the pictures it keeps, with a button to clear them. With **More settings**:
+  each part of the background work, and how often pages update. Read [Make Starboard use less of your server](make-starboard-lighter.md).
 - **Backup/Logs:** full backups of Starboard and every app's settings, the backup schedule, copies off this
   computer and restoring a backup, then the logs and **Send feedback**. Read [Back up Starboard's settings](back-up-settings.md),
   [Read the log](read-the-log.md) and [Send feedback about a page](send-feedback.md). **Updates**, **Restore** also

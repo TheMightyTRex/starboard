@@ -7,7 +7,6 @@ let state = null;
 let flow = null;   // the job in progress: { kind, step, steps, ... }
 let watching = 0;  // timer while a job runs
 
-const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const ROLE = { pool: "In the pool", parity: "Parity disk", copy: "Copy disk" };
 const nameOf = (d) => `${d.model || d.name} ${formatBytes(d.size)}`;
 const serialOf = (d) => (d.ends ? `serial ends ${d.ends}` : "no serial number");
@@ -16,11 +15,6 @@ function helpLink(text, page) {
   return helpButton(text, { page });
 }
 
-function notice(tone, title, text, extra = []) {
-  return el("div", { class: "notice", "data-tone": tone, role: "status" },
-    icon(tone === "warning" ? "triangle-alert" : "info"),
-    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text }), extra));
-}
 
 // Widths are set through the style object: the page's security rules refuse style attributes.
 function widthOf(node, pct) {
@@ -170,7 +164,7 @@ async function load() {
       n.replaceChildren(notice("info", "Set up the pool helper first",
         state.why === "no answer" ? "Starboard has a folder for the pool helper, but the helper has not answered yet. Check that it is installed."
           : "The pool helper makes the pool. It runs on the server with the right to change disks, which Starboard itself never has. Run ./install.sh again and say yes to Disk pools.",
-        [el("p", {}, helpLink("Add a disk to the pool", "topics/add-a-drive-to-the-pool.md"))]));
+        null, { after: [el("p", {}, helpLink("Add a disk to the pool", "topics/add-a-drive-to-the-pool.md"))] }));
       return;
     }
     $("#overview").hidden = !!flow;
@@ -287,7 +281,7 @@ function confirmView() {
   const go = async (e) => {
     const confirm = Object.fromEntries($$("[data-drive]").map((i) => [i.dataset.drive, i.value.trim()]));
     const password = $("#pool-password").value;
-    if (!password) return inlineError($("#pool-password"), "Enter your password");
+    if (!password) return inlineError($("#pool-password"), NEED_PASSWORD);
     const bad = drives.find((d, n) => $(`#serial-${n}`).value.replace(/[^a-z0-9]/gi, "").toUpperCase() !== d.ends);
     if (bad) return inlineError($(`#serial-${drives.indexOf(bad)}`), `Type ${bad.ends}, the last 4 characters of the serial number`);
     e.target.disabled = true;

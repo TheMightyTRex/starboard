@@ -1014,6 +1014,7 @@ def item(data_dir, reelix, tab, item_id, cfg=None):
 
 # Changing things from the Library (DASH-276, DASH-206) --------------------------------------------------------
 
+ARTIST_FIND_MAX = 100  # albums searched in one go from an artist's page
 ACTIONS = ("get", "follow", "unfollow", "delete", "keep")
 KEEP = (5, 10, 25, 50, 100)  # Keep (DASH-319): the newest this many episodes of a podcast
 
@@ -1148,9 +1149,16 @@ def act(reelix, tab, item_id, action, scope="item", season=None, episode=None, d
         if action == "get":
             albums = (services._api(reelix, "/albums", {"artist_id": item_id, "page_size": 0}) or {}).get("items") or []
             wanted = [a["id"] for a in albums if a.get("monitored") and int((a.get("statistics") or {}).get("track_file_count") or 0) == 0]
-            for a in wanted[:20]:
-                services._api(reelix, f"/albums/{a}/search", method="POST", body={})
-            return f"Reelix is searching for {len(wanted[:20])} {'album' if len(wanted[:20]) == 1 else 'albums'} now"
+            # One request for the lot, 100 at most, so Reelix paces them itself (the owner's limit, 26 November 2026).
+            # More than that says so, where it used to stop at 20 and say nothing.
+            sent = wanted[:ARTIST_FIND_MAX]
+            if sent:
+                services._api(reelix, "/music/search", method="POST", body={"kind": "item", "ids": sent})
+            word = "album" if len(sent) == 1 else "albums"
+            if len(wanted) > len(sent):
+                return (f"Reelix is searching for {len(sent)} of {len(wanted)} albums now. "
+                        f"It searches {ARTIST_FIND_MAX} at a time, so use the button again for the other {len(wanted) - len(sent)}")
+            return f"Reelix is searching for {len(sent)} {word} now"
         return "Reelix follows the artist" if on else "Reelix no longer follows the artist"
     if tab == "radio" and action == "keep":  # DASH-319: the newest N episodes, or all
         keep = None if scope in ("all", "", None) else int(scope)

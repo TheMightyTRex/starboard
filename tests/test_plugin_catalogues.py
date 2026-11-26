@@ -96,7 +96,8 @@ class Catalogues(unittest.TestCase):
         op = Opener({OTHER: {"name": "Friend", "plugins": [ENTRY]}})
         cats, items = pa.catalogue(cfg, op, now=1000)
         self.assertGreater(cats[0]["count"], 0)  # the copy Starboard ships
-        self.assertEqual(cats[0]["error"], "")
+        self.assertIn("did not answer", cats[0]["error"])  # and the page says GitHub did not answer
+        self.assertEqual(cats[0]["read_at"], 0)
         cats, items = pa.catalogue(cfg, Opener({}), now=1000 + 90000)  # a day later, nothing answers
         self.assertTrue(cats[1]["error"])
         self.assertEqual(cats[1]["count"], 1)  # the last good list
@@ -106,6 +107,94 @@ class Catalogues(unittest.TestCase):
         pa.catalogue(None, op, now=1000)
         pa.catalogue(None, op, now=2000)
         self.assertEqual(len(op.asked), 1)
+
+
+@mock.patch("starboard.outside.check_url", lambda url: None)
+class CheckNow(unittest.TestCase):
+    """Check for updates now (owner, 26 November 2026): a release made after the last read is found at once, a catalogue
+    that does not answer is said in words, and the button cannot be pressed again within a few seconds."""
+
+    def setUp(self):
+        pa._catalogues.clear()
+        pa._forced["at"] = 0
+
+    def test_kept_six_hours_then_read_again(self):
+        op = Opener({pa.CATALOGUE_URL: {"name": "S", "plugins": [ENTRY]}})
+        pa.catalogue(None, op, now=1000)
+        pa.catalogue(None, op, now=1000 + 5 * 3600)  # inside 6 hours: nothing asked
+        self.assertEqual(len(op.asked), 1)
+        pa.catalogue(None, op, now=1000 + 6 * 3600 + 5)
+        self.assertEqual(len(op.asked), 2)
+
+    def test_a_new_version_is_found_by_checking_now(self):
+        old = {**ENTRY, "version": "1.1.1"}
+        new = {**ENTRY, "version": "1.1.2"}
+        pa.catalogue(None, Opener({pa.CATALOGUE_URL: {"name": "S", "plugins": [old]}}), now=1000)
+        _, items = pa.catalogue(None, Opener({pa.CATALOGUE_URL: {"name": "S", "plugins": [new]}}), now=2000)
+        self.assertEqual(items[0]["version"], "1.1.1")  # an hour later it is still the old list: this was the bug
+        got = pa.refresh(None, Opener({pa.CATALOGUE_URL: {"name": "S", "plugins": [new]}}), now=2000)
+        self.assertFalse(got["too_soon"])
+        self.assertEqual(pa._catalogues[pa.CATALOGUE_URL]["items"][0]["version"], "1.1.2")
+        self.assertEqual(got["catalogues"][0]["read_at"], 2000)
+
+    def test_cannot_be_pressed_again_within_the_gap(self):
+        op = Opener({pa.CATALOGUE_URL: {"name": "S", "plugins": []}})
+        pa.refresh(None, op, now=5000)
+        again = pa.refresh(None, op, now=5000 + 10)
+        self.assertTrue(again["too_soon"])
+        self.assertEqual(again["wait"], pa.MIN_GAP - 10)
+        self.assertIn(f"Try again in {pa.MIN_GAP - 10} seconds", again["said"])
+        self.assertEqual(len(op.asked), 1)
+        later = pa.refresh(None, op, now=5000 + pa.MIN_GAP + 1)
+        self.assertFalse(later["too_soon"])
+        self.assertEqual(len(op.asked), 2)
+
+    def test_a_catalogue_that_fails_says_why_and_keeps_its_last_list(self):
+        cfg = Cfg()
+        cfg.data["plugin_catalogues"] = [{"url": OTHER, "name": "x"}]
+        pa.refresh(cfg, Opener({OTHER: {"name": "Friend", "plugins": [ENTRY]}, pa.CATALOGUE_URL: {"name": "S", "plugins": []}}), now=1000)
+        got = pa.refresh(cfg, Opener({pa.CATALOGUE_URL: {"name": "S", "plugins": []}}), now=2000)
+        bad = [c for c in got["catalogues"] if not c["ok"]]
+        self.assertEqual(len(bad), 1)
+        self.assertEqual((bad[0]["count"], bad[0]["read_at"]), (1, 1000))  # the list from 1000 stays, and when it was read
+        self.assertIn("did not answer", bad[0]["error"])
+        self.assertEqual(got["failed"], 1)
+        self.assertIn("1 did not answer", got["said"])
+        self.assertEqual(pa.last_read()["errors"], 1)
+
+    def test_errors_are_in_words(self):
+        import socket
+        import urllib.error
+        self.assertIn("error 404", pa._why(urllib.error.HTTPError("https://x", 404, "Not Found", {}, None)))
+        self.assertIn("5 seconds", pa._why(urllib.error.URLError(socket.timeout("timed out"))))
+        self.assertIn("internet connection", pa._why(urllib.error.URLError(socket.gaierror(-2, "Name or service not known"))))
+        for text in (pa._why(OSError("[Errno 5] weird")), pa._why(urllib.error.URLError(ConnectionRefusedError()))):
+            self.assertNotIn("Errno", text)
+
+    def test_last_read_is_the_oldest_answer(self):
+        cfg = Cfg()
+        cfg.data["plugin_catalogues"] = [{"url": OTHER, "name": "x"}]
+        pa.catalogue(cfg, Opener({pa.CATALOGUE_URL: {"name": "S", "plugins": []}, OTHER: {"name": "F", "plugins": []}}), now=1000)
+        pa.catalogue(cfg, Opener({pa.CATALOGUE_URL: {"name": "S", "plugins": []}, OTHER: {"name": "F", "plugins": []}}), now=2000, force=True)
+        self.assertEqual(pa.last_read()["read_at"], 2000)
+        pa._catalogues[OTHER]["read_at"] = 1500
+        self.assertEqual(pa.last_read()["read_at"], 1500)
+
+    def test_the_update_is_listed_after_the_check_without_opening_the_catalogue(self):
+        import tempfile
+
+        from starboard import plugin_life
+        with tempfile.TemporaryDirectory() as d:
+            pdir = pa.folder(d, "hello")
+            import os
+            os.makedirs(pdir)
+            pa._write(os.path.join(pdir, "manifest.json"), {"id": "hello", "name": "Hello", "version": "1.1.1"})
+            pa._write(os.path.join(pdir, "state.json"), {"state": "installed"})
+            self.assertEqual(plugin_life.updates_known(d), {})
+            pa.refresh(None, Opener({pa.CATALOGUE_URL: {"name": "S", "plugins": [{**ENTRY, "version": "1.1.2", "permissions": ["network:lan"]}]}}), now=1000)
+            known = plugin_life.updates_known(d)
+            self.assertEqual(known["hello"]["version"], "1.1.2")
+            self.assertEqual(known["hello"]["permissions"], ["network:lan"])
 
 
 if __name__ == "__main__":
