@@ -1260,7 +1260,7 @@ if (setUp) {
   }
 }
 
-// T-BUSY (DASH-558) Busy now by keyboard alone: the page reads once when it opens and says so, Check again is reached with
+// T-BUSY (DASH-558) Busy now by keyboard alone: the page reads once when it opens and says so, Check now is reached with
 // Tab and pressed with Enter, focus comes back to it, the result is said in a live region, and each table has a caption
 // and row headings.
 await page.goto(`${base}/system-busy.html`);
@@ -1269,7 +1269,7 @@ await page.waitForFunction(() => /Read at/.test(document.querySelector("#busy-su
 check("T-BUSY", "the page reads once when it opens and says when", /Read at \d\d:\d\d:\d\d/.test(await page.locator("#busy-summary").innerText()));
 check("T-BUSY", "each table has a caption and row headings", await page.evaluate(() => [...document.querySelectorAll("#busy-containers table, #busy-processes table")].every((t) => t.querySelector("caption")?.textContent.trim() && t.querySelector("tbody th[scope=row]"))));
 const again = await tabTo((f) => f.id === "busy-again", 60);
-check("T-BUSY", "Check again can be reached with Tab", !!again);
+check("T-BUSY", "Check now can be reached with Tab", !!again);
 if (again) {
   await page.keyboard.press("Enter");
   await page.waitForTimeout(300);
@@ -1277,7 +1277,7 @@ if (again) {
   await page.waitForFunction(() => !document.getElementById("busy-again").disabled, null, { timeout: 10000 }).catch(() => {});
   await page.waitForTimeout(500);
   const f = await focus(), s = await said();
-  check("T-BUSY", "focus comes back to Check again", f.id === "busy-again", f.id || f.text);
+  check("T-BUSY", "focus comes back to Check now", f.id === "busy-again", f.id || f.text);
   check("T-BUSY", "the result is said in a live region", /Read at \d\d:\d\d:\d\d/.test(s), s);
 }
 
