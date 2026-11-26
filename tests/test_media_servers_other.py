@@ -211,5 +211,75 @@ class Registry(unittest.TestCase):
         self.assertEqual(emby.Emby().find_service(both)["id"], "emby")
 
 
+class Flow(unittest.TestCase):
+    """The whole way through a server: add Plex from the catalogue, choose it, see it on the dashboard's route, go back."""
+
+    @classmethod
+    def setUpClass(cls):
+        import http.client
+        import json
+        import os
+        import tempfile
+        import threading
+        from starboard import auth
+        from starboard.server import make_server
+        cls.http, cls.json = http.client, json
+        cls.tmp = tempfile.TemporaryDirectory()
+        auth.ITERATIONS = 1000
+        for k in ("STARBOARD_HISTORY", "STARBOARD_SCHEDULE", "STARBOARD_WATCH", "STARBOARD_JOBS"):
+            os.environ[k] = "0"
+        os.environ["STARBOARD_DOCKER"] = "/nonexistent/docker.sock"
+        cls.server, cls.app = make_server("127.0.0.1", 0, cls.tmp.name)
+        threading.Thread(target=cls.server.serve_forever, daemon=True).start()
+        cls.port = cls.server.server_address[1]
+        cls.password = "correct horse battery"
+        r, _ = cls.call("POST", "/api/setup", {"token": cls.app.setup_token, "password": cls.password}, cookie=False)
+        cls.cookie = r.getheader("Set-Cookie").split(";")[0]
+
+    @classmethod
+    def call(cls, method, path, body=None, cookie=True):
+        conn = cls.http.HTTPConnection("127.0.0.1", cls.port, timeout=10)
+        headers = {"Content-Type": "application/json", "X-Starboard": "1"}
+        if cookie:
+            headers["Cookie"] = cls.cookie
+        conn.request(method, path, cls.json.dumps(body) if body is not None else None, headers)
+        r = conn.getresponse()
+        raw = r.read()
+        conn.close()
+        return r, cls.json.loads(raw) if raw[:1] in (b"{", b"[") else raw
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server.server_close()
+        cls.tmp.cleanup()
+
+    def test_add_plex_choose_it_and_go_back(self):
+        self.app.config.data["services"] = [JF]
+        self.app.config.data["extras"].pop("media_server", None)
+        r, got = self.call("POST", "/api/plugins/add-builtin", {"id": "plex", "password": self.password})
+        self.assertEqual(r.status, 200, got)
+        self.assertEqual(self.call("GET", "/api/media-server")[1]["added"], ["jellyfin", "plex"])
+        # Not set up yet: the choice is refused, in words, and nothing changes.
+        r, got = self.call("POST", "/api/media-server/choose", {"id": "plex"})
+        self.assertEqual(r.status, 409)
+        self.assertIn("Plex did not answer: Plex is not set up yet", got["error"])
+        self.assertEqual(self.call("GET", "/api/media-server")[1]["active"], "jellyfin")
+        # Set up (an Other app with the icon plex): the check says what it found, and the choice works.
+        self.app.config.data["services"] = [JF, PLEX]
+        fetch = Fetch(dict(PLEX_ANSWERS))
+        with mock.patch.object(services, "_fetch", side_effect=fetch):
+            r, got = self.call("POST", "/api/media-server/check", {"id": "plex"})
+            self.assertEqual((r.status, got["ok"], got["libraries"]), (200, True, ["Films", "Series", "Odd"]))
+            r, got = self.call("POST", "/api/media-server/choose", {"id": "plex"})
+            self.assertEqual((r.status, got["active"], got["configured"]), (200, "plex", True))
+            r, got = self.call("GET", "/api/jellyfin?fresh=1")  # the dashboard's own route now answers for Plex
+            self.assertEqual((got["name"], got["version"], len(got["playing"])), ("Plex", "1.41.3.9314", 2))
+            self.assertEqual(self.call("GET", "/api/media-server")[1]["back"]["name"], "Jellyfin")
+            r, got = self.call("POST", "/api/media-server/back")
+            self.assertEqual((r.status, got["active"]), (200, "jellyfin"))
+        self.app.config.data["services"] = []
+
+
 if __name__ == "__main__":
     unittest.main()
