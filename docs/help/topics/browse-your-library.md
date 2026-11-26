@@ -21,7 +21,7 @@ albums or reading order.
    **My library** shows them all as covers, A to Z.
 3. Optional: to find one title, type part of its name in **Search your films** (or series, books and so on).
    The wall shows only what matches as you enter it.
-4. Optional: to show only some, select a filter, such as **Not in library** or **Not released**. Each filter says how many it
+4. Optional: to show only some, select a filter, such as **Wanted** or **Not released**. Each filter says how many it
    holds. Select it again to show everything.
 ![The Films wall with example data at the letter M, with steps 5 and 6 outlined](../images/browse-your-library-2-letters.png)
 

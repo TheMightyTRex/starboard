@@ -43,17 +43,17 @@ NOUNS = {"films": ("film", "films"), "tv": ("series", "series"), "music": ("arti
 STATUS = {  # Storyarr's status words: label and tone
     "in_library": ("In library", "success"),
     "partly": ("Partly in library", "info"),
-    "wanted": ("Wanted", "warning"),
+    "wanted": ("Wanted", "neutral"),
     "not_released": ("Not released", "muted"),
-    "not_monitored": ("Not wanted", "muted"),
+    "not_monitored": ("Not followed", "muted"),
     "downloading": ("Downloading", "info"),
     "searching": ("Searching", "info"),
 }
 CHIPS = {  # filter chips for each tab: key, label
-    "films": [("released", "Released"), ("coming", "Not released"), ("missing", "Not in library")],
-    "tv": [("continuing", "Continuing"), ("ended", "Ended"), ("missing", "Episodes not in library")],
-    "music": [("complete", "Complete"), ("missing", "Tracks not in library")],
-    "radio": [("in_library", "Has episodes"), ("wanted", "Wanted"), ("podcast", "Podcasts"), ("radio_show", "Radio shows")],
+    "films": [("released", "Released"), ("coming", "Not released"), ("missing", "Wanted")],
+    "tv": [("continuing", "Continuing"), ("ended", "Ended"), ("missing", "Wanted")],
+    "music": [("complete", "In library"), ("missing", "Wanted")],
+    "radio": [("in_library", "In library"), ("wanted", "Wanted"), ("podcast", "Podcasts"), ("radio_show", "Radio shows")],
     "books": [("in_library", "In library"), ("wanted", "Wanted"), ("not_released", "Not released")],
     "audiobooks": [("in_library", "In library"), ("wanted", "Wanted"), ("not_released", "Not released")],
 }
@@ -874,7 +874,7 @@ def item(data_dir, reelix, tab, item_id, cfg=None):
                 rows = [_row(str(x.get("year") or ""), x.get("title"), "", "in_library" if x.get("has_file") else
                              "wanted" if x.get("movie_id") else "not_monitored",
                              href=f"/library-film.html?id={x['movie_id']}" if x.get("movie_id") else "",
-                             note="" if x.get("movie_id") else "Not in your library") for x in found.get("movies") or []]
+                             note="" if x.get("movie_id") else "Not added") for x in found.get("movies") or []]
                 lists.append({"key": "collection", "label": "Collection", "heading": found.get("title"), "rows": rows})
     elif tab == "tv":
         s = services._api(reelix, f"/series/{item_id}") or {}
