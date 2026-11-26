@@ -703,10 +703,12 @@ if (ck) {
   const afterCheck = await focus();
   check("T37", "after the check focus stays on the button, and the answer is in the status", /^Check it now/.test(afterCheck.text) && /answered|did not answer/.test(await said()), JSON.stringify(afterCheck) + " " + await said());
 }
-const none = await tabTo((f) => f.tag === "INPUT" && f.id === "ms-choice-none", 40);
-check("T37", "Tab reaches the None choice, named", !!none, none ? none.text : "not reached");
+// A group of radio buttons is one Tab stop, on the one chosen; the arrow keys move to the next, as a screen reader says.
+const chosen = await tabTo((f) => f.tag === "INPUT" && f.id === "ms-choice-jellyfin", 40);
+check("T37", "Tab reaches the chosen media server in the group, named", !!chosen, chosen ? chosen.text : "not reached");
+const none = chosen ? (await page.keyboard.press("ArrowDown"), await focus()) : null;
+check("T37", "the Down arrow moves to None", !!none && none.id === "ms-choice-none", none ? none.id : "not reached");
 if (none) {
-  await page.keyboard.press("Space");
   const go = await tabTo((f) => f.tag === "BUTTON" && /^Use this media server/.test(f.text), 8);
   check("T37", "Tab reaches Use this media server", !!go, go ? go.text : "not reached");
   if (go) {
