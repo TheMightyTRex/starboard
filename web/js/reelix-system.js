@@ -6,7 +6,7 @@ const rsHeld = { password: "", timer: null };
 
 async function rsAsk(what, error = "") {
   const pw = el("input", { class: "input", type: "password", autocomplete: "current-password", id: "rs-password" });
-  const err = el("p", { class: "field__error", role: "alert", text: error });
+  const err = el("p", { class: "field-error", role: "alert", text: error });
   setTimeout(() => pw.focus(), 50);
   const ok = await confirmDialog({ title: "Enter your Reelix password", confirm: "Continue",
     message: `To ${what}, Starboard signs in to Reelix for this change only, then signs out. This page remembers the password for 5 minutes.`,

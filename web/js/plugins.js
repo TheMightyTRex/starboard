@@ -457,7 +457,7 @@ function appSettingsSection(p) {
   if (p.state !== "enabled") return section(`pl-${p.id}-app`, "Settings", `Activate ${p.name} on State to change its settings.`);
   const box = el("div", { class: "stack-4", "aria-busy": "true" }, el("p", { class: "muted", text: "Loading…" }));
   loadScript(app.script).then(() => window[app.draw]("", box, true))
-    .catch((err) => { box.removeAttribute("aria-busy"); box.replaceChildren(el("p", { class: "field__error", text: err.message })); });
+    .catch((err) => { box.removeAttribute("aria-busy"); box.replaceChildren(el("p", { class: "field-error", text: err.message })); });
   return section(`pl-${p.id}-app`, "Settings", app.about, box);
 }
 

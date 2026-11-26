@@ -317,6 +317,43 @@ check("LIB-04", "with no address a browser can open there is no Play",
 const addLink = page.locator(".series-head .notice a", { hasText: "Add Jellyfin's address" });
 check("LIB-04", "and the page says where to add it", await addLink.count() === 1 && (await addLink.getAttribute("href")) === `/settings.html?edit=${encodeURIComponent(jfApp.id)}`);
 await api("/api/services", { method: "POST", body: jfSaved });
+// LIB-05: the row of controls on every item page: each control is one height (the --control-h token, 44px), those in one
+// row start at the same line, the Following choice looks like the buttons beside it, and a phone wraps without sideways scrolling.
+console.log("\n== LIB-05 one control height on item pages");
+const ITEM_PAGES = ["library-film.html?id=3", "library-tv-show.html?id=8", "library-artist.html?id=2", "library-book.html?id=4",
+  "library-audiobook.html?id=6", "library-radio-show.html?id=1", "library-radio-show.html?id=7", "library-radio-show.html?id=13"];
+const rowFacts = () => page.evaluate(() => {
+  const kids = [...document.querySelectorAll(".series-head__actions > *")].map((c) => c.getBoundingClientRect());
+  const token = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--control-h"));
+  const rows = {};
+  kids.forEach((r) => { (rows[Math.round(r.top)] ||= []).push(r.bottom); });
+  return { count: kids.length, heights: kids.map((r) => Math.round(r.height * 10) / 10), token,
+    sameBottoms: Object.values(rows).every((b) => Math.max(...b) - Math.min(...b) < 1),
+    sideways: document.documentElement.scrollWidth > document.documentElement.clientWidth };
+});
+for (const [w, h] of [[1280, 860], [375, 812], [320, 700]]) {
+  await page.setViewportSize({ width: w, height: h });
+  for (const p of ITEM_PAGES) {
+    await open(p);
+    await page.locator(".series-head__actions").waitFor({ timeout: 8000 }).catch(() => {});
+    const f = await rowFacts();
+    check("LIB-05", `${p} at ${w}px: every control is the ${f.token}px token`, f.count > 0 && f.heights.every((x) => Math.abs(x - f.token) < 1), f.heights.join(","));
+    check("LIB-05", `${p} at ${w}px: controls in one row line up and the page does not scroll sideways`, f.sameBottoms && !f.sideways);
+  }
+}
+await open("library-radio-show.html?id=1");
+await page.setViewportSize({ width: 1280, height: 860 });
+const follow = await page.evaluate(() => {
+  const l = document.querySelector(".series-head__follow"), s = l?.querySelector("select"), b = getComputedStyle(l || document.body);
+  const btn = getComputedStyle(document.querySelector(".series-head__actions .btn"));
+  return { label: l?.querySelector(".field__label")?.textContent, name: s?.getAttribute("aria-label"), border: b.borderTopColor === btn.borderTopColor,
+    radius: b.borderTopLeftRadius === btn.borderTopLeftRadius, weight: getComputedStyle(s).fontWeight === btn.fontWeight };
+});
+check("LIB-05", "Following keeps its label and name for screen readers", follow.label === "Following" && follow.name === "Following");
+check("LIB-05", "and is framed like the buttons beside it", follow.border && follow.radius && follow.weight);
+await page.locator("#radio-follow").focus();
+check("LIB-05", "the Following choice shows a focus outline", await page.evaluate(() => getComputedStyle(document.querySelector(".series-head__follow")).outlineStyle !== "none"));
+await page.setViewportSize({ width: 1280, height: 860 });
 // DASH-261: narrator pages, and Narrated by on an audiobook's summary links to them.
 await open("library-audiobooks-narrators.html");
 check("LIB-02", "Narrators lists each narrator", await page.locator("#groups .collection-card__link").count() >= 3);
@@ -2839,6 +2876,42 @@ check("LOG-02", "Alerts only shows errors and warnings and nothing else, and is 
 const downloaded = await page.evaluate(async () => (await fetch("/api/logs/download")).text());
 check("LOG-02", "Download gives the same: a line saying how many, then alerts only", /^# Starboard log: the newest \d+ of [\d,]+ entries, alerts only/.test(downloaded) && !/ INFO /.test(downloaded), downloaded.slice(0, 120));
 await api("/api/config/general", { method: "PUT", body: { logs: { show_lines: 200, alerts_only: false } } });
+
+// Settings, Plug-ins: each plug-in's tab has its own icon, and icons only still name the current and focused tab (owner, 26 November 2026).
+console.log("\n== PTI Plug-in tab icons");
+await page.setViewportSize({ width: 375, height: 812 });
+await open("settings-plugin.html?id=notifications");
+await page.waitForFunction(() => document.querySelectorAll('nav[aria-label="Plug-ins"] a').length > 4, null, { timeout: 5000 }).catch(() => {});
+const ptiTabs = () => page.evaluate(() => [...document.querySelectorAll('nav[aria-label="Plug-ins"] a')].map((a) => {
+  const r = a.getBoundingClientRect(), l = a.querySelector(".menu-tabs__label"), s = a.querySelector("svg");
+  return { name: a.textContent.trim(), icon: s?.querySelector("use")?.getAttribute("href") || "", hidden: s?.getAttribute("aria-hidden"), w: Math.round(r.width), h: Math.round(r.height),
+    shown: l.getBoundingClientRect().width > 8, current: a.getAttribute("aria-current") === "page", title: a.title };
+}));
+let pti = await ptiTabs();
+const ptiPlugs = pti.slice(2);
+check("PTI-01", "at 375 wide the tabs show icons only, and each is at least 44 by 44", pti.length > 4 && pti.filter((x) => !x.current).every((x) => !x.shown && x.w >= 44 && x.h >= 44), JSON.stringify(pti.map((x) => [x.name, x.w, x.h])));
+const known = ptiPlugs.filter((x) => !/#i-puzzle$/.test(x.icon));
+check("PTI-02", "every plug-in tab with an icon of its own has a different one",
+  known.length > 8 && new Set(known.map((x) => x.icon)).size === known.length, JSON.stringify(known.map((x) => [x.name, x.icon])));
+check("PTI-03", "a plug-in with no icon of its own gets the neutral puzzle piece", ptiPlugs.some((x) => /#i-puzzle$/.test(x.icon)) && ptiPlugs.find((x) => x.name === "Notifications")?.icon.endsWith("#i-bell"));
+check("PTI-04", "every icon is hidden from a screen reader, and every tab keeps its name as text and as its tooltip", pti.every((x) => x.hidden === "true" && x.name && x.title === x.name));
+check("PTI-05", "the tab you are on shows its name beside the icon, with the bar under it, and is in view",
+  pti.filter((x) => x.current).length === 1 && pti.find((x) => x.current).name === "Notifications" && pti.find((x) => x.current).shown
+  && await page.evaluate(() => { const a = document.querySelector('nav[aria-label="Plug-ins"] a[aria-current]'), r = a.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 1; }));
+const ptiLinks = page.locator('nav[aria-label="Plug-ins"] a');
+await ptiLinks.first().focus();
+await page.keyboard.press("Tab");
+await page.keyboard.press("Tab");
+const ptiFocus = await page.evaluate(() => { const a = document.activeElement; return { name: a.textContent.trim(), shown: (a.querySelector(".menu-tabs__label")?.getBoundingClientRect().width || 0) > 8, ring: getComputedStyle(a).outlineStyle !== "none" }; });
+check("PTI-06", "Tab moves along the tabs, and the tab with focus shows its name and a focus ring", ptiFocus.shown && ptiFocus.ring && ptiFocus.name.length > 0, JSON.stringify(ptiFocus));
+check("PTI-07", "the row scrolls inside itself, not the page", await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+await open("settings-plugins.html");
+check("PTI-09", "at 375 wide a notice with buttons keeps its words readable (DASH-602)", await page.evaluate(() => [...document.querySelectorAll(".notice")].every((n) => (n.querySelector(".notice__body")?.getBoundingClientRect().width || 999) > 150)));
+await page.setViewportSize({ width: 1280, height: 860 });
+await open("settings-plugin.html?id=notifications");
+await page.waitForFunction(() => document.querySelectorAll('nav[aria-label="Plug-ins"] a').length > 4, null, { timeout: 5000 }).catch(() => {});
+pti = await ptiTabs();
+check("PTI-08", "on a computer the same icons show, and the tab name shows for the current tab", pti.length > 4 && pti.slice(2).every((x) => x.icon && x.h >= 44) && pti.find((x) => x.current)?.shown, JSON.stringify(pti.filter((x) => x.current)));
 
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });

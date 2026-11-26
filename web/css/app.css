@@ -284,3 +284,9 @@ body > .loading-bar--top { position: fixed; top: 0; bottom: auto; z-index: 100; 
   .bring-sources .bring-source__actions { grid-column: 2; grid-row: 2; }
   .bring-sources .sortable__moves { grid-column: 3; grid-row: 2; }
 }
+
+/* A notice with buttons (such as a plug-in offered in the set-up) is a third column; on a phone it would squeeze the words
+   to a letter a line, so the buttons go on their own row under the words (DASH-602). */
+@media (max-width: 600px) {
+  .notice > .actions { grid-column: 2 / -1; }
+}
