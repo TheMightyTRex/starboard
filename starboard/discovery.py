@@ -30,8 +30,8 @@ CATALOGUE = {
     "bazarr": ("Bazarr", "bazarr", [6767], ("title", "bazarr"), True, False),
     "whisparr": ("Whisparr", "link", [6969], ("title", "whisparr"), False, False),
     "jellyfin": ("Jellyfin", "jellyfin", [8096], ("json", "/System/Info/Public", "ProductName"), True, False),
-    "emby": ("Emby", "link", [8096, 8920], ("json", "/emby/System/Info/Public", "Version"), False, False),
-    "plex": ("Plex", "link", [32400], ("body", "MediaContainer"), False, False),
+    "emby": ("Emby", "emby", [8096, 8920], ("json", "/emby/System/Info/Public", "Version"), True, False),
+    "plex": ("Plex", "plex", [32400], ("body", "MediaContainer"), True, False),
     "seerr": ("Seerr", "seerr", [5055], ("json", "/api/v1/status", "commitTag"), True, False),
     "qbittorrent": ("qBittorrent", "qbittorrent", [8080, 8081], ("title", "qbittorrent"), True, False),
     "sabnzbd": ("SABnzbd", "sabnzbd", [8080, 8085, 8090], ("title", "sabnzbd"), True, False),
@@ -78,6 +78,8 @@ KEY_FILES = {
     "readarr": ("/config/config.xml", r"<ApiKey>([A-Za-z0-9]{20,64})</ApiKey>"),
     "prowlarr": ("/config/config.xml", r"<ApiKey>([A-Za-z0-9]{20,64})</ApiKey>"),
     "sabnzbd": ("/config/sabnzbd.ini", r"(?m)^api_key\s*=\s*([A-Za-z0-9]{16,64})\s*$"),
+    # Plex: the server owner's token, from its preferences file (DASH-566). Emby has none to read: its keys are made in its dashboard.
+    "plex": ("/config/Library/Application Support/Plex Media Server/Preferences.xml", r'PlexOnlineToken="([A-Za-z0-9_-]{15,40})"'),
     "seerr": ("/app/config/settings.json", r'"apiKey"\s*:\s*"([A-Za-z0-9=+/]{20,120})"'),
     # Bazarr's own key, under auth: (its config also holds Sonarr's and Radarr's keys, under their own names).
     "bazarr": ("/config/config/config.yaml", r"(?m)^auth:[ \t]*\n(?:[ \t]+.*\n)*?[ \t]+apikey:[ \t]*['\"]?([A-Za-z0-9]{32})['\"]?[ \t]*$"),

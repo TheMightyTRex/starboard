@@ -30,14 +30,12 @@ class MediaServer:
     id = ""
     name = ""
     service_type = ""  # the entry in the saved services that holds its address and key
-    service_icon = ""  # an app saved as "Other app" is found by its icon, such as plex or emby
     capabilities = ()
     page = ""  # its own settings page, when it has one
 
     def find_service(self, services_list):
         """The saved app that holds its address and key (enabled, with both), or None."""
         return next((s for s in services_list or [] if isinstance(s, dict) and s.get("type") == self.service_type
-                     and (not self.service_icon or str(s.get("icon") or "").lower() == self.service_icon)
                      and s.get("enabled", True) and s.get("api_key") and s.get("url")), None)
 
     def _service(self, services_list):

@@ -7,8 +7,8 @@ from unittest import mock
 from starboard import mediaserver, services
 from starboard.mediaservers import emby, plex
 
-EMBY = {"id": "emby", "name": "Emby", "type": "link", "icon": "emby", "url": "http://192.168.1.9:8096", "api_key": "made-up-emby-key", "enabled": True}
-PLEX = {"id": "plex", "name": "Plex", "type": "link", "icon": "plex", "url": "http://192.168.1.9:32400", "api_key": "made-up-plex-token", "enabled": True}
+EMBY = {"id": "emby", "name": "Emby", "type": "emby", "url": "http://192.168.1.9:8096", "api_key": "made-up-emby-key", "enabled": True}
+PLEX = {"id": "plex", "name": "Plex", "type": "plex", "url": "http://192.168.1.9:32400", "api_key": "made-up-plex-token", "enabled": True}
 JF = {"id": "jellyfin", "name": "Jellyfin", "type": "jellyfin", "url": "http://192.168.1.9:8097", "api_key": "made-up-jf-key", "enabled": True}
 
 EMBY_ANSWERS = {
@@ -71,7 +71,7 @@ class Shared:
         self.assertEqual((d["id"], d["kind"], d["capabilities"]), (self.one.id, "media-server", []))
 
     def test_not_set_up_is_said_in_words(self):
-        for services_list in ([], [{**self.svc, "api_key": ""}], [{**self.svc, "enabled": False}], [{**self.svc, "icon": "other"}], [JF]):
+        for services_list in ([], [{**self.svc, "api_key": ""}], [{**self.svc, "enabled": False}], [{**self.svc, "type": "link"}], [JF]):
             with self.assertRaises(services.ServiceError) as e:
                 self.one.libraries(services_list)
             self.assertIn(f"{self.one.name} is not set up yet", str(e.exception))
@@ -146,7 +146,7 @@ class EmbyTests(Shared, unittest.TestCase):
     def test_keys_are_said_in_words(self):
         k = self.one.keys_needed()[0]
         self.assertIn("API key", k["what"])
-        self.assertIn("icon emby", k["kept"])
+        self.assertIn("Manage apps", k["kept"])
 
 
 class PlexTests(Shared, unittest.TestCase):
@@ -190,7 +190,7 @@ class PlexTests(Shared, unittest.TestCase):
     def test_the_token_is_asked_for_in_words(self):
         k = self.one.keys_needed()[0]
         self.assertEqual(k["what"], "Plex token")
-        self.assertIn("icon plex", k["kept"])
+        self.assertIn("Manage apps", k["kept"])
 
 
 class Registry(unittest.TestCase):
@@ -265,7 +265,7 @@ class Flow(unittest.TestCase):
         self.assertEqual(r.status, 409)
         self.assertIn("Plex did not answer: Plex is not set up yet", got["error"])
         self.assertEqual(self.call("GET", "/api/media-server")[1]["active"], "jellyfin")
-        # Set up (an Other app with the icon plex): the check says what it found, and the choice works.
+        # Set up (an app of the kind Plex): the check says what it found, and the choice works.
         self.app.config.data["services"] = [JF, PLEX]
         fetch = Fetch(dict(PLEX_ANSWERS))
         with mock.patch.object(services, "_fetch", side_effect=fetch):
