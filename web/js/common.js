@@ -1996,6 +1996,7 @@ function pluginTabs(list) {
   const here = location.pathname.endsWith("/settings-plugin.html") ? new URLSearchParams(location.search).get("id") : null;
   if (here) $$("a[aria-current]", nav).forEach((a) => a.removeAttribute("aria-current"));
   const tpl = $("a", nav);
+  nav.classList.add("menu-tabs--scroll");  // 44px tabs that scroll, and the name of the tab you are on (design system)
   for (const p of list) {
     const a = tpl.cloneNode(true);
     a.href = `/settings-plugin.html?id=${encodeURIComponent(p.id)}`;
@@ -2007,10 +2008,14 @@ function pluginTabs(list) {
   }
   // With a row of icons that scrolls sideways, the tab you are on is brought into view (the name beside its icon shows there).
   const current = $("a[aria-current]", nav);
-  if (here && current) requestAnimationFrame(() => requestAnimationFrame(() => {
-    const a = current.getBoundingClientRect(), b = nav.getBoundingClientRect();
-    nav.scrollLeft = Math.max(0, nav.scrollLeft + (a.left - b.left) - (b.width - a.width) / 2);
-  }));
+  if (here && current) {
+    const reveal = () => {
+      const a = current.getBoundingClientRect(), b = nav.getBoundingClientRect();
+      if (a.left < b.left || a.right > b.right) nav.scrollLeft = Math.max(0, nav.scrollLeft + (a.left - b.left) - (b.width - a.width) / 2);
+    };
+    requestAnimationFrame(() => requestAnimationFrame(reveal));
+    new ResizeObserver(reveal).observe(nav);  // a turned phone or larger text brings it back into view
+  }
 }
 
 // Logos legible in light and dark (owner, 12 November 2026): a network's logo is measured once, in the first browser

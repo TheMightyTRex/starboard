@@ -65,7 +65,7 @@ Each tab is at least 44 pixels wide, the size of a fingertip. Scroll the row sid
 
 ![Settings, Plug-ins, on a phone: icons only, with the Styles tab showing its name beside its icon (step 1)](../images/add-a-plugin-9-tabs-phone.png)
 
-![The same phone tabs in the Dark theme, with the Notifications tab showing its name (step 2)](../images/add-a-plugin-10-tabs-phone-dark.png)
+![The same phone tabs in the Dark theme: the Notifications tab, which is open, and the Tdarr tab, which has focus, both show their name, and Tdarr is outlined (step 2)](../images/add-a-plugin-10-tabs-phone-dark.png)
 
 ### Check which system a plug-in needs
 

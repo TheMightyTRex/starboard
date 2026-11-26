@@ -46,10 +46,10 @@
       "width": 390,
       "height": 640,
       "scheme": "dark",
-      "run": "for (let i = 0; i < 40 && document.querySelectorAll('nav[aria-label=\"Plug-ins\"] a').length < 6; i++) await new Promise(r => setTimeout(r, 250)); await new Promise(r => setTimeout(r, 900));",
+      "run": "for (let i = 0; i < 40 && document.querySelectorAll('nav[aria-label=\"Plug-ins\"] a').length < 6; i++) await new Promise(r => setTimeout(r, 250)); await new Promise(r => setTimeout(r, 900)); const t = document.querySelector('nav[aria-label=\"Plug-ins\"] a[href*=\"id=tdarr\"]'); t.focus(); t.dataset.shot = 'focus'; await new Promise(r => setTimeout(r, 400));",
       "marks": [
         {
-          "t": "$nav[aria-label='Plug-ins'] a[aria-current]",
+          "t": "$a[data-shot=focus]",
           "step": 2,
           "side": "bottom",
           "tail": 70
@@ -58,7 +58,7 @@
       "steps": [
         2
       ],
-      "alt": "The same phone tabs in the Dark theme, with the Notifications tab showing its name (step 2)"
+      "alt": "The same phone tabs in the Dark theme: the Notifications tab, which is open, and the Tdarr tab, which has focus, both show their name, and Tdarr is outlined (step 2)"
     }
   ]
 }

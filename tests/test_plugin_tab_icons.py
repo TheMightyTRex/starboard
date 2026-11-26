@@ -46,11 +46,12 @@ class PluginTabIcons(unittest.TestCase):
 
     def test_icons_only_tabs_are_44px_wide_and_name_the_current_and_focused_tab(self):
         css = read("web", "css", "components.css")
-        compact = re.search(r"\.menu-tabs\.is-compact a \{(.*?)\}", css, re.S).group(1)
-        self.assertIn("min-width: var(--control-h)", compact)
-        self.assertIn("flex: none", compact)
-        self.assertIn('a[aria-current="page"] .menu-tabs__label', css)
-        self.assertIn("a:focus-visible .menu-tabs__label", css)
+        tab = re.search(r"\.menu-tabs--scroll\.is-compact a \{(.*?)\}", css, re.S).group(1)
+        self.assertIn("min-width: var(--control-h)", tab)
+        self.assertIn("flex: none", tab)
+        self.assertIn('.menu-tabs--scroll.is-compact a[aria-current="page"] .menu-tabs__label', css)
+        self.assertIn(".menu-tabs--scroll.is-compact a:focus-visible .menu-tabs__label", css)
+        self.assertIn('nav.classList.add("menu-tabs--scroll")', read("web", "js", "common.js"))
         self.assertIn("a.title = name", read("web", "js", "components.js"))
 
 

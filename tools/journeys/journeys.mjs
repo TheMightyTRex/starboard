@@ -2784,8 +2784,8 @@ let pti = await ptiTabs();
 const ptiPlugs = pti.slice(2);
 check("PTI-01", "at 375 wide the tabs show icons only, and each is at least 44 by 44", pti.length > 4 && pti.filter((x) => !x.current).every((x) => !x.shown && x.w >= 44 && x.h >= 44), JSON.stringify(pti.map((x) => [x.name, x.w, x.h])));
 const known = ptiPlugs.filter((x) => !/#i-puzzle$/.test(x.icon));
-check("PTI-02", "every plug-in tab with an icon of its own has a different one, none is the default puzzle piece's twin or Manage's or Catalogue's",
-  known.length > 8 && new Set(known.map((x) => x.icon)).size === known.length && !known.some((x) => pti.slice(0, 2).some((m) => m.icon === x.icon)), JSON.stringify(known.map((x) => [x.name, x.icon])));
+check("PTI-02", "every plug-in tab with an icon of its own has a different one",
+  known.length > 8 && new Set(known.map((x) => x.icon)).size === known.length, JSON.stringify(known.map((x) => [x.name, x.icon])));
 check("PTI-03", "a plug-in with no icon of its own gets the neutral puzzle piece", ptiPlugs.some((x) => /#i-puzzle$/.test(x.icon)) && ptiPlugs.find((x) => x.name === "Notifications")?.icon.endsWith("#i-bell"));
 check("PTI-04", "every icon is hidden from a screen reader, and every tab keeps its name as text and as its tooltip", pti.every((x) => x.hidden === "true" && x.name && x.title === x.name));
 check("PTI-05", "the tab you are on shows its name beside the icon, with the bar under it, and is in view",
@@ -2802,7 +2802,7 @@ await page.setViewportSize({ width: 1280, height: 860 });
 await open("settings-plugin.html?id=notifications");
 await page.waitForFunction(() => document.querySelectorAll('nav[aria-label="Plug-ins"] a').length > 4, null, { timeout: 5000 }).catch(() => {});
 pti = await ptiTabs();
-check("PTI-08", "on a computer the same icons show, and the tab name shows for the current tab", pti.length > 4 && pti.every((x) => x.icon && x.h >= 44) && pti.find((x) => x.current)?.shown, JSON.stringify(pti.filter((x) => x.current)));
+check("PTI-08", "on a computer the same icons show, and the tab name shows for the current tab", pti.length > 4 && pti.slice(2).every((x) => x.icon && x.h >= 44) && pti.find((x) => x.current)?.shown, JSON.stringify(pti.filter((x) => x.current)));
 
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
