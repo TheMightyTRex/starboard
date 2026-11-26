@@ -19,6 +19,7 @@ import json
 import os
 import re
 import secrets
+import stat
 import threading
 import time
 
@@ -114,14 +115,33 @@ def _host_of(path):
     return path
 
 
+def zip_path(folder, name):
+    """The settings zip called `name` inside `folder`, as a real path, or None. The name must be exactly a server settings
+    zip's (no folder part, no ..), the folder is resolved, and the file must be a plain file that stays inside it: a link
+    (to a file or a folder elsewhere) or an absolute name is refused, never followed."""
+    if not folder or not isinstance(name, str) or not NAME_RE.fullmatch(name):
+        return None
+    root = os.path.realpath(folder)
+    path = os.path.normpath(os.path.join(root, name))
+    if os.path.dirname(path) != root or os.path.commonpath([root, path]) != root:
+        return None
+    try:
+        st = os.lstat(path)
+    except OSError:
+        return None
+    if not stat.S_ISREG(st.st_mode) or os.path.realpath(path) != path:  # not a link, not a folder, nowhere else
+        return None
+    return path
+
+
 def newest_zip():
     """The newest server settings zip in the server backups folder: (name, size) or None."""
     folder = backup.backup_dir()
     best = None
     if folder and os.path.isdir(folder):
         for name in os.listdir(folder):
-            p = os.path.join(folder, name)
-            if NAME_RE.match(name) and os.path.isfile(p) and (best is None or name > best[0]):
+            p = zip_path(folder, name)
+            if p and (best is None or name > best[0]):
                 best = (name, os.path.getsize(p))
     return best
 
@@ -166,8 +186,8 @@ def start(data_dir, name=None):
         if not zip_:
             raise ZipError("There is no server settings backup to copy yet")
         name = zip_[0]
-    if not NAME_RE.match(name or "") or not folder or not os.path.isfile(os.path.join(folder, name)):
-        raise ZipError("That is not a server settings backup in the server backups folder")
+    if not zip_path(folder, name):
+        raise ZipError("That is not a server settings backup in the server backups folder. Only a plain file named server-settings-DATE.zip inside it is sent, never a link or another folder")
     places = [d for d in backup_copies.destinations(data_dir) if d["enabled"]]
     if not places:
         raise ZipError("Activate a place for the copies first")

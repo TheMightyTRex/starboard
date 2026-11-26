@@ -231,6 +231,26 @@ class SettingsZip(Base):
         self.assertEqual(sorted(os.listdir(os.path.join(self.d, bc.WORK))), [])
         self.assertIn("not allowed to write", got["places"][0]["error"])
 
+    def test_names_and_links_cannot_leave_the_server_backups_folder(self):
+        sz.make_key(self.d)
+        self.add("disk")
+        outside = tempfile.mkdtemp()
+        secret = os.path.join(outside, "server-settings-2026-11-20.zip")
+        with open(secret, "wb") as f:
+            f.write(b"secret")
+        os.symlink(secret, os.path.join(self.folder, "server-settings-2026-11-20.zip"))          # a link to a file elsewhere
+        os.symlink(outside, os.path.join(self.folder, "server-settings-2026-11-19.zip"))         # a link to a folder
+        os.mkdir(os.path.join(self.folder, "server-settings-2026-11-18.zip"))                    # a folder with a zip's name
+        for bad in ("../" + os.path.basename(outside) + "/server-settings-2026-11-20.zip", "..", "../x.zip", secret, "/etc/passwd",
+                    "sub/server-settings-2026-11-26.zip", "server-settings-2026-11-26.zip/../x", "server-settings-2026-11-26.zip\n",
+                    "server-settings-2026-11-20.zip", "server-settings-2026-11-19.zip", "server-settings-2026-11-18.zip", 5):
+            with self.assertRaisesRegex(sz.ZipError, "not a server settings backup"):
+                sz.start(self.d, bad)
+            self.assertIsNone(sz.zip_path(self.folder, bad))
+        self.assertEqual(self.calls, [])
+        self.assertEqual(sz.zip_path(self.folder, self.ZIP), os.path.realpath(os.path.join(self.folder, self.ZIP)))
+        self.assertEqual(sz.newest_zip(), (self.ZIP, 3))  # the links and the folder are not offered either
+
     def test_never_in_a_full_backup(self):
         self.assertIn(sz.KEY_FILE, full_backup.COPY_SKIP)
         self.assertIn(sz.STATUS, full_backup.COPY_SKIP)
