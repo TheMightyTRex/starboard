@@ -771,6 +771,10 @@
     min-height: var(--control-h-compact);
     padding: 0 var(--space-3);
   }
+  /* The plain button, named as the pair of .btn--primary. It looks the same as .btn, so use .btn when you can. */
+  .btn--secondary {
+    border-color: var(--color-border);
+  }
   .btn[disabled],
   .btn[aria-disabled="true"] {
     opacity: 0.6;
@@ -981,7 +985,8 @@
   .required-key .field__required {
     margin: 0 0.2em 0 0;
   }
-  .field-error {
+  .field-error,
+  .field__error {
     display: flex;
     gap: var(--space-1);
     color: var(--status-danger-fg);
@@ -1003,6 +1008,17 @@
     min-height: 96px;
     padding: var(--space-2) var(--space-3);
   }
+  /* A number field: room for about six digits, not the whole row (a count of copies to keep). */
+  .input--narrow {
+    width: 8rem;
+    max-width: 100%;
+  }
+  .select--compact {
+    width: auto;
+    min-height: var(--control-h-compact);
+    padding-top: 0;
+    padding-bottom: 0;
+  }
   .select {
     appearance: none;
     padding-right: var(--space-8);
@@ -1013,11 +1029,6 @@
       calc(100% - 13px) 50%;
     background-size: 5px 5px;
     background-repeat: no-repeat;
-  }
-  /* A narrow field for a short value, such as a number of copies to keep: about seven characters wide, never wider than its row. */
-  .input--narrow {
-    width: 7rem;
-    max-width: 100%;
   }
   .input:focus-visible,
   .select:focus-visible,
