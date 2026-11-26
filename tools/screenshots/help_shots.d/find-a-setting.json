@@ -13,7 +13,7 @@
           "tail": 90
         },
         {
-          "t": "$.menu-tabs:not(.is-compact) a[href='/settings-general-lists.html']",
+          "t": "$.site-header__tabs .menu-tabs a[href='/settings-general-lists.html']",
           "step": 3,
           "side": "bottom",
           "tail": 70
