@@ -972,42 +972,34 @@
      The row's own listeners are added once. */
   function tabsEdges(nav) {
     const compact = nav.classList.contains("is-compact");
-    nav.querySelectorAll("a").forEach((a) => {
-      const name = a.querySelector(".menu-tabs__label")?.textContent.trim();
-      if (compact && name && a.getAttribute("aria-current") !== "page" && a !== document.activeElement) a.dataset.tooltip = name;
-      else a.removeAttribute("data-tooltip");
-    });
+    for (const a of nav.querySelectorAll("a")) {
+      if (compact && a.getAttribute("aria-current") !== "page" && a !== document.activeElement) a.dataset.tooltip = a.textContent.trim();
+      else delete a.dataset.tooltip;
+    }
     if (!nav.dataset.tabsReady) {
       nav.dataset.tabsReady = "1";
       nav.addEventListener("keydown", (e) => {
-        const links = [...nav.querySelectorAll("a")];
-        const at = links.indexOf(document.activeElement);
-        if (at < 0 || e.altKey || e.ctrlKey || e.metaKey) return;
-        const rtl = getComputedStyle(nav).direction === "rtl";
-        const to = { ArrowRight: at + (rtl ? -1 : 1), ArrowLeft: at - (rtl ? -1 : 1), Home: 0, End: links.length - 1 }[e.key];
-        if (to === undefined || !links[to]) return;
+        const links = [...nav.querySelectorAll("a")], at = links.indexOf(document.activeElement);
+        const to = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: links.length - 1 }[e.key];
+        if (at < 0 || e.altKey || e.ctrlKey || e.metaKey || !links[to]) return;
         e.preventDefault();
         links[to].focus();
       });
       nav.addEventListener("focusin", (e) => {
-        e.target.closest?.("a")?.removeAttribute("data-tooltip");
-        requestAnimationFrame(() => {
-          const a = document.activeElement;
-          if (!a || !nav.contains(a)) return;
-          const r = a.getBoundingClientRect(), b = nav.getBoundingClientRect();
-          const pad = nav.classList.contains("can-scroll-start") || nav.classList.contains("can-scroll-end") ? 28 : 0;
+        delete e.target.dataset.tooltip;
+        requestAnimationFrame(() => {  // keep the tab with focus clear of the fade
+          const r = document.activeElement.getBoundingClientRect(), b = nav.getBoundingClientRect(), pad = nav.matches(".can-scroll-start, .can-scroll-end") ? 28 : 0;
           if (r.left < b.left + pad) nav.scrollLeft += r.left - b.left - pad;
           else if (r.right > b.right - pad) nav.scrollLeft += r.right - b.right + pad;
         });
       });
       nav.addEventListener("focusout", () => tabsEdges(nav));
-      let queued = false;
-      nav.addEventListener("scroll", () => { if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; tabsFade(nav); }); } }, { passive: true });
+      nav.addEventListener("scroll", () => tabsFade(nav), { passive: true });
     }
-    const current = nav.querySelector('a[aria-current="page"]');
-    if (compact && current && nav.scrollWidth > nav.clientWidth + 1 && !nav.contains(document.activeElement)) {
-      const r = current.getBoundingClientRect(), b = nav.getBoundingClientRect();
-      if (r.left < b.left || r.right > b.right) nav.scrollLeft = Math.max(0, nav.scrollLeft + (r.left - b.left) - (b.width - r.width) / 2);
+    const cur = nav.querySelector('a[aria-current="page"]');
+    if (compact && cur && !nav.contains(document.activeElement)) {  // the current tab comes into view
+      const r = cur.getBoundingClientRect(), b = nav.getBoundingClientRect();
+      if (r.left < b.left || r.right > b.right) nav.scrollLeft += r.left - b.left - (b.width - r.width) / 2;
     }
     tabsFade(nav);
   }

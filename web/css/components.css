@@ -374,18 +374,11 @@
     clip-path: none;
     text-overflow: ellipsis;
   }
-  .site-header__tabs .menu-tabs.can-scroll-end:not(.can-scroll-start) {
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
-    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  .site-header__tabs .menu-tabs:is(.can-scroll-start, .can-scroll-end) {
+    mask-image: linear-gradient(to right, transparent, #000 var(--fade-start, 0), #000 calc(100% - var(--fade-end, 0)), transparent);
   }
-  .site-header__tabs .menu-tabs.can-scroll-start:not(.can-scroll-end) {
-    -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent);
-    mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent);
-  }
-  .site-header__tabs .menu-tabs.can-scroll-start.can-scroll-end {
-    -webkit-mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent);
-    mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent);
-  }
+  .site-header__tabs .menu-tabs.can-scroll-start { --fade-start: 28px; }
+  .site-header__tabs .menu-tabs.can-scroll-end { --fade-end: 28px; }
   /* When even the icons do not fit (large text, wider spacing, a long server name), the header gives way in steps
      instead of cutting items off or squeezing the search box (DASH-437). SharedComponents.setupHeaderFit measures the
      header and adds one class at a time to .site-header until everything fits:
