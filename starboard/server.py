@@ -1551,8 +1551,36 @@ class Handler(BaseHTTPRequestHandler):
                     return self.json(200, {"ok": True})
             if path == "/api/network" and method == "GET":
                 return self.json(200, app.network_info(self.client_address[0]))
+            if path.startswith("/api/plex/link"):
+                from . import plex_link  # only when a person signs in to Plex: nothing more at start-up
+            if path == "/api/plex/link" and method == "POST":
+                # Sign in to Plex with its own link code (DASH-595): plex.tv gives a code, the person approves it at plex.tv/link.
+                try:
+                    out = plex_link.start(app.data_dir)
+                except plex_link.LinkError as e:
+                    return self.error(502, str(e))
+                logs.event("info", "apps", "Plex link code requested")
+                return self.json(200, out)
+            m = re.match(r"^/api/plex/link/(\d{1,12})(/cancel)?$", path)
+            if m:
+                pin = int(m.group(1))
+                if m.group(2) and method == "POST":
+                    plex_link.cancel(pin)
+                    return self.json(200, {"state": "cancelled"})
+                if not m.group(2) and method == "GET":
+                    try:
+                        out = plex_link.poll(pin)
+                    except plex_link.LinkError as e:
+                        return self.json(200, {"state": "waiting", "left": 0, "note": str(e)})
+                    if out["state"] == "approved":
+                        logs.event("info", "apps", "Plex link approved")
+                    return self.json(200, out)
             if path == "/api/services" and method == "POST":
                 incoming = self.body()
+                if incoming.get("plex_pin") and not incoming.get("api_key"):  # the token Plex's link flow found stays on the server
+                    from . import plex_link
+                    incoming["api_key"] = plex_link.token_of(incoming["plex_pin"]) or ""
+                incoming.pop("plex_pin", None)
                 service_id = cfg.upsert_service(incoming)
                 logs.event("info", "apps", f"{'Changed' if incoming.get('id') else 'Added'} {str(incoming.get('name', 'an app'))[:60]}")
                 if not incoming.get("id"):
@@ -1577,6 +1605,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, {"user": user, "password": password})
             if path == "/api/services/test" and method == "POST":
                 incoming = self.body()
+                if incoming.get("plex_pin") and not incoming.get("api_key"):
+                    from . import plex_link
+                    incoming["api_key"] = plex_link.token_of(incoming["plex_pin"], keep=True) or ""
+                incoming.pop("plex_pin", None)
                 stored = cfg.service(incoming.get("id", "")) if incoming.get("id") else None
                 if stored and not incoming.get("api_key"):
                     if not same_server(stored.get("url", ""), str(incoming.get("url", ""))):

@@ -1357,6 +1357,31 @@ if (dispBtn) {
   check("T-SHADOWS", "Escape returns focus to Display", /Display/.test(f3.text), f3.text);
 }
 
+// T-PLEX Sign in with Plex (DASH-595): reachable by Tab beside the token field; Enter shows the code in a polite live region
+// and puts focus on Cancel; Cancel puts focus back on the button and says so; the approval is said and focus goes to Save.
+await page.goto(`${base}/settings.html`);
+await settle();
+await page.click("#add-service");
+await page.locator("#service-form select[name=type]").selectOption("plex");
+await page.waitForTimeout(300);
+const signIn = page.getByRole("button", { name: "Sign in with Plex" });
+await signIn.focus();
+await page.keyboard.press("Enter");
+await page.locator(".plex-code").waitFor({ timeout: 5000 });
+const f2a = await focus();
+check("T-PLEX", "Enter shows the code and focus is on Cancel", f2a.tag === "BUTTON" && /^Cancel/.test(f2a.text), `${f2a.tag} ${f2a.text}`);
+check("T-PLEX", "the code is in a polite live region with a link to plex.tv/link", await page.locator(".plex-link [aria-live=polite] .plex-code").count() === 1
+  && await page.locator(".plex-link [aria-live=polite] a[href='https://plex.tv/link']").count() === 1);
+await page.keyboard.press("Enter");
+await page.waitForTimeout(300);
+const f2b = await focus();
+check("T-PLEX", "Cancel puts focus back on Sign in with Plex and says so", /Sign in with Plex/.test(f2b.text) && /Sign-in cancelled/.test(await page.locator(".plex-link [aria-live=polite]").innerText()), f2b.text);
+await page.keyboard.press("Enter");
+await page.locator(".plex-link", { hasText: "Signed in with Plex" }).waitFor({ timeout: 15000 }).catch(() => {});
+const f2c = await focus();
+check("T-PLEX", "when it is approved, it is said and focus goes to the save button", /Signed in with Plex/.test(await page.locator(".plex-link [aria-live=polite]").innerText()) && /Add app|Save app|Save and continue/.test(f2c.text), f2c.text);
+await page.keyboard.press("Escape");
+
 // T-GEN1 Settings, General, Backup/Logs (DASH-595): one page of sections with a row of in-page links. Tab walks the links in
 // reading order, Enter on one moves to its section with focus on the section's heading, and every link has a section.
 await page.goto(`${base}/settings-general-backup.html`);

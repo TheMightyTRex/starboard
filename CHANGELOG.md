@@ -8,6 +8,7 @@ add features.
 ## [Unreleased]
 
 ### Added
+- **Sign in to Plex with a link code.** Manage apps has Sign in with Plex, which shows a code to enter at plex.tv/link, or you can still paste the token.
 - **A first sign-in for app plug-ins.** A plug-in can now set its app's first password, and the plug-in's page shows it once after you enter your Starboard password. Calibre-Web uses this from version 1.2.0. Find out more in the [manifest reference](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/developers/plugin-manifest-reference.md#a-first-sign-in-shown-once-first_sign_in).
 - **A wizard for switching media server.** The media server tab in Settings, Apps has Switch with help, which says what moves, what cannot and what keeps working before anything changes. Find out more in [Choose your media server](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/choose-your-media-server.md).
 - **Plex and Emby as kinds of app.** Manage apps, Add an app now lists Plex and Emby, each with its own form and connection test. If you go back to an older version, restore a Settings backup made before this change, because older versions do not know these kinds.
@@ -22,11 +23,11 @@ add features.
 - **Emby and Plex as media servers.** Both are now built-in plug-ins that the dashboard can show, read only for now. They cannot play, mark watched, show Live TV or use the Jellyfin tools.
 
 ### Changed
+- **Starboard no longer reads Plex's token.** Search for new apps does not look inside the Plex container for the token any more.
 - **The shared styles now define the names Starboard already used.** `--radius-sm`, `--radius-md`, `--font-mono`, `--color-success-text`, `--color-danger-text`, `stack-3`, `stack-5`, `input--narrow`, `select--compact`, `field__error` and `btn--secondary` had no style, so a few boxes in Bring in, Backup and restore and the dashboard editor gained their intended spacing and width.
 - **One name for asking again: Check now.** Every Check again button and line of help now says Check now, as plug-ins do, and the Updates button says Check now before and after the first check (owner, 26 November 2026).
 - **One Backup/Logs tab.** Settings, General has Backup/Logs, which holds backups, restoring, logs and Send feedback, and the old addresses still open it.
 - **Shorter names in General.** The first tab is now General, and the others are Appearance, Lists, Discover, Hours, Alerts, Performance, Pictures and Backup/Logs, so every name fits at 1280 pixels wide.
-
 - **One tab for your media server.** Settings, Apps has one tab named for the media server in use, so the separate Media server tab and plug-in tab are gone. The old address still opens the right page.
 - **Alerts and Performance are part of General.** Settings, General has new Alerts, Performance and Pictures tabs, and the old addresses still open the right page.
 - **Lighter pages and quicker tests.** Page scripts and style sheets are now built without comments and blank lines, so a first visit sends about 38 KB less. The parallel test runner cuts a full run from 5 minutes 18 seconds to 53 seconds.

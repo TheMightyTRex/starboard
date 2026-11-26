@@ -1005,6 +1005,47 @@ check("MENU2-06", "Sign out everywhere shows its parts with Advanced settings in
   await page.locator("#sc-ses-h").isVisible() && await page.locator("#sc-danger-h").isVisible());
 await api("/api/config/general", { method: "PUT", body: { settings_advanced: true } });
 
+// DASH-595: Plex signs in with its own link code, or the token is pasted. Starboard never reads it from Plex's container;
+// the token stays on the server; nothing is asked of plex.tv once the panel is closed. plex.tv is a made-up stand-in here.
+console.log("\n== PLEX Sign in with Plex");
+await open("settings.html");
+await page.click("#add-service");
+const plexForm = page.locator("#service-form");
+check("PLEX-01", "Sign in with Plex is not shown for another kind of app", !(await page.getByRole("button", { name: "Sign in with Plex" }).isVisible()));
+await plexForm.locator("select[name=type]").selectOption("plex");
+check("PLEX-01", "it is shown for Plex, beside the token field", await page.getByRole("button", { name: "Sign in with Plex" }).isVisible()
+  && await plexForm.locator("input[name=api_key]").count() === 1);
+await page.getByRole("button", { name: "Sign in with Plex" }).click();
+await page.locator(".plex-code").waitFor({ timeout: 5000 });
+check("PLEX-02", "the code is shown with plex.tv/link", (await page.locator(".plex-link").innerText()).replace(/\s+/g, "").includes("PX42") && await page.getByRole("link", { name: "plex.tv/link" }).count() === 1);
+check("PLEX-02", "focus is on Cancel", await page.evaluate(() => document.activeElement?.textContent) === "Cancel");
+await page.getByRole("button", { name: "Cancel", exact: true }).first().click();
+await page.waitForTimeout(300);
+check("PLEX-03", "Cancel says so and puts focus back on Sign in with Plex", /Sign-in cancelled/.test(await page.locator(".plex-link").innerText())
+  && await page.evaluate(() => document.activeElement?.textContent?.includes("Sign in with Plex")));
+await page.getByRole("button", { name: "Sign in with Plex" }).click();
+await page.locator(".plex-code").waitFor({ timeout: 5000 });
+await page.locator(".plex-link", { hasText: "Signed in with Plex" }).waitFor({ timeout: 15000 });
+check("PLEX-04", "approved: it says Signed in with Plex, the token field is blank and off, and the page never has the token",
+  await plexForm.locator("input[name=api_key]").isDisabled() && !(await page.content()).includes("made-up-example-plex-token"));
+await plexForm.locator("input[name=url]").fill("http://journey-plex:32400");
+await page.getByRole("button", { name: /^(Add app|Save app)$/ }).click();
+await page.waitForTimeout(800);
+const plexApp = (await api("/api/config")).services.find((x) => x.type === "plex");
+check("PLEX-04", "saved: the app has a token, and no answer from Starboard shows it",
+  !!plexApp?.has_api_key && !JSON.stringify(await api("/api/config")).includes("made-up-example-plex-token"));
+await page.locator("#app-sections .row__title button", { hasText: /^Plex/ }).first().click();
+await page.getByRole("button", { name: "Sign in with Plex" }).click();
+await page.locator(".plex-code").waitFor({ timeout: 5000 });
+let plexAsked = 0;
+page.on("request", (r) => { if (/\/api\/plex\/link\/\d+$/.test(r.url()) && r.method() === "GET") plexAsked += 1; });
+await page.keyboard.press("Escape");
+await page.waitForTimeout(500);
+const closedAt = plexAsked;
+await page.waitForTimeout(5000);
+check("PLEX-05", "nothing is asked of plex.tv once the panel is closed", plexAsked === closedAt, `${plexAsked} asked, ${closedAt} when it closed`);
+if (plexApp) await api(`/api/services/${plexApp.id}`, { method: "DELETE" });
+
 // DASH-595: Backup and restore and Logs and feedback are one tab, Settings, General, Backup/Logs. Every section is on the
 // one page, with links to each; the old addresses answer 301 and open it; the General tab names fit at 1280 pixels wide.
 console.log("\n== BKL Settings, General, Backup/Logs");

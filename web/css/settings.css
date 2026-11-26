@@ -270,6 +270,10 @@ body:not(.show-advanced) :is([data-advanced]:has(:target), [data-advanced]:targe
 .place, .place__text, .place-add__text, .place-state, .tested { min-width: 0; overflow-wrap: anywhere; }
 .place { max-inline-size: 100%; }
 
+/* Sign in with Plex (Settings, Manage apps): the code to enter at plex.tv/link. */
+.plex-link .actions { margin-block: var(--space-2, 0.5rem); }
+.plex-code { font-family: var(--font-mono, ui-monospace, monospace); font-size: 1.5em; letter-spacing: 0.15em; white-space: nowrap; }
+
 /* In-page links under a heading (Settings, General, Backup/Logs): a row of plain links to the sections below. */
 .page-links { margin-block: 0 var(--space-6, 1.5rem); }
 .page-links__title { margin: 0 0 var(--space-2, 0.5rem); font-weight: 600; color: var(--color-text); }
