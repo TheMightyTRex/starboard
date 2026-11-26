@@ -30,8 +30,21 @@ class MediaServer:
     id = ""
     name = ""
     service_type = ""  # the entry in the saved services that holds its address and key
+    service_icon = ""  # an app saved as "Other app" is found by its icon, such as plex or emby
     capabilities = ()
     page = ""  # its own settings page, when it has one
+
+    def find_service(self, services_list):
+        """The saved app that holds its address and key (enabled, with both), or None."""
+        return next((s for s in services_list or [] if isinstance(s, dict) and s.get("type") == self.service_type
+                     and (not self.service_icon or str(s.get("icon") or "").lower() == self.service_icon)
+                     and s.get("enabled", True) and s.get("api_key") and s.get("url")), None)
+
+    def _service(self, services_list):
+        found = self.find_service(services_list)
+        if not found:
+            raise services.ServiceError(f"{self.name} is not set up yet. Add it with its API key in Settings, Apps")
+        return found
 
     def describe(self):
         return {"id": self.id, "name": self.name, "kind": "media-server", "page": self.page, "capabilities": list(self.capabilities)}
@@ -65,29 +78,19 @@ class MediaServer:
         raise NotImplementedError
 
 
-class Jellyfin(MediaServer):
-    id = "jellyfin"
-    name = "Jellyfin"
-    service_type = "jellyfin"
-    page = "/settings-jellyfin.html"
-    capabilities = ("play", "watched", "restart", "own_plugins", "conversion_test", "live_tv", "libraries_add", "first_run",
-                    "history_import", "user_defaults", "metadata_folder", "detect", "updates")
+class MediaBrowser(MediaServer):
+    """What Jellyfin and Emby share: both answer the same questions in the same shapes (Jellyfin began as a copy of
+    Emby), at the same paths, apart from a prefix and the header that carries the key."""
 
-    def _service(self, services_list):
-        found = [s for s in services_list or [] if isinstance(s, dict) and s.get("type") == self.service_type
-                 and s.get("enabled", True) and s.get("api_key") and s.get("url")]
-        if not found:
-            raise services.ServiceError(f"{self.name} is not set up yet. Add it with its API key in Settings, Apps")
-        return found[0]
+    prefix = ""
+
+    def _headers(self, service):
+        raise NotImplementedError
 
     def _send(self, service, method, path):
         import urllib.request
-        req = urllib.request.Request(service["url"].rstrip("/") + path, method=method, headers={
-            "Authorization": f'MediaBrowser Token="{service.get("api_key", "")}"', "Accept": "application/json", "User-Agent": services.USER_AGENT})
+        req = urllib.request.Request(service["url"].rstrip("/") + self.prefix + path, method=method, headers=self._headers(service))
         return services._fetch(service, req, services.TIMEOUT)
-
-    def legacy_status(self, services_list):
-        return services.jellyfin(services_list)
 
     def status(self, services_list):
         try:
@@ -132,11 +135,28 @@ class Jellyfin(MediaServer):
             return {"ok": False, "why": str(e)}
         return {"ok": True, "why": "", "name": (info or {}).get("ServerName") or self.name, "version": (info or {}).get("Version", "")}
 
+
+class Jellyfin(MediaBrowser):
+    id = "jellyfin"
+    name = "Jellyfin"
+    service_type = "jellyfin"
+    page = "/settings-jellyfin.html"
+    capabilities = ("play", "watched", "restart", "own_plugins", "conversion_test", "live_tv", "libraries_add", "first_run",
+                    "history_import", "user_defaults", "metadata_folder", "detect", "updates")
+
+    def _headers(self, service):
+        return {"Authorization": f'MediaBrowser Token="{service.get("api_key", "")}"', "Accept": "application/json", "User-Agent": services.USER_AGENT}
+
+    def legacy_status(self, services_list):
+        return services.jellyfin(services_list)
+
     def keys_needed(self):
         return [{"what": "API key", "where": "Dashboard, API keys", "kept": "Settings, Apps"}]
 
 
 ADAPTERS = {Jellyfin.id: Jellyfin}
+from .mediaservers import emby as _emby, plex as _plex  # noqa: E402 - the others, which need the classes above
+ADAPTERS.update({_emby.Emby.id: _emby.Emby, _plex.Plex.id: _plex.Plex})
 
 
 def active_id(data):
@@ -176,7 +196,7 @@ def state(data, added=None, now=None):
     caller knows) and the way back while there is one."""
     one = active(data)
     saved = (data or {}).get("services") or []
-    have = bool(one and any(isinstance(s, dict) and s.get("type") == one.service_type and s.get("enabled", True) and s.get("api_key") for s in saved))
+    have = bool(one and one.find_service(saved))
     return {"active": one.id if one else "", "name": one.name if one else "", "configured": have,
             "capabilities": list(one.capabilities) if one else [], "page": one.page if one else "",
             "available": [{"id": c.id, "name": c.name, "page": c.page} for c in ADAPTERS.values()],

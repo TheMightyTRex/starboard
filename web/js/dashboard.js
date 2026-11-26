@@ -75,7 +75,11 @@ const CARDS = {
   },
   async playing() {
     const r = await ask("/api/jellyfin");
-    if (!r.configured) return empty("Add Jellyfin with its key to show what is playing here.", "/settings.html", "Manage apps");
+    if (!r.configured) {  // the words follow the media server in use (DASH-565)
+      const ms = await ask("/api/media-server").catch(() => null);
+      if (ms && !ms.active) return empty("Choose a media server to show what is playing here.", "/settings-media-server.html", "Choose a media server");
+      return empty(`Add ${ms?.name || "your media server"} with its key to show what is playing here.`, "/settings.html", "Manage apps");
+    }
     return r.playing.length ? el("ul", { class: "rows" }, r.playing.slice(0, 5).map((p) => line(p.title || "Something", [p.user, p.device].filter(Boolean).join(" · "))))
       : empty("Nothing is playing.");
   },

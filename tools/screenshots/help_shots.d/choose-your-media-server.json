@@ -43,19 +43,19 @@
       "file": "choose-your-media-server-3-catalogue.png",
       "page": "settings-plugins-catalogue.html",
       "height": 800,
-      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); for (let i = 0; i < 60 && !document.querySelector('#pl-media-servers-h'); i++) await wait(250); const tabs = document.querySelector('#topic-tabs [role=tab]'); const t = [...document.querySelectorAll('#topic-tabs [role=tab]')].find((x) => x.textContent.trim() === 'Media servers'); if (t) t.click(); await wait(600); const row = document.querySelector('section:has(#pl-media-servers-h) .row'); row.dataset.shot = 'row'; row.scrollIntoView({ block: 'center' }); await wait(300);",
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); for (let i = 0; i < 60 && !document.querySelector('#pl-media-servers-h'); i++) await wait(250); const tabs = document.querySelector('#topic-tabs [role=tab]'); const t = [...document.querySelectorAll('#topic-tabs [role=tab]')].find((x) => x.textContent.trim() === 'Media servers'); if (t) t.click(); await wait(600); const row = document.querySelector('section:has(#pl-media-servers-h) ul.rows'); row.dataset.shot = 'row'; row.scrollIntoView({ block: 'center' }); await wait(300);",
       "marks": [
         {
           "t": "$[data-shot=row]",
-          "step": 2,
+          "step": 4,
           "side": "top",
           "tail": 50
         }
       ],
       "steps": [
-        2
+        4
       ],
-      "alt": "The catalogue's Media servers, with Jellyfin Added (step 2) outlined, with example data"
+      "alt": "The catalogue's Media servers, with Jellyfin Added and Emby and Plex to install (step 4) outlined, with example data"
     },
     {
       "topic": "choose-your-media-server",

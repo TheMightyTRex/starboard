@@ -1404,11 +1404,12 @@ function mediaServerSection(p, ms) {
   const mine = (ms?.available || []).find((a) => a.id === p.id);
   const using = inUse(p, ms);
   return section(`pl-${p.id}-slot`, "Media server",
-    using ? `${p.name} answers for the dashboard panel, Library, Activity and System. Starboard uses one media server at a time.`
+    using ? `${p.name} answers for the dashboard panel, Library, Activity and System. Starboard uses one media server at a time.${mine?.page ? "" : ` Its address and key are in Settings, Manage apps, as an Other app with the icon ${p.id}.`}`
       : `${p.name} is added but another media server is in use, or none. Nothing changes until you choose it in Settings, Media server.`,
     using && ms.configured === false ? notice("warning", `${p.name} is not set up yet`, "Add its address and key in Settings, Apps, and the dashboard panel will show it.") : null,
     el("div", { class: "actions" },
-      mine?.page ? el("a", { class: "btn", href: mine.page }, icon("settings"), `Open ${p.name} settings`) : null,
+      mine?.page ? el("a", { class: "btn", href: mine.page }, icon("settings"), `Open ${p.name} settings`)
+        : el("a", { class: "btn", href: "/settings.html" }, icon("settings"), "Open Settings, Manage apps"),
       el("a", { class: "btn btn--quiet", href: "/settings-media-server.html" }, "Open Settings, Media server")));
 }
 
