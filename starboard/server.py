@@ -2707,8 +2707,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, {**backup.jobs_status(), "plugin_jobs": plugin_life.jobs(app.data_dir)})
             if path == "/api/recent" and method == "GET":
                 return self.json(200, services.cached("recent", 300, lambda: services.recent(cfg.data["services"]), fresh))
-            if path == "/api/jellyfin" and method == "GET":
-                return self.json(200, services.cached("jellyfin", 20, lambda: services.jellyfin(cfg.data["services"]), fresh))
+            if path == "/api/jellyfin" and method == "GET":  # the active media server's status, as the pages have always had it (DASH-565)
+                from . import mediaserver
+                return self.json(200, services.cached("jellyfin", 20, lambda: mediaserver.status_for_pages(cfg.data), fresh))
+            if path == "/api/media-server" and method == "GET":  # DASH-565: which media server is active, from settings alone
+                from . import mediaserver
+                return self.json(200, mediaserver.state(cfg.data))
             if path == "/api/health" and method == "GET":
                 return self.json(200, services.cached("health", 300, lambda: services.health(cfg.data["services"], stack.chosen_keys(app.data_dir), app.data_dir), fresh))
             if path == "/api/history" and method == "GET":
