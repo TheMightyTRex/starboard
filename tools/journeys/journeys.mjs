@@ -331,7 +331,7 @@ const rowFacts = () => page.evaluate(() => {
     sameBottoms: Object.values(rows).every((b) => Math.max(...b) - Math.min(...b) < 1),
     sideways: document.documentElement.scrollWidth > document.documentElement.clientWidth };
 });
-for (const [w, h] of [[1280, 860], [375, 812]]) {
+for (const [w, h] of [[1280, 860], [375, 812], [320, 700]]) {
   await page.setViewportSize({ width: w, height: h });
   for (const p of ITEM_PAGES) {
     await open(p);

@@ -237,4 +237,4 @@
   background-color: transparent; font-size: var(--text-sm); font-weight: var(--weight-strong); text-overflow: ellipsis;
 }
 .series-head__follow .select:focus-visible { outline: none; }
-@media (max-width: 560px) { .series-head__follow { flex: 1 1 100%; } .series-head__follow .select { flex: 1 1 auto; } }
+@media (max-width: 560px) { .series-head__follow { flex: 1 1 100%; } .series-head__follow .select { flex: 1 1 0; inline-size: 0; } .lib-item .series-head__text { min-width: 0; } }
