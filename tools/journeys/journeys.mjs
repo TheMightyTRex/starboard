@@ -8,7 +8,7 @@ const base = process.env.BASE || "http://127.0.0.1:18792";
 const password = fs.readFileSync(process.env.PASSWORD_FILE, "utf8").trim();
 const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.html", "downloads.html", "downloads-requests.html",
   "upcoming.html", "system.html", "system-storage.html", "system-disks.html", "system-monitor.html", "system-busy.html", "system-network.html",
-  "system-logs.html", "system-backup.html", "settings.html", "settings-general.html", "settings-security.html",
+  "system-logs.html", "settings-general-backup.html", "settings.html", "settings-general.html", "settings-security.html",
   "settings-general-alerts.html", "settings-updates.html", "settings-releases.html", "settings-restore.html", "settings-general-performance.html", "settings-jellyfin.html",
   "settings-audiobookshelf.html", "copy-settings.html", "install-apps.html", "setup-guide.html", "bring-in.html", "upgrade.html", "settings-install.html",
   // The Library, from the made-up Reelix (DASH-163)
@@ -22,7 +22,7 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "search-sites.html", "settings-radio.html",  // Search the sites (DASH-213), Settings, Radio (DASH-212)
   "settings-dispatcharr.html",  // Settings, Apps, Dispatcharr (DASH-228)
   // General's level 2 pages (DASH-389)
-  "settings-general-appearance.html", "settings-general-lists.html", "settings-general-hours.html", "settings-general-logs.html",
+  "settings-general-appearance.html", "settings-general-lists.html", "settings-general-hours.html", "settings-general-backup.html",
   "settings-general-discover.html", "discover-tv.html", "discover-books.html",  // Discover rows, a section per area (DASH-396)
   // Downloads' level 2 pages (DASH-390)
   "settings-downloads.html", "settings-downloads-usenet.html", "settings-downloads-hours.html",
@@ -108,7 +108,7 @@ check("CON-01", "with nothing in use, an error toast", await page.locator('#toas
 await open("apps-updates.html");
 const summary = await page.locator("#updates-summary").textContent();
 const label = (await page.locator("#check-updates").textContent()).trim();
-check("DASH-50", "the Updates button says Check until the first check", /Not checked/.test(summary) ? label === "Check" : /Last checked/.test(summary) ? label === "Check again" : true, `${label} / ${summary}`);
+check("DASH-50", "the Updates button says Check now, before and after the first check", label === "Check now", `${label} / ${summary}`);
 
 // APP-01: What is new in Reelix, from its changelog (the example server's made-up Reelix: seen at 0.7.0, now 0.7.1,
 // with 0.7.2 waiting)
@@ -162,8 +162,8 @@ await page.locator("snag-list button", { hasText: /^Save in Starboard$/ }).click
 await page.locator("snag-list", { hasText: "Saved in Starboard" }).first().waitFor({ timeout: 5000 }).catch(() => {});
 const saved = ((await api("/api/ux-notes")).notes || []).filter((n) => n.source === "snaglist" && n.markdown.includes("A made-up journey report"));
 check("FB-01", "the report is saved in Starboard", saved.length === 1);
-await open("settings-general-logs.html");
-check("FB-01", "Settings, General, Logs and feedback lists it", await page.locator("#feedback-list .row").count() >= 1);
+await open("settings-general-backup.html");
+check("FB-01", "Settings, General, Backup/Logs lists it", await page.locator("#feedback-list .row").count() >= 1);
 for (const n of saved) await api("/api/ux-notes/remove", { method: "POST", body: { id: n.id } });
 await api("/api/config/general", { method: "PUT", body: { ux_notes: false } });
 await open("index.html");
@@ -196,9 +196,9 @@ await api("/api/config/general", { method: "PUT", body: { groups: [...before.gro
 const added = await api("/api/services", { method: "POST", body: { type: "link", name: XSS, url: "http://journey-xss:8080",
   description: `<script>window.__xss='description'</script>`, group: `"><svg onload="window.__xss='group'">` } });
 await api("/api/ux-notes", { method: "POST", body: { what: `<img src=x onerror="window.__xss='note'">`, page: "/index.html", part: XSS } });
-for (const p of ["index.html", "apps-services.html", "settings.html", "settings-general-logs.html"]) {
+for (const p of ["index.html", "apps-services.html", "settings.html", "settings-general-backup.html"]) {
   await open(p);
-  if (p === "settings-general-logs.html") {
+  if (p === "settings-general-backup.html") {
     await page.locator("#feedback-list .row").first().waitFor({ timeout: 5000 }).catch(() => {});
     check("SEC-07", "a saved report is shown as text", await page.locator("#feedback-list").getByText(`<img src=x onerror="window.__xss='note'">`).count() > 0);
   }
@@ -939,8 +939,8 @@ await api(`/api/services/${dispatcharr.id}`, { method: "DELETE" }).catch(() => {
 console.log("\n== MENU2 General on the level 2 menu");
 const level2 = async (p) => { await open(p); return (await page.locator(".site-header__tabs .menu-tabs a").evaluateAll((as) => as.map((a) => a.textContent.trim()))).join("|"); };
 const headings = () => page.locator("main .settings-sections h2").evaluateAll((hs) => hs.map((h) => h.textContent.trim()).join("|"));
-check("MENU2-01", "General has Names and apps, Appearance, Pages and lists, Discover rows, Download hours, Logs and feedback, Alerts, Performance, Pictures, Backup and restore",
-  (await level2("settings-general.html")) === "Names and apps|Appearance|Pages and lists|Discover rows|Download hours|Logs and feedback|Alerts|Performance|Pictures|Backup and restore", await level2("settings-general.html"));
+check("MENU2-01", "General has General, Appearance, Lists, Discover, Hours, Alerts, Performance, Pictures, Backup/Logs",
+  (await level2("settings-general.html")) === "General|Appearance|Lists|Discover|Hours|Alerts|Performance|Pictures|Backup/Logs", await level2("settings-general.html"));
 check("MENU2-01", "each page shows only its own parts", (await headings()) === "Names|Categories|App cards|Set-up guide", await headings());
 await open("settings-general-appearance.html");
 check("MENU2-02", "Appearance holds style and colours, the default design and accessibility", (await headings()) === "Style and colours|Default design|Accessibility", await headings());
@@ -956,7 +956,7 @@ await page.keyboard.press("Escape");
 await page.waitForTimeout(300);
 check("MENU2-02", "and a change in Display shows on the page", !(await page.locator("#ap-pref-underline").isChecked()));
 for (const [from, to] of [["settings-general.html#download-hours", "/settings-general-hours.html#download-hours"],
-  ["settings-general.html#gn-style-h", "/settings-general-appearance.html#gn-style-h"], ["settings-general.html#logs", "/settings-general-logs.html#logs"],
+  ["settings-general.html#gn-style-h", "/settings-general-appearance.html#gn-style-h"], ["settings-general.html#logs", "/settings-general-backup.html#logs"],
   ["settings-general.html?discover=films#discover-rows-s", "/settings-general-discover.html#dr-films"]]) {
   await open("index.html");
   await open(from);
@@ -964,7 +964,7 @@ for (const [from, to] of [["settings-general.html#download-hours", "/settings-ge
   check("MENU2-03", `the old address ${from} opens its new page`, at === to, at);
 }
 await open("settings-general-lists.html");
-check("MENU2-03", "Pages and lists has Long lists", await page.locator("#gn-scroll-h").count() === 1);
+check("MENU2-03", "Lists has Long lists", await page.locator("#gn-scroll-h").count() === 1);
 
 // DASH-390: Downloads has VPN, Usenet and Download hours on the level 2 menu; Download hours is the same field as
 // General's, so a change in one shows in the other.
@@ -977,7 +977,7 @@ await page.locator("[aria-labelledby=dh-on-l]").click();
 await page.waitForTimeout(500);
 check("MENU2-04", "Download hours on Downloads is the switch itself and saves", (await api("/api/config")).download_hours.enabled === !hoursWas);
 await open("settings-general-hours.html");
-check("MENU2-04", "and General, Download hours shows the same", (await page.locator("[aria-labelledby=dh-on-l]").isChecked()) === !hoursWas);
+check("MENU2-04", "and General, Hours shows the same", (await page.locator("[aria-labelledby=dh-on-l]").isChecked()) === !hoursWas);
 await api("/api/config/general", { method: "PUT", body: { download_hours: { enabled: hoursWas } } });
 await open("index.html");
 await open("settings-downloads.html#dl-hours-h");
@@ -989,7 +989,7 @@ console.log("\n== MENU2 Radio, Performance and Security on the level 2 menu");
 check("MENU2-05", "Radio has Sources, Add a show from a link, Your podcast library, Station logos",
   (await level2("settings-radio.html")) === "Sources|Add a show from a link|Your podcast library|Station logos", await level2("settings-radio.html"));
 check("MENU2-05", "Sources shows only the sources", (await headings()) === "Sources", await headings());
-check("MENU2-05", "Performance and Pictures are tabs of General", (await level2("settings-general-performance.html")) === "Names and apps|Appearance|Pages and lists|Discover rows|Download hours|Logs and feedback|Alerts|Performance|Pictures|Backup and restore");
+check("MENU2-05", "Performance and Pictures are tabs of General", (await level2("settings-general-performance.html")) === "General|Appearance|Lists|Discover|Hours|Alerts|Performance|Pictures|Backup/Logs");
 check("MENU2-05", "Pictures has the picture cache and its Clear", (await level2("settings-general-pictures.html")) && (await headings()) === "Pictures|Clear", await headings());
 check("MENU2-05", "Security has Who can open the dashboard, Password, Sign-in methods, API keys, Sign out everywhere",
   (await level2("settings-security.html")) === "Who can open the dashboard|Password|Sign-in methods|API keys|Sign out everywhere", await level2("settings-security.html"));
@@ -1045,6 +1045,35 @@ const closedAt = plexAsked;
 await page.waitForTimeout(5000);
 check("PLEX-05", "nothing is asked of plex.tv once the panel is closed", plexAsked === closedAt, `${plexAsked} asked, ${closedAt} when it closed`);
 if (plexApp) await api(`/api/services/${plexApp.id}`, { method: "DELETE" });
+
+// DASH-595: Backup and restore and Logs and feedback are one tab, Settings, General, Backup/Logs. Every section is on the
+// one page, with links to each; the old addresses answer 301 and open it; the General tab names fit at 1280 pixels wide.
+console.log("\n== BKL Settings, General, Backup/Logs");
+await page.setViewportSize({ width: 1280, height: 800 });
+await open("settings-general-backup.html");
+const genHeads = await page.locator("main h2").evaluateAll((hs) => hs.map((h) => h.textContent.trim()));
+for (const want of ["When backups are made", "Full without media", "Where backups go", "Settings only", "The whole server, by its own job", "Logs", "Send feedback", "Delete all logs"])
+  check("BKL-01", `Backup/Logs has the section ${want}`, genHeads.includes(want), genHeads.join("|"));
+check("BKL-01", "the page has one heading, Backup/Logs", (await page.locator("main h1").allTextContents()).join("|") === "Backup/Logs");
+check("BKL-01", "the Backup/Logs tab is the current one", (await page.locator(".site-header__tabs [aria-current=page]").textContent()).trim() === "Backup/Logs");
+check("BKL-02", "the tab names are shown, not icons only, at 1280 pixels",
+  !(await page.locator(".site-header__tabs .menu-tabs").evaluate((n) => n.classList.contains("is-compact"))));
+check("BKL-02", "and every tab name is visible", await page.locator(".site-header__tabs .menu-tabs__label").evaluateAll((ls) => ls.every((l) => l.getBoundingClientRect().width > 8)));
+await page.locator(".page-links a", { hasText: "Where backups go" }).click();
+await page.waitForTimeout(300);
+check("BKL-03", "an in-page link goes to its section", await page.evaluate(() => location.hash) === "#bk-copies-h");
+await page.locator(".page-links a", { hasText: "Delete all logs" }).click();
+await page.waitForTimeout(300);
+check("BKL-03", "the link to Delete all logs goes to it", await page.locator("#delete-logs").isVisible());
+for (const [from, to] of [["system-backup.html", "/settings-general-backup.html"], ["settings-general-logs.html#logs", "/settings-general-backup.html"],
+  ["settings-general-logs.html?x=1", "/settings-general-backup.html"], ["wanted.html", "/wanted-films.html"], ["wanted-quality.html", "/wanted-films.html?list=cutoff"],
+  ["discover-trending.html", "/discover-films.html"], ["settings-alerts.html", "/settings-general-alerts.html"], ["settings-performance.html", "/settings-general-performance.html"],
+  ["settings-media-server.html", "/settings-jellyfin.html"]]) {
+  const r = await page.request.get(`${base}/${from.split("#")[0]}`, { maxRedirects: 0 });
+  check("BKL-04", `${from} answers 301`, r.status() === 301 && (r.headers().location || "").startsWith(to), String(r.status()));
+}
+await open("system-backup.html");
+check("BKL-04", "the old Backup and restore address opens the new page", await page.evaluate(() => location.pathname) === "/settings-general-backup.html");
 
 // DASH-388: the own style's colours, from the design system's palettes, on the Styles plug-in's page; a plug-in style
 // in use, then Reset style, comes back to the own style in those colours.
@@ -1348,7 +1377,7 @@ check("DR-06", "Books has Trending and Reelix's nine subjects, all standard rows
 check("DR-06", "Music has no genre rows (Reelix has no music genres)", (await api("/api/library/discover-layout?tab=music")).rows.every((r) => !r.genre));
 
 console.log("\n== Full without media: which disk (DASH-260)");
-await open("system-backup.html");
+await open("settings-general-backup.html");
 await page.locator("#full-disk p").first().waitFor({ timeout: 10000 }).catch(() => {});
 const fullFolder = await page.locator("#full-folder").inputValue().catch(() => "");
 check("BK-01", "the copies go to the media folder's disk, not the system disk", fullFolder === "/srv/media/backups/starboard", fullFolder);
@@ -1421,11 +1450,11 @@ await page.keyboard.press("Space");
 await page.waitForFunction(() => /Inactive:/.test(document.querySelector("#mcp-result")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
 check("MCP-05", "deactivating it stops the assistant at once", (await mcpCall({ jsonrpc: "2.0", id: 3, method: "ping" })).status === 403);
 for (const k of (await api("/api/keys")).keys.filter((k) => k.name === "Journey assistant")) await api(`/api/keys/${k.id}`, { method: "DELETE" });
-// DASH-380, several places (26 November 2026): Where backups go on System, Backup and restore, set by the example server to
+// DASH-380, several places (26 November 2026): Where backups go on Settings, General, Backup/Logs, set by the example server to
 // a made-up USB disk, Google Drive and OneDrive, with a stand-in helper. Test answers beside the place and focus stays on
 // it; a wrong share is said in an alert that takes focus; a place can be deactivated and the page says if the backup is safe.
 console.log("\n== CP Where backups go");
-await open("system-backup.html");
+await open("settings-general-backup.html");
 const cp = page.locator("#copies-body");
 await cp.locator("#places-h").waitFor({ timeout: 10000 }).catch(() => {});
 check("CP-01", "the section is there, after Full without media, with its heading",
@@ -2240,7 +2269,7 @@ await page.getByText("VPN added").waitFor({ timeout: 10000 });
 check("VPN-04", "the VPN is added back, with Gluetun", (await api("/api/downloads/vpn-state")).on === true);
 
 console.log("\n== LOG-01 Log limits and Delete all logs, by keyboard (DASH-451)");
-await open("settings-general-logs.html");
+await open("settings-general-backup.html");
 await page.locator("#logs-now").filter({ hasText: /^Now: |no logs/ }).waitFor({ timeout: 10000 });
 const sizeSelect = page.locator('select[aria-labelledby="lg-size-l"]');
 check("LOG-01", "No more than shows 50 MB, the default", (await sizeSelect.inputValue()) === "50");
@@ -2281,7 +2310,7 @@ const standin = base.replace(/:(\d+)$/, (_, p) => `:${Number(p) + 2}`);
 const placesBefore = (await api("/api/backup/copies")).destinations.map((d) => d.id);
 const announced = () => page.evaluate(() => document.querySelector("#announcer")?.textContent || "");
 const activeId = () => page.evaluate(() => document.activeElement?.id || document.activeElement?.className || "");
-await open("system-backup.html");
+await open("settings-general-backup.html");
 const addDrive = page.locator("#place-add-drive");
 check("CLD-01", "Add a place offers each service with its logo, name and how many are connected, the services in the agreed order",
   (await page.locator(".place-adds button strong").allTextContents()).slice(3).join() === "Google Drive,OneDrive,Dropbox,Backblaze B2,An S3-compatible service,Nextcloud or another WebDAV server,An SFTP server,Your own rclone remote"
@@ -2345,7 +2374,7 @@ check("CLD-11", "Test shows Connected with when, and focus stays on the button",
   && /Tested/.test(await page.locator(`#place-tested-${newId}`).innerText()) && await activeId() === `place-test-${newId}`);
 await page.waitForFunction(() => /^Connected: /.test(document.querySelector("#announcer")?.textContent || ""), null, { timeout: 3000 }).catch(() => {});
 check("CLD-11", "and says it in the live region", /^Connected: Google Drive/.test(await announced()), await announced());
-await open("system-backup.html");
+await open("settings-general-backup.html");
 check("CLD-11", "the result is still there when the page is opened again", /Connected/.test(await page.locator(`#place-tested-${newId}`).innerText()));
 // Closing part way: Dropbox, the link only, then Escape.
 await page.locator("#place-add-dropbox").click();
@@ -2383,7 +2412,7 @@ check("CLD-14", "the QR step fits a phone without scrolling sideways", qrWide <=
 await page.keyboard.press("Escape");
 await page.setViewportSize({ width: 1280, height: 860 });
 // Monthly backups: least to most often, saves at once, keeps 6.
-await open("system-backup.html");
+await open("settings-general-backup.html");
 const schedValues = await page.locator("input[name=backup-schedule]").evaluateAll((l) => l.map((i) => i.value));
 check("MON-01", "When backups are made lists Off, Manual, Monthly, Weekly, Nightly", schedValues.join() === "off,manual,monthly,weekly,nightly", schedValues.join());
 const schedWas = (await api("/api/backup/schedule")).mode;
@@ -2515,7 +2544,7 @@ const rxStatus = (route) => route.fulfill({ contentType: "application/json", bod
 await page.route(/\/api\/reelix\/admin\/system\/backups$/, rxBackups);
 await page.route(/\/api\/services\/[a-z0-9-]+\/restart$/, rxRestart);
 await page.route(/\/api\/status\?id=/, rxStatus);
-await open("system-backup.html");
+await open("settings-general-backup.html");
 await page.getByRole("button", { name: "Show Reelix's backups" }).click();
 await page.waitForTimeout(300);
 if (await page.locator("#rs-password").count()) { await page.fill("#rs-password", "made-up"); await page.keyboard.press("Enter"); }
@@ -2539,7 +2568,7 @@ await page.unroute(/\/api\/status\?id=/, rxStatus);
 // Full backups: Checked in the list (DASH-381) and Restore on this server (DASH-387). The example server restores
 // nothing: its made-up backup password is "made-up backup", and the steps pass in a few seconds.
 console.log("\n== Full backups: Checked, and Restore on this server (DASH-381, DASH-387)");
-await open("system-backup.html");
+await open("settings-general-backup.html");
 await page.locator("#full-list li[data-key]").first().waitFor({ timeout: 10000 }).catch(() => {});
 const fullRows = page.locator("#full-list li[data-key]");
 check("BKC-01", "the newest full backup says Checked, the one made before the check does not",
@@ -2604,7 +2633,7 @@ const rxPlace = async (route) => {
 await page.route(/\/api\/reelix\/admin\/system\/(backups|backup-place|backup-settings)$/, rxPlace);
 await page.route(/\/api\/services\/[a-z0-9-]+\/restart$/, (route) => { rxMoved = true; return route.fulfill({ contentType: "application/json", body: JSON.stringify({ said: "Reelix restarted" }) }); });
 await page.route(/\/api\/status\?id=/, rxStatus);
-await open("system-backup.html");
+await open("settings-general-backup.html");
 await page.getByRole("button", { name: "Show Reelix's backups" }).click();
 await page.waitForTimeout(300);
 if (await page.locator("#rs-password").count()) { await page.fill("#rs-password", "made-up"); await page.keyboard.press("Enter"); }

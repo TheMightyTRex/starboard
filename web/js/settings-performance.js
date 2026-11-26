@@ -2,7 +2,7 @@
 
 const USAGE_CHOICES = [["ask", "Only when I press Sort by type"], ["open", "When I open Storage, if over a day old"], ["nightly", "Every night at 3 am"], ["weekly", "Every week, at 3 am"], ["off", "Off"]];
 
-const STORAGE_REFRESH = [[0, "Only when I press Check again"], [60, "Every minute"], [300, "Every 5 minutes"]];
+const STORAGE_REFRESH = [[0, "Only when I press Check now"], [60, "Every minute"], [300, "Every 5 minutes"]];
 
 // Performance ---------------------------------------------------------------
 // Presets set every optional piece of background work at once; changing one by hand makes it Custom.
@@ -87,7 +87,7 @@ async function startPerformance() {
   // Pages
   const pages = el("ul", { class: "settings-rows" },
     settingRow("Downloads page updates", withCost("While Downloads is open and in view.", "downloadsRefresh"),
-      pick("pf-dl-l", [[0, "Only when I press Check again"], [10, "Every 10 seconds"], [15, "Every 15 seconds"], [30, "Every 30 seconds"], [60, "Every minute"]], perf().downloads_refresh,
+      pick("pf-dl-l", [[0, "Only when I press Check now"], [10, "Every 10 seconds"], [15, "Every 15 seconds"], [30, "Every 30 seconds"], [60, "Every minute"]], perf().downloads_refresh,
         (v, t) => save({ performance: { downloads_refresh: Number(v) } })), "pf-dl-l"),
     settingRow("Storage page updates", withCost("While Storage is open and in view.", "storageRefresh"),
       pick("pf-st-l", STORAGE_REFRESH, perf().storage_refresh, (v, t) => save({ performance: { storage_refresh: Number(v) } })), "pf-st-l"),

@@ -37,7 +37,7 @@ PUBLIC_FILES = {"/favicon.svg", "/icon-app.svg", "/manifest.webmanifest"}
 
 
 def _snaglist_style():
-    """Snaglist (Settings, General, Logs and feedback) sets its styles with one <style> in its own shadow root. Its hash lets
+    """Snaglist (Settings, General, Backup/Logs) sets its styles with one <style> in its own shadow root. Its hash lets
     exactly that stylesheet in, so the policy still refuses every other inline style."""
     try:
         with open(os.path.join(WEB, "js", "snaglist.js"), encoding="utf-8") as f:
@@ -495,7 +495,11 @@ def _installer_started_since(app, since):
 # Pages whose address changed: the old address answers 301 with the new one (a link from a bookmark, a plug-in or an older help page).
 MOVED_PAGES = {"/settings-media-server.html": "/settings-jellyfin.html",  # Settings, Apps: the media server tab (DASH-565)
                "/settings-alerts.html": "/settings-general-alerts.html", "/settings-performance.html": "/settings-general-performance.html",
-               "/settings-performance-pictures.html": "/settings-general-pictures.html"}  # DASH-584: Alerts and Performance are in General now
+               "/settings-performance-pictures.html": "/settings-general-pictures.html",  # DASH-584: Alerts and Performance are in General now
+               # DASH-595: Backup and restore, and Logs and feedback, are one tab, Settings, General, Backup/Logs
+               "/system-backup.html": "/settings-general-backup.html", "/settings-general-logs.html": "/settings-general-backup.html",
+               # Pages that moved on 12 November 2026 (they were a page with a script that sent the browser on): now a 301 too
+               "/wanted.html": "/wanted-films.html", "/wanted-quality.html": "/wanted-films.html?list=cutoff", "/discover-trending.html": "/discover-films.html"}
 MOVED_BY_REELIX = ("radarr", "sonarr", "lidarr", "bookshelf", "prowlarr", "seerr")  # what Reelix's migrator reads
 
 
@@ -1167,7 +1171,8 @@ class Handler(BaseHTTPRequestHandler):
             path = "/dashboard.html"  # the landing page (DASH-239)
         if path in MOVED_PAGES:  # an address that moved (DASH-565, DASH-584): the old one answers 301 with the new one, keeping what follows the page
             query = urllib.parse.urlsplit(self.path).query
-            return self.send(301, extra={"Location": MOVED_PAGES[path] + ("?" + query if query else ""), "Cache-Control": "no-cache"})
+            where = MOVED_PAGES[path]
+            return self.send(301, extra={"Location": where + (("&" if "?" in where else "?") + query if query else ""), "Cache-Control": "no-cache"})
         if not path.endswith(".html") and "." not in posixpath.basename(path):
             path += ".html"
         public = path in PUBLIC_PAGES or path in PUBLIC_FILES or path.startswith(PUBLIC_PREFIXES)
@@ -1343,7 +1348,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _api(self, method, path):
         app = self.app
-        fresh = "fresh=1" in urllib.parse.urlparse(self.path).query  # "Check again": skip the shared answers
+        fresh = "fresh=1" in urllib.parse.urlparse(self.path).query  # "Check now": skip the shared answers
         if method != "GET":
             services.forget()  # a change (an app added, a setting saved) makes the shared answers out of date
         try:
@@ -2586,7 +2591,7 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/logs/report" and method == "GET":
                 return self.send(200, logs.report(app, app.log).encode(), "text/plain; charset=utf-8")
             if path == "/api/logs/limits" and method == "GET":
-                # Settings, General, Logs and feedback (DASH-451): the limits, what the logs take now, and the apps'
+                # Settings, General, Backup/Logs (DASH-451): the limits, what the logs take now, and the apps'
                 # own limit read from Docker (asked only here, kept 10 minutes).
                 from . import app_logs
                 return self.json(200, logs.limits_answer(app, app_logs.limits()))
@@ -2611,7 +2616,7 @@ class Handler(BaseHTTPRequestHandler):
                 cfg.update_general({"last_version": app.version})
                 return self.json(200, {"ok": True})
             if path == "/api/busy" and method == "GET":
-                # What is using the processor now (DASH-558): read when the page is opened or Check again is pressed, never kept.
+                # What is using the processor now (DASH-558): read when the page is opened or Check now is pressed, never kept.
                 from . import busy
                 try:
                     return self.json(200, busy.read(cfg.data["services"]))

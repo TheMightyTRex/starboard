@@ -128,7 +128,7 @@ async function reflow(name) {
 }
 
 const ALL = pages.length ? pages : fs.readdirSync(process.env.WEB || "/web").filter((f) => f.endsWith(".html") &&
-  !["login.html", "setup.html", "offline.html", "wanted-moved.html", "discover-trending.html", "wanted.html", "wanted-quality.html"].includes(f))
+  !["login.html", "setup.html", "offline.html", "wanted-moved.html"].includes(f))
   // A plug-in's own page with a plug-in: the example Styles plug-in, just updated, shows What is new (DASH-393).
   .concat(["settings-plugin.html?id=styles", "settings-plugin.html?id=watch-stats", "settings-plugin.html?id=notifications",
     "settings-plugin.html?id=audio-description-sources", "settings-plugin.html?id=audio-description-tracks",
@@ -536,7 +536,7 @@ if (!pages.length || pages.some((p) => p.includes("install-apps") || p.includes(
 // Connect a cloud service (DASH-452): each step of the wizard, both ways to sign in, and Test connection's result,
 // in Light, Dark and High contrast, with their structure. Stand-ins only; the phone is approved at the example
 // server's stand-in on its port + 2.
-if (!pages.length || pages.some((p) => p.includes("system-backup"))) {
+if (!pages.length || pages.some((p) => p.includes("settings-general-backup"))) {
   const themes = async (name) => {
     await axe(name, "light");
     await structure(name);
@@ -552,10 +552,10 @@ if (!pages.length || pages.some((p) => p.includes("system-backup"))) {
   try {
     // Where backups go (several places, 26 November 2026): the list, a form in a slide-out, the wizard opened from a
     // service in Add a place, each step, and Test beside a place.
-    await page.goto(`${base}/system-backup.html`);
+    await page.goto(`${base}/settings-general-backup.html`);
     await settle();
     await page.locator("#place-on-main").waitFor();
-    await themes("system-backup.html, Where backups go");
+    await themes("settings-general-backup.html, Where backups go");
     await page.evaluate(() => { window.scrollTo(0, 0); document.querySelector("#place-add-smb").click(); });
     await page.locator("#place-smb").waitFor();
     await themes("Where backups go, add a network share");
@@ -584,23 +584,23 @@ if (!pages.length || pages.some((p) => p.includes("system-backup"))) {
     await page.locator(".side-panel").waitFor({ state: "detached" });
     await page.locator("[id^=place-test-]").last().click();
     await page.waitForFunction(() => ![...document.querySelectorAll("[id^=place-test-]")].some((b) => b.disabled));
-    await themes("system-backup.html, Test connection result");
+    await themes("settings-general-backup.html, Test connection result");
     // Opened without scrolling the page, so nothing on the page behind sits half under the sticky header.
     await page.evaluate(() => { window.scrollTo(0, 0); document.querySelector("#place-add-webdav").click(); });
     await page.locator("#cloud-details").waitFor();
     await themes("Connect a cloud service, Nextcloud details");
     await page.keyboard.press("Escape");
     console.log("checked Where backups go and Connect a cloud service");
-  } catch (e) { add("system-backup.html, Where backups go", "page", "error", e.message.split("\n")[0]); }
+  } catch (e) { add("settings-general-backup.html, Where backups go", "page", "error", e.message.split("\n")[0]); }
   // Full backups with Checked and Restore, the restore dialog (also with an error under a field), the restore while
   // it runs and when it ends (DASH-381, DASH-387); Reelix's backup settings and the folder choice (DASH-385, DASH-386).
   // The example server restores and moves nothing.
   try {
-    await page.goto(`${base}/system-backup.html`);
+    await page.goto(`${base}/settings-general-backup.html`);
     await settle();
     await page.locator("#full-list li[data-key]").first().waitFor();
     await page.locator("#full-list").scrollIntoViewIfNeeded();
-    await themes("system-backup.html, full backups with Checked and Restore");
+    await themes("settings-general-backup.html, full backups with Checked and Restore");
     await page.locator("#full-list li[data-key] button").nth(1).click();
     await page.locator("#restore-full-pw").waitFor();
     await themes("Restore a full backup, the dialog");
@@ -635,7 +635,7 @@ if (!pages.length || pages.some((p) => p.includes("system-backup"))) {
       await api("/api/reelix/admin/system/backup-settings", { method: "POST", body: { password: "made-up", every: 7, keep: 5 } });
     });
     console.log("checked full backups and Reelix's backups");
-  } catch (e) { add("system-backup.html, full backups and Reelix's backups", "page", "error", e.message.split("\n")[0]); }
+  } catch (e) { add("settings-general-backup.html, full backups and Reelix's backups", "page", "error", e.message.split("\n")[0]); }
 }
 
 // DASH-512: the sign-in page in each state it can be in: the two-step code after the password, a single sign-on button
