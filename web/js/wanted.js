@@ -132,7 +132,7 @@ async function wantedLoad(more = false) {
 
 async function wantedSearch(ids, button) {
   if (!ids.length) {
-    const ok = await confirmDialog({ title: "Search for everything on this list?", confirm: "Search all",
+    const ok = await confirmDialog({ title: "Find everything on this list?", confirm: "Find all below quality",
       message: `Reelix searches for all ${wantedState.total.toLocaleString("en-GB")} a few at a time, so the sites are not overloaded. It can take a while for a long list.` });
     if (!ok) return;
   }
@@ -280,7 +280,15 @@ startPage().then(async () => {
   try { wantedState.paused = (await api("/api/schedule")).mode === "pause"; } catch { wantedState.paused = false; }
   if (W_KIND) $(".page-head")?.after(wantedTabs());
   $("#select-all").addEventListener("change", wantedSelectAll);
-  $("#wanted-all").addEventListener("click", (e) => wantedSearch([], e.currentTarget));
+  // Find all wanted (26 November 2026): the Wanted list uses the same counted, limited search as the Library tabs; the
+  // Below quality list keeps its own whole-list search.
+  const TAB_OF = { movie: "films", episode: "tv", album: "music", ebook: "books", audiobook: "audiobooks" };
+  const all = $("#wanted-all");
+  const label = () => { all.lastChild.textContent = WHICH === "missing" ? "Find all wanted" : "Find all below quality"; };
+  label();
+  all.addEventListener("click", (e) => (WHICH === "missing" ? findAllWanted(TAB_OF[wantedState.kind], e.currentTarget) : wantedSearch([], e.currentTarget)));
+  $(".page-head")?.addEventListener("click", () => setTimeout(label, 0));
+  findResume(TAB_OF[wantedState.kind], all);
   // Show more, and more by itself near the end (DASH-277, UX-52): the button moves focus to the first new row.
   loadMore($("#wanted-more"), {
     items: () => $$("#wanted-list > li"),

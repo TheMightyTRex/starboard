@@ -8,6 +8,7 @@ add features.
 ## [Unreleased]
 
 ### Added
+- **Find all wanted.** Every Library tab and every Wanted page has Find all wanted. It counts what is wanted, asks you to confirm how many and what Reelix will be asked, then searches 10 at a time with a minute between groups, up to 100 in a run, leaving out anything searched in the last day, with progress, Stop and a summary. It waits while Download hours pause downloads. Radio searches each show that has wanted episodes.
 - **Compatibility check for the API.** A new check fails a change that takes away or tightens a route, permission, manifest field, card, event or key scope without the deprecation steps, and runs 74 older plug-in manifests against this Starboard. Draft, for review.
 - **Plug-in updates found at once, in one list.** Check now reads every plug-in catalogue again, says when it last did and why one did not answer, and waits 30 seconds between presses. Settings, Plug-ins, Manage and the new Settings, Updates, Plug-ins page list each plug-in's old and new version, what is new and any new permissions, with Update all, Update chosen, Update by themselves, History and Roll back.
 
