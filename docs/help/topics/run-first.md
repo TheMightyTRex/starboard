@@ -3,19 +3,19 @@
 
 # Set up everything with the Run first script
 
-Once Linux is installed, the Run first script sets up everything else. It checks the computer, installs Docker and
-anything else that is missing, downloads Starboard and starts its installer. Then the set-up opens in your browser,
+Once you have installed Linux, the Run first script sets up everything else. It checks the computer, installs
+Docker and anything else that is missing, downloads Starboard and starts its installer. Then the set-up opens in your browser,
 or carries on in the terminal. It takes about 15 minutes.
 
 ## Before you begin
 
-- A computer with Linux installed: Linux Mint 22.3 (recommended), Debian 13, Ubuntu Server 26.04 or Raspberry Pi
-  OS (64-bit), or a later version, with or without a desktop. Read [Install Linux on a computer](install-linux.md).
+- A computer with Linux installed, with or without a desktop. Use Linux Mint 22.3 (recommended), Debian 13, Ubuntu
+  Server 26.04 or Raspberry Pi OS (64-bit), or a later version. Read [Install Linux on a computer](install-linux.md).
   Each system has its own page: [Linux Mint](start-on-linux-mint.md), [Debian](start-on-debian.md),
   [Ubuntu Server](start-on-ubuntu-server.md) and [Raspberry Pi OS](start-on-raspberry-pi-os.md).
 - The computer is connected to the internet. Read
   [Connect to the internet, by cable or Wi-Fi](connect-to-the-internet.md).
-- The password you use to sign in to that computer. It is asked for when something needs installing.
+- The password you use to sign in to that computer. The script asks for it when something needs installing.
 - A terminal open on that computer, or connected to it. Read [The terminal: entering commands](../basics/the-terminal.md).
 
 ## Steps
@@ -66,8 +66,8 @@ or carries on in the terminal. It takes about 15 minutes.
    - **In a browser, on a computer with a desktop:** the set-up page opens by itself with the set-up code filled in.
      Read [Create your password and sign in](create-your-password.md), then
      [Set up your dashboard after installing](../guides/set-up-your-dashboard.md).
-   - **In a browser, with no desktop:** open the address it shows on a phone or another computer at home, and
-     enter the set-up code it shows.
+   - **In a browser, with no desktop:** open the address it shows on a phone or another computer at home. Enter the
+     set-up code it shows.
    - **Here in the terminal:** answer the set-up questions. Read
      [Set up Starboard in the terminal, with no browser](set-up-in-the-terminal.md#steps).
 
@@ -110,7 +110,8 @@ or carries on in the terminal. It takes about 15 minutes.
 ## If it does not work
 
 - **An error number, such as "Error RF-11":** find it in
-  [Run first and installer error numbers](run-first-errors.md), which says what it means and how to put it right.
+  [Run first and installer error numbers](run-first-errors.md). That page says what it means and how to put it
+  right.
 - **"The requested URL returned error: 404":** the address has a difference. Copy and paste it instead.
 - **"Command 'curl' not found" or "curl: command not found":** a new Debian does not include curl. Use the same
   command with `wget` instead:

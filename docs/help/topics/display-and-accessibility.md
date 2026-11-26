@@ -3,9 +3,9 @@
 
 # Change text size, theme and other display settings
 
-The **Display and accessibility** panel changes Starboard's colours, text and movement for you: light or dark, bigger text,
-higher contrast, less movement, underlined links, wider spacing, the design of the Apps page and styles from
-plug-ins. Each choice applies at once, is kept in the browser you use, and is undone the same way.
+The **Display and accessibility** panel changes Starboard's colours, text and movement for you. You can choose light
+or dark, bigger text, higher contrast, less movement, underlined links, wider spacing, the design of the Apps page and
+styles from plug-ins. Each choice applies at once, stays in the browser you use, and you undo it the same way.
 
 ![Where Display is in the header, and a table of what each setting in the Display and accessibility panel changes](../images/a11y-display-map.svg)
 
@@ -53,14 +53,14 @@ There, each change says **Saved** beside the control, and focus stays where it w
 Drop shadows cost a little processor on every scroll, so removing them helps small and older computers. Removing
 them leaves every border where it is, so nothing loses its edge, and nothing else changes.
 
-Unlike the other choices, this one is for everyone on this server, not only the browser you use, and it is saved at once.
+Unlike the other choices, this one is for everyone on this server, not only the browser you use, and Starboard saves it at once.
 The set-up asks about it, straight after **How much it does**, in the browser and in the terminal:
 
 - **Reelix Lite** starts with the shadows **removed**, because Lite is for smaller computers.
 - Any other install starts with the shadows **kept**.
 - Your own choice is never changed. If you later switch between Reelix Lite and the full Reelix in **Settings**,
-  your choice stays, and only a setting you never answered follows the install.
-- A Starboard that was installed before this setting existed keeps its shadows. The first visit after the update
+  your choice stays. Only a setting you never answered follows the install.
+- A Starboard that you installed before this setting existed keeps its shadows. The first visit after the update
   says so once.
 
 1. Select **Display** in the header.
@@ -81,8 +81,8 @@ High contrast already has no shadows.
 
 ## Choose a style from a plug-in
 
-A style changes Starboard's colours and shape. Styles come from plug-ins, and Starboard checks each one for
-accessibility before it can be chosen: every colour pair must meet WCAG 2.2 AA, in light and in dark. **Style**
+A style changes Starboard's colours and shape. Styles come from plug-ins. Starboard checks each one for
+accessibility before you can choose it, and every colour pair must meet WCAG 2.2 AA, in light and in dark. **Style**
 shows in the Display panel only when an active plug-in has styles. Read [Add a plug-in](add-a-plugin.md).
 
 1. Select **Display** in the header.
@@ -94,7 +94,7 @@ spacing, underlined links and reduced motion always win over a style.
 
 ## Things to note
 
-- **Kept in this browser:** these settings, including the design and the style, are kept in the browser you use,
+- **Kept in this browser:** your browser keeps these settings, including the design and the style. They are
   not on the server and not with your sign-in. Each phone, computer and browser has its own. Set them again on each
   one you use.
 - A private or incognito window may forget them when it closes. Clearing your browser's data for Starboard also

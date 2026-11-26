@@ -5,8 +5,8 @@ Running Starboard from a checkout, its tests and tools, and keeping your own det
 ## Keep your details out of the repository
 
 Settings, API keys, sessions and backups live in `./data`, `./backups` and `.env`, which git ignores. Before
-contributing, run `tools/install-hooks.sh`: every commit is then checked for home network addresses, dynamic
-DNS names, email addresses, keys and the words you list in `.private-words` (also ignored by git).
+contributing, run `tools/install-hooks.sh`. After that, a check on every commit looks for home network addresses,
+dynamic DNS names, email addresses, keys and the words you list in `.private-words` (git ignores that file too).
 
 ## Run and test it
 
@@ -28,7 +28,7 @@ What each test covers, and the latest results, are in [docs/TESTING.md](TESTING.
 These checks run once a week on GitHub (Actions, Code and writing checks), with the unit tests under coverage.py, and
 can be run there by hand at any time; they do not run on every push or release. Claude Code also checks each file it
 edits in this repository with `tools/checks.sh --file` (`.claude/settings.json`), which takes about 2 seconds.
-The rules are in `ruff.toml`, `biome.jsonc`, `_typos.toml` and `tools/checks/vale`; each rule that is switched off says why.
+The rules are in `ruff.toml`, `biome.jsonc`, `_typos.toml` and `tools/checks/vale`. Each rule that is switched off says why.
 
 The header, menus and Display panel are in `starboard/shell.py`; the server fills them into each page when it first
 serves it, so the page files hold only the shell markers (`tools/apply_shell.py` adds those). Design tokens are in
@@ -37,7 +37,7 @@ serves it, so the page files hold only the shell markers (`tools/apply_shell.py`
 
 ## The help centre
 
-The help is written in Markdown in `docs/help`, to the rules in `docs/help/HOW-THIS-HELP-IS-WRITTEN.md`. Its web pages are
+We write the help in Markdown in `docs/help`, to the rules in `docs/help/HOW-THIS-HELP-IS-WRITTEN.md`. Its web pages are
 built by the design system's help centre builder, with the settings in `help-centre.json`, and published on GitHub
 Pages by `.github/workflows/help.yml` when a change reaches main. To build them here:
 

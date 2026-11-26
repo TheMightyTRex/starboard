@@ -11,18 +11,18 @@ them later. Each app keeps its settings, its ports and what it relies on, and yo
 ## Before you begin
 
 - Starboard has Docker access. Without it, Starboard cannot stop or start your apps.
-- Your apps are running and were started from a Compose file (`docker compose up`). Apps that are stopped, or
-  that were started another way, are left as they are.
+- Your apps are running, and you started them from a Compose file (`docker compose up`). Starboard leaves apps that
+  are stopped, or that you started another way, as they are.
 - There is room on the disk for a copy of your apps' settings. Starboard checks before it copies, and stops if there
   is not.
 - You know your Starboard password, and your qBittorrent password if you want Reelix to use qBittorrent.
 
 ## Steps
 
-The steps on the page are numbered, and the numbers change with what your server needs.
+The steps on the page are numbered. The numbers change with what your server needs.
 
 1. Go to **Settings**, then **Apps**, then **Your install**, and find **Apps you already run**. Starboard lists the
-   apps it takes over, the ones Reelix or NZBGet replaces, the ones it installs new and the ones it leaves as they are.
+   apps it takes over, the apps Reelix or NZBGet replaces, the apps it installs new and the apps it leaves as they are.
 
    ![Settings, Apps, Your install, with the Apps you already run tab (step 1) outlined, with example data](../images/take-over-your-apps-1-tab.png)
 
@@ -83,11 +83,11 @@ Starboard keeps all this in `data/stack/kept.json`, so later changes in **Your i
 Until you choose **Keep it**, **Apps you already run** shows **Roll back**.
 
 1. Enter **Your password**, then select **Roll back**.
-2. Starboard stops the apps it took over, puts its own set-up back as it was, and starts your old apps from your
-   own Compose file, on the versions they ran.
+2. Starboard stops the apps it took over and puts its own set-up back as it was. Then it starts your old apps
+   from your own Compose file, on the versions they ran.
 
-Anything that changed since the takeover, such as new downloads in the new qBittorrent or new watch history in
-Jellyfin, is not in your old apps: they carry on from the moment they stopped.
+Your old apps do not have anything that changed since the takeover, such as new downloads in the new qBittorrent
+or new watch history in Jellyfin. They carry on from the moment they stopped.
 
 ## Keep it
 
@@ -117,7 +117,7 @@ nothing is deleted. Your old settings folders and the `starboard-rollback` image
   another disk.
 - **"Move ... into Reelix first":** do the 'move them into Reelix' step first, or tick **Stop ... without moving
   them into Reelix**.
-- **"qBittorrent did not accept that password":** enter the password you use to sign in to qBittorrent, or leave it
+- **"qBittorrent did not accept that password":** enter the password you use to sign in to qBittorrent. Or leave it
   empty and add qBittorrent later in **Settings**, **Apps**, **Reelix**, under 'Download apps'.
 
 ## Find out more

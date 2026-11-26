@@ -3,7 +3,7 @@
 
 # Accessibility limits and known gaps
 
-Starboard is built and tested to WCAG 2.2 AA, but some things are not tested yet, some are outside Starboard's
+We build and test Starboard to WCAG 2.2 AA, but we have not tested some things yet, some are outside Starboard's
 control, and some are still open. This page lists them honestly, so you know what to expect. If something here
 stops you, or you find something that is not listed, [report a problem](tell-us-about-a-problem.md).
 
@@ -14,22 +14,22 @@ stops you, or you find something that is not listed, [report a problem](tell-us-
 
 ## What is not tested yet
 
-- **Real screen readers:** Starboard has not yet been listened to with NVDA, JAWS, VoiceOver, TalkBack or Orca by a
-  person. The automated checks read what a screen reader would be given, not at what each one says.
+- **Real screen readers:** no person has yet listened to Starboard with NVDA, JAWS, VoiceOver, TalkBack or Orca. The
+  automated checks read what a screen reader would be given, not what each one says.
 - **People who use assistive technology:** no testing yet with people who use screen readers, switch access, voice
   control or magnifiers every day.
 - **Browsers:** the automated checks run in Chromium, the engine of Chrome and Edge. Firefox and Safari are not part
   of the checks.
 - **Zoom at 400%:** checked through a page 320 pixels wide, which is what 400% zoom gives on a computer, but not by
   zooming each page on its own.
-- **Voice control and switch access:** expected to work, as everything works by keyboard and every control has a
-  visible name, but not tried.
-- **The set-up in the terminal:** its accessible mode gives plain numbered lines for screen readers, but it has not
-  been tried with a screen reader by a person.
+- **Voice control and switch access:** we expect these to work, because everything works by keyboard and every
+  control has a visible name, but we have not tried them.
+- **The set-up in the terminal:** its accessible mode gives plain numbered lines for screen readers, but no person
+  has tried it with a screen reader.
 - **Two keyboard tasks need more example data:** **Show more** on Wanted and the Live TV channel lists are skipped
   by the keyboard walk, because the example server has no second page of Wanted and no Live TV channels.
-- **The checks are not yet on GitHub:** they run before every change is merged and before every release, on a
-  computer with Docker, but not yet in GitHub's own checks on each pull request.
+- **The checks are not yet on GitHub:** they run before we merge every change and before every release, on a
+  computer with Docker. They do not yet run in GitHub's own checks on each pull request.
 
 ## Display settings
 
@@ -43,7 +43,7 @@ stops you, or you find something that is not listed, [report a problem](tell-us-
 
 ![Diagram of what Starboard controls and what it does not](../images/a11y-who-controls.svg)
 
-- **Starboard's own pages** are built and tested to WCAG 2.2 AA: Apps, Home, Library, Discover, Activity, System,
+- **Starboard's own pages** are built and tested to WCAG 2.2 AA. They are Apps, Home, Library, Discover, Activity, System,
   Settings, Sign in, the set-up and Display and accessibility.
 - **Made by others, but drawn and checked by Starboard:**
   - **Plug-in styles:** Starboard checks every colour pair of a style for contrast, in light and dark, and writes
@@ -67,9 +67,9 @@ These are known and on the list to do:
 
 - **Installing without a terminal:** the first step of an install is a command in a terminal. A way to install with
   no terminal, such as ready-made templates for Unraid, TrueNAS or Synology, is not built yet.
-- **Plain words for every error:** some errors from Docker and the installer are still shown as they come, and can
-  be hard to understand.
-- **Time to come back:** a long install should survive a break; this is only partly done.
+- **Plain words for every error:** Starboard still shows some errors from Docker and the installer as they come, and
+  they can be hard to understand.
+- **Time to come back:** a long install should survive a break. This is only partly done.
 - **A profile for each person:** one place to set subtitles, audio language, audio description and a simpler mode
   for each person who watches is not built yet.
 - **An accessible remote:** a page of player controls that says what changes is not built yet.

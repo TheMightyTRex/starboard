@@ -321,13 +321,13 @@ The pages:
 - **Examples to copy:** the [starboard-plugins collection](https://github.com/TheMightyTRex/starboard-plugins) has a
   plug-in of each kind, and its [help centre](https://themightytrex.github.io/starboard-plugins/help/) explains how each
   is built, with Direct play's card worked through.
-- An AI assistant can be wrong with confidence. Test every plug-in with the plug-in tester, and every script with a
-  key you can revoke.
+- An AI assistant can be wrong with confidence. Test every plug-in with the plug-in tester, and test every script
+  with a key you can revoke.
 - Never paste a real API key, password or your home address on the internet into an assistant. Use
   `STARBOARD_KEY` in what you share, and revoke any key you paste by mistake.
 - Read the permissions an assistant asks for in a manifest. Remove any it does not need.
 - These prompts describe plug-in API 1.15. When Starboard's plug-in API moves on, Starboard's own checks fail until
-  this page is brought up to date.
+  someone updates this page.
 
 ## Find out more
 

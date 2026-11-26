@@ -56,9 +56,11 @@ Use this to remove, ignore or import many downloads together, such as a whole se
 
 1. Tick the box at the start of each download's row. To tick a run of rows, tick the first, then hold **Shift**
    and tick the last. To tick every download on the list, tick **Select all**.
-2. A bar at the foot of the list says how many are selected and shows what you can do with them:
-   **Try the import again** and **Ignore** for Reelix downloads waiting to import, **Find another**, **Remove**
-   and **Clear selection**.
+2. A bar at the foot of the list says how many downloads you selected. It also shows what you can do with them:
+   - **Try the import again** and **Ignore**, for Reelix downloads waiting to import
+   - **Find another**
+   - **Remove**
+   - **Clear selection**
 
    ![The queue with two downloads ticked, with Select all (step 1) and the bar of actions (step 2) outlined, with example data](../images/manage-downloads-6-select.png)
 
@@ -68,18 +70,18 @@ Use this to remove, ignore or import many downloads together, such as a whole se
 
    ![The question before removing two downloads, with Block these releases (step 4) and Remove 2 downloads (step 5) outlined, with example data](../images/manage-downloads-7-bulk-remove.png)
 
-6. Starboard sends each download to its app in turn and counts them in the bar, then says what was done, such as
-   **Removed 12 downloads.** Any it could not do are named, with the app's reason.
+6. Starboard sends each download to its app in turn and counts them in the bar. Then it says what it did, such as
+   **Removed 12 downloads.** It names any download it could not deal with, with the app's reason.
 
-**Try the import again** and **Ignore** act only on the selected downloads that are waiting to import; the
-question says how many others are left as they are. A download the filter hides is not selected, so choose the
-filter first, such as **Needs attention**, then **Select all**.
+**Try the import again** and **Ignore** act only on the selected downloads that are waiting to import. The
+question says how many others stay as they are. A download that the filter hides is not selected, so choose the
+filter first, such as **Needs attention**, then select **Select all**.
 
 ### Get a held download now, or remove it
 
 Reelix can hold a release back for a while, in case a better one comes. This is a delay profile. Held releases
-show under **Held downloads** on the Queue page, with **Held**, why each waits, such as **Waiting for the delay to
-pass**, and when it goes to the download app by itself.
+show under **Held downloads** on the Queue page. Each one shows **Held**, why it waits (such as **Waiting for the
+delay to pass**) and when it goes to the download app.
 
 1. To send one to the download app straight away, select **Get it now** beside it.
 2. To drop one, select **Remove**, then **Remove** again. Nothing is downloaded, and Reelix may find it again at its
@@ -122,8 +124,8 @@ The actions, and when each one fits:
 - **Ignore**: takes it off the list and notes in Reelix's history that you chose to ignore it. The files stay.
 - **Remove from the list and keep the files**: takes it off the list. The files stay in the download folder, so
   you can use them yourself.
-- **Remove and delete the files**: takes it off the list and deletes its files, for a download you already have,
-  or one that holds only a sample.
+- **Remove and delete the files**: takes it off the list and deletes its files. Use it for a download you already
+  have, or one that holds only a sample.
 - **Remove, delete and add to the blocklist**: for a fake or harmful release, such as an .exe posing as an
   episode. Never open such a file.
 

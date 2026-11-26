@@ -180,18 +180,20 @@ request within a minute. The new file then appears in the list of server backups
 
 - Starboard cannot restore the whole server. To restore, copy the files back on the server yourself, or
   follow the rebuild prompt.
-- With **Include a rebuild prompt** active, your job can also save `REBUILD-PROMPT.md` next to the backup:
-  steps an AI assistant with a shell can follow to rebuild the server. The example script does not write one.
+- With **Include a rebuild prompt** active, your job can also save `REBUILD-PROMPT.md` next to the backup. It holds
+  steps that an AI assistant with a shell can follow to rebuild the server. The example script does not write one.
 - Select a backup in the list to open its details, then **Download** to save it. Starboard asks for your
   password first, because a server backup can hold API keys and private files.
 - The backups are on the same server. If its disk fails, they go with it. Starboard can send each new settings zip
-  to your other places (a folder, a share, Google Drive, OneDrive and more), encrypted first: read **Server settings
+  to your other places (a folder, a share, Google Drive, OneDrive and more), encrypted first. Read **Server settings
   backup, encrypted** in [Copy backups to a cloud service](copy-backups-to-a-cloud-service.md). Your job asks Starboard
   to do it with `POST /api/v1/backup/settings-copy` and a key with the Manage right and the System scope. The zip is
   never sent without Starboard's key for it.
 - With only `STARBOARD_BACKUP_DIR` set, the page lists the backups but cannot start one.
-- Your job can also write `included` and `unreadable` (lists of what went in and what could not be read),
-  `exit` (its exit code) and `runs` (earlier results). Starboard shows them when they are there.
+- Your job can also write these files, and Starboard shows them when they are there:
+  - `included` and `unreadable`: lists of what went in and what could not be read
+  - `exit`: its exit code
+  - `runs`: earlier results
 - The same `requests` folder can run other jobs, such as a server check. Read
   [Run a server job](run-a-server-job.md).
 - If you installed from the ready-made image, add the `volumes` lines and the two settings to
@@ -199,7 +201,7 @@ request within a minute. The new file then appears in the list of server backups
 
 ## If it does not work
 
-- **The page says "No server backup job is set up":** Starboard did not get the two settings. Check `.env`,
+- **The page says "No server backup job is set up":** Starboard did not receive the two settings. Check `.env`,
   then repeat step 10.
 - **"the requests folder is not writable":** repeat step 2, and check the `requests` line in
   `compose.override.yaml` does not end in `:ro`.

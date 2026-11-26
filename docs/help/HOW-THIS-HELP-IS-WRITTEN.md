@@ -3,15 +3,15 @@
 Starboard's help follows the shared guides in the design system, which Starboard uses:
 
 - [Help writing guide](https://github.com/TheMightyTRex/design-system/blob/main/docs/HELP-WRITING.md): the three
-  tiers (topics, guides and the basics), the layout of each, the rules for help, screenshots, and how to get an AI
+  tiers (topics, guides and the basics), the layout of each, the rules for help and screenshots, and how to get an AI
   to write instructions.
 - [Screenshots in help](https://github.com/TheMightyTRex/design-system/blob/main/docs/SCREENSHOTS.md): when a
   screenshot earns its place, made-up data only, the red outline, curved arrow and step-number mark-up, and a short
-  version to give an AI tool. Mark screenshots up with the design system's `tools/annotate.js`, from a preview with
-  example data (`tools/screenshots.sh`), and keep them in `docs/help/images`.
+  version to give an AI tool. Mark screenshots up with the design system's `tools/annotate.js`. Make them from a
+  preview with example data (`tools/screenshots.sh`), and keep them in `docs/help/images`.
 - [Content design guide](https://github.com/TheMightyTRex/design-system/blob/main/docs/CONTENT-DESIGN.md): voice,
-  words and punctuation for everything on screen and in the help. For example, settings are activated and
-  deactivated, never with the words for a light switch.
+  words and punctuation for everything on screen and in the help. For example, you activate and deactivate
+  settings, and never use the words for a light switch.
 
 ## Only in Starboard
 
@@ -21,17 +21,17 @@ Starboard's help follows the shared guides in the design system, which Starboard
   (how-to, reference or troubleshooting).
 - **The second line** says where the article is listed in the help centre's side menu:
   `<!-- help: <area> / <group> -->`, such as `<!-- help: fix / apps -->`. The areas are the design system's six, beside Home
-  (`start`, `use`, `plugins`, `a11y`, `fix`, `dev`) and the groups are in `help-centre.json`. A new group goes there
+  (`start`, `use`, `plugins`, `a11y`, `fix`, `dev`). The groups are in `help-centre.json`, and a new group goes there
   first. The journey, the newest thing and the problem solver on the help centre's home page are there too.
 - **Flow chart first:** every troubleshooting topic starts with a flow chart in a `flow` block, straight after its
-  opening sentences, and each numbered answer is a section of its own, named on the chart's line with `#its-id`.
+  opening sentences. Each numbered answer is a section of its own, named on the chart's line with `#its-id`.
   Guides show their steps as a flow chart too (a `flow` block, or the Mermaid flowcharts they already have). The
   format is in the design system's
   [help writing guide, section 11.4](https://github.com/TheMightyTRex/design-system/blob/main/docs/HELP-WRITING.md#114-flow-charts).
   New Fix a problem articles go in the problem solver in `help-centre.json`.
-- **The help centre's pages** at https://themightytrex.github.io/starboard/help/ are built from these files by
-  `the design system's help centre builder (tools/help_centre)` and published when a change reaches main. Each article is its own page; the app's Help
-  buttons open them (`starboard/shell.py`).
+- **The help centre's pages** at https://themightytrex.github.io/starboard/help/ come from these files, which
+  the design system's help centre builder (`tools/help_centre`) builds. We publish them when a change reaches main.
+  Each article is its own page, and the app's Help buttons open them (`starboard/shell.py`).
 - **Made-up examples:** use `192.168.1.20` or `192.168.1.21` for addresses, `starboard-pi` for a Raspberry Pi,
   and names such as Sam and Alex. `tools/check-private.sh` allows exactly these, and refuses any other home
   network address.
@@ -39,24 +39,24 @@ Starboard's help follows the shared guides in the design system, which Starboard
   up to the design system's screenshot rules. Retake them whenever the page or the help changes.
   `python3 tools/check-help.py --list-screenshots` lists the topics that still have fewer.
 - **Check before committing:** `python3 tools/check-help.py` checks every link, the layout of each tier and the
-  writing rules that a machine can check. It also runs `tools/check-help-links.py`, which checks that every link
+  writing rules that a machine can check. It also runs `tools/check-help-links.py`. That checks that every link
   into the help, from the articles, the release notes, the pages and the code, reaches a heading that exists.
 - **Link to the exact heading:** when an article mentions another task or page that has its own article or
   heading, link straight to it, such as `set-download-hours.md#before-you-begin`. An anchor is the heading in
   lower case, with punctuation left out and spaces as hyphens. Keep headings stable, because release notes link
-  to them; if one must change, update its links in `CHANGELOG.md` and `docs/releases`.
+  to them. If you must change one, update its links in `CHANGELOG.md` and `docs/releases`.
 
 ## The footer on every page
 
 Every page ends with the same footer: download only what you have the right to. The README has it too. Do not write
-it by hand: run `python3 tools/help_footer.py` after adding or changing a page, and it adds or refreshes the footer
+it by hand. Run `python3 tools/help_footer.py` after you add or change a page, and it adds or refreshes the footer
 between its two markers. `tools/check-help.py` fails when a page has no footer or an old one. The wording follows the
-installer's Usenet note, widened to every download app; change it in `tools/help_footer.py` only.
+installer's Usenet note, widened to every download app. Change it in `tools/help_footer.py` only.
 
 ## The plug-ins' pages
 
 `docs/help/plugins/` is a copy of the help in the [starboard-plugins](https://github.com/TheMightyTRex/starboard-plugins)
 repository, where it is written (DASH-426): every plug-in's README and its seven pages, and the catalogue. Change them
-there, then run `python3 tools/sync-plugin-help.py <starboard-plugins checkout>`, which also copies the plug-in groups
-into `help-centre.json`. `tools/check-help.py` checks the copy, and with `STARBOARD_PLUGINS` set to a checkout, that it
-matches.
+there, then run `python3 tools/sync-plugin-help.py <starboard-plugins checkout>`. That also copies the plug-in groups
+into `help-centre.json`. `tools/check-help.py` checks the copy. With `STARBOARD_PLUGINS` set to a checkout, it also
+checks that the copy matches.

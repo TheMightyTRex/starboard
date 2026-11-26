@@ -3,10 +3,10 @@
 
 # How Starboard is tested for accessibility
 
-Starboard is tested against WCAG 2.2 level AA with automated checks on every page, a check of the reading order, a
-walk of the main tasks with the keyboard alone, and a contrast check of every colour. They run on every change
-before it is merged, and again before every release. This page says what each check does, and what checks cannot
-catch.
+We test Starboard against WCAG 2.2 level AA. The tests are automated checks on every page, a check of the reading
+order, a walk of the main tasks with the keyboard alone, and a contrast check of every colour. They run on every
+change before we merge it, and again before every release. This page says what each check does and what checks
+cannot catch.
 
 ![Diagram of the four checks run on every change and before every release, and the screen reader check a person does](../images/a11y-test-process.svg)
 
@@ -35,34 +35,34 @@ server with made-up data, so nothing real is read.
 
 - **Rules:** axe-core runs every WCAG 2.0, 2.1 and 2.2 rule at levels A and AA on each page, three times: in the
   Light theme, the Dark theme and High contrast.
-- **Structure:** one level 1 heading, headings in order, a header, navigation and main content, **Skip to main
-  content** as the first Tab, a page title, a polite live region, the page's language, a label for every field and
-  a name for every button.
-- **Keyboard:** up to 45 Tab stops on each page, checking that the focus outline shows, that focus never lands on
-  something hidden, that nothing traps it, and that the sticky header never covers it.
+- **Structure:** the check expects one level 1 heading, headings in order, a header, navigation and main
+  content, **Skip to main content** as the first Tab, a page title, a polite live region, the page's language, a
+  label for every field and a name for every button.
+- **Keyboard:** the check goes through up to 45 Tab stops on each page. It checks that the focus outline shows,
+  that focus never lands on something hidden, that nothing traps it, and that the sticky header never covers it.
 - **Size:** every button, tick box and choice is at least 24 by 24 pixels.
 - **Reflow:** nothing needs sideways scrolling at 320 pixels wide, or at 175% text.
 - **Slide-outs:** focus moves into **Display and accessibility**, stays inside with Tab, and goes back to
   **Display** after Escape.
 - **Windows' contrast themes:** the focus outline stays visible in forced colours.
 - **Reduced motion:** with reduced motion asked for, nothing on the Apps page moves for longer than 50 milliseconds.
-- **Menus at large text:** the side menu and the header on eight pages, at 100%, 125%, 150% and 175% text, with and
-  without wider spacing, in Light, Dark and High contrast, at 1280 and 1366 pixels wide and at phone width, and in
-  windows 600 and 700 pixels tall. It fails if a word breaks in the middle, a name runs past an edge, items overlap,
-  a menu item or the search box is cut off, or the page scrolls sideways. The scan's own reflow rule cannot find a
-  menu that cuts off its own items, so this part checks for exactly that.
+- **Menus at large text:** the check covers the side menu and the header on eight pages. It uses 100%, 125%, 150% and
+  175% text, with and without wider spacing, in Light, Dark and High contrast. It uses windows 1280 and 1366 pixels
+  wide and at phone width, and windows 600 and 700 pixels tall. It fails if a word breaks in the middle, a name runs
+  past an edge, items overlap, a menu item or the search box is cut off, or the page scrolls sideways. The scan's own
+  reflow rule cannot find a menu that cuts off its own items, so this part checks for exactly that.
 
 ### Reading order
 
 A screen reader reads, and Tab moves, in the order of the page's code. The page shows its own order. The check
-compares the two on every page, at computer and phone widths: anything read later but shown clearly earlier, or Tab
-that jumps back up a column, is a finding. It also checks that the landmarks come in order and that the page's
+compares the two on every page, at computer and phone widths. It counts as a finding anything that a screen reader
+reads later but the page shows clearly earlier, and any Tab that jumps back up a column. It also checks that the landmarks come in order and that the page's
 level 1 heading is the first thing in the main content.
 
 ### Keyboard walk
 
-The main tasks are done with keys alone, as a screen reader user would. After each step, the check records where
-focus is, and what was said. The tasks include: sign in, skip to the main content, search, open a film, change a
+The check does the main tasks with keys alone, as a screen reader user would. After each step, it records where
+focus is and what was said. The tasks include: sign in, skip to the main content, search, open a film, change a
 setting, change an accessibility option in Settings, edit an app in a slide-out, make and revoke a key, show more of
 a list, delete a file, select several items, the Live TV channel lists, release notes, copies of backups, a
 plug-in's notices, tables, cards, recommendations and settings, and each **Reduce motion** choice against the
@@ -72,9 +72,9 @@ device's own setting.
 
 ### Colour contrast
 
-The design system checks every pair of text and background, control border and focus outline, in Light, Dark,
-High contrast and High contrast dark, and in light and dark for every one of the own style colour palettes:
-4.5 to 1 for text, 3 to 1 for borders and the focus outline.
+The design system checks every pair of text and background, control border and focus outline. It checks them in
+Light, Dark, High contrast and High contrast dark, and in light and dark for every one of the own style colour
+palettes. The ratios are 4.5 to 1 for text and 3 to 1 for borders and the focus outline.
 
 ### Plug-ins
 
@@ -91,12 +91,12 @@ description, and every diagram says the same thing in words.
 
 ## When the checks run
 
-- **Every change:** the scan, reading order and keyboard walk run before a change is merged, with the unit tests,
-  the journeys (every page used as a person would) and the help checks. A finding is fixed, or checked by hand and
-  shown to come from the test itself, before the change goes in.
+- **Every change:** the scan, reading order and keyboard walk run before we merge a change, with the unit tests,
+  the journeys (every page used as a person would) and the help checks. Before the change goes in, we fix each
+  finding, or check it by hand and show that it comes from the test itself.
 - **Every change to colours:** the contrast check runs, and must show 0 failures.
 - **Before every release:** all of them run again on the release, with fresh screenshots that a person checks.
-  The results are listed with each release in
+  We list the results with each release in
   [Security: how Starboard protects you, and how it was tested](https://github.com/TheMightyTRex/starboard/blob/main/docs/SECURITY-AND-TESTS.md#security-checks-for-each-release).
 
 ## What automated checks cannot catch

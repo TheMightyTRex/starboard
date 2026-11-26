@@ -4,18 +4,18 @@
 # Move from Radarr, Sonarr and the others to Reelix
 
 Reelix can read your Radarr, Sonarr, Lidarr, Readarr (or Bookshelf), Prowlarr and Jellyseerr (or Seerr) and set
-itself up from them: your films and series, your folders, quality profiles, download apps, indexers, users and
-requests. Your media files stay where they are, and your old apps are not changed.
+itself up from them. It takes your films and series, your folders, quality profiles, download apps, indexers, users
+and requests. Your media files stay where they are, and your old apps do not change.
 
 ## Before you begin
 
-- Reelix is installed and set up. Read [Install apps with Starboard](install-apps.md).
+- You have installed and set up Reelix. Read [Install apps with Starboard](install-apps.md).
 - Your old apps are running, so Reelix can read them.
 - Reelix reaches your media folder at the same path as your old apps do, such as `/data/media/movies`. If the paths
   differ, add a **Path rewrite** when you connect each app.
 - A TMDB API key is best but not needed. Add it first in Reelix, **Settings**, **Metadata** (free from
-  themoviedb.org). Without it, Reelix uses open data: almost everything comes across, but films have no posters, and
-  a few titles are left out.
+  themoviedb.org). Without it, Reelix uses open data. Almost everything comes across, but films have no posters, and
+  a few titles do not make it.
 
 ## Steps
 
@@ -47,8 +47,8 @@ seconds for each series, so over an hour for 200 series. Your library works in R
 - Films and series, with which ones are monitored, their folders and their quality profile.
 - Your files: Reelix finds them in the folders and reads their quality, size and media details.
 - Library folders, tags and remote path mappings.
-- Quality profiles. A profile with the same name as one of Reelix's own, such as **HD-1080p**, is not copied:
-  Reelix keeps its own, and the preview says so. Check them in **Settings**, **Profiles** after the move. A name
+- Quality profiles. Reelix does not copy a profile with the same name as one of its own, such as **HD-1080p**.
+  It keeps its own, and the preview says so. Check them in **Settings**, **Profiles** after the move. A name
   used by another kind of profile (Lidarr's **Any** after Radarr's) comes across with the app's name added, such as
   **Any (Lidarr)**.
 - Indexers from Prowlarr, and download apps (qBittorrent, SABnzbd and others), with the details each app shows.
@@ -88,7 +88,7 @@ Your old apps hide passwords and API keys, so Reelix cannot copy them:
 
 ## Books and audiobooks
 
-Reelix moves authors from Readarr or Bookshelf. From any other app, or for books it does not know, add the folder
+Reelix moves authors from Readarr or Bookshelf. For any other app, or for books it does not know, add the folder
 in Reelix: **Books**, **Import Library**, choose the books or audiobooks folder, then **Import books**. Reelix
 suggests an author for each folder from Open Library.
 

@@ -40,7 +40,7 @@ costs.
 ### Unit and API tests
 
 Python's own `unittest`, with no packages to install. Apps such as Sonarr, Jellyfin, Plex and Audiobookshelf
-are small made-up servers inside the tests, and a Plex database is built from scratch, so nothing real is
+are small made-up servers inside the tests. The tests build a Plex database from scratch, so nothing real is
 needed. By file:
 
 | File | Tests | What it keeps working |
@@ -69,11 +69,11 @@ runs `tools/journeys/journeys.mjs` in the Playwright image. It needs Docker. It 
 
 - every page script parses;
 - adding, changing, testing and removing an app through the page;
-- an error shows beside what it belongs to (renaming a category to a name in use), the next try clears it, and
-  an error with nothing on the page to belong to is an error toast;
+- an error shows beside what it belongs to (renaming a category to a name in use), and the next try clears it;
+  an error with nothing on the page to belong to becomes an error toast;
 - the Updates button says Check until the first check;
-- Send feedback (Snaglist): it appears when activated, the content policy lets its styles in, a report saved
-  in Starboard is listed in Settings, General, and it is gone when deactivated;
+- Send feedback (Snaglist) appears when activated, and the content policy lets its styles in. A report saved
+  in Starboard is listed in Settings, General. Send feedback is gone when deactivated;
 - after signing in, the `next` address cannot send you to another site;
 - names, categories, descriptions and saved reports that look like code are shown as text, and nothing runs;
 - the content security policy is on all 26 pages and blocks nothing;
@@ -91,20 +91,24 @@ tools/vm/vm.sh prepare ubuntu
 tools/vm/vm.sh test ubuntu
 ```
 
-Systems: `ubuntu` (24.04), `debian` (12), `fedora` (42) and `arm64` (Debian 12 for 64-bit ARM, like Raspberry
-Pi OS). `VM_MEMORY=512` sets the memory, for example to match a Raspberry Pi Zero 2 W. The arm64 system needs
-the `qemu-system-arm` and `qemu-efi-aarch64` packages. Without hardware speed-up (KVM) the PC systems are about
-ten times slower; arm64 is always emulated.
+The systems are `ubuntu` (24.04), `debian` (12), `fedora` (42) and `arm64` (Debian 12 for 64-bit ARM, like
+Raspberry Pi OS). `VM_MEMORY=512` sets the memory, for example to match a Raspberry Pi Zero 2 W. The arm64 system
+needs the `qemu-system-arm` and `qemu-efi-aarch64` packages. Without hardware speed-up (KVM) the PC systems are
+about ten times slower. arm64 is always emulated.
 
-The 17 checks: the installer with every question answered No (starts, first visit goes to set-up, set-up code,
-`.env` and `data` private, no Docker socket, the API refuses without signing in, another host name is
-refused); the installer run again with Docker access (set-up code kept, socket mounted); this computer only
-(answers inside the VM, refused from outside); `./update.sh --check`; the published image starts and prints
-the set-up code.
+The 17 checks cover five things:
+
+- The installer with every question answered No. It starts, the first visit goes to set-up, there is a set-up code,
+  `.env` and `data` stay private, there is no Docker socket, the API refuses without signing in, and it refuses
+  another host name.
+- The installer run again with Docker access. It keeps the set-up code and mounts the socket.
+- This computer only. It answers inside the VM and refuses from outside.
+- `./update.sh --check`.
+- The published image starts and prints the set-up code.
 
 ## Latest results
 
-From release 0.12.1 (8 November 2026): unit tests (375) and journeys; from 0.12.0: unit tests, journeys, the help check, the six security scanners, a rehearsal of the takeover and roll back, and a move of a real server's apps into a test Reelix. Fresh installs are from 0.10.0 (7 November 2026) on Debian 13, Ubuntu 26.04, Linux Mint 22.3 and the emulated Raspberry Pi OS, through the terminal and the browser. From 0.9.2: install tests on Ubuntu 24.04 and 64-bit ARM, and the Run first script on Ubuntu 24.04. The Run first script on Debian and Fedora is from 0.9.0. Debian, Fedora and ARM at 512 MB are from 0.7.4.
+From release 0.12.1 (8 November 2026): unit tests (375) and journeys. From 0.12.0: unit tests, journeys, the help check, the six security scanners, a rehearsal of the takeover and roll back, and a move of a real server's apps into a test Reelix. Fresh installs are from 0.10.0 (7 November 2026). They run on Debian 13, Ubuntu 26.04, Linux Mint 22.3 and the emulated Raspberry Pi OS, through the terminal and the browser. From 0.9.2: install tests on Ubuntu 24.04 and 64-bit ARM, and the Run first script on Ubuntu 24.04. The Run first script on Debian and Fedora is from 0.9.0. Debian, Fedora and ARM at 512 MB are from 0.7.4.
 
 | | Result |
 |---|---|
@@ -120,7 +124,7 @@ From release 0.12.1 (8 November 2026): unit tests (375) and journeys; from 0.12.
 
 ## Test plans for each system
 
-From 6 November 2026, Starboard is built and tested for Linux Mint 22.3 (recommended), Debian 13, Ubuntu Server
+From 6 November 2026, we build and test Starboard for Linux Mint 22.3 (recommended), Debian 13, Ubuntu Server
 26.04 and Raspberry Pi OS (64-bit), or later versions of each. [Systems Starboard supports](test-plans/systems.md)
 gives the minimum and recommended hardware for each. Every step of the start is tested on each, in
 [Test plan: the Run first script](test-plans/setup.md) and
@@ -134,8 +138,8 @@ problems found while testing by hand, as GitHub issues or saved in Starboard.
 
 ## Starboard 0.16.0: the first-time set-up on fresh virtual machines (10 November 2026)
 
-Four runs of `tools/vm/vm.sh new mint` (KVM, a bare system with no Docker), driven by `tools/vm/drive.py` and a
-browser, from Run first or `./install.sh` to the end of the browser set-up with the Run first window closed.
+Four runs of `tools/vm/vm.sh new mint` (KVM, a bare system with no Docker). `tools/vm/drive.py` and a browser drove
+them from Run first or `./install.sh` to the end of the browser set-up with the Run first window closed.
 Faults found and fixed before release:
 
 - `./install.sh` crashed when it installed Docker (a job before the first page; MENU_RIGHT unset): fixed, with a test
@@ -150,5 +154,5 @@ Faults found and fixed before release:
 - Smaller: lines past 80 columns, Picture quality not on HD by default, a stray /dev/tty line, the bar's style.
 
 - After the fixes, a single straight run on a fresh VM set up everything, Jellyfin and Audiobookshelf included, with
-  every app's key and Jellyfin's start-up wizard closed. Nothing was typed but the Starboard password, and the
-  VPN details from the provider when the VPN is chosen. Disk health asks for one sudo command, by design.
+  every app's key and Jellyfin's start-up wizard closed. The tester typed only the Starboard password, and the
+  VPN details from the provider when choosing the VPN. Disk health asks for one sudo command, by design.

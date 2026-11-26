@@ -64,7 +64,7 @@ Under **What to alert on**, each alert is active unless you deactivate it. Each 
 ### Choose what to alert on for the server itself
 
 Under **The server itself**, each alert is deactivated until you activate it. Each has a limit and a time, so a
-short spike never alerts: it alerts only when the value stays at or over the limit for the whole time.
+short spike never alerts. An alert fires only when the value stays at or over the limit for the whole time.
 
 ![Settings, General, Alerts, The server itself, with The processor is too hot, its switch, limit and time outlined, with example data](../images/activate-alerts-4-server.png)
 
@@ -74,11 +74,11 @@ short spike never alerts: it alerts only when the value stays at or over the lim
 - **A folder is nearly full for a long time:** any folder on System, Storage, from 80% to 98%. For one that
   alerts at once, use **A folder gets full** in the same list.
 - **The disks are working hard:** all disks together, reading and writing, from 50 to 1,000 MB/s.
-- **The outside address changes:** Starboard checks every 10 minutes the address the No-IP updater and each
-  VPN show to the internet, and says when one is not the one it showed before. The alert never says the address,
-  and nothing is sent to any other server.
-- **A container stops with an error:** one list from Docker a minute. A container that was stopped on purpose,
-  or that rests when not in use, is not an alert. Another message comes when it runs again.
+- **The outside address changes:** Every 10 minutes, Starboard checks the address that the No-IP updater and each
+  VPN show to the internet. It says when one is not the one it showed before. The alert never says the address,
+  and Starboard sends nothing to any other server.
+- **A container stops with an error:** one list from Docker a minute. A container that you stopped on purpose,
+  or that rests when not in use, does not raise an alert. Another message comes when it runs again.
 
 The time can be 1, 5, 10, 15 or 30 minutes, or 1 or 2 hours. These work without **Watch in the background**.
 While none is active, nothing runs. With every reading on, it costs about 2 milliseconds of processor a

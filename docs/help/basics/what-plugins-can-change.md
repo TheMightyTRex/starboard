@@ -18,13 +18,13 @@ shows each permission in plain words with a risk level (low, medium or high) bef
 - **Run its own small apps, called containers.** Each one is limited to its own folder, a set amount of memory and
   processor, and its own network.
 - **Read from Starboard, if you allow it.** Your apps and whether they answer, what is downloading, your films,
-  series and books, or processor, memory and disks. It uses its own key, which only reads, and stops working when
-  the plug-in is removed.
+  series and books, or processor, memory and disks. It uses its own key, which only reads. The key stops working when
+  you remove the plug-in.
 - **Reach your home network or run inside your VPN,** only when it asks for this and you agree.
 - **Move films and series to the holding folder,** only when it asks for this and you agree, such as Library
-  clean-up. They go to a holding folder inside your media folder, `media/.holding`, keeping their folders, and each
-  can be put back with **Put back**. It is given your whole media folder, so its risk is high: add only a plug-in you
-  trust.
+  clean-up. They go to a holding folder inside your media folder, `media/.holding`, keeping their folders, and you can put
+  each one back with **Put back**. The plug-in gets your whole media folder, so its risk is high. Add only a plug-in
+  you trust.
 - **Show settings and buttons** in its own section of **Settings**, then **Plug-ins**, drawn by Starboard.
 - **Add cards to the dashboard** that show a number, a short list or a status. You choose to add them with
   **Edit dashboard**. Starboard asks the plug-in at most once a minute and shows its answer as plain text. Read
@@ -35,11 +35,11 @@ shows each permission in plain words with a risk level (low, medium or high) bef
 These are refused whatever a plug-in asks for. Starboard does not offer them, so no plug-in can be given them.
 
 - **Add code to Starboard's pages.** A plug-in sends data, never scripts or CSS. Starboard draws everything on the page.
-- **Change how Starboard works for you:** the layout and order of pages, the size of buttons, text size, spacing,
-  underlined links, reduced motion and **High contrast**. Your **Display** choices always win over a style.
-- **Use a style that fails accessibility.** Every style is checked in light and dark: text needs a contrast of at
-  least 4.5 to 1 with what is behind it, and edges and the focus ring 3 to 1, as WCAG 2.2 asks. A style that fails
-  cannot be added or chosen.
+- **Change how Starboard works for you,** such as the layout and order of pages, the size of buttons, text size,
+  spacing, underlined links, reduced motion and **High contrast**. Your **Display** choices always win over a style.
+- **Use a style that fails accessibility.** Starboard checks every style in light and dark. Text needs a contrast of
+  at least 4.5 to 1 with what is behind it, and edges and the focus ring need 3 to 1, as WCAG 2.2 asks. Nobody can
+  add or choose a style that fails.
 - **Control Docker or the computer.** No plug-in gets the Docker socket, administrator rights, the computer's own
   network, its devices, or any folder but its own.
 - **Read or change other apps' settings, keys or passwords,** or Starboard's own data and password.

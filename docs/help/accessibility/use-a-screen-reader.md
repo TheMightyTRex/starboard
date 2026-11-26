@@ -3,9 +3,9 @@
 
 # Use a screen reader
 
-Starboard is built to work with screen readers, such as NVDA and JAWS on Windows, VoiceOver on a Mac, iPhone or
-iPad, TalkBack on Android and Orca on Linux. Nothing needs to be activated. This page says how the pages are laid
-out and what you hear.
+We built Starboard to work with screen readers, such as NVDA and JAWS on Windows, VoiceOver on a Mac, iPhone or
+iPad, TalkBack on Android and Orca on Linux. You do not need to activate anything. This page says how the pages are
+laid out and what you hear.
 
 ## When would you use it
 
@@ -26,14 +26,14 @@ out and what you hear.
 
 ## What you hear
 
-- **Short messages:** said politely, without moving you, such as "Saved", "23 films missing", "12 more shown",
+- **Short messages:** Starboard says them politely, without moving you, such as "Saved", "23 films missing", "12 more shown",
   "40 more shown" or "Display settings reset".
-- **Quiet lists:** a whole list is never read out when it changes. Lists that refresh by themselves, such as
-  Activity and the cards on Home, are updated in place without interrupting you.
-- **Problems:** a problem with a field is shown beside it, said at once, and tied to the field, so it is read again
-  when you come back to it.
-- **States:** a state is said in words, such as **Works**, **Not answering** or **Warning**, never shown by colour
-  alone.
+- **Quiet lists:** Starboard never reads out a whole list when it changes. Lists that refresh by themselves, such
+  as Activity and the cards on Home, update in place without interrupting you.
+- **Problems:** Starboard shows a problem with a field beside it, says it at once, and ties it to the field. You
+  hear it again when you come back to the field.
+- **States:** Starboard says a state in words, such as **Works**, **Not answering** or **Warning**. It never shows
+  a state by colour alone.
 - **Switches and choices:** every switch, tick box and choice has its label, and a hint under a field is read with
   it.
 - **Buttons with only an icon:** each has a name, such as **Close Display and accessibility**.
@@ -53,15 +53,15 @@ they close. A dialog that would delete something starts on **Cancel**. Read
 Tables have a caption and header cells, so a screen reader names the column and row of each cell. On a phone, wide
 tables are shown as a list of cards instead, with each value named.
 
-Each chart, such as those on **System**, then **Monitor**, has a sentence that says what it shows. It can be reached
-with Tab: the Left and Right arrow keys then move from reading to reading, with Home and End for the first and last.
+Each chart, such as those on **System**, then **Monitor**, has a sentence that says what it shows. Reach it with Tab.
+The Left and Right arrow keys then move from reading to reading, and Home and End go to the first and last.
 Under each chart, **Show as a table** shows every reading as a table, so no value depends on pointing at the chart.
 
 ![A chart on System, Monitor, with Show as a table outlined and open: the same readings as a table of times and values under the chart](../images/a11y-chart-table.png)
 
 ## Plug-in cards on Home
 
-Every card a plug-in adds to **Home** is drawn by Starboard, the same way: a band with the plug-in's name as a level
+Starboard draws every card a plug-in adds to **Home** the same way. It has a band with the plug-in's name as a level
 2 heading, then its state and when it last updated. The state starts with "Status:" and the time with "Updated",
 for screen readers only, so each makes sense on its own. Cards update quietly in place.
 
