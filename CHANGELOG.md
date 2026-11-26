@@ -8,7 +8,9 @@ add features.
 ## [Unreleased]
 
 ### Added
+- **Compatibility check for the API.** A new check fails a change that takes away or tightens a route, permission, manifest field, card, event or key scope without the deprecation steps, and runs 74 older plug-in manifests against this Starboard. Draft, for review.
 - **Plug-in updates found at once, in one list.** Check now reads every plug-in catalogue again, says when it last did and why one did not answer, and waits 30 seconds between presses. Settings, Plug-ins, Manage and the new Settings, Updates, Plug-ins page list each plug-in's old and new version, what is new and any new permissions, with Update all, Update chosen, Update by themselves, History and Roll back.
+
 - **Sign in to Plex with a link code.** Manage apps has Sign in with Plex, which shows a code to enter at plex.tv/link, or you can still paste the token.
 - **A first sign-in for app plug-ins.** A plug-in can now set its app's first password, and the plug-in's page shows it once after you enter your Starboard password. Calibre-Web uses this from version 1.2.0. Find out more in the [manifest reference](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/developers/plugin-manifest-reference.md#a-first-sign-in-shown-once-first_sign_in).
 - **A wizard for switching media server.** The media server tab in Settings, Apps has Switch with help, which says what moves, what cannot and what keeps working before anything changes. Find out more in [Choose your media server](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/choose-your-media-server.md).
@@ -28,6 +30,9 @@ add features.
 - **A notice with buttons reads properly on a phone.** On Settings, Plug-ins the offer to install a plug-in chosen in the set-up no longer squeezes its title to one letter a line, because its buttons now sit on their own row.
 - **Each plug-in's tab has its own icon.** Settings, Plug-ins now draws a different line icon on each plug-in's tab, and where the tabs show icons only, such as on a phone, the tab you are on and the tab with focus also show their name.
 - **Starboard no longer reads Plex's token.** Search for new apps does not look inside the Plex container for the token any more.
+- **Display opens as a slide-out on Sign in and Set up too.** The sign-in page had its own copy of Display as a dialog; it now uses the same template as every other page.
+- **Error lines under fields use the shared `field-error` class.** Three messages (app details, Reelix system and plug-ins) had a class name with no style.
+
 - **The shared styles now define the names Starboard already used.** `--radius-sm`, `--radius-md`, `--font-mono`, `--color-success-text`, `--color-danger-text`, `stack-3`, `stack-5`, `input--narrow`, `select--compact`, `field__error` and `btn--secondary` had no style, so a few boxes in Bring in, Backup and restore and the dashboard editor gained their intended spacing and width.
 - **One name for asking again: Check now.** Every Check again button and line of help now says Check now, as plug-ins do, and the Updates button says Check now before and after the first check (owner, 26 November 2026).
 - **One Backup/Logs tab.** Settings, General has Backup/Logs, which holds backups, restoring, logs and Send feedback, and the old addresses still open it.
@@ -39,7 +44,13 @@ add features.
 - **Plain English pilot.** The README and the help topics Add an app and How lean Starboard is now use shorter sentences and the active voice.
 
 ### Fixed
+- **An even row of controls on a Library item page.** On a radio show, the Following list now sits in the same frame and height as the buttons beside it, and every control on a film, series, artist, book, audiobook or radio show page is one height and wraps on a phone.
 - **A full backup that was not made is now reported.** A scheduled backup with no saved backup password used to say it had run. It now says "No full backup was made", raises an alert and shows a warning in Settings.
+
+### Security
+- **Requests with a Transfer-Encoding are refused.** Starboard now answers 400 and closes the connection, so a proxy in front of it cannot hide a second request inside a body.
+- **One guarded way to fetch a plug-in's manifest, catalogue and logo.** Starboard now checks every redirect and the address it connects to, so an address that redirects, or changes its answer, cannot reach your home network's private services or a cloud metadata address.
+
 
 ## [0.31.0] (25 November 2026)
 

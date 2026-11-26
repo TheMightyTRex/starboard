@@ -876,6 +876,18 @@ class Handler(BaseHTTPRequestHandler):
     disable_nagle_algorithm = True  # without it, small answers on a kept-alive connection wait 40 ms
     timeout = 30  # an idle or slow connection is closed after 30 seconds, so it cannot hold a thread for ever
 
+    def parse_request(self):
+        """A request with a Transfer-Encoding header is refused with 400 and the connection closes (DASH-603). Starboard reads
+        bodies by Content-Length only, so a chunked body left unread could be taken for the next request on a kept-alive
+        connection, which a proxy in front of Starboard would let through (request smuggling)."""
+        if not super().parse_request():
+            return False
+        if self.headers.get("Transfer-Encoding") is not None:
+            self.close_connection = True
+            self.send_error(400, "Starboard does not take a Transfer-Encoding. Send a Content-Length instead")
+            return False
+        return True
+
     def send_error(self, code, message=None, explain=None):
         """Python's own error answers (a method Starboard does not handle, a broken request) carry the same
         security headers as every other answer, and close the connection."""

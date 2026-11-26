@@ -254,7 +254,7 @@ def fetch_manifest(address, opener=None, sha256=""):
         raise ValueError("Give the manifest's https address, such as a repository's raw starboard-plugin.json")
     outside.check_url(address)
     req = urllib.request.Request(address, headers={"User-Agent": "Starboard", "Accept": "application/json"})
-    with (opener or urllib.request.build_opener()).open(req, timeout=5) as r:  # checked above  # nosec B310
+    with (opener or outside.guarded_opener()).open(req, timeout=5) as r:  # checked above, on redirects and when it connects  # nosec B310
         raw = r.read(MAX_MANIFEST + 1)
     if len(raw) > MAX_MANIFEST:
         raise ValueError("That manifest is too large")
@@ -373,7 +373,7 @@ def fetch_catalogue(address, opener=None):
     outside.check_url(address)
     req = urllib.request.Request(address, headers={"User-Agent": "Starboard", "Accept": "application/json"})
     try:
-        with (opener or urllib.request.build_opener()).open(req, timeout=5) as r:  # checked above  # nosec B310
+        with (opener or outside.guarded_opener()).open(req, timeout=5) as r:  # checked above, on redirects and when it connects  # nosec B310
             raw = r.read(MAX_MANIFEST + 1)
     except OSError as e:
         raise ValueError(f"That address did not answer: {_why(e)}") from None
