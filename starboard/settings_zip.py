@@ -122,8 +122,14 @@ def zip_path(folder, name):
     if not folder or not isinstance(name, str) or not NAME_RE.fullmatch(name):
         return None
     root = os.path.realpath(folder)
-    path = os.path.normpath(os.path.join(root, name))
-    if os.path.dirname(path) != root or os.path.commonpath([root, path]) != root:
+    try:  # the name is looked up among the folder's own entries, so what is opened is a name the folder gave, not the caller's text
+        found = next((n for n in os.listdir(root) if n == name), None)
+    except OSError:
+        return None
+    if found is None:
+        return None
+    path = os.path.normpath(os.path.join(root, found))
+    if not path.startswith(root + os.sep):
         return None
     try:
         st = os.lstat(path)
