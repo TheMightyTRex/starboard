@@ -550,16 +550,18 @@ if (!pages.length || pages.some((p) => p.includes("system-backup"))) {
   };
   const foot = () => page.locator(".side-panel__foot .btn--primary").first().click();
   try {
-    const kept = await page.evaluate(() => api("/api/backup/copies").catch(() => null));
+    // Where backups go (several places, 26 November 2026): the list, a form in a slide-out, the wizard opened from a
+    // service in Add a place, each step, and Test beside a place.
     await page.goto(`${base}/system-backup.html`);
     await settle();
-    await page.locator("input[name=copies-kind][value=rclone]").check();
-    await themes("system-backup.html, A cloud service");
-    await page.evaluate(() => { window.scrollTo(0, 0); document.querySelector("#copies-connect").click(); });
-    await page.locator("#cloud-step-heading").waitFor();
-    await themes("Connect a cloud service, choose a service");
-    await page.locator("input[name=cloud-service][value=drive]").check();
-    await foot();
+    await page.locator("#place-on-main").waitFor();
+    await themes("system-backup.html, Where backups go");
+    await page.evaluate(() => { window.scrollTo(0, 0); document.querySelector("#place-add-smb").click(); });
+    await page.locator("#place-smb").waitFor();
+    await themes("Where backups go, add a network share");
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => !document.querySelector(".side-panel"));
+    await page.evaluate(() => { window.scrollTo(0, 0); document.querySelector("#place-add-drive").click(); });
     await page.locator("#cloud-way").waitFor();
     await page.locator("input[name=cloud-way][value=browser]").check();
     await page.locator("#cloud-open-signin").waitFor();
@@ -580,20 +582,16 @@ if (!pages.length || pages.some((p) => p.includes("system-backup"))) {
     await page.locator("#cloud-password").fill(password);
     await foot();
     await page.locator(".side-panel").waitFor({ state: "detached" });
-    await page.locator("#copies-test").click();
-    await page.waitForFunction(() => !document.querySelector("#copies-test")?.disabled);
+    await page.locator("[id^=place-test-]").last().click();
+    await page.waitForFunction(() => ![...document.querySelectorAll("[id^=place-test-]")].some((b) => b.disabled));
     await themes("system-backup.html, Test connection result");
     // Opened without scrolling the page, so nothing on the page behind sits half under the sticky header.
-    await page.evaluate(() => { window.scrollTo(0, 0); document.querySelector("#copies-connect").click(); });
-    await page.locator("#cloud-step-heading").waitFor();
-    await page.locator("input[name=cloud-service][value=webdav]").check();
-    await foot();
+    await page.evaluate(() => { window.scrollTo(0, 0); document.querySelector("#place-add-webdav").click(); });
     await page.locator("#cloud-details").waitFor();
     await themes("Connect a cloud service, Nextcloud details");
     await page.keyboard.press("Escape");
-    if (kept) await page.evaluate(([k, pw]) => api("/api/backup/copies", { method: "PUT", body: { password: pw, kind: k.kind, folder: k.folder, keep: k.keep } }), [kept, password]);
-    console.log("checked Connect a cloud service");
-  } catch (e) { add("system-backup.html, Connect a cloud service", "page", "error", e.message.split("\n")[0]); }
+    console.log("checked Where backups go and Connect a cloud service");
+  } catch (e) { add("system-backup.html, Where backups go", "page", "error", e.message.split("\n")[0]); }
   // Full backups with Checked and Restore, the restore dialog (also with an error under a field), the restore while
   // it runs and when it ends (DASH-381, DASH-387); Reelix's backup settings and the folder choice (DASH-385, DASH-386).
   // The example server restores and moves nothing.
