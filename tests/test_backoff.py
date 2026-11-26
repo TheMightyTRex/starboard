@@ -1,5 +1,5 @@
 """Backing off from apps that are not responding (DASH-66): checked less often up to a limit, back to every check as
-soon as they answer, and Check again always checks."""
+soon as they answer, and Check now always checks."""
 
 import json
 import threading

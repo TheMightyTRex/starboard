@@ -37,7 +37,7 @@ PUBLIC_FILES = {"/favicon.svg", "/icon-app.svg", "/manifest.webmanifest"}
 
 
 def _snaglist_style():
-    """Snaglist (Settings, General, Logs and feedback) sets its styles with one <style> in its own shadow root. Its hash lets
+    """Snaglist (Settings, General, Backup/Logs) sets its styles with one <style> in its own shadow root. Its hash lets
     exactly that stylesheet in, so the policy still refuses every other inline style."""
     try:
         with open(os.path.join(WEB, "js", "snaglist.js"), encoding="utf-8") as f:
@@ -495,7 +495,11 @@ def _installer_started_since(app, since):
 # Pages whose address changed: the old address answers 301 with the new one (a link from a bookmark, a plug-in or an older help page).
 MOVED_PAGES = {"/settings-media-server.html": "/settings-jellyfin.html",  # Settings, Apps: the media server tab (DASH-565)
                "/settings-alerts.html": "/settings-general-alerts.html", "/settings-performance.html": "/settings-general-performance.html",
-               "/settings-performance-pictures.html": "/settings-general-pictures.html"}  # DASH-584: Alerts and Performance are in General now
+               "/settings-performance-pictures.html": "/settings-general-pictures.html",  # DASH-584: Alerts and Performance are in General now
+               # DASH-595: Backup and restore, and Logs and feedback, are one tab, Settings, General, Backup/Logs
+               "/system-backup.html": "/settings-general-backup.html", "/settings-general-logs.html": "/settings-general-backup.html",
+               # Pages that moved on 12 November 2026 (they were a page with a script that sent the browser on): now a 301 too
+               "/wanted.html": "/wanted-films.html", "/wanted-quality.html": "/wanted-films.html?list=cutoff", "/discover-trending.html": "/discover-films.html"}
 MOVED_BY_REELIX = ("radarr", "sonarr", "lidarr", "bookshelf", "prowlarr", "seerr")  # what Reelix's migrator reads
 
 
@@ -1167,7 +1171,8 @@ class Handler(BaseHTTPRequestHandler):
             path = "/dashboard.html"  # the landing page (DASH-239)
         if path in MOVED_PAGES:  # an address that moved (DASH-565, DASH-584): the old one answers 301 with the new one, keeping what follows the page
             query = urllib.parse.urlsplit(self.path).query
-            return self.send(301, extra={"Location": MOVED_PAGES[path] + ("?" + query if query else ""), "Cache-Control": "no-cache"})
+            where = MOVED_PAGES[path]
+            return self.send(301, extra={"Location": where + (("&" if "?" in where else "?") + query if query else ""), "Cache-Control": "no-cache"})
         if not path.endswith(".html") and "." not in posixpath.basename(path):
             path += ".html"
         public = path in PUBLIC_PAGES or path in PUBLIC_FILES or path.startswith(PUBLIC_PREFIXES)
@@ -1343,7 +1348,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _api(self, method, path):
         app = self.app
-        fresh = "fresh=1" in urllib.parse.urlparse(self.path).query  # "Check again": skip the shared answers
+        fresh = "fresh=1" in urllib.parse.urlparse(self.path).query  # "Check now": skip the shared answers
         if method != "GET":
             services.forget()  # a change (an app added, a setting saved) makes the shared answers out of date
         try:
@@ -1546,8 +1551,36 @@ class Handler(BaseHTTPRequestHandler):
                     return self.json(200, {"ok": True})
             if path == "/api/network" and method == "GET":
                 return self.json(200, app.network_info(self.client_address[0]))
+            if path.startswith("/api/plex/link"):
+                from . import plex_link  # only when a person signs in to Plex: nothing more at start-up
+            if path == "/api/plex/link" and method == "POST":
+                # Sign in to Plex with its own link code (DASH-595): plex.tv gives a code, the person approves it at plex.tv/link.
+                try:
+                    out = plex_link.start(app.data_dir)
+                except plex_link.LinkError as e:
+                    return self.error(502, str(e))
+                logs.event("info", "apps", "Plex link code requested")
+                return self.json(200, out)
+            m = re.match(r"^/api/plex/link/(\d{1,12})(/cancel)?$", path)
+            if m:
+                pin = int(m.group(1))
+                if m.group(2) and method == "POST":
+                    plex_link.cancel(pin)
+                    return self.json(200, {"state": "cancelled"})
+                if not m.group(2) and method == "GET":
+                    try:
+                        out = plex_link.poll(pin)
+                    except plex_link.LinkError as e:
+                        return self.json(200, {"state": "waiting", "left": 0, "note": str(e)})
+                    if out["state"] == "approved":
+                        logs.event("info", "apps", "Plex link approved")
+                    return self.json(200, out)
             if path == "/api/services" and method == "POST":
                 incoming = self.body()
+                if incoming.get("plex_pin") and not incoming.get("api_key"):  # the token Plex's link flow found stays on the server
+                    from . import plex_link
+                    incoming["api_key"] = plex_link.token_of(incoming["plex_pin"]) or ""
+                incoming.pop("plex_pin", None)
                 service_id = cfg.upsert_service(incoming)
                 logs.event("info", "apps", f"{'Changed' if incoming.get('id') else 'Added'} {str(incoming.get('name', 'an app'))[:60]}")
                 if not incoming.get("id"):
@@ -1572,6 +1605,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, {"user": user, "password": password})
             if path == "/api/services/test" and method == "POST":
                 incoming = self.body()
+                if incoming.get("plex_pin") and not incoming.get("api_key"):
+                    from . import plex_link
+                    incoming["api_key"] = plex_link.token_of(incoming["plex_pin"], keep=True) or ""
+                incoming.pop("plex_pin", None)
                 stored = cfg.service(incoming.get("id", "")) if incoming.get("id") else None
                 if stored and not incoming.get("api_key"):
                     if not same_server(stored.get("url", ""), str(incoming.get("url", ""))):
@@ -2554,7 +2591,7 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/logs/report" and method == "GET":
                 return self.send(200, logs.report(app, app.log).encode(), "text/plain; charset=utf-8")
             if path == "/api/logs/limits" and method == "GET":
-                # Settings, General, Logs and feedback (DASH-451): the limits, what the logs take now, and the apps'
+                # Settings, General, Backup/Logs (DASH-451): the limits, what the logs take now, and the apps'
                 # own limit read from Docker (asked only here, kept 10 minutes).
                 from . import app_logs
                 return self.json(200, logs.limits_answer(app, app_logs.limits()))
@@ -2579,7 +2616,7 @@ class Handler(BaseHTTPRequestHandler):
                 cfg.update_general({"last_version": app.version})
                 return self.json(200, {"ok": True})
             if path == "/api/busy" and method == "GET":
-                # What is using the processor now (DASH-558): read when the page is opened or Check again is pressed, never kept.
+                # What is using the processor now (DASH-558): read when the page is opened or Check now is pressed, never kept.
                 from . import busy
                 try:
                     return self.json(200, busy.read(cfg.data["services"]))

@@ -3775,7 +3775,7 @@
       "$ref": "#/components/responses/Problem"
      }
     },
-    "description": "Only for keys that ticked Logs: a key with no scopes does not have them. The same choices as Settings, General, Logs and feedback. Older days go at once; the answer says how many."
+    "description": "Only for keys that ticked Logs: a key with no scopes does not have them. The same choices as Settings, General, Backup/Logs. Older days go at once; the answer says how many."
    }
   },
   "/api/v1/logs/delete": {

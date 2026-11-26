@@ -1,9 +1,8 @@
 /*
- * Shared components for Storyarr and Starboard (version 1, 2 November 2026).
+ * Shared components for Starboard, its plug-ins and Stallboard (version 1, 2 November 2026).
  *
  * Uses only tokens.css. Everything is in the "shared" layer, so an app's own styles win without
- * !important. Class names are plain and match Starboard's; Storyarr maps its older classes to these
- * as each page is rebuilt (README.md has the map).
+ * !important. Class names are plain and match Starboard's.
  *
  * Rules that hold everywhere: square corners; 44px controls; one typeface; a visible 3px focus ring;
  * status is never colour alone; nothing moves when reduced motion is on.
@@ -790,6 +789,10 @@
     min-height: var(--control-h-compact);
     padding: 0 var(--space-3);
   }
+  /* The plain button, named as the pair of .btn--primary. It looks the same as .btn, so use .btn when you can. */
+  .btn--secondary {
+    border-color: var(--color-border);
+  }
   .btn[disabled],
   .btn[aria-disabled="true"] {
     opacity: 0.6;
@@ -1019,7 +1022,8 @@
   .required-key .field__required {
     margin: 0 0.2em 0 0;
   }
-  .field-error {
+  .field-error,
+  .field__error {
     display: flex;
     gap: var(--space-1);
     color: var(--status-danger-fg);
@@ -1040,6 +1044,17 @@
   .textarea {
     min-height: 96px;
     padding: var(--space-2) var(--space-3);
+  }
+  /* A number field: room for about six digits, not the whole row (a count of copies to keep). */
+  .input--narrow {
+    width: 8rem;
+    max-width: 100%;
+  }
+  .select--compact {
+    width: auto;
+    min-height: var(--control-h-compact);
+    padding-top: 0;
+    padding-bottom: 0;
   }
   .select {
     appearance: none;
@@ -1454,10 +1469,12 @@
   :is(h1, h2, h3, h4)[tabindex="-1"]:focus {
     outline: none;
   }
-  /* Stacks: children one under another with a fixed gap (1: 4px, 2: 8px, 4: 16px). */
+  /* Stacks: children one under another with a fixed gap (1: 4px, 2: 8px, 3: 12px, 4: 16px, 5: 20px). */
   .stack-1,
   .stack-2,
-  .stack-4 {
+  .stack-3,
+  .stack-4,
+  .stack-5 {
     display: grid;
     align-content: start;
   }
@@ -1467,8 +1484,14 @@
   .stack-2 {
     gap: var(--space-2);
   }
+  .stack-3 {
+    gap: var(--space-3);
+  }
   .stack-4 {
     gap: var(--space-4);
+  }
+  .stack-5 {
+    gap: var(--space-5);
   }
   /* Settings helpers. Inline save: a field and its Save button on one line. Form stack: fields one under
      another, at a readable width. Setting cost: the muted line under a setting that says what it costs. */
@@ -6186,6 +6209,111 @@ body:has(.side-panel-layer:not([hidden]), dialog[open]) snag-list { display: non
   [data-tooltip]:not(button, a, input) {
     cursor: default;
   }
+
+  /* 10. Starboard patterns, promoted into the library (26 November 2026, owner decision 2 of the design system audit).
+     Each was built inside Starboard first. The values are Starboard's own, so an app that adopts a pattern looks as it did.
+     The larger ones are styles-only parts (tools/parts.py): an app loads the file only on the pages that use it.
+     LIBRARY.md, App patterns, has the markup and the rules; the components pages show each one. */
+
+  /* Plain list: a short list of plain lines inside a slide-out or a card (what moves, what cannot). */
+  .plain-list {
+    margin: 0;
+    padding-inline-start: 1.2em;
+  }
+
+  /* Show once: a secret that is shown one time (a first sign-in, an API key, recovery codes, a backup key). The value
+     is selectable in one go, Copy and Download sit under it, and a notice says it will not appear again. Markup:
+     .show-once > .show-once__label + .show-once__value (code) + .show-once__actions (buttons) + .notice. Recovery codes
+     are the same pattern with .recovery-codes in place of the one value. */
+  .show-once {
+    display: grid;
+    gap: var(--space-3);
+    min-width: 0;
+    padding: var(--space-4);
+    border: 1px solid var(--color-divider);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-sunken);
+  }
+  .show-once__label {
+    margin: 0;
+    font-weight: var(--weight-strong);
+  }
+  .show-once__value {
+    display: block;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    font-family: var(--font-mono);
+    font-size: 1.05em;
+    overflow-wrap: anywhere;
+    user-select: all;
+  }
+  .show-once__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  .recovery-codes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: var(--space-2);
+  }
+  .recovery-codes li {
+    margin: 0;
+  }
+  .recovery-codes code {
+    display: block;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-divider);
+    border-radius: var(--radius-sm);
+    font-size: 1.05em;
+    letter-spacing: 0.04em;
+    user-select: all;
+  }
+
+  /* A wizard inside a slide-out (the media server switch): the same rules as a page wizard (WIZARD.md), in a wide slide-out.
+     "Step n of m" is the progress, one small muted line above the step's heading; a wizard with a bar uses .wizard-progress.
+     Markup: .side-panel.side-panel--wide > .side-panel__body.panel-wizard > p.panel-wizard__count + h3 + the step's fields,
+     then .side-panel__foot with Back, Next (primary) and Cancel. */
+
+  /* Page topics: a long page of settings, cut into topics, one shown at a time. nav.topic-tabs > [role=tablist] >
+     button.topic-tabs__tab[role=tab] (aria-selected, aria-controls the section); the sections are section.settings-section in
+     .settings-sections, and a hidden one has .topic-off. It differs from .tabs, which is for the parts of one thing in
+     one panel. Left and Right move between tabs, Home and End go to the first and last. The tabs wrap onto a second
+     line, never scroll. They stay under the header from 768px wide and 640px tall, and the page keeps their height
+     clear (--topic-tabs-h, set by the page's script as they wrap) so a focused field is never under them. */
+
+  /* Folding sections with a table in each (a plug-in's screen): .fold-tools (search and filters) above .folds, each
+     .fold a button that opens .fold__panel. The switch on the right of a head turns the whole section on or off. */
+
+  /* The update list: one table for each category, each with the same column widths so the columns line up down the page.
+     Below 721px the library stacks each row, so the widths apply only above that. Markup: .table-wrap > table.table.updates-table
+     with a colgroup (col.updates-table__app, __image, __installed, __latest, __status, __actions), a first cell .updates-app
+     (a tick, .app-icon.updates-app__icon, the name and the container line), and a Check now button in the page head. */
+
+  /* Places: where something goes (several places for backups). Each .place is a box with a logo, the name, a switch and the
+     last copy; .place-adds is a grid of .place-add buttons, one for each kind of place that can be added. The logo is one colour
+     (the text colour), so it reads in every theme, and the name always sits beside it. A brand's logo comes from
+     service-logos.svg (svg.place-logo__img > use href="icons/services.svg#s-drive"; Drive, OneDrive, Dropbox, Backblaze B2,
+     Amazon S3 and WebDAV) and is decorative; a place on this network uses a plain icon. The state of the last copy is
+     .place-state with data-tone, an icon and a bold word, never colour alone. */
+
+  /* Dashboard: a 12-column grid of cards in preset sizes (small 3, medium 4, half 6, wide 8, full 12 columns; two columns
+     on a phone, one for the rest). A .dash-card is a card with a head (.dash-card__head: the title and, in edit mode,
+     .dash-card__tools with a select.select--compact for the size and move buttons), then its content. Add .has-band for the
+     card band across the top. .dash-edit is the Edit dashboard bar. A plug-in's card types are .dash-stat (one large number
+     and its label), .guide-card (a numbered list with a thin bar: .guide-card__item, __num) and .spark-card (a small line in
+     the accent colour with its latest, lowest and highest in words: __item, __line, __words). */
+
+  /* The media library, promoted from Starboard's library.css (26 November 2026): walls of covers and their groups (.lib-wall,
+     .lib-group, .lib-card), network and collection cards (.network-card, .collection-card with the completion ring), item pages,
+     episode rows (.lib-order), search results, and Discover's rows that scroll sideways (.discover-rows, .discover-row,
+     .discover-shelf, .discover-card). It is Starboard's CSS word for word, so Starboard can load this file in place of its own;
+     merging these poster cards with .media-card is a later change (LIBRARY.md, App patterns). */
 
   /* Windows Contrast themes for the page banner and the tooltip. */
   @media (forced-colors: active) {

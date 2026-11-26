@@ -41,7 +41,7 @@ Whatever has keyboard focus has a thick outline, 3 pixels wide with a small gap,
 themes keep it too. The sticky header never covers what has focus: the page keeps the header's height clear when it
 scrolls.
 
-![The Apps page with Check again focused: a thick outline with a small gap round the button shows where the keyboard is](../images/a11y-focus.png)
+![The Apps page with Check now focused: a thick outline with a small gap round the button shows where the keyboard is](../images/a11y-focus.png)
 
 Every button and field is 44 pixels high, and nothing anyone needs to select is smaller than 24 by 24 pixels.
 
