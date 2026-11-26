@@ -8,8 +8,6 @@ let poolsFound = {};
 let usage = null;
 let perf = {};
 
-const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-const timeNow = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 const pctUsed = (d) => Math.round((d.used / d.total) * 100);
 
 // "7.6 of 8 TB": the used amount in the same unit as the total.

@@ -3,7 +3,6 @@
 // into your own library; Remove takes it out of the history.
 
 let odKind = "all";
-const plural = (n, [one, many]) => `${n.toLocaleString("en-GB")} ${n === 1 ? one : many}`;
 
 function odRow(it) {
   const when = it.last ? `Last watched ${new Date(it.last.replace(" ", "T")).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}` : "";
