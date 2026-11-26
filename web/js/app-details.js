@@ -299,7 +299,7 @@ const AppDetails = (() => {
     const rows = state.recent[s.id];
     if (!rows) {
       api(`/api/status?recent=${encodeURIComponent(s.id)}`).then((r) => { state.recent[s.id] = r.recent; if (current?.id === s.id) fill(); }).catch(() => {});
-      return el("p", { class: "muted", text: "Loading…" });
+      return SharedComponents.wait("Loading the recent checks");
     }
     if (!rows.length) return el("p", { class: "muted", text: "None since Starboard started." });
     return el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" },
@@ -314,7 +314,7 @@ const AppDetails = (() => {
 
   function uptimeBlock(s) {
     const u = state.uptime;
-    if (!u) return el("p", { class: "muted", text: state.errors.uptime ? `Could not load the history: ${state.errors.uptime}` : "Loading…" });
+    if (!u) return state.errors.uptime ? el("p", { class: "muted", text: `Could not load the history: ${state.errors.uptime}` }) : SharedComponents.wait("Loading the history");
     const row = u.items[s.id];
     if (!u.enabled && !row?.pct7 && row?.pct7 !== 0) {
       return el("p", { class: "muted" }, "Starboard keeps uptime history only while it watches in the background. Activate it in ",

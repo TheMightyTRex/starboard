@@ -2779,6 +2779,22 @@ for (const p of PAGES) {
   if (over > 0) wide.push(`${p} by ${over}px`);
 }
 check("USE-01", "no page scrolls sideways at 375 wide", wide.length === 0, wide.join(", "));
+console.log("\n== One waiting mark");
+await page.setViewportSize({ width: 1280, height: 860 });
+await open("index.html");
+const waited = await page.evaluate(() => {
+  const w = SharedComponents.wait("Loading the releases", { status: true });
+  document.body.append(w);
+  const plain = SharedComponents.wait("Loading the help");
+  const out = { cls: w.className, mark: w.firstElementChild.className, markHidden: w.firstElementChild.getAttribute("aria-hidden"), words: w.lastElementChild.textContent, role: w.lastElementChild.getAttribute("role"), plainRole: plain.lastElementChild.getAttribute("role"),
+    ring: getComputedStyle(w.firstElementChild).borderRadius, shown: w.firstElementChild.getBoundingClientRect().width };
+  w.remove();
+  return out;
+});
+check("UI-02", "the library's waiting mark is a hidden ring with words, and a status only when asked", waited.cls === "wait" && waited.mark === "wait__mark" && waited.markHidden === "true" && waited.words === "Loading the releases" && waited.role === "status" && waited.plainRole === null && waited.shown === 16, JSON.stringify(waited));
+await open("discover-ondemand.html");
+check("UI-02", "a page that waits shows the ring, not a plain Loading line", await page.locator(".wait .wait__mark").count() > 0 || await page.locator("#od-list .rows li, #od-list li").count() > 0);
+
 check("ALL", "no script errors on any page", problems.length === 0, problems.slice(0, 5).join(" | "));
 
 console.log(`\n== ${passed} passed, ${failed} failed`);
