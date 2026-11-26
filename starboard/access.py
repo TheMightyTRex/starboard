@@ -37,6 +37,13 @@ def summary(app):
               "Starboard reads status, queues, calendars and updates from the apps you add, with the API keys you give it. "
               "It adds films, series and books only when you choose Add.",
               any(s.get("api_key") for s in d["services"]), "apps", link="/settings.html", cost="A few small requests to each app when a page that shows it is open, shared for a few seconds."),
+        _item("json_cards", "Custom cards for any service's JSON",
+              "Each custom card you make asks the one address you gave it, with the key you gave it, and shows the fields you chose. "
+              + ("It asks addresses on your home network only. " if not (d.get("json_cards") or {}).get("allow_outside") else
+                 "You have allowed addresses outside your home network. ")
+              + "It never follows a redirect, waits at most 8 seconds, reads at most 256 KB and keeps only the chosen fields.",
+              (d.get("json_cards") or {}).get("cards"), "setting", link="/apps-services.html#custom-cards-h",
+              cost="Nothing until a dashboard shows the card or you select Ask now; then one small request, at most once in the card's refresh time (one minute to one hour)."),
         _item("download_hours", "Pausing and resuming downloads",
               "Outside your download hours, Starboard pauses qBittorrent, NZBGet and SABnzbd"
               + (f" ({' and '.join(clients)})" if clients else "") + ".",

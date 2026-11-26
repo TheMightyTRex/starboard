@@ -211,6 +211,58 @@ if (!pages.length || pages.some((p) => p.includes("settings-plugins-catalogue"))
   } catch (e) { add("settings-plugins-catalogue.html, Stallboard", "page", "error", e.message.split("\n")[0]); }
 }
 
+// A custom card (DASH-555): its panel with the chosen fields and the fields to choose from, and the dashboard with the card
+// on it, in Light, Dark and High contrast.
+if (!pages.length || pages.some((p) => p.includes("apps-services"))) {
+  try {
+    await page.goto(`${base}/apps-services.html`);
+    await settle();
+    await page.locator("[data-json-card]").first().click();
+    await page.waitForSelector("#jc-ask", { timeout: 8000 });
+    await page.locator("#jc-ask").click();
+    await page.waitForSelector("#jc-filter", { timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(500);
+    await page.evaluate(() => window.scrollTo(0, 0));  // Playwright scrolled the page to reach the row; axe is run from the top as for the other panels
+    await page.waitForTimeout(200);
+    const name = "apps-services.html, custom card";
+    await axe(name, "light");
+    await structure(name);
+    await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+    await page.waitForTimeout(150);
+    await axe(name, "dark");
+    await page.evaluate(() => { document.documentElement.removeAttribute("data-theme"); document.documentElement.classList.add("pref-contrast"); });
+    await page.waitForTimeout(150);
+    await axe(name, "high contrast");
+    await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
+    console.log("checked the custom card panel");
+  } catch (e) { add("apps-services.html, custom card", "page", "error", e.message.split("\n")[0]); }
+}
+if (!pages.length || pages.some((p) => p.includes("dashboard"))) {
+  try {
+    await page.goto(`${base}/dashboard.html`);
+    await settle();
+    await page.evaluate(async () => {
+      const cards = (await api("/api/json-cards")).cards;
+      const cfg = await api("/api/config/general", { method: "PUT", body: { dashboard: { layout: "glance", cards: [{ id: `json:${cards[0].id}`, size: "half" }, { id: "health", size: "half" }] } } });
+      dash = cfg.dashboard; draw();
+    });
+    await page.waitForSelector('[data-card^="json:"] dl', { timeout: 8000 });
+    await page.waitForTimeout(500);
+    const name = "dashboard.html, custom card";
+    await axe(name, "light");
+    await structure(name);
+    await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+    await page.waitForTimeout(150);
+    await axe(name, "dark");
+    await page.evaluate(() => { document.documentElement.removeAttribute("data-theme"); document.documentElement.classList.add("pref-contrast"); });
+    await page.waitForTimeout(150);
+    await axe(name, "high contrast");
+    await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
+    await page.evaluate(async () => { await api("/api/config/general", { method: "PUT", body: { dashboard: { layout: "glance", cards: null } } }); });
+    console.log("checked the custom card on the dashboard");
+  } catch (e) { add("dashboard.html, custom card", "page", "error", e.message.split("\n")[0]); }
+}
+
 // Alerts, The server itself (DASH-556): the host alerts' switches, limits and times, with More settings on, in Light, Dark and High contrast.
 if (!pages.length || pages.includes("settings-alerts.html")) {
   const name = "settings-alerts.html, The server itself";
