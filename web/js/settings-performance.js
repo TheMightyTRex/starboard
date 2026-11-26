@@ -1,4 +1,4 @@
-// Settings, Performance: the preset and pictures.
+// Settings, General, Performance: the preset and pictures.
 
 const USAGE_CHOICES = [["ask", "Only when I press Sort by type"], ["open", "When I open Storage, if over a day old"], ["nightly", "Every night at 3 am"], ["weekly", "Every week, at 3 am"], ["off", "Off"]];
 
@@ -64,7 +64,7 @@ async function startPerformance() {
       el("div", { class: "inline-save" }, pick("pf-hist-every", [[60, "Every minute"], [300, "Every 5 minutes"], [900, "Every 15 minutes"]], perf().history_every,
         (v, t) => save({ performance: { history_every: Number(v) } })),
         sw("pf-hist-l", perf().history, (on) => save({ performance: { history: on } }))), "pf-hist-l"),
-    settingRow("Watching and alerts", withCost("Checks your apps with no page open and sends alerts. Where alerts go: Settings, Alerts.", "watch"),
+    settingRow("Watching and alerts", withCost("Checks your apps with no page open and sends alerts. Where alerts go: Settings, General, Alerts.", "watch"),
       el("div", { class: "inline-save" }, pick("pf-watch-every", [[1, "Every minute"], [5, "Every 5 minutes"], [10, "Every 10 minutes"], [15, "Every 15 minutes"], [30, "Every 30 minutes"], [60, "Every hour"]], w.every,
         (v, t) => save({ watch: { every: Number(v) } })),
         sw("pf-watch-l", w.enabled, (on) => save({ watch: { enabled: on } }))), "pf-watch-l"),

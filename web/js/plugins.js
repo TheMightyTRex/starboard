@@ -712,6 +712,7 @@ function pluginPage(p, redraw, ms = null) {
   return [
     groupSection(`pl-${p.id}-general`, "General", stateSec, slot, versions, jobs, may, remove),
     webSection(p),
+    p.id === "calibre-web" ? section("pl-calibre-web-phone", "Read on your phone", "Apps for Android and iOS that open your Calibre-Web library.", phoneApps()) : null,
     adoptSection(p, redraw),
     p.looks?.length ? section(`pl-${p.id}-styles`, "Styles", "Colours for Starboard from this plug-in. Choose one for this browser, as in Display.", styleGallery(p)) : null,
     appSettingsSection(p),

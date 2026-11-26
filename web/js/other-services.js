@@ -76,7 +76,7 @@ async function renderOwnJobs() {
   const cfg = AppDetails.state.config;
   const rows = extras.jobs.map((j) => ({ key: j.key, title: j.title, what: j.what, on: j.enabled, state: j.state, summary: j.summary, link: j.page || "/settings-jellyfin.html" }));
   rows.push({ key: "hours", title: "Download hours", what: "Pauses qBittorrent, NZBGet and SABnzbd outside the hours you set", on: !!hours?.enabled, link: "/settings-downloads-hours.html" });
-  rows.push({ key: "watch", title: "Watching and alerts", what: "Checks your apps every few minutes and sends alerts", on: !!cfg?.watch?.enabled, link: "/settings-alerts.html" });
+  rows.push({ key: "watch", title: "Watching and alerts", what: "Checks your apps every few minutes and sends alerts", on: !!cfg?.watch?.enabled, link: "/settings-general-alerts.html" });
   renderKeyed($("#own-jobs"), rows, (r) => r.key, (r) => {
     const [words, tone] = !r.on ? STATUS.inactive : r.state === "failed" ? STATUS.failed : r.state === "running" ? STATUS.inProgress : STATUS.active;
     return el("li", { class: "row row--lead", "data-key": r.key },

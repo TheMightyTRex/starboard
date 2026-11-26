@@ -252,7 +252,7 @@ HELP = {
             "asked for here, typed hidden, and stays on the server. Press Enter to leave one for later: add it in "
             "Starboard, Settings, Manage apps.",
     "storage-page": "Working out what uses the space reads every file on your disks, so you choose when it happens. "
-                    "The Storage page can also update its sizes while it is open. Both are in Settings, Performance.",
+                    "The Storage page can also update its sizes while it is open. Both are in Settings, General, Performance.",
     "cleanup": "What earlier versions, removed plug-ins and old backups left behind. Moving them to the holding folder "
                "deletes nothing: each can be put back, or deleted for good by you, in Starboard, System, Clean up. "
                "Starboard never deletes them by itself.",
@@ -3531,7 +3531,7 @@ def step_storage_page(api, term, state):
         except Problem as e:
             refused(term, e)
     state["storage_page"] = {"usage": u + 1, "refresh": r + 1, "daily": daily}
-    term.ok("Saved. Change it later in Settings, Performance.")
+    term.ok("Saved. Change it later in Settings, General, Performance.")
     return True
 
 
@@ -3769,7 +3769,7 @@ def step_preset(api, term, state):
     keys = [recommended] + [k for k in keys if k != recommended]  # the recommended one at the top
     HELP["preset"] = "\n\n".join(f"{config['presets'][k]}: {config['preset_about'][k]}" for k in keys)
     head(term, state, "preset")
-    term.note("How much Starboard does in the background. You can change each part later in Settings, Performance.")
+    term.note("How much Starboard does in the background. You can change each part later in Settings, General, Performance.")
     current = config["performance"].get("preset", recommended)
     current = current if current in keys else recommended
     default = keys.index(state.get("preset", recommended if current == "balanced" else current)) + 1
@@ -3784,7 +3784,7 @@ def step_preset(api, term, state):
             refused(term, e)
             default = picked + 1
     state["preset"] = keys[picked]
-    term.ok(f"{config['presets'][keys[picked]]}. Change it later in Settings, Performance.")
+    term.ok(f"{config['presets'][keys[picked]]}. Change it later in Settings, General, Performance.")
     return True
 
 

@@ -9,7 +9,7 @@ const password = fs.readFileSync(process.env.PASSWORD_FILE, "utf8").trim();
 const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.html", "downloads.html", "downloads-requests.html",
   "upcoming.html", "system.html", "system-storage.html", "system-disks.html", "system-monitor.html", "system-busy.html", "system-network.html",
   "system-logs.html", "system-backup.html", "settings.html", "settings-general.html", "settings-security.html",
-  "settings-alerts.html", "settings-updates.html", "settings-releases.html", "settings-restore.html", "settings-performance.html", "settings-jellyfin.html",
+  "settings-general-alerts.html", "settings-updates.html", "settings-releases.html", "settings-restore.html", "settings-general-performance.html", "settings-jellyfin.html",
   "settings-audiobookshelf.html", "copy-settings.html", "install-apps.html", "setup-guide.html", "bring-in.html", "upgrade.html", "settings-install.html",
   // The Library, from the made-up Reelix (DASH-163)
   "library-tv.html", "library-tv-networks.html", "library-films.html", "library-films-collections.html", "library-music.html",
@@ -27,7 +27,7 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   // Downloads' level 2 pages (DASH-390)
   "settings-downloads.html", "settings-downloads-usenet.html", "settings-downloads-hours.html",
   // Radio's, Performance's and Security's level 2 pages (DASH-391)
-  "settings-radio-link.html", "settings-radio-library.html", "settings-radio-logos.html", "settings-performance-pictures.html",
+  "settings-radio-link.html", "settings-radio-library.html", "settings-radio-logos.html", "settings-general-pictures.html",
   "settings-security-password.html", "settings-security-signin.html", "settings-security-keys.html", "settings-security-sessions.html",
   "settings-plugins.html", "settings-plugins-catalogue.html", "settings-plugin.html?id=direct-play", "settings-plugin.html?id=jellyfin"];  // with the set-up's Audio description offer (DASH-399)
 const SECRET = "made-up-journey-key-7f3a9c1e5b";
@@ -939,8 +939,8 @@ await api(`/api/services/${dispatcharr.id}`, { method: "DELETE" }).catch(() => {
 console.log("\n== MENU2 General on the level 2 menu");
 const level2 = async (p) => { await open(p); return (await page.locator(".site-header__tabs .menu-tabs a").evaluateAll((as) => as.map((a) => a.textContent.trim()))).join("|"); };
 const headings = () => page.locator("main .settings-sections h2").evaluateAll((hs) => hs.map((h) => h.textContent.trim()).join("|"));
-check("MENU2-01", "General has Names and apps, Appearance, Pages and lists, Discover rows, Download hours, Logs and feedback, Backup and restore",
-  (await level2("settings-general.html")) === "Names and apps|Appearance|Pages and lists|Discover rows|Download hours|Logs and feedback|Backup and restore", await level2("settings-general.html"));
+check("MENU2-01", "General has Names and apps, Appearance, Pages and lists, Discover rows, Download hours, Logs and feedback, Alerts, Performance, Pictures, Backup and restore",
+  (await level2("settings-general.html")) === "Names and apps|Appearance|Pages and lists|Discover rows|Download hours|Logs and feedback|Alerts|Performance|Pictures|Backup and restore", await level2("settings-general.html"));
 check("MENU2-01", "each page shows only its own parts", (await headings()) === "Names|Categories|App cards|Set-up guide", await headings());
 await open("settings-general-appearance.html");
 check("MENU2-02", "Appearance holds style and colours, the default design and accessibility", (await headings()) === "Style and colours|Default design|Accessibility", await headings());
@@ -989,11 +989,11 @@ console.log("\n== MENU2 Radio, Performance and Security on the level 2 menu");
 check("MENU2-05", "Radio has Sources, Add a show from a link, Your podcast library, Station logos",
   (await level2("settings-radio.html")) === "Sources|Add a show from a link|Your podcast library|Station logos", await level2("settings-radio.html"));
 check("MENU2-05", "Sources shows only the sources", (await headings()) === "Sources", await headings());
-check("MENU2-05", "Performance has Preset and Pictures", (await level2("settings-performance.html")) === "Preset|Pictures");
-check("MENU2-05", "Pictures has the picture cache and its Clear", (await level2("settings-performance-pictures.html")) && (await headings()) === "Pictures|Clear", await headings());
+check("MENU2-05", "Performance and Pictures are tabs of General", (await level2("settings-general-performance.html")) === "Names and apps|Appearance|Pages and lists|Discover rows|Download hours|Logs and feedback|Alerts|Performance|Pictures|Backup and restore");
+check("MENU2-05", "Pictures has the picture cache and its Clear", (await level2("settings-general-pictures.html")) && (await headings()) === "Pictures|Clear", await headings());
 check("MENU2-05", "Security has Who can open the dashboard, Password, Sign-in methods, API keys, Sign out everywhere",
   (await level2("settings-security.html")) === "Who can open the dashboard|Password|Sign-in methods|API keys|Sign out everywhere", await level2("settings-security.html"));
-for (const [from, to] of [["settings-radio.html#radio-logos-h", "/settings-radio-logos.html"], ["settings-performance.html#pf-pictures-h", "/settings-performance-pictures.html"],
+for (const [from, to] of [["settings-radio.html#radio-logos-h", "/settings-radio-logos.html"], ["settings-general-performance.html#pf-pictures-h", "/settings-general-pictures.html"],
   ["settings-security.html#sc-keys-h", "/settings-security-keys.html"], ["settings-security.html#sc-pw-h", "/settings-security-password.html"]]) {
   await open("index.html");
   await open(from);

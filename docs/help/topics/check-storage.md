@@ -44,7 +44,7 @@ To sort again later, select **Sort by type again**.
 ## Things to note
 
 - Sorting by type reads every file name in your folders, so it runs only when you choose. To run it on a
-  schedule, change **Work out what uses the space** in **Settings**, **Performance**, under
+  schedule, change **Work out what uses the space** in **Settings**, **General**, **Performance**, under
   **More settings**. Read [Make Starboard use less of your server](make-starboard-lighter.md#background-work).
 - **Space used over time** needs **Daily record of used space** active in the same place. It shows a forecast of
   when the space runs out, after a week of readings.

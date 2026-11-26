@@ -123,7 +123,7 @@
   }
  },
  "storage_page": {
-  "intro": "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance.",
+  "intro": "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, General, Performance.",
   "usage_question": "Work out what uses the space",
   "usage": [
    {

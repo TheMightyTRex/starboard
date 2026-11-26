@@ -11,7 +11,7 @@ Notifications' settings are on its own tab: go to **Settings**, then **Plug-ins*
 | **Tell the person who asked too** | By the email address or Telegram chat given for them under People. Activated or deactivated. | Activated |
 | **A download failed** | A download that stops with a problem. Activated or deactivated. | Activated |
 | **An app stops answering, and when it is back** | After two checks in a row with no answer. Activated or deactivated. | Activated |
-| **A disk is nearly full** | At the limit set for alerts in Settings, Alerts, or 90%. Activated or deactivated. | Activated |
+| **A disk is nearly full** | At the limit set for alerts in Settings, General, Alerts, or 90%. Activated or deactivated. | Activated |
 | **A disk is erased, added or taken out** | Every change Starboard's disk pool helper makes, however it was asked for, as a warning when a disk was erased. Needs Starboard 0.23.0 or later. Activated or deactivated. | Activated |
 | **An update is ready** | For Starboard, your apps and your plug-ins. Activated or deactivated. | Activated |
 | **New this week** | Films, series and more that arrived in the last 7 days, once a week at 09:00. Activated or deactivated. | Activated |
