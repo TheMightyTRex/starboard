@@ -36,6 +36,7 @@ async function findAllWanted(tab, button) {
   try { plan = await api(`/api/find-wanted?tab=${tab}`); }
   catch (e) { problem(e.message, button); button.disabled = false; button.removeAttribute("aria-busy"); return; }
   button.disabled = false; button.removeAttribute("aria-busy");
+  button.focus();  // a disabled button loses focus: the question must give it back to this one
   if (plan.run?.state === "running") { findShow(tab, button, plan.run); return; }
   if (!plan.to_search) {
     announce(plan.wanted ? "Everything wanted was searched for in the last day" : "Nothing is wanted");
