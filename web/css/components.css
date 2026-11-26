@@ -348,6 +348,25 @@
     overflow: hidden;
     clip-path: inset(50%);
   }
+  /* A 2nd level menu with many tabs whose icons must be told apart (.menu-tabs--scroll, owner, 26 November 2026, such as
+     one tab for each plug-in): icons only, every tab keeps 44px and the row scrolls sideways instead of squeezing the
+     tabs. The current tab and the tab with focus show their name beside the icon, so tabs can be told apart. The bar
+     under the current tab and the focus ring carry the state without colour. */
+  .site-header__tabs .menu-tabs--scroll.is-compact a {
+    flex: none;
+    min-width: var(--control-h);
+    justify-content: center;
+  }
+  .site-header__tabs .menu-tabs--scroll.is-compact a[aria-current="page"] .menu-tabs__label,
+  .site-header__tabs .menu-tabs--scroll.is-compact a:focus-visible .menu-tabs__label {
+    position: static;
+    width: auto;
+    height: auto;
+    max-width: 12rem;
+    overflow: hidden;
+    clip-path: none;
+    text-overflow: ellipsis;
+  }
   /* When even the icons do not fit (large text, wider spacing, a long server name), the header gives way in steps
      instead of cutting items off or squeezing the search box (DASH-437). SharedComponents.setupHeaderFit measures the
      header and adds one class at a time to .site-header until everything fits:
