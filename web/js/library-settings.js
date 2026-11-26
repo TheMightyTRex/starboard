@@ -29,7 +29,7 @@ async function drawLibraryViews() {
 // Discover's rows (DASH-303): which rows each area shows and their order. A sortable list (UX-51) with a tick for
 // each row; a change applies at once with the saved note (settings pattern 2). Put back the standard rows undoes it.
 // DASH-396 (owner, 13 November 2026: "might need a separate section for each in the settings"): its own level 2 page,
-// Settings, General, Discover rows, with one section per area in the Discover menu's order, so topic tabs show one
+// Settings, General, Discover, with one section per area in the Discover menu's order, so topic tabs show one
 // area at a time. An area asks Reelix for its rows only when its section is shown (lightweight rule).
 const DISCOVER_AREAS = [["films", "Films"], ["tv", "TV"], ["music", "Music"], ["radio", "Radio"], ["books", "Books"], ["audiobooks", "Audiobooks"]];
 

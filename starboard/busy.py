@@ -1,7 +1,7 @@
 """What is using the processor now (DASH-558; owner, 23 November 2026, from a look at Monitee's process monitoring).
 
 The heaviest containers and processes by processor and memory, for System, Overview, Busy now. Read only, and only
-when the page is opened or Check again is pressed: nothing runs at rest and nothing is kept. It never stops, signals
+when the page is opened or Check now is pressed: nothing runs at rest and nothing is kept. It never stops, signals
 or changes anything.
 
 How it reads, in order of cost:

@@ -7,7 +7,7 @@ let filter = null; // a state word, or null for everything
 let sort = "attention";
 let grouped = false;
 let paused = false;
-let every = 15; // seconds between updates; Settings, General, Performance (0: only when you press Check again)
+let every = 15; // seconds between updates; Settings, General, Performance (0: only when you press Check now)
 let timer = null;
 let services = new Map(); // app name -> app from /api/config, for "Open in" links
 let panel = null;
@@ -900,7 +900,7 @@ async function issuesExport(how, button) {
 }
 
 // Held downloads (DASH-210): releases Reelix found but a delay profile is holding back, in case a better one comes.
-// Asked when the page opens, with Check again and when the tab is shown again; not on the queue's timer, as the
+// Asked when the page opens, with Check now and when the tab is shown again; not on the queue's timer, as the
 // list changes only when a delay ends (lightweight rule). Get it now sends one to the download app; Remove drops it.
 
 function heldWhen(iso) {
@@ -1129,7 +1129,7 @@ startPage().then(async () => {
   $("#download-issues").addEventListener("click", (e) => issuesExport("download", e.currentTarget));
   $("#auto-refresh").addEventListener("click", () => {
     setPaused(!paused);
-    announce(paused ? "Updates paused" : every ? `Updates resumed, every ${every} seconds` : "Updates only when you press Check again");
+    announce(paused ? "Updates paused" : every ? `Updates resumed, every ${every} seconds` : "Updates only when you press Check now");
   });
   $("#select-all").addEventListener("change", selectAll);
   $("#group-by-app").addEventListener("click", (e) => {

@@ -364,7 +364,7 @@ if (await wsTab.count()) {
 // T16 Where backups go (DASH-380, several places 26 November 2026): from the section's heading, Tab reaches the first
 // place's switch, then its Test, Change and Remove, then the next place; Enter on Test keeps focus on it and the result
 // is shown beside the place and said in the polite announcer.
-await page.goto(`${base}/system-backup.html`);
+await page.goto(`${base}/settings-general-backup.html`);
 await settle();
 await page.evaluate(() => { const h = document.querySelector("#bk-copies-h"); h.tabIndex = -1; h.focus(); });
 const sw16 = await tabTo((f) => f.tag === "INPUT" && f.id === "place-on-main", 8);
@@ -864,7 +864,7 @@ check("T28", "Escape cancels and gives focus back to Remove the VPN", afterWarn.
 // T30 Connect a cloud service (DASH-452) by keyboard alone: a service in Add a place opens the slide-out at the sign-in
 // with focus on its heading; the way to sign in by arrows; focus stays in the slide-out; Escape closes
 // it part way, says nothing was saved and gives focus back to the button.
-await page.goto(`${base}/system-backup.html`);
+await page.goto(`${base}/settings-general-backup.html`);
 await settle();
 await page.evaluate(() => { const h = document.querySelector("#places-add"); h.focus(); });
 const connect30 = await tabTo((f) => f.id === "place-add-drive", 10);
@@ -1040,7 +1040,7 @@ if (await picks34.count() >= 3) {
 // Starboard password, Restore this backup, then Cancel; Escape closes it with focus back on Restore and nothing
 // started. With both passwords, Enter starts it: focus is back on Restore and each step is said politely. The example
 // server restores nothing (its made-up backup password is "made-up backup").
-await page.goto(`${base}/system-backup.html`);
+await page.goto(`${base}/settings-general-backup.html`);
 await settle();
 await page.locator("#full-list li[data-key]").first().waitFor({ timeout: 10000 }).catch(() => {});
 await page.evaluate(() => { const h = [...document.querySelectorAll("#full-body h3")].find((x) => x.textContent === "Full backups in the folder"); h.tabIndex = -1; h.focus(); });
@@ -1092,7 +1092,7 @@ if (sitesLink) {
 // T35 Reelix's backup settings (DASH-385, DASH-386) by keyboard alone: the selects change with the arrow keys and
 // save at once, focus stays on the select and the saved note says so; choosing the media folder says Reelix must
 // restart, with focus still on the select.
-await page.goto(`${base}/system-backup.html`);
+await page.goto(`${base}/settings-general-backup.html`);
 await settle();
 const show35 = page.getByRole("button", { name: "Show Reelix's backups" });
 if (await show35.count()) {
@@ -1260,7 +1260,7 @@ if (setUp) {
   }
 }
 
-// T-BUSY (DASH-558) Busy now by keyboard alone: the page reads once when it opens and says so, Check again is reached with
+// T-BUSY (DASH-558) Busy now by keyboard alone: the page reads once when it opens and says so, Check now is reached with
 // Tab and pressed with Enter, focus comes back to it, the result is said in a live region, and each table has a caption
 // and row headings.
 await page.goto(`${base}/system-busy.html`);
@@ -1269,7 +1269,7 @@ await page.waitForFunction(() => /Read at/.test(document.querySelector("#busy-su
 check("T-BUSY", "the page reads once when it opens and says when", /Read at \d\d:\d\d:\d\d/.test(await page.locator("#busy-summary").innerText()));
 check("T-BUSY", "each table has a caption and row headings", await page.evaluate(() => [...document.querySelectorAll("#busy-containers table, #busy-processes table")].every((t) => t.querySelector("caption")?.textContent.trim() && t.querySelector("tbody th[scope=row]"))));
 const again = await tabTo((f) => f.id === "busy-again", 60);
-check("T-BUSY", "Check again can be reached with Tab", !!again);
+check("T-BUSY", "Check now can be reached with Tab", !!again);
 if (again) {
   await page.keyboard.press("Enter");
   await page.waitForTimeout(300);
@@ -1277,7 +1277,7 @@ if (again) {
   await page.waitForFunction(() => !document.getElementById("busy-again").disabled, null, { timeout: 10000 }).catch(() => {});
   await page.waitForTimeout(500);
   const f = await focus(), s = await said();
-  check("T-BUSY", "focus comes back to Check again", f.id === "busy-again", f.id || f.text);
+  check("T-BUSY", "focus comes back to Check now", f.id === "busy-again", f.id || f.text);
   check("T-BUSY", "the result is said in a live region", /Read at \d\d:\d\d:\d\d/.test(s), s);
 }
 
@@ -1356,6 +1356,52 @@ if (dispBtn) {
   const f3 = await focus();
   check("T-SHADOWS", "Escape returns focus to Display", /Display/.test(f3.text), f3.text);
 }
+
+// T-PLEX Sign in with Plex (DASH-595): reachable by Tab beside the token field; Enter shows the code in a polite live region
+// and puts focus on Cancel; Cancel puts focus back on the button and says so; the approval is said and focus goes to Save.
+await page.goto(`${base}/settings.html`);
+await settle();
+await page.click("#add-service");
+await page.locator("#service-form select[name=type]").selectOption("plex");
+await page.waitForTimeout(300);
+const signIn = page.getByRole("button", { name: "Sign in with Plex" });
+await signIn.focus();
+await page.keyboard.press("Enter");
+await page.locator(".plex-code").waitFor({ timeout: 5000 });
+const f2a = await focus();
+check("T-PLEX", "Enter shows the code and focus is on Cancel", f2a.tag === "BUTTON" && /^Cancel/.test(f2a.text), `${f2a.tag} ${f2a.text}`);
+check("T-PLEX", "the code is in a polite live region with a link to plex.tv/link", await page.locator(".plex-link [aria-live=polite] .plex-code").count() === 1
+  && await page.locator(".plex-link [aria-live=polite] a[href='https://plex.tv/link']").count() === 1);
+await page.keyboard.press("Enter");
+await page.waitForTimeout(300);
+const f2b = await focus();
+check("T-PLEX", "Cancel puts focus back on Sign in with Plex and says so", /Sign in with Plex/.test(f2b.text) && /Sign-in cancelled/.test(await page.locator(".plex-link [aria-live=polite]").innerText()), f2b.text);
+await page.keyboard.press("Enter");
+await page.locator(".plex-link", { hasText: "Signed in with Plex" }).waitFor({ timeout: 15000 }).catch(() => {});
+const f2c = await focus();
+check("T-PLEX", "when it is approved, it is said and focus goes to the save button", /Signed in with Plex/.test(await page.locator(".plex-link [aria-live=polite]").innerText()) && /Add app|Save app|Save and continue/.test(f2c.text), f2c.text);
+await page.keyboard.press("Escape");
+
+// T-GEN1 Settings, General, Backup/Logs (DASH-595): one page of sections with a row of in-page links. Tab walks the links in
+// reading order, Enter on one moves to its section with focus on the section's heading, and every link has a section.
+await page.goto(`${base}/settings-general-backup.html`);
+await settle();
+const linkNames = await page.locator(".page-links a").allTextContents();
+check("T-GEN1", "the in-page links are a list under a named navigation", await page.locator("nav.page-links[aria-label='On this page'] ul li a").count() === linkNames.length && linkNames.length >= 8);
+await page.evaluate(() => { document.querySelector("main h1").tabIndex = -1; document.querySelector("main h1").focus(); });
+const firstLink = await tabTo((f) => f.tag === "A" && /^When backups are made/.test(f.text), 4);
+check("T-GEN1", "Tab from the heading reaches the first link, then the rest in order", !!firstLink);
+const seen = [];
+for (let i = 1; i < linkNames.length; i++) { await page.keyboard.press("Tab"); seen.push((await focus()).text); }
+check("T-GEN1", "the links come in the order the sections do", JSON.stringify(seen) === JSON.stringify(linkNames.slice(1)), seen.join("|"));
+await page.locator(".page-links a", { hasText: "Where backups go" }).focus();
+await page.keyboard.press("Enter");
+await page.waitForTimeout(300);
+check("T-GEN1", "Enter moves to the section", (await page.evaluate(() => location.hash)) === "#bk-copies-h" && await page.locator("#bk-copies-h").isVisible());
+check("T-GEN1", "the page has one h1 and every section a heading", await page.locator("main h1").count() === 1 && await page.locator("main h2").count() >= 8);
+await page.goto(`${base}/system-backup.html`);
+await settle();
+check("T-GEN1", "the old address opens it", new URL(page.url()).pathname === "/settings-general-backup.html");
 
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);

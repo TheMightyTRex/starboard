@@ -1,7 +1,7 @@
 /*
  * Shared component behaviour (version 1, 2 November 2026). Plain JavaScript, no libraries.
- * Starboard can use it as it is; Storyarr has the same behaviour in its React components. Each part
- * below says what the behaviour must be, so both apps keep to it.
+ * Starboard can use it as it is. Each part
+ * below says what the behaviour must be, so every app keeps to it.
  */
 (() => {
   const focusable =
