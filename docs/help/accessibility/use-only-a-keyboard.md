@@ -4,7 +4,7 @@
 # Use only a keyboard
 
 Everything in Starboard works with a keyboard alone, and with switch access or voice control that acts as a
-keyboard. Nothing needs to be activated: it is how every page is built. This page lists the keys, and says how focus
+keyboard. You do not need to activate anything, because every page is built this way. This page lists the keys, and says how focus
 moves through slide-outs and dialogs and after you do something.
 
 ## When would you use it
@@ -55,8 +55,8 @@ box that asks before doing something, such as **Delete the history?**. Both work
 1. You select a button, such as **Display**, **Edit** or **Remove**. Starboard remembers it.
 2. Focus moves inside: to the first field when it asks for something, to **Close** when it shows something, or to
    **Cancel** when the choice would delete or remove something, so pressing Enter by mistake does no harm.
-3. Tab and Shift and Tab move only between its controls. After the last one, focus goes back to the first. The
-   page behind cannot be reached while it is open.
+3. Tab and Shift and Tab move only between its controls. After the last one, focus goes back to the first. You
+   cannot reach the page behind while it is open.
 4. Escape, **Close**, **Done** or **Cancel** closes it, as does finishing what it asks.
 5. Focus goes back to the button that opened it. If that button has gone, for example after removing the thing it
    belonged to, focus goes to the same control drawn again, then its row, then the heading of its section, and
@@ -70,8 +70,8 @@ Nothing opens by itself when a page loads: a slide-out opens only when you ask f
 
 ## Focus after you do something
 
-Many parts of a page are drawn again after a save, a delete or a refresh. Focus is never lost to the top of the
-page: it stays on the same control drawn again, or moves to the nearest thing that is still there. For example:
+The page draws many of its parts again after a save, a delete or a refresh. Focus is never lost to the top of the
+page. It stays on the same control drawn again, or moves to the nearest thing that is still there. For example:
 
 - **Show 40 more:** focus moves to the first new item.
 - **Load more as you scroll:** focus stays where it is.
@@ -81,8 +81,8 @@ page: it stays on the same control drawn again, or moves to the nearest thing th
 
 ## Things to note
 
-- Rows of covers that scroll sideways are reached with Tab, one cover at a time; the arrows beside a row are for a
-  mouse and are left out of the Tab order.
+- Reach rows of covers that scroll sideways with Tab, one cover at a time. The arrows beside a row are for a
+  mouse, and Tab skips them.
 - Lists you can put in order have **Move up** and **Move down** as well as dragging.
 - Every main task is walked with the keyboard alone before each change is merged. Read
   [How Starboard is tested](how-starboard-is-tested.md).

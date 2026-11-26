@@ -3,10 +3,10 @@
 
 # Latest accessibility test results
 
-The most recent accessibility checks of Starboard, for Starboard 0.18.0, found no problems: the scan of every
-page, the reading order, the layout check and the colour contrast check all passed, and every keyboard task passed. This page gives the figures, with their
-dates, and the results of earlier runs. How each check works is in
-[How Starboard is tested](how-starboard-is-tested.md).
+The most recent accessibility checks, for Starboard 0.18.0, found no problems. The scan of every page, the reading
+order, the layout check and the colour contrast check all passed, and every keyboard task passed. This page gives
+the figures, with their dates, and the results of earlier runs. [How Starboard is tested](how-starboard-is-tested.md)
+explains how each check works.
 
 ## When would you use it
 
@@ -44,17 +44,17 @@ made-up data.
 | 13 November 2026 | 0 problems on 93 pages | 0 problems | 49 checks passed |
 | 12 November 2026, the first full check | 48 problems found and fixed; 4 left, checked by hand and shown to come from the test itself | 8 problems found and fixed | 23 checks passed |
 
-On 0.18.0 the scan found one 320 pixel sideways scroll on System, Backup while the computer was busy, the same
-timing effect found before; the page passed when checked again on its own. The layout check is new in 0.18.0: it
-covers the four problems fixed in this release (the side menu and header at large text, short windows and Reduce
-motion Off) and found none.
+On 0.18.0 the scan found one 320 pixel sideways scroll on System, Backup while the computer was busy. This is the
+same timing effect that we found before, and the page passed when we checked it again on its own. The layout check is
+new in 0.18.0. It covers the four problems we fixed in this release (the side menu and header at large text, short
+windows and Reduce motion Off) and found none.
 
-Two findings on 0.17.0, a 4 pixel sideways scroll on System, Backup and one Tab step on Library, Films, came from
-timing while the computer was busy; both pages passed when checked again on their own.
+We had two findings on 0.17.0: a 4 pixel sideways scroll on System, Backup and one Tab step on Library, Films. Both
+came from timing while the computer was busy, and both pages passed when we checked them again on their own.
 
 ## What the first full check fixed
 
-The first full check, on 12 November 2026, found 48 problems on 73 pages, and all were fixed:
+The first full check, on 12 November 2026, found 48 problems on 73 pages, and we fixed them all:
 
 - **Headings:** 11 pages went from a level 1 heading straight to level 3. Their lists now have a level 2 heading
   for screen readers.
@@ -63,10 +63,15 @@ The first full check, on 12 November 2026, found 48 problems on 73 pages, and al
   24 by 24 pixels.
 - **Sideways scrolling:** a long folder path pushed one page sideways at 320 pixels. Words now wrap.
 
-The reading order check the same day found and fixed 8 more: focus lost after a part of a page was drawn again,
-whole lists read aloud on every change, a slide-out that opened by itself, forms in slide-outs that did not start
-in their first field, confirm boxes that started on their close button, a notice before the page's heading, and
-**Show more** leaving focus behind.
+The reading order check the same day found 8 more problems, and we fixed them all:
+
+- focus lost after the page drew a part of it again
+- whole lists read aloud on every change
+- a slide-out that opened by itself
+- forms in slide-outs that did not start in their first field
+- confirm boxes that started on their close button
+- a notice before the page's heading
+- **Show more** leaving focus behind
 
 ## Find out more
 

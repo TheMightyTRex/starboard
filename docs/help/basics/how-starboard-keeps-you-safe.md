@@ -3,17 +3,17 @@
 
 # How Starboard keeps your server safe
 
-Starboard runs a server that other devices in your home can reach, so it is built to be safe by default. Here
+Starboard runs a server that other devices in your home can reach, so we built it to be safe by default. Here
 is what protects you, what Starboard can and cannot do on your computer, and the few choices that are yours.
 
 ## Your password
 
-- Starboard has one password, at least 10 characters long. It is stored only as a hash (PBKDF2-SHA256 with
-  600,000 rounds), so the password itself is never kept.
+- Starboard has one password, at least 10 characters long. Starboard stores only a hash (PBKDF2-SHA256 with
+  600,000 rounds), so it never keeps the password itself.
 - Choosing the first password needs the one-time set-up code the installer prints, so nobody else on your network
   can claim a new server before you.
 - Five wrong attempts lock that address out for 15 minutes.
-- Without **Remember me**, you are signed out when the browser closes, or after a day.
+- Without **Remember me**, Starboard signs you out when the browser closes, or after a day.
 - Changes that affect the computer itself, such as starting apps, changing your install or erasing a disk, ask
   for the password again. So does [Sign out everywhere](../topics/sign-out-everywhere.md).
 
@@ -32,15 +32,15 @@ is what protects you, what Starboard can and cannot do on your computer, and the
 
 - Starboard runs as your user, in a read-only container with every Linux capability dropped. It never runs as
   root.
-- Each kind of access is optional and asked for by the installer: your home network, Docker (for app updates and
-  starting apps), each app's memory use, folders for the Storage page, and Disk health. Say no and only that part
-  is missing. [What the installer asks](../topics/what-the-installer-asks.md) explains each one.
+- Each kind of access is optional, and the installer asks for it. The kinds are your home network, Docker (for app
+  updates and starting apps), each app's memory use, folders for the Storage page, and Disk health. Say no and only
+  that part is missing. [What the installer asks](../topics/what-the-installer-asks.md) explains each one.
 - Docker access is as powerful as the root account, so it is inactive unless you say yes.
 - **Install apps** starts only the apps on its own list, with folders it has checked (never a system folder or a
   whole home folder). Before the apps start, the Run first window and the installer check the set-up file again
-  with the same rules, so a changed file cannot start anything else.
-- Disks are changed only by a small helper you install yourself, which accepts a fixed list of actions, checks
-  every change first and asks for the last characters of a disk's serial number before erasing it.
+  with the same rules. A changed file cannot start anything else.
+- Only a small helper that you install yourself changes disks. It accepts a fixed list of actions and checks every
+  change first. Before it erases a disk, it asks for the last characters of the disk's serial number.
 
 ## In the browser
 

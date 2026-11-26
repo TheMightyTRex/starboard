@@ -4,8 +4,8 @@
 # Connect an AI assistant
 
 An AI assistant, such as one in your terminal or a chat app that can run commands, can answer questions about your
-server from Starboard's API: which apps are down, what is downloading, what the logs say. It uses a key of its own
-that only reads, so it can read but not change anything. This page explains how to set one up safely.
+server from Starboard's API. For example, it can say which apps are down, what is downloading and what the logs say.
+It uses a key of its own that only reads, so it can read but not change anything. This page explains how to set one up safely.
 
 ## What an assistant can and cannot do
 
@@ -13,18 +13,18 @@ that only reads, so it can read but not change anything. This page explains how 
   an assistant by itself.
 - **Read only.** Give an assistant a **Read only** key. It can then read status, health, downloads, the Library and,
   if you tick **Logs**, the logs. It cannot approve, pause, remove or change anything.
-- **Never secrets.** No answer from the API holds a password, an app's API key, a token or the set-up code, and the
-  logs it reads have addresses, names and keys taken out.
+- **Never secrets.** No answer from the API holds a password, an app's API key, a token or the set-up code. Starboard takes
+  addresses, names and keys out of the logs the assistant reads.
 - **Never settings.** No key, whatever its right, can change settings, security, Docker access, the install or
   plug-ins, or delete anything from Settings. Read [What the API covers](api-coverage.md).
-- **Logged.** Every key that is refused and every change made with a key is written to the audit log, so you can check
+- **Logged.** Starboard writes every refused key and every change made with a key to the audit log, so you can check
   what an assistant did.
 
 Letting an assistant act, asking you first each time, is not built yet. It needs its own decision.
 
 ## An assistant that speaks MCP
 
-An assistant that speaks MCP, the Model Context Protocol, needs no instructions about addresses: it connects to
+An assistant that speaks MCP, the Model Context Protocol, needs no instructions about addresses. It connects to
 `/api/v1/mcp` and is given tools for the Library, downloads, requests, app health and disk space. It is off until
 you activate **Let AI assistants connect** in **Settings**, **Security**, **API keys**, and takes only a **Read only**
 key. Read [Let an AI assistant answer questions about your server](../topics/connect-an-ai-assistant-with-mcp.md), and
@@ -43,9 +43,9 @@ themselves.
    in the audit log.
 3. In **What it may do**, keep **Read only**.
 4. In **What it may read**, tick only what it needs, such as **Apps**, **Downloads** and **System**. Tick **Logs** only
-   if it should read them: logs are never included when nothing is ticked. Leave **Updates** unticked unless the
-   assistant should update Starboard, apps and plug-ins for you: it is never included either, and it also needs
-   **Read and manage**.
+   if it should read them. Starboard never includes logs when nothing is ticked. Leave **Updates** unticked unless the
+   assistant should update Starboard, apps and plug-ins for you. Starboard never includes updates by default either,
+   and they also need **Read and manage**.
 5. In **Ends**, choose **In 90 days**.
 6. Enter your Starboard password, select **Make a key**, then select **Copy**.
 
