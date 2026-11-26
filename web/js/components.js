@@ -1182,23 +1182,6 @@
     };
   }
 
-  /* Waiting mark builder: wait(words, options) returns the .wait line (the ring, then the words) for a short wait, so a
-     page never writes a plain "Loading…". Say what is loading ("Loading the releases"). options: status (true puts
-     role="status" on the words, for words that change), id. A busy button needs no builder: aria-busy="true". */
-  function wait(words, options = {}) {
-    const box = document.createElement("span");
-    box.className = "wait";
-    if (options.id) box.id = options.id;
-    const mark = document.createElement("span");
-    mark.className = "wait__mark";
-    mark.setAttribute("aria-hidden", "true");
-    const text = document.createElement("span");
-    text.textContent = words;
-    if (options.status) text.setAttribute("role", "status");
-    box.append(mark, text);
-    return box;
-  }
-
   /* Tooltip: data-tooltip="Connected" on anything that shows only an icon (an icon button, a .status-icon with
      tabindex="0"). It shows on hover after a moment and at once on keyboard focus, stays while the pointer is on it
      or on the tooltip, and Escape closes it (WCAG 1.4.13). The words must already be the thing's name (aria-label or
@@ -1325,14 +1308,10 @@
     setupSideTrees, setupSolvers, setupSearch, setupSearchIcons, setupSortables, openLayer, toast, savedNote,
     copyText, azLetter, azJump, azGo, loadMore, pageBanner, setupTooltips, say, addSetup, 
     kit: { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus } };
-<<<<<<< HEAD
-  Object.assign(window.SharedComponents, { wait }); // the waiting mark builder
-=======
   Object.assign(window.SharedComponents, { notice }); // the notice builder
   Object.assign(window.SharedComponents, { wait }); // the waiting mark builder
   Object.assign(window.SharedComponents, { plural, clock, num }); // counts and clock times in words
   Object.assign(window.SharedComponents, { progress, setProgress }); // the progress bar builder
->>>>>>> patterns-notice
   // An app that wires its own behaviour (Starboard's page scripts) loads this file with data-manual, or
   // sets window.SharedComponentsManual = true first, and calls setup() or openLayer() itself.
   const manual = window.SharedComponentsManual || document.currentScript?.hasAttribute("data-manual");
