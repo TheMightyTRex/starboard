@@ -9,9 +9,11 @@ import unittest
 from starboard import auth, server, shell
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-NEW = {"settings-general-alerts.html": "Alerts", "settings-general-performance.html": "Performance", "settings-general-pictures.html": "Pictures"}
+NEW = {"settings-general-alerts.html": "Alerts", "settings-general-performance.html": "Performance"}
 OLD = {"/settings-alerts.html": "/settings-general-alerts.html", "/settings-performance.html": "/settings-general-performance.html",
-       "/settings-performance-pictures.html": "/settings-general-pictures.html"}
+       "/settings-performance-pictures.html": "/settings-general-performance.html#pf-pictures-h",
+       "/settings-general-pictures.html": "/settings-general-performance.html#pf-pictures-h",  # General has seven tabs (26 November 2026)
+       "/settings-general-discover.html": "/settings-general-lists.html#dr-films-h"}
 
 
 class Menu(unittest.TestCase):
@@ -80,7 +82,8 @@ class Redirect(unittest.TestCase):
             r = self.get(old)
             self.assertEqual((r.status, r.getheader("Location")), (301, new))
             r = self.get(old + "?x=1")
-            self.assertEqual(r.getheader("Location"), new + "?x=1")
+            page, _, section = new.partition("#")  # the query goes before the section
+            self.assertEqual(r.getheader("Location"), page + "?x=1" + ("#" + section if section else ""))
 
 
 if __name__ == "__main__":

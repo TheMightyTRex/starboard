@@ -52,8 +52,7 @@ async function historyLoad(more = false) {
       ? `${r.total.toLocaleString("en-GB")} ${r.total === 1 ? "release" : "releases"} Reelix will not download again`
       : "What Reelix found, downloaded, renamed and removed, newest first.";
   } catch (e) {
-    list.replaceChildren(el("li", {}, el("div", { class: "notice", role: "status" }, icon("info"),
-      el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "Reelix could not be asked" }), el("p", { text: e.message })))));
+    list.replaceChildren(el("li", {}, notice("info", "Reelix could not be asked", e.message)));
   }
 }
 

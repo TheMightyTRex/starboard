@@ -347,6 +347,18 @@ class App:
     def session_version(self):
         return self.config.data["auth"].get("session_version", 1)
 
+    def _read_catalogues_too(self):
+        """With the look at GitHub (at most every 6 hours, and only while a page asks), the plug-in catalogues are read
+        too, in the background, so Ready to update names a plug-in's new version without anyone opening the Catalogue.
+        Only when a plug-in has been added from a catalogue; nothing runs on a timer of its own."""
+        from . import plugins_admin as pa
+        try:
+            if not any(not p.get("builtin") for p in pa.basics(self.data_dir)):
+                return
+        except OSError:
+            return
+        threading.Thread(target=_read_catalogues, args=(self,), name="catalogue-read", daemon=True).start()
+
     def latest_release(self):
         """Asks GitHub for the newest version tag (what ./update.sh installs) at most every 6 hours. Off when
         STARBOARD_REPO is not set."""
@@ -366,7 +378,16 @@ class App:
                     self._latest["tag"] = newest_tag(t.get("name", "") for t in json.loads(resp.read(500000)))
             except (OSError, ValueError):
                 pass
+            self._read_catalogues_too()
             return self._latest["tag"]
+
+
+def _read_catalogues(app):
+    from . import plugins_admin as pa
+    try:
+        pa.catalogue(app.config)  # kept 6 hours, so this is a read only when the last one is older
+    except Exception:  # noqa: BLE001  a catalogue that does not answer is said on the Catalogue page
+        pass
 
 
 def newest_tag(names):
@@ -495,7 +516,9 @@ def _installer_started_since(app, since):
 # Pages whose address changed: the old address answers 301 with the new one (a link from a bookmark, a plug-in or an older help page).
 MOVED_PAGES = {"/settings-media-server.html": "/settings-jellyfin.html",  # Settings, Apps: the media server tab (DASH-565)
                "/settings-alerts.html": "/settings-general-alerts.html", "/settings-performance.html": "/settings-general-performance.html",
-               "/settings-performance-pictures.html": "/settings-general-pictures.html",  # DASH-584: Alerts and Performance are in General now
+               "/settings-performance-pictures.html": "/settings-general-performance.html#pf-pictures-h",  # DASH-584: Alerts and Performance are in General now
+               # Owner, 26 November 2026: General has seven tabs. Discover rows are part of Lists, and Pictures is part of Performance.
+               "/settings-general-discover.html": "/settings-general-lists.html#dr-films-h", "/settings-general-pictures.html": "/settings-general-performance.html#pf-pictures-h",
                # DASH-595: Backup and restore, and Logs and feedback, are one tab, Settings, General, Backup/Logs
                "/system-backup.html": "/settings-general-backup.html", "/settings-general-logs.html": "/settings-general-backup.html",
                # Pages that moved on 12 November 2026 (they were a page with a script that sent the browser on): now a 301 too
@@ -855,6 +878,18 @@ class Handler(BaseHTTPRequestHandler):
     disable_nagle_algorithm = True  # without it, small answers on a kept-alive connection wait 40 ms
     timeout = 30  # an idle or slow connection is closed after 30 seconds, so it cannot hold a thread for ever
 
+    def parse_request(self):
+        """A request with a Transfer-Encoding header is refused with 400 and the connection closes (DASH-603). Starboard reads
+        bodies by Content-Length only, so a chunked body left unread could be taken for the next request on a kept-alive
+        connection, which a proxy in front of Starboard would let through (request smuggling)."""
+        if not super().parse_request():
+            return False
+        if self.headers.get("Transfer-Encoding") is not None:
+            self.close_connection = True
+            self.send_error(400, "Starboard does not take a Transfer-Encoding. Send a Content-Length instead")
+            return False
+        return True
+
     def send_error(self, code, message=None, explain=None):
         """Python's own error answers (a method Starboard does not handle, a broken request) carry the same
         security headers as every other answer, and close the connection."""
@@ -1171,8 +1206,9 @@ class Handler(BaseHTTPRequestHandler):
             path = "/dashboard.html"  # the landing page (DASH-239)
         if path in MOVED_PAGES:  # an address that moved (DASH-565, DASH-584): the old one answers 301 with the new one, keeping what follows the page
             query = urllib.parse.urlsplit(self.path).query
-            where = MOVED_PAGES[path]
-            return self.send(301, extra={"Location": where + (("&" if "?" in where else "?") + query if query else ""), "Cache-Control": "no-cache"})
+            where, _, section = MOVED_PAGES[path].partition("#")  # a section in the new place; what the old address had after # is kept by the browser only when this has none
+            where += ("?" + query) if query else ""
+            return self.send(301, extra={"Location": where + (("#" + section) if section else ""), "Cache-Control": "no-cache"})
         if not path.endswith(".html") and "." not in posixpath.basename(path):
             path += ".html"
         public = path in PUBLIC_PAGES or path in PUBLIC_FILES or path.startswith(PUBLIC_PREFIXES)
@@ -2945,13 +2981,16 @@ class Handler(BaseHTTPRequestHandler):
                 if what in ("plan", "start") and method == "POST":
                     data = self.body()
                     self.check_password(data)
+                    kinds = data.get("kinds")
+                    if kinds is not None and not (isinstance(kinds, list) and all(k in update_batch.ORDER for k in kinds)):
+                        return self.error(400, "kinds must be a list of kinds of update")
                     if what == "plan":
-                        return self.json(200, update_batch.plan(app))
+                        return self.json(200, update_batch.plan(app, kinds))
                     targets = data.get("targets")
                     if targets is not None and not (isinstance(targets, list) and all(isinstance(t, str) for t in targets) and len(targets) <= 200):
                         return self.error(400, "targets must be a list of the updates you confirmed")
                     try:
-                        run = update_batch.start(app, by="you", targets=targets)
+                        run = update_batch.start(app, by="you", targets=targets, kinds=kinds)
                     except (update_runs.Refused, update_runs.Busy) as e:
                         return self.error(409, str(e))
                     return self.json(200, {"said": "Started", "batch": update_batch.view(app, run["id"]), "follow": f"/api/updates/all/{run['id']}"})
@@ -2975,7 +3014,7 @@ class Handler(BaseHTTPRequestHandler):
                     runs = [update_runs.public(r) for r in update_runs.recent(app)]
                     from . import update_batch
                     from . import update_check
-                    return self.json(200, {"items": items, "auto": auto, "recent": runs,
+                    return self.json(200, {"items": items, "counts": update_runs.counts(items), "auto": auto, "recent": runs,
                                            "running": next((r for r in runs if r["state"] == "running"), None),
                                            "batch": update_batch.latest(app), "apps_checked": containers.last_check(),
                                            "jellyfin_waiting": [{k: j[k] for k in ("id", "name", "current", "latest")} for j in update_check.jellyfin_waiting()]})
@@ -3506,6 +3545,7 @@ class Handler(BaseHTTPRequestHandler):
                                                 "system": plugin_systems.judge(p.get("system"), here),
                                                 "resting": plugin_watch.resting(app.data_dir, p["id"])} for p in listed], "builtin": built,
                                    "media_server": mediaserver.state(app.config.data, self.media_servers_added()),
+                                   "catalogue_read": pa.last_read(),
                                    "wanted": pa.wanted_from_setup(app.config, {p["id"] for p in listed})})
         if path == "/api/plugins/wanted" and method == "POST":  # Not now on a plug-in chosen in the set-up (DASH-399)
             said = pa.drop_wanted(app.config, str(self.body().get("id") or ""))
@@ -3544,7 +3584,7 @@ class Handler(BaseHTTPRequestHandler):
                         elif known:
                             manifest = pa.fetch_manifest(known["manifest"], sha256=known.get("sha256", ""))
                         else:
-                            return self.error(404, "No newer version is known. Open the Catalogue to check again, or give an address")
+                            return self.error(404, "No newer version is known. Use Check now on the plug-in's Versions tab, or give an address")
                         old = pa._read(os.path.join(pa.folder(app.data_dir, pid), "manifest.json"), {}) or {}
                         return self.json(200, {**pa.summary(manifest), "new_permissions": plugin_life.new_permissions(old, manifest),
                                                "changelog": (known or {}).get("changelog", "") if not body.get("address") else "",
@@ -3563,12 +3603,20 @@ class Handler(BaseHTTPRequestHandler):
                 return self.error(404, "No plug-in with that id")
             plugin_life.whats_new_seen(app.data_dir, mw.group(1))
             return self.json(200, {"said": "Marked as read"})
+        if path == "/api/plugins/updates" and method == "GET":  # the update list for Manage and Updates, Plug-ins
+            from . import plugin_updates
+            return self.json(200, plugin_updates.listing(app))
+        if path == "/api/plugins/catalogue/check" and method == "POST":
+            # Check for updates now (owner, 26 November 2026): every catalogue read again, with no password (it reads
+            # public lists and installs nothing). At most one read every 30 seconds, however often it is pressed.
+            got = pa.refresh(app.config)
+            return self.json(200, {**got, "updates": len(plugin_life.updates_known(app.data_dir))})
         if path == "/api/plugins/catalogue" and method == "GET":
             # The Catalogue page (DASH-318): the Starboard plug-ins collection, each marked when already added.
             have = {p["id"] for p in pa.added(app.data_dir)}
             cats, items = pa.catalogue(app.config)
             here = plugin_systems.present_in(app.config.data["services"])  # DASH-567
-            return self.json(200, {"catalogues": cats, "choices": pa.builtin_choices(app.config),
+            return self.json(200, {"catalogues": cats, "choices": pa.builtin_choices(app.config), "read": pa.last_read(),
                                    "plugins": [{**e, "added": e["id"] in have, "system": plugin_systems.judge(e.get("system"), here)} for e in items]})
         if path == "/api/plugins/catalogues" and method == "POST":
             # Catalogue sources added from a link (owner, 12 November 2026). Adding one installs nothing.
