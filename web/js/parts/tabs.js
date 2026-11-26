@@ -2,7 +2,7 @@
  * Made by tools/parts.py from components.js in github.com/TheMightyTRex/design-system: change it there, not here. */
 (() => {
   const S = window.SharedComponents;
-  const { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus } = S.kit;
+  const { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus, notice } = S.kit;
 
   /* Tabs (ARIA tabs pattern): .tabs > [role=tablist] > [role=tab][aria-controls], and [role=tabpanel]s. One Tab stop
      for the list; Left and Right move round, Home and End go to the ends. Moving chooses the tab (automatic), or

@@ -8,6 +8,9 @@ add features.
 ## [Unreleased]
 
 ### Added
+- **Compatibility check for the API.** A new check fails a change that takes away or tightens a route, permission, manifest field, card, event or key scope without the deprecation steps, and runs 74 older plug-in manifests against this Starboard. Draft, for review.
+- **Plug-in updates found at once, in one list.** Check now reads every plug-in catalogue again, says when it last did and why one did not answer, and waits 30 seconds between presses. Settings, Plug-ins, Manage and the new Settings, Updates, Plug-ins page list each plug-in's old and new version, what is new and any new permissions, with Update all, Update chosen, Update by themselves, History and Roll back.
+
 - **Sign in to Plex with a link code.** Manage apps has Sign in with Plex, which shows a code to enter at plex.tv/link, or you can still paste the token.
 - **A first sign-in for app plug-ins.** A plug-in can now set its app's first password, and the plug-in's page shows it once after you enter your Starboard password. Calibre-Web uses this from version 1.2.0. Find out more in the [manifest reference](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/developers/plugin-manifest-reference.md#a-first-sign-in-shown-once-first_sign_in).
 - **A wizard for switching media server.** The media server tab in Settings, Apps has Switch with help, which says what moves, what cannot and what keeps working before anything changes. Find out more in [Choose your media server](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/choose-your-media-server.md).
@@ -24,6 +27,13 @@ add features.
 
 ### Changed
 - **Every row of tabs condenses like the plug-in tabs.** Where the names do not fit, a row under the header now shows icons only, with each tab 44 pixels wide and the tab you are on in full; the arrow keys, Home and End move along the row, and a fade shows when it scrolls. [Find out more](https://themightytrex.github.io/starboard/help/accessibility/menus-with-icons.html)
+- **One way to copy to the clipboard.** Copying log lines and the log report now say when they could not copy, and the page shares the design system's copy code.
+- **One way to ask for your Starboard password.** Every box that asks for it says "Your Starboard password", and an empty one says "Enter your Starboard password", in Backups, Reelix, Pool, Downloads, Jellyfin, Logs, Security, Clean-up and sign-in settings.
+- **One way to write a count and a time.** System, Storage, Disks, Pool, Monitor, Downloads, Library and On demand history share one count in words and one clock, so a count over a thousand has its comma on every page.
+- **One look for a short wait.** Loading lines in help, release notes, set-up steps, Discover, radio settings and a few more now show the waiting ring with words that say what is loading, in place of a plain "Loading…".
+- **One look for a notice.** A message in the page (an error, a warning, a note) is drawn by one function, so an error notice in Downloads, Search, Search the sites and On demand history now has the same circle-with-exclamation icon as everywhere else.
+- **Lighter pages again.** Styles for parts of the design system that no page uses (cover cards, the logo editor, the decision tree and more) are no longer sent with every page, so each page's style sheet is about 14 KB smaller.
+- **Plug-in catalogues are read every 6 hours.** Starboard reads them again with its look at GitHub, only while a page is open and only when you have added a plug-in, instead of once a day.
 - **A notice with buttons reads properly on a phone.** On Settings, Plug-ins the offer to install a plug-in chosen in the set-up no longer squeezes its title to one letter a line, because its buttons now sit on their own row.
 - **Each plug-in's tab has its own icon.** Settings, Plug-ins now draws a different line icon on each plug-in's tab, and where the tabs show icons only, such as on a phone, the tab you are on and the tab with focus also show their name.
 - **Starboard no longer reads Plex's token.** Search for new apps does not look inside the Plex container for the token any more.
@@ -41,7 +51,16 @@ add features.
 - **Plain English pilot.** The README and the help topics Add an app and How lean Starboard is now use shorter sentences and the active voice.
 
 ### Fixed
+- **Field errors say "Error:" to a screen reader.** An error under a field, such as an empty password, now starts with the hidden word Error: , as the design system asks, so it is not read as a plain sentence. The nine places that drew one by hand share one function.
+- **An artist's Get it searches for every wanted album, up to 100.** It used to stop at 20 without saying so. Now it sends one request, and says how many are left when there are more than 100.
+
+- **An even row of controls on a Library item page.** On a radio show, the Following list now sits in the same frame and height as the buttons beside it, and every control on a film, series, artist, book, audiobook or radio show page is one height and wraps on a phone.
 - **A full backup that was not made is now reported.** A scheduled backup with no saved backup password used to say it had run. It now says "No full backup was made", raises an alert and shows a warning in Settings.
+
+### Security
+- **Requests with a Transfer-Encoding are refused.** Starboard now answers 400 and closes the connection, so a proxy in front of it cannot hide a second request inside a body.
+- **One guarded way to fetch a plug-in's manifest, catalogue and logo.** Starboard now checks every redirect and the address it connects to, so an address that redirects, or changes its answer, cannot reach your home network's private services or a cloud metadata address.
+
 
 ## [0.31.0] (25 November 2026)
 

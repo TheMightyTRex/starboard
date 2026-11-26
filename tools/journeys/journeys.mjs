@@ -9,7 +9,7 @@ const password = fs.readFileSync(process.env.PASSWORD_FILE, "utf8").trim();
 const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.html", "downloads.html", "downloads-requests.html",
   "upcoming.html", "system.html", "system-storage.html", "system-disks.html", "system-monitor.html", "system-busy.html", "system-network.html",
   "system-logs.html", "settings-general-backup.html", "settings.html", "settings-general.html", "settings-security.html",
-  "settings-general-alerts.html", "settings-updates.html", "settings-releases.html", "settings-restore.html", "settings-general-performance.html", "settings-jellyfin.html",
+  "settings-general-alerts.html", "settings-updates.html", "settings-updates-plugins.html", "settings-releases.html", "settings-restore.html", "settings-general-performance.html", "settings-jellyfin.html",
   "settings-audiobookshelf.html", "copy-settings.html", "install-apps.html", "setup-guide.html", "bring-in.html", "upgrade.html", "settings-install.html",
   // The Library, from the made-up Reelix (DASH-163)
   "library-tv.html", "library-tv-networks.html", "library-films.html", "library-films-collections.html", "library-music.html",
@@ -317,6 +317,43 @@ check("LIB-04", "with no address a browser can open there is no Play",
 const addLink = page.locator(".series-head .notice a", { hasText: "Add Jellyfin's address" });
 check("LIB-04", "and the page says where to add it", await addLink.count() === 1 && (await addLink.getAttribute("href")) === `/settings.html?edit=${encodeURIComponent(jfApp.id)}`);
 await api("/api/services", { method: "POST", body: jfSaved });
+// LIB-05: the row of controls on every item page: each control is one height (the --control-h token, 44px), those in one
+// row start at the same line, the Following choice looks like the buttons beside it, and a phone wraps without sideways scrolling.
+console.log("\n== LIB-05 one control height on item pages");
+const ITEM_PAGES = ["library-film.html?id=3", "library-tv-show.html?id=8", "library-artist.html?id=2", "library-book.html?id=4",
+  "library-audiobook.html?id=6", "library-radio-show.html?id=1", "library-radio-show.html?id=7", "library-radio-show.html?id=13"];
+const rowFacts = () => page.evaluate(() => {
+  const kids = [...document.querySelectorAll(".series-head__actions > *")].map((c) => c.getBoundingClientRect());
+  const token = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--control-h"));
+  const rows = {};
+  kids.forEach((r) => { (rows[Math.round(r.top)] ||= []).push(r.bottom); });
+  return { count: kids.length, heights: kids.map((r) => Math.round(r.height * 10) / 10), token,
+    sameBottoms: Object.values(rows).every((b) => Math.max(...b) - Math.min(...b) < 1),
+    sideways: document.documentElement.scrollWidth > document.documentElement.clientWidth };
+});
+for (const [w, h] of [[1280, 860], [375, 812], [320, 700]]) {
+  await page.setViewportSize({ width: w, height: h });
+  for (const p of ITEM_PAGES) {
+    await open(p);
+    await page.locator(".series-head__actions").waitFor({ timeout: 8000 }).catch(() => {});
+    const f = await rowFacts();
+    check("LIB-05", `${p} at ${w}px: every control is the ${f.token}px token`, f.count > 0 && f.heights.every((x) => Math.abs(x - f.token) < 1), f.heights.join(","));
+    check("LIB-05", `${p} at ${w}px: controls in one row line up and the page does not scroll sideways`, f.sameBottoms && !f.sideways);
+  }
+}
+await open("library-radio-show.html?id=1");
+await page.setViewportSize({ width: 1280, height: 860 });
+const follow = await page.evaluate(() => {
+  const l = document.querySelector(".series-head__follow"), s = l?.querySelector("select"), b = getComputedStyle(l || document.body);
+  const btn = getComputedStyle(document.querySelector(".series-head__actions .btn"));
+  return { label: l?.querySelector(".field__label")?.textContent, name: s?.getAttribute("aria-label"), border: b.borderTopColor === btn.borderTopColor,
+    radius: b.borderTopLeftRadius === btn.borderTopLeftRadius, weight: getComputedStyle(s).fontWeight === btn.fontWeight };
+});
+check("LIB-05", "Following keeps its label and name for screen readers", follow.label === "Following" && follow.name === "Following");
+check("LIB-05", "and is framed like the buttons beside it", follow.border && follow.radius && follow.weight);
+await page.locator("#radio-follow").focus();
+check("LIB-05", "the Following choice shows a focus outline", await page.evaluate(() => getComputedStyle(document.querySelector(".series-head__follow")).outlineStyle !== "none"));
+await page.setViewportSize({ width: 1280, height: 860 });
 // DASH-261: narrator pages, and Narrated by on an audiobook's summary links to them.
 await open("library-audiobooks-narrators.html");
 check("LIB-02", "Narrators lists each narrator", await page.locator("#groups .collection-card__link").count() >= 3);
@@ -1223,6 +1260,35 @@ check("AP-08", "the catalogue groups the apps together, each with what it uses a
   (await apGroup.count()) === 1 && /At rest: about \d+ MB of memory/.test(await apGroup.innerText()));
 await open("settings-plugin.html?id=tdarr");
 check("AP-07", "an app plug-in that is not active says a port is chosen when it is", /chooses a free port/.test(await page.locator('section[aria-labelledby="pl-tdarr-web-h"]').innerText()));
+// Check for updates now and the plug-in update list (owner, 26 November 2026).
+await open("settings-updates-plugins.html");
+const pu = page.locator("#plugin-updates");
+check("PU-01", "Updates, Plug-ins lists each plug-in in a table with the version you have beside the new one, and a check button, Update all and When they update",
+  (await pu.locator("table.updates-table th", { hasText: "Installed" }).count()) === 1 && (await pu.locator("table.updates-table th", { hasText: "Latest" }).count()) === 1
+  && (await page.locator("#plu-check").count()) === 1 && (await page.locator("#plu-update-all").count()) === 1);
+await page.locator("#plu-check").focus();
+await page.keyboard.press("Enter");
+await page.waitForFunction(() => /Read \d+ catalogue|Try again in/.test(document.getElementById("plu-check-result")?.textContent || ""), null, { timeout: 15000 }).catch(() => {});
+check("PU-02", "Check now says what it read, keeps focus on the button and writes the summary again",
+  /Read \d+ catalogue|Try again in/.test(await page.locator("#plu-check-result").innerText()) && (await page.evaluate(() => document.activeElement?.id)) === "plu-check"
+  && /Last checked at/.test(await page.locator("#plu-summary").innerText()));
+await page.locator("#plu-check").click();
+await page.waitForTimeout(800);
+check("PU-03", "pressed again at once it says how long to wait and reads nothing more", /Try again in \d+ seconds/.test(await page.locator("#plu-check-result").innerText()));
+const puRow = pu.locator("tbody tr").first();
+check("PU-04", "the first row has a tick and What is new, and Update chosen shows only after a tick",
+  (await puRow.locator("input.updates-choose").count()) === 1 && (await puRow.getByRole("button", { name: /What is new/ }).count()) === 1 && (await page.locator("#plu-chosen").isHidden()));
+await puRow.locator("input.updates-choose").check();
+check("PU-05", "ticking a plug-in shows Update chosen with the count", (await page.locator("#plu-chosen").isVisible()) && /1 chosen/.test(await page.locator("#plu-chosen-text").innerText()));
+check("PU-06", "Update by themselves and History are on the page, and the menu has a Plug-ins entry under Updates",
+  (await page.locator("#plu-auto").count()) === 1 && (await page.locator("#plu-history-h").count()) === 1
+  && (await page.locator('nav a[href="/settings-updates-plugins.html"]').count()) >= 1);
+await open("settings-plugins.html");
+check("PU-07", "Manage has the same update list and check button above the plug-ins", (await page.locator("#plugin-updates table.updates-table").count()) === 1 && (await page.locator("#plu-check").count()) === 1);
+await open("settings-plugins-catalogue.html");
+check("PU-08", "the Catalogue has Check now and says when the catalogues were read", (await page.locator("#pl-check-now").count()) === 1 && /catalogues/.test(await page.locator("#pl-check-now-when").innerText()));
+await open("settings-plugin.html?id=picture-shrinker");
+check("PU-09", "a plug-in's Versions tab has Check now", (await page.locator("#pl-picture-shrinker-check-now").count()) === 1);
 // DASH-410: plug-in API 1.12 on the example Audio description plug-ins: a row's link opens in a new tab and says so,
 // the plug-in's own words for each state, and an upload that takes only a file.
 console.log("\n== AD Audio description sources");
@@ -1892,7 +1958,7 @@ console.log("\n== UPD Settings, Updates");
 await open("settings-updates.html");
 await page.locator("#updates-list:not([aria-busy])").waitFor({ timeout: 5000 }).catch(() => {});
 const ready = await page.locator("#up-list-summary").textContent();
-check("UPD-05", "Ready to update says in a live region what is ready", /updates are ready: .*Starboard/.test(ready)
+check("UPD-05", "Ready to update says in a live region what is ready", /^Last checked at \d\d:\d\d · \d+ updates available: .*Starboard|^Not checked yet · \d+ updates available: .*Starboard/.test(ready)
   && (await page.locator("#up-list-summary[role=status]").count()) === 1, ready);
 check("UPD-05", "Starboard waits for you; the plug-in updates by itself", (await page.locator('[data-key="starboard"]').textContent()).includes("Waits for you")
   && (await page.locator('[data-key="plugin:picture-shrinker"]').textContent()).includes("Updates by itself"));
@@ -1911,12 +1977,12 @@ check("UPD-09", "Ready to update has Check for updates", (await checkBtn.count()
 check("UPD-09", "nothing asks Jellyfin which plug-ins are new before it is pressed", !(await page.locator("#up-list-summary").textContent()).includes("Playback Reporting"));
 await checkBtn.focus();
 await page.keyboard.press("Enter");
-await page.locator("#up-list-summary", { hasText: "Checked at" }).waitFor({ timeout: 30000 }).catch(() => {});
+await page.locator("#up-list-summary", { hasText: "Last checked at" }).waitFor({ timeout: 30000 }).catch(() => {});
 const checkedSays = await page.locator("#up-list-summary").textContent();
-check("UPD-09", "it says in the live region when it checked and what is ready, Jellyfin's plug-ins too", /^Checked at \d\d:\d\d\. \d+ updates are ready: .*Playback Reporting 20\.0\.0\.0 for Jellyfin/.test(checkedSays), checkedSays);
+check("UPD-09", "it says in the live region when it checked and what is ready, Jellyfin's plug-ins too", /^Last checked at \d\d:\d\d · \d+ updates available: .*Playback Reporting 20\.0\.0\.0 for Jellyfin/.test(checkedSays), checkedSays);
 check("UPD-09", "focus stays on Check for updates", await page.evaluate(() => document.activeElement?.id === "check-updates-now"));
-check("UPD-09", "Jellyfin's row names the new version", (await page.locator('[data-key="jellyfin-plugins"]').textContent()).includes("New versions: Playback Reporting 20.0.0.0"));
-const readyNow = (checkedSays.match(/(\d+) updates are ready/) || [])[1];
+check("UPD-09", "Jellyfin's row names the new version", (await page.locator('[data-key="jellyfin-plugins"]').textContent()).includes("Playback Reporting 20.0.0.0"));
+const readyNow = (checkedSays.match(/(\d+) updates available/) || [])[1];
 check("UPD-09", "Install all updates counts what the check found", (await page.locator("#install-all").textContent()).trim() === `Install all ${readyNow} updates`, readyNow);
 
 // UPD-10 What is new (DASH-462): one slide-out with the notes of every waiting update, by item, under Added, Changed,
@@ -1952,6 +2018,7 @@ await page.route("**/api/updates", async (route) => {
   let kept = false;
   body.items = body.items.map((t) => { if (t.update_available && !kept) { kept = true; return t; } return { ...t, update_available: false }; });
   body.jellyfin_waiting = [];
+  body.counts = { total: body.items.filter((t) => t.update_available).length, by_kind: {} };  // the one count (update_runs.counts)
   await route.fulfill({ response: r, json: body });
 });
 await open("settings-updates.html");
@@ -2840,6 +2907,21 @@ const downloaded = await page.evaluate(async () => (await fetch("/api/logs/downl
 check("LOG-02", "Download gives the same: a line saying how many, then alerts only", /^# Starboard log: the newest \d+ of [\d,]+ entries, alerts only/.test(downloaded) && !/ INFO /.test(downloaded), downloaded.slice(0, 120));
 await api("/api/config/general", { method: "PUT", body: { logs: { show_lines: 200, alerts_only: false } } });
 
+console.log("\n== One notice");
+await open("index.html");
+const built = await page.evaluate(() => {
+  const n = (t, title, text, o) => { const e = SharedComponents.notice(t, title, text, o); document.body.append(e); return e; };
+  const danger = n("danger", "Not saved", "The folder is missing.", { alert: true, id: "t-notice" });
+  const info = n("info", "Version 2 is out", ["Read ", Object.assign(document.createElement("a"), { href: "/x", textContent: "the notes" })], { actions: Object.assign(document.createElement("button"), { textContent: "Update" }) });
+  const bare = n("muted", "", "Only words");
+  const out = { dangerRole: danger.getAttribute("role"), dangerTone: danger.dataset.tone, dangerIcon: danger.querySelector("use").getAttribute("href"), dangerTitle: danger.querySelector(".notice__title").textContent,
+    infoRole: info.getAttribute("role"), infoTone: info.dataset.tone ?? null, infoLink: !!info.querySelector("p a"), infoButtonLast: info.lastElementChild.tagName, bareTitle: !!bare.querySelector(".notice__title"), bareIcon: bare.querySelector("use").getAttribute("href"),
+    app: typeof notice === "function" && notice("warning", "T", "x").dataset.tone, appRole: notice("warning", "T", "x").getAttribute("role") };
+  [danger, info, bare].forEach((e) => e.remove());
+  return out;
+});
+check("UI-01", "the library's notice builder gives the right role, icon and tone", built.dangerRole === "alert" && built.dangerTone === "danger" && built.dangerIcon.endsWith("#i-circle-alert") && built.dangerTitle === "Not saved"
+  && built.infoRole === "status" && built.infoTone === null && built.infoLink && built.infoButtonLast === "BUTTON" && !built.bareTitle && built.bareIcon.endsWith("#i-info") && built.app === "warning" && built.appRole === "status", JSON.stringify(built));
 // Settings, Plug-ins: each plug-in's tab has its own icon, and icons only still name the current and focused tab (owner, 26 November 2026).
 console.log("\n== PTI Plug-in tab icons");
 await page.setViewportSize({ width: 375, height: 812 });
@@ -2885,6 +2967,22 @@ for (const p of PAGES) {
   if (over > 0) wide.push(`${p} by ${over}px`);
 }
 check("USE-01", "no page scrolls sideways at 375 wide", wide.length === 0, wide.join(", "));
+console.log("\n== One waiting mark");
+await page.setViewportSize({ width: 1280, height: 860 });
+await open("index.html");
+const waited = await page.evaluate(() => {
+  const w = SharedComponents.wait("Loading the releases", { status: true });
+  document.body.append(w);
+  const plain = SharedComponents.wait("Loading the help");
+  const out = { cls: w.className, mark: w.firstElementChild.className, markHidden: w.firstElementChild.getAttribute("aria-hidden"), words: w.lastElementChild.textContent, role: w.lastElementChild.getAttribute("role"), plainRole: plain.lastElementChild.getAttribute("role"),
+    ring: getComputedStyle(w.firstElementChild).borderRadius, shown: w.firstElementChild.getBoundingClientRect().width };
+  w.remove();
+  return out;
+});
+check("UI-02", "the library's waiting mark is a hidden ring with words, and a status only when asked", waited.cls === "wait" && waited.mark === "wait__mark" && waited.markHidden === "true" && waited.words === "Loading the releases" && waited.role === "status" && waited.plainRole === null && waited.shown === 16, JSON.stringify(waited));
+await open("discover-ondemand.html");
+check("UI-02", "a page that waits shows the ring, not a plain Loading line", await page.locator(".wait .wait__mark").count() > 0 || await page.locator("#od-list .rows li, #od-list li").count() > 0);
+
 check("ALL", "no script errors on any page", problems.length === 0, problems.slice(0, 5).join(" | "));
 
 console.log(`\n== ${passed} passed, ${failed} failed`);
