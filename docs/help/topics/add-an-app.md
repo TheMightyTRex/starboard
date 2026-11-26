@@ -3,19 +3,19 @@
 
 # Add an app
 
-Add an app by giving Starboard its name, its address and, for most apps, its API key. The app then has a card on
-the Apps page with its status. Apps that Starboard installed are added for you; this is for an app you run
-yourself, such as Jellyfin on another computer.
+Give Starboard the app's name, its address and, for most apps, its API key. The app then has a card on the Apps page
+with its status. Starboard adds the apps it installs for you, so use this topic for an app you run yourself, such as
+Jellyfin on another computer.
 
 ## Before you begin
 
-- The app is installed and running. If you have no apps yet, read [Install apps with Starboard](install-apps.md).
+- You have the app installed and running. If you have no apps yet, read [Install apps with Starboard](install-apps.md).
 - You know the app's port, such as 8096 for Jellyfin. Read [Addresses and ports](../basics/addresses-and-ports.md)
   if ports are new to you.
 - You have the app's API key to hand. Read [Find an app's API key](find-an-api-key.md).
 
-Tip: if the app is on the same computer as Starboard,
-[Search for apps already on your server](search-for-new-apps.md) can find it and fill in these details.
+Tip: for an app on the same computer as Starboard,
+[Search for apps already on your server](search-for-new-apps.md) finds it and fills in these details.
 
 ## Steps
 
@@ -53,8 +53,8 @@ Starboard uses these choices when you add a film, series, album or book from the
 1. In **Quality profile**, choose the profile to use. The list comes from the app itself.
 2. In **Folder**, choose the folder new items go in.
 3. For Lidarr and Readarr, choose a **Metadata profile**.
-4. Keep **Search as soon as something is added** active if you want the app to search for it straight away.
-5. Select **Save adding options**. To choose later, select **Skip for now**: Starboard then uses the first in
+4. To make the app search straight away, keep **Search as soon as something is added** active.
+5. Select **Save adding options**. To choose later, select **Skip for now**. Starboard then uses the first choice in
    each list.
 
 ## Things to note
@@ -62,10 +62,10 @@ Starboard uses these choices when you add a film, series, album or book from the
 - Docker container names, such as `http://jellyfin:8096`, usually do not work, because Starboard uses the
   computer's own network. Use `127.0.0.1` and the port instead.
 - Starboard keeps API keys on the server and never sends them to your browser. When you edit an app later,
-  **API key** is empty: leave it empty to keep the saved key.
-- An app saved with `127.0.0.1` still opens from a phone, because Starboard swaps in the address you opened
-  Starboard with. To use another address, fill in **Address to open in your browser**.
-- **Outside address** is optional. It is for an address that works away from home, such as your own domain.
+  **API key** is empty. Leave it empty to keep the saved key.
+- An app saved with `127.0.0.1` still opens from a phone, because Starboard swaps in the address you used to open
+  Starboard. To use another address, enter it in **Address to open in your browser**.
+- **Outside address** is optional. Use it for an address that works away from home, such as your own domain.
 - An app with no web page of its own, such as a VPN (virtual private network), is a background service. Read
   [Add a background service](add-a-background-service.md).
 
@@ -74,9 +74,9 @@ Starboard uses these choices when you add a film, series, album or book from the
 - **Cannot connect:** check the port, and that the address starts with `http://`. Open the address in a
   browser on the server to check the app is running.
 - **The address must start with http:// or https://:** add `http://` to the start of the address.
-- **Starboard does not call** and the address: Starboard refuses link-local addresses (they start with
-  `169.254`) and cloud metadata addresses, because no media app uses them. Use the app's address on your home
-  network instead.
+- **Starboard does not call** followed by an address: Starboard refuses link-local addresses (they start with
+  `169.254`) and cloud metadata addresses. No media app uses them. Use the app's address on your home network
+  instead.
 - **The key is refused:** copy the API key again from the app. Read
   [Find an app's API key](find-an-api-key.md#where-each-app-keeps-its-key).
 - **Could not load the profiles and folders:** the app did not send its lists. Select **Skip for now**, check
