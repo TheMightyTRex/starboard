@@ -20,7 +20,7 @@ Starboard gives the apps it installs their keys for you, so you need this table 
 | Jellyfin | **Dashboard**, then **API keys**. Make a new key and name it Starboard. |
 | Audiobookshelf | **Settings**, then **API Keys**, signed in as an admin user. |
 | Emby | **Dashboard**, then **Advanced**, **API Keys**, then **New API Key**. |
-| Plex | Plex has a token, not a key. In the Plex web app open any item, select **Get Info**, then **View XML**, and copy what follows `X-Plex-Token=` in the address. |
+| Plex | Plex has a token, not a key. In **Manage apps**, select **Sign in with Plex**, enter the code it shows at plex.tv/link and wait. Or paste the token: in the Plex web app open any item, select **Get Info**, then **View XML**, and copy what follows `X-Plex-Token=` in the address. |
 | qBittorrent | **Options**, then **Web UI**, **API key**. This needs qBittorrent 5.2 or later. |
 | NZBGet | NZBGet has no key. Enter its control user name and password as `user:password`, from **Settings**, then **Security**, **ControlUsername** and **ControlPassword**. |
 | Bazarr | **Settings**, then **General**, **API Key** |
@@ -59,7 +59,7 @@ The hint under **API key** in Starboard also says where the key is for the kind 
   [copy listening progress](copy-listening-progress.md).
 - **Other app** has no API key. Starboard only checks that its page answers.
 - With Docker access, **Search for new apps** can read the keys of Sonarr, Radarr, Lidarr, Readarr, Prowlarr,
-  SABnzbd, Seerr and Plex (its token) for you. Read [Search for apps already on your server](search-for-new-apps.md).
+  SABnzbd and Seerr for you. It never reads Plex's token from the Plex container: use **Sign in with Plex** or paste the token. Read [Search for apps already on your server](search-for-new-apps.md).
 - Treat an API key like a password. Anyone with it can control that app.
 - Menu names can differ a little between versions of an app. If the key is not where the table says, try the
   app's general or security settings.

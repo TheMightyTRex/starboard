@@ -120,10 +120,8 @@ class Around(unittest.TestCase):
         for key in ("plex", "emby"):
             name, kind, _ports, _rule, needs_key, background = discovery.CATALOGUE[key]
             self.assertEqual((kind, needs_key, background), (key, True, False))
-        self.assertIn("plex", discovery.READABLE)  # its token is in its own preferences file
-        path, pattern = discovery.KEY_FILES["plex"]
-        import re
-        self.assertEqual(re.search(pattern, '<Preferences PlexOnlineToken="abcDEF123456_-xyzABC" x="1"/>').group(1), "abcDEF123456_-xyzABC")
+        self.assertNotIn("plex", discovery.READABLE)  # DASH-595: its token is never read from its container
+        self.assertNotIn("plex", discovery.KEY_FILES)
 
     def test_an_app_already_added_is_not_offered_again(self):
         with mock.patch.object(discovery, "_probe", side_effect=lambda port: ["plex"] if port == 32400 else []), \

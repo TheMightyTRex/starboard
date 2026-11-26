@@ -733,6 +733,28 @@ const moving = await page.evaluate(() => [...document.querySelectorAll("*")].fil
 }).slice(0, 5).map((e) => e.className || e.tagName));
 if (moving.length) add("index.html", "motion", "reduced-motion", moving.join(", "), moving.length);
 
+// Sign in with Plex (DASH-595): the Add an app panel for Plex, with the code shown, in Light, Dark and High contrast.
+if (!pages.length || pages.some((p) => p.includes("settings.html"))) {
+  try {
+    await page.goto(`${base}/settings.html`);
+    await settle();
+    await page.click("#add-service");
+    await page.locator("#service-form select[name=type]").selectOption("plex");
+    await page.getByRole("button", { name: "Sign in with Plex" }).click();
+    await page.locator(".plex-code").waitFor({ timeout: 5000 });
+    const name = "settings.html, Sign in with Plex (the code)";
+    await axe(name, "light");
+    await structure(name);
+    await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+    await page.waitForTimeout(150);
+    await axe(name, "dark");
+    await page.evaluate(() => { document.documentElement.removeAttribute("data-theme"); document.documentElement.classList.add("pref-contrast"); });
+    await page.waitForTimeout(150);
+    await axe(name, "high contrast");
+    await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
+  } catch (e) { add("settings.html, Sign in with Plex", "page", "error", e.message.split("\n")[0]); }
+}
+
 await browser.close();
 fs.writeFileSync(process.env.OUT || "/work/a11y.json", JSON.stringify(findings, null, 1));
 const by = {};

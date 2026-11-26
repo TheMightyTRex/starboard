@@ -1437,6 +1437,24 @@ class _LazyStand:
 
 
 
+from starboard import plex_link  # noqa: E402  Plex's link code (DASH-595): a made-up plex.tv that approves the second time it is asked
+
+
+_plex_asked = {"n": 0}
+
+
+def _example_plex_tv(url, method="GET", body=None, headers=None, timeout=10, limit=None):
+    if method == "POST":
+        _plex_asked["n"] = 0
+        return {"id": 7777, "code": "PX42", "expiresIn": 900, "authToken": None}
+    _plex_asked["n"] += 1
+    return {"id": 7777, "code": "PX42", "authToken": "made-up-example-plex-token-123" if _plex_asked["n"] >= 2 else None}
+
+
+plex_link._call = _example_plex_tv
+plex_link.SAME_ANSWER = 0.2  # the journeys do not wait for the real spacing between two asks
+
+
 from starboard import noip  # noqa: E402  The No-IP updater (DASH-170), with made-up addresses
 noip.status = lambda data_dir, **k: {"installed": True, "running": True, "state": "refused", "last_update": "2026-11-09T10:19:01Z",
                                      "address": "203.0.113.7", "said": "Type a new DDNS key or password below, then save. The updater starts again with it.",
