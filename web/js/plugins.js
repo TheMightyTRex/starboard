@@ -1427,7 +1427,7 @@ function mediaServerCatalogue(list, ms, redraw) {
         });
       }
       return el("li", { class: "row" }, pluginLogo(b), el("div", {},
-        el("h4", { class: "row__title" }, b.name, " ", chip("Recommended", "info"), ms && ms.active === b.id ? [" ", chip(...SLOT_IN_USE)] : null),
+        el("h3", { class: "row__title" }, b.name, " ", chip("Recommended", "info"), ms && ms.active === b.id ? [" ", chip(...SLOT_IN_USE)] : null),
         el("div", { class: "row__meta", text: b.description }), el("div", { class: "row__meta", text: `Version ${b.version}, built into Starboard` })),
         el("div", { class: "row__side" }, side));
     })));
