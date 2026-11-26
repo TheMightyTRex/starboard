@@ -581,6 +581,11 @@ function problem(message, near) {
   if (!control || !control.getClientRects().length) return window.SharedComponents.toast.error(String(message).replace(/\.$/, ""));
   return inlineError(control, message);
 }
+// What an error line says, the library's way (design system: Field): the icon, then "Error: " for screen readers, then the words.
+function errorWords(node, message) {
+  node.replaceChildren(icon("circle-alert"), el("span", {}, el("span", { class: "visually-hidden", text: "Error: " }), message));
+  return node;
+}
 function inlineError(control, message) {
   const row = control.closest(".row");
   const box = (row && $(".row__text", row)) || control.closest(".field, td, li");
@@ -588,7 +593,7 @@ function inlineError(control, message) {
   const holder = box || after.parentElement;
   $(":scope > .field-error[data-problem]", holder)?.remove();
   const text = String(message).replace(/\.?$/, ".");
-  const error = el("p", { class: "field-error", role: "alert", "data-problem": "", id: `problem-${Date.now()}` }, icon("circle-alert"), el("span", { text }));
+  const error = errorWords(el("p", { class: "field-error", role: "alert", "data-problem": "", id: `problem-${Date.now()}` }), text);
   if (box) box.append(error); else after.after(error);
   control.setAttribute("aria-describedby", [control.getAttribute("aria-describedby"), error.id].filter(Boolean).join(" "));
   // The next go clears it: a new answer replaces it, a success leaves nothing to explain.

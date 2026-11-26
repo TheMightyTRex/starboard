@@ -27,7 +27,7 @@ function setError(control, message) {
   const error = control.fieldError;
   const ids = [control.fieldHint?.id, ...(control.moreHints || [])];
   if (message) {
-    error.replaceChildren(icon("circle-alert"), el("span", { text: message }));
+    errorWords(error, message);
     error.hidden = false;
     control.setAttribute("aria-invalid", "true");
     ids.push(error.id);

@@ -50,6 +50,7 @@ add features.
 - **Plain English pilot.** The README and the help topics Add an app and How lean Starboard is now use shorter sentences and the active voice.
 
 ### Fixed
+- **Field errors say "Error:" to a screen reader.** An error under a field, such as an empty password, now starts with the hidden word Error: , as the design system asks, so it is not read as a plain sentence. The nine places that drew one by hand share one function.
 - **An even row of controls on a Library item page.** On a radio show, the Following list now sits in the same frame and height as the buttons beside it, and every control on a film, series, artist, book, audiobook or radio show page is one height and wraps on a phone.
 - **A full backup that was not made is now reported.** A scheduled backup with no saved backup password used to say it had run. It now says "No full backup was made", raises an alert and shows a warning in Settings.
 
