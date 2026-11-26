@@ -99,7 +99,7 @@ ask Starboard for a long random one instead and show it once on the plug-in's pa
 - **Let Starboard check the file.** A container's data folder is closed (`700`, for the user the container runs as) and
   Starboard runs as another user, so it cannot tell that `ready_file` is there. When the app writes it, it also runs
   `chmod 711` on its data folder: that lets Starboard check one named file, and nothing more, as the plug-in's own folder
-  above it is closed to everyone but Starboard. Starboard makes the folder `700` again each time it starts the plug-in,
+  that holds it is closed to everyone but Starboard. Starboard makes the folder `700` again each time it starts the plug-in,
   so the app does it at every start.
 - Until `ready_file` is there, the page offers nothing, so a plug-in that was already set up is never shown a password
   that was not set.
