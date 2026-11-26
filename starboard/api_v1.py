@@ -44,7 +44,7 @@ import time
 import urllib.parse
 import uuid
 
-API_VERSION = "1.8.0"  # 1.8.0 (20 November 2026, plug-in API 1.17): POST /plugin/alerts, alerts from a plug-in with alerts:send, answered only to its own key. 1.7.0 (19 November 2026, DASH-464): /mcp, read-only tools for AI assistants, off until activated. 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
+API_VERSION = "1.9.0"  # 1.9.0 (26 November 2026): several backup places in /backup/copies (destinations, safe, settings_zip), the test for each, and POST /backup/settings-copy. 1.8.0 (20 November 2026, plug-in API 1.17): POST /plugin/alerts, alerts from a plug-in with alerts:send, answered only to its own key. 1.7.0 (19 November 2026, DASH-464): /mcp, read-only tools for AI assistants, off until activated. 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
 KEYS_FILE = "api-keys.json"
 RIGHTS = ("read", "manage")  # manage: read, and the everyday actions (DASH-274). "admin" stays with the pages
 SCOPES = ("apps", "downloads", "media", "system", "library", "requests")
@@ -633,7 +633,11 @@ def routes():
     def backup_copies_get(h, m, q):  # DASH-452 (API 1.6.0): where copies go, the last copy and the last Test connection
         from . import backup_copies
         p = backup_copies.public(h.app.data_dir)
-        return scrub({k: p.get(k) for k in ("kind", "where", "where_words", "service", "keep", "status", "tested")})
+        places = [{k: d.get(k) for k in ("id", "title", "kind", "kind_words", "enabled", "where", "where_words", "service", "keep", "keep_settings",
+                                          "status", "tested", "state_word", "shape")} for d in p.get("destinations") or []]
+        from . import settings_zip
+        return scrub({**{k: p.get(k) for k in ("kind", "where", "where_words", "service", "keep", "status", "tested")},
+                      "destinations": places, "safe": p.get("safe"), "settings_zip": settings_zip.overview(h.app.data_dir)})
 
     def extras(h, m, q):
         rows = [{k: r.get(k) for k in ("key", "title", "what", "enabled", "started", "finished", "state", "summary", "needs")}
@@ -888,14 +892,33 @@ def actions():
     def copies_test(h, m, q, b):
         """Test connection (DASH-452, API 1.6.0): as the page's button; at most 2 minutes."""
         from . import backup_copies
-        if backup_copies.settings(h.app.data_dir)["kind"] == "off":
+        places = [d for d in backup_copies.destinations(h.app.data_dir) if d["enabled"]]
+        if not places:
             raise NotReady("Copies off this computer are not set up")
+        results = {}
+        for d in places:  # one failing never stops the others
+            try:
+                results[d["id"]] = backup_copies.test(h.app.data_dir, d["id"])
+            except backup_copies.CopyError as e:
+                results[d["id"]] = {"ok": False, "error": str(e)}
+        first = results[places[0]["id"]]
+        if len(places) == 1 and first.get("error") and "running already" in first["error"]:
+            raise Conflict(first["error"], "cannot_test")
+        logs.event("info", "backup", f"Test connection by the API key {h.api_key['name']}: "
+                   + ", ".join(f"{backup_copies.title_of(d)} {'connected' if (results[d['id']] or {}).get('ok') else 'not connected'}" for d in places))
+        return 200, {"ok": all((r or {}).get("ok") for r in results.values()), "tested": scrub(first),
+                     "places": scrub([{"id": d["id"], "title": backup_copies.title_of(d), "tested": results[d["id"]]} for d in places])}
+
+    def settings_copy(h, m, q, b):
+        """Copy the server's settings zip to every place that is activated, encrypted (API 1.9.0). The server's own backup job
+        calls this after it has written the zip; the file is named, never a path."""
+        from . import settings_zip
         try:
-            got = backup_copies.test(h.app.data_dir)
-        except backup_copies.CopyError as e:
-            raise Conflict(str(e), "cannot_test") from None
-        logs.event("info", "backup", f"Test connection by the API key {h.api_key['name']}: {'connected' if got and got.get('ok') else 'not connected'}")
-        return 200, {"ok": bool(got and got.get("ok")), "tested": scrub(got)}
+            got = settings_zip.start(h.app.data_dir, str((b or {}).get("name") or "") or None)
+        except settings_zip.ZipError as e:
+            raise Conflict(str(e), "cannot_copy") from None
+        logs.event("info", "backup", f"Server settings copy started by the API key {h.api_key['name']}")
+        return 202, {"accepted": True, "status": "/api/v1/backup/copies", "settings_zip": scrub(got)}
 
     def extra_run(h, m, q, b):
         h.app.jobs.run_soon(m.group(1), force=True)
@@ -913,6 +936,7 @@ def actions():
         (r"^/api/v1/containers/check$", "POST", "apps", containers_check),
         (r"^/api/v1/alerts/test$", "POST", "system", alerts_test),
         (r"^/api/v1/backup/copies/test$", "POST", "system", copies_test),
+        (r"^/api/v1/backup/settings-copy$", "POST", "system", settings_copy),
         (r"^/api/v1/extras/(livetv|import|defaults|listening)/run$", "POST", "media", extra_run),
         (r"^/api/v1/updates$", "POST", "updates", update_start),
         (r"^/api/v1/updates/rollback$", "POST", "updates", update_rollback),

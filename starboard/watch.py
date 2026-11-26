@@ -297,6 +297,10 @@ class Watch:
                     self.alert(f"full-backup:{full.get('started')}", "The full backup failed",
                                f"{name}: {full.get('error') or 'go to Settings, General, Backup and restore'}.")
 
+                from . import backup_copies  # Several backup places (26 November 2026): one alert for each that failed, by name
+                for bad in (backup_copies.failures(self.app.data_dir) if getattr(self.app, "data_dir", None) else []):
+                    self.alert(bad["key"], f"The backup copy to {bad['title']} failed", f"{name}: {bad['error']}. The other places were still tried.")
+
             # Certificates, once a day.
             days = int(on.get("cert_days", 0) or 0)
             if days and now - self.state.get("certs_checked", 0) > 86400:

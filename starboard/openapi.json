@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Starboard API",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "Make a key in Starboard: Settings, Security, API keys. Send it as Authorization: Bearer sb_read_... or sb_manage_... A read key reads; a manage key also does the everyday actions (each POST, marked x-right: manage). x-scope is the scope a key needs. Errors are RFC 9457 problem details. Lists use limit and cursor. Answers carry an ETag; send If-None-Match to get 304.",
   "license": {
    "name": "MIT",
@@ -3998,6 +3998,105 @@
              ]
             }
            }
+          },
+          "destinations": {
+           "type": "array",
+           "description": "Added in 1.9.0: every place a backup can go, each with its own switch (enabled), keep counts, last copy (status, state_word, shape) and last test. The fields above are the first place's.",
+           "items": {
+            "type": "object",
+            "properties": {
+             "id": {
+              "type": "string"
+             },
+             "title": {
+              "type": "string"
+             },
+             "kind": {
+              "type": "string"
+             },
+             "kind_words": {
+              "type": "string"
+             },
+             "enabled": {
+              "type": "boolean"
+             },
+             "where": {
+              "type": "string"
+             },
+             "where_words": {
+              "type": "string"
+             },
+             "service": {
+              "type": "string"
+             },
+             "keep": {
+              "type": "integer"
+             },
+             "keep_settings": {
+              "type": "integer"
+             },
+             "status": {
+              "type": "object",
+              "additionalProperties": true
+             },
+             "tested": {
+              "type": [
+               "object",
+               "null"
+              ],
+              "description": "The last Test connection: ok, each step (folder, write, read, remove) done or not, free bytes there when the place says, when (at, seconds since 1970), and error in words when it did not work. An error that starts SIGNIN| means the cloud service no longer accepts the sign-in: sign in again on the page.",
+              "properties": {
+               "ok": {
+                "type": "boolean"
+               },
+               "steps": {
+                "type": "array",
+                "items": {
+                 "type": "object",
+                 "additionalProperties": true
+                }
+               },
+               "free": {
+                "type": [
+                 "integer",
+                 "null"
+                ]
+               },
+               "at": {
+                "type": "number"
+               },
+               "error": {
+                "type": "string"
+               },
+               "where": {
+                "type": "string"
+               },
+               "count": {
+                "type": [
+                 "integer",
+                 "null"
+                ]
+               }
+              }
+             },
+             "state_word": {
+              "type": "string"
+             },
+             "shape": {
+              "type": "string"
+             }
+            }
+           }
+          },
+          "safe": {
+           "type": "object",
+           "additionalProperties": true,
+           "description": "Added in 1.9.0: safe is true only when every place that is activated has copied the newest full backup and read it back; words says it, places says which."
+          },
+          "settings_zip": {
+           "type": "object",
+           "additionalProperties": true,
+           "description": "Added in 1.9.0: the key for the server settings copies (set, never the key) and each place's last settings copy."
           }
          }
         }
@@ -4011,6 +4110,85 @@
       "$ref": "#/components/responses/Problem"
      },
      "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/backup/settings-copy": {
+   "post": {
+    "operationId": "copyServerSettings",
+    "summary": "Copy the server's settings zip to every place that is activated, encrypted with rclone crypt first, as the server's own backup job asks after writing it (1.9.0). Body: name, the zip's file name in the server backups folder (the newest when left out). Never sent without a key.",
+    "tags": [
+     "System"
+    ],
+    "x-scope": "system",
+    "x-right": "manage",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/idempotency"
+     }
+    ],
+    "requestBody": {
+     "required": false,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object"
+       }
+      }
+     }
+    },
+    "responses": {
+     "202": {
+      "description": "It worked.",
+      "headers": {
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "accepted"
+         ],
+         "properties": {
+          "accepted": {
+           "type": "boolean"
+          },
+          "status": {
+           "type": "string"
+          },
+          "settings_zip": {
+           "type": "object",
+           "additionalProperties": true
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "403": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "404": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "413": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "409": {
       "$ref": "#/components/responses/Problem"
      }
     }

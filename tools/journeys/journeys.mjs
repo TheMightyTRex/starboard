@@ -1380,49 +1380,52 @@ await page.keyboard.press("Space");
 await page.waitForFunction(() => /Inactive:/.test(document.querySelector("#mcp-result")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
 check("MCP-05", "deactivating it stops the assistant at once", (await mcpCall({ jsonrpc: "2.0", id: 3, method: "ping" })).status === 403);
 for (const k of (await api("/api/keys")).keys.filter((k) => k.name === "Journey assistant")) await api(`/api/keys/${k.id}`, { method: "DELETE" });
-// DASH-380: Copies off this computer on System, Backup and restore, set by the example server to a made-up USB disk,
-// with a stand-in helper. Test answers in the live line and focus stays on Test; a wrong remote is said in an alert
-// that takes focus; Off saves with the password and the buttons go; the made-up disk is put back after.
-console.log("\n== CP Copies off this computer");
+// DASH-380, several places (26 November 2026): Where backups go on System, Backup and restore, set by the example server to
+// a made-up USB disk, Google Drive and OneDrive, with a stand-in helper. Test answers beside the place and focus stays on
+// it; a wrong share is said in an alert that takes focus; a place can be deactivated and the page says if the backup is safe.
+console.log("\n== CP Where backups go");
 await open("system-backup.html");
 const cp = page.locator("#copies-body");
-await cp.locator("#copies-form").waitFor({ timeout: 10000 }).catch(() => {});
+await cp.locator("#places-h").waitFor({ timeout: 10000 }).catch(() => {});
 check("CP-01", "the section is there, after Full without media, with its heading",
-  await page.evaluate(() => { const h = [...document.querySelectorAll("main h2")].map((x) => x.textContent); return h.indexOf("Copies off this computer") === h.indexOf("Full without media") + 1; }));
-check("CP-01", "Another disk is chosen, and the last copy is said",
-  await cp.getByRole("radio", { name: /Another disk/ }).isChecked() && /Copied to .*usb-backup/.test(await page.locator("#copies-state").innerText()));
-check("CP-01", "fields for other places are hidden", !(await page.locator("#copies-smb").isVisible()) && !(await page.locator("#copies-remote").isVisible()));
-await page.locator("#copies-test").click();
-await page.waitForFunction(() => !document.querySelector("#copies-test")?.disabled && /Tested/.test(document.querySelector("#copies-tested")?.textContent || ""), null, { timeout: 8000 }).catch(() => {});
-check("CP-02", "Test connection says Connected beside the place, with 5 full backups there (DASH-452)",
-  /Connected/.test(await page.locator("#copies-tested").innerText()) && /5 full backups there/.test(await page.locator("#copies-tested").innerText()), await page.locator("#copies-tested").innerText());
-check("CP-02", "focus stays on Test connection", await page.evaluate(() => document.activeElement.id) === "copies-test");
+  await page.evaluate(() => { const h = [...document.querySelectorAll("main h2")].map((x) => x.textContent); return h.indexOf("Where backups go") === h.indexOf("Full without media") + 1; }));
+check("CP-01", "three places are listed, each with its name, its logo or icon (decorative) and its last copy in words",
+  (await page.locator(".place__title").allTextContents()).join() === "USB disk,Google Drive,OneDrive"
+  && await page.locator(".places .place-logo[aria-hidden=true]").count() === 3 && await page.locator(".places .place-state", { hasText: "Copied and read back" }).count() === 3);
+check("CP-01", "the page says the newest backup is safe, because each place read it back", /^Safe/.test(await page.locator("#places-safe").innerText()));
+check("CP-01", "every kind of place can be added, with the services",
+  await page.locator(".place-adds button").count() === 11 && await page.locator("#place-add-onedrive").isVisible());
+await page.locator("#place-test-main").click();
+await page.waitForFunction(() => !document.querySelector("#place-test-main")?.disabled && /Tested/.test(document.querySelector("#place-tested-main")?.textContent || ""), null, { timeout: 8000 }).catch(() => {});
+check("CP-02", "Test says Connected beside the place, with 5 full backups there (DASH-452)",
+  /Connected/.test(await page.locator("#place-tested-main").innerText()) && /5 full backups there/.test(await page.locator("#place-tested-main").innerText()), await page.locator("#place-tested-main").innerText());
+check("CP-02", "focus stays on Test", await page.evaluate(() => document.activeElement.id) === "place-test-main");
 await page.waitForFunction(() => /^Connected: /.test(document.querySelector("#announcer")?.textContent || ""), null, { timeout: 3000 }).catch(() => {});
 check("CP-02", "the result is said politely", /^Connected: /.test(await page.locator("#announcer").innerText()));
-await cp.getByRole("radio", { name: /A cloud service/ }).check();
-await page.locator("#copies-own-toggle").click();
-check("CP-03", "Paste your own rclone remote instead shows its own fields", await page.locator("#copies-remote").isVisible() && await page.locator("#copies-rclone-config").isVisible());
-await page.fill("#copies-remote", "mycloud:starboard");
-await page.fill("#copies-mine", password);
-await page.locator("#copies-save").click();
-await page.locator("#copies-error [role=alert]").waitFor({ timeout: 5000 }).catch(() => {});
-check("CP-03", "without its part of rclone.conf it is not saved, said in an alert that takes focus",
-  /starts with \[mycloud\]/.test(await page.locator("#copies-error").innerText()) && await page.evaluate(() => document.activeElement.id) === "copies-error");
-check("CP-03", "the secret box never shows a kept value", (await page.locator("#copies-rclone-config").inputValue()) === "");
-await cp.getByRole("radio", { name: /^Off/ }).check();
-await page.fill("#copies-mine", password);
-await page.locator("#copies-save").click();
-await page.waitForFunction(() => !document.querySelector("#copies-test"), null, { timeout: 5000 }).catch(() => {});
-check("CP-04", "Off is saved: Test and Copy the newest now go, focus is on Save",
-  !(await page.locator("#copies-test").count()) && await page.evaluate(() => document.activeElement.id) === "copies-save");
+await page.locator("#place-add-smb").click();
+await page.locator("#place-smb").waitFor();
+await page.fill("#place-smb", "nas.home/backups");
+await page.fill("#place-mine", password);
+await page.locator("#place-save").click();
+await page.locator("#place-error [role=alert]").waitFor({ timeout: 5000 }).catch(() => {});
+check("CP-03", "a share written wrongly is not saved, said in an alert that takes focus",
+  /\/\/computer\/share/.test(await page.locator("#place-error").innerText()) && await page.evaluate(() => document.activeElement.id) === "place-error");
+check("CP-03", "the password box never shows a kept value", (await page.locator("#place-smb-password").inputValue()) === "");
+await page.keyboard.press("Escape");
+await page.waitForFunction(() => !document.querySelector(".side-panel"));
+await page.locator("#place-on-d1a2b3").focus();
+await page.keyboard.press("Space");
+await page.waitForFunction(() => /Deactivated/.test(document.querySelector("#place-d1a2b3 .place-state")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
+check("CP-04", "deactivating a place is said in words and a shape, and focus stays on its switch",
+  /Deactivated/.test(await page.locator("#place-d1a2b3 .place-state").innerText()) && await page.evaluate(() => document.activeElement.id) === "place-on-d1a2b3");
+await page.keyboard.press("Space");
+await page.waitForFunction(() => /Copied and read back/.test(document.querySelector("#place-d1a2b3 .place-state")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
 const copiesNow = await api("/api/backup/copies");
-check("CP-04", "the page never gets a password or config back", !("smb_password" in copiesNow) && !("rclone_config" in copiesNow));
-await api("/api/backup/copies", { method: "PUT", body: { password, kind: "disk", folder: copiesNow.folder, keep: 5 } });
-await open("system-backup.html");
-await page.locator("#copies-now").waitFor({ timeout: 5000 }).catch(() => {});
+check("CP-04", "the page never gets a password or config back", !JSON.stringify(copiesNow).includes("smb_password\":") && !("rclone_config" in copiesNow) && copiesNow.destinations.length === 3);
+check("CP-04", "the API says safe only when each place read it back", copiesNow.safe.safe === true && copiesNow.safe.places.length === 3);
 await page.locator("#copies-now").click();
-await page.waitForFunction(() => /Copied to|Copying now/.test(document.querySelector("#copies-state")?.textContent || ""), null, { timeout: 8000 }).catch(() => {});
-check("CP-05", "Copy the newest now copies, said in the live line", /Copied to .*keeps 5|Copying now/.test(await page.locator("#copies-state").innerText()));
+await page.waitForFunction(() => /Copied and read back|Copying/.test(document.querySelector("#copies-body")?.textContent || ""), null, { timeout: 8000 }).catch(() => {});
+check("CP-05", "Copy the newest full backup now copies to every place that is activated", /Copied and read back|Copying/.test(await page.locator("#copies-body").innerText()));
 console.log("\n== Audio description, chosen in the set-up (DASH-399)");
 await open("settings-plugins-catalogue.html");
 const adOffer = page.locator('[data-offer="audio-description"]');
@@ -2234,38 +2237,22 @@ await api("/api/config/general", { method: "PUT", body: { logs: { max_mb: 50 } }
 // example_server.py): the phone's sign-in is approved at the stand-in on the example server's port + 2, as a phone would.
 console.log("\n== CLD Connect a cloud service, Test connection, Monthly");
 const standin = base.replace(/:(\d+)$/, (_, p) => `:${Number(p) + 2}`);
-const copiesKept = await api("/api/backup/copies");
+const placesBefore = (await api("/api/backup/copies")).destinations.map((d) => d.id);
 const announced = () => page.evaluate(() => document.querySelector("#announcer")?.textContent || "");
 const activeId = () => page.evaluate(() => document.activeElement?.id || document.activeElement?.className || "");
 await open("system-backup.html");
-await page.locator("input[name=copies-kind][value=rclone]").check();
-const connectBtn = page.locator("#copies-connect");
-check("CLD-01", "A cloud service offers Connect a cloud service and the other way, pasting your own remote",
-  await connectBtn.isVisible() && (await page.locator("#copies-own-toggle").getAttribute("aria-expanded")) === "false");
-await page.locator("#copies-own-toggle").click();
-check("CLD-01", "Paste your own rclone remote instead shows its two fields", await page.locator("#copies-rclone-config").isVisible()
-  && (await page.locator("#copies-own-toggle").getAttribute("aria-expanded")) === "true");
-await page.locator("#copies-own-toggle").click();
-await connectBtn.focus();
+const addDrive = page.locator("#place-add-drive");
+check("CLD-01", "Add a place offers each service with its logo, name and how many are connected, the services in the agreed order",
+  (await page.locator(".place-adds button strong").allTextContents()).slice(3).join() === "Google Drive,OneDrive,Dropbox,Backblaze B2,An S3-compatible service,Nextcloud or another WebDAV server,An SFTP server,Your own rclone remote"
+  && /1 connected/.test(await addDrive.innerText()));
+await addDrive.focus();
 await page.keyboard.press("Enter");
 await page.locator("#cloud-step-heading").waitFor();
-check("CLD-02", "the slide-out opens on step 1 with focus on its heading", await activeId() === "cloud-step-heading"
-  && /step 1 of 5/.test(await page.locator(".wizard-progress").innerText()));
-check("CLD-02", "the progress bar says the step in words", (await page.locator(".wizard-progress [role=progressbar]").getAttribute("aria-valuetext")) === "Step 1 of 5: Choose a service");
-const svcOrder = await page.locator("input[name=cloud-service]").evaluateAll((l) => l.map((i) => i.value));
-check("CLD-02", "the services in the agreed order", svcOrder.join() === "drive,onedrive,dropbox,b2,s3,webdav,sftp,own", svcOrder.join());
-// Keyboard only: Continue with nothing chosen, then Google Drive with Space, then Continue with Enter.
-await page.locator(".side-panel__foot .btn--primary").focus();
-await page.keyboard.press("Enter");
-check("CLD-03", "Continue with nothing chosen says so and moves focus to the choices", await page.locator("#cloud-service-error").isVisible()
-  && await page.evaluate(() => document.activeElement?.name === "cloud-service"));
-await page.keyboard.press("Space");
-await page.locator(".side-panel__foot .btn--primary").focus();
-await page.keyboard.press("Enter");
+check("CLD-02", "the slide-out opens at the sign-in with focus on its heading, as step 2 of 5", await activeId() === "cloud-step-heading"
+  && /step 2 of 5/.test(await page.locator(".wizard-progress").innerText()));
 await page.locator("#cloud-way").waitFor();
 check("CLD-03", "Google Drive offers both ways to sign in, the same weight", await page.locator("#cloud-way .option-card").count() === 2
   && /Complete on the phone/.test(await page.locator("#cloud-way").innerText()) && /Complete in this browser/.test(await page.locator("#cloud-way").innerText()));
-// The browser first (the default), then the phone with the arrow keys.
 await page.locator("#cloud-open-signin").waitFor();
 check("CLD-04", "in this browser: the sign-in link opens in a new tab and says so", (await page.locator("#cloud-open-signin").getAttribute("target")) === "_blank"
   && /opens in a new tab/.test(await page.locator("#cloud-open-signin").innerText()) && /^https:\/\/accounts\.google\.com\//.test(await page.locator("#cloud-open-signin").getAttribute("href")));
@@ -2301,24 +2288,26 @@ await page.locator("#cloud-password").fill(password);
 await page.keyboard.press("Enter");
 await page.locator(".side-panel").waitFor({ state: "detached" });
 await page.waitForTimeout(600);
-check("CLD-10", "saved: the slide-out closes and focus is back on the button that opened it", await activeId() === "copies-connect", await activeId());
-check("CLD-10", "the page says where the copies go now, in words", /Connected to Google Drive, starboard-backups/.test(await page.locator("#copies-body").innerText()));
+check("CLD-10", "saved: the slide-out closes and focus is on Add a place", ["places-add", "place-add-drive"].includes(await activeId()), await activeId());
 const savedCopies = await api("/api/backup/copies");
+const addedPlaces = savedCopies.destinations.filter((d) => !placesBefore.includes(d.id));
+check("CLD-10", "the second Google Drive is a new place with its own rclone remote, and the first keeps its own",
+  addedPlaces.length === 1 && addedPlaces[0].service === "drive" && addedPlaces[0].remote.startsWith("starboard-drive:")
+  && savedCopies.destinations.find((d) => d.id === "d1a2b3").remote.startsWith("starboard-cloud:"), JSON.stringify(addedPlaces.map((d) => d.remote)));
 check("CLD-10", "the page is never sent the sign-in", !JSON.stringify(savedCopies).includes("standin-") && !JSON.stringify(savedCopies).includes("token"));
 // Test connection: busy while it runs, then the result beside the place, kept for next time.
-const testBtn = page.locator("#copies-test");
+const newId = addedPlaces[0]?.id;
+const testBtn = page.locator(`#place-test-${newId}`);
 await testBtn.click();
-await page.waitForFunction(() => !document.querySelector("#copies-test")?.disabled);
-check("CLD-11", "Test connection shows Connected with when, and focus stays on the button", /Connected/.test(await page.locator("#copies-tested").innerText())
-  && /Tested/.test(await page.locator("#copies-tested").innerText()) && await activeId() === "copies-test");
+await page.waitForFunction((i) => !document.querySelector(`#place-test-${i}`)?.disabled, newId);
+check("CLD-11", "Test shows Connected with when, and focus stays on the button", /Connected/.test(await page.locator(`#place-tested-${newId}`).innerText())
+  && /Tested/.test(await page.locator(`#place-tested-${newId}`).innerText()) && await activeId() === `place-test-${newId}`);
 await page.waitForFunction(() => /^Connected: /.test(document.querySelector("#announcer")?.textContent || ""), null, { timeout: 3000 }).catch(() => {});
-check("CLD-11", "and says it in the live region", /^Connected: Google Drive, starboard-backups/.test(await announced()), await announced());
+check("CLD-11", "and says it in the live region", /^Connected: Google Drive/.test(await announced()), await announced());
 await open("system-backup.html");
-check("CLD-11", "the result is still there when the page is opened again", /Connected/.test(await page.locator("#copies-tested").innerText()));
+check("CLD-11", "the result is still there when the page is opened again", /Connected/.test(await page.locator(`#place-tested-${newId}`).innerText()));
 // Closing part way: Dropbox, the link only, then Escape.
-await page.locator("#copies-connect").click();
-await page.locator("input[name=cloud-service][value=dropbox]").check();
-await page.locator(".side-panel__foot .btn--primary").click();
+await page.locator("#place-add-dropbox").click();
 await page.locator("#cloud-open-signin").waitFor();
 check("CLD-12", "Dropbox signs in with the link in this browser only, no QR code", await page.locator("#cloud-way").count() === 0 && await page.locator(".qr-card").count() === 0);
 await page.locator("#cloud-answer").fill("http://127.0.0.1:53682/?state=SomeoneElse123&code=abc");
@@ -2328,13 +2317,11 @@ check("CLD-12", "an address from another sign-in is refused beside the field", (
   && /different sign-in/.test(await page.locator("#cloud-answer-error").innerText()));
 await page.keyboard.press("Escape");
 await page.waitForTimeout(500);
-check("CLD-12", "closing part way: focus back on the button, nothing saved, the sign-in ended", await activeId() === "copies-connect"
+check("CLD-12", "closing part way: focus back on the service, nothing saved, the sign-in ended", await activeId() === "place-add-dropbox"
   && /nothing was saved/.test(await announced()) && (await api("/api/backup/cloud/session")).state === "none"
-  && (await api("/api/backup/copies")).service === "drive");
-// Pasting back in this browser, by keyboard: OneDrive.
-await page.locator("#copies-connect").click();
-await page.locator("input[name=cloud-service][value=onedrive]").check();
-await page.locator(".side-panel__foot .btn--primary").click();
+  && (await api("/api/backup/copies")).destinations.length === placesBefore.length + 1);
+// Pasting back in this browser, by keyboard: OneDrive, again: it has its own remote, starboard-onedrive-2 or the first free.
+await page.locator("#place-add-onedrive").click();
 await page.locator("#cloud-way").waitFor();
 if (await page.locator("input[name=cloud-way][value=browser]").isChecked() === false) await page.locator("input[name=cloud-way][value=browser]").check();
 await page.locator("#cloud-open-signin").waitFor();
@@ -2347,9 +2334,7 @@ await page.keyboard.press("Escape");
 await page.waitForTimeout(400);
 // Phone width: the QR step does not scroll sideways.
 await page.setViewportSize({ width: 375, height: 812 });
-await page.locator("#copies-connect").click();
-await page.locator("input[name=cloud-service][value=drive]").check();
-await page.locator(".side-panel__foot .btn--primary").click();
+await page.locator("#place-add-drive").click();
 await page.locator("input[name=cloud-way][value=phone]").check();
 await page.locator(".qr-card").waitFor();
 const qrWide = await page.evaluate(() => Math.max(document.documentElement.scrollWidth - innerWidth, document.querySelector(".side-panel__body").scrollWidth - document.querySelector(".side-panel__body").clientWidth));
@@ -2369,8 +2354,8 @@ check("MON-01", "Monthly saves at once: the 1st at 03:00, keeping 6, said in its
   && /1st of each month at 03:00\. The newest 6 are kept/.test(await page.locator("label.option-card", { hasText: "Monthly" }).innerText()));
 check("MON-01", "focus stays on Monthly and the save is said", await page.evaluate(() => document.activeElement?.value === "monthly") && /Saved: Monthly/.test(await announced()));
 await api("/api/config/general", { method: "PUT", body: { backup_schedule: schedWas } });
-// Put the example's copies back as they were (a USB disk).
-await api("/api/backup/copies", { method: "PUT", body: { password, kind: copiesKept.kind, folder: copiesKept.folder, keep: copiesKept.keep } });
+// Put the example's places back as they were: remove the one the journey added.
+for (const d of (await api("/api/backup/copies")).destinations.filter((x) => !placesBefore.includes(x.id))) await api("/api/backup/copies/forget", { method: "POST", body: { password, id: d.id } });
 
 console.log("\n== Bring in media (DASH-455)");
 await open("bring-in.html?part=bring-sources");

@@ -3005,21 +3005,48 @@ class Handler(BaseHTTPRequestHandler):
                         return self.json(200, backup_copies.public(app.data_dir))
                     if path == "/api/backup/copies/test" and method == "POST":
                         # Test connection (DASH-452): write, read back, remove, room and sign-in; the result is kept.
-                        result = backup_copies.test(app.data_dir)
+                        dest = str(self.body().get("id") or "") or None
+                        result = backup_copies.test(app.data_dir, dest)
                         logs.event("info" if result and result.get("ok") else "warning", "backup",
-                                   f"Test connection, {backup_copies.where(backup_copies.settings(app.data_dir))}: "
+                                   f"Test connection, {backup_copies.where(backup_copies.settings(app.data_dir, dest))}: "
                                    + ("connected" if result and result.get("ok") else (result or {}).get("error", "did not work").split("|")[-1]))
                         return self.json(200, {**backup_copies.public(app.data_dir), "tested": result})
+                    if path == "/api/backup/copies/enabled" and method == "POST":
+                        # Switch one place on or off (several places, 26 November 2026): it keeps its settings either way.
+                        data = self.body()
+                        got = backup_copies.set_enabled(app.data_dir, str(data.get("id") or ""), bool(data.get("on")))
+                        logs.event("info", "backup", f"Backup place {backup_copies.title_of(got)} switched {'on' if data.get('on') else 'off'}")
+                        return self.json(200, backup_copies.public(app.data_dir))
                     if path == "/api/backup/copies/now" and method == "POST":
-                        backup_copies.copy_now(app.data_dir)
+                        backup_copies.copy_now(app.data_dir, str(self.body().get("id") or "") or None)
                         logs.event("info", "backup", "Copy off this computer started by hand")
                         return self.json(202, backup_copies.public(app.data_dir))
                     if path == "/api/backup/copies/forget" and method == "POST":
-                        self.check_password(self.body())
-                        backup_copies.forget(app.data_dir)
-                        logs.event("info", "backup", "Copies off this computer stopped; the kept share password and rclone config were removed")
+                        data = self.body()
+                        self.check_password(data)
+                        backup_copies.forget(app.data_dir, str(data.get("id") or "") or None)
+                        logs.event("info", "backup", "A backup place was removed; its kept share password and rclone config were removed")
                         return self.json(200, backup_copies.public(app.data_dir))
                 except (backup_copies.CopyError, full_backup.BackupError, ValueError) as e:
+                    return self.error(400, str(e))
+                except containers.DockerError as e:
+                    return self.error(400, f"Docker did not do it: {e}")
+            if path.startswith("/api/backup/settings-zip"):  # The server's settings zip, encrypted, to the same places
+                from . import settings_zip
+                try:
+                    if path == "/api/backup/settings-zip" and method == "GET":
+                        return self.json(200, settings_zip.overview(app.data_dir))
+                    if path == "/api/backup/settings-zip/key" and method == "POST":
+                        data = self.body()
+                        self.check_password(data)
+                        card = settings_zip.make_key(app.data_dir, replace=bool(data.get("replace")))
+                        logs.event("info", "backup", "The key for encrypted server settings copies was made")
+                        return self.json(200, {**settings_zip.overview(app.data_dir), "card": card})
+                    if path == "/api/backup/settings-zip/copy" and method == "POST":
+                        got = settings_zip.start(app.data_dir, str(self.body().get("name") or "") or None)
+                        logs.event("info", "backup", "Server settings copy started by hand")
+                        return self.json(202, got)
+                except (settings_zip.ZipError, ValueError) as e:
                     return self.error(400, str(e))
                 except containers.DockerError as e:
                     return self.error(400, f"Docker did not do it: {e}")
@@ -3035,7 +3062,8 @@ class Handler(BaseHTTPRequestHandler):
                     if path == "/api/backup/cloud/session" and method == "GET":
                         return self.json(200, cloud_connect.current())
                     if path == "/api/backup/cloud/start" and method == "POST":
-                        return self.json(200, cloud_connect.start(app.data_dir, str(data.get("service") or ""), str(data.get("way") or "browser")))
+                        return self.json(200, cloud_connect.start(app.data_dir, str(data.get("service") or ""), str(data.get("way") or "browser"),
+                                                                  dest=str(data.get("dest") or "") or None))
                     if path == "/api/backup/cloud/answer" and method == "POST":
                         return self.json(200, cloud_connect.answer(str(data.get("id") or ""), data.get("address")))
                     if path == "/api/backup/cloud/details" and method == "POST":

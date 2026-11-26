@@ -453,12 +453,23 @@ def _example_copies(data):
     from starboard import backup_copies
     usb = str(data / "example-computer" / "mnt" / "usb-backup" / "starboard")
     if not (data / backup_copies.SETTINGS).exists():
-        backup_copies.save(str(data), {**backup_copies.settings(str(data)), "kind": "disk", "folder": usb, "keep": 5},
-                           backup_copies.secrets(str(data)))
+        # Several places (26 November 2026): the USB disk, Google Drive (the first connection, its remote still named
+        # starboard-cloud) and OneDrive (its own remote), with last night's copy at each; the server settings key is made.
+        d = str(data)
+        full = str(data / "example-computer" / "mnt" / "disk2" / "backups" / "starboard-full-2026-11-13-030000.starboard")
         last = dt.datetime.now().replace(hour=3, minute=4, second=0).timestamp()
-        backup_copies._say(str(data), state="done", started=last - 40, finished=last, where=usb,
-                           file=str(data / "example-computer" / "mnt" / "disk2" / "backups" / "starboard-full-2026-11-13-030000.starboard"),
-                           said=f"Copied to {usb}, which keeps 5 full backups")
+        for pid, kind, extra, said in (
+                ("main", "disk", {"folder": usb, "name": "USB disk"}, f"Copied to {usb}, which keeps 5 full backups"),
+                ("d1a2b3", "rclone", {"remote": "starboard-cloud:starboard-backups", "service": "drive", "name": "Google Drive"}, "Copied to Google Drive, starboard-backups, which keeps 5 full backups"),
+                ("d4e5f6", "rclone", {"remote": "starboard-onedrive:starboard-backups", "service": "onedrive", "name": "OneDrive", "account": "Alex Example"},
+                 "Copied to OneDrive, starboard-backups, which keeps 5 full backups")):
+            backup_copies.save(d, {"id": pid, "kind": kind, "keep": 5, **extra},
+                               {"smb_password": "", "rclone_config": f"[{extra.get('remote', '').split(':')[0]}]\ntype = {extra.get('service', '')}\n" if kind == "rclone" else ""})
+            backup_copies._say(d, pid, state="done", started=last - 40, finished=last, where=backup_copies.where(backup_copies.settings(d, pid)), file=full, said=said, verified=True)
+        from starboard import settings_zip
+        settings_zip.make_key(d)
+        for pid in ("main", "d1a2b3", "d4e5f6"):
+            settings_zip._say(d, pid, state="done", finished=last + 600, file="server-settings-2026-11-22.zip", said="Encrypted, copied and read back")
     # Test connection (DASH-452) answers with every check done, 1.8 TB free and 5 backups there.
     backup_copies._helper = lambda script, binds, image=None, network="none", volumes=(), timeout=7200: (
         0, "STEP-FOLDER\nSTEP-WRITE\nSTEP-READ\nSTEP-REMOVE\nFREE 1979120929996\nCOUNT 5\n")
@@ -466,15 +477,17 @@ def _example_copies(data):
     backup_copies.newest_size = lambda data_dir: 412 * 1024 ** 2
     real_test = backup_copies.test
 
-    def test(data_dir):  # the example server has no Docker: the stand-in helper above answers instead
+    def test(data_dir, dest=None):  # the example server has no Docker: the stand-in helper above answers instead
         was, folder = containers.available, stack.host_folder
         containers.available = lambda: True
         stack.host_folder = lambda d: str(data / "stack")  # where Starboard's folder would be, for a cloud place's config
         try:
-            return real_test(data_dir)
+            return real_test(data_dir, dest)
         finally:
             containers.available, stack.host_folder = was, folder
     backup_copies.test = test
+    from starboard import settings_zip
+    settings_zip.newest_zip = lambda: ("server-settings-2026-11-22.zip", 2367888883)
     _example_cloud(data)
 
 

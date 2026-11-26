@@ -58,7 +58,7 @@ function testWords(error) {
   return { signin: text.startsWith("SIGNIN|"), text: text.replace(/^SIGNIN\|/, "") };
 }
 
-async function cloudWizard({ opener = document.activeElement, startAt = "service", serviceId = null, folder = "", onSaved } = {}) {
+async function cloudWizard({ opener = document.activeElement, startAt = "service", serviceId = null, folder = "", dest = null, onSaved } = {}) {
   let list;
   try { list = await api("/api/backup/cloud/services"); } catch (e) { problem(e.message, opener); return; }
   const services = list.services;
@@ -146,7 +146,7 @@ async function cloudWizard({ opener = document.activeElement, startAt = "service
     st.last = "";
     drawSignin();
     try {
-      st.sess = await api("/api/backup/cloud/start", { method: "POST", body: { service: svc().id, way: st.way } });
+      st.sess = await api("/api/backup/cloud/start", { method: "POST", body: { service: svc().id, way: st.way, dest } });
     } catch (e) {
       st.sess = { state: "failed", error: e.message };
     }
@@ -311,7 +311,7 @@ async function cloudWizard({ opener = document.activeElement, startAt = "service
       go.disabled = true;
       const values = Object.fromEntries(Object.entries(inputs).map(([k, i]) => [k, i.value]));
       try {
-        if (!st.sess?.id) st.sess = await api("/api/backup/cloud/start", { method: "POST", body: { service: s.id } });
+        if (!st.sess?.id) st.sess = await api("/api/backup/cloud/start", { method: "POST", body: { service: s.id, dest } });
         announce("Checking the details with rclone");
         st.sess = await api("/api/backup/cloud/details", { method: "POST", body: { id: st.sess.id, values } });
         announce(`Details accepted for ${s.name}`);
