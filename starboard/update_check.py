@@ -4,7 +4,7 @@ Check for updates asks now, with the checks Starboard already has, instead of wa
 
 - Starboard: GitHub's newest version tag (App.latest_release, which otherwise looks at most every 6 hours);
 - the apps and Reelix: each image's registry (containers.check, as Look for updates on Apps, Updates);
-- Starboard's plug-ins: every plug-in catalogue (plugins_admin.catalogue, which otherwise reads each once a day);
+- Starboard's plug-ins: every plug-in catalogue (plugins_admin.refresh, which otherwise reads each every 6 hours);
 - Jellyfin's plug-ins: Jellyfin's own list of packages from its repositories, against the versions installed.
 
 What is new puts the notes of every waiting update in one list, grouped by item, from the version installed to the
@@ -67,12 +67,10 @@ def _check_apps(app):
 
 def _check_plugins(app):
     from . import plugins_admin as pa
-    for hit in list(pa._catalogues.values()):
-        hit["at"] = 0  # read every catalogue again now
-    sources, _ = pa.catalogue(app.config)
-    failed = [s["name"] for s in sources if s.get("error")]
-    said = f"Read {len(sources)} {'catalogue' if len(sources) == 1 else 'catalogues'}"
-    if failed:
+    got = pa.refresh(app.config)  # every catalogue again now, but not twice within a few seconds
+    failed = [c["name"] for c in got["catalogues"] if c.get("error")]
+    said = got["said"].rstrip(".") if got["too_soon"] else f"Read {len(got['catalogues'])} {'catalogue' if len(got['catalogues']) == 1 else 'catalogues'}"
+    if failed and not got["too_soon"]:
         said += f". Did not answer: {', '.join(failed[:4])}"
     return {"id": "plugins", "name": "Starboard's plug-ins", "ok": not failed, "said": said}
 

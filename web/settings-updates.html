@@ -15,9 +15,13 @@
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/designs.css">
 <link rel="stylesheet" href="/css/settings.css">
+<link rel="stylesheet" href="/css/apps.css">
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
 <script src="/js/settings-core.js" defer></script>
+<script src="/js/update-table.js" defer></script>
+<script src="/js/update-run.js" defer></script>
+<script src="/js/plugin-updates.js" defer></script>
 <script src="/js/settings-setup.js" defer></script>
 </head>
 <body class="page-settings with-rail">
@@ -37,7 +41,7 @@
       <div class="settings-section__head"><h2 id="up-list-h">Ready to update</h2><p class="small muted" id="up-list-summary" role="status" aria-live="polite">Checking what can be updated…</p></div>
       <div id="updates-all" class="stack-2"></div>
       <div id="self-update" class="stack-2"></div>
-      <ul class="settings-rows update-list" id="updates-list" aria-labelledby="up-list-h" aria-busy="true"></ul>
+      <div class="stack-2" id="updates-list" aria-busy="true"></div>
       <div id="updates-result" class="stack-2"></div>
     </section>
     <section class="settings-section" aria-labelledby="up-auto-h">
