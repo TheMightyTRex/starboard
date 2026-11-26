@@ -63,15 +63,15 @@ Starboard sends the key in a header, never in an address, so it does not reach a
 ### Install Plex or Emby with Starboard
 
 You can run all three media servers side by side to try them. Only one is your media server at a time; the others are
-installed and not in use. Plex and Emby are not ticked in any ready-made install.
+installed and not in use. Plex and Emby are not part of Basics or Full install; you add them here.
 
-1. Go to **Settings**, then **Apps**, then **Your install**, then **Change your install**.
-2. Tick **Plex**, **Emby** or both in **Watching**, then follow the steps to the end. Starboard gives each its own folders
-   in your settings folder and mounts your media folder in each as **read only**, so neither can change your files.
-   Each is capped at 2 GB of memory and at 4 processors, or fewer if this computer has fewer. Plex uses port 32400 and
-   Emby uses port 8097, because Jellyfin has 8096.
+1. Go to **System**, then **Apps**, then **Install apps**.
+2. Under **You can add**, select **Add** beside **Plex** or **Emby**, then follow the set-up's steps to the end. Add the
+   other one afterwards if you want both. Starboard gives each its own folders in your settings folder and mounts your
+   media folder in each as **read only**, so neither can change your files. Each is capped at 2 GB of memory and at 4
+   processors, or fewer if this computer has fewer. Plex uses port 32400 and Emby uses port 8097, because Jellyfin has 8096.
 
-   ![Your install, Change your install, with Plex and Emby in the list of apps (step 2) outlined, with example data](../images/choose-your-media-server-9-install.png)
+   ![Install apps, under You can add, with Add beside Plex and Emby (step 2) outlined, with example data](../images/choose-your-media-server-9-install.png)
 
 3. When the apps run, Starboard adds each to **Manage apps** as the kind **Plex** or **Emby**, with its address.
 4. Finish each one's set-up, which Starboard lists under **Still to set up**:
