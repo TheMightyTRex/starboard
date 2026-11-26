@@ -841,6 +841,9 @@
     align-items: center;
     gap: var(--space-2);
   }
+  .stack-3 {
+    gap: var(--space-3);
+  }
 
   /* Menu: a button that opens a list of actions (role="menu"). Arrow keys move; Escape closes. */
   .menu-wrap {
@@ -1032,6 +1035,11 @@
       calc(100% - 13px) 50%;
     background-size: 5px 5px;
     background-repeat: no-repeat;
+  }
+  /* A narrow field for a short value, such as a number of copies to keep: about seven characters wide, never wider than its row. */
+  .input--narrow {
+    width: 7rem;
+    max-width: 100%;
   }
   .input:focus-visible,
   .select:focus-visible,
@@ -1435,10 +1443,12 @@
   :is(h1, h2, h3, h4)[tabindex="-1"]:focus {
     outline: none;
   }
-  /* Stacks: children one under another with a fixed gap (1: 4px, 2: 8px, 4: 16px). */
+  /* Stacks: children one under another with a fixed gap (1: 4px, 2: 8px, 3: 12px, 4: 16px, 5: 20px). */
   .stack-1,
   .stack-2,
-  .stack-4 {
+  .stack-3,
+  .stack-4,
+  .stack-5 {
     display: grid;
     align-content: start;
   }
@@ -1450,6 +1460,9 @@
   }
   .stack-4 {
     gap: var(--space-4);
+  }
+  .stack-5 {
+    gap: var(--space-5);
   }
   /* Settings helpers. Inline save: a field and its Save button on one line. Form stack: fields one under
      another, at a readable width. Setting cost: the muted line under a setting that says what it costs. */

@@ -30,6 +30,7 @@ add features.
 - **Plain English pilot.** The README and the help topics Add an app and How lean Starboard is now use shorter sentences and the active voice.
 
 ### Fixed
+- **Spacing and error lines that were never styled.** The Bring in and cloud service pages now have the gap between their blocks, and number fields such as the number of backups to keep are narrow.
 - **A full backup that was not made is now reported.** A scheduled backup with no saved backup password used to say it had run. It now says "No full backup was made", raises an alert and shows a warning in Settings.
 
 ## [0.31.0] (25 November 2026)

@@ -31,7 +31,7 @@ async function loadSetupAnswers() {
 // A Test button and the line that says how it went, for the TMDB key and the Usenet server.
 function testButton(label, run) {
   const said = el("div", { role: "status", "aria-live": "polite" });
-  const button = el("button", { type: "button", class: "btn btn--secondary" }, label);
+  const button = el("button", { type: "button", class: "btn" }, label);
   button.addEventListener("click", async () => {
     button.disabled = true;
     said.replaceChildren(el("p", { class: "small muted", text: "Testing…" }));
