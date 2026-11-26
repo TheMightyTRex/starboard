@@ -1717,7 +1717,6 @@ async function startCatalogue() {
     };
     holder.replaceChildren(...[
       ...setupOffers(r, c, draw),
-      mediaServerCatalogue(r.builtin || [], r.media_server, draw),
       builtinSection(r.builtin || [], draw),
       ...c.catalogues.map((cat, n) => {
         const rows = c.plugins.filter((e) => e.catalogue === cat.name && e.own === cat.own);
@@ -1729,6 +1728,7 @@ async function startCatalogue() {
           ...recommended(rows),
           rows.length ? byKind(rows.filter((e) => !e.recommended)) : el("p", { class: "small muted", text: "It lists no plug-ins." }));
       }),
+      mediaServerCatalogue(r.builtin || [], r.media_server, draw),  // after Starboard's own collection, which stays the first tab
       sourcesSection(c.catalogues, draw, c.choices || []),
       addPluginSection(draw), zipSection(), testerSection()].filter(Boolean));
   };
