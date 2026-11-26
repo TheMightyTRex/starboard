@@ -197,6 +197,13 @@ GUIDED = [
     ("slskd", "Add your Soulseek name",
      "In slskd, Options: type a Soulseek name and password under soulseek (a new name makes a free account), and "
      "choose what to share. Then select Done."),
+    ("plex", "Claim your Plex server",
+     "Open Plex at its address on port 32400 and sign in with your Plex account: Plex needs one for its first set-up, and Starboard "
+     "cannot make or enter it for you. Add your libraries from /data/media, then in Manage apps add Plex with its token. "
+     "Then select Done."),
+    ("emby", "Finish Emby's set-up",
+     "Open Emby at its address on port 8097 and follow its first-run steps: language, a user, and your libraries from "
+     "/data/media. Then in Dashboard, API Keys make a key and add Emby in Manage apps with it. Then select Done."),
     ("kavita", "Finish Kavita's set-up",
      "In Kavita, make its admin, then add a library: Books, at /media/books (and Comics at /media/comics if you have "
      "them). Kavita reads them where they are. Then select Done."),
