@@ -178,7 +178,7 @@ def hold(data_dir, ids, backup_running=False):
             json.dump({"from": path, "kind": kind, "what": what, "held": time.time()}, f)
         moved.append(what)
     if not moved:
-        raise ValueError("Nothing was moved: the list has changed. Check again")
+        raise ValueError("Nothing was moved: the list has changed. Check now")
     return moved
 
 
@@ -189,7 +189,7 @@ def _held_path(data_dir, item_id):
             path = os.path.join(folder, name)
             if not name.endswith(".from.json") and not os.path.islink(path) and _id(path) == item_id:
                 return path
-    raise ValueError("That is not in the holding folder any more. Check again")
+    raise ValueError("That is not in the holding folder any more. Check now")
 
 
 def put_back(data_dir, item_id):

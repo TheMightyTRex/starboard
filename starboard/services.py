@@ -29,7 +29,7 @@ SAID_DOWN = set()  # apps said to be down to plug-ins, so each change is said on
 FIRST_SEEN = {}  # (app id, message): when an app's own health warning was first seen
 # Backing off (DASH-66): an app that has not answered BACKOFF_AFTER checks in a row is checked less often, the wait
 # doubling from the usual 15 seconds up to BACKOFF_MAX, and its last answer is shown meanwhile. The first answer from
-# it, to a check or to anything else Starboard asks it, puts it back to every check. Check again always checks.
+# it, to a check or to anything else Starboard asks it, puts it back to every check. Check now always checks.
 BACKOFF_AFTER = 2  # as alerts and plug-in events: two checks in a row say an app is down, at the usual pace
 BACKOFF_BASE = 15  # seconds: how long the shared status answer is kept
 BACKOFF_MAX = 300  # seconds: the longest an app that is down waits for its next check
@@ -106,7 +106,7 @@ class ServiceError(Exception):
 
 # Shared answers ----------------------------------------------------------------
 # Every open tab and device shares one answer per kind for a short time, and only one request per kind runs at
-# a time, so five open tabs ask Sonarr once, not five times. "Check again" passes fresh=True.
+# a time, so five open tabs ask Sonarr once, not five times. "Check now" passes fresh=True.
 
 _cache = {}
 _cache_lock = threading.Lock()
@@ -431,7 +431,7 @@ def recent_checks(service_id):
 
 
 def status_all(services, only=None, fresh=False):
-    """Every enabled app's state; only: one app id, checked on its own (Check again in its slide-out). An app that
+    """Every enabled app's state; only: one app id, checked on its own (Check now in its slide-out). An app that
     is backing off (DASH-66) keeps its last answer until its next check is due, unless only or fresh asks for it."""
     enabled = [s for s in services if s.get("enabled", True) and (only is None or s["id"] == only)]
     by_id = {s["id"]: s for s in services}

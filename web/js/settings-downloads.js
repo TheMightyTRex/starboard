@@ -2,7 +2,7 @@
 
 // Settings, Downloads (DASH-226): the VPN (provider, connection, countries, key), the Usenet provider's server with
 // Test, and download hours. The same words as the set-ups (web/setup-answers.json). Each is its own level 2 page
-// (DASH-390); Download hours is the same field as Settings, General, Download hours (downloadHoursSection), so it
+// (DASH-390); Download hours is the same field as Settings, General, Hours (downloadHoursSection), so it
 // asks the server for nothing more.
 async function startDownloadsSettings() {
   const root = $("#downloads-sections");

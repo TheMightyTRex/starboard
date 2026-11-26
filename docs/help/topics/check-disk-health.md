@@ -59,12 +59,12 @@ new reports arrive in about a minute.
 ## If it does not work
 
 - **Disk health is not set up:** answer Yes to **Set up Disk health reports?** in `./install.sh`.
-- **No SMART reports yet:** the job has not run yet. Wait up to 30 minutes, then select **Check again**.
+- **No SMART reports yet:** the job has not run yet. Wait up to 30 minutes, then select **Check now**.
 - **No Read disks now button:** Starboard cannot ask for a reading. Run `./install.sh` again to set Disk health
   up afresh.
 - **Failing:** back up what is on the disk now, and replace it. If it is a pool disk, read
   [A pool disk has failed](a-pool-drive-has-failed.md).
-- **Needs attention:** back up what is on the disk and plan to replace it. Check again after the next report to
+- **Needs attention:** back up what is on the disk and plan to replace it. Check now after the next report to
   find out if the counts are rising.
 
 ## Find out more

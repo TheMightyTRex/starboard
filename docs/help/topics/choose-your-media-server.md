@@ -48,10 +48,15 @@ with Jellyfin.
    **Plex**. Starboard names it for you and shows the usual address. Enter the address Starboard uses to reach it and its
    key.
    - For Emby, make a key in its dashboard under **API keys**.
-   - For Plex, use its token. In Plex's web app, open an item, then **Get info**, then **View XML**. Copy the value
+   - For Plex, select **Sign in with Plex**. Starboard shows a code. Go to plex.tv/link, enter the code and approve it.
+     Starboard waits for five minutes, and **Cancel** stops it. When it says **Signed in with Plex**, select **Save**.
+   - Or paste Plex's token instead. In Plex's web app, open an item, then **Get info**, then **View XML**. Copy the value
      after `X-Plex-Token=` from the address.
+   - Starboard keeps the token on the server and never shows it again.
 
    ![The Add an app panel with Kind of app set to Plex (step 2) outlined, with example data](../images/choose-your-media-server-7-add-plex.png)
+
+   ![The Add an app panel for Plex with the code from Sign in with Plex and the link plex.tv/link (step 2) outlined, with example data](../images/choose-your-media-server-13-plex-link.png)
 
    Select **Test connection**. Starboard asks the server for its version. Then it asks for something only the key
    allows, so a wrong key shows as a problem here and not later. Select **Add app**.
@@ -79,7 +84,7 @@ installed but not in use. Plex and Emby are not part of Basics or Full install; 
 3. When the apps run, Starboard adds each to **Manage apps** as the kind **Plex** or **Emby**, with its address.
 4. Finish each one's set-up, which Starboard lists under **Still to set up**:
    - **Plex** needs a Plex account for its first set-up. Open Plex on port 32400, sign in, and add your libraries from
-     `/data/media`. Starboard cannot make or enter the account for you. Then add Plex's token in **Manage apps**.
+     `/data/media`. Starboard cannot make or enter the account for you. Then sign in to Plex in **Manage apps**, with **Sign in with Plex** or its token.
    - **Emby** needs no account. Open it on port 8097, follow its first-run steps and add your libraries from
      `/data/media`. Then make an API key in its **Dashboard** and add it in **Manage apps**.
 5. Choose the media server to use, as set out under **Choose another media server, or none**.

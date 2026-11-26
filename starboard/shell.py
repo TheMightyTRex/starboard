@@ -84,21 +84,21 @@ MENU = [
     ]),
     ("settings", "Settings", "settings", [
         # Level 2 (owner, 13 November 2026: "The general sub menu should be on menu 2"; DASH-389).
-        ("General", "sliders-horizontal", [("settings-general.html", "Names and apps", "tags"),
+        ("General", "sliders-horizontal", [("settings-general.html", "General", "tags"),
                                            ("settings-general-appearance.html", "Appearance", "sun"),
-                                           ("settings-general-lists.html", "Pages and lists", "list"),
+                                           ("settings-general-lists.html", "Lists", "list"),
                                            # DASH-396: one section per Discover area, so its own page (topic tabs)
-                                           ("settings-general-discover.html", "Discover rows", "compass"),
-                                           ("settings-general-hours.html", "Download hours", "clock"),
-                                           ("settings-general-logs.html", "Logs and feedback", "scroll-text"),
+                                           ("settings-general-discover.html", "Discover", "compass"),
+                                           ("settings-general-hours.html", "Hours", "clock"),
                                            # Owner, 26 November 2026 (DASH-584): Alerts and Performance are part of General now.
                                            # Their old addresses move here (MOVED_PAGES in server.py).
                                            ("settings-general-alerts.html", "Alerts", "bell"),
                                            ("settings-general-performance.html", "Performance", "gauge"),
                                            ("settings-general-pictures.html", "Pictures", "eye"),
-                                           # Owner, 16 November 2026: "Backup and restore should go in general" (it was
-                                           # System, Backup; the page keeps its address). Restore also stays in Updates.
-                                           ("system-backup.html", "Backup and restore", "archive-restore")]),
+                                           # Owner, 26 November 2026 (DASH-595): Backup and restore (it was System, Backup, then
+                                           # General) and Logs and feedback are one tab. The names are short so every tab keeps its
+                                           # name at 1280 pixels wide. The old addresses move here (MOVED_PAGES in server.py).
+                                           ("settings-general-backup.html", "Backup/Logs", "archive-restore")]),
         ("Apps", "app-window", [("settings.html", "Manage apps", "app-window"), ("settings-install.html", "Your install", "layers"),
                                 ("settings-reelix.html", "Reelix", "film"),
                                 ("settings-jellyfin.html", "Jellyfin", "tv"), ("settings-audiobookshelf.html", "Audiobookshelf", "headphones"),
@@ -155,20 +155,17 @@ HELP = {
         "library-artist.html", "library-radio-show.html", "library-book.html", "library-audiobook.html")},
     "search.html": ("topics/search-and-add.md", "searching for and adding films, series, music and books"),
     "search-sites.html": ("topics/search-and-add.md", "searching the sites directly"),
-    "discover-trending.html": ("topics/search-and-add.md", "searching for and adding films, series, music and books"),
     **{f"discover-{a}.html": ("topics/search-and-add.md", "discovering and adding films, series, music, radio and books")
        for a in ("films", "tv", "music", "radio", "books", "audiobooks")},
     "upcoming.html": ("topics/coming-up.md", "finding out what is coming up"),
     "discover-ondemand.html": ("topics/search-and-add.md", "searching for and adding films, series, music and books"),
     "downloads.html": ("topics/manage-downloads.md", "pausing, resuming and removing downloads"),
     "downloads-finished.html": ("topics/manage-downloads.md", "pausing, resuming and removing downloads"),
-    "wanted.html": ("topics/get-what-is-missing.md", "finding and getting what is missing"),
     "wanted-films.html": ("topics/get-what-is-missing.md", "finding and getting what is missing"),
     "wanted-tv.html": ("topics/get-what-is-missing.md", "finding and getting what is missing"),
     "wanted-music.html": ("topics/get-what-is-missing.md", "finding and getting what is missing"),
     "wanted-books.html": ("topics/get-what-is-missing.md", "finding and getting what is missing"),
     "wanted-audiobooks.html": ("topics/get-what-is-missing.md", "finding and getting what is missing"),
-    "wanted-quality.html": ("topics/get-what-is-missing.md", "finding and getting what is missing"),
     "downloads-requests.html": ("topics/approve-requests.md", "approving or declining requests"),
     "downloads-issues.html": ("topics/approve-requests.md", "issues people report"),
     "downloads-direct.html": ("topics/manage-downloads.md#download-from-a-youtube-or-spotify-link", "downloading from YouTube and Spotify"),
@@ -185,7 +182,7 @@ HELP = {
     "system-pool.html": ("basics/what-is-a-drive-pool.md", "the disk pool"),
     "system-disks.html": ("topics/check-disk-health.md", "checking your disks' health"),
     "system-network.html": ("topics/open-from-another-device.md", "opening Starboard from another device"),
-    "system-backup.html": ("README.md#backup-and-restore", "backup and restore"),
+    "settings-general-backup.html": ("topics/back-up-settings.md", "backups, logs and feedback"),
     "system-logs.html": ("topics/read-the-log.md", "reading the log and reporting a problem"),
     "system-cleanup.html": ("topics/remove-starboard.md", "removing what Starboard leaves behind"),
     "system-holding.html": ("topics/remove-starboard.md", "removing what Starboard leaves behind"),
@@ -194,7 +191,6 @@ HELP = {
     "settings-general-lists.html": ("topics/coming-up.md", "what Coming up and the lists show"),
     "settings-general-discover.html": ("topics/search-and-add.md", "Discover's rows and adding films, series, music, radio and books"),
     "settings-general-hours.html": ("topics/set-download-hours.md", "setting download hours"),
-    "settings-general-logs.html": ("topics/read-the-log.md", "reading the log and reporting a problem"),
     "settings.html": ("topics/change-or-remove-an-app.md", "changing or removing an app"),
     "settings-install.html": ("topics/change-your-install.md", "changing your install"),
     "settings-reelix.html": ("topics/change-reelix-settings.md", "changing Reelix's settings"),
@@ -239,7 +235,7 @@ for key, _, _, items in MENU:
             PAGES[page] = (key, n)
 # Pages with no tab of their own show the page they open from as current: the guides open from Settings,
 # General, and Copy settings from Manage apps.
-TAB_OF = {"setup-guide.html": "settings-general.html", "wanted.html": "wanted-films.html", "wanted-quality.html": "wanted-films.html", "discover-trending.html": "discover-films.html", "settings-plugin.html": "settings-plugins.html", "upgrade.html": "settings-general.html", "copy-settings.html": "settings.html",
+TAB_OF = {"setup-guide.html": "settings-general.html", "settings-plugin.html": "settings-plugins.html", "upgrade.html": "settings-general.html", "copy-settings.html": "settings.html",
           # An item's page shows its Library tab as current.
           "library-film.html": "library-films.html", "library-tv-show.html": "library-tv.html", "library-artist.html": "library-music.html",
           "library-radio-show.html": "library-radio.html", "library-book.html": "library-books.html",

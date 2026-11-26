@@ -381,7 +381,7 @@ spec["paths"].update({
                 "responses": ok(LOG_LIMITS)},
         "post": write(LOG_LIMITS, "Change how long Starboard keeps its logs and the most they may take", "setLogLimits", "System",
                       body={"type": "object", "properties": LIMITS}) | {
-            "description": LOGS_NOTE + " The same choices as Settings, General, Logs and feedback. Older days go at once; the answer says how many."}},
+            "description": LOGS_NOTE + " The same choices as Settings, General, Backup/Logs. Older days go at once; the answer says how many."}},
     "/api/v1/logs/delete": {"post": write(
         {"type": "object", "required": ["removed", "emptied", "freed", "summary"],
          "properties": {"removed": {"type": "integer"}, "emptied": {"type": "integer", "description": "Today's file and the audit log, emptied so logging goes on."},

@@ -696,7 +696,7 @@ def verify(host, plan, confirm):
     for bid, fp in plan["fingerprints"].items():
         d = next((x for x in listing if x["by_id"] == bid), None)
         if not d or fingerprint(d) != fp:
-            raise Refused("The disk changed since the check, so nothing was done. Check again")
+            raise Refused("The disk changed since the check, so nothing was done. Check now")
     for bid in plan["erases"]:
         d = next(x for x in listing if x["by_id"] == bid)
         typed = re.sub(r"[^A-Za-z0-9]", "", str((confirm or {}).get(bid, ""))).upper()
