@@ -24,6 +24,7 @@ add features.
 ### Changed
 - **One way to write a count and a time.** System, Storage, Disks, Pool, Monitor, Downloads, Library and On demand history share one count in words and one clock, so a count over a thousand has its comma on every page.
 - **One look for a short wait.** Loading lines in help, release notes, set-up steps, Discover, radio settings and a few more now show the waiting ring with words that say what is loading, in place of a plain "Loading…".
+- **Lighter pages again.** Styles for parts of the design system that no page uses (cover cards, the logo editor, the decision tree and more) are no longer sent with every page, so each page's style sheet is about 21 KB smaller.
 - **One tab for your media server.** Settings, Apps has one tab named for the media server in use, so the separate Media server tab and plug-in tab are gone. The old address still opens the right page.
 - **Alerts and Performance are part of General.** Settings, General has new Alerts, Performance and Pictures tabs, and the old addresses still open the right page.
 - **Lighter pages and quicker tests.** Page scripts and style sheets are now built without comments and blank lines, so a first visit sends about 38 KB less. The parallel test runner cuts a full run from 5 minutes 18 seconds to 53 seconds.

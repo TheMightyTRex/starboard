@@ -1250,7 +1250,7 @@
   window.SharedComponents = { setup, applyTheme, creepProgress, setupHeaderFit, fitHeader, motionStill,
     setupSideTrees, setupSolvers, setupSearch, setupSearchIcons, setupSortables, openLayer, toast, savedNote,
     copyText, azLetter, azJump, azGo, loadMore, pageBanner, setupTooltips, say, addSetup, 
-    kit: { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus } };
+    kit: { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus, notice } };
   Object.assign(window.SharedComponents, { notice }); // the notice builder
   Object.assign(window.SharedComponents, { wait }); // the waiting mark builder
   Object.assign(window.SharedComponents, { plural, clock, num }); // counts and clock times in words
