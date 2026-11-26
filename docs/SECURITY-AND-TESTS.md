@@ -1,8 +1,8 @@
 # Security: how Starboard protects you, and how it was tested
 
-Starboard sits on your home network next to apps that hold your media and their keys, so it is built to give
-away as little as possible and to need as little access as possible. This page says how it does that, what
-the security review in November 2026 found and fixed, and which security tests pass today.
+Starboard sits on your home network next to apps that hold your media and their keys. We built it to give away as
+little as possible and to need as little access as possible. This page says how it does that. It also says what the
+security review in November 2026 found and fixed, and which security tests pass today.
 
 To report a problem, see [SECURITY.md](../SECURITY.md). For every other kind of test, see
 [Testing and system use](TESTING.md).
@@ -15,27 +15,28 @@ Latest results: 3 November 2026.
 - One password of at least 10 characters, stored only as a PBKDF2-SHA256 hash with 600,000 rounds.
 - The first password needs a one-time set-up code that only someone with access to the server can read. It
   stops working once used.
-- Five wrong attempts lock an address out for 15 minutes, and at most two password checks run at once, so
-  guesses sent all together are counted too.
+- Five wrong attempts lock an address out for 15 minutes. At most two password checks run at once, so Starboard
+  counts guesses sent all together too.
 - Sign-in cookies are `HttpOnly` and `SameSite=Strict`, and can be HTTPS-only behind a reverse proxy.
 - Changing the password, or **Sign out everywhere**, signs out every other browser.
 - A forgotten password is reset only on the server itself (`./reset-password.sh`), which also signs everyone out.
 - **Two-step code (TOTP) and single sign-on (OpenID Connect), both off until set up** in Settings, Security, Sign-in methods
   (DASH-512). The code is 6 digits, checked in constant time over a 90 second window, and a used code is never accepted
-  again. Wrong codes are limited to 5 in 15 minutes from one address and 10 from anywhere, and a half-finished sign-in
-  (the password was right) allows 5 tries, 5 minutes, from the address that made it. The 8 recovery codes are shown once
-  and kept only as PBKDF2 hashes. Single sign-on uses the authorisation code flow with PKCE (S256); the state is
-  single-use and tied to the browser that started it by a cookie, the nonce and the ID token's issuer, audience, expiry and
-  RS256 signature (against the provider's published keys, 2048 bits or more, checked with standard library code that
-  builds the expected padding and compares in constant time) are all checked, and only the one owner's verified email, or
-  a claim the owner chose, gets in. The provider's address is checked like any address Starboard calls (no link-local or
-  metadata addresses; https; http only for this computer itself, for testing; the address is looked up once and connected to, with a 15 second limit), and no redirect is followed with the client secret. Secrets
-  live in the settings file under `auth` (never in a settings backup), are never sent to the browser, and are never
-  written to a log or the audit log. Each change asks for the password again. The password works unless turned off on
+  again. Starboard limits wrong codes to 5 in 15 minutes from one address and 10 from anywhere. A half-finished sign-in
+  (the password was right) allows 5 tries, for 5 minutes, from the address that made it. The 8 recovery codes are shown once
+  and kept only as PBKDF2 hashes. Single sign-on uses the authorisation code flow with PKCE (S256). The state is
+  single-use, and a cookie ties it to the browser that started it. Starboard checks the nonce and the ID token's
+  issuer, audience, expiry and RS256 signature. It checks the signature against the provider's published keys (2048
+  bits or more), using standard library code that builds the expected padding and compares in constant time. Only the
+  one owner's verified email, or a claim the owner chose, gets in. Starboard checks the provider's address like any address it calls. It allows no link-local or
+  metadata addresses, and it needs https (http only for this computer itself, for testing). It looks the address up
+  once and connects to it, with a 15 second limit. It never follows a redirect with the client secret. Secrets
+  live in the settings file under `auth`, never in a settings backup. Starboard never sends them to the browser and
+  never writes them to a log or the audit log. Each change asks for the password again. The password works unless you turn it off on
   purpose, which needs single sign-on on and tested. `./reset-sign-in.sh` on the server turns both off.
-- Send feedback (Snaglist) sends its reports without cookies, so **Save in Starboard** carries a key instead. The
-  key is given only to a signed-in browser, works only while that sign-in does and while Send feedback is active,
-  and needs Starboard's own header and `Origin` like every other change. A report is at most 512 KB.
+- Send feedback (Snaglist) sends its reports without cookies, so **Save in Starboard** carries a key instead. Starboard
+  gives the key only to a signed-in browser. It works only while that sign-in does and while Send feedback is active,
+  and it needs Starboard's own header and `Origin` like every other change. A report is at most 512 KB.
 
 **Requests**
 - Every change needs a header only Starboard's own pages send, and a matching `Origin`, so another website
@@ -69,31 +70,33 @@ Latest results: 3 November 2026.
   folder, the Live TV folder), each folder checked first. **Make the change now** needs the Starboard password; the
   browser cannot send the server any other command. `./install.sh --no-starter` removes it.
 - Pages that open inside Starboard's slide-outs (the upgrade guide and the Still to set up steps) may be framed only
-  by Starboard itself (`frame-ancestors 'self'`); every other page refuses any frame.
+  by Starboard itself (`frame-ancestors 'self'`). Every other page refuses any frame.
 - **Home network** can be switched off, so nothing else on the network can connect at all.
 
 ### A known risk: Starboard's user is as strong as root (issue #187, accepted 19 November 2026)
 
-Starboard updates and runs your apps through Docker, so the installer gives it Docker's control socket, and your own
-account is usually in the `docker` group too. Docker access is the same as full control of the computer: anything that
-runs as Starboard's user, or as your account, could start a container that mounts any disk and erases it. So a check
-only on the pool helper (the root helper that erases and adds disks) would not make the server safer: something that
-could forge a pool request could already do the same another way, and erasing a disk from the page would have to go.
+Starboard updates and runs your apps through Docker. The installer therefore gives it Docker's control socket, and
+your own account is usually in the `docker` group too. Docker access is the same as full control of the computer.
+Anything that runs as Starboard's user, or as your account, could start a container that mounts any disk and erases
+it. So a check only on the pool helper (the root helper that erases and adds disks) would not make the server safer.
+Anything that could forge a pool request could already do the same another way. To close that gap, we would have to
+remove disk erasing from the page.
 
 What Starboard does instead:
-- **Protect the user.** Treat Starboard's user, the Docker group and your account as you would root: never run
+- **Protect the user.** Treat Starboard's user, the Docker group and your account as you would root. Never run
   programs you do not trust as them, and keep Starboard's password and API keys private.
-- **Never silent.** Every pool job the helper finishes, however it was asked for, is written to Starboard's log
-  (a warning when a disk was erased) and sent as the `disk.changed` event, which the Notifications plug-in turns into
-  an alert. An erase you did not start reaches you at once.
-- **The page's own checks stay:** your Starboard password, the last 4 characters of the disk's serial number for
-  every erase, a plan that runs out after 15 minutes, and the disk's fingerprint checked again before any change.
+- **Never silent.** The helper reports every pool job it finishes, however someone asked for it. Starboard writes
+  it to its log (a warning when a disk was erased) and sends it as the `disk.changed` event, which the Notifications
+  plug-in turns into an alert. An erase you did not start reaches you at once.
+- **The page's own checks stay.** They are your Starboard password, the last 4 characters of the disk's serial
+  number for every erase, a plan that runs out after 15 minutes, and a second check of the disk's fingerprint before
+  any change.
 
 ## The security review, November 2026
 
-Two passes on Starboard 0.3.4: an independent code review by a reviewer who had not seen the other pass, and
-attacks from outside against a throwaway copy. No critical issues were found. One high, four medium and
-several low issues were found; all are fixed, and each fix has a test so it stays fixed.
+We made two passes on Starboard 0.3.4. One was an independent code review by a reviewer who had not seen the other
+pass. The other was attacks from outside against a throwaway copy. We found no critical issues. We found one high,
+four medium and several low issues. All are fixed, and each fix has a test so it stays fixed.
 
 | Severity | What was found | How it was fixed |
 |---|---|---|
@@ -152,8 +155,8 @@ Each check has an ID, which the test scripts print beside their results. The tes
 | SEC-23 | No personal details in the repository | `tools/check-private.sh` before every commit | Pass |
 | SEC-24 | Save in Starboard needs a key from a signed-in session, ends with it, and only while Send feedback is active; the policy lets in only Snaglist's stylesheet | Unit test, browser journey | Pass |
 
-The 5 systems are clean installs of Ubuntu 24.04, Debian 12 and Fedora 42, and 64-bit ARM with 1 GB and with
-512 MB of memory.
+The 5 systems are clean installs of Ubuntu 24.04, Debian 12 and Fedora 42. The other two are 64-bit ARM, one
+with 1 GB and one with 512 MB of memory.
 
 ## Security scans, 3 November 2026
 
@@ -178,10 +181,11 @@ private Docker network with no way out, so it can never reach other apps on the 
   purpose, and display settings kept in the browser.
 - **A private address, signed in only:** `/api/network` lists the addresses you can open Starboard from, so it
   includes the server's home network address. The signed-out scan finds none.
-- **Two false alarms, checked on 7 November 2026 and left out for those addresses only:** "SQL injection" on
-  `/api/history?hours=`, where `hours` is only looked up in a fixed list (1, 6 or 24) and Starboard has no SQL
-  database; the answers differed because the history grew between ZAP's two requests. "Path traversal" on
-  `/api/config/general`, where the server name is free text that is saved and shown back, never used as a path.
+- **Two false alarms, checked on 7 November 2026 and left out for those addresses only:**
+  - "SQL injection" on `/api/history?hours=`. Starboard only looks `hours` up in a fixed list (1, 6 or 24) and has
+    no SQL database. The answers differed because the history grew between ZAP's two requests.
+  - "Path traversal" on `/api/config/general`. The server name is free text that Starboard saves and shows back. It
+    never uses it as a path.
 
 ## Security scans, 4 November 2026 (0.7.6)
 
@@ -198,26 +202,33 @@ false alarms:
 
 `SCAN_REPORTS=folder tools/security-scan.sh --full` now keeps ZAP's reports, with each warning's address.
 
-The full scan needs no tuning since DASH-543: ZAP gets 8 GB (`ZAP_MEMORY`), the Java option that leaves `URLDecoder.decode` to the interpreter (`ZAP_JVM_EXTRA`, the fault in ZAP's own Java that stopped the 0.28.0 run) and a time limit of 150 minutes (`ZAP_TIME_LIMIT`), after which the scan fails with "did not finish in time". On a 16 GB server 8 GB is about half, inside the heavy-job limit of about two thirds. `tools/security-scan.sh --full --dry-run` prints the settings without starting anything.
+The full scan needs no tuning since DASH-543. It sets three things:
+
+- ZAP gets 8 GB (`ZAP_MEMORY`). On a 16 GB server that is about half, inside the heavy-job limit of about two thirds.
+- A Java option leaves `URLDecoder.decode` to the interpreter (`ZAP_JVM_EXTRA`). This works around the fault in ZAP's
+  own Java that stopped the 0.28.0 run.
+- A time limit of 150 minutes (`ZAP_TIME_LIMIT`). After that, the scan fails with "did not finish in time".
+
+`tools/security-scan.sh --full --dry-run` prints the settings without starting anything.
 
 ## Security review of the set-up wizards, 5 November 2026 (0.9.0)
 
-Two independent reviews read every set-up path: the Run first script, `install.sh`, the terminal set-up, the browser
-set-up guide, Install apps and the routes they use. Each finding was checked again in the code before it was fixed,
-and each fix has a test where code can test it:
+Two independent reviews read every set-up path. These were the Run first script, `install.sh`, the terminal set-up,
+the browser set-up guide, Install apps and the routes they use. We checked each finding again in the code before we
+fixed it, and each fix has a test where code can test it:
 
 - **What the set-up hands to the installer (medium):** `data/setup-host.json` is in the data folder, which the
   container can write to. The Run first script now passes on only `--disk Media=`, `--livetv-folder` and
-  `--disk-health`, each folder checked again by the same rule as the server, from a regular file only.
+  `--disk-health`. It checks each folder again by the same rule as the server, and reads from a regular file only.
 - **The set-up code (medium to low):** a link planted at `data/setup-token` could have sent a host file, such as an
-  SSH key, to the container. The code is now read only from a regular file, never through a link, and only as code
-  characters, in the terminal set-up, `install.sh` and the Run first script.
-- **Files the scripts write (low):** the hand-over is written to a new file and moved into place; Docker's installer
-  and the logs use private temporary files instead of fixed names in `/tmp`.
+  SSH key, to the container. The terminal set-up, `install.sh` and the Run first script now read the code only from a regular file, never
+  through a link, and only as code characters.
+- **Files the scripts write (low):** the scripts write the hand-over to a new file and move it into place. Docker's
+  installer and the logs use private temporary files instead of fixed names in `/tmp`.
 - **Host names (low):** any name starting with the machine's name was allowed, which let DNS rebinding reach a native
   install. Now only the machine's name, alone or with a home-network ending.
 - **Folders (low):** the installer's folder options must match whole and are never `/`, a system folder or a top
-  folder; Install apps also refuses `/var/spool` and top folders.
+  folder. Install apps also refuses `/var/spool` and top folders.
 - **Disk health (low, possible):** the root job's report folder now belongs to root, and `chown -h` never follows a
   link.
 - **The first password (low):** checked and saved under one lock.
@@ -226,8 +237,8 @@ The scans then found nothing new. Trivy, Gitleaks, ShellCheck and Hadolint passe
 lists (they name `/tmp` to refuse it), now marked. ZAP signed out passed 58 checks; ZAP signed in passed 109 with two
 false alarms:
 
-- **SQL injection on `/api/logs?level=`:** the level is picked from a fixed list (all, problems, detail), and anything
-  else counts as all, so a changed value gives the same answer. There is no database.
+- **SQL injection on `/api/logs?level=`:** Starboard picks the level from a fixed list (all, problems, detail), and
+  anything else counts as all, so a changed value gives the same answer. There is no database.
 - **Path traversal on `server_name`:** as for 0.7.6 and 0.7.7, the name is never used as a path.
 
 The full report, with the Reelix wizard's review, is kept with the project's notes.
@@ -248,7 +259,7 @@ of them a weakness:
 
 ## Security scans, 4 November 2026 (0.7.7)
 
-Trivy, Gitleaks, Bandit, ShellCheck and Hadolint found nothing. ZAP signed out found one new warning: Python's own
+Trivy, Gitleaks, Bandit, ShellCheck and Hadolint found nothing. ZAP signed out found one new warning. Python's own
 error answer (501, for a request method Starboard does not handle) had no content policy or other security headers.
 Fixed: those answers now carry the same headers, with a test; ZAP signed out then passed 58 checks with no warnings.
 ZAP's active scan signed in passed 109 checks, with two warnings, both false alarms:
@@ -338,8 +349,8 @@ These suit Starboard and cost nothing:
 - **Nmap** from another computer on your network, to confirm which ports your server really has open.
 - **Lynis** and **Docker Bench for Security**, to audit the server itself and its Docker set-up rather than
   Starboard.
-  Docker Bench was run on 3 November 2026. Its one finding for Starboard was that the container had no memory
-  or process limit; the compose files now set 512 MB and 200 processes (and the `--native` service the same).
+  We ran Docker Bench on 3 November 2026. Its one finding for Starboard was that the container had no memory
+  or process limit. The compose files now set 512 MB and 200 processes (and the `--native` service the same).
 - **testssl.sh**, if you put Starboard behind a reverse proxy with HTTPS.
 
 ## Not tested yet

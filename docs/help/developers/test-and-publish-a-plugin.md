@@ -3,15 +3,15 @@
 
 # Test and publish a plug-in
 
-How to check a plug-in before anyone else adds it, pin its images, and publish it in a catalogue so people can add
-it and get its updates. To build your first one, read [Make your first plug-in](make-a-plugin.md).
+This page shows how to check a plug-in before anyone else adds it, pin its images, and publish it in a catalogue so
+that people can add it and get its updates. To build your first one, read [Make your first plug-in](make-a-plugin.md).
 
 ## Test it
 
-The plug-in tester runs the same check Starboard runs before any plug-in is added, and more. Each issue says where
+The plug-in tester runs the same check that Starboard runs before it adds any plug-in, and more. Each issue says where
 it is, what is wrong and how to fix it.
 
-- **Errors** stop the plug-in being added.
+- **Errors** stop Starboard adding the plug-in.
 - **Warnings** should be fixed, such as a card with no `example` or a plug-in with no `health` path.
 - **Tips** are worth reading, such as a container that can reach your home network.
 
@@ -148,7 +148,7 @@ Starboard, and offer updates. The full shape is in
 5. To release a new version, add it to `versions` with its own address and SHA-256. Leave the older ones, so
    people on an older Starboard still get the newest version that works for them.
 
-Never change a manifest after it is listed: Starboard refuses a file whose SHA-256 does not match, and says it
+Never change a manifest after it is listed. Starboard refuses a file whose SHA-256 does not match, and says it
 changed since the catalogue listed it. Publish a new version instead.
 
 ## Add a catalogue from a link
