@@ -2031,7 +2031,7 @@ RELEASES = [
             ["The sign-in provider request tests an allowlist first", "This answers CodeQL alert 82, and GitHub now shows it as fixed. No alert was dismissed."]
         ],
         "review": [],
-        "settings": "Your settings stay as they are. Lines shown starts at 200, Alerts only starts off and Stallboard's catalogue is off until you tick it. Starboard keeps two small files, data/discovery-last.json (the last search for new apps) and data/reelix-sites.json (the number of Reelix sites), and writes them only when they change. To go back, run ./update.sh --to v0.29.0."
+        "settings": "Your settings stay as they are. Lines shown starts at 200, Alerts only starts off and Stallboard's catalogue is off until you tick it. Starboard keeps data/discovery-last.json (the last search for new apps) and data/reelix-sites.json (the number of Reelix sites), and writes them only when they change. To go back, run ./update.sh --to v0.29.0."
     },
     {
         "version": "0.31.0",
