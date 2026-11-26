@@ -61,6 +61,29 @@ Under **What to alert on**, each alert is active unless you deactivate it. Each 
 - **A certificate runs out soon:** for apps with an outside `https://` address. Choose **7 days before**,
   **14 days before**, **30 days before** or **Off**. Starboard checks once a day.
 
+### Choose what to alert on for the server itself
+
+Under **The server itself**, each alert is deactivated until you activate it. Each has a limit and a time, so a
+short spike never alerts: it alerts only when the value stays at or over the limit for the whole time.
+
+![Settings, Alerts, The server itself, with The processor is too hot, its switch, limit and time outlined, with example data](../images/activate-alerts-4-server.png)
+
+- **The processor is too hot:** its temperature, from 60 to 100 °C.
+- **The processor is too busy:** how busy it is, from 70% to 100%.
+- **Memory is nearly full:** the memory in use, from 70% to 95%.
+- **A folder is nearly full for a long time:** any folder on System, Storage, from 80% to 98%. For one that
+  alerts at once, use **A folder gets full** in the same list.
+- **The disks are working hard:** all disks together, reading and writing, from 50 to 1,000 MB/s.
+- **The outside address changes:** Starboard checks every 10 minutes the address the No-IP updater and each
+  VPN show to the internet, and says when one is not the one it showed before. The alert never says the address,
+  and nothing is sent to any other server.
+- **A container stops with an error:** one list from Docker a minute. A container that was stopped on purpose,
+  or that rests when not in use, is not an alert. Another message comes when it runs again.
+
+The time can be 1, 5, 10, 15 or 30 minutes, or 1 or 2 hours. These work without **Watch in the background**.
+While none is active, nothing runs. With every reading on, it costs about 2 milliseconds of processor a
+minute.
+
 ## Things to note
 
 - Each alert is sent once, and again only after the problem has cleared and come back.
@@ -79,6 +102,8 @@ Under **What to alert on**, each alert is active unless you deactivate it. Each 
   **More settings**. Then check the alert you want is active under **What to alert on**.
 - **A disk or folder alert never comes:** Disk health or the Storage folders may not be set up. Read
   [Check your disks' health](check-disk-health.md) and [Check free space and what is using it](check-storage.md).
+- **A server alert never comes:** it needs the value to stay at or over the limit for the whole time. Choose a
+  lower limit or a shorter time. For the container alert, Starboard needs access to Docker.
 
 ## Find out more
 

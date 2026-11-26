@@ -480,7 +480,7 @@ function startEdit() {
 
 startPage().then(async (session) => {
   if (!session) return;
-  try { const cfg = await api("/api/config"); dash = cfg.dashboard || dash; services = cfg.services || []; } catch { /* the default layout */ }
+  try { const cfg = await ask("/api/config"); dash = cfg.dashboard || dash; services = cfg.services || []; } catch { /* the default layout */ }
   try {
     for (const c of (await api("/api/json-cards")).cards) CARD_TITLES[`json:${c.id}`] = c.name;  // nothing is asked of any service
   } catch { /* no custom cards */ }
