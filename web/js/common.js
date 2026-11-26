@@ -657,22 +657,8 @@ function shortUrl(url) {
 }
 
 // The clipboard API needs HTTPS or localhost; on a home network address the old copy command still works.
-async function copyText(text) {
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch { /* fall through */ }
-  const area = el("textarea", { class: "visually-hidden", readonly: true, "aria-hidden": "true" });
-  area.value = text;
-  document.body.append(area);
-  area.select();
-  let ok = false;
-  try { ok = document.execCommand("copy"); } catch { ok = false; }
-  area.remove();
-  return ok;
-}
+// The library's copy to the clipboard (a fallback for a page that is not a secure context). true when it worked.
+function copyText(text) { return SharedComponents.copyText(text); }
 
 const COPY_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>'; // Lucide copy
 

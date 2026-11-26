@@ -115,7 +115,7 @@ function renderReport() {
   copy.addEventListener("click", async () => {
     try {
       const text = await (await fetch("/api/logs/report", { credentials: "same-origin" })).text();
-      await navigator.clipboard.writeText(text);
+      if (!await copyText(text)) throw new Error("not copied");
       // Beside the button, not a toast (R5).
       const note = copy.parentElement.querySelector(".saved-note") || el("span", { class: "saved-note", hidden: true });
       copy.parentElement.append(note);
