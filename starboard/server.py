@@ -2026,6 +2026,8 @@ class Handler(BaseHTTPRequestHandler):
                     log = ""
                 return self.json(200, {**{k: progress.get(k) for k in ("state", "n", "of", "name")}, "log": log,
                                        "window": stack.starter_waiting(app.data_dir)})
+            if path.startswith("/api/json-cards"):  # custom cards for any service's JSON (DASH-555; not part of the public API)
+                return self.json_cards(method, path, fresh)
             if path == "/api/discover" and method == "GET":
                 got = discovery.search(cfg.data["services"])
                 discovery.save(app.data_dir)  # a person's own search: kept, so Why is this here? shows it after a restart
@@ -4006,6 +4008,38 @@ class Handler(BaseHTTPRequestHandler):
         body = ('<!doctype html><html lang="en-GB"><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=' + to
                 + '"><title>Signing in</title><p>Signing in. <a href="' + to + '">Continue</a></p>').encode()
         self.send(200, body, "text/html; charset=utf-8", dict({"Cache-Control": "no-store"}, **(extra or {})))
+
+    def json_cards(self, method, path, fresh):
+        """Custom cards: the list (nothing is asked), saving, removing, choosing fields, the allow switch, and one card's answer."""
+        from . import json_cards
+        cfg = self.app.config
+        try:
+            if path == "/api/json-cards" and method == "GET":
+                return self.json(200, json_cards.listing(cfg))
+            m = re.match(r"^/api/json-cards/(jc[0-9a-f]{8})/answer$", path)
+            if m and method == "GET":
+                return self.json(200, json_cards.answer(cfg, m.group(1), fresh=fresh))
+            if method != "POST":
+                return self.error(404, "Not found")
+            data = self.body()
+            if path == "/api/json-cards":
+                card = json_cards.save_card(cfg, data)
+                logs.event("info", "settings", f"Custom card saved: {card['name']}")
+                return self.json(200, {"card": card, **json_cards.listing(cfg)})
+            if path == "/api/json-cards/delete":
+                json_cards.delete_card(cfg, str(data.get("id", "")))
+                logs.event("info", "settings", "A custom card was removed")
+                return self.json(200, json_cards.listing(cfg))
+            if path == "/api/json-cards/probe":
+                return self.json(200, json_cards.probe(cfg, data))
+            if path == "/api/json-cards/allow-outside":
+                json_cards.set_allow_outside(cfg, bool(data.get("allow")))
+                logs.event("warning" if data.get("allow") else "info", "settings",
+                           "Custom cards may ask addresses outside the home network" if data.get("allow") else "Custom cards ask home network addresses only")
+                return self.json(200, json_cards.listing(cfg))
+        except json_cards.CardError as e:
+            return self.error(e.status, e.text)
+        return self.error(404, "Not found")
 
     def signin_settings(self, method, path):
         """Settings, Security, Sign-in: the two-step code, single sign-on and the password's switch. Each change asks for the password."""

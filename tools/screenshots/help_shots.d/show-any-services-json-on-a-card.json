@@ -1,0 +1,100 @@
+{
+ "shots": [
+  {
+   "topic": "show-any-services-json-on-a-card",
+   "file": "json-card-1-add.png",
+   "page": "apps-services.html",
+   "height": 800,
+   "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); for (let i = 0; i < 40 && !document.querySelector('#add-json-card'); i++) await wait(250); document.querySelector('#custom-cards-h').scrollIntoView({block:'start'}); await wait(400);",
+   "marks": [
+    {
+     "t": "$#add-json-card",
+     "step": 2,
+     "side": "right",
+     "tail": 60
+    }
+   ],
+   "steps": [
+    2
+   ],
+   "alt": "System, Apps, Other services, with Add a custom card (step 2) outlined, under Custom cards with an example card"
+  },
+  {
+   "topic": "show-any-services-json-on-a-card",
+   "file": "json-card-2-address.png",
+   "page": "apps-services.html",
+   "height": 900,
+   "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); for (let i = 0; i < 40 && !document.querySelector('#add-json-card'); i++) await wait(250); document.querySelector('#add-json-card').click(); for (let i = 0; i < 40 && !document.querySelector('#jc-url'); i++) await wait(250); await wait(300);",
+   "marks": [
+    {
+     "t": "$$#jc-name, #jc-url, #jc-key",
+     "step": 3,
+     "side": "left",
+     "tail": 60
+    }
+   ],
+   "steps": [
+    3
+   ],
+   "alt": "The Add a custom card panel, with the Name, Address and Key boxes (step 3) outlined"
+  },
+  {
+   "topic": "show-any-services-json-on-a-card",
+   "file": "json-card-3-fields.png",
+   "page": "apps-services.html",
+   "height": 900,
+   "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); for (let i = 0; i < 40 && !document.querySelector('[data-json-card]'); i++) await wait(250); document.querySelector('[data-json-card]').click(); for (let i = 0; i < 40 && !document.querySelector('#jc-ask'); i++) await wait(250); document.querySelector('#jc-ask').click(); for (let i = 0; i < 40 && !document.querySelector('#jc-filter'); i++) await wait(250); await wait(500); document.querySelector('.json-card__choices').scrollIntoView({block:'center'}); await wait(300);",
+   "marks": [
+    {
+     "t": "$.json-card__choices",
+     "step": 4,
+     "side": "left",
+     "tail": 60
+    }
+   ],
+   "steps": [
+    4
+   ],
+   "alt": "The custom card panel after Ask the address, with the list of fields the example service answered with (step 4) outlined"
+  },
+  {
+   "topic": "show-any-services-json-on-a-card",
+   "file": "json-card-4-rule.png",
+   "page": "apps-services.html",
+   "height": 900,
+   "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); for (let i = 0; i < 40 && !document.querySelector('[data-json-card]'); i++) await wait(250); document.querySelector('[data-json-card]').click(); for (let i = 0; i < 40 && !document.querySelector('#jc-f1-op'); i++) await wait(250); await wait(300); document.querySelector('#jc-f1-label').closest('fieldset').scrollIntoView({block:'center'}); await wait(300);",
+   "marks": [
+    {
+     "t": "$$#jc-f1-label, #jc-f1-unit, #jc-f1-op",
+     "step": 5,
+     "side": "left",
+     "tail": 60
+    }
+   ],
+   "steps": [
+    5
+   ],
+   "alt": "One chosen field in the custom card panel, with its Label, Unit and Status rule (step 5) outlined"
+  },
+  {
+   "topic": "show-any-services-json-on-a-card",
+   "file": "json-card-5-dashboard.png",
+   "page": "dashboard.html",
+   "height": 900,
+   "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); for (let i = 0; i < 40 && !document.querySelector('[data-card]'); i++) await wait(250); const cards = (await api('/api/json-cards')).cards; await api('/api/config/general', {method:'PUT', body:{dashboard:{layout:'glance', cards:[{id:'json:'+cards[0].id,size:'half'},{id:'health',size:'half'}]}}}); const cfg = await api('/api/config'); dash = cfg.dashboard; draw(); for (let i = 0; i < 40 && !document.querySelector('[data-card^=\"json:\"] dl'); i++) await wait(250); await wait(600); document.querySelector('[data-card^=\"json:\"]').dataset.shot = 'jc'; document.body.style.paddingBottom = '600px'; const c = document.querySelector('[data-shot=jc]'); window.scrollTo(0, c.getBoundingClientRect().top + window.scrollY - 140); await wait(400);",
+   "after": "await api('/api/config/general', {method:'PUT', body:{dashboard:{layout:'glance', cards:null}}});",
+   "marks": [
+    {
+     "t": "$[data-shot=jc]",
+     "step": 7,
+     "side": "bottom",
+     "tail": 50
+    }
+   ],
+   "steps": [
+    7
+   ],
+   "alt": "The dashboard with the example custom card (step 7) outlined: each chosen field with its value, unit and status, and the card's status at the top"
+  }
+ ]
+}
