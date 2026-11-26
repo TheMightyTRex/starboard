@@ -1,6 +1,6 @@
 """Styles no page uses stay out of the core (Starboard patterns audit, 26 November 2026).
 
-The design system marks the styles of components that no page of Starboard uses as the parts extras, covers,
+The design system marks the styles of components that no page of Starboard uses as the parts extras, media-extras,
 logo-picker and wizard-review. They are in css/parts for the day a page needs one: the core style sheet has none of
 those rules, and no page loads them (a page that needs one loads it, and then this test is changed with it)."""
 import pathlib
@@ -8,7 +8,7 @@ import re
 import unittest
 
 WEB = pathlib.Path(__file__).resolve().parents[1] / "web"
-PARTS = ("extras", "covers", "logo-picker", "wizard-review")
+PARTS = ("extras", "media-extras", "logo-picker", "wizard-review")
 
 
 def rules(text):
