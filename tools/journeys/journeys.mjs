@@ -2770,6 +2770,40 @@ const downloaded = await page.evaluate(async () => (await fetch("/api/logs/downl
 check("LOG-02", "Download gives the same: a line saying how many, then alerts only", /^# Starboard log: the newest \d+ of [\d,]+ entries, alerts only/.test(downloaded) && !/ INFO /.test(downloaded), downloaded.slice(0, 120));
 await api("/api/config/general", { method: "PUT", body: { logs: { show_lines: 200, alerts_only: false } } });
 
+// Settings, Plug-ins: each plug-in's tab has its own icon, and icons only still name the current and focused tab (owner, 26 November 2026).
+console.log("\n== PTI Plug-in tab icons");
+await page.setViewportSize({ width: 375, height: 812 });
+await open("settings-plugin.html?id=notifications");
+await page.waitForFunction(() => document.querySelectorAll('nav[aria-label="Plug-ins"] a').length > 4, null, { timeout: 5000 }).catch(() => {});
+const ptiTabs = () => page.evaluate(() => [...document.querySelectorAll('nav[aria-label="Plug-ins"] a')].map((a) => {
+  const r = a.getBoundingClientRect(), l = a.querySelector(".menu-tabs__label"), s = a.querySelector("svg");
+  return { name: a.textContent.trim(), icon: s?.querySelector("use")?.getAttribute("href") || "", hidden: s?.getAttribute("aria-hidden"), w: Math.round(r.width), h: Math.round(r.height),
+    shown: l.getBoundingClientRect().width > 8, current: a.getAttribute("aria-current") === "page", title: a.title };
+}));
+let pti = await ptiTabs();
+const ptiPlugs = pti.slice(2);
+check("PTI-01", "at 375 wide the tabs show icons only, and each is at least 44 by 44", pti.length > 4 && pti.filter((x) => !x.current).every((x) => !x.shown && x.w >= 44 && x.h >= 44), JSON.stringify(pti.map((x) => [x.name, x.w, x.h])));
+const known = ptiPlugs.filter((x) => !/#i-puzzle$/.test(x.icon));
+check("PTI-02", "every plug-in tab with an icon of its own has a different one, none is the default puzzle piece's twin or Manage's or Catalogue's",
+  known.length > 8 && new Set(known.map((x) => x.icon)).size === known.length && !known.some((x) => pti.slice(0, 2).some((m) => m.icon === x.icon)), JSON.stringify(known.map((x) => [x.name, x.icon])));
+check("PTI-03", "a plug-in with no icon of its own gets the neutral puzzle piece", ptiPlugs.some((x) => /#i-puzzle$/.test(x.icon)) && ptiPlugs.find((x) => x.name === "Notifications")?.icon.endsWith("#i-bell"));
+check("PTI-04", "every icon is hidden from a screen reader, and every tab keeps its name as text and as its tooltip", pti.every((x) => x.hidden === "true" && x.name && x.title === x.name));
+check("PTI-05", "the tab you are on shows its name beside the icon, with the bar under it, and is in view",
+  pti.filter((x) => x.current).length === 1 && pti.find((x) => x.current).name === "Notifications" && pti.find((x) => x.current).shown
+  && await page.evaluate(() => { const a = document.querySelector('nav[aria-label="Plug-ins"] a[aria-current]'), r = a.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 1; }));
+const ptiLinks = page.locator('nav[aria-label="Plug-ins"] a');
+await ptiLinks.first().focus();
+await page.keyboard.press("Tab");
+await page.keyboard.press("Tab");
+const ptiFocus = await page.evaluate(() => { const a = document.activeElement; return { name: a.textContent.trim(), shown: (a.querySelector(".menu-tabs__label")?.getBoundingClientRect().width || 0) > 8, ring: getComputedStyle(a).outlineStyle !== "none" }; });
+check("PTI-06", "Tab moves along the tabs, and the tab with focus shows its name and a focus ring", ptiFocus.shown && ptiFocus.ring && ptiFocus.name.length > 0, JSON.stringify(ptiFocus));
+check("PTI-07", "the row scrolls inside itself, not the page", await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+await page.setViewportSize({ width: 1280, height: 860 });
+await open("settings-plugin.html?id=notifications");
+await page.waitForFunction(() => document.querySelectorAll('nav[aria-label="Plug-ins"] a').length > 4, null, { timeout: 5000 }).catch(() => {});
+pti = await ptiTabs();
+check("PTI-08", "on a computer the same icons show, and the tab name shows for the current tab", pti.length > 4 && pti.every((x) => x.icon && x.h >= 44) && pti.find((x) => x.current)?.shown, JSON.stringify(pti.filter((x) => x.current)));
+
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
 const wide = [];

@@ -22,6 +22,7 @@ add features.
 - **Emby and Plex as media servers.** Both are now built-in plug-ins that the dashboard can show, read only for now. They cannot play, mark watched, show Live TV or use the Jellyfin tools.
 
 ### Changed
+- **Each plug-in's tab has its own icon.** Settings, Plug-ins now draws a different line icon on each plug-in's tab, and where the tabs show icons only, such as on a phone, the tab you are on and the tab with focus also show their name.
 - **One tab for your media server.** Settings, Apps has one tab named for the media server in use, so the separate Media server tab and plug-in tab are gone. The old address still opens the right page.
 - **Alerts and Performance are part of General.** Settings, General has new Alerts, Performance and Pictures tabs, and the old addresses still open the right page.
 - **Lighter pages and quicker tests.** Page scripts and style sheets are now built without comments and blank lines, so a first visit sends about 38 KB less. The parallel test runner cuts a full run from 5 minutes 18 seconds to 53 seconds.

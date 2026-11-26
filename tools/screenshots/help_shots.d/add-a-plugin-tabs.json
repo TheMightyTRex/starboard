@@ -1,0 +1,64 @@
+{
+  "shots": [
+    {
+      "topic": "add-a-plugin",
+      "file": "add-a-plugin-8-tabs-computer.png",
+      "page": "settings-plugin.html?id=styles",
+      "height": 700,
+      "run": "for (let i = 0; i < 40 && document.querySelectorAll('nav[aria-label=\"Plug-ins\"] a').length < 6; i++) await new Promise(r => setTimeout(r, 250)); await new Promise(r => setTimeout(r, 600));",
+      "marks": [
+        {
+          "t": "$nav[aria-label='Plug-ins'] a[aria-current]",
+          "step": 1,
+          "side": "bottom",
+          "tail": 90
+        }
+      ],
+      "steps": [
+        1
+      ],
+      "alt": "Settings, Plug-ins, on a computer: the tab for each plug-in has its own icon, and the Styles tab is outlined (step 1)"
+    },
+    {
+      "topic": "add-a-plugin",
+      "file": "add-a-plugin-9-tabs-phone.png",
+      "page": "settings-plugin.html?id=styles",
+      "width": 390,
+      "height": 640,
+      "run": "for (let i = 0; i < 40 && document.querySelectorAll('nav[aria-label=\"Plug-ins\"] a').length < 6; i++) await new Promise(r => setTimeout(r, 250)); await new Promise(r => setTimeout(r, 900));",
+      "marks": [
+        {
+          "t": "$nav[aria-label='Plug-ins'] a[aria-current]",
+          "step": 1,
+          "side": "bottom",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        1
+      ],
+      "alt": "Settings, Plug-ins, on a phone: icons only, with the Styles tab showing its name beside its icon (step 1)"
+    },
+    {
+      "topic": "add-a-plugin",
+      "file": "add-a-plugin-10-tabs-phone-dark.png",
+      "page": "settings-plugin.html?id=notifications",
+      "width": 390,
+      "height": 640,
+      "scheme": "dark",
+      "run": "for (let i = 0; i < 40 && document.querySelectorAll('nav[aria-label=\"Plug-ins\"] a').length < 6; i++) await new Promise(r => setTimeout(r, 250)); await new Promise(r => setTimeout(r, 900));",
+      "marks": [
+        {
+          "t": "$nav[aria-label='Plug-ins'] a[aria-current]",
+          "step": 2,
+          "side": "bottom",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        2
+      ],
+      "alt": "The same phone tabs in the Dark theme, with the Notifications tab showing its name (step 2)"
+    }
+  ]
+}

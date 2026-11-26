@@ -340,6 +340,9 @@
   }
   /* When the names do not fit, icons only; the names stay as tooltips and for screen readers. */
   .menu-tabs.is-compact a {
+    flex: none;
+    min-width: var(--control-h);
+    justify-content: center;
     padding: 0 var(--space-3);
   }
   .menu-tabs.is-compact .menu-tabs__label {
@@ -348,6 +351,19 @@
     height: 1px;
     overflow: hidden;
     clip-path: inset(50%);
+  }
+  /* On the 2nd level, icons only still names the tab you are on and the tab with focus (owner, 26 November 2026): both show their name
+     beside the icon, so tabs whose icons look alike can be told apart. The bar under the current tab and the focus
+     ring carry the state without colour. */
+  .site-header__tabs .menu-tabs.is-compact a[aria-current="page"] .menu-tabs__label,
+  .site-header__tabs .menu-tabs.is-compact a:focus-visible .menu-tabs__label {
+    position: static;
+    width: auto;
+    height: auto;
+    max-width: 12rem;
+    overflow: hidden;
+    clip-path: none;
+    text-overflow: ellipsis;
   }
   /* When even the icons do not fit (large text, wider spacing, a long server name), the header gives way in steps
      instead of cutting items off or squeezing the search box (DASH-437). SharedComponents.setupHeaderFit measures the

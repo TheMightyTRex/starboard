@@ -48,6 +48,25 @@ is ready to use.
 tab, **General**, has a card each for **State**, **Versions**, **Jobs** (when it has any), **What it may do** and
 **Remove**. Its other tabs hold its settings, its own screens and its styles.
 
+### Find a plug-in's tab by its icon
+
+Each plug-in you add has its own tab in **Settings**, then **Plug-ins**, after **Catalogue**. Every tab has its own
+icon, drawn in the same line style as the menu's other icons, such as a bell for **Notifications** and a palette for **Styles**.
+A plug-in that has no icon of its own in Starboard shows a puzzle piece. On a phone, and whenever the names do not fit,
+the tabs show icons only. The names are still there:
+
+1. Select the icon. The tab you are on shows its name beside the icon, and the bar under it marks it as the current tab.
+2. Move to a tab with the keyboard (press **Tab**). The tab with focus shows its name too.
+3. On a computer, point at an icon to read its name as a tooltip. A screen reader reads the name of every tab.
+
+Each tab is at least 44 pixels wide, the size of a fingertip. Scroll the row sideways to reach the rest.
+
+![Settings, Plug-ins, on a computer: the tab for each plug-in has its own icon, and the Styles tab is outlined (step 1)](../images/add-a-plugin-8-tabs-computer.png)
+
+![Settings, Plug-ins, on a phone: icons only, with the Styles tab showing its name beside its icon (step 1)](../images/add-a-plugin-9-tabs-phone.png)
+
+![The same phone tabs in the Dark theme, with the Notifications tab showing its name (step 2)](../images/add-a-plugin-10-tabs-phone-dark.png)
+
 ### Check which system a plug-in needs
 
 Some plug-ins work with one system only, such as a plug-in for Jellyfin. Starboard says so in words, next to the

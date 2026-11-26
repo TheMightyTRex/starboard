@@ -1976,7 +1976,20 @@ function mediaServerTab(name) {
   $$('nav a[href="/settings-jellyfin.html"] .menu-tabs__label').forEach((n) => { n.textContent = name || "Media server"; });
 }
 
-// Settings, Plug-ins (DASH-318): the level 2 menu is Manage, Catalogue, then one tab for each plug-in added.
+// Settings, Plug-ins (DASH-318): the level 2 menu is Manage, Catalogue, then one tab for each plug-in added. Each tab has its own
+// icon, drawn in the menu's line style from the shared icon set (owner, 26 November 2026: "It is hard to know which one is which
+// on the phone"). The icon is chosen by plug-in id, from this list, so nothing is fetched and no plug-in logo is read for the menu
+// (a logo is a coloured tile, and reading one per tab would add a request each). A plug-in not in the list, such as one from
+// another catalogue, gets the neutral puzzle piece; its name still shows on the tab you are on and the tab with focus.
+const PLUGIN_TAB_ICONS = {
+  "audio-description": "mic", "audio-description-tracks": "headphones", "calibre-web": "book-copy", "checkrr": "file-search",
+  "direct-play": "play", "disk-forecast": "hard-drive", "dns-blocking": "ban", "download-summary": "download",
+  "home-assistant": "house", "jellystat": "chart-line", "kavita": "book-open-text", "library-cleanup": "sparkles",
+  "library-health": "heart-pulse", "line-speed": "gauge", "livetv": "tv", "maintainerr": "timer", "most-watched": "award",
+  "navidrome": "music", "notifications": "bell", "on-demand": "history", "outside-services": "globe", "picture-shrinker": "image",
+  "remote-access": "network", "seerr": "inbox", "styles": "palette", "tdarr": "film", "themearr": "star", "tv-station": "monitor",
+  "uptime-kuma": "activity", "vpn-check": "shield-check", "watch-stats": "eye", "watching-now": "users", "wizarr": "user-plus",
+};
 function pluginTabs(list) {
   const nav = $('.site-header__tabs nav[aria-label="Plug-ins"]');
   if (!nav || !list.length) return;
@@ -1988,10 +2001,16 @@ function pluginTabs(list) {
     a.href = `/settings-plugin.html?id=${encodeURIComponent(p.id)}`;
     a.removeAttribute("aria-current");
     if (p.id === here) a.setAttribute("aria-current", "page");
-    a.querySelector("svg")?.replaceWith(icon("puzzle"));
+    a.querySelector("svg")?.replaceWith(icon(PLUGIN_TAB_ICONS[p.id] || "puzzle"));
     a.querySelector(".menu-tabs__label").textContent = p.name;
     nav.append(a);
   }
+  // With a row of icons that scrolls sideways, the tab you are on is brought into view (the name beside its icon shows there).
+  const current = $("a[aria-current]", nav);
+  if (here && current) requestAnimationFrame(() => requestAnimationFrame(() => {
+    const a = current.getBoundingClientRect(), b = nav.getBoundingClientRect();
+    nav.scrollLeft = Math.max(0, nav.scrollLeft + (a.left - b.left) - (b.width - a.width) / 2);
+  }));
 }
 
 // Logos legible in light and dark (owner, 12 November 2026): a network's logo is measured once, in the first browser
