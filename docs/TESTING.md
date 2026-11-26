@@ -20,7 +20,7 @@ was tested](SECURITY-AND-TESTS.md).
 For a person choosing a computer, the help centre turns these into advice:
 [What you need to run Starboard](help/topics/what-you-need.md).
 
-Settings, Performance shows Starboard's own use on a running server, and what each piece of background work
+Settings, General, Performance shows Starboard's own use on a running server, and what each piece of background work
 costs.
 
 ## The tests

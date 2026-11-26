@@ -32,3 +32,6 @@ tools/a11y/shots/
 # Claude Code: personal settings stay out of the repository (.claude/settings.json is shared)
 .claude/settings.local.json
 .self-update.log.new
+
+# A help picture taken only to set up the next ones (tools/screenshots/help_shots.d/read-calibre-web-books-on-your-phone.json)
+docs/help/images/*-0-setup.png

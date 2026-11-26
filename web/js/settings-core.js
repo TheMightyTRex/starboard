@@ -122,7 +122,7 @@ const MOVED_PARTS = {
   "/settings-general-lists.html": { "discover-rows": "settings-general-discover.html", "discover-rows-s": "settings-general-discover.html" },
   "/settings-downloads.html": { "dl-usenet": "settings-downloads-usenet.html", "dl-hours": "settings-downloads-hours.html" },
   "/settings-radio.html": { "radio-link": "settings-radio-link.html", "radio-library": "settings-radio-library.html", "radio-logos": "settings-radio-logos.html" },
-  "/settings-performance.html": { "pf-pictures": "settings-performance-pictures.html", "pf-danger": "settings-performance-pictures.html" },
+  "/settings-general-performance.html": { "pf-pictures": "settings-general-pictures.html", "pf-danger": "settings-general-pictures.html" },
   "/settings-security.html": { "sc-pw": "settings-security-password.html", "sc-keys": "settings-security-keys.html", "sc-mcp": "settings-security-keys.html",
     "sc-ses": "settings-security-sessions.html", "sc-danger": "settings-security-sessions.html" },
 };
@@ -638,7 +638,7 @@ const settingsLoaded = new Promise((done) => {
   else done();
 });
 const SETTINGS_STARTS = [["#app-sections", "startManageApps"], ["#general-sections", "startGeneral"], ["#security-sections", "startSecurity"], ["#signin-sections", "startSignin"],
-  ["#alerts-sections", "startAlerts"], ["#jellyfin-sections", "startJellyfin"], ["#listening-sections", "startListening"],
+  ["#alerts-sections", "startAlerts"], ["#jellyfin-sections", "startJellyfin"], ["#media-server-sections", "startMediaServer"], ["#listening-sections", "startListening"],
   ["#radio-sections", "startRadioSettings"], ["#performance-sections", "startPerformance"], ["#reelix-sections", "startReelix"],
   ["#install-sections", "startYourInstall"], ["#downloads-sections", "startDownloadsSettings"], ["#guide", "startGuide"],
   ["#upgrade", "startUpgrade"], ["#install", "startInstall"], ["#bring-in", "startBringIn"], // DASH-455

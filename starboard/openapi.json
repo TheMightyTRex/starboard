@@ -2253,7 +2253,7 @@
   "/api/v1/alerts/test": {
    "post": {
     "operationId": "testAlert",
-    "summary": "Send a test alert to the channel set in Settings, Alerts",
+    "summary": "Send a test alert to the channel set in Settings, General, Alerts",
     "tags": [
      "System"
     ],
@@ -4489,7 +4489,7 @@
           },
           "sent": {
            "type": "boolean",
-           "description": "false when it was already raised, there was nothing to clear, or alerts are off in Settings, Alerts"
+           "description": "false when it was already raised, there was nothing to clear, or alerts are off in Settings, General, Alerts"
           }
          }
         }

@@ -8,3 +8,5 @@ web/js/settings.js	last look at their images|Look again on Apps, Updates	Branch 
 docs/help/topics/get-what-is-missing.md	\*\*Below the quality wanted\*\*	Wanted's own tab name, quoted as the label; "below" compares a quality, it is not a direction
 docs/help/topics/prepare-a-raspberry-pi.md	\*\*Enable SSH\*\*	Raspberry Pi Imager's own label, quoted exactly
 docs/help/topics/start-on-debian.md	please insert the disc labeled	Debian's own message, quoted exactly
+docs/help/topics/find-an-api-key.md	Emby \| \*\*Dashboard\*\*, then \*\*Advanced\*\*	Emby's own menu name, quoted as the label; not a difficulty word
+web/js/settings-apps.js	Dashboard, Advanced, API Keys	Emby's own menu name, quoted as the label; not a difficulty word

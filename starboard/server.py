@@ -492,6 +492,10 @@ def _installer_started_since(app, since):
         return False
 
 
+# Pages whose address changed: the old address answers 301 with the new one (a link from a bookmark, a plug-in or an older help page).
+MOVED_PAGES = {"/settings-media-server.html": "/settings-jellyfin.html",  # Settings, Apps: the media server tab (DASH-565)
+               "/settings-alerts.html": "/settings-general-alerts.html", "/settings-performance.html": "/settings-general-performance.html",
+               "/settings-performance-pictures.html": "/settings-general-pictures.html"}  # DASH-584: Alerts and Performance are in General now
 MOVED_BY_REELIX = ("radarr", "sonarr", "lidarr", "bookshelf", "prowlarr", "seerr")  # what Reelix's migrator reads
 
 
@@ -1161,6 +1165,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(404, b"Not found", "text/plain; charset=utf-8")
         if path == "/":
             path = "/dashboard.html"  # the landing page (DASH-239)
+        if path in MOVED_PAGES:  # an address that moved (DASH-565, DASH-584): the old one answers 301 with the new one, keeping what follows the page
+            query = urllib.parse.urlsplit(self.path).query
+            return self.send(301, extra={"Location": MOVED_PAGES[path] + ("?" + query if query else ""), "Cache-Control": "no-cache"})
         if not path.endswith(".html") and "." not in posixpath.basename(path):
             path += ".html"
         public = path in PUBLIC_PAGES or path in PUBLIC_FILES or path.startswith(PUBLIC_PREFIXES)
@@ -1366,6 +1373,8 @@ class Handler(BaseHTTPRequestHandler):
                     "ux_notes": bool(signed_in and app.config.data.get("ux_notes")),
                     # The plug-ins added: their menu items show only then (owner, 12 November 2026).
                     "plugins": plugins_admin.added(app.data_dir) if signed_in else [],
+                    # The name on Settings, Apps' media server tab (DASH-565): the one in use, "" for none.
+                    "media_server": self.media_server_name() if signed_in else None,
                 })
             if path == "/api/feedback" and method == "POST":
                 # Snaglist sends without cookies, so the key it was given while signed in stands in for them.
@@ -1571,7 +1580,7 @@ class Handler(BaseHTTPRequestHandler):
                 candidate = validate_service(incoming)
                 candidate["id"] = candidate.get("id") or "test"
                 return self.json(200, services.check(candidate))
-            if path == "/api/pictures" and method == "GET":  # Settings, Performance, Pictures (12 November 2026)
+            if path == "/api/pictures" and method == "GET":  # Settings, General, Performance, Pictures (12 November 2026)
                 from . import picture_cache
                 return self.json(200, picture_cache.stats(cfg.data_dir))
             if path == "/api/pictures/clear" and method == "POST":
@@ -2714,7 +2723,27 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, services.cached("jellyfin", 20, lambda: mediaserver.status_for_pages(cfg.data), fresh))
             if path == "/api/media-server" and method == "GET":  # DASH-565: which media server is active, from settings alone
                 from . import mediaserver
-                return self.json(200, mediaserver.state(cfg.data))
+                return self.json(200, mediaserver.state(cfg.data, self.media_servers_added()))
+            if path == "/api/media-server/check" and method == "POST":  # asks one to answer; changes nothing
+                from . import mediaserver
+                try:
+                    return self.json(200, mediaserver.check(cfg.data, str(self.body().get("id") or "")))
+                except LookupError as e:
+                    return self.error(404, str(e))
+            if path in ("/api/media-server/choose", "/api/media-server/back") and method == "POST":
+                from . import mediaserver
+                try:
+                    if path.endswith("/back"):
+                        got = mediaserver.go_back(cfg)
+                    else:
+                        got = mediaserver.choose(cfg, str(self.body().get("id") or ""), self.media_servers_added())
+                except LookupError as e:
+                    return self.error(404, str(e))
+                except ValueError as e:
+                    return self.error(409, str(e))
+                if got["changed"]:
+                    logs.event("info", "media server", got["said"])
+                return self.json(200, {**got, **mediaserver.state(cfg.data, self.media_servers_added())})
             if path == "/api/health" and method == "GET":
                 return self.json(200, services.cached("health", 300, lambda: services.health(cfg.data["services"], stack.chosen_keys(app.data_dir), app.data_dir), fresh))
             if path == "/api/history" and method == "GET":
@@ -3374,6 +3403,19 @@ class Handler(BaseHTTPRequestHandler):
         token = app.sessions.create(days, app.session_version, remember)
         return {"Set-Cookie": self.session_cookie(token, days * 86400 if remember else None)}
 
+    def media_server_name(self):
+        """The active media server's name for the menu tab, from the settings alone (nothing is asked of the server)."""
+        from . import mediaserver
+        one = mediaserver.active(self.app.config.data)
+        return one.name if one else ""
+
+    def media_servers_added(self):
+        """The ids of the media server plug-ins that are added and active (DASH-565): a media server can be chosen only then."""
+        from . import mediaserver, plugins_admin as pa
+        pa.ensure_default_once(self.app.data_dir, self.app.config.data["services"])
+        ids = set(mediaserver.ADAPTERS)
+        return sorted(p["id"] for p in pa.basics(self.app.data_dir) if p["id"] in ids and p["state"] == "enabled")
+
     def plugins_route(self, method, path):
         """Settings, Plug-ins (DASH-149): add (password), enable, disable, remove (password), Stop all, settings."""
         from . import plugins_admin as pa
@@ -3398,7 +3440,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.json(200, {"plugins": [{**p, "update": updates.get(p["id"]), "health": well.get(p["id"]),
                                                 "system": plugin_systems.judge(p.get("system"), here),
                                                 "resting": plugin_watch.resting(app.data_dir, p["id"])} for p in listed], "builtin": built,
-                                   "media_server": mediaserver.state(app.config.data),
+                                   "media_server": mediaserver.state(app.config.data, self.media_servers_added()),
                                    "wanted": pa.wanted_from_setup(app.config, {p["id"] for p in listed})})
         if path == "/api/plugins/wanted" and method == "POST":  # Not now on a plug-in chosen in the set-up (DASH-399)
             said = pa.drop_wanted(app.config, str(self.body().get("id") or ""))
@@ -3704,7 +3746,7 @@ class Handler(BaseHTTPRequestHandler):
             from . import mediaserver
             if mediaserver.in_use(app.config.data, pid):  # DASH-565: Starboard would be left with no media server by accident
                 return self.error(409, f"{next(p['name'] for p in pa.basics(app.data_dir) if p['id'] == pid)} is your media server, so it stays on. "
-                                       "Starboard uses it for the dashboard panel, Library, Activity and System")
+                                       "Choose another one, or none, in Settings, Apps, the media server tab first")
         if what == "settings" and method == "PUT":
             return self.json(200, {"settings": pa.save_settings(app.data_dir, pid, self.body().get("settings") or {})})
         if method != "POST":

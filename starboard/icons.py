@@ -29,6 +29,8 @@ _lock = threading.Lock()
 
 
 def default_name(service):
+    if service.get("type") in ("plex", "emby"):  # DASH-566: its own icon whatever the app is called ("Family Plex")
+        return service["type"]
     slug = re.sub(r"[^a-z0-9]+", "-", service.get("name", "").lower()).strip("-")
     return ALIASES.get(slug, slug)
 

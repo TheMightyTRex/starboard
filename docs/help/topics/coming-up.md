@@ -67,7 +67,7 @@ To stop every calendar that uses the address, select **Add to your calendar**, t
 
 ### Show or hide posters
 
-1. Go to **Settings**, then **Performance**, and activate **More settings**.
+1. Go to **Settings**, then **General**, then **Performance**, and activate **More settings**.
 2. Select the **Background work** tab, then activate or deactivate **Posters on Coming up and the Library**. When it is
    inactive, each release shows its app's icon instead.
 

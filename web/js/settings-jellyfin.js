@@ -36,6 +36,10 @@ function jobRun(job) {
 
 async function startJellyfin() {
   const root = $("#jellyfin-sections");
+  // This page is the media server's tab (DASH-565): Jellyfin's own sections draw only while Jellyfin is the one in use.
+  try {
+    if ((await api("/api/media-server")).active !== "jellyfin") { root.replaceChildren(); root.removeAttribute("aria-busy"); return; }
+  } catch { /* draw them as before */ }
   let d;
   try { d = await api("/api/extras"); } catch (e) { root.replaceChildren(notice("danger", "Could not load", e.message)); return; }
   const jobs = Object.fromEntries(d.jobs.map((j) => [j.key, j]));

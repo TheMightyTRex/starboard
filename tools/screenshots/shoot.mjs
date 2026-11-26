@@ -53,7 +53,7 @@ const SHOTS = [
     run: `(async () => { [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Begin").click(); ${wait(1800)} })()` },
   { file: "your-install.png", page: "settings-install.html", ...desk },
   { file: "setup-guide.png", page: "setup-guide.html", ...desk },
-  { file: "performance.png", page: "settings-performance.html", ...desk },
+  { file: "performance.png", page: "settings-general-performance.html", ...desk },
   { file: "search-new-apps.png", page: "settings.html", ...desk, click: "#find-apps" },
   { file: "release-notes.png", page: "index.html", ...desk, click: ".site-footer a[href=\"#release-notes\"]" },
   { file: "logs.png", page: "system-logs.html", ...desk, before: 'api("/api/config/general", { method: "PUT", body: { logs: { detail: "day" } } })' },

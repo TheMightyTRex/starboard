@@ -66,6 +66,7 @@ Each guide is a journey through several topics, in order.
 ### Apps
 
 - [Add an app](topics/add-an-app.md)
+- [Read your Calibre-Web books on your phone](topics/read-calibre-web-books-on-your-phone.md)
 - [Choose a Usenet provider and add it](topics/choose-a-usenet-provider.md)
 - [Find an app's API key](topics/find-an-api-key.md)
 - [Search for apps already on your server](topics/search-for-new-apps.md)
@@ -161,7 +162,7 @@ Each guide is a journey through several topics, in order.
 
 ### Jellyfin and Audiobookshelf
 
-- [Check which media server Starboard uses](topics/choose-your-media-server.md)
+- [Choose your media server](topics/choose-your-media-server.md)
 - [Set up free Live TV in Jellyfin](topics/set-up-live-tv.md)
 - [A Live TV channel will not play](topics/live-tv-channel-will-not-play.md)
 - [Import watch history into Jellyfin](topics/import-watch-history.md)

@@ -91,6 +91,11 @@ MENU = [
                                            ("settings-general-discover.html", "Discover rows", "compass"),
                                            ("settings-general-hours.html", "Download hours", "clock"),
                                            ("settings-general-logs.html", "Logs and feedback", "scroll-text"),
+                                           # Owner, 26 November 2026 (DASH-584): Alerts and Performance are part of General now.
+                                           # Their old addresses move here (MOVED_PAGES in server.py).
+                                           ("settings-general-alerts.html", "Alerts", "bell"),
+                                           ("settings-general-performance.html", "Performance", "gauge"),
+                                           ("settings-general-pictures.html", "Pictures", "eye"),
                                            # Owner, 16 November 2026: "Backup and restore should go in general" (it was
                                            # System, Backup; the page keeps its address). Restore also stays in Updates.
                                            ("system-backup.html", "Backup and restore", "archive-restore")]),
@@ -104,8 +109,6 @@ MENU = [
         # Level 2 (owner, 13 November 2026: "All should have those on Menu 2"; DASH-391), as General and Downloads.
         ("Radio", "radio", [("settings-radio.html", "Sources", "radio"), ("settings-radio-link.html", "Add a show from a link", "link"),
                             ("settings-radio-library.html", "Your podcast library", "library"), ("settings-radio-logos.html", "Station logos", "layout-grid")]),
-        ("Alerts", "bell", [("settings-alerts.html", "Alerts", "bell")]),
-        ("Performance", "gauge", [("settings-performance.html", "Preset", "gauge"), ("settings-performance-pictures.html", "Pictures", "eye")]),
         ("Security", "shield-check", [("settings-security.html", "Who can open the dashboard", "network"),
                                       ("settings-security-password.html", "Password", "key-round"),
                                       ("settings-security-signin.html", "Sign-in methods", "shield-check"),
@@ -195,13 +198,13 @@ HELP = {
     "settings.html": ("topics/change-or-remove-an-app.md", "changing or removing an app"),
     "settings-install.html": ("topics/change-your-install.md", "changing your install"),
     "settings-reelix.html": ("topics/change-reelix-settings.md", "changing Reelix's settings"),
-    "settings-jellyfin.html": ("README.md#jellyfin-and-audiobookshelf", "Jellyfin and Audiobookshelf"),
+    "settings-jellyfin.html": ("topics/choose-your-media-server.md", "your media server"),  # the active media server's tab (Jellyfin, Plex or Emby)
     "settings-audiobookshelf.html": ("README.md#jellyfin-and-audiobookshelf", "Jellyfin and Audiobookshelf"),
     "settings-tdarr.html": ("README.md#jellyfin-and-audiobookshelf", "Jellyfin and Audiobookshelf"),
     "settings-dispatcharr.html": ("topics/set-up-live-tv.md", "setting up Live TV"),
-    "settings-alerts.html": ("topics/activate-alerts.md", "activating alerts"),
-    "settings-performance.html": ("topics/make-starboard-lighter.md", "making Starboard use less of your server"),
-    "settings-performance-pictures.html": ("topics/make-starboard-lighter.md#what-each-item-costs", "pictures and what they cost"),
+    "settings-general-alerts.html": ("topics/activate-alerts.md", "activating alerts"),
+    "settings-general-performance.html": ("topics/make-starboard-lighter.md", "making Starboard use less of your server"),
+    "settings-general-pictures.html": ("topics/make-starboard-lighter.md#what-each-item-costs", "pictures and what they cost"),
     "settings-security.html": ("topics/choose-who-can-open-starboard.md", "choosing who can open Starboard"),
     "settings-security-password.html": ("topics/change-your-password.md", "changing your password"),
     "settings-security-signin.html": ("topics/set-up-a-two-step-code.md", "setting up a two-step code"),

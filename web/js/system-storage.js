@@ -147,9 +147,9 @@ function renderUsage(u) {
   button.hidden = off;
   button.disabled = !!u.running;
   $("span", button).textContent = u.running ? "Sorting by type…" : u.finished ? "Sort by type again" : "Sort by type now";
-  $("#usage-when").textContent = off ? "Off in Settings, Performance" : u.running ? "Reading the folders now" : u.finished ? `Worked out ${formatDate(u.finished * 1000, true)}` : "Not worked out yet";
+  $("#usage-when").textContent = off ? "Off in Settings, General, Performance" : u.running ? "Reading the folders now" : u.finished ? `Worked out ${formatDate(u.finished * 1000, true)}` : "Not worked out yet";
   $("#usage-about").textContent = off
-    ? "Working out what uses the space is inactive in Settings, Performance, so the charts show used and free space only."
+    ? "Working out what uses the space is inactive in Settings, General, Performance, so the charts show used and free space only."
     : `Starboard reads every folder to sort the space by type: ${USAGE_WORDS[u.every] || USAGE_WORDS.ask} A file shared by a download and the library counts once, for the library.`;
   clearTimeout(usageTimer);
   if (u.running) usageTimer = setTimeout(loadUsage, 5000);
@@ -260,7 +260,7 @@ startPage().then(async (session) => {
   await load();
   await loadUsage();
   try { spaceDays = (await api("/api/space-history")).days; renderCharts(); } catch { /* no history yet */ }
-  // When you open Storage: sort by type if the last answer is over a day old (Settings, Performance).
+  // When you open Storage: sort by type if the last answer is over a day old (Settings, General, Performance).
   if (usage && usage.every === "open" && !usage.running && (!usage.finished || Date.now() / 1000 - usage.finished > 86400)) runUsage();
   // Sizes update by themselves while the page is open and in view, or only with Check again.
   if (perf.storage_refresh) setInterval(() => { if (!document.hidden) load(); }, perf.storage_refresh * 1000);

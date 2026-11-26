@@ -40,18 +40,17 @@ def parts_of(page):
 class SettingsMenusTest(unittest.TestCase):
     WANT = {
         "General": ["Names and apps", "Appearance", "Pages and lists", "Discover rows", "Download hours", "Logs and feedback",
-                    "Backup and restore"],
+                    "Alerts", "Performance", "Pictures", "Backup and restore"],
         "Downloads": ["VPN", "Usenet", "Download hours"],
         "Radio": ["Sources", "Add a show from a link", "Your podcast library", "Station logos"],
-        "Performance": ["Preset", "Pictures"],
         "Security": ["Who can open the dashboard", "Password", "Sign-in methods", "API keys", "Sign out everywhere"],
     }
 
     BEFORE = {
-        "General": ["gn-name", "gn-cat", "gn-card", "gn-up", "gn-dh", "gn-guide", "gn-logs", "gn-design", "gn-style", "gn-test", "gn-scroll"],
+        "General": ["gn-name", "gn-cat", "gn-card", "gn-up", "gn-dh", "gn-guide", "gn-logs", "gn-design", "gn-style", "gn-test", "gn-scroll",
+                    "pf-now", "pf-preset", "pf-bg", "pf-pages", "pf-pictures", "pf-danger"],  # Performance's parts moved in (DASH-584)
         "Downloads": ["dl-vpn", "dl-usenet", "dl-hours"],
         "Radio": ["radio-sources", "radio-link", "radio-library", "radio-logos"],
-        "Performance": ["pf-now", "pf-preset", "pf-bg", "pf-pages", "pf-pictures", "pf-danger"],
         "Security": ["sc-who", "sc-pw", "sc-ses", "sc-keys", "sc-danger"],
     }
 
@@ -63,7 +62,7 @@ class SettingsMenusTest(unittest.TestCase):
         for group in self.WANT:
             seen = []
             for page, label, _ in level2(group):
-                if page == "system-backup.html":  # its own page, kept at its address (owner, 16 November 2026)
+                if page in ("system-backup.html", "settings-general-alerts.html"):  # backup: its own page at its address (owner, 16 November 2026); alerts: one page, every part shown (DASH-584)
                     continue
                 parts = parts_of(page)
                 self.assertTrue(parts, f"{page} has no data-parts")

@@ -493,7 +493,7 @@ class DiskTemps:
 # (folders named movies, tv, music, audiobooks, books, downloads and so on), and the biggest series and films.
 # A file with several hard links (a seeding torrent that is also in the library) counts once, for the library,
 # because the library is read first. The drives that make up a pool are not read again on their own.
-# When it runs is a setting (Settings, Performance): off, when you ask, when you open Storage (if the last answer
+# When it runs is a setting (Settings, General, Performance): off, when you ask, when you open Storage (if the last answer
 # is over a day old), every night or every week. A scheduled thread exists only while a schedule is chosen.
 
 MEDIA_TYPES = ("tv", "movies", "audiobooks", "music", "books", "downloads", "other")
@@ -605,7 +605,7 @@ class Usage:
     def start(self, disks):
         import threading
         if self.settings().get("usage_every") == "off":
-            raise ValueError("Working out what uses the space is off in Settings, Performance")
+            raise ValueError("Working out what uses the space is off in Settings, General, Performance")
         with self.lock:
             if self.running:
                 return
@@ -706,7 +706,7 @@ class Usage:
 # Space over time ---------------------------------------------------------------------
 # One reading of each folder's used space a day, for the forecast on System, Storage. No thread of its own: it is
 # taken when Storage or Overview is opened, or by the history thread, whichever comes first that day. A year of
-# readings is a few kilobytes. Off in Settings, Performance.
+# readings is a few kilobytes. Off in Settings, General, Performance.
 
 class SpaceLog:
     KEEP_DAYS = 400
@@ -757,7 +757,7 @@ class SpaceLog:
 # so the System charts can look back. About 1,440 small readings; nothing leaves the server.
 
 class History:
-    """Readings for the System charts. Off, or less often, in Settings, Performance: the thread runs only while
+    """Readings for the System charts. Off, or less often, in Settings, General, Performance: the thread runs only while
     it is on, and ends when it is turned off (after saving)."""
     KEEP = 24 * 3600
 
@@ -888,7 +888,7 @@ class History:
 
 
 def self_usage():
-    """Starboard's own memory and processor use, and its threads, for Settings, Performance."""
+    """Starboard's own memory and processor use, and its threads, for Settings, General, Performance."""
     import threading
     status = {}
     for line in _read("/proc/self/status").splitlines():

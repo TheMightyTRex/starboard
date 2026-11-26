@@ -204,7 +204,7 @@ spec["paths"].update({
                                                            "properties": {"hours": {"type": "integer"}, "interval": {"type": "integer"},
                                                                           "points": {"type": "array", "items": ANY}}}),
                                                      "400": {"$ref": "#/components/responses/Problem"}}}},
-    "/api/v1/alerts/test": {"post": write(OK_BODY, "Send a test alert to the channel set in Settings, Alerts", "testAlert", "System")},
+    "/api/v1/alerts/test": {"post": write(OK_BODY, "Send a test alert to the channel set in Settings, General, Alerts", "testAlert", "System")},
     "/api/v1/extras": {"get": {"operationId": "listExtras", "summary": "Jellyfin and Audiobookshelf jobs: Live TV, watch history, user defaults and listening progress", "tags": ["Media"],
                                "responses": ok({"type": "object", "required": ["items"], "properties": {"items": {"type": "array", "items": ANY}}})}},
     "/api/v1/extras/{name}/run": {"post": write(ACCEPTED, "Run a Jellyfin or Audiobookshelf job now", "runExtra", "Media", status="202",
@@ -467,7 +467,7 @@ spec["paths"]["/api/v1/mcp"] = {"post": {
 spec["paths"]["/api/v1/plugin/alerts"] = {"post": write(
     {"type": "object", "required": ["ok", "sent"], "properties": {
         "ok": {"type": "boolean"},
-        "sent": {"type": "boolean", "description": "false when it was already raised, there was nothing to clear, or alerts are off in Settings, Alerts"}}},
+        "sent": {"type": "boolean", "description": "false when it was already raised, there was nothing to clear, or alerts are off in Settings, General, Alerts"}}},
     "A plug-in raises or clears one of its alerts, sent through Starboard's own alerts", "sendPluginAlert", "Plug-ins",
     body={"type": "object", "required": ["key", "state"], "properties": {
         "key": {"type": "string", "pattern": "^[A-Za-z0-9._:-]{1,80}$", "description": "The plug-in's own name for the alert, such as check-router. Raised once until cleared."},

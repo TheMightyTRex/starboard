@@ -682,6 +682,82 @@ if (mv) {
   check("T26", "Escape closes it and focus goes back to the button", /^Move them out of the settings folder/.test(back25.text), back25.text);
 }
 
+// T37 Choose the media server by keyboard (DASH-565): Settings, Apps, Media server. Check it now keeps focus and says what
+// it found; choosing None asks first (focus in the box), and after it focus is on what was said; Go back to Jellyfin
+// does the same and leaves Jellyfin in use.
+await page.goto(`${base}/settings-jellyfin.html`);
+await settle();
+const ck = await tabTo((f) => f.tag === "BUTTON" && /^Check it now/.test(f.text), 80);
+check("T37", "Tab reaches Check it now, named for a screen reader", !!ck, ck ? ck.text : "not reached");
+if (ck) {
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(() => /answered|did not answer/.test(document.getElementById("ms-said")?.textContent || ""), null, { timeout: 8000 }).catch(() => {});
+  const afterCheck = await focus();
+  check("T37", "after the check focus stays on the button, and the answer is in the status", /^Check it now/.test(afterCheck.text) && /answered|did not answer/.test(await said()), JSON.stringify(afterCheck) + " " + await said());
+}
+// A group of radio buttons is one Tab stop, on the one chosen; the arrow keys move to the next, as a screen reader says.
+const chosen = await tabTo((f) => f.tag === "INPUT" && f.id === "ms-choice-jellyfin", 40);
+check("T37", "Tab reaches the chosen media server in the group, named", !!chosen, chosen ? chosen.text : "not reached");
+const none = chosen ? (await page.keyboard.press("ArrowDown"), await focus()) : null;
+check("T37", "the Down arrow moves to None", !!none && none.id === "ms-choice-none", none ? none.id : "not reached");
+if (none) {
+  const go = await tabTo((f) => f.tag === "BUTTON" && /^Use this media server/.test(f.text), 8);
+  check("T37", "Tab reaches Use this media server", !!go, go ? go.text : "not reached");
+  if (go) {
+    await page.keyboard.press("Enter");
+    await settle();
+    const box = await focus();
+    check("T37", "the question opens with focus in it", box.inPanel && !box.lost, JSON.stringify(box));
+    await page.keyboard.press("Enter");  // focus starts on the main button, Use none
+    await settle();
+    const changed = await page.evaluate(() => /No media server is in use now/.test(document.getElementById("ms-said")?.textContent || ""));
+    if (changed) {
+      const after = await focus();
+      check("T37", "after the change focus is on what was said", after.id === "ms-said" && !after.lost, JSON.stringify(after));
+      const back = await tabTo((f) => f.tag === "BUTTON" && /^Go back to Jellyfin/.test(f.text), 80);
+      check("T37", "Tab reaches Go back to Jellyfin", !!back, back ? back.text : "not reached");
+      if (back) {
+        await page.keyboard.press("Enter");
+        await settle();
+        const again = await focus();
+        check("T37", "after going back focus is on what was said, and Jellyfin is in use", again.id === "ms-said" && /Jellyfin is your media server again/.test(await said()), JSON.stringify(again) + " " + await said());
+      }
+    } else {
+      // The box's default was Cancel: nothing changed, so focus is back on the button that asked.
+      const after = await focus();
+      check("T37", "Cancel gives focus back to the choices", !after.lost, JSON.stringify(after));
+    }
+  }
+}
+
+// T-PLEX (DASH-566) Add a Plex app by keyboard alone: Add an app opens the panel with focus in it, the Kind of app list is reached
+// with Tab and Plex is chosen by typing its name, the token field is named for a screen reader as a Plex token and its hint says
+// where to find it, and Escape closes the panel with focus back on Add an app.
+await page.goto(`${base}/settings.html`);
+await settle();
+const addApp = await tabTo((f) => f.tag === "BUTTON" && /^Add an app/.test(f.text), 60);
+check("T-PLEX", "Tab reaches Add an app", !!addApp, addApp ? addApp.text : "not reached");
+if (addApp) {
+  await page.keyboard.press("Enter");
+  await settle();
+  const inPanel = await focus();
+  check("T-PLEX", "the panel opens with focus inside it", inPanel.inPanel && !inPanel.lost, JSON.stringify(inPanel));
+  const kind = await tabTo((f) => f.tag === "SELECT" && f.name === "type", 12);
+  check("T-PLEX", "Tab reaches Kind of app", !!kind, kind ? kind.name : "not reached");
+  if (kind) {
+    await page.keyboard.type("Plex");
+    const got = await page.evaluate(() => ({ kind: document.querySelector("#service-form [name=type]").value, name: document.querySelector("#service-form [name=name]").value,
+      label: document.querySelector("label[for=" + document.querySelector("#service-form [name=api_key]").id + "]").textContent.trim(),
+      hint: document.getElementById(document.querySelector("#service-form [name=api_key]").id + "-hint")?.textContent || "" }));
+    check("T-PLEX", "typing Plex chooses it, names the app and calls the key a Plex token", got.kind === "plex" && got.name === "Plex" && /^Plex token/.test(got.label), JSON.stringify(got));
+    check("T-PLEX", "the token's hint says where to find it, and is tied to the field", /X-Plex-Token/.test(got.hint), got.hint);
+  }
+  await page.keyboard.press("Escape");
+  await settle();
+  const closed = await focus();
+  check("T-PLEX", "Escape closes the panel and focus goes back to Add an app", /^Add an app/.test(closed.text), JSON.stringify(closed));
+}
+
 // T23 Reduce motion (DASH-437): Off means full movement even when the device asks for less; Match device follows the
 // device; On stills movement on a device that does not ask. Checked in the styles and scripts a slide-out, a message
 // and the loading line use, as Display leaves them after a reload.
