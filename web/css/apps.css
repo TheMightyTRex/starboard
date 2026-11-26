@@ -145,4 +145,9 @@
   .updates-table__actions {
     width: 12%;
   }
+  /* The plug-in lists (Settings, Plug-ins, Manage and Updates, Plug-ins) have no Image column: more room for the status. */
+  .updates-table--plugins .updates-table__app { width: 24%; }
+  .updates-table--plugins .updates-table__installed, .updates-table--plugins .updates-table__latest { width: 11%; }
+  .updates-table--plugins .updates-table__status { width: 34%; }
+  .updates-table--plugins .updates-table__actions { width: 20%; }
 }

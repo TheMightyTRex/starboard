@@ -839,44 +839,12 @@ let updatesRefresh = null;  // draws Ready to update and Recent updates again, a
 // same Update words and dialog everywhere; Update by themselves sets each part and the hours; Recent updates says
 // what each update did and what is new. Nothing here asks the internet: GitHub, the registries and the catalogues
 // are read by their own checks (DASH-421).
-const RUN_WORDS = { updated: ["Updated", "success"], "up-to-date": STATUS.upToDate, "rolled-back": ["Rolled back", "info"],
-  "went-back": ["Went back by itself", "warning"], refused: ["Not updated", "warning"], failed: STATUS.failed, running: STATUS.updating,
-  "some-updated": ["Some updated", "warning"] };
-
-// Each update's state in Install all updates (DASH-454): words, tone and icon, so the state never rests on colour.
-const BATCH_WORDS = { waiting: STATUS.waiting, working: STATUS.updating, done: STATUS.done,
-  "went-back": STATUS.wentBack, failed: STATUS.failed, skipped: STATUS.notStarted,
-  held: STATUS.heldBack };
-
-const byWords = (by) => (by === "automatic" ? "by itself" : String(by || "").startsWith("api") ? "from the API" : "by you");
-
-// The password dialog every update and Roll back uses: what happens, then the Starboard password. send(password)
-// does the request; a wrong password asks again in the same dialog. Returns send's answer, or null when cancelled.
-async function updateWithPassword({ title, steps, confirm, send }) {
-  const input = el("input", { class: "input", id: `up-pw-${Date.now()}`, type: "password", autocomplete: "current-password", required: true });
-  const err = el("span", { class: "field-error", id: `${input.id}-error`, hidden: true });
-  input.setAttribute("aria-describedby", err.id);
-  const what = el("div", { class: "stack-2" }, el("ul", {}, steps.map((t) => el("li", { text: t }))), el("p", { text: "Enter your Starboard password to go ahead." }));
-  for (;;) {
-    const asked = confirmDialog({ title, message: what, confirm, fields: [el("div", { class: "field" }, el("label", { for: input.id, text: "Your Starboard password" }), input, err)] });
-    if (!(await asked)) return null;
-    try { return await send(input.value); } catch (e) {
-      if (e.status === 401 || e.status === 429) {
-        err.textContent = e.status === 401 ? "That password is not right. Check Caps Lock and try again." : e.message;
-        err.hidden = false; input.setAttribute("aria-invalid", "true"); input.value = "";
-        continue;
-      }
-      throw e;
-    }
-  }
-}
-
 async function startUpdatesPlace() {
   const list = $("#updates-list");
   if (!list) return;
   const summary = $("#up-list-summary"), result = $("#updates-result"), recent = $("#updates-recent"), auto = $("#updates-auto");
   const allBox = $("#updates-all");
-  let data = null, jelly = null, batchShown = null, checked = null, checking = false, jellyRestart = null;
+  let data = null, jelly = null, checked = null, checking = false, jellyRestart = null;
   const load = async () => { data = await api("/api/updates"); };
   try { await load(); } catch (e) { list.removeAttribute("aria-busy"); summary.textContent = `Starboard could not list the updates: ${e.message}`; return; }
 
@@ -916,50 +884,58 @@ async function startUpdatesPlace() {
     }
   };
 
+  // The list is the same table as Apps, Updates (update-table.js): each row has the version you have beside the new one,
+  // its status, and what you can do; ticks and Update chosen update several through Install all updates' batch.
+  const chosen = new Set();
+  const bar = updateSelectionBar({ id: "up-chosen", onUpdate: (b) => batch.install(b, [...chosen]),
+    onClear: () => { chosen.clear(); drawList(); announce("None chosen"); } });
+  const ticks = () => bar.set(chosen.size, batch.running());
+  const canChoose = (t) => t.update_available && t.can_update && t.kind !== "starboard" && !t.held && !t.big_change;
   const action = (t) => {
+    const nameId = `up-${t.id}-l`;
     if (t.kind === "starboard") {
-      if (!t.update_available || !t.can_update || !selfUpdateAsk) return null;
-      const b = el("button", { type: "button", class: "btn btn--primary", "aria-haspopup": "dialog", "aria-describedby": `up-${t.id}-l` }, icon("circle-arrow-up"), "Update now");
+      if (!t.update_available || !t.can_update || !selfUpdateAsk) return [];
+      const b = el("button", { type: "button", class: "btn btn--primary btn--compact", "aria-haspopup": "dialog", "aria-describedby": nameId }, icon("circle-arrow-up"), "Update now");
       b.addEventListener("click", () => selfUpdateAsk());
-      return b;
+      return [b];
     }
     if (t.kind === "plugin") {
-      const pid = t.id.split(":")[1];
-      if (t.update_available) return el("a", { class: "btn btn--primary", href: `/settings-plugin.html?id=${encodeURIComponent(pid)}`, "aria-describedby": `up-${t.id}-l` }, "Read what is new and update");
-      if (t.can_roll_back) return el("a", { class: "btn", href: `/settings-plugin.html?id=${encodeURIComponent(pid)}`, "aria-describedby": `up-${t.id}-l` }, "Roll back");
-      return null;
+      const page = `/settings-plugin.html?id=${encodeURIComponent(t.id.split(":")[1])}`;
+      if (t.update_available) {
+        const wn = el("button", { type: "button", class: "btn btn--compact", "aria-describedby": nameId }, "What is new");
+        wn.addEventListener("click", () => pluginWhatsNew(t, wn));
+        return [wn, t.held ? el("a", { class: "btn btn--compact btn--primary", href: page, "aria-describedby": nameId }, "Update on its page") : null];
+      }
+      return t.can_roll_back ? [el("a", { class: "btn btn--compact", href: page, "aria-describedby": nameId }, "Roll back")] : [];
     }
-    if (!t.update_available || !t.can_update) return null;
-    const b = el("button", { type: "button", class: "btn btn--primary", "aria-haspopup": "dialog", "aria-describedby": `up-${t.id}-l` }, icon("circle-arrow-up"), "Update now");
+    if (!t.update_available || !t.can_update) return [];
+    const b = el("button", { type: "button", class: "btn btn--primary btn--compact", "aria-haspopup": "dialog", "aria-describedby": nameId }, icon("circle-arrow-up"), "Update now");
     b.addEventListener("click", () => startApp(t, b));
-    return b;
+    return [b];
   };
   const row = (t) => {
     const ready = t.update_available;
-    const facts = [t.current ? `You have ${t.current}` : "Version not known", ready && t.latest ? `New: ${t.latest}` : ""].filter(Boolean).join(". ");
     const unknown = !ready && /look for updates first/i.test(t.why || "");  // no look at its image yet
     const why = ready && !t.can_update && t.kind !== "plugin" ? t.why : !ready && t.why && !/up to date|no newer version/i.test(t.why) ? t.why : "";
-    const note = t.kind === "plugin" && ready && t.note ? `What is new: ${t.note}` : "";
-    return el("li", { class: "setting", "data-key": t.id },
-      el("div", { class: "setting__text" },
-        el("span", { class: "setting__label", id: `up-${t.id}-l`, text: t.name }),
-        el("span", { class: "setting__hint" }, `${facts}.`, why ? ` ${why}.`.replace(/\.\.$/, ".") : "", note ? ` ${note}` : ""),
-        el("span", { class: "chips" }, ready ? chip(...STATUS.updateAvailable) : unknown ? chip(...STATUS.notChecked) : chip(...STATUS.upToDate),
-          ready ? (t.automatic ? chip("Updates by itself", "muted", "clock") : chip("Waits for you", "warning", "user")) : null,
-          t.kind === "plugin" ? systemChip(t.system) : null),
-        t.kind === "plugin" ? systemLine(t.system, true) : null),
-      el("div", { class: "setting__control" }, action(t)));
+    const who = ready && !t.held ? (t.automatic ? chip("Updates by itself", "muted", "clock") : chip("Waits for you", "warning", "user")) : null;
+    const status = t.kind === "plugin" ? pluginStatus(t, { extraChips: [who] })
+      : [el("div", { class: "chips" }, ready ? chip(...STATUS.updateAvailable) : unknown ? chip(...STATUS.notChecked) : chip(...STATUS.upToDate), who),
+        why || (ready && t.note) ? el("div", { class: "small muted", text: why || t.note }) : null];
+    const picture = t.kind === "plugin" ? pluginLogo({ name: t.name, logo: t.logo }, { compact: true })
+      : t.icon ? appIcon({ id: t.icon.service, icon: t.icon.v, name: t.name }, "app-icon app-icon--compact") : null;
+    const sub = t.kind === "plugin" && systemChip(t.system) ? el("div", {}, systemChip(t.system), systemLine(t.system, true)) : null;
+    return { id: t.id, key: t.id, name: updateName({ tick: canChoose(t) ? updateTick(t.id, t.name, chosen, ticks, batch.running()) : null, picture,
+      name: t.name, id: `up-${t.id}-l`, sub, href: t.kind === "plugin" ? `/settings-plugin.html?id=${encodeURIComponent(t.id.split(":")[1])}` : "" }),
+      installed: t.current || "Not known", latest: ready ? t.latest : "", status, actions: action(t) };
   };
   const jellyRow = () => {
     if (!jelly?.connected) return null;
     const t = { id: "jellyfin-plugins", kind: "jellyfin-plugins", name: "Jellyfin's plug-ins" };
-    const b = el("button", { type: "button", class: "btn", "aria-haspopup": "dialog", "aria-describedby": "up-jellyfin-plugins-l" }, icon("circle-arrow-up"), "Check for updates and install them");
+    const b = el("button", { type: "button", class: "btn btn--compact", "aria-haspopup": "dialog", "aria-describedby": "up-jellyfin-plugins-l" }, icon("circle-arrow-up"), "Check for updates and install them");
     b.addEventListener("click", () => startApp(t, b));
     const own = jelly.own_schedule ? " Jellyfin also updates them by itself on its own schedule." : "";
     const found = data.jellyfin_waiting || [];
-    const hint = found.length
-      ? `${jelly.count} installed. New versions: ${found.map((j) => `${j.name} ${j.latest}`).join(", ")}.${own}`
-      : `${jelly.count} installed. Jellyfin knows which have new versions: Check for updates asks it.${own}`;
+    const hint = found.length ? "New versions are listed under Latest." : "Jellyfin knows which have new versions: Check for updates asks it.";
     // Restart needed (DASH-470): new plug-in versions wait for Jellyfin's restart when someone was watching. The
     // same Restart Jellyfin stays while it works and after, so a redraw of the list keeps its status.
     if (jelly.restart && jelly.can_restart && !jellyRestart) {
@@ -971,36 +947,32 @@ async function startUpdatesPlace() {
     }
     const restarting = jellyRestart && (jelly.restart || jellyRestart.dataset.state) ? jellyRestart : null;
     if (!restarting) jellyRestart = null;
-    const chips = [found.length ? chip("Update available", "info", "circle-arrow-up") : null, jelly.restart ? chip(...STATUS.restartNeeded) : null].filter(Boolean);
-    return el("li", { class: "setting", "data-key": t.id },
-      el("div", { class: "setting__text" }, el("span", { class: "setting__label", id: "up-jellyfin-plugins-l", text: t.name }),
-        el("span", { class: "setting__hint", text: jelly.restart ? `${hint} New versions start when Jellyfin restarts.` : hint }),
-        chips.length ? el("span", { class: "chips" }, chips) : null, restarting),
-      el("div", { class: "setting__control" }, b));
+    const chips = [found.length ? chip(...STATUS.updateAvailable) : chip(...STATUS.notChecked), jelly.restart ? chip(...STATUS.restartNeeded) : null].filter(Boolean);
+    return { id: t.id, key: t.id, name: updateName({ name: t.name, id: "up-jellyfin-plugins-l" }), installed: `${jelly.count} installed`,
+      latest: found.map((j) => `${j.name} ${j.latest}`).join(", "),
+      status: [el("div", { class: "chips" }, chips), el("div", { class: "small muted", text: `${jelly.restart ? `${hint} New versions start when Jellyfin restarts.` : hint}${own}` }), restarting], actions: [b] };
   };
   const drawList = () => {
+    const had = document.activeElement?.id;
     const items = [...data.items].sort((a, b) => Number(b.update_available) - Number(a.update_available));
     const ready = [...items.filter((t) => t.update_available).map((t) => `${t.name} ${t.latest}`.trim()),
       ...(data.jellyfin_waiting || []).map((j) => `${j.name} ${j.latest} for Jellyfin`)];
     if (!checking) summary.textContent = summaryText(ready);
     list.removeAttribute("aria-busy");
-    redraw(list, [...items.map(row), jellyRow(),
+    for (const id of [...chosen]) if (!items.some((t) => t.id === id && canChoose(t))) chosen.delete(id);  // an update that is no longer waiting
+    list.replaceChildren(updateTable({ caption: "Everything Starboard can update", nameLabel: "Name", rows: [...items.map(row), jellyRow()].filter(Boolean) }), bar.node,
       // The place is said in the words as well as the link (DASH-474: read as text it said "Each app's image is on .").
-      el("li", { class: "setting", "data-key": "look" }, el("div", { class: "setting__text" },
-        el("span", { class: "setting__hint", text: "Check for updates, in Ready to update, checks every part again. Each app's image and its versions are in Apps, Updates." })),
-        el("div", { class: "setting__control" }, el("a", { class: "btn btn--quiet", href: "/apps-updates.html" }, "Open Apps, Updates"))) ].filter(Boolean));
+      el("p", { class: "small muted", "data-key": "look" }, "Check for updates, in Ready to update, checks every part again. Each app's image and its versions are in Apps, Updates. ",
+        el("a", { href: "/apps-updates.html", text: "Open Apps, Updates" }), "."));
+    ticks();
+    if (had && document.getElementById(had)) document.getElementById(had).focus();
   };
-  // What Ready to update says (a polite live region): what is ready, and after Check for updates when it looked and
-  // what it could not reach.
+  // What Ready to update says (a polite live region), in the words Apps, Updates uses: when it was last checked, how many
+  // updates wait, and what could not be reached.
   const summaryText = (ready) => {
     const kept = data.apps_checked;  // the apps' last look, kept across a restart (DASH-548)
-    const when = checked ? `Checked at ${new Date(checked.checked_at * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}. `
-      : kept ? `The apps were last checked ${checkedWhen(kept.at, kept.restored)}. ` : "";
-    const what = ready.length
-      ? `${ready.length} ${ready.length === 1 ? "update is" : "updates are"} ready: ${ready.join(", ")}.`
-      : checked ? "Everything is up to date." : "Everything Starboard knows about is up to date.";
     const missed = (checked?.parts || []).filter((p) => !p.ok).map((p) => `${p.name}: ${p.said}.`);
-    return `${when}${what}${missed.length ? ` Could not check everything. ${missed.join(" ")}` : ""}`;
+    return updateSummary({ checkedAt: checked ? checked.checked_at : kept ? kept.at : 0, restored: !checked && !!kept?.restored, count: ready.length, names: ready, missed });
   };
   const drawRecent = () => {
     const runs = data.recent || [];
@@ -1053,9 +1025,9 @@ async function startUpdatesPlace() {
   // Check for updates and What is new (DASH-462): Check for updates asks every part now (nothing is asked on page
   // load); What is new reads every waiting update's notes only when pressed. Install all updates shows from one update.
   const waitingUpdates = () => data.items.filter((t) => t.update_available);
-  const waitingCount = () => waitingUpdates().length + (data.jellyfin_waiting || []).length;
+  const waitingCount = () => data.counts.total + (data.jellyfin_waiting || []).length;  // one count: the server's (update_runs.counts)
   const drawAll = () => {
-    if (batchShown?.running()) return;
+    if (batch.running()) return;
     const n = waitingCount();
     const had = document.activeElement?.id;
     const check = el("button", { type: "button", class: "btn", id: "check-updates-now", "aria-describedby": "install-all-hint" },
@@ -1075,7 +1047,7 @@ async function startUpdatesPlace() {
     const hint = n ? "One at a time, each with a copy first, a check afterwards and the way back. Starboard updates last."
       : "Check for updates asks Starboard, the apps, Reelix, the plug-ins and Jellyfin for new versions now.";
     allBox.replaceChildren(...[el("div", { class: "actions" }, ...buttons), el("p", { class: "small muted", id: "install-all-hint", text: hint }),
-      batchShown?.node].filter(Boolean));
+      batch.node()].filter(Boolean));
     if (had && ["check-updates-now", "install-all", "whats-new"].includes(had)) (document.getElementById(had) || check).focus();
   };
   const checkNow = async () => {
@@ -1132,150 +1104,19 @@ async function startUpdatesPlace() {
     panel.setBody([el("p", { text: "Everything new from the version you have to the one ready, for each update. Each kind of change lists the newest first." }),
       r.items.length > 1 ? jump : null, ...sections].filter(Boolean));
   };
-  const planLine = (i) => (i.kind === "jellyfin-plugins" ? `${i.name}: ${i.note || "Jellyfin installs any new versions it has"}, and restarts once at the end, when nobody is watching`
-    : i.from && i.to ? `${i.name} ${i.from} to ${i.to}` : `${i.name} ${i.to}`.trim());
-  // The dialog counts what will run (Jellyfin's plug-ins as one), as the panel does; the page button counts what is
-  // ready. These sentences join the two: "4 of the 6 updates ready, plus Jellyfin's plug-ins. They install one at a
-  // time, in this order."
-  const introText = (plan) => {
-    const known = plan.items.filter((i) => i.kind !== "jellyfin-plugins").length, ready = waitingUpdates().length;
-    const jf = plan.items.length > known ? ", plus Jellyfin's plug-ins" : "";
-    const which = known === ready ? `${ready === 1 ? "The update" : `All ${ready} updates`} ready${jf}` : `${known} of the ${ready} updates ready${jf}`;
-    if (plan.items.length === 1) return `${which}. If it does not work, it goes back by itself.`;
-    return `${which}. They install one at a time, in this order. One that does not work goes back by itself, and the rest carry on.`;
-  };
-  const installAll = async (opener) => {
-    let password = "";
-    let plan;
-    try {
-      plan = await updateWithPassword({ title: "Install all updates", confirm: "Continue",
-        steps: ["Starboard checks each waiting update, then shows you what will install before anything does.",
-          "They install one at a time, each with a copy first, a check afterwards and the way back.",
-          "Starboard updates last. It restarts, and this page reconnects by itself."],
-        send: async (pw) => { const r = await api("/api/updates/all/plan", { method: "POST", body: { password: pw } }); password = pw; return r; } });
-    } catch (e) {
-      const box = notice("danger", "Starboard could not list the updates", e.message);
-      box.setAttribute("tabindex", "-1"); result.replaceChildren(box); box.focus();
-      return;
-    }
-    if (!plan) { opener?.focus(); return; }
-    const held = plan.held.length ? [el("h3", { text: `Held back for you (${plan.held.length})` }),
-      el("ul", { class: "update-plan" }, plan.held.map((h) => el("li", {}, el("strong", { text: `${h.name} ${h.to}`.trim() }), `: ${h.why}.`.replace(/\.\.$/, "."))))] : [];
-    if (!plan.count) {
-      const box = notice("info", "Nothing can install all at once", "Each update waiting needs you to choose it on its own.");
-      box.setAttribute("tabindex", "-1");
-      result.replaceChildren(box, ...held);
-      box.focus();
-      return;
-    }
-    const words = `${plan.items.length} ${plan.items.length === 1 ? "update" : "updates"}`;  // what the list shows, as the panel counts
-    const message = el("div", { class: "stack-2" },
-      el("p", { text: introText(plan) }),
-      el("ol", { class: "update-plan" }, plan.items.map((i) => el("li", { text: planLine(i) }))),
-      ...held);
-    const ok = await confirmDialog({ title: `Install ${words}`, message, confirm: `Install ${words}` });
-    if (!ok) { opener?.isConnected && opener.focus(); return; }
-    try {
-      const r = await api("/api/updates/all/start", { method: "POST", body: { password, targets: plan.items.map((i) => i.target) } });
-      password = "";
-      showBatch(r.batch, true);
-    } catch (e) {
-      password = "";
-      const box = notice("danger", "The updates did not start", e.message);
-      box.setAttribute("tabindex", "-1"); result.replaceChildren(box); box.focus();
-    }
-  };
-  // The batch's panel: each update with its state in words and an icon, the count, what is happening now, a polite
-  // live region for each change, and the result at the end. It asks every 2 seconds while the batch runs, and keeps
-  // asking while Starboard restarts (no answer for about a minute), then shows how it ended. The words say whether it
-  // is still working (#161): "Installing updates" and "4 of 5 done" over a moving bar, then how it ended, with Close.
-  const batchEnd = (v) => (v.state === "updated" ? "All updates finished" : v.state === "failed" ? "The updates stopped" : "Some updates did not install");
-  const showBatch = (b, focus = false) => {
-    const head = el("h3", { id: "update-all-h", tabindex: "-1", text: b.finished ? "Install all updates finished" : "Installing all updates" });
-    const count = el("span", { class: "numeric" });
-    const label = el("span", { text: b.finished ? batchEnd(b) : "Installing updates" });
-    const bar = el("div", { class: `progress${b.finished ? "" : " progress--running"}`, role: "progressbar", "aria-labelledby": "update-all-count", "aria-valuemin": "0" }, el("span"));
-    const meter = el("div", { class: "meter" }, el("div", { class: "meter__label", id: "update-all-count" }, label, count), bar);
-    const now = el("p", { class: "task-now small", role: "status" });
-    const list = el("ul", { class: "task-list", "aria-label": "Each update" });
-    const res = el("div", { class: "stack-2" });
-    const live = el("div", { class: "visually-hidden", role: "status", "aria-live": "polite" });
-    const node = el("section", { class: "update-all", "aria-labelledby": "update-all-h" }, head, meter, now, list, res, live);
-    const states = new Map();
-    let running = !b.finished, misses = 0;
-    const draw = (v) => {
-      count.textContent = `${v.ended} of ${v.count} done`;
-      label.textContent = v.finished ? batchEnd(v) : "Installing updates";
-      bar.classList.toggle("progress--running", !v.finished);
-      bar.setAttribute("aria-valuemax", String(v.count || 1));
-      bar.setAttribute("aria-valuenow", String(v.ended));
-      bar.setAttribute("aria-valuetext", `${v.finished ? batchEnd(v) : "Installing updates"}, ${v.ended} of ${v.count} done`);
-      // DASH-489: while it runs the bar is never empty: 1% from the first moment, then each update that ends adds its
-      // share. The count in aria-valuenow and the words stay the true count (0 of 5 until the first one ends).
-      const share = v.count ? Math.round((100 * v.ended) / v.count) : 100;
-      bar.firstChild.style.width = `${v.finished ? share : Math.max(1, share)}%`;
-      const changes = [];
-      list.replaceChildren(...v.items.map((i) => {
-        const [word, tone, ic] = BATCH_WORDS[i.state] || BATCH_WORDS.waiting;
-        const li = el("li", { class: "task-list__item", "data-state": i.state },
-          el("span", { class: "task-list__name", text: i.label }), chip(word, tone, ic),
-          i.detail ? el("span", { class: "task-list__detail small muted", text: i.detail }) : null);
-        if (i.state === "working") li.setAttribute("aria-current", "step");
-        const before = states.get(i.target);
-        if (before && before !== i.state) changes.push(`${i.label}: ${word}`);
-        states.set(i.target, i.state);
-        return li;
-      }));
-      if (changes.length) live.textContent = changes.join(". ");
-      now.textContent = v.finished ? "" : v.said ? `Now: ${v.said}` : "";
-      now.hidden = v.finished || !v.said;
-    };
-    const end = async (v, followed = true) => {
-      running = false;
-      head.textContent = "Install all updates finished";
-      label.textContent = batchEnd(v);
-      bar.classList.remove("progress--running");
-      const tone = v.state === "updated" ? "success" : v.state === "failed" ? "danger" : "warning";
-      const title = batchEnd(v);
-      const box = notice(tone, title, v.said);
-      box.setAttribute("tabindex", "-1");
-      // Close (DASH-473): takes the finished panel away for good, and focus goes to Ready to update's heading.
-      const close = el("button", { type: "button", class: "btn", id: "update-all-close" }, icon("x"), "Close",
-        el("span", { class: "visually-hidden", text: " Install all updates" }));
-      close.addEventListener("click", () => closeBatch(b.id));
-      res.replaceChildren(box, el("div", { class: "actions" }, close));
-      if (!followed) { drawAll(); return; }  // ended before the page opened: shown with the button, nothing announced or moved
-      live.textContent = `${title}. ${v.said}`;
-      const there = document.activeElement === document.body || node.contains(document.activeElement);
-      await refresh();
-      if (there) box.focus();  // focus moves to the result only from the panel, never away from what you are doing
-    };
-    const look = async () => {
-      let v = null;
-      try { v = await api(`/api/updates/all/${b.id}`); misses = 0; } catch { misses += 1; }
-      if (v) { draw(v); if (v.finished) { end(v); return; } }
-      else if (misses === 1) { now.hidden = false; now.textContent = "Starboard is restarting. This reconnects by itself."; }
-      setTimeout(look, v ? 2000 : 3000);
-    };
-    draw(b);
-    batchShown = { id: b.id, node, running: () => running };
-    allBox.replaceChildren(node);
-    if (focus) head.focus();
-    if (b.finished) end(b, false); else setTimeout(look, 2000);
-  };
-
-  // Close on the finished panel: Starboard is told, so the panel does not come back when the page opens again; it
-  // goes from the page even when that cannot be saved. Focus moves to Ready to update, and the change is announced.
-  const closeBatch = async (id) => {
-    try { await api(`/api/updates/all/${id}/close`, { method: "POST" }); } catch { /* closed on this page only */ }
-    batchShown = null;
-    if (data.batch?.id === id) data.batch = null;
-    drawAll();
-    const h = document.getElementById("up-list-h");
-    h.setAttribute("tabindex", "-1");
-    h.focus();
-    announce("Install all updates closed. Ready to update.");
-  };
+  // Install all updates: the plan, the password and the panel are shared with Settings, Plug-ins, Manage (update-run.js).
+  const batch = updateBatchPanel({ mount: allBox, result, ready: () => waitingUpdates().length,
+    onSettled: (followed) => (followed ? refresh() : drawAll()),
+    onClosed: (id) => {
+      if (data.batch?.id === id) data.batch = null;
+      drawAll();
+      const h = document.getElementById("up-list-h");
+      h.setAttribute("tabindex", "-1");
+      h.focus();
+      announce("Install all updates closed. Ready to update.");
+    } });
+  const installAll = (opener) => batch.install(opener);
+  const showBatch = (b, focus) => batch.show(b, focus);
   const refresh = async () => { try { await load(); } catch { return; } drawList(); drawRecent(); drawAll(); };
   updatesRefresh = refresh;
   drawList();
