@@ -462,7 +462,7 @@ if (!pages.length || pages.some((p) => p.includes("settings-updates-plugins") ||
       await page.goto(`${base}/${name}`);
       await settle();
       await page.locator("#plu-check").click();
-      await page.locator("#plu-result", { hasText: /Read \d+ catalogue|Try again in/ }).waitFor({ timeout: 30000 });
+      await page.locator("#plu-check-result", { hasText: /Read \d+ catalogue|Try again in/ }).waitFor({ timeout: 30000 });
       await scanP(`${name}, after Check for updates now`);
     }
     await page.locator("#plugin-updates button", { hasText: "What is new" }).first().click();

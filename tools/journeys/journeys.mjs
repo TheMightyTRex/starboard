@@ -1161,13 +1161,13 @@ check("PU-01", "Updates, Plug-ins lists each plug-in in a table with the version
   && (await page.locator("#plu-check").count()) === 1 && (await page.locator("#plu-update-all").count()) === 1);
 await page.locator("#plu-check").focus();
 await page.keyboard.press("Enter");
-await page.waitForFunction(() => /Read \d+ catalogue|Try again in/.test(document.getElementById("plu-result")?.textContent || ""), null, { timeout: 15000 }).catch(() => {});
+await page.waitForFunction(() => /Read \d+ catalogue|Try again in/.test(document.getElementById("plu-check-result")?.textContent || ""), null, { timeout: 15000 }).catch(() => {});
 check("PU-02", "Check for updates now says what it read, keeps focus on the button and writes the summary again",
-  /Read \d+ catalogue|Try again in/.test(await page.locator("#plu-result").innerText()) && (await page.evaluate(() => document.activeElement?.id)) === "plu-check"
+  /Read \d+ catalogue|Try again in/.test(await page.locator("#plu-check-result").innerText()) && (await page.evaluate(() => document.activeElement?.id)) === "plu-check"
   && /last read/.test(await page.locator("#plu-summary").innerText()));
 await page.locator("#plu-check").click();
 await page.waitForTimeout(800);
-check("PU-03", "pressed again at once it says how long to wait and reads nothing more", /Try again in \d+ seconds/.test(await page.locator("#plu-result").innerText()));
+check("PU-03", "pressed again at once it says how long to wait and reads nothing more", /Try again in \d+ seconds/.test(await page.locator("#plu-check-result").innerText()));
 const puRow = pu.locator("tbody tr").first();
 check("PU-04", "the first row has a tick and What is new, and Update chosen shows only after a tick",
   (await puRow.locator("input.updates-choose").count()) === 1 && (await puRow.getByRole("button", { name: /What is new/ }).count()) === 1 && (await page.locator("#plu-chosen").isHidden()));

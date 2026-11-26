@@ -1366,7 +1366,7 @@ const chk = await tabTo((f) => f.id === "plu-check", 80);
 check("T-PLU", "Tab reaches Check for updates now", !!chk, "not reached");
 if (chk) {
   await page.keyboard.press("Enter");
-  await page.waitForFunction(() => /Read \d+ catalogue|Try again in/.test(document.getElementById("plu-result")?.textContent || ""), null, { timeout: 15000 }).catch(() => {});
+  await page.waitForFunction(() => /Read \d+ catalogue|Try again in/.test(document.getElementById("plu-check-result")?.textContent || ""), null, { timeout: 15000 }).catch(() => {});
   const after = await focus();
   check("T-PLU", "after the check, focus is still on the button", after.id === "plu-check", `${after.id} ${after.text}`);
   const said = await page.evaluate(() => [...document.querySelectorAll("[role=status], [aria-live=polite]")].map((n) => n.textContent).join(" | "));
