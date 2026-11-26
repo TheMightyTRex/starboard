@@ -99,6 +99,10 @@ select **What is new**. Read [Add a plug-in from a zip file](add-a-plugin-from-a
 - **The plug-in says Not answering after an update:** select **Roll back to** and the version you had, then tell the
   plug-in's maker.
 
+## If a plug-in says Needs an update
+
+This Starboard cannot run that plug-in as it is, so Starboard has stopped it. The plug-in's page says why. Its settings and data are kept. Select **Check for an update**. If a newer version fits, update it and select **Activate**. If none fits yet, the plug-in stays stopped until its maker updates it. [Our promise to plug-in developers](../developers/compatibility-promise.md) explains when this can happen.
+
 ## Find out more
 
 - [Add a plug-in](add-a-plugin.md)
