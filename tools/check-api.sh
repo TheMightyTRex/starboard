@@ -26,6 +26,9 @@ step "API reference page is up to date"
 python3 tools/make_api_reference.py --check
 step "AI-readable developer pages (llms-full.txt) are up to date"
 python3 tools/make_llms_full.py --check
+step "API compatibility: nothing taken away, older plug-in manifests still pass (DASH-603)"
+python3 tools/api_compat.py --check
+python3 tools/api_compat.py --frozen
 step "API contract tests"
 python3 -m unittest tests.test_api_v1
 step "Plug-in tests"

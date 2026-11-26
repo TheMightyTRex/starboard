@@ -64,6 +64,9 @@ first, is checked afterwards and goes back by itself if it does not work, and th
 1. Go to **Settings**, then **Updates**. At the top of **Ready to update**, select **Install all updates**. The
    button says how many are waiting, such as **Install 1 update** or **Install all 6 updates**. To read their notes
    first, read [What is new in every update](#what-is-new-in-every-update).
+   The list under **Ready to update** is a table, the same as **System**, **Apps**, **Updates**: each row shows the version you have
+   beside the new one. To install only some, tick them and select **Update chosen**. The line above the table says when
+   Starboard last checked and how many updates are waiting.
 2. Enter **Your Starboard password** and select **Continue**. Starboard checks each waiting update.
 3. A dialog lists what will install, in the order it installs. Under **Held back for you**, it lists any update that
    always waits for you, with the reason:
