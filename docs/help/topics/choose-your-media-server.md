@@ -11,8 +11,8 @@ in one step for 24 hours. Starboard never switches by itself.
 ## Before you begin
 
 - You can sign in to Starboard.
-- To use a different media server, add it first from the catalogue's **Media servers** tab. Read
-  [Add a plug-in](add-a-plugin.md).
+- To use Emby or Plex, add its plug-in from the catalogue's **Media servers** tab, and add the app itself in **Manage
+  apps** with its address and key, as set out under **Use Emby or Plex** below. Read [Add a plug-in](add-a-plugin.md).
 
 ## Steps
 
@@ -32,6 +32,23 @@ in one step for 24 hours. Starboard never switches by itself.
    it becomes your media server and the old one stays added, with its address and key.
 
    ![Choose a media server, with the choices and Use this media server (step 2) outlined, with example data](../images/choose-your-media-server-5-choose.png)
+
+### Use Emby or Plex
+
+Emby and Plex are built into Starboard like Jellyfin, and read only for now: Starboard shows their status, libraries, what is
+playing and what was added, on the dashboard, in Activity and in System. Play in Jellyfin, Watched, Live TV and the other
+Jellyfin tools stay with Jellyfin.
+
+1. Go to **Settings**, then **Plug-ins**, then **Catalogue**, then the **Media servers** tab. Select **Install** beside
+   **Emby** or **Plex**, read **What it may do**, enter your Starboard password and select **Install**.
+2. Go to **Settings**, then **Apps**, then **Manage apps**. Add the app as an **Other app** with the icon `emby` or `plex`,
+   the address Starboard uses to reach it, and its key. For Emby, make a key in its dashboard under **API keys**. For
+   Plex, use its token: in Plex's web app open an item, then **Get info**, then **View XML**, and copy the value after
+   `X-Plex-Token=` from the address.
+3. Go to **Settings**, then **Apps**, then **Media server**, choose it and select **Use this media server**. Starboard
+   checks that it answers first.
+
+Starboard sends the key in a header, never in an address, so it does not reach a log.
 
 ### Go back
 
@@ -66,7 +83,7 @@ For 24 hours after a change, **The way back** says which media server you had.
   Nothing is removed.
 - If you never had Jellyfin, it is added but not active, and says it is not set up. If you removed it on purpose,
   Starboard does not add it again.
-- Nothing runs for it, so it uses no extra container and no memory of its own. Your Jellyfin settings and backups restore
+- Nothing runs for a media server plug-in, so it uses no extra container and no memory of its own. Your Jellyfin settings and backups restore
   as before.
 
 ## If it does not work

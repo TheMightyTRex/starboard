@@ -120,7 +120,7 @@ class Choice(unittest.TestCase):
     def test_the_state_says_which_are_added_and_the_way_back(self):
         got = mediaserver.state({"extras": {"media_server": "plex", "media_server_back": {"id": "jellyfin", "at": 1}}, "services": []}, ["plex"], now=2)
         self.assertEqual((got["active"], got["added"], got["back"]["name"]), ("plex", ["plex"], "Jellyfin"))
-        self.assertEqual(mediaserver.state({}, None)["added"], ["jellyfin", "plex"])
+        self.assertEqual(mediaserver.state({}, None)["added"], ["emby", "jellyfin", "plex"])
 
 
 class Check(unittest.TestCase):
