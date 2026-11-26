@@ -36,6 +36,7 @@ const CARD_BAND = {
   alerts: { own: "bell" },
   links: { own: "link" },
 };
+const JSON_BAND = { own: "list", time: true };  // a custom card for any service's JSON (DASH-555): its own name, and when it was asked
 let services = [];  // the apps set up, from /api/config, for the logos
 const LAYOUTS = {
   glance: { name: "At a glance", cards: [["playing", "half"], ["health", "half"], ["downloads", "half"], ["coming", "half"], ["recent", "full"],
@@ -167,6 +168,23 @@ const CARDS = {
   },
 };
 
+// A custom card for any service's JSON (DASH-555): Starboard asks its address when the card is shown (the server keeps the
+// answer for the card's refresh time), and draws the chosen fields as keys and values. The text is never treated as HTML.
+async function jsonCard(id) {
+  let r;
+  try { r = await api(`/api/json-cards/${id}/answer`); } catch (e) {
+    if (e.status === 404) return empty("This custom card was removed. Take it off the dashboard with Edit dashboard.");
+    throw e;
+  }
+  if (r.problem) return band(STATUS.notWorking, empty(r.problem, "/apps-services.html#custom-cards-h", "Check it in Other services"));
+  const worst = { ok: STATUS.healthy, warning: STATUS.needsAttention, problem: STATUS.notWorking }[r.state] || null;
+  const rows = r.items.flatMap((it) => {
+    const st = { ok: STATUS.healthy, warning: STATUS.needsAttention, problem: STATUS.notWorking }[it.state];
+    return [el("dt", { text: it.label }), el("dd", {}, it.value, it.unit ? ` ${it.unit}` : null, st ? " " : null, st ? chip(st[0], st[1]) : null)];
+  });
+  return { ...band(worst, el("dl", { class: "facts" }, rows)), asked: r.asked * 1000 };
+}
+
 // Cards from active plug-ins (DASH-149): Starboard asks the plug-in and draws the answer itself, as text only.
 let pluginCards = {};
 const FORMATS = {
@@ -251,7 +269,7 @@ const band = (chipOf, node) => ({ node, chip: chipOf });
 // The logo for a built-in card (CARD_BAND): the one app's own icon, or the card's design system icon on the tile.
 const appOf = (s) => (s.icon === "reelix" ? "reelix" : s.type);
 function cardLogo(id) {
-  const b = CARD_BAND[id] || {};
+  const b = CARD_BAND[id] || (id.startsWith("json:") ? JSON_BAND : {});
   const on = services.filter((s) => s.enabled !== false && (b.apps || []).includes(b.byType ? s.type : appOf(s)));
   const kinds = [...new Set(on.map(appOf))];
   const app = b.first ? b.apps.find((k) => kinds.includes(k)) : kinds.length === 1 ? kinds[0] : null;
@@ -374,11 +392,12 @@ function focusWalk(button) {
 async function fill(c, body, card) {
   try {
     const plugin = c.id.startsWith("plugin:");
-    const out = plugin ? (pluginCards[c.id] ? await pluginCard(c.id) : empty("Its plug-in is not active.")) : await CARDS[c.id]();
+    const out = plugin ? (pluginCards[c.id] ? await pluginCard(c.id) : empty("Its plug-in is not active."))
+      : c.id.startsWith("json:") ? await jsonCard(c.id.slice(5)) : await CARDS[c.id]();
     if (out === null && c.id === "setup" && !editing) { card.remove(); return; }  // everything is set up
     const node = out && !(out instanceof Node) ? out.node : out;
     body.replaceChildren(node || empty("Nothing to show."));
-    if (!plugin) bandSide(card.querySelector(".card-band__side"), out?.chip?.[0], out?.chip?.[1], CARD_BAND[c.id]?.time ? Date.now() : 0, out?.action);
+    if (!plugin) bandSide(card.querySelector(".card-band__side"), out?.chip?.[0], out?.chip?.[1], (CARD_BAND[c.id] || (c.id.startsWith("json:") ? JSON_BAND : null))?.time ? (out?.asked || Date.now()) : 0, out?.action);
     if (out?.action && c.id === "setup") focusWalk(out.action);
   } catch (e) {
     body.replaceChildren(empty(e.status === 409 || e.status === 400 ? e.message : "Could not ask."));
@@ -466,6 +485,9 @@ function startEdit() {
 startPage().then(async (session) => {
   if (!session) return;
   try { const cfg = await ask("/api/config"); dash = cfg.dashboard || dash; services = cfg.services || []; } catch { /* the default layout */ }
+  try {
+    for (const c of (await api("/api/json-cards")).cards) CARD_TITLES[`json:${c.id}`] = c.name;  // nothing is asked of any service
+  } catch { /* no custom cards */ }
   try {
     for (const c of (await api("/api/plugins/cards")).cards) { pluginCards[c.id] = c; CARD_TITLES[c.id] = `${c.title} (${c.plugin})`; }
   } catch { /* no plug-in cards */ }

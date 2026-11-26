@@ -1122,6 +1122,43 @@ if (whyBtn) {
   check("T-WHY", "Escape gives focus back to Why is this here?", out.id === "why-here", out.id || out.text);
 }
 
+// T-JSON (DASH-555) A custom card by keyboard alone: its row is reached with Tab, Enter opens the panel with focus inside it,
+// Ask the address lists the fields (said in a polite status), Space ticks a field and focus stays on it while the "On the card"
+// count changes, Remove on a chosen field says so and keeps focus in the panel, and Escape gives focus back to the card's row.
+await page.goto(`${base}/apps-services.html`);
+await settle();
+const jsonRow = await tabTo((f) => f.text === "Download client" && f.tag === "BUTTON", 80);
+check("T-JSON", "a custom card's name can be reached with Tab", !!jsonRow);
+if (jsonRow) {
+  await page.keyboard.press("Enter");
+  await page.waitForSelector("#side-panel #jc-ask", { timeout: 8000 }).catch(() => {});
+  const inside = await focus();
+  check("T-JSON", "the panel opens with focus inside it", inside.inPanel, inside.text);
+  await page.focus("#jc-ask");
+  await page.keyboard.press("Enter");
+  await page.waitForSelector("#jc-filter", { timeout: 8000 }).catch(() => {});
+  check("T-JSON", "the fields it answers with are said in a polite status", /Choose the fields to show/.test(await page.locator("#jc-status").textContent()) && (await page.locator("#jc-status").getAttribute("role")) === "status");
+  check("T-JSON", "the count of fields is in a status region", /\d+ of \d+ fields/.test(await page.locator("#jc-count[role=status]").textContent()));
+  const before = await page.locator("#jc-chosen-h").textContent();
+  const box = page.locator("#jc-pick-5");
+  await box.focus();
+  await page.keyboard.press("Space");
+  await page.waitForTimeout(300);
+  const after = await page.locator("#jc-chosen-h").textContent();
+  check("T-JSON", "Space ticks a field and the On the card count changes", before !== after, `${before} -> ${after}`);
+  const kept = await focus();
+  check("T-JSON", "focus stays on the ticked field", kept.id === "jc-pick-5", kept.id || kept.text);
+  await page.focus("#jc-f0-remove");
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  const afterRemove = await focus();
+  check("T-JSON", "removing a chosen field keeps focus inside the panel", afterRemove.inPanel, afterRemove.id || afterRemove.text);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(500);
+  const out = await focus();
+  check("T-JSON", "Escape gives focus back to the card's name", out.tag === "BUTTON" && out.text === "Download client", out.id || out.text);
+}
+
 // T-SIGNIN (DASH-512) Set up a two-step code by keyboard alone: the dialog asks for the password first, the slide-out
 // starts in the code field, the recovery codes end on I have saved them, and focus is never lost to the top.
 await page.goto(`${base}/settings-security-signin.html`);

@@ -288,7 +288,7 @@ class PhoneSignIn(Base):
         b = self.svc.base
         hook = {"device": {sid: {"code": b + "/device/code", "token": b + "/token", "pages": ("127.0.0.1",)} for sid in ("drive", "onedrive")},
                 "graph": b + "/me/drive", "hosts": ("127.0.0.1",)}
-        self.p += [mock.patch.object(cc, "TEST_HOOK", hook),
+        self.p += [mock.patch.object(cc, "TEST_HOOK", hook), mock.patch.object(cc, "PHONE_PAUSE", 0.05),  # the poll every 2 s becomes every 0.1 s
                    mock.patch.dict(os.environ, {"STARBOARD_GOOGLE_CLIENT_ID": "standin.apps.example", "STARBOARD_GOOGLE_CLIENT_SECRET": "x",
                                                 "STARBOARD_MICROSOFT_CLIENT_ID": "standin-ms"})]
         for p in self.p[1:]:
@@ -305,8 +305,9 @@ class PhoneSignIn(Base):
         self.assertEqual(s["page"], self.svc.base + "/device")
         self.assertGreater(s["qr"]["size"], 20)
         self.assertTrue(s["qr"]["path"].startswith("M"))
-        time.sleep(1.5)
+        time.sleep(0.5)  # several polls at 0.1 s
         self.assertEqual(cc.current()["state"], "phone")  # nothing yet: authorization_pending
+        self.assertGreaterEqual(len([r for r in self.svc.requests if r[1] == "/token"]), 2)
         self.svc.approve(s["user_code"])
         self.assertTrue(wait_for(lambda: cc.current()["state"] == "signed-in", 10))
         conf = cc._session["config"]
@@ -337,16 +338,19 @@ class PhoneSignIn(Base):
         self.assertIn("Try again", cc.current()["error"])
 
     def test_starboard_own_time_limit(self):
-        with mock.patch.object(cc, "PHONE_LIMIT", 2):
+        with mock.patch.object(cc, "PHONE_LIMIT", 1):
             s = cc.start(self.data, "onedrive", "phone")
-            self.assertLessEqual(s["seconds_left"], 2)
+            self.assertLessEqual(s["seconds_left"], 1)
             self.assertTrue(wait_for(lambda: cc.current()["state"] == "expired", 8))
 
     def test_closing_stops_the_waiting(self):
         s = cc.start(self.data, "drive", "phone")
         cc.cancel()
+        time.sleep(0.15)  # a poll that was already waiting ends
+        asked = len(self.svc.requests)
         self.svc.approve(s["user_code"])
-        time.sleep(2.5)
+        time.sleep(0.5)  # five polls would have passed
+        self.assertEqual(len(self.svc.requests), asked)
         self.assertEqual(cc.current(), {"state": "none"})
 
     def test_slow_down_waits_longer(self):
@@ -359,8 +363,7 @@ class PhoneSignIn(Base):
             return 400, {"error": "slow_down"}
         with mock.patch.object(cc, "HTTP", http):
             cc.start(self.data, "drive", "phone")
-            time.sleep(2.3)
-            self.assertEqual(cc._session["interval"], 7)
+            self.assertTrue(wait_for(lambda: cc._session["interval"] == 7, 3))
 
     def test_a_page_somewhere_else_is_never_shown(self):
         def http(url, form=None, headers=None):
@@ -494,6 +497,7 @@ class SignInLog(Base):
         cc.answer(s["id"], "http://localhost:53682/?code=dbx-secret-code&state=Abc123_state-XYZ")
         self.run.finish(sess, {"access_token": "at-secret", "token_type": "Bearer", "refresh_token": "rt-secret", "expiry": "2026-11-16T12:00:00Z"})
         self.assertTrue(wait_for(lambda: cc.current()["state"] == "signed-in"))
+        self.assertTrue(wait_for(lambda: "signed in" in self.words("cloud sign-in")))  # the line follows the state a moment later
         said = self.words("cloud sign-in")
         for step in ("Dropbox in this browser: started", "sign-in page ready at www.dropbox.com", "the pasted address was not used",
                      "was pasted back", "signed in"):

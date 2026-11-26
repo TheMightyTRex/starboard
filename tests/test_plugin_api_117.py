@@ -85,7 +85,7 @@ class SparklineCard(unittest.TestCase):
         self.assertEqual(plugins.key_scopes(m), ["media"])
         self.assertEqual(plugins.PERMISSIONS["alerts:send"][1:], ("low", None))
         self.assertIn("Alerts: it can send alerts through Starboard, to where Starboard sends its own", plugins.install_warning(m)["change"])
-        self.assertEqual(plugins.API_VERSION, "1.17.0")
+        self.assertGreaterEqual(tuple(map(int, plugins.API_VERSION.split("."))), (1, 17, 0))
 
 
 ALERTING = {**ON_DEMAND, "id": "advanced-dashboard", "name": "Advanced dashboard", "permissions": ["apps:read", "alerts:send"],

@@ -10,7 +10,7 @@ is ready to use.
 ## Before you begin
 
 - The plug-in is in the **Catalogue**, or you have its manifest address, its `starboard-plugin.json` file or its
-  installer. Plug-ins you can add are also listed in [The plug-in collection](../basics/plugin-collection.md).
+  installer. Plug-ins you can add are also listed in [The plug-in collection](../basics/plugin-collection.md), and you can browse them in the [Stallboard plug-in store](https://themightytrex.github.io/stallboard/).
 - You know your Starboard password. Adding and removing a plug-in ask for it.
 - To understand what a plug-in can and cannot do first, read
   [What a plug-in can change](../basics/what-plugins-can-change.md).
@@ -47,6 +47,24 @@ is ready to use.
 **Activate** or **Deactivate**, and **Remove**. Each plug-in also has its own tab after **Catalogue**. Its first
 tab, **General**, has a card each for **State**, **Versions**, **Jobs** (when it has any), **What it may do** and
 **Remove**. Its other tabs hold its settings, its own screens and its styles.
+
+### Check which system a plug-in needs
+
+Some plug-ins work with one system only, such as a plug-in for Jellyfin. Starboard says so in words, next to the
+plug-in's name, so you know before you install it. Read the tag in three places: the **Catalogue**, the list under
+**Settings**, **Plug-ins**, **Manage**, and the plug-in's own **General** tab, in the **State** card, on the **What it needs** line.
+
+1. In the **Catalogue**, find the tag under the plug-in's description, such as **Jellyfin only**, **Plex or Emby** or
+   **Needs Reelix**.
+2. When that system is not on this Starboard, a line under the tag says why, such as "Needs Jellyfin, which this
+   Starboard does not use". You can still install the plug-in, for example to add Jellyfin next.
+3. A plug-in you already installed whose system has gone says **Waiting** on its **General** tab and in **Manage**. It is not
+   stopped, and it keeps its settings. It carries on when that system is back. **Ready to update** shows the same tag.
+
+![Settings, Plug-ins, Catalogue, with a plug-in row that says Jellyfin only (step 1) outlined](../images/add-a-plugin-7-needs.png)
+
+A plug-in's maker can name the system in its manifest. For older plug-ins Starboard works it out from what they may use,
+such as Jellyfin's key. Read [The `requires` field](../developers/plugin-manifest-reference.md#what-it-needs-requires).
 
 ### Add the Stallboard catalogue
 
