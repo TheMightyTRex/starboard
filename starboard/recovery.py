@@ -136,9 +136,9 @@ def check(app, verdict, status_all=None, pool_status=None, backup_status=None):
     if backup.get("state") == "running":
         try:
             full_backup._say(data_dir, state="failed", error="Stopped when the server went off. Make it again.", finished=time.time())
-            fixed.append("a full backup that was being made is marked as stopped: make it again on Settings, General, Backup and restore")
+            fixed.append("a full backup that was being made is marked as stopped: make it again on Settings, General, Backup/Logs")
         except OSError:
-            problems.append("A full backup was being made and did not finish. Make it again on Settings, General, Backup and restore.")
+            problems.append("A full backup was being made and did not finish. Make it again on Settings, General, Backup/Logs.")
     # The apps, after they have had time to start.
     apps = [s for s in app.config.data.get("services", []) if s.get("enabled") is not False and not s.get("background")]
     if apps:

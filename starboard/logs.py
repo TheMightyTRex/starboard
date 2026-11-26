@@ -1,6 +1,6 @@
 """Starboard's own log, for System, Logs and for reporting a problem.
 
-One file a day in data/logs (one JSON line per entry). Settings, General, Logs and feedback limits Starboard's logs
+One file a day in data/logs (one JSON line per entry). Settings, General, Backup/Logs limits Starboard's logs
 (DASH-451): kept for a number of days (30 by default) and no more than a total size (50 MB by default), whichever
 comes first removing the oldest days. The limits cover every log Starboard keeps itself: the day files (which hold
 the jobs, updates and plug-ins' lines too), the API's audit log (audit.jsonl and its older copies) and the last
@@ -466,7 +466,7 @@ def start(data_dir, settings, words):
     return _current
 
 
-# Settings, General, Logs and feedback and the API (DASH-451) ------------------------------------------------------
+# Settings, General, Backup/Logs and the API (DASH-451) ------------------------------------------------------
 
 def limits_answer(app, apps=None):
     """The limits, their choices, what the logs take now, what they cover, and the apps' own limit from Docker."""

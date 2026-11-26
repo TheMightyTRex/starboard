@@ -51,7 +51,7 @@ People can report a problem with a film or series in Reelix. Starboard shows tho
 
 - Requests show **Waiting for approval** at first. Select **All recent** to show the newest requests of every
   kind, with their state.
-- **Check again** asks for the latest requests straight away.
+- **Check now** asks for the latest requests straight away.
 - A declined request cannot be undone from Starboard. To change your mind, select **Open** and the app's name,
   such as **Open Seerr**. It opens in a new tab.
 - When the download for an approved request starts, it appears in **Activity**, then **Downloads**, then
