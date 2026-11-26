@@ -26,6 +26,7 @@ add features.
 - **Emby and Plex as media servers.** Both are now built-in plug-ins that the dashboard can show, read only for now. They cannot play, mark watched, show Live TV or use the Jellyfin tools.
 
 ### Changed
+- **Every row of tabs condenses like the plug-in tabs.** Where the names do not fit, a row under the header now shows icons only, with each tab 44 pixels wide and the tab you are on in full; the arrow keys, Home and End move along the row, and a fade shows when it scrolls. [Find out more](https://themightytrex.github.io/starboard/help/accessibility/menus-with-icons.html)
 - **One way to copy to the clipboard.** Copying log lines and the log report now say when they could not copy, and the page shares the design system's copy code.
 - **One way to ask for your Starboard password.** Every box that asks for it says "Your Starboard password", and an empty one says "Enter your Starboard password", in Backups, Reelix, Pool, Downloads, Jellyfin, Logs, Security, Clean-up and sign-in settings.
 - **One way to write a count and a time.** System, Storage, Disks, Pool, Monitor, Downloads, Library and On demand history share one count in words and one clock, so a count over a thousand has its comma on every page.

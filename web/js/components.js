@@ -966,6 +966,48 @@
      A level 2 menu (.site-header__tabs) shows icons only when its names do not fit. It measures again whenever
      anything in the header changes size: the window, the text size or spacing chosen in Display, a name arriving
      after the page loads, the font loading. One ResizeObserver, no timers. */
+  /* A menu row that shows icons only (DASH-437, 26 November 2026): each icon-only tab gets the tooltip (data-tooltip, on hover and
+     keyboard focus) except the current one, which shows its name; the current tab is brought into view when the row changes
+     size; a fade shows which edge has more; the arrow keys, Home and End move between the tabs (Tab still reaches each one).
+     The row's own listeners are added once. */
+  function tabsEdges(nav) {
+    const compact = nav.classList.contains("is-compact");
+    for (const a of nav.querySelectorAll("a")) {
+      if (compact && a.getAttribute("aria-current") !== "page" && a !== document.activeElement) a.dataset.tooltip = a.textContent.trim();
+      else delete a.dataset.tooltip;
+    }
+    if (!nav.dataset.tabsReady) {
+      nav.dataset.tabsReady = "1";
+      nav.addEventListener("keydown", (e) => {
+        const links = [...nav.querySelectorAll("a")], at = links.indexOf(document.activeElement);
+        const to = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: links.length - 1 }[e.key];
+        if (at < 0 || e.altKey || e.ctrlKey || e.metaKey || !links[to]) return;
+        e.preventDefault();
+        links[to].focus();
+      });
+      nav.addEventListener("focusin", (e) => {
+        delete e.target.dataset.tooltip;
+        requestAnimationFrame(() => {  // keep the tab with focus clear of the fade
+          const r = document.activeElement.getBoundingClientRect(), b = nav.getBoundingClientRect(), pad = nav.matches(".can-scroll-start, .can-scroll-end") ? 28 : 0;
+          if (r.left < b.left + pad) nav.scrollLeft += r.left - b.left - pad;
+          else if (r.right > b.right - pad) nav.scrollLeft += r.right - b.right + pad;
+        });
+      });
+      nav.addEventListener("focusout", () => tabsEdges(nav));
+      nav.addEventListener("scroll", () => tabsFade(nav), { passive: true });
+    }
+    const cur = nav.querySelector('a[aria-current="page"]');
+    if (compact && cur && !nav.contains(document.activeElement)) {  // the current tab comes into view
+      const r = cur.getBoundingClientRect(), b = nav.getBoundingClientRect();
+      if (r.left < b.left || r.right > b.right) nav.scrollLeft += r.left - b.left - (b.width - r.width) / 2;
+    }
+    tabsFade(nav);
+  }
+  function tabsFade(nav) {
+    const max = nav.scrollWidth - nav.clientWidth;
+    nav.classList.toggle("can-scroll-start", max > 1 && nav.scrollLeft > 1);
+    nav.classList.toggle("can-scroll-end", max > 1 && nav.scrollLeft < max - 1);
+  }
   const HEADER_STEPS = ["is-search-folded", "is-actions-compact", "is-crowded"];
   function fitHeader(header) {
     if (!header || header.classList.contains("is-search-open")) return;
@@ -980,12 +1022,7 @@
     header.querySelectorAll(".menu-tabs").forEach((nav) => nav.classList.remove("is-compact"));
     header.querySelectorAll(".site-header__tabs .menu-tabs").forEach((nav) => {
       nav.classList.toggle("is-compact", overflows(nav));
-      // Icons only: each tab's name is its tooltip (a title this code added is taken away again when the names fit).
-      nav.querySelectorAll("a").forEach((a) => {
-        const name = a.querySelector(".menu-tabs__label")?.textContent.trim();
-        if (nav.classList.contains("is-compact") && name && !a.title) { a.title = name; a.dataset.autoTitle = ""; }
-        else if (!nav.classList.contains("is-compact") && "autoTitle" in a.dataset) { a.removeAttribute("title"); delete a.dataset.autoTitle; }
-      });
+      tabsEdges(nav);
     });
     const steps = [() => main?.classList.add("is-compact"), ...HEADER_STEPS.map((step) => () => header.classList.add(step))];
     for (const step of steps) {
