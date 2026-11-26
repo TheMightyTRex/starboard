@@ -26,6 +26,7 @@ add features.
 - **Emby and Plex as media servers.** Both are now built-in plug-ins that the dashboard can show, read only for now. They cannot play, mark watched, show Live TV or use the Jellyfin tools.
 
 ### Changed
+- **Lighter pages again.** Styles for parts of the design system that no page uses (cover cards, the logo editor, the decision tree and more) are no longer sent with every page, so each page's style sheet is about 14 KB smaller.
 - **Plug-in catalogues are read every 6 hours.** Starboard reads them again with its look at GitHub, only while a page is open and only when you have added a plug-in, instead of once a day.
 - **A notice with buttons reads properly on a phone.** On Settings, Plug-ins the offer to install a plug-in chosen in the set-up no longer squeezes its title to one letter a line, because its buttons now sit on their own row.
 - **Each plug-in's tab has its own icon.** Settings, Plug-ins now draws a different line icon on each plug-in's tab, and where the tabs show icons only, such as on a phone, the tab you are on and the tab with focus also show their name.

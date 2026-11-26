@@ -1,0 +1,202 @@
+/* wizard-review: a part of the shared components. Load it after components.css, on the pages that use it.
+ * Made by tools/parts.py from components.css in github.com/TheMightyTRex/design-system: change it there, not here. */
+@layer shared {
+  .wizard-paths__path {
+    display: grid;
+    align-content: start;
+    gap: var(--space-1);
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-raised);
+  }
+  .wizard-paths__path[data-here] {
+    border: 2px solid var(--color-accent);
+    background: var(--color-accent-soft);
+  }
+  .wizard-paths__path h3,
+  .wizard-paths__path p {
+    margin: 0;
+  }
+  .wizard-paths__path ol {
+    display: grid;
+    gap: 2px;
+    margin: var(--space-1) 0 0;
+    padding-left: var(--space-5);
+    font-size: var(--text-sm);
+  }
+  .wizard-next li {
+    min-width: 0;
+    padding: var(--space-3);
+    border: 1px solid var(--color-divider);
+    overflow-wrap: anywhere;
+  }
+  .wizard-next li[data-chosen] {
+    border-color: var(--color-accent);
+    background: var(--color-accent-soft);
+  }
+  .wizard-next__if {
+    display: block;
+    font-weight: var(--weight-strong);
+  }
+  .wizard-next__then {
+    display: block;
+    margin-top: var(--space-1);
+  }
+  .wizard-next__tag {
+    display: inline-block;
+    margin-left: var(--space-2);
+    color: var(--color-accent);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-heading);
+  }
+  .wizard-tree-toggle > summary h2 {
+    display: inline;
+  }
+  .wizard-tree__flow {
+    margin: 0 0 var(--space-2);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-strong);
+  }
+  .wizard-tree {
+    --mark: max(24px, 1.5rem); /* grows with Text size, so the number stays inside */
+  }
+  .wizard-tree,
+  .wizard-tree ol,
+  .wizard-tree__branches {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .wizard-tree__stage {
+    margin: var(--space-4) 0 var(--space-2);
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-heading);
+  }
+  .wizard-tree > li:first-child .wizard-tree__stage {
+    margin-top: 0;
+  }
+  .wizard-tree__step {
+    position: relative;
+    padding: 0 0 var(--space-3) calc(var(--mark) + var(--space-3));
+  }
+  .wizard-tree__step:last-child::before {
+    display: none;
+  }
+  .wizard-tree__mark {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: grid;
+    place-items: center;
+    width: var(--mark);
+    height: var(--mark);
+    border: 2px solid var(--color-border);
+    background: var(--color-surface-raised);
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-heading);
+  }
+  .wizard-tree__mark svg {
+    width: 60%;
+    height: 60%;
+  }
+  .wizard-tree__step[data-kind="decision"] .wizard-tree__mark > * {
+    transform: rotate(-45deg);
+  }
+  .wizard-tree__step[data-state="done"] .wizard-tree__mark {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-accent-text);
+  }
+  .wizard-tree__step[data-state="current"] .wizard-tree__mark {
+    border-color: var(--color-accent);
+    outline: var(--focus-w) solid var(--color-accent-soft);
+    color: var(--color-accent);
+  }
+  .wizard-tree__step[data-state="left-out"] {
+    color: var(--color-text-muted);
+  }
+  .wizard-tree__step[data-state="left-out"] .wizard-tree__mark {
+    border-style: dashed;
+  }
+  .wizard-tree__title {
+    display: block;
+    padding-top: 2px;
+    font-weight: var(--weight-strong);
+    line-height: var(--leading-tight);
+  }
+  .wizard-tree__step[data-state="current"] .wizard-tree__title {
+    color: var(--color-accent);
+  }
+  .wizard-tree__step[data-state="left-out"] .wizard-tree__title {
+    font-weight: var(--weight-regular);
+    text-decoration: line-through;
+  }
+  .wizard-tree__meta {
+    display: block;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+  .wizard-tree__branches {
+    display: grid;
+    gap: var(--space-1);
+    margin-top: var(--space-2);
+  }
+  .wizard-tree__branch {
+    border-left: 2px solid var(--color-divider);
+    font-size: var(--text-sm);
+  }
+  .wizard-tree__branch[data-chosen] {
+    border-left-color: var(--color-accent);
+    background: var(--color-accent-soft);
+  }
+  .wizard-tree__branch summary {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--space-2);
+    align-items: start;
+    min-height: 32px;
+    padding: var(--space-1) var(--space-2);
+    cursor: pointer;
+    list-style: none;
+  }
+  .wizard-tree__branch summary::-webkit-details-marker {
+    display: none;
+  }
+  .wizard-tree__branch summary:focus-visible {
+    outline: var(--focus-w) solid var(--color-focus);
+    outline-offset: -2px;
+  }
+  .wizard-tree__branch summary svg {
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+  }
+  .wizard-tree__branch:not([data-chosen]) details[open] summary svg {
+    transform: rotate(90deg);
+  }
+  .wizard-tree__branch details p {
+    margin: 0;
+    padding: 0 var(--space-2) var(--space-2) calc(var(--space-4) + 16px);
+    color: var(--color-text-muted);
+  }
+  .wizard-summary li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--space-2) var(--space-3);
+    align-items: start;
+    padding: var(--space-3);
+    border: 1px solid var(--color-divider);
+    background: var(--color-surface-raised);
+  }
+  .wizard-summary li > svg {
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+  }
+  .wizard-summary li[data-tone="warning"] {
+    border-left: var(--status-edge-w) solid var(--status-warning-fg);
+  }
+}
