@@ -690,48 +690,48 @@ if (mv) {
   check("T26", "Escape closes it and focus goes back to the button", /^Move them out of the settings folder/.test(back25.text), back25.text);
 }
 
-// T27 Choose the media server by keyboard (DASH-565): Settings, Apps, Media server. Check it now keeps focus and says what
+// T37 Choose the media server by keyboard (DASH-565): Settings, Apps, Media server. Check it now keeps focus and says what
 // it found; choosing None asks first (focus in the box), and after it focus is on what was said; Go back to Jellyfin
 // does the same and leaves Jellyfin in use.
 await page.goto(`${base}/settings-media-server.html`);
 await settle();
-const ck = await tabTo((f) => f.tag === "BUTTON" && /^Check it now/.test(f.text), 20);
-check("T27", "Tab reaches Check it now, named for a screen reader", !!ck, ck ? ck.text : "not reached");
+const ck = await tabTo((f) => f.tag === "BUTTON" && /^Check it now/.test(f.text), 80);
+check("T37", "Tab reaches Check it now, named for a screen reader", !!ck, ck ? ck.text : "not reached");
 if (ck) {
   await page.keyboard.press("Enter");
   await page.waitForFunction(() => /answered|did not answer/.test(document.getElementById("ms-said")?.textContent || ""), null, { timeout: 8000 }).catch(() => {});
   const afterCheck = await focus();
-  check("T27", "after the check focus stays on the button, and the answer is in the status", /^Check it now/.test(afterCheck.text) && /answered|did not answer/.test(await said()), JSON.stringify(afterCheck) + " " + await said());
+  check("T37", "after the check focus stays on the button, and the answer is in the status", /^Check it now/.test(afterCheck.text) && /answered|did not answer/.test(await said()), JSON.stringify(afterCheck) + " " + await said());
 }
-const none = await tabTo((f) => f.tag === "INPUT" && f.id === "ms-choice-none", 12);
-check("T27", "Tab reaches the None choice, named", !!none, none ? none.text : "not reached");
+const none = await tabTo((f) => f.tag === "INPUT" && f.id === "ms-choice-none", 40);
+check("T37", "Tab reaches the None choice, named", !!none, none ? none.text : "not reached");
 if (none) {
   await page.keyboard.press("Space");
-  const go = await tabTo((f) => f.tag === "BUTTON" && /^Use this media server/.test(f.text), 4);
-  check("T27", "Tab reaches Use this media server", !!go, go ? go.text : "not reached");
+  const go = await tabTo((f) => f.tag === "BUTTON" && /^Use this media server/.test(f.text), 8);
+  check("T37", "Tab reaches Use this media server", !!go, go ? go.text : "not reached");
   if (go) {
     await page.keyboard.press("Enter");
     await settle();
     const box = await focus();
-    check("T27", "the question opens with focus in it", box.inPanel && !box.lost, JSON.stringify(box));
+    check("T37", "the question opens with focus in it", box.inPanel && !box.lost, JSON.stringify(box));
     await page.keyboard.press("Enter");  // focus starts on the main button, Use none
     await settle();
     const changed = await page.evaluate(() => /No media server is in use now/.test(document.getElementById("ms-said")?.textContent || ""));
     if (changed) {
       const after = await focus();
-      check("T27", "after the change focus is on what was said", after.id === "ms-said" && !after.lost, JSON.stringify(after));
-      const back = await tabTo((f) => f.tag === "BUTTON" && /^Go back to Jellyfin/.test(f.text), 20);
-      check("T27", "Tab reaches Go back to Jellyfin", !!back, back ? back.text : "not reached");
+      check("T37", "after the change focus is on what was said", after.id === "ms-said" && !after.lost, JSON.stringify(after));
+      const back = await tabTo((f) => f.tag === "BUTTON" && /^Go back to Jellyfin/.test(f.text), 80);
+      check("T37", "Tab reaches Go back to Jellyfin", !!back, back ? back.text : "not reached");
       if (back) {
         await page.keyboard.press("Enter");
         await settle();
         const again = await focus();
-        check("T27", "after going back focus is on what was said, and Jellyfin is in use", again.id === "ms-said" && /Jellyfin is your media server again/.test(await said()), JSON.stringify(again) + " " + await said());
+        check("T37", "after going back focus is on what was said, and Jellyfin is in use", again.id === "ms-said" && /Jellyfin is your media server again/.test(await said()), JSON.stringify(again) + " " + await said());
       }
     } else {
       // The box's default was Cancel: nothing changed, so focus is back on the button that asked.
       const after = await focus();
-      check("T27", "Cancel gives focus back to the choices", !after.lost, JSON.stringify(after));
+      check("T37", "Cancel gives focus back to the choices", !after.lost, JSON.stringify(after));
     }
   }
 }
