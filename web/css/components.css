@@ -2775,6 +2775,32 @@
   .cover-card > .cover-card__art {
     grid-area: 1 / 1;
   }
+  .cover-card__open {
+    align-self: stretch;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+  .cover-card__open::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+  .cover-card__open:focus-visible {
+    outline: none;
+  }
+  .cover-card__art {
+    position: relative;
+    min-width: 0;
+  }
+  .cover-card__art > :first-child {
+    width: 100%;
+  }
   .media-card.cover-card:focus-within .cover {
     outline: none;
   }
@@ -2856,6 +2882,53 @@
     transform: none;
     pointer-events: auto;
   }
+  .cover-actions__btn {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: var(--control-h);
+    min-height: var(--control-h);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--color-text);
+    cursor: pointer;
+  }
+  .cover-actions__btn:hover,
+  .cover-actions__btn[aria-expanded="true"] {
+    background: var(--color-control-active);
+  }
+  .cover-actions__btn:focus-visible {
+    outline: var(--focus-w) solid var(--color-focus);
+    outline-offset: calc(-1 * var(--focus-w));
+  }
+  .cover-actions__btn:disabled,
+  .cover-actions__btn[aria-disabled="true"] {
+    color: var(--color-text-muted);
+    cursor: default;
+  }
+  .cover-actions__btn > svg {
+    width: 18px;
+    height: 18px;
+  }
+  .cover-actions__tick {
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    display: grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    background: var(--status-success-fg);
+    color: var(--color-surface-raised);
+  }
+  .cover-actions__tick svg {
+    width: 12px;
+    height: 12px;
+    stroke-width: 3;
+  }
   /* The hover label: the same words as the name, shown on hover and on keyboard focus. */
   .cover-actions__tip {
     position: absolute;
@@ -2872,6 +2945,27 @@
     white-space: nowrap;
     pointer-events: none;
     opacity: 0;
+  }
+  .cover-actions__btn:hover .cover-actions__tip,
+  .cover-actions__btn:focus-visible .cover-actions__tip {
+    opacity: 1;
+  }
+  .cover-actions__btn[aria-expanded="true"] .cover-actions__tip {
+    opacity: 0;
+  }
+  .cover-card__status {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+  }
+  .cover-card__status svg {
+    flex: none;
+    width: 14px;
+    height: 14px;
   }
   /* A menu opened from inside a shelf that scrolls sideways sits over the page instead (the app
      sets top and left from the button). */
@@ -2900,10 +2994,81 @@
     align-items: center;
     padding: var(--space-3) 0;
   }
+  .book-row--lead {
+    grid-template-columns: auto var(--book-row-art) minmax(0, 1fr) auto;
+  }
+  .book-row__open {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+  .book-row__open:hover {
+    background: var(--color-control-active);
+  }
+  .book-row__open:focus-visible {
+    outline: var(--focus-w) solid var(--color-focus);
+    outline-offset: calc(-1 * var(--focus-w));
+  }
+  .book-row > :not(.book-row__open, .cover-actions) {
+    pointer-events: none;
+  }
+  .book-row :is(a, button, input, select, textarea, label, summary, [tabindex]) {
+    pointer-events: auto;
+  }
+  .book-row__art {
+    width: var(--book-row-art);
+  }
+  .book-row__art > * {
+    width: 100%;
+  }
+  .book-row__text {
+    display: grid;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+  .book-row__title {
+    margin: 0;
+    font-size: var(--text-md);
+    font-weight: var(--weight-strong);
+    line-height: var(--leading-tight);
+    overflow-wrap: anywhere;
+  }
+  .book-row:has(> .book-row__open:hover) .book-row__title {
+    text-decoration: underline;
+  }
   /* Progress from getting a format shows under the actions. */
   .book-row > .cover-card__status {
     grid-column: -2 / -1;
     justify-self: end;
+  }
+  .cover-actions--row {
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    min-height: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+  .cover-actions--row .cover-actions__tip {
+    top: auto;
+    right: auto;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
   }
   @media (max-width: 720px) {
     .book-row {
@@ -2940,6 +3105,18 @@
     background: var(--color-surface-raised);
     color: var(--color-text);
     cursor: pointer;
+  }
+  .cover-card__more:hover,
+  .cover-card__more[aria-expanded="true"] {
+    background: var(--color-control-active);
+  }
+  .cover-card__more:focus-visible {
+    outline: var(--focus-w) solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  .cover-card__more > svg {
+    width: 18px;
+    height: 18px;
   }
 
   /* Show art (FEAT-R decision 2, fill 4, 2 November 2026): a radio show's square artwork in the 2:3
