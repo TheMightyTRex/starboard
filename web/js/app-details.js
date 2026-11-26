@@ -255,10 +255,9 @@ const AppDetails = (() => {
       const shown = el("span", { "aria-live": "polite" });
       const button = el("button", { type: "button", class: "btn btn--quiet" }, "Show its sign-in");
       button.addEventListener("click", async () => {
-        const input = el("input", { class: "input", type: "password", id: `signin-pw-${s.id}`, autocomplete: "current-password" });
-        const error = el("p", { class: "field__error", role: "alert" });
+        const input = passwordInput(`signin-pw-${s.id}`);
         if (!await confirmDialog({ title: `Show ${s.name}'s sign-in`, message: `Starboard made up ${s.name}'s sign-in when it installed it. Enter your Starboard password to show it.`,
-          confirm: "Show", fields: [el("div", { class: "field" }, el("label", { for: input.id, text: "Your Starboard password" }), input, error)] })) return;
+          confirm: "Show", fields: [passwordField(input)] })) return;
         try {
           const r = await api("/api/services/sign-in", { method: "POST", body: { id: s.id, password: input.value } });
           shown.replaceChildren(el("span", { text: "User name " }), el("code", { text: r.user }), el("span", { text: ", password " }), el("code", { text: r.password }));

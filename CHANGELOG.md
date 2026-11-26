@@ -22,6 +22,7 @@ add features.
 - **Emby and Plex as media servers.** Both are now built-in plug-ins that the dashboard can show, read only for now. They cannot play, mark watched, show Live TV or use the Jellyfin tools.
 
 ### Changed
+- **One way to ask for your Starboard password.** Every box that asks for it says "Your Starboard password", and an empty one says "Enter your Starboard password", in Backups, Reelix, Pool, Downloads, Jellyfin, Logs, Security, Clean-up and sign-in settings.
 - **One way to write a count and a time.** System, Storage, Disks, Pool, Monitor, Downloads, Library and On demand history share one count in words and one clock, so a count over a thousand has its comma on every page.
 - **One look for a short wait.** Loading lines in help, release notes, set-up steps, Discover, radio settings and a few more now show the waiting ring with words that say what is loading, in place of a plain "Loading…".
 - **One look for a notice.** A message in the page (an error, a warning, a note) is drawn by one function, so an error notice in Downloads, Search, Search the sites and On demand history now has the same circle-with-exclamation icon as everywhere else.
