@@ -771,7 +771,7 @@ function sidePanel({ title, body = [], foot = [], wide = false, opener = documen
     layer, body: bodyNode, foot: footNode, close: shut,
     setTitle(text) { heading.textContent = text; close.setAttribute("aria-label", `Close ${text}`); },
     setFoot(nodes) { footNode.replaceChildren(...nodes); footNode.hidden = !nodes.length; },
-    // Draws the body again (Check again); a headChip goes on the title's line, as when it opened.
+    // Draws the body again (Check now); a headChip goes on the title's line, as when it opened.
     setBody(nodes) {
       const next = [nodes].flat().filter(Boolean);
       const c = next.find((n) => n?.dataset?.headChip);
@@ -1025,11 +1025,11 @@ const USENET = [
 const USENET_ABOUT = "SABnzbd needs an account with a Usenet provider. Usenet is a worldwide network of discussion groups, running since 1980, that also carries files. Any provider works with SABnzbd.";
 const USENET_AD = "these are affiliate links. If you sign up through one, the provider pays a small commission towards Starboard's development. You pay the same price.";
 const USENET_RIGHTS_TITLE = "Download only what you have the right to";
-const USENET_RIGHTS = "Use Usenet only for files you have the right to download, such as open-source software, works in the public domain and your own backups. Downloading films, series, music or books without the copyright holder's permission is against the law in the UK and most other countries. Starboard does not host or provide any files, and you are responsible for what you download.";
+const USENET_RIGHTS = "Use Usenet only for files you have the right to download. Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or books without the copyright holder's permission is against the law in the UK and most other countries. Starboard does not host or provide any files, and you are responsible for what you download.";
 
 // The same words for every download app (torrents as well as Usenet), as in the README and help footer
 // (tools/help_footer.py). About shows these.
-const DOWNLOAD_RIGHTS = "Use the download apps only for files you have the right to download, such as open-source software, works in the public domain and your own backups. Downloading films, series, music or books without the copyright holder's permission is against the law in the UK and most other countries. Starboard does not host or provide any files, and you are responsible for what you download.";
+const DOWNLOAD_RIGHTS = "Use the download apps only for files you have the right to download. Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or books without the copyright holder's permission is against the law in the UK and most other countries. Starboard does not host or provide any files, and you are responsible for what you download.";
 
 function rightsNotice(text) {
   return el("div", { class: "notice" }, icon("info"), el("div", { class: "notice__body" },
@@ -1906,9 +1906,9 @@ function wireDialog(dialog) {
   $$("[data-dialog-close]", dialog).forEach((b) => b.addEventListener("click", () => dialog.close()));
 }
 
-// Send feedback (Settings, General, Logs and feedback): Snaglist's Send feedback button (web/js/snaglist.js, from
+// Send feedback (Settings, General, Backup/Logs): Snaglist's Send feedback button (web/js/snaglist.js, from
 // github.com/TheMightyTRex/snaglist; copy a new version in, never edit it here). Each report goes as a GitHub
-// issue on Starboard's repository, or is saved in Starboard (data/ux-notes.json, listed in Settings, General, Logs and feedback).
+// issue on Starboard's repository, or is saved in Starboard (data/ux-notes.json, listed in Settings, General, Backup/Logs).
 // It sends without cookies, so a key given while signed in stands in. The script loads only while it is on.
 async function startFeedback(session) {
   if (IN_PANEL) return;  // the page around the slide-out has it
@@ -1976,21 +1976,45 @@ function mediaServerTab(name) {
   $$('nav a[href="/settings-jellyfin.html"] .menu-tabs__label').forEach((n) => { n.textContent = name || "Media server"; });
 }
 
-// Settings, Plug-ins (DASH-318): the level 2 menu is Manage, Catalogue, then one tab for each plug-in added.
+// Settings, Plug-ins (DASH-318): the level 2 menu is Manage, Catalogue, then one tab for each plug-in added. Each tab has its own
+// icon, drawn in the menu's line style from the shared icon set (owner, 26 November 2026: "It is hard to know which one is which
+// on the phone"). The icon is chosen by plug-in id, from this list, so nothing is fetched and no plug-in logo is read for the menu
+// (a logo is a coloured tile, and reading one per tab would add a request each). A plug-in not in the list, such as one from
+// another catalogue, gets the neutral puzzle piece; its name still shows on the tab you are on and the tab with focus.
+const PLUGIN_TAB_ICONS = {
+  "audio-description": "mic", "audio-description-tracks": "headphones", "calibre-web": "book-copy", "checkrr": "file-search",
+  "direct-play": "play", "disk-forecast": "hard-drive", "dns-blocking": "ban", "download-summary": "download",
+  "home-assistant": "house", "jellystat": "chart-line", "kavita": "book-open-text", "library-cleanup": "sparkles",
+  "library-health": "heart-pulse", "line-speed": "gauge", "livetv": "tv", "maintainerr": "timer", "most-watched": "award",
+  "navidrome": "music", "notifications": "bell", "on-demand": "history", "outside-services": "globe", "picture-shrinker": "image",
+  "remote-access": "network", "seerr": "inbox", "styles": "palette", "tdarr": "film", "themearr": "star", "tv-station": "monitor",
+  "uptime-kuma": "activity", "vpn-check": "shield-check", "watch-stats": "eye", "watching-now": "users", "wizarr": "user-plus",
+};
 function pluginTabs(list) {
   const nav = $('.site-header__tabs nav[aria-label="Plug-ins"]');
   if (!nav || !list.length) return;
   const here = location.pathname.endsWith("/settings-plugin.html") ? new URLSearchParams(location.search).get("id") : null;
   if (here) $$("a[aria-current]", nav).forEach((a) => a.removeAttribute("aria-current"));
   const tpl = $("a", nav);
+  nav.classList.add("menu-tabs--scroll");  // 44px tabs that scroll, and the name of the tab you are on (design system)
   for (const p of list) {
     const a = tpl.cloneNode(true);
     a.href = `/settings-plugin.html?id=${encodeURIComponent(p.id)}`;
     a.removeAttribute("aria-current");
     if (p.id === here) a.setAttribute("aria-current", "page");
-    a.querySelector("svg")?.replaceWith(icon("puzzle"));
+    a.querySelector("svg")?.replaceWith(icon(PLUGIN_TAB_ICONS[p.id] || "puzzle"));
     a.querySelector(".menu-tabs__label").textContent = p.name;
     nav.append(a);
+  }
+  // With a row of icons that scrolls sideways, the tab you are on is brought into view (the name beside its icon shows there).
+  const current = $("a[aria-current]", nav);
+  if (here && current) {
+    const reveal = () => {
+      const a = current.getBoundingClientRect(), b = nav.getBoundingClientRect();
+      if (a.left < b.left || a.right > b.right) nav.scrollLeft = Math.max(0, nav.scrollLeft + (a.left - b.left) - (b.width - a.width) / 2);
+    };
+    requestAnimationFrame(() => requestAnimationFrame(reveal));
+    new ResizeObserver(reveal).observe(nav);  // a turned phone or larger text brings it back into view
   }
 }
 
@@ -2135,7 +2159,7 @@ function shelfScroller(list, name) {
   return outer;
 }
 
-// Delete all logs (DASH-451): the danger dialog, with the password, from Settings, General, Logs and feedback and
+// Delete all logs (DASH-451): the danger dialog, with the password, from Settings, General, Backup/Logs and
 // System, Logs. Says what goes (with the size) and what stays. Resolves the server's answer, or null when cancelled;
 // a wrong password throws, for the page to say beside its button.
 const logBytes = (n) => (n < 1024 ? "less than 1 KB" : formatBytes(n));

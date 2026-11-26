@@ -28,7 +28,7 @@ during the day. It pauses qBittorrent, NZBGet, SABnzbd and Soulseek. You can sti
 Each change applies at once. There is no save button. Outside the hours, Starboard pauses qBittorrent, NZBGet,
 SABnzbd and Soulseek (slskd).
 
-**Settings**, then **General**, then **Download hours** is the same setting in a second place: a change in one shows
+**Settings**, then **General**, then **Hours** is the same setting in a second place: a change in one shows
 in the other. **Settings**, then **Downloads** also holds your VPN and your Usenet provider's server. Read
 [Choose a Usenet provider and add it](choose-a-usenet-provider.md).
 
@@ -83,8 +83,8 @@ Starboard downloads that one item and keeps everything else paused. Read
 
 ---
 
-**Download only what you have the right to.** Use the download apps only for files you have the right to download,
-such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+**Download only what you have the right to.** Use the download apps only for files you have the right to download.
+Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 

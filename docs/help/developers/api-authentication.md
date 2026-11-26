@@ -128,7 +128,7 @@ Starboard writes a line to its audit log, `data/logs/audit.jsonl`, in these case
   `sign_in_sso`, `sso_refused` and the like).
 
 The log never holds a key or a password. It keeps 5 files of about 1 MB each, and counts towards the log limits in
-Settings, General, Logs and feedback. Its older files go with the oldest days, and Delete all logs empties it (the
+Settings, General, Backup/Logs. Its older files go with the oldest days, and Delete all logs empties it (the
 delete itself is its next line).
 
 ## The calendar address is not a key
@@ -166,8 +166,8 @@ cannot send a header. Its token is not an API key:
 
 ---
 
-**Download only what you have the right to.** Use the download apps only for files you have the right to download,
-such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+**Download only what you have the right to.** Use the download apps only for files you have the right to download.
+Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 

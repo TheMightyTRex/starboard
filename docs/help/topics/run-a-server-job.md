@@ -40,8 +40,8 @@ them on System, Overview, shows how each one went, and lets you start one with *
 ## Things to note
 
 - **Run now** cannot be selected while the job is waiting or running.
-- Starboard lists every job the runner reports, apart from the backups. Backups have their own page: **System**,
-  then **Backup and restore**.
+- Starboard lists every job the runner reports, apart from the backups. Backups have their own page: **Settings**,
+  then **General**, then **Backup/Logs**.
 - **Server jobs** appears only when the runner has reported at least one job.
 
 ## If it does not work
@@ -64,8 +64,8 @@ them on System, Overview, shows how each one went, and lets you start one with *
 
 ---
 
-**Download only what you have the right to.** Use the download apps only for files you have the right to download,
-such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+**Download only what you have the right to.** Use the download apps only for files you have the right to download.
+Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 

@@ -3,7 +3,7 @@
 
 # Back up the whole server
 
-Starboard can start a backup of your whole server and list the files it made, on **Settings**, **General**, **Backup and restore**. A
+Starboard can start a backup of your whole server and list the files it made, on **Settings**, **General**, **Backup/Logs**. A
 job you set up on the server makes the backup, so Starboard never reads the server's files.
 
 You write a small script, set up a systemd service and change Docker's settings. If that is new to you, start
@@ -171,7 +171,7 @@ Starboard lists the files in the backup folder that end in `.zip`, `.tar`, `.tar
     docker compose up -d
     ```
 
-11. Go to **Settings**, then **General**, then **Backup and restore**, and select **Back up the server now**.
+11. Go to **Settings**, then **General**, then **Backup/Logs**, and select **Back up the server now**.
 
 The status shows **Starting**, then **Backing up now**, then **Complete** or **Failed**. The server picks up the
 request within a minute. The new file then appears in the list of server backups.
@@ -228,8 +228,8 @@ request within a minute. The new file then appears in the list of server backups
 
 ---
 
-**Download only what you have the right to.** Use the download apps only for files you have the right to download,
-such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+**Download only what you have the right to.** Use the download apps only for files you have the right to download.
+Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 

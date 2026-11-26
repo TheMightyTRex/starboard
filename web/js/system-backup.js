@@ -1,4 +1,4 @@
-// Backup and restore: the whole server (the server's own backup job), then Starboard's settings (download,
+// Settings, General, Backup/Logs, the backup half: the whole server (the server's own backup job), then Starboard's settings (download,
 // restore from a file or from a copy Starboard saved). The password is asked once, in the dialog that confirms.
 
 let serverTimer = null;
@@ -6,11 +6,7 @@ let server = null;
 
 // Small helpers ------------------------------------------------------------
 
-function notice(tone, title, text, action) {
-  const icons = { success: "circle-check", warning: "triangle-alert", danger: "circle-alert", info: "info" };
-  return el("div", { class: "notice", "data-tone": tone === "info" ? null : tone, role: "status" },
-    icon(icons[tone] || "info"), el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), text ? el("p", {}, text) : null), action || null);
-}
+// notice() comes from settings-core.js, which this page loads first.
 
 function facts(pairs) {
   return el("dl", { class: "facts" }, pairs.filter(([, v]) => v !== null && v !== undefined && v !== "").flatMap(([k, v]) => [el("dt", { text: k }), el("dd", {}, v)]));
@@ -430,7 +426,7 @@ async function restoreFull(b, opener, showRestore) {
       title: `Restore the full backup from ${made}?`,
       message: [
         el("p", { text: `Starboard, its plug-ins and the settings and database of ${apps} ${apps === 1 ? "app" : "apps"}${apps ? ` (${b.apps.join(", ")})` : ""} go back to how they were then. What changed since is replaced. Your media is not touched.` }),
-        el("p", { text: "Starboard makes a full backup of how things are now first, in the same folder and with the same backup password, so you can go back. Your apps stop while this happens and start again afterwards. Your Starboard password and sign-ins stay as they are." })],
+        el("p", { text: "Starboard first makes a full backup of how things are now, in the same folder and with the same backup password. You can then go back. Your apps stop while this happens and start again afterwards. Your Starboard password and sign-ins stay as they are." })],
       confirm: "Restore this backup", danger: true, fields: [backup.node, mine.node] });
     (errors.mine && !errors.backup ? mine : backup).input.focus();
     if (!(await asked)) return;
@@ -521,7 +517,7 @@ function scheduleState(s, canFull) {
     if (makes.length) parts.push(notice("info", `Next backup: ${next}`, `It makes ${makes.join(", then ")}.${s.last_run ? ` Last time, ${formatDate(s.last_run * 1000, true)}: ${s.last_result}` : ""}`));
     else parts.push(notice("warning", "Nothing to back up yet", canFull
       ? "Scheduled full backups need the backup password, kept by Starboard so it can make them with nobody there."
-      : "Starboard did not set up your apps and no backup job on the server is set up, so there is nothing it can make by itself.",
+      : "Starboard did not set up your apps, and the server has no backup job. So Starboard has nothing it can make by itself.",
     canFull ? el("button", { type: "button", class: "btn btn--compact", id: "keep-key", onclick: (e) => openKeepKey(e.currentTarget) }, "Keep the backup password") : null));
     // 26 November 2026: with no kept password the schedule only asked the server's job, and nothing said no full backup was made.
     if (!s.key && canFull && makes.length) parts.push(notice("warning", "Full backups are not being made", "A schedule can make a full backup without media only when Starboard keeps the backup password. Until then it asks only the server's own backup job, which is not a full backup of the apps."));
@@ -637,7 +633,7 @@ async function showGoBack() {
 
 startPage().then((session) => {
   if (!session) return;
-  // The same script runs Settings, General, Backup and restore and Settings, Updates, Restore (no download or server there).
+  // The same script runs Settings, General, Backup/Logs and Settings, Updates, Restore (no download or server there).
   if ($("#back-command")) { showGoBack(); loadSaved(); showKeepVersions(); }
   const picker = $("#restore-input");
   $("#restore-file").addEventListener("click", () => picker.click());

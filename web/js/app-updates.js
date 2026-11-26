@@ -115,7 +115,7 @@ function render() {
   updateAll.disabled = busy() || !all.length;
   $("span", updateAll).textContent = busy() ? "Updating…" : all.length ? `Update all (${all.length})` : "Update all";
   $("#check-updates").disabled = busy();
-  $("span", $("#check-updates")).textContent = data.checked_at ? "Check again" : "Check"; // "again" only after a first check
+  $("span", $("#check-updates")).textContent = "Check now"; // the same label before and after a first check (owner, 26 November 2026)
   const missing = rows.filter((r) => !r.container).length;
   $("#updates-summary").textContent = busy() ? "Updating. Apps restart for a moment as they update."
     : updateSummary({ checkedAt: data.checked_at || 0, restored: !!data.restored, count: available.length,

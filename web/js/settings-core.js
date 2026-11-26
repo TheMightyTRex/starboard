@@ -115,7 +115,7 @@ const MOVED_PARTS = {
     ...["gn-up", "coming-up", "gn-scroll", "library-views", "library-views-s"].map((k) => [k, "settings-general-lists.html"]),
     ...["discover-rows", "discover-rows-s"].map((k) => [k, "settings-general-discover.html"]),
     ...["gn-dh", "download-hours"].map((k) => [k, "settings-general-hours.html"]),
-    ...["gn-logs", "logs", "gn-test", "testing", "feedback-list", "gn-logdel", "delete-logs"].map((k) => [k, "settings-general-logs.html"]),
+    ...["gn-logs", "logs", "gn-test", "testing", "feedback-list", "gn-logdel", "delete-logs"].map((k) => [k, "settings-general-backup.html"]),
     ...["gn-style", "gn-design", "gn-access", "style", "appearance"].map((k) => [k, "settings-general-appearance.html"]),
   ]),
   // DASH-396: Discover rows is its own page, a section per area.
@@ -197,7 +197,7 @@ function redraw(root, nodes) {
 // Menu items run after the menu has closed and given focus back to its button, so a dialog returns there.
 function later(fn) { setTimeout(fn, 0); }
 
-// Download hours (DASH-389, DASH-390): one field shown in two places, Settings, General, Download hours and
+// Download hours (DASH-389, DASH-390): one field shown in two places, Settings, General, Hours and
 // Settings, Downloads, Download hours. Both use this function and save the one setting (download_hours), so they
 // stay in step. A switch and two selects, each applying at once.
 function downloadHoursSection(id) {
@@ -238,21 +238,21 @@ const COSTS = {
   every: "Every minute costs five times as much as every 5 minutes; every hour, a twelfth.",
   host: "Costs about: 2 milliseconds of processor a minute (0.003% overall) for all the readings together, measured with every one on, and no extra memory. Nothing runs while every one is deactivated.",
   weekly: "Costs about: one message a week. Nothing noticeable.",
-  livetv: "Costs about: under 2 seconds of processor a day to refresh the guides, and about a minute once a week (or when a channel list changes) to test every stream, using up to 35 MB more memory while it runs. Nothing in between. Deactivating it saves all of that.",
+  livetv: "Costs about: under 2 seconds of processor a day to refresh the guides. Testing every stream takes about a minute once a week, or when a channel list changes. It uses up to 35 MB more memory while it runs. Nothing in between. Deactivating it saves all of that.",
   importKeep: "Costs about: 1 second of processor and up to 40 MB more memory for about 20 seconds an hour, while it reads your Jellyfin library. Deactivating it saves that; Apply now still works.",
   defaults: "Costs about: two small requests per Jellyfin user an hour. Nothing noticeable.",
-  listeningKeep: "Costs about: one reading of your Audiobookshelf library and users an hour, under a second of processor and a few MB more memory while it runs. Deactivating it saves that; Apply now still works.",
-  history: "Costs about: one reading of the server's own counters each time, under 0.01% of the processor, and up to 1.5 MB of memory for a day of readings. Inactive: the System charts have no history.",
+  listeningKeep: "Costs about: one reading of your Audiobookshelf library and users an hour. Each reading uses under a second of processor and a few MB more memory while it runs. Deactivating it saves that; Apply now still works.",
+  history: "Costs about: one reading of the server's own counters each time, under 0.01% of the processor. A day of readings takes up to 1.5 MB of memory. Inactive: the System charts have no history.",
   scheduleEvery: "Every minute catches a new download straight away; every 5 minutes uses a fifth of the requests.",
   downloadsRefresh: "Each update asks each download app once (shared for 10 seconds). Slower, or off, means fewer requests while Downloads is open.",
   monitorRefresh: "Each reading takes under a thousandth of a second on the server. Slower means fewer readings while Monitor is open.",
   cardNumbers: "Costs about: one small request per app when Apps opens, shared for a minute. Deactivating it saves that.",
-  usage: "Costs about: each run reads every file name in your folders (a few minutes for 30 TB, mostly disk reading, under 20 MB of memory), and nothing between runs. Starboard skips the disks inside a pool, so a pool is read once. Every night or every week keeps one sleeping thread; the other choices keep none.",
+  usage: "Costs about: each run reads every file name in your folders (a few minutes for 30 TB, mostly disk reading, under 20 MB of memory). It costs nothing between runs. Starboard skips the disks inside a pool, so a pool is read once. Every night or every week keeps one sleeping thread; the other choices keep none.",
   spaceLog: "Costs about: one size check of each folder a day, taken when a page or the history asks anyway, and a few kilobytes a year. Nothing noticeable.",
   logKeep: "Costs about: a few kilobytes a day on disk (about 100 KB a month for a quiet server). Nothing in memory.",
   logSize: "Costs about: nothing between days. Starboard counts what it writes as it writes it, so the size is only checked when the count passes the limit.",
   logDetail: "Costs about: one short line per page request and per call to your apps, about 1 to 5 MB a day on a busy dashboard. For 24 hours deactivates itself, so it cannot fill the disk.",
-  storageRefresh: "Each update checks the size of each folder, under a thousandth of a second. Inactive means only when you open the page or press Check again.",
+  storageRefresh: "Each update checks the size of each folder, under a thousandth of a second. Inactive means only when you open the page or press Check now.",
   posters: "Costs about: a small download per new poster, kept for a week (a few megabytes on disk).",
   icons: "Costs about: one download per app, once.",
 };
@@ -476,7 +476,7 @@ function taskJob({ title, url, failedWord = STATUS.failed[0], intro = "", return
 // The basic settings are the approved table (FULL-INSTALL-AND-APP-SETUP section 3); the sections listed here are the
 // advanced ones, marked as each page draws them.
 const ADVANCED_SECTIONS = new Set([
-  "gn-cat", "gn-card", "gn-up", "gn-logs", "gn-logdel", "gn-design", "gn-guide",  // General
+  "gn-cat", "gn-card", "gn-up", "gn-design", "gn-guide",  // General (Logs and Delete all logs show: Backup/Logs is one page of everything about copies and logs)
   "sc-ses",  // Security
   "in-how", "tk",  // Your install
   "rx-mediaservers", "rx-downloadclients", "rx-library", "rx-folders", "rx-information", "rx-files", "rx-requests",

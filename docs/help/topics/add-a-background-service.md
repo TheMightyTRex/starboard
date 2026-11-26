@@ -40,7 +40,7 @@ clean-up job. Add one so that Starboard shows whether it is running. It is liste
 - You can also start from **Settings**, **Apps**, **Manage apps**: select **Add an app**, then activate
   **Background service**. To make an existing app a background service, activate it in the app's **Edit** panel.
 - **Manage apps** lists background services under **Other services**.
-- **Other services** has **Check again**, which checks every service now.
+- **Other services** has **Check now**, which checks every service now.
 
 ## Find out more
 
@@ -54,8 +54,8 @@ clean-up job. Add one so that Starboard shows whether it is running. It is liste
 
 ---
 
-**Download only what you have the right to.** Use the download apps only for files you have the right to download,
-such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+**Download only what you have the right to.** Use the download apps only for files you have the right to download.
+Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 

@@ -25,7 +25,7 @@ function catalogueCheckWords(got) {
 function catalogueCheck({ read, onDone, id = "pl-check-now", whenId = "" }) {
   // whenId: the page already says when they were read, in the line with that id, so this adds no second one.
   const when = whenId ? null : el("p", { class: "small muted", id: `${id}-when`, text: catalogueReadWords(read) });
-  const button = el("button", { type: "button", class: "btn", id, "aria-describedby": whenId || `${id}-when` }, icon("refresh-cw"), "Check for updates now");
+  const button = el("button", { type: "button", class: "btn", id, "aria-describedby": whenId || `${id}-when` }, icon("refresh-cw"), "Check now");
   const said = catalogueSaid;
   catalogueSaid = null;
   const out = el("div", { class: "stack-2", id: `${id}-result` });

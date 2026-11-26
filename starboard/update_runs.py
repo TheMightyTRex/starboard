@@ -454,7 +454,7 @@ def _start_plugin(app, pid, by, address):
     elif known:
         manifest, source = pa.fetch_manifest(known["manifest"], sha256=known.get("sha256", "")), known["manifest"]
     else:
-        raise Refused("No newer version is known. Use Check for updates now on the plug-in's Versions tab, or give an address on the plug-in's page")
+        raise Refused("No newer version is known. Use Check now on the plug-in's Versions tab, or give an address on the plug-in's page")
     if manifest.get("id") != pid:
         raise ValueError("That manifest is for another plug-in")
     from . import plugins

@@ -4,7 +4,7 @@
 # Find out what is using the processor
 
 When the server feels slow, **Busy now** lists the containers and processes that are using the most processor and
-memory at that moment. It reads them once when you open the page, and again when you select **Check again**. It
+memory at that moment. It reads them once when you open the page, and again when you select **Check now**. It
 never stops, restarts or changes anything: it only tells you.
 
 ## Before you begin
@@ -27,14 +27,14 @@ never stops, restarts or changes anything: it only tells you.
 
    ![Busy now, with the notice about what Starboard could not read (step 3) outlined, with example data](../images/find-out-what-is-using-the-processor-2-notice.png)
 
-4. To read again, select **Check again**. The line under the title says when it was read, what was busiest and how
+4. To read again, select **Check now**. The line under the title says when it was read, what was busiest and how
    long the reading took.
 
-   ![Busy now, with Check again (step 4) outlined, with example data](../images/find-out-what-is-using-the-processor-3-check-again.png)
+   ![Busy now, with Check now (step 4) outlined, with example data](../images/find-out-what-is-using-the-processor-3-check-again.png)
 
 ## Things to note
 
-- Starboard reads only when you open the page or select **Check again**. It keeps nothing, and nothing runs when
+- Starboard reads only when you open the page or select **Check now**. It keeps nothing, and nothing runs when
   the page is closed. A reading takes about a second and a half and uses well under a quarter of one processor core
   for that time, and about 1 MB of memory.
 - **Processor** is a share of the whole processor over the last second, as on the Monitor page. A container that
@@ -54,8 +54,8 @@ never stops, restarts or changes anything: it only tells you.
 
 ---
 
-**Download only what you have the right to.** Use the download apps only for files you have the right to download,
-such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+**Download only what you have the right to.** Use the download apps only for files you have the right to download.
+Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 

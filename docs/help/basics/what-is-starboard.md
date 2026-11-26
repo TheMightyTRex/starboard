@@ -37,8 +37,7 @@ Starboard's menu has three levels:
    **Home**, **Library**, **Discover**, **Activity**, **System** and **Settings**. The logo opens the **Apps** page.
    At its foot are the version, **Update** when one is out, and **Feedback**.
 2. **The level 1 menu**, along the header, lists the pages in the section you chose. It starts with your
-   server's name, if you gave it one in **Settings**, then **General**, then
-   **Names and apps**.
+   server's name, if you gave it one in **Settings**, then **General**.
 3. **The level 2 menu**, under the level 1 menu, lists a page's own tabs. Only pages with tabs have one.
 
 In this help, a place is written as its path: **Settings**, then **Apps**, then **Jellyfin** means the Settings
@@ -82,8 +81,8 @@ you do not have any media apps yet, Starboard can install them: read
 
 ---
 
-**Download only what you have the right to.** Use the download apps only for files you have the right to download,
-such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+**Download only what you have the right to.** Use the download apps only for files you have the right to download.
+Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 

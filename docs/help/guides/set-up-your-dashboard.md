@@ -129,7 +129,7 @@ The default install works with all of these as they are. Change them when you wa
   then [Change or remove an app](../topics/change-or-remove-an-app.md#change-an-apps-details).
 - **Reelix's sites and settings:** [Choose the sites Reelix searches](../topics/choose-sites-to-search.md) and
   [Change Reelix's settings in Starboard](../topics/change-reelix-settings.md).
-- **The set-up guide again:** go to **Settings**, then **General**, then **Names and apps**. Activate **More
+- **The set-up guide again:** go to **Settings**, then **General**. Activate **More
   settings**, then select **Run the set-up guide again** under **Set-up guide**. Nothing changes until you select
   **Continue**.
 
@@ -144,8 +144,8 @@ The default install works with all of these as they are. Change them when you wa
 
 ---
 
-**Download only what you have the right to.** Use the download apps only for files you have the right to download,
-such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+**Download only what you have the right to.** Use the download apps only for files you have the right to download.
+Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 

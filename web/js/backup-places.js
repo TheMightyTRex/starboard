@@ -1,4 +1,4 @@
-// Where backups go (several places, 26 November 2026), on Settings, General, Backup and restore.
+// Where backups go (several places, 26 November 2026), on Settings, General, Backup/Logs.
 // Every place a copy can go is listed with its own switch, keep count and last copy in words and a shape. A cloud service
 // is connected by the wizard (cloud-wizard.js), as many times as you like; a folder, an SMB share, an NFS share or your own
 // rclone remote has one form in a slide-out. A backup counts as safe only when each place that is on has read it back.

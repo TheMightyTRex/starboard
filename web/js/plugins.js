@@ -1839,7 +1839,7 @@ function sourcesSection(cats, redraw, choices = []) {
         el("div", { class: "row__meta row__meta--wrap", text: [`${cat.count} plug-in${cat.count === 1 ? "" : "s"}`, cat.url, cat.error && STATUS.notResponding[0]].filter(Boolean).join(" · ") })),
       el("div", { class: "row__side" }, side));
   });
-  return section("pl-sources", "Catalogue sources", "Where this page finds plug-ins. Add another catalogue by its link. Each is read again every 6 hours, or when you press Check for updates now.",
+  return section("pl-sources", "Catalogue sources", "Where this page finds plug-ins. Add another catalogue by its link. Each is read again every 6 hours, or when you press Check now.",
     ticks.length ? el("ul", { class: "settings-rows", "aria-label": "Built-in catalogues" }, ticks) : null,
     el("ul", { class: "rows" }, rows), form);
 }

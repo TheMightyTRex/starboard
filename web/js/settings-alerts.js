@@ -73,7 +73,7 @@ function startAlerts() {
     settingRow("A folder gets full", "For the folders on System, Storage.",
       selectFor("al-full-l", [[0, "Off"], [80, "At 80%"], [85, "At 85%"], [90, "At 90%"], [95, "At 95%"]], a().disk_full, (v, t) => save({ alerts: { disk_full: Number(v) } })), "al-full-l"),
     settingRow("A download needs attention", "When it has needed attention for 30 minutes.", onOff("download_stuck", "al-stuck-l"), "al-stuck-l"),
-    settingRow("The server backup fails", "From Settings, General, Backup and restore.", onOff("backup_failed", "al-backup-l"), "al-backup-l"),
+    settingRow("The server backup fails", "From Settings, General, Backup/Logs.", onOff("backup_failed", "al-backup-l"), "al-backup-l"),
     settingRow("A certificate runs out soon", "For apps with an outside https:// address. Checked once a day.",
       selectFor("al-cert-l", [[0, "Off"], [7, "7 days before"], [14, "14 days before"], [30, "30 days before"]], a().cert_days, (v, t) => save({ alerts: { cert_days: Number(v) } })), "al-cert-l"));
 
@@ -114,7 +114,7 @@ function startAlerts() {
     settingRow("Weekly summary", withCost("On Monday morning: how each app did, disk health and how full your folders are. Sent where alerts go.", "weekly"),
       switchFor("al-week-l", w().weekly, (on) => save({ weekly: on })), "al-week-l"),
     // DASH-105: a new Starboard release, at most one message a week, only where your alerts go.
-    settingRow("An update is ready", "One message when a newer Starboard is out, with a link to what is new (at most once a week), and one for each plug-in or app version that waits for you. Nothing is checked for it. What updates by itself is told afterwards instead.",
+    settingRow("An update is ready", "One message when a newer Starboard is out, with a link to what is new (at most once a week). One more for each plug-in or app version that waits for you. Nothing is checked for it. What updates by itself is told afterwards instead.",
       switchFor("al-rel-l", w().releases !== false, (on) => save({ releases: on })), "al-rel-l"));
 
   $("#alerts-sections").removeAttribute("aria-busy");

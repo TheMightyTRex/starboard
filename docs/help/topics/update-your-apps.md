@@ -17,7 +17,7 @@ restarts for a moment while it updates, and so does anything that depends on it.
 
 1. Go to **System**, then **Apps**, then **Updates**. The page lists each app's **Image**, **Installed**
    version, **Latest** version and **Status**.
-2. Select **Check**, or **Check again** after the first check. Starboard asks where each app's downloads come
+2. Select **Check now**. Starboard asks where each app's downloads come
    from whether there is a newer version. This can take a minute.
 
    ![System, Apps, Updates, with Check (step 2) outlined, with example data](../images/update-your-apps-1-check.png)
@@ -97,7 +97,7 @@ Replace `<service>` with the app's name in the Compose file. If the script fails
 ## If it does not work
 
 - **Cannot check:** Starboard could not reach the place the image comes from, or the image was built on this
-  computer. Try **Check again** later.
+  computer. Try **Check now** later.
 - **The registry is busy, try again:** the place the image comes from (lscr.io for the LinuxServer.io images) asked
   Starboard to slow down. Starboard waits a few seconds and asks once more before it says this. Select **Check
   again** after a minute.
@@ -117,8 +117,8 @@ Replace `<service>` with the app's name in the Compose file. If the script fails
 
 ---
 
-**Download only what you have the right to.** Use the download apps only for files you have the right to download,
-such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+**Download only what you have the right to.** Use the download apps only for files you have the right to download.
+Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 

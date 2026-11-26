@@ -29,10 +29,10 @@ q2: What do you want to do?
 
 **Send feedback** is active on every page unless you deactivate it. To hide it:
 
-1. Go to **Settings**, then **General**, then **Logs and feedback**.
+1. Go to **Settings**, then **General**, then **Backup/Logs**.
 2. Under **Send feedback**, deactivate **Send feedback**. Activate it again the same way.
 
-   ![Settings, General, Logs and feedback, with Send feedback (step 2) outlined, with example data](../images/send-feedback-1-logs-page.png)
+   ![Settings, General, Backup/Logs, with Send feedback (step 2) outlined, with example data](../images/send-feedback-1-logs-page.png)
 
 ## Send a report
 
@@ -55,10 +55,10 @@ q2: What do you want to do?
 
 ## Find the reports saved in Starboard
 
-1. Go to **Settings**, then **General**, then **Logs and feedback**.
+1. Go to **Settings**, then **General**, then **Backup/Logs**.
 2. Under **Send feedback**, the saved reports are listed, newest first. Open **The full report** to read one.
 
-   ![Settings, General, Logs and feedback, where the reports saved in Starboard are listed (step 1), with example data](../images/send-feedback-3-saved.png)
+   ![Settings, General, Backup/Logs, where the reports saved in Starboard are listed (step 1), with example data](../images/send-feedback-3-saved.png)
 
 3. Select **Mark fixed** when it is dealt with. To delete one, select **More actions**, then **Remove**, then
    **Remove report**.
@@ -91,8 +91,8 @@ q2: What do you want to do?
 
 ---
 
-**Download only what you have the right to.** Use the download apps only for files you have the right to download,
-such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+**Download only what you have the right to.** Use the download apps only for files you have the right to download.
+Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 

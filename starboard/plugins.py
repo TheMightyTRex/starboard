@@ -543,7 +543,7 @@ CHANGES = {"slot:media-server": "Which media server Starboard shows on the dashb
                               "(media/.holding) and put them back. It is given the whole folder to read and change, "
                               "so add only a plug-in you trust; what it moves leaves Jellyfin until it is put back"}
 REACHES = {"network:lan": "Other computers on your home network, and the internet",
-           "network:port": "Its own web page is opened on your home network: anyone on your home network can open it, "
+           "network:port": "Its own web page is open on your home network. Anyone on your home network can open it, "
                            "at this computer's address and a port Starboard chooses",
            "network:vpn": "The internet, through your VPN connection"}
 NEVER = ("Docker itself, devices such as disks and graphics cards, other apps' folders and settings, or your Starboard "

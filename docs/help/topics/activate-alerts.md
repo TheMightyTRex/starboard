@@ -56,7 +56,7 @@ Under **What to alert on**, each alert is active unless you deactivate it. Each 
 - **A folder gets full:** choose **At 80%**, **At 85%**, **At 90%**, **At 95%** or **Off**, for the folders on
   System, Storage. Read [Check free space and what is using it](check-storage.md).
 - **A download needs attention:** when it has needed attention for 30 minutes.
-- **The server backup fails:** from Settings, General, Backup and restore. Read
+- **The server backup fails:** from Settings, General, Backup/Logs. Read
   [Back up the whole server](back-up-the-server.md).
 - **A certificate runs out soon:** for apps with an outside `https://` address. Choose **7 days before**,
   **14 days before**, **30 days before** or **Off**. Starboard checks once a day.
@@ -115,8 +115,8 @@ minute.
 
 ---
 
-**Download only what you have the right to.** Use the download apps only for files you have the right to download,
-such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+**Download only what you have the right to.** Use the download apps only for files you have the right to download.
+Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 

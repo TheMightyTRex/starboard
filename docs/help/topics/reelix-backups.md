@@ -16,7 +16,7 @@ which disk they are on, make one now, or go back to one.
 
 ### Open Reelix's backups
 
-1. Go to **Settings**, then **General**, then **Backup and restore**.
+1. Go to **Settings**, then **General**, then **Backup/Logs**.
 2. Find **Reelix's backups** and select **Show Reelix's backups**.
 3. Enter the **Reelix password** and select **Continue**. The page remembers it for 5 minutes.
 
@@ -82,8 +82,8 @@ When Reelix answers again, the page shows **Done** and the folder Reelix now use
 
 ---
 
-**Download only what you have the right to.** Use the download apps only for files you have the right to download,
-such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+**Download only what you have the right to.** Use the download apps only for files you have the right to download.
+Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 

@@ -59,9 +59,9 @@ A title's page has buttons for what Reelix can do with it. Each one shows only w
 
 When you change the order, the layout, the cover size or a filter, **Save this view as default** appears. Select
 it, and that kind always opens that way, on any device you sign in from. To go back to A to Z with medium covers,
-go to **Settings**, then **General**, then **Pages and lists**, and select **Reset Library views**.
+go to **Settings**, then **General**, then **Lists**, and select **Reset Library views**.
 
-![Settings, General, Pages and lists with example data, with Reset Library views outlined](../images/browse-your-library-4-reset.png)
+![Settings, General, Lists with example data, with Reset Library views outlined](../images/browse-your-library-4-reset.png)
 
 
 ## Things to note
@@ -103,8 +103,8 @@ go to **Settings**, then **General**, then **Pages and lists**, and select **Res
 
 ---
 
-**Download only what you have the right to.** Use the download apps only for files you have the right to download,
-such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+**Download only what you have the right to.** Use the download apps only for files you have the right to download.
+Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 

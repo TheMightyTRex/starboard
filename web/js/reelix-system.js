@@ -1,4 +1,4 @@
-// Reelix's own backups (Settings, General, Backup and restore), log and scheduled tasks (System, Logs): DASH-201, 202, 203. Reelix keeps them
+// Reelix's own backups (Settings, General, Backup/Logs), log and scheduled tasks (System, Logs): DASH-201, 202, 203. Reelix keeps them
 // behind its admin password, so each section asks for it when opened, uses it for that change only, and this page
 // remembers it for 5 minutes, as Settings, Reelix does. Loaded after common.js on those two pages.
 
@@ -92,7 +92,7 @@ async function rsBackups(body, locked) {
     let placeNote = null;
     if (p && (p.chosen === "other" || p.now === "other")) {
       // A folder someone set in Reelix's own configuration file: said, and left alone.
-      placeNote = el("p", { class: "small muted", text: `Reelix keeps its backups in ${p.other || "a folder set in its own configuration file"}, which was not chosen here, so Starboard leaves it as it is.` });
+      placeNote = el("p", { class: "small muted", text: `Reelix keeps its backups in ${p.other || "a folder set in its own configuration file"}. You did not choose that here, so Starboard leaves it as it is.` });
     } else if (p && (!p.same_disk || p.chosen === "media")) {
       const [beside, media] = p.choices;
       const where = el("select", { class: "select", id: "rs-place", "aria-labelledby": "rs-place-l", "aria-describedby": "rs-place-h" },
@@ -201,8 +201,11 @@ async function rsTasks(body, locked) {
 startPage().then(() => {
   const page = $("main .page");
   if (!page) return;
-  if (location.pathname.endsWith("/system-backup.html")) {
-    page.append(rsSection("rs-backups", "Reelix's backups", "Reelix backs up its own library and settings. Make one, change how often, or go back to one.", rsBackups, "Show Reelix's backups"));
+  if (location.pathname.endsWith("/settings-general-backup.html")) {
+    // Before the logs on that page, with the other backups.
+    const mine = rsSection("rs-backups", "Reelix's backups", "Reelix backs up its own library and settings. Make one, change how often, or go back to one.", rsBackups, "Show Reelix's backups");
+    const logs = $("#general-sections");
+    if (logs) logs.before(mine); else page.append(mine);
   } else {
     page.append(rsSection("rs-log", "Reelix's log", "What Reelix did, newest last, to find out why something did not work.", rsLogs, "Read Reelix's log"),
       rsSection("rs-tasks", "Reelix's scheduled tasks", "What Reelix does on its own, such as refreshing the library, with Run now.", rsTasks, "Show Reelix's tasks"));

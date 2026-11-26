@@ -1377,7 +1377,7 @@ with urllib.request.urlopen(req, timeout=10) as r:
 
 Change how long Starboard keeps its logs and the most they may take.
 
-Only for keys that ticked Logs: a key with no scopes does not have them. The same choices as Settings, General, Logs and feedback. Older days go at once; the answer says how many.
+Only for keys that ticked Logs: a key with no scopes does not have them. The same choices as Settings, General, Backup/Logs. Older days go at once; the answer says how many.
 
 - **Key:** a key made with Read and manage whose scopes include `logs` (the logs, only when ticked). A key without it gets `404 not_found`.
 - **Needs:** `manage`. A read key gets `403 right_needed`. Send a JSON body; `Idempotency-Key` makes a retry safe.
@@ -2551,8 +2551,8 @@ The named objects the answers use.
 
 ---
 
-**Download only what you have the right to.** Use the download apps only for files you have the right to download,
-such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+**Download only what you have the right to.** Use the download apps only for files you have the right to download.
+Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 

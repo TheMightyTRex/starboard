@@ -40,13 +40,13 @@ to return.
 ### Change how far ahead it shows
 
 1. On the Coming up page, select **Change how far ahead**. This opens **Settings**, then **General**, then
-   **Pages and lists**. The **Coming up** section shows when **More settings** is active: activate it if the
+   **Lists**. The **Coming up** section shows when **More settings** is active: activate it if the
    section is not there.
 2. In **How far ahead**, choose **1 week**, **2 weeks**, **30 days**, **60 days** or **90 days**. The change
    applies at once.
 3. Optional: in **View**, choose whether the page opens as **List** or **Calendar**.
 
-   ![Settings, General, Pages and lists with More settings active, with How far ahead (step 2) and View (step 3) outlined in the Coming up section](../images/coming-up-4-how-far.png)
+   ![Settings, General, Lists with More settings active, with How far ahead (step 2) and View (step 3) outlined in the Coming up section](../images/coming-up-4-how-far.png)
 
 ### Add Coming up to your calendar
 
@@ -113,8 +113,8 @@ To stop every calendar that uses the address, select **Add to your calendar**, t
 
 ---
 
-**Download only what you have the right to.** Use the download apps only for files you have the right to download,
-such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+**Download only what you have the right to.** Use the download apps only for files you have the right to download.
+Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 

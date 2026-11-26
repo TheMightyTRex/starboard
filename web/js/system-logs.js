@@ -71,7 +71,7 @@ function renderHead() {
   $("#logs-summary").replaceChildren(
     s.files ? `${s.days} ${s.days === 1 ? "day" : "days"} of logs (${logBytes(s.bytes)}) · kept for ${keep} days, no more than ${most} MB · `
       : `No logs yet · kept for ${keep} days, no more than ${most} MB · `,
-    el("a", { href: "/settings-general-logs.html#logs", text: "Change in Settings, General, Logs and feedback" }));
+    el("a", { href: "/settings-general-backup.html#logs", text: "Change in Settings, General, Backup/Logs" }));
   const del = el("button", { type: "button", class: "btn btn--danger", id: "logs-delete-all", disabled: !s.files }, icon("trash-2"), "Delete all logs");
   del.addEventListener("click", async () => {
     let r;
@@ -143,7 +143,7 @@ function renderReport() {
       el("li", {}, el("strong", { text: "Do the thing that went wrong again. " })),
       el("li", {}, el("strong", { text: "Copy the details and open an issue. " }), "Paste them in, and say what you expected to happen. ",
         el("div", { class: "actions" }, copy, issue))),
-    el("p", { class: "small muted", text: "Starboard removes personal details before anything is written to its log: passwords, API keys and tokens, IP addresses, host and computer names, email addresses, the user name in folder paths and the dashboard's name. Read the text before you post it all the same." }),
+    el("p", { class: "small muted", text: "Starboard removes personal details before it writes anything to its log. These are passwords, API keys and tokens, IP addresses, host and computer names, email addresses, the user name in folder paths and the dashboard's name. Read the text before you post it all the same." }),
     details);
 }
 

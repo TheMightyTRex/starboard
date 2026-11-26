@@ -41,7 +41,7 @@ Whatever has keyboard focus has a thick outline, 3 pixels wide with a small gap,
 themes keep it too. The sticky header never covers what has focus: the page keeps the header's height clear when it
 scrolls.
 
-![The Apps page with Check again focused: a thick outline with a small gap round the button shows where the keyboard is](../images/a11y-focus.png)
+![The Apps page with Check now focused: a thick outline with a small gap round the button shows where the keyboard is](../images/a11y-focus.png)
 
 Every button and field is 44 pixels high, and nothing anyone needs to select is smaller than 24 by 24 pixels.
 
@@ -98,8 +98,8 @@ page. It stays on the same control drawn again, or moves to the nearest thing th
 
 ---
 
-**Download only what you have the right to.** Use the download apps only for files you have the right to download,
-such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+**Download only what you have the right to.** Use the download apps only for files you have the right to download.
+Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 

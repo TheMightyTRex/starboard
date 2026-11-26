@@ -10,7 +10,7 @@ personal. You can also have the page checked automatically and choose which prob
 ## Before you begin
 
 - You are signed in to Starboard, and **Send feedback** is active. It is active unless someone deactivated it in
-  **Settings**, then **General**, then **Logs and feedback**. Read [Send feedback about a page](../topics/send-feedback.md).
+  **Settings**, then **General**, then **Backup/Logs**. Read [Send feedback about a page](../topics/send-feedback.md).
 
 ## Steps
 
@@ -61,8 +61,8 @@ personal. You can also have the page checked automatically and choose which prob
 
 ---
 
-**Download only what you have the right to.** Use the download apps only for files you have the right to download,
-such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+**Download only what you have the right to.** Use the download apps only for files you have the right to download.
+Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 
