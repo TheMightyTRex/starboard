@@ -12,7 +12,7 @@ add features.
 - **A wizard for switching media server.** The media server tab in Settings, Apps has Switch with help, which says what moves, what cannot and what keeps working before anything changes. Find out more in [Choose your media server](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/choose-your-media-server.md).
 - **Plex and Emby as kinds of app.** Manage apps, Add an app now lists Plex and Emby, each with its own form and connection test. If you go back to an older version, restore a Settings backup made before this change, because older versions do not know these kinds.
 - **Phone apps for Calibre-Web.** Starboard now names and links the apps for reading Calibre-Web books on a phone: KOReader and Calibre-Web-Companion for Android, and Readest for iPhone and iPad. Starboard does not run them.
-- **Several places for backups.** Settings, General, Backup and restore has Where backups go, which copies each backup to a folder, a network share or a cloud service. Starboard encrypts the server settings zip before it sends it and shows the key once, so store it.
+- **Several places for backups.** Settings, General, Backup/Logs has Where backups go, which copies each backup to a folder, a network share or a cloud service. Starboard encrypts the server settings zip before it sends it and shows the key once, so store it.
 - **A custom card for any service's JSON.** System, Apps, Other services has Custom cards, which show the fields you choose from any service's JSON on a dashboard card. Starboard asks only addresses on your home network unless you allow others. Find out more in [Show any service's JSON on a dashboard card](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/show-any-services-json-on-a-card.md).
 - **A link to the plug-in store.** The README and the help topics The plug-in collection and Add a plug-in now link to the Stallboard plug-in store.
 - **Plug-ins show the system they need.** A tag such as Jellyfin only, Plex or Emby, or Needs Reelix now shows on each plug-in that needs one. A manifest sets it with the new `requires` list (plug-in API 1.19).
@@ -24,6 +24,8 @@ add features.
 ### Changed
 - **The shared styles now define the names Starboard already used.** `--radius-sm`, `--radius-md`, `--font-mono`, `--color-success-text`, `--color-danger-text`, `stack-3`, `stack-5`, `input--narrow`, `select--compact`, `field__error` and `btn--secondary` had no style, so a few boxes in Bring in, Backup and restore and the dashboard editor gained their intended spacing and width.
 - **One name for asking again: Check now.** Every Check again button and line of help now says Check now, as plug-ins do, and the Updates button says Check now before and after the first check (owner, 26 November 2026).
+- **One Backup/Logs tab.** Settings, General has Backup/Logs, which holds backups, restoring, logs and Send feedback, and the old addresses still open it.
+- **Shorter names in General.** The first tab is now General, and the others are Appearance, Lists, Discover, Hours, Alerts, Performance, Pictures and Backup/Logs, so every name fits at 1280 pixels wide.
 
 - **One tab for your media server.** Settings, Apps has one tab named for the media server in use, so the separate Media server tab and plug-in tab are gone. The old address still opens the right page.
 - **Alerts and Performance are part of General.** Settings, General has new Alerts, Performance and Pictures tabs, and the old addresses still open the right page.

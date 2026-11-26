@@ -1200,7 +1200,7 @@ RELEASES = [
             ],
             [
                 "Discover by area",
-                "Discover has a page each for Films, TV, Music, Radio, Books and Audiobooks, from Reelix's own lists. Settings, General, Discover rows chooses each area's rows and their order, including a row for each genre (such as Comedy or Science fiction) for films, series and radio. Recently added follows what arrived, so new episodes come first, On demand history shows what you started watching, with Add to wanted and Remove, and pictures are kept for four weeks, with Clear the picture cache in Settings, Performance."
+                "Discover has a page each for Films, TV, Music, Radio, Books and Audiobooks, from Reelix's own lists. Settings, General, Discover chooses each area's rows and their order, including a row for each genre (such as Comedy or Science fiction) for films, series and radio. Recently added follows what arrived, so new episodes come first, On demand history shows what you started watching, with Add to wanted and Remove, and pictures are kept for four weeks, with Clear the picture cache in Settings, Performance."
             ],
             [
                 "Discover, Radio",
@@ -1340,7 +1340,7 @@ RELEASES = [
         "removed": [
             [
                 "Note an issue",
-                "The old Note an issue tester has gone; Send feedback replaced it. Notes it saved are still listed in Settings, General, Logs and feedback."
+                "The old Note an issue tester has gone; Send feedback replaced it. Notes it saved are still listed in Settings, General, Backup/Logs."
             ],
             [
                 "Storyarr",
@@ -1678,7 +1678,7 @@ RELEASES = [
             ],
             [
                 "Connect a cloud service",
-                "Settings, General, Backup and restore has a wizard that signs in to Google Drive, OneDrive, Dropbox and other services, chooses the folder and tests it, so copies of your backups can go off this computer."
+                "Settings, General, Backup/Logs has a wizard that signs in to Google Drive, OneDrive, Dropbox and other services, chooses the folder and tests it, so copies of your backups can go off this computer."
             ],
             [
                 "Test connection",
@@ -1690,7 +1690,7 @@ RELEASES = [
             ],
             [
                 "Log limits and Delete all logs",
-                "Settings, General, Logs and feedback sets how long Starboard keeps its logs and the most they may take, and Delete all logs removes them after your password."
+                "Settings, General, Backup/Logs sets how long Starboard keeps its logs and the most they may take, and Delete all logs removes them after your password."
             ]
         ],
         "changed": [
@@ -1732,7 +1732,7 @@ RELEASES = [
             ]
         ],
         "review": [],
-        "settings": "Your settings stay as they are. Logs keep your number of days, now with a 50 MB limit as well, which you can change in Settings, General, Logs and feedback. Starboard's built-in plug-ins restart once after the update to take the apps' log limit of 3 files of 10 MB. To go back, run ./update.sh --to v0.19.1."
+        "settings": "Your settings stay as they are. Logs keep your number of days, now with a 50 MB limit as well, which you can change in Settings, General, Backup/Logs. Starboard's built-in plug-ins restart once after the update to take the apps' log limit of 3 files of 10 MB. To go back, run ./update.sh --to v0.19.1."
     },
     {
         "version": "0.20.1",

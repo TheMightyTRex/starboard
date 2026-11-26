@@ -16,7 +16,7 @@ which disk they are on, make one now, or go back to one.
 
 ### Open Reelix's backups
 
-1. Go to **Settings**, then **General**, then **Backup and restore**.
+1. Go to **Settings**, then **General**, then **Backup/Logs**.
 2. Find **Reelix's backups** and select **Show Reelix's backups**.
 3. Enter the **Reelix password** and select **Continue**. The page remembers it for 5 minutes.
 

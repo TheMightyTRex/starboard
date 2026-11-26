@@ -357,7 +357,7 @@ def _example_update_all():
 
 
 def _example_saved_copies(data):
-    """Settings, Restore, and System, Backup and restore, Copies Starboard saved: two made-up copies of the settings, one
+    """Settings, Restore, and Settings, General, Backup/Logs, Copies Starboard saved: two made-up copies of the settings, one
     made before an update changed them and one before a restore, so the list the help describes has something in it."""
     import shutil
     from starboard import config as settings_config
@@ -377,7 +377,7 @@ def _example_saved_copies(data):
 
 
 def _example_full_backups():
-    """System, Backup and restore, Full without media (DASH-260): the media folder on its own disk, so the page says
+    """Settings, General, Backup/Logs, Full without media (DASH-260): the media folder on its own disk, so the page says
     which disk the copies go on, and two made-up copies in the folder. Nothing is read from this computer."""
     from starboard import full_backup
     full_backup._drives = lambda data_dir: [{"mount": "/srv/media", "device": "sdb1", "size": 4000 * 1000 ** 3, "fs": "ext4",

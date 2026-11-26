@@ -115,7 +115,7 @@ const MOVED_PARTS = {
     ...["gn-up", "coming-up", "gn-scroll", "library-views", "library-views-s"].map((k) => [k, "settings-general-lists.html"]),
     ...["discover-rows", "discover-rows-s"].map((k) => [k, "settings-general-discover.html"]),
     ...["gn-dh", "download-hours"].map((k) => [k, "settings-general-hours.html"]),
-    ...["gn-logs", "logs", "gn-test", "testing", "feedback-list", "gn-logdel", "delete-logs"].map((k) => [k, "settings-general-logs.html"]),
+    ...["gn-logs", "logs", "gn-test", "testing", "feedback-list", "gn-logdel", "delete-logs"].map((k) => [k, "settings-general-backup.html"]),
     ...["gn-style", "gn-design", "gn-access", "style", "appearance"].map((k) => [k, "settings-general-appearance.html"]),
   ]),
   // DASH-396: Discover rows is its own page, a section per area.
@@ -197,7 +197,7 @@ function redraw(root, nodes) {
 // Menu items run after the menu has closed and given focus back to its button, so a dialog returns there.
 function later(fn) { setTimeout(fn, 0); }
 
-// Download hours (DASH-389, DASH-390): one field shown in two places, Settings, General, Download hours and
+// Download hours (DASH-389, DASH-390): one field shown in two places, Settings, General, Hours and
 // Settings, Downloads, Download hours. Both use this function and save the one setting (download_hours), so they
 // stay in step. A switch and two selects, each applying at once.
 function downloadHoursSection(id) {
@@ -476,7 +476,7 @@ function taskJob({ title, url, failedWord = STATUS.failed[0], intro = "", return
 // The basic settings are the approved table (FULL-INSTALL-AND-APP-SETUP section 3); the sections listed here are the
 // advanced ones, marked as each page draws them.
 const ADVANCED_SECTIONS = new Set([
-  "gn-cat", "gn-card", "gn-up", "gn-logs", "gn-logdel", "gn-design", "gn-guide",  // General
+  "gn-cat", "gn-card", "gn-up", "gn-design", "gn-guide",  // General (Logs and Delete all logs show: Backup/Logs is one page of everything about copies and logs)
   "sc-ses",  // Security
   "in-how", "tk",  // Your install
   "rx-mediaservers", "rx-downloadclients", "rx-library", "rx-folders", "rx-information", "rx-files", "rx-requests",

@@ -1,4 +1,4 @@
-"""Scheduled backups (DASH-17, owner, 9 November 2026): Settings, General, Backup and restore, Schedule.
+"""Scheduled backups (DASH-17, owner, 9 November 2026): Settings, General, Backup/Logs, Schedule.
 
 - Off (the default): Starboard makes no backup by itself.
 - Manual: backups are made only by hand; the page reminds you when the newest is more than 30 days old.
@@ -31,7 +31,7 @@ HOUR = 3
 REMIND_DAYS = 30
 STATE = "backup-schedule.json"
 NO_KEY = ("No full backup was made: Starboard is not keeping a backup password, so it cannot make one by itself. "
-          "Go to Settings, General, Backup and restore, Schedule, and keep the password")
+          "Go to Settings, General, Backup/Logs, Schedule, and keep the password")
 PERIOD_DAYS = {"monthly": 31, "weekly": 7, "nightly": 1}
 
 

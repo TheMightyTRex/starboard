@@ -290,12 +290,12 @@ class Watch:
                 status = (backup.server_status().get("status") or {})
                 key = f"backup:{status.get('started')}"
                 if status.get("status") == "failed":
-                    self.alert(key, "The server backup failed", f"{name}: {status.get('summary') or 'go to Settings, General, Backup and restore'}.")
+                    self.alert(key, "The server backup failed", f"{name}: {status.get('summary') or 'go to Settings, General, Backup/Logs'}.")
                 from . import full_backup  # Full without media, by hand or on the schedule (DASH-17, DASH-78)
                 full = full_backup.status(self.app.data_dir) if getattr(self.app, "data_dir", None) else {}
                 if full.get("state") == "failed":
                     self.alert(f"full-backup:{full.get('started')}", "The full backup failed",
-                               f"{name}: {full.get('error') or 'go to Settings, General, Backup and restore'}.")
+                               f"{name}: {full.get('error') or 'go to Settings, General, Backup/Logs'}.")
 
                 from . import backup_copies  # Several backup places (26 November 2026): one alert for each that failed, by name
                 for bad in (backup_copies.failures(self.app.data_dir) if getattr(self.app, "data_dir", None) else []):
