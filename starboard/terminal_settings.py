@@ -24,13 +24,13 @@ HELP.update({
     "settings": "Each part of Starboard's settings that can be changed here. Everything here can also be changed in "
                 "Starboard's Settings pages from a browser. Type q to close the settings at any time; nothing changes "
                 "until you choose it.",
-    "updates": "Check for new versions: Starboard checks GitHub once a day and says on Settings, Updates and in the "
-               "side menu when a new version is out. Install Starboard updates automatically: in the quiet hours "
-               "(your download hours when they are set, otherwise 01:00 to 06:00), Starboard installs its newest "
-               "release with ./update.sh, which backs up its settings first and goes back by itself if the new version "
+    "updates": "Check for new versions: Starboard checks GitHub once a day. It says on Settings, Updates and in the "
+               "side menu when a new version is out. Install Starboard updates automatically: in the quiet hours, "
+               "Starboard installs its newest release with ./update.sh. The quiet hours are your download hours "
+               "when they are set, otherwise 01:00 to 06:00. The script backs up the settings first and goes back by itself if the new version "
                "does not start. A version that did not install is not tried again until someone chooses Update now in "
                "Settings, Updates. Install Reelix updates automatically: "
-               "in the quiet hours, once a day at most, Starboard installs a new Reelix, saving its settings first, and goes back to the "
+               "in the quiet hours, once a day at most, Starboard installs a new Reelix. It saves the settings first and goes back to the "
                "version before if the new one is not healthy. Update Starboard with ./update.sh in the Starboard "
                "folder; ./update.sh --to and a version goes back to that version, restoring the settings it saved.",
     "settings-password": "The password you chose for Starboard, the one you sign in with from a browser. Forgotten "

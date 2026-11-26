@@ -143,7 +143,7 @@ function renderReport() {
       el("li", {}, el("strong", { text: "Do the thing that went wrong again. " })),
       el("li", {}, el("strong", { text: "Copy the details and open an issue. " }), "Paste them in, and say what you expected to happen. ",
         el("div", { class: "actions" }, copy, issue))),
-    el("p", { class: "small muted", text: "Starboard removes personal details before anything is written to its log: passwords, API keys and tokens, IP addresses, host and computer names, email addresses, the user name in folder paths and the dashboard's name. Read the text before you post it all the same." }),
+    el("p", { class: "small muted", text: "Starboard removes personal details before it writes anything to its log. These are passwords, API keys and tokens, IP addresses, host and computer names, email addresses, the user name in folder paths and the dashboard's name. Read the text before you post it all the same." }),
     details);
 }
 

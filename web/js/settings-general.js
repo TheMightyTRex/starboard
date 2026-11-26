@@ -313,7 +313,7 @@ function logsSection() {
           (v) => saveGeneral({ logs: { detail: v } }, true)), "lg-detail-l")),
     el("div", { class: "stack-2" },
       el("h3", { text: "What the limits cover" }),
-      el("p", { class: "small", text: "Starboard's own log, one file a day, which also holds its jobs, updates and plug-ins' lines; the API's audit log; and the last Starboard update's log. Plug-ins keep no log files in Starboard." }),
+      el("p", { class: "small", text: "Starboard's own log, one file a day, with the lines from its jobs, updates and plug-ins. Also the API's audit log and the last Starboard update's log. Plug-ins keep no log files in Starboard." }),
       el("p", { class: "small", id: "logs-now", text: "Checking the logs…" })),
     el("div", { class: "stack-2" },
       el("h3", { text: "The apps' own logs" }),

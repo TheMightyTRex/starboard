@@ -2554,7 +2554,7 @@ const rstDialog = page.getByRole("dialog", { name: /^Restore the full backup fro
 await rstDialog.waitFor({ timeout: 5000 }).catch(() => {});
 const rstText = await rstDialog.innerText().catch(() => "");
 check("RST-02", "the dialog says what is replaced, that a full backup is made first and that the apps stop",
-  /go back to how they were then/.test(rstText) && /makes a full backup of how things are now first/.test(rstText) && /Your apps stop/.test(rstText) && /media is not touched/.test(rstText), rstText);
+  /go back to how they were then/.test(rstText) && /first makes a full backup of how things are now/.test(rstText) && /Your apps stop/.test(rstText) && /media is not touched/.test(rstText), rstText);
 check("RST-02", "it is a danger dialog with Cancel, and focus starts on the backup's password",
   await rstDialog.getByRole("button", { name: "Restore this backup" }).evaluate((b) => b.classList.contains("btn--danger"))
   && await rstDialog.getByRole("button", { name: "Cancel" }).count() === 1 && await activeId() === "restore-full-pw", await activeId());

@@ -92,7 +92,7 @@ async function startJellyfin() {
     settingRow("Build Live TV channels and guide", withCost(lt.what + ". Free channels only: Samsung TV Plus, Pluto TV and Free-TV, with Sky-style numbers.", "livetv"),
       sw("lt-on-l", x().livetv, (on) => save({ livetv: on })), "lt-on-l"));
   const liveNeeds = lt.needs.length ? notice("warning", "Needs set-up on the server", `Starboard needs ${lt.needs.join(" and ")}. Run ./install.sh and say yes to Live TV.`) : null;
-  const liveHelp = el("p", { class: "help-links" }, helpButton("How Jellyfin uses these files", { body: el("p", { text: "With Jellyfin's API key, Starboard adds these to Jellyfin after each run, and leaves your own alone. By hand, in Jellyfin: Dashboard, Live TV. Add a tuner of type M3U for each playlist (channels.m3u, samsung.m3u, pluto.m3u) and an XMLTV guide for each guide file (guide.xml, guide-samsung.xml, guide-pluto.xml), from the folder they are in inside Jellyfin." }) }));
+  const liveHelp = el("p", { class: "help-links" }, helpButton("How Jellyfin uses these files", { body: el("p", { text: "With Jellyfin's API key, Starboard adds these to Jellyfin after each run, and leaves your own alone. By hand, in Jellyfin: Dashboard, Live TV. Add a tuner of type M3U for each playlist (channels.m3u, samsung.m3u, pluto.m3u). Add an XMLTV guide for each guide file (guide.xml, guide-samsung.xml, guide-pluto.xml). Use the folder they are in inside Jellyfin." }) }));
 
   // Import watch history
   const h = d.history;
@@ -206,7 +206,7 @@ async function drawJellyfinMetadata(holder) {
   try { d = await api("/api/jellyfin/metadata"); } catch (e) { holder.replaceChildren(notice("danger", "Could not read where Jellyfin keeps them", e.message)); return; }
   holder.removeAttribute("aria-busy");
   if (d.moved) {
-    holder.replaceChildren(el("p", { text: "Outside its settings folder, in /metadata (the jellyfin-metadata folder beside its settings), so Jellyfin watches fewer folders and new files in Films and TV show without a scan." }));
+    holder.replaceChildren(el("p", { text: "Outside its settings folder, in /metadata (the jellyfin-metadata folder beside its settings). Jellyfin then watches fewer folders, and new files in Films and TV show without a scan." }));
     return;
   }
   if (!d.can_move) {

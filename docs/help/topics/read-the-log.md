@@ -44,15 +44,15 @@ q2: What do you want to do?
 
    ![System, Logs, with Lines shown (step 4) and Alerts only (step 5) outlined, with example data](../images/read-the-log-4-lines.png)
 
-Each entry shows its **Time**, its **Level** (Error, Warning, Info or Detail), the **Area** of Starboard it
-came from and **What happened**. Select an entry's message to show more, when it has more. To go further back,
+Each entry shows its **Time** and its **Level** (Error, Warning, Info or Detail). It also shows the **Area** of
+Starboard it came from and **What happened**. Select an entry's message to show more, when it has more. To go further back,
 choose more in **Lines shown**.
 
 **Lines shown** and **Alerts only** work with **Everything**, **Problems**, **Detailed** and the search. With a
-search or **Alerts only**, the count is of the entries that match, out of all the log holds, such as "Showing the
-newest 50 matching entries, of 3,412 in the log". Alerts only with **Detailed** shows nothing, as detail entries
-are not alerts. They change only what is shown: the stored log (how long it is kept and how much it may take) is
-not changed.
+search or **Alerts only**, the count covers only the entries that match, out of all the log holds. For example,
+"Showing the newest 50 matching entries, of 3,412 in the log". **Alerts only** with **Detailed** shows nothing,
+because detail entries are not alerts. These choices change only what Starboard shows. They do not change the stored log, that
+is, how long Starboard keeps it and how much space it may take.
 
 ## Read an app's log
 
@@ -62,13 +62,13 @@ passwords and addresses hidden.
 1. Go to **System**, then **Logs**, and find **App logs**.
 2. In **App**, choose the app. In **How many**, choose the last 100, 300 or 1,000 lines.
 3. Select **Show**. The newest line is at the end.
-4. To find something, enter a word in **Only lines with**. Each match is marked, and Starboard says how many lines
+4. To find something, enter a word in **Only lines with**. Starboard marks each match and says how many lines
    match.
 5. To show only some levels, select **Errors**, **Warnings**, **Info** or **Debug** to turn each one off or on. Each
    one shows how many lines it has.
 
-Select **Wrap lines** to read long lines without scrolling sideways, **Download the lines (TXT)** to keep them in a
-file, or **Copy** to paste them somewhere else.
+Select **Wrap lines** to read long lines without scrolling sideways. Select **Download the lines (TXT)** to keep
+them in a file, or **Copy** to paste them somewhere else.
 
 ## Report a problem
 
@@ -116,18 +116,18 @@ each in their own set-up, so they stay small even without that setting.
 3. Starboard asks **Delete all logs?** and says how much goes. Enter your Starboard password.
 4. Select **Delete all logs** to go ahead, or **Cancel** to keep them.
 
-Starboard says "All logs deleted" and how much was freed. Today's file and the API's audit log are emptied, not
-removed, so Starboard keeps logging. Their first new line says the logs were deleted, from which browser or API
-key, and when. This cannot be undone. The apps' own logs, which Docker keeps, are not deleted.
+Starboard says "All logs deleted" and how much was freed. Starboard empties today's file and the API's audit log but does not remove them, so it keeps
+logging. Their first new line says the logs were deleted, from which browser or API key, and when. You cannot undo
+this. Starboard does not delete the apps' own logs, which Docker keeps.
 
 ## Things to note
 
-- Starboard removes personal details before anything is written to its log: passwords, API keys and tokens,
-  IP addresses, host and computer names, email addresses, the user name in folder paths and the dashboard's
+- Starboard removes personal details before it writes anything to its log. These are passwords, API keys and
+  tokens, IP addresses, host and computer names, email addresses, the user name in folder paths and the dashboard's
   name. Read the text before you post it all the same.
-- **Download** saves the newest lines as a text file, for example to attach it to an issue: as many as **Lines
-  shown** says, and only errors and warnings when **Alerts only** is active. Its first line says how many it holds.
-  **Copy the details** gives the same number of lines.
+- **Download** saves the newest lines as a text file, for example to attach to an issue. It saves as many lines as
+  **Lines shown** says, and only errors and warnings when **Alerts only** is active. The file's first line says how
+  many lines it holds. **Copy the details** gives the same number of lines.
 - To suggest something or report a problem with one page, use **Feedback** in the side menu instead. Read
   [Send feedback about a page](send-feedback.md).
 - **Detailed logging** is also in **Settings**, **General**, **Logs and feedback**, in the **Logs** section.
@@ -150,7 +150,7 @@ key, and when. This cannot be undone. The apps' own logs, which Docker keeps, ar
   attach the file or copy the text from it.
 - **"That password is not right":** enter the password you sign in to Starboard with, then select **Delete all
   logs** again.
-- **The logs take more than No more than says:** today's file is never removed, so a busy day with detailed
+- **The logs take more than No more than says:** Starboard never removes today's file. A busy day with detailed
   logging can go over the limit until the next day starts. Set **Detailed logging** back to **Off**.
 - **"Set STARBOARD_REPO on the server to link straight to the issue page":** Starboard does not know where
   to report problems. Go to the Starboard project on GitHub and open a new issue there.
@@ -166,8 +166,8 @@ key, and when. This cannot be undone. The apps' own logs, which Docker keeps, ar
 
 ---
 
-**Download only what you have the right to.** Use the download apps only for files you have the right to download,
-such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+**Download only what you have the right to.** Use the download apps only for files you have the right to download.
+Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or
 books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
 does not host or provide any files, and you are responsible for what you download.
 
