@@ -110,7 +110,7 @@ async function bringSources(ctx) {
     el("p", { class: "small muted", text: "Starboard only reads these places: it copies from them and never renames, moves or deletes anything there. When the same title is in two places, the one higher in the list is brought in." }),
     el("p", { class: "help-links" },
       helpButton("What is a network share?", { body: [el("p", { text: "A folder another computer or a NAS shares on your network. Windows and most NAS boxes share with SMB; Linux often with NFS. Starboard connects to it read only, so nothing there can change." })], title: "What is a network share?" }),
-      helpButton("Why does the order matter?", { body: [el("p", { text: "When the same film, episode, album or book is in two places, the copy from the place higher in the list is brought in and the other is left where it is. Put the place with your best copies first." })], title: "Why does the order matter?" })),
+      helpButton("Why does the order matter?", { body: [el("p", { text: "When the same film, episode, album or book is in two places, Starboard brings in the copy from the place higher in the list. It leaves the other where it is. Put the place with your best copies first." })], title: "Why does the order matter?" })),
   ];
   return { nodes, save: async () => {
     // In the set-up, Continue with nothing added skips the step, as Enter does in the terminal set-up.
@@ -172,7 +172,7 @@ function cloudSignIn(place, opener, then) {
       cards.addEventListener("change", (e) => { st.way = e.target.value; begin(); });
       parts.push(cards);
     } else if (place.service === "gdrive") {
-      parts.push(el("p", { class: "small muted", text: "Google only lets apps read the files you already have when you sign in in a browser, so Complete on the phone is not offered for Google Drive." }));
+      parts.push(el("p", { class: "small muted", text: "Google only lets apps read your existing files when you sign in in a browser. So Starboard does not offer Complete on the phone for Google Drive." }));
     }
     if (s.state === "starting" || s.state === "checking") parts.push(waiting(s.state === "starting" ? "Getting the sign-in ready…" : `Checking the sign-in with ${place.name}…`));
     else if (s.state === "link") {
@@ -247,7 +247,7 @@ async function bringWhat(ctx) {
   const said = el("p", { class: "small muted", role: "status" });
   const box = el("div", { class: "stack-5" });
   const nodes = [said, box, el("p", { class: "help-links" },
-    helpButton("How does Starboard know?", { body: [el("p", { text: "By the kind of each file (a video, music, a book) and the shape of the folders: Season folders and S01E01 in names are series, an author's folder of audio files is an audiobook, and so on. Subtitles, artwork and .nfo files travel with their film or episode. System files and leftovers such as thumbs.db, .txt and .url files stay where they are." })], title: "How does Starboard know?" }))];
+    helpButton("How does Starboard know?", { body: [el("p", { text: "By the kind of each file (a video, music, a book) and the shape of the folders. Season folders and S01E01 in names are series. An author's folder of audio files is an audiobook, and so on. Subtitles, artwork and .nfo files travel with their film or episode. System files and leftovers such as thumbs.db, .txt and .url files stay where they are." })], title: "How does Starboard know?" }))];
   const fixSelect = (s, folder, current, label) => {
     const sel = el("select", { class: "input", "aria-label": label },
       el("option", { value: "", text: folder ? "As found" : "As found, folder by folder" }),
@@ -302,7 +302,7 @@ async function bringWhat(ctx) {
     });
     linkBox.replaceChildren(el("div", { class: "check bring-links" }, links, el("label", { for: "bring-links", class: "check__text" },
       el("strong", { text: "Link films and series on the same disk instead of copying them" }),
-      el("span", { class: "check__hint", text: "Uses no extra space, but the library file is then the same file as the original, so anything that changes the file's contents changes the original too. Music, books and audiobooks are always copied. If a link cannot be made (a pool's disks underneath can differ), the file is copied instead and the report says so." }))));
+      el("span", { class: "check__hint", text: "Uses no extra space. The library file is then the same file as the original, so anything that changes it changes the original too. Music, books and audiobooks are always copied. If a link cannot be made (a pool's disks underneath can differ), the file is copied instead and the report says so." }))));
     linkBox.hidden = false;
   };
   nodes.splice(2, 0, linkBox);
@@ -391,8 +391,8 @@ async function bringNames(ctx) {
     else { listBox.querySelector(":scope > button")?.remove(); if (more) listBox.append(more); }
   };
   const nodes = [top, space, filterBox, listBox, el("p", { class: "help-links" },
-    helpButton("Where does each file go?", { body: [el("p", { text: "Films go in Films as Title (Year), series in Series as Title (Year), Season 01, Title - S01E01, music by artist and album, books and audiobooks by author and title. These are the names Reelix and Jellyfin match best. Once copied, Reelix adds each one and gives every file Reelix's own name." })], title: "Where does each file go?" }),
-    helpButton("Why are some left where they are?", { body: [el("p", { text: "Samples, extras and files that are not media stay where they are, as do titles already in your library and second copies of a title (the source higher in the list wins). Exact copies of the same file are brought in once." })], title: "Why are some left where they are?" }))];
+    helpButton("Where does each file go?", { body: [el("p", { text: "Films go in Films as Title (Year). Series go in Series as Title (Year), Season 01, Title - S01E01. Music goes by artist and album. Books and audiobooks go by author and title. These are the names Reelix and Jellyfin match best. Once copied, Reelix adds each one and gives every file Reelix's own name." })], title: "Where does each file go?" }),
+    helpButton("Why are some left where they are?", { body: [el("p", { text: "Samples, extras and files that are not media stay where they are. So do titles already in your library and second copies of a title (the source higher in the list wins). Exact copies of the same file are brought in once." })], title: "Why are some left where they are?" }))];
   (async () => {
     try {
       await api("/api/bring-in/check", { method: "POST" });

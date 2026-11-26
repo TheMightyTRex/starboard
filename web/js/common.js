@@ -1025,11 +1025,11 @@ const USENET = [
 const USENET_ABOUT = "SABnzbd needs an account with a Usenet provider. Usenet is a worldwide network of discussion groups, running since 1980, that also carries files. Any provider works with SABnzbd.";
 const USENET_AD = "these are affiliate links. If you sign up through one, the provider pays a small commission towards Starboard's development. You pay the same price.";
 const USENET_RIGHTS_TITLE = "Download only what you have the right to";
-const USENET_RIGHTS = "Use Usenet only for files you have the right to download, such as open-source software, works in the public domain and your own backups. Downloading films, series, music or books without the copyright holder's permission is against the law in the UK and most other countries. Starboard does not host or provide any files, and you are responsible for what you download.";
+const USENET_RIGHTS = "Use Usenet only for files you have the right to download. Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or books without the copyright holder's permission is against the law in the UK and most other countries. Starboard does not host or provide any files, and you are responsible for what you download.";
 
 // The same words for every download app (torrents as well as Usenet), as in the README and help footer
 // (tools/help_footer.py). About shows these.
-const DOWNLOAD_RIGHTS = "Use the download apps only for files you have the right to download, such as open-source software, works in the public domain and your own backups. Downloading films, series, music or books without the copyright holder's permission is against the law in the UK and most other countries. Starboard does not host or provide any files, and you are responsible for what you download.";
+const DOWNLOAD_RIGHTS = "Use the download apps only for files you have the right to download. Examples are open-source software, works in the public domain and your own backups. Downloading films, series, music or books without the copyright holder's permission is against the law in the UK and most other countries. Starboard does not host or provide any files, and you are responsible for what you download.";
 
 function rightsNotice(text) {
   return el("div", { class: "notice" }, icon("info"), el("div", { class: "notice__body" },

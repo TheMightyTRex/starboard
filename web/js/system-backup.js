@@ -426,7 +426,7 @@ async function restoreFull(b, opener, showRestore) {
       title: `Restore the full backup from ${made}?`,
       message: [
         el("p", { text: `Starboard, its plug-ins and the settings and database of ${apps} ${apps === 1 ? "app" : "apps"}${apps ? ` (${b.apps.join(", ")})` : ""} go back to how they were then. What changed since is replaced. Your media is not touched.` }),
-        el("p", { text: "Starboard makes a full backup of how things are now first, in the same folder and with the same backup password, so you can go back. Your apps stop while this happens and start again afterwards. Your Starboard password and sign-ins stay as they are." })],
+        el("p", { text: "Starboard first makes a full backup of how things are now, in the same folder and with the same backup password. You can then go back. Your apps stop while this happens and start again afterwards. Your Starboard password and sign-ins stay as they are." })],
       confirm: "Restore this backup", danger: true, fields: [backup.node, mine.node] });
     (errors.mine && !errors.backup ? mine : backup).input.focus();
     if (!(await asked)) return;
@@ -517,7 +517,7 @@ function scheduleState(s, canFull) {
     if (makes.length) parts.push(notice("info", `Next backup: ${next}`, `It makes ${makes.join(", then ")}.${s.last_run ? ` Last time, ${formatDate(s.last_run * 1000, true)}: ${s.last_result}` : ""}`));
     else parts.push(notice("warning", "Nothing to back up yet", canFull
       ? "Scheduled full backups need the backup password, kept by Starboard so it can make them with nobody there."
-      : "Starboard did not set up your apps and no backup job on the server is set up, so there is nothing it can make by itself.",
+      : "Starboard did not set up your apps, and the server has no backup job. So Starboard has nothing it can make by itself.",
     canFull ? el("button", { type: "button", class: "btn btn--compact", id: "keep-key", onclick: (e) => openKeepKey(e.currentTarget) }, "Keep the backup password") : null));
     // 26 November 2026: with no kept password the schedule only asked the server's job, and nothing said no full backup was made.
     if (!s.key && canFull && makes.length) parts.push(notice("warning", "Full backups are not being made", "A schedule can make a full backup without media only when Starboard keeps the backup password. Until then it asks only the server's own backup job, which is not a full backup of the apps."));

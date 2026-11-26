@@ -278,7 +278,7 @@ function mcpAssistants() {
   return el("div", { class: "stack-4" },
     el("ul", { class: "settings-rows" },
       settingRow("Let AI assistants connect",
-        el("span", { id: "mcp-h", text: "An assistant can then read the Library, what is new, coming up and playing, downloads and their problems, requests, how each app is and disk space. It cannot change anything, never gets a password or an app's key, and each question it asks is written to the audit log. Give it a Read only key with only the scopes it needs." }),
+        el("span", { id: "mcp-h", text: "An assistant can then read the Library, what is new, coming up and playing. It can also read downloads and their problems, requests, how each app is and disk space. It cannot change anything, never gets a password or an app's key, and each question it asks is written to the audit log. Give it a Read only key with only the scopes it needs." }),
         el("label", { class: "switch" }, on), "mcp-l")),
     result, where,
     el("p", { class: "small muted" }, "How to connect one: ", helpLink("topics/connect-an-ai-assistant-with-mcp", "Let an AI assistant answer questions"),

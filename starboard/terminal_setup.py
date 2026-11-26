@@ -98,7 +98,7 @@ USENET_ABOUT = ("SABnzbd needs an account with a Usenet provider. Usenet is a wo
 USENET_AD = ("Ad: these are affiliate links. If you sign up through one, the provider pays a small commission towards "
              "Starboard's development. You pay the same price.")
 USENET_RIGHTS_TITLE = "Download only what you have the right to"
-USENET_RIGHTS = ("Use Usenet only for files you have the right to download, such as open-source software, works in the "
+USENET_RIGHTS = ("Use Usenet only for files you have the right to download. Examples are open-source software, works in the "
                  "public domain and your own backups. Downloading films, series, music or books without the copyright "
                  "holder's permission is against the law in the UK and most other countries. Starboard does not host "
                  "or provide any files, and you are responsible for what you download.")
@@ -159,7 +159,7 @@ HELP_PAGES = {
 
 HELP = {
     "bring": "Bring in media you already have copies films, series, music, books and audiobooks from folders on this "
-             "computer, another disk or a network share into your media folder, named so Reelix and Jellyfin match them. "
+             "computer, another disk or a network share into your media folder. It names them so Reelix and Jellyfin match them. "
              "Nothing where your media is now is renamed, moved or deleted. When a title is in two places, the one higher "
              "in the list is brought in. Read Bring in media you already have in the help centre.",
     "pool": "A pool joins several disks into one folder, /mnt/pool, so your media has one place however many "
@@ -169,7 +169,7 @@ HELP = {
               "as big as the biggest pool disk and can rebuild any one failed disk; it is checked every night. A "
               "copy (rsync) is a full, readable copy of your media folder and needs as much space as it. Neither is "
               "a full backup on its own: keep a third copy of what matters somewhere else.",
-    "balance": "Balancing moves whole series, film and book folders from fuller disks to emptier ones, so the "
+    "balance": "Balancing moves whole series, film and book folders from fuller disks to emptier ones. The "
                "disks fill evenly and each series stays on one disk. It runs at low priority and can be stopped.",
     "password": "Your password signs you in to Starboard from any device. Use 10 characters or more; a few unrelated "
                 "words make a strong password that you can remember. If you forget it, run ./reset-password.sh.",
@@ -196,7 +196,7 @@ HELP = {
                       "settings, so you can switch either way later in Starboard, Settings, Reelix.",
     "usenet": USENET_HELP,
     "sites": "Reelix searches these sites for what you want, then hands the best copy to the download app. The ones listed "
-             "need no account. Torznab and Newznab are the ways such sites answer searches: use your own address if "
+             "need no account. Torznab and Newznab are the ways such sites answer searches. Use your own address if "
              "you run Jackett or Prowlarr, or have an account with a Usenet search site. You can add, test and remove "
              "sites later in Starboard, Settings, Reelix, Sites to search.",
     "shadows": "Drop shadows give cards, covers and menus some depth, and they cost a little processor on every scroll. "
@@ -213,9 +213,9 @@ HELP = {
     "hours": "Downloading uses most of your internet connection while it runs, so streaming, video calls and games on "
              "other devices can slow down. With download hours, Starboard pauses the download apps outside them and "
              "starts them again when they begin. Nothing is lost.",
-    "auto-updates": "Starboard can install new versions of itself, Reelix, your other apps and the plug-ins by itself in the update hours: "
+    "auto-updates": "Starboard can install new versions of itself, Reelix, your other apps and the plug-ins. It does this in the update hours: "
                     "your download hours when they are set, otherwise 01:00 to 06:00. Before each one it saves the "
-                    "settings, and if the new version does not start it goes back to the one before (Jellyfin's "
+                    "settings. If the new version does not start, it goes back to the one before (Jellyfin's "
                     "plug-ins cannot go back by themselves). Each is deactivated unless you choose it; change them "
                     "and the hours later in Settings, Updates.",
     "check": "This is everything that will change. Nothing has changed yet: type b to go back and change an answer, or "
@@ -226,8 +226,8 @@ HELP = {
               "everyone has watched from Plex, Emby or another Jellyfin. Defaults set Jellyfin's options for users who "
               "have not chosen their own. Audio description adds a plug-in for blind and partially sighted people, "
               "installed in Settings, Plug-ins.",
-    "alerts": "Starboard checks your apps every few minutes and sends an alert when one stops answering or a disk has a "
-              "problem. ntfy has a free phone app: choose a long private topic name, such as https://ntfy.sh/a-long-private-name.",
+    "alerts": "Starboard checks your apps every few minutes. It sends an alert when one stops answering or a disk has a "
+              "problem. ntfy has a free phone app. Choose a long private topic name, such as https://ntfy.sh/a-long-private-name.",
     "health": "A small script reads each disk's health report (SMART) as root every 30 minutes, so Starboard can warn "
               "you before a disk fails. Setting it up needs sudo once, so it is done at the end.",
     "name": "The name is shown in the header of every page and in the browser tab, so you can tell this server "
@@ -2064,8 +2064,8 @@ def step_keyboard(api, term, state):
     symbols = boards[0].get("symbols") or []
     HELP["keyboard-now"] = HELP["keyboard"] + ("\n\n" + "\n".join(symbols) + "\n\n" + data.get("set_it_right", "") if symbols else "")
     HELP_PAGES["keyboard-now"] = HELP_PAGES["keyboard"]
-    term.note("If a symbol such as | or \\ does not come out as marked on the key, the layout set does not match your "
-              "keyboard: type ? for where the symbols are.")
+    term.note("If a symbol such as | or \\ does not come out as marked on the key, the layout you set does not match your "
+              "keyboard. Type ? to find where the symbols are.")
     picked = term.choose_list(question("keyboard"), options, 1, help_key="keyboard-now")
     state["keyboard_chosen"] = boards[picked]["id"]
     saved = api.call("POST", "/api/setup/place", {"tz": state["tz"], "keyboard": state["keyboard_chosen"]})
@@ -2414,8 +2414,8 @@ def bring_what(api, term, state):
         s["look"] = api.call("PUT", "/api/bring-in/fix", {"source": s["id"], "folder": "" if f == 0 else look["folders"][f - 1]["path"], "kind": kind})
     d = api.call("GET", "/api/bring-in")
     if d.get("link_offered"):
-        term.note("Linking uses no extra space, but the library file is then the same file as the original, so anything "
-                  "that changes the file's contents changes the original too. Music, books and audiobooks are always "
+        term.note("Linking uses no extra space. The library file is then the same file as the original, so anything "
+                  "that changes it changes the original too. Music, books and audiobooks are always "
                   "copied. If a link cannot be made, the file is copied instead.")
         links = term.choose("Link films and series on the same disk instead of copying them?",
                             [("No, copy them", "the originals never change"), ("Yes, link them", "no extra space")],

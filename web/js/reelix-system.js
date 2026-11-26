@@ -92,7 +92,7 @@ async function rsBackups(body, locked) {
     let placeNote = null;
     if (p && (p.chosen === "other" || p.now === "other")) {
       // A folder someone set in Reelix's own configuration file: said, and left alone.
-      placeNote = el("p", { class: "small muted", text: `Reelix keeps its backups in ${p.other || "a folder set in its own configuration file"}, which was not chosen here, so Starboard leaves it as it is.` });
+      placeNote = el("p", { class: "small muted", text: `Reelix keeps its backups in ${p.other || "a folder set in its own configuration file"}. You did not choose that here, so Starboard leaves it as it is.` });
     } else if (p && (!p.same_disk || p.chosen === "media")) {
       const [beside, media] = p.choices;
       const where = el("select", { class: "select", id: "rs-place", "aria-labelledby": "rs-place-l", "aria-describedby": "rs-place-h" },

@@ -114,7 +114,7 @@ function startAlerts() {
     settingRow("Weekly summary", withCost("On Monday morning: how each app did, disk health and how full your folders are. Sent where alerts go.", "weekly"),
       switchFor("al-week-l", w().weekly, (on) => save({ weekly: on })), "al-week-l"),
     // DASH-105: a new Starboard release, at most one message a week, only where your alerts go.
-    settingRow("An update is ready", "One message when a newer Starboard is out, with a link to what is new (at most once a week), and one for each plug-in or app version that waits for you. Nothing is checked for it. What updates by itself is told afterwards instead.",
+    settingRow("An update is ready", "One message when a newer Starboard is out, with a link to what is new (at most once a week). One more for each plug-in or app version that waits for you. Nothing is checked for it. What updates by itself is told afterwards instead.",
       switchFor("al-rel-l", w().releases !== false, (on) => save({ releases: on })), "al-rel-l"));
 
   $("#alerts-sections").removeAttribute("aria-busy");
