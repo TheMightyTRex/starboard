@@ -8,6 +8,7 @@ add features.
 ## [Unreleased]
 
 ### Added
+- **Compatibility check for the API.** A new check fails a change that takes away or tightens a route, permission, manifest field, card, event or key scope without the deprecation steps, and runs 74 older plug-in manifests against this Starboard. Draft, for review.
 - **Sign in to Plex with a link code.** Manage apps has Sign in with Plex, which shows a code to enter at plex.tv/link, or you can still paste the token.
 - **A first sign-in for app plug-ins.** A plug-in can now set its app's first password, and the plug-in's page shows it once after you enter your Starboard password. Calibre-Web uses this from version 1.2.0. Find out more in the [manifest reference](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/developers/plugin-manifest-reference.md#a-first-sign-in-shown-once-first_sign_in).
 - **A wizard for switching media server.** The media server tab in Settings, Apps has Switch with help, which says what moves, what cannot and what keeps working before anything changes. Find out more in [Choose your media server](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/choose-your-media-server.md).
@@ -44,7 +45,9 @@ add features.
 - **A full backup that was not made is now reported.** A scheduled backup with no saved backup password used to say it had run. It now says "No full backup was made", raises an alert and shows a warning in Settings.
 
 ### Security
+- **Requests with a Transfer-Encoding are refused.** Starboard now answers 400 and closes the connection, so a proxy in front of it cannot hide a second request inside a body.
 - **One guarded way to fetch a plug-in's manifest, catalogue and logo.** Starboard now checks every redirect and the address it connects to, so an address that redirects, or changes its answer, cannot reach your home network's private services or a cloud metadata address.
+
 
 ## [0.31.0] (25 November 2026)
 
