@@ -1018,16 +1018,16 @@ for (const [from, to] of [["/settings-general-discover.html", "/settings-general
 await page.setViewportSize({ width: 375, height: 812 });
 await open("settings-general-hours.html");
 await page.waitForTimeout(600);
-const row = await page.evaluate(() => {
+const mrow = await page.evaluate(() => {
   const nav = document.querySelector('.site-header__tabs nav[aria-label="General"]');
   const as = [...nav.querySelectorAll("a")];
   const label = (a) => a.querySelector(".menu-tabs__label").getBoundingClientRect().width > 2;
   return { compact: nav.classList.contains("is-compact"), tabs: as.length, minW: Math.min(...as.map((a) => a.getBoundingClientRect().width)),
     named: as.filter(label).map((a) => a.textContent.trim()), current: as.filter((a) => a.getAttribute("aria-current") === "page").map((a) => a.textContent.trim()) };
 });
-check("MENU3-02", "General has seven tabs and at 375 px shows icons only", row.tabs === 7 && row.compact, JSON.stringify(row));
-check("MENU3-02", "every tab is at least 44 px wide", row.minW >= 43.9, String(row.minW));
-check("MENU3-02", "only the current tab, Hours, shows its name", row.named.join() === "Hours" && row.current.join() === "Hours", JSON.stringify(row));
+check("MENU3-02", "General has seven tabs and at 375 px shows icons only", mrow.tabs === 7 && mrow.compact, JSON.stringify(mrow));
+check("MENU3-02", "every tab is at least 44 px wide", mrow.minW >= 43.9, String(mrow.minW));
+check("MENU3-02", "only the current tab, Hours, shows its name", mrow.named.join() === "Hours" && mrow.current.join() === "Hours", JSON.stringify(mrow));
 await page.locator('.site-header__tabs nav[aria-label="General"] a').first().focus();
 await page.keyboard.press("ArrowRight");
 const moved = await page.evaluate(() => ({ text: document.activeElement.textContent.trim(), named: document.activeElement.querySelector(".menu-tabs__label").getBoundingClientRect().width > 2 }));
