@@ -487,6 +487,7 @@ def listing(data_dir):
                         "adopt": adopt_info(m), "adopted": st.get("adopted"),
                         # API 1.15: added from a zip (DASH-414), so it updates from one; its Jellyfin libraries (DASH-430)
                         "from_zip": bool(plugins.builds(m)) or os.path.isdir(os.path.join(where, "zips")),
+                        "media_server": is_media_server(m),  # DASH-565: it fills the media server slot
                         "libraries": st.get("libraries")})
     return out
 
@@ -564,7 +565,7 @@ def host_for_builtin():
             "iptv": os.environ.get("STARBOARD_LIVETV_PATH") or None, "tz": os.environ.get("TZ") or None}
 
 
-def install(data_dir, manifest, media_dir, dev=False, builtin=False, defaults=None, host=None):
+def install(data_dir, manifest, media_dir, dev=False, builtin=False, defaults=None, host=None, listed=True):
     """Checks and installs a plug-in (not started): its folder, settings with defaults, its API key with exactly the
     approved scopes, and its Compose file. Returns its listing entry."""
     builtin = builtin and manifest.get("id") in builtins() and builtins()[manifest["id"]] == manifest
@@ -590,6 +591,8 @@ def install(data_dir, manifest, media_dir, dev=False, builtin=False, defaults=No
     now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     _write(os.path.join(where, "state.json"), {"state": "installed", "installed_at": now, "key_id": item["id"], "builtin": builtin})
     api_v1.audit(data_dir, "plugin_installed", plugin=pid, version=manifest["version"], permissions=manifest.get("permissions") or [])
+    if not listed:  # the default media server record: nothing to show, and listing() loads the styles, logos and more
+        return None
     return next(p for p in listing(data_dir) if p["id"] == pid)
 
 
@@ -708,6 +711,67 @@ def set_state(data_dir, pid, state, message=""):
     st = _read(os.path.join(folder(data_dir, pid), "state.json"), {})
     st.update(state=state, message=message[:500])
     _write(os.path.join(folder(data_dir, pid), "state.json"), st)
+
+
+def is_media_server(manifest):
+    """True for a plug-in that fills the media server slot (DASH-565): it asks for slot:media-server."""
+    return "slot:media-server" in ((manifest or {}).get("permissions") or [])
+
+
+DEFAULT_MEDIA_SERVER = "jellyfin"
+
+
+def ensure_default(data_dir, services):
+    """DASH-565, PR C: Jellyfin is added by default as the built-in media server plug-in, on new and existing installs.
+    A record only: a state file and the manifest from Starboard's own copy, so nothing runs and nothing changes for
+    the person; Jellyfin's settings, address and key stay where they were. It is additive and idempotent: it never
+    changes an added plug-in's state or settings, only follows Starboard's copy of the manifest, and it does not add
+    the plug-in again once it was removed. Enabled when Jellyfin is set up, else added but not active. Returns True
+    when it added the record."""
+    pid = DEFAULT_MEDIA_SERVER
+    where = folder(data_dir, pid)
+    shipped = builtins().get(pid)
+    if not shipped:
+        return False
+    mine = _read(os.path.join(where, "manifest.json"))
+    if mine:
+        if mine != shipped and (_read(os.path.join(where, "state.json"), {}) or {}).get("builtin"):
+            _write(os.path.join(where, "manifest.json"), shipped)  # the version follows Starboard's
+        return False
+    aside = os.path.join(root(data_dir), ".removed")
+    try:
+        if any(n.startswith(f"{pid}-") for n in os.listdir(aside)):
+            return False  # removed on purpose: not added again behind a person's back
+    except OSError:
+        pass
+    install(data_dir, shipped, "", builtin=True, listed=False)
+    if any(isinstance(s, dict) and s.get("type") == "jellyfin" and s.get("enabled", True) and s.get("url") and s.get("api_key")
+           for s in services or []):
+        set_state(data_dir, pid, "enabled")
+    return True
+
+
+_default_seen = set()
+_default_lock = threading.Lock()
+
+
+def ensure_default_once(data_dir, services):
+    """ensure_default() once for each data folder and run, for the pages that already load this module: it is not asked
+    at start-up (nothing is loaded for it until someone opens a page, DASH-565), and costs nothing after the first time."""
+    with _default_lock:  # two pages asking together: the second waits for the first, and then finds it done
+        if data_dir in _default_seen:
+            return False
+        try:
+            added = ensure_default(data_dir, services)
+        except (OSError, ValueError) as e:  # a record only: never stops a page
+            import logging
+            logging.getLogger("starboard").warning("The Jellyfin media server plug-in was not added: %s", e)
+            return False
+        _default_seen.add(data_dir)
+    if added:
+        from . import logs
+        logs.event("info", "plug-ins", "Jellyfin was added as the media server plug-in, with its settings as they were")
+    return added
 
 
 def _runs_nothing(data_dir, pid):
@@ -1119,6 +1183,8 @@ def refresh_builtins(data_dir, media_dir, services, helper=None, host=None):
             continue
         pid, manifest = p["id"], shipped[p["id"]]
         where = folder(data_dir, pid)
+        if not manifest.get("containers"):
+            continue  # a media server built into Starboard runs nothing; ensure_default() keeps its manifest current
         try:
             text = plugins.compose(manifest, host_path(data_dir, pid), media_dir, host or host_for_builtin(),
                                    media_owner(data_dir), None)
@@ -1161,11 +1227,12 @@ def upgrade_all(data_dir, services, helper=None):
     return done
 
 
-def stop_all(data_dir, helper=None):
-    """The kill switch (PS11): every enabled plug-in stopped."""
+def stop_all(data_dir, helper=None, keep=()):
+    """The kill switch (PS11): every enabled plug-in stopped, except the ones named in `keep` (the media server in use,
+    which is not a container and stays until another is chosen, DASH-565)."""
     stopped = []
     for p in basics(data_dir):
-        if p["state"] == "enabled":
+        if p["state"] == "enabled" and p["id"] not in keep:
             disable(data_dir, p["id"], helper)
             stopped.append(p["name"])
     return stopped

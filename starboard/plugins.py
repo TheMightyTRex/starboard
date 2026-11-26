@@ -42,6 +42,9 @@ PERMISSIONS = {
     "library:holding": ("Move films and series from your library into the holding folder in your media folder, and put them back", "high", None),
     # API 1.17: raise and clear alerts with POST /api/v1/plugin/alerts, the one write a plug-in's read-only key may do
     "alerts:send": ("Send alerts through Starboard, to where it sends its own (ntfy, Gotify, a webhook, and plug-ins that pass them on)", "low", None),
+    # DASH-565: the media server slot. A plug-in that fills it answers for Starboard's dashboard panel, Library, Activity
+    # and System. Only plug-ins that ship inside Starboard may ask for it so far (third-party ones: a later step).
+    "slot:media-server": ("Be Starboard's media server: answer for the dashboard panel, Library, Activity and System, using the address and key kept in Settings, Apps", "high", None),
 }
 NETWORKS = {"default": None, "lan": "network:lan", "vpn": "network:vpn"}
 SETTING_TYPES = ("text", "number", "switch", "choice", "address", "secret", "folder", "list", "custom", "schedule")  # schedule: API 1.14
@@ -219,7 +222,12 @@ def check(manifest, dev=False, builtin=False):
         out.append("permissions must be a list from: " + ", ".join(PERMISSIONS))
         perms = []
     containers = m.get("containers", [])
-    least = 0 if m.get("styles") else 1  # a plug-in with only styles runs nothing (DASH-284)
+    # DASH-565: a media server that comes with Starboard runs inside it, so it has no container; for now only those may ask
+    # for the slot (third-party media server plug-ins, with containers, are a later step)
+    slot = "slot:media-server" in perms
+    if slot and not builtin:
+        out.append("Only a plug-in that comes with Starboard can be the media server for now")
+    least = 0 if (m.get("styles") or (slot and builtin)) else 1  # only styles, or a built-in media server, runs nothing (DASH-284, DASH-565)
     if not (isinstance(containers, list) and least <= len(containers) <= 4):
         out.append("containers must list one to four containers" + (" (none for a plug-in with only styles)" if not least else ""))
         containers = []
@@ -515,8 +523,10 @@ SEES = {"apps:read": "Your apps and whether they answer", "downloads:read": "Wha
         "media:read": "Your library: films, series, music and books", "system:read": "Processor, memory and disk use",
         "jellyfin:key": "Everything in Jellyfin: your library, the people who use it and what each one watched",
         "reelix:key": "Everything in Reelix: what you follow, your download sites and its search",
-        "usenet:servers": "Your news server's address, user name and password (the Usenet account you pay for)"}
-CHANGES = {"jellyfin:key": "Anything in Jellyfin: it gets Jellyfin's API key, which can change users, libraries and settings",
+        "usenet:servers": "Your news server's address, user name and password (the Usenet account you pay for)",
+        "slot:media-server": "What your media server shows: its libraries, who is watching and what was added"}
+CHANGES = {"slot:media-server": "Which media server Starboard shows on the dashboard, in Library and in Activity",
+           "jellyfin:key": "Anything in Jellyfin: it gets Jellyfin's API key, which can change users, libraries and settings",
            "reelix:key": "Anything in Reelix: it gets Reelix's API key, which can add, search for and remove what you follow",
            "usenet:servers": "It can download from your news server with your account, using some of its connections",
            "appearance:styles": "Starboard's appearance, through styles in Display (checked for accessibility first)",

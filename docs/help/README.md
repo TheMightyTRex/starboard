@@ -161,6 +161,7 @@ Each guide is a journey through several topics, in order.
 
 ### Jellyfin and Audiobookshelf
 
+- [Check which media server Starboard uses](topics/choose-your-media-server.md)
 - [Set up free Live TV in Jellyfin](topics/set-up-live-tv.md)
 - [A Live TV channel will not play](topics/live-tv-channel-will-not-play.md)
 - [Import watch history into Jellyfin](topics/import-watch-history.md)

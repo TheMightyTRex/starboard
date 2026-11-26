@@ -161,7 +161,7 @@ def state(data):
     have = bool(one and any(isinstance(s, dict) and s.get("type") == one.service_type and s.get("enabled", True) and s.get("api_key") for s in saved))
     return {"active": one.id if one else "", "name": one.name if one else "", "configured": have,
             "capabilities": list(one.capabilities) if one else [], "page": one.page if one else "",
-            "available": [{"id": c.id, "name": c.name} for c in ADAPTERS.values()]}
+            "available": [{"id": c.id, "name": c.name, "page": c.page} for c in ADAPTERS.values()]}
 
 
 def status_for_pages(data):
@@ -171,3 +171,9 @@ def status_for_pages(data):
     if one is None:
         return {"configured": False}
     return one.legacy_status((data or {}).get("services") or [])
+
+
+def in_use(data, pid):
+    """True when the plug-in `pid` is the media server in use (the active one). A media server plug-in that is in use
+    cannot be deactivated or removed: choose another one, or none, first (Settings, Media server)."""
+    return bool(pid) and active_id(data) == pid

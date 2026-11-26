@@ -133,7 +133,7 @@ const ALL = pages.length ? pages : fs.readdirSync(process.env.WEB || "/web").fil
   .concat(["settings-plugin.html?id=styles", "settings-plugin.html?id=watch-stats", "settings-plugin.html?id=notifications",
     "settings-plugin.html?id=audio-description-sources", "settings-plugin.html?id=audio-description-tracks",
     "settings-plugin.html?id=jellystat", "settings-plugin.html?id=tdarr", "settings-plugin.html?id=direct-play",
-    "settings-plugin.html?id=picture-shrinker", "settings-plugin.html?id=on-demand", "settings-plugin.html?id=library-cleanup"]);  // built from a zip, with Jellyfin libraries, and Put back on each row (plug-in API 1.15, DASH-406)  // a PNG logo and a schedule setting (plug-in API 1.14)  // Direct play (DASH-425)  // app plug-ins (DASH-411)  // links on rows and a file-only upload (DASH-410)  // read-only tables (DASH-402), settings in sections with secrets (DASH-401)
+    "settings-plugin.html?id=jellyfin", "settings-plugin.html?id=picture-shrinker", "settings-plugin.html?id=on-demand", "settings-plugin.html?id=library-cleanup"]);  // built from a zip, with Jellyfin libraries, and Put back on each row (plug-in API 1.15, DASH-406)  // a PNG logo and a schedule setting (plug-in API 1.14)  // Direct play (DASH-425)  // app plug-ins (DASH-411)  // links on rows and a file-only upload (DASH-410)  // read-only tables (DASH-402), settings in sections with secrets (DASH-401)
 for (const name of ALL) {
   try {
     await page.goto(`${base}/${name}`);
@@ -261,6 +261,33 @@ if (!pages.length || pages.some((p) => p.includes("dashboard"))) {
     await page.evaluate(async () => { await api("/api/config/general", { method: "PUT", body: { dashboard: { layout: "glance", cards: null } } }); });
     console.log("checked the custom card on the dashboard");
   } catch (e) { add("dashboard.html, custom card", "page", "error", e.message.split("\n")[0]); }
+}
+
+// The media server plug-in (DASH-565): Jellyfin's own plug-in page, with its Media server card and the state chip with its
+// shape, and the catalogue's Media servers tab, in Light, Dark and High contrast.
+if (!pages.length || pages.some((p) => p.includes("settings-plugin"))) {
+  const scan = async (name) => {
+    await axe(name, "light");
+    await structure(name);
+    await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+    await page.waitForTimeout(150);
+    await axe(name, "dark");
+    await page.evaluate(() => { document.documentElement.removeAttribute("data-theme"); document.documentElement.classList.add("pref-contrast"); });
+    await page.waitForTimeout(150);
+    await axe(name, "high contrast");
+    await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
+  };
+  try {
+    await page.goto(`${base}/settings-plugin.html?id=jellyfin`);
+    await settle();
+    await scan("settings-plugin.html, Jellyfin as the media server");
+    await page.goto(`${base}/settings-plugins-catalogue.html`);
+    await settle();
+    await page.getByRole("tab", { name: "Media servers", exact: true }).click();
+    await page.waitForTimeout(300);
+    await scan("settings-plugins-catalogue.html, the Media servers tab");
+    console.log("checked the media server plug-in");
+  } catch (e) { add("settings-plugin.html, Jellyfin as the media server", "page", "error", e.message.split("\n")[0]); }
 }
 
 // Alerts, The server itself (DASH-556): the host alerts' switches, limits and times, with More settings on, in Light, Dark and High contrast.

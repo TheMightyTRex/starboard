@@ -1344,6 +1344,8 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/session" and method == "GET":
                 signed_in = self.signed_in()
                 from . import plugins_admin
+                if signed_in:
+                    plugins_admin.ensure_default_once(app.data_dir, app.config.data["services"])  # Jellyfin's record (DASH-565)
                 return self.json(200, {
                     "signed_in": signed_in, "needs_setup": app.needs_setup,
                     # DASH-238: until the first set-up has finished, pages show only the set-up wizard.
@@ -3353,9 +3355,10 @@ class Handler(BaseHTTPRequestHandler):
         media = f"{media}/media" if media else "/nonexistent-media-folder"
         from . import plugin_life
         if path == "/api/plugins" and method == "GET":
-            from . import livetv_move
+            from . import livetv_move, mediaserver
+            pa.ensure_default_once(app.data_dir, app.config.data["services"])  # Jellyfin as the media server plug-in (DASH-565)
             added = {p["id"] for p in pa.basics(app.data_dir)}
-            built = [{**pa.summary(m, []), "added": m["id"] in added, "logo": pa.builtin_logo(m),
+            built = [{**pa.summary(m, []), "added": m["id"] in added, "logo": pa.builtin_logo(m), "media_server": pa.is_media_server(m), "recommended": m["id"] == mediaserver.DEFAULT,  # Jellyfin is the one recommended
                       "why_not": livetv_move.can_run(app.data_dir) if m["id"] == livetv_move.PID else ""}
                      for m in pa.builtins().values()]
             updates = plugin_life.updates_known(app.data_dir)  # from catalogues already read; nothing fetched here
@@ -3367,6 +3370,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.json(200, {"plugins": [{**p, "update": updates.get(p["id"]), "health": well.get(p["id"]),
                                                 "system": plugin_systems.judge(p.get("system"), here),
                                                 "resting": plugin_watch.resting(app.data_dir, p["id"])} for p in listed], "builtin": built,
+                                   "media_server": mediaserver.state(app.config.data),
                                    "wanted": pa.wanted_from_setup(app.config, {p["id"] for p in listed})})
         if path == "/api/plugins/wanted" and method == "POST":  # Not now on a plug-in chosen in the set-up (DASH-399)
             said = pa.drop_wanted(app.config, str(self.body().get("id") or ""))
@@ -3639,7 +3643,8 @@ class Handler(BaseHTTPRequestHandler):
                 logs.event("info", "plug-ins", f"{mx.group(1)}: {out['said']}")
             return self.json(200, out)
         if path == "/api/plugins/stop-all" and method == "POST":
-            stopped = pa.stop_all(app.data_dir)
+            from . import mediaserver
+            stopped = pa.stop_all(app.data_dir, keep={mediaserver.active_id(app.config.data)})  # the media server in use stays (DASH-565)
             logs.event("info", "plug-ins", f"Deactivated every plug-in ({len(stopped)})")
             return self.json(200, {"stopped": stopped, "plugins": pa.listing(app.data_dir)})
         ma = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/actions/([A-Za-z0-9_-]{1,40})$", path)
@@ -3667,6 +3672,11 @@ class Handler(BaseHTTPRequestHandler):
         if not m or not any(p["id"] == m.group(1) for p in pa.basics(app.data_dir)):
             return self.error(404, "No plug-in with that id")
         pid, what = m.groups()
+        if what in ("disable", "remove") and method == "POST":
+            from . import mediaserver
+            if mediaserver.in_use(app.config.data, pid):  # DASH-565: Starboard would be left with no media server by accident
+                return self.error(409, f"{next(p['name'] for p in pa.basics(app.data_dir) if p['id'] == pid)} is your media server, so it stays on. "
+                                       "Starboard uses it for the dashboard panel, Library, Activity and System")
         if what == "settings" and method == "PUT":
             return self.json(200, {"settings": pa.save_settings(app.data_dir, pid, self.body().get("settings") or {})})
         if method != "POST":

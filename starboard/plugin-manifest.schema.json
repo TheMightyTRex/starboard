@@ -189,6 +189,7 @@
      "network:port",
      "network:vpn",
      "reelix:key",
+     "slot:media-server",
      "system:read",
      "usenet:servers"
     ]
