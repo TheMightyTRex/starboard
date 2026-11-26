@@ -23,6 +23,7 @@ add features.
 - **Emby and Plex as media servers.** Both are now built-in plug-ins that the dashboard can show, read only for now. They cannot play, mark watched, show Live TV or use the Jellyfin tools.
 
 ### Changed
+- **Three tab icons are easier to tell apart.** In Settings, Pictures has a picture icon, Tdarr (in Apps) has a chip, and Updates has an upward arrow, so no two tabs in a row look the same when only icons show.
 - **Every row of tabs condenses like the plug-in tabs.** Where the names do not fit, a row under the header now shows icons only, with each tab 44 pixels wide and the tab you are on in full; the arrow keys, Home and End move along the row, and a fade shows when it scrolls. [Find out more](https://themightytrex.github.io/starboard/help/accessibility/menus-with-icons.html)
 - **A notice with buttons reads properly on a phone.** On Settings, Plug-ins the offer to install a plug-in chosen in the set-up no longer squeezes its title to one letter a line, because its buttons now sit on their own row.
 - **Each plug-in's tab has its own icon.** Settings, Plug-ins now draws a different line icon on each plug-in's tab, and where the tabs show icons only, such as on a phone, the tab you are on and the tab with focus also show their name.
