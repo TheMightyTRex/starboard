@@ -97,11 +97,6 @@ function drawAnswers() {
     found.sites.length ? el("details", { class: "disclosure" }, el("summary", { text: "Each site's answer" }), el("div", { class: "disclosure__body" }, list)) : null);
 }
 
-function notice(tone, title, text, action) {
-  const icons = { success: "circle-check", warning: "triangle-alert", danger: "circle-x", info: "info" };
-  return el("div", { class: "notice", "data-tone": tone === "info" ? null : tone, role: "status" }, icon(icons[tone] || "info"),
-    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), text ? el("p", { text }) : null), action || null);
-}
 
 async function runSearch() {
   const q = $("#sites-q").value.trim();

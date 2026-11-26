@@ -125,8 +125,7 @@ async function wantedLoad(more = false) {
     $("#wanted-all").disabled = !r.total;
   } catch (e) {
     wantedState.items = [];
-    list.replaceChildren(el("li", {}, el("div", { class: "notice", "data-tone": e.status === 400 ? null : "danger", role: "status" }, icon("info"),
-      el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "Reelix could not be asked" }), el("p", { text: e.message })))));
+    list.replaceChildren(el("li", {}, notice(e.status === 400 ? "info" : "danger", "Reelix could not be asked", e.message)));
   }
   wantedSelection();
 }
