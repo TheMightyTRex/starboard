@@ -452,7 +452,7 @@ async function cloudWizard({ opener = document.activeElement, startAt = "service
       fieldError(keep, ""); fieldError(mine, "");
       const n = Number(keep.value);
       if (!Number.isInteger(n) || n < 1 || n > 50) { fieldError(keep, "Give a number from 1 to 50"); return; }
-      if (!mine.value) { fieldError(mine, "Enter your Starboard password"); return; }
+      if (!mine.value) { fieldError(mine, NEED_PASSWORD); return; }
       go.disabled = true;
       try {
         await api("/api/backup/cloud/save", { method: "POST", body: { id: st.sess.id, keep: n, password: mine.value } });

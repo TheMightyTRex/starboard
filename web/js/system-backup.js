@@ -29,11 +29,11 @@ function took(start, end) {
 async function withPassword({ title, message, confirm, danger = false, run }) {
   let error = "";
   for (;;) {
-    const input = el("input", { class: "input", id: "confirm-password", type: "password", autocomplete: "current-password", required: true });
+    const input = passwordInput("confirm-password");
     const errorNode = el("span", { class: "field-error", id: "confirm-password-error" }, icon("circle-alert"), el("span", { text: error }));
     errorNode.hidden = !error;
     if (error) { input.setAttribute("aria-invalid", "true"); input.setAttribute("aria-describedby", errorNode.id); }
-    const asked = confirmDialog({ title, message, confirm, danger, fields: [el("div", { class: "field" }, el("label", { for: input.id, text: "Your password" }), input, errorNode)] });
+    const asked = confirmDialog({ title, message, confirm, danger, fields: [passwordField(input, { after: errorNode })] });
     input.focus();
     if (!(await asked)) return null;
     try {
