@@ -87,14 +87,11 @@ MENU = [
         ("General", "sliders-horizontal", [("settings-general.html", "General", "tags"),
                                            ("settings-general-appearance.html", "Appearance", "sun"),
                                            ("settings-general-lists.html", "Lists", "list"),
-                                           # DASH-396: one section per Discover area, so its own page (topic tabs)
-                                           ("settings-general-discover.html", "Discover", "compass"),
                                            ("settings-general-hours.html", "Hours", "clock"),
                                            # Owner, 26 November 2026 (DASH-584): Alerts and Performance are part of General now.
                                            # Their old addresses move here (MOVED_PAGES in server.py).
                                            ("settings-general-alerts.html", "Alerts", "bell"),
                                            ("settings-general-performance.html", "Performance", "gauge"),
-                                           ("settings-general-pictures.html", "Pictures", "image"),
                                            # Owner, 26 November 2026 (DASH-595): Backup and restore (it was System, Backup, then
                                            # General) and Logs and feedback are one tab. The names are short so every tab keeps its
                                            # name at 1280 pixels wide. The old addresses move here (MOVED_PAGES in server.py).
@@ -190,7 +187,6 @@ HELP = {
     "settings-general.html": ("topics/organise-categories.md", "organising apps into categories"),
     "settings-general-appearance.html": ("topics/display-and-accessibility.md", "the display, colours and accessibility"),
     "settings-general-lists.html": ("topics/coming-up.md", "what Coming up and the lists show"),
-    "settings-general-discover.html": ("topics/search-and-add.md", "Discover's rows and adding films, series, music, radio and books"),
     "settings-general-hours.html": ("topics/set-download-hours.md", "setting download hours"),
     "settings.html": ("topics/change-or-remove-an-app.md", "changing or removing an app"),
     "settings-install.html": ("topics/change-your-install.md", "changing your install"),
@@ -201,7 +197,6 @@ HELP = {
     "settings-dispatcharr.html": ("topics/set-up-live-tv.md", "setting up Live TV"),
     "settings-general-alerts.html": ("topics/activate-alerts.md", "activating alerts"),
     "settings-general-performance.html": ("topics/make-starboard-lighter.md", "making Starboard use less of your server"),
-    "settings-general-pictures.html": ("topics/make-starboard-lighter.md#what-each-item-costs", "pictures and what they cost"),
     "settings-security.html": ("topics/choose-who-can-open-starboard.md", "choosing who can open Starboard"),
     "settings-security-password.html": ("topics/change-your-password.md", "changing your password"),
     "settings-security-signin.html": ("topics/set-up-a-two-step-code.md", "setting up a two-step code"),

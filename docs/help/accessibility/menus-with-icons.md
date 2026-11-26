@@ -36,7 +36,7 @@ the icon shows. The icon itself is not read.
 
 ## Things to note
 
-- Pointing at an icon, or moving to it with the keyboard, shows its name as a tooltip. A touch screen has no tooltip, so
+- Pointing at an icon, or moving to it with the keyboard, shows its name as a tooltip. A phone has no tooltip, so
   the tab you are on always shows its name.
 - In Windows contrast themes the current tab also has an outline, so you can find it without colour.
 - A row never wraps onto a second line and never makes a tab smaller than 44 pixels.

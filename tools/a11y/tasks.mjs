@@ -1403,6 +1403,40 @@ await page.goto(`${base}/system-backup.html`);
 await settle();
 check("T-GEN1", "the old address opens it", new URL(page.url()).pathname === "/settings-general-backup.html");
 
+// T-ROW1 A row of tabs under the header at phone width (owner, 26 November 2026), by keyboard alone: Tab reaches a tab, the arrow keys, Home and
+// End move along the row, the tab with focus shows its name, focus is never lost and stays in view, Enter opens the page, and a
+// change of text size keeps focus on the same link.
+await page.setViewportSize({ width: 375, height: 812 });
+await page.goto(`${base}/settings-general-hours.html`);
+await settle();
+const rowNav = page.locator('.site-header__tabs nav[aria-label="General"]');
+const rowFocus = () => page.evaluate(() => { const a = document.activeElement, n = a.closest("nav"); const r = a.getBoundingClientRect(), b = n ? n.getBoundingClientRect() : r;
+  return { text: a.textContent.trim(), inNav: !!n, named: !!a.querySelector(".menu-tabs__label") && a.querySelector(".menu-tabs__label").getBoundingClientRect().width > 2, inView: r.left >= b.left - 1 && r.right <= b.right + 1 }; });
+const rowReached = await tabTo((f) => f.tag === "A" && /^General$/.test(f.text), 40);
+check("T-ROW1", "Tab reaches the first tab of the row", !!rowReached);
+let f = await rowFocus();
+check("T-ROW1", "the tab with focus shows its name", f.named && f.inNav, JSON.stringify(f));
+await page.keyboard.press("ArrowRight");
+f = await rowFocus();
+check("T-ROW1", "the right arrow moves to the next tab, in view, with its name", f.text === "Appearance" && f.named && f.inView, JSON.stringify(f));
+await page.keyboard.press("End");
+await page.waitForTimeout(300);
+f = await rowFocus();
+check("T-ROW1", "End goes to the last tab, in view", f.text === "Backup/Logs" && f.inView, JSON.stringify(f));
+await page.keyboard.press("Home");
+check("T-ROW1", "Home goes to the first tab", (await rowFocus()).text === "General");
+await page.evaluate(() => document.documentElement.classList.add("pref-text-175"));
+await page.waitForTimeout(500);
+f = await rowFocus();
+check("T-ROW1", "a larger text size keeps focus on the same link, in view", f.text === "General" && f.inView, JSON.stringify(f));
+await page.evaluate(() => document.documentElement.classList.remove("pref-text-175"));
+await page.keyboard.press("ArrowRight");
+await page.keyboard.press("Enter");
+await page.waitForLoadState("domcontentloaded");
+await settle();
+check("T-ROW1", "Enter opens the page, and its row shows that tab as current", new URL(page.url()).pathname === "/settings-general-appearance.html" && await rowNav.locator("a[aria-current=page]").textContent() === "Appearance");
+await page.setViewportSize({ width: 1280, height: 860 });
+
 // T-PLU Plug-in updates by keyboard (owner, 26 November 2026): Tab reaches Check now; Enter reads the
 // catalogues, says what it found in a polite live region and focus stays on the button; Tab then reaches a tick, Space
 // ticks it and the count is said; Update all asks for the password with focus in the field, and Escape gives focus back.

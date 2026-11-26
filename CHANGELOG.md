@@ -26,6 +26,7 @@ add features.
 - **Emby and Plex as media servers.** Both are now built-in plug-ins that the dashboard can show, read only for now. They cannot play, mark watched, show Live TV or use the Jellyfin tools.
 
 ### Changed
+- **General has seven tabs.** Discover rows are now sections of Lists, and Pictures is a section of Performance, each with a list of links at the top of the page. The old addresses still open the right section.
 - **Three tab icons are easier to tell apart.** In Settings, Pictures has a picture icon, Tdarr (in Apps) has a chip, and Updates has an upward arrow, so no two tabs in a row look the same when only icons show.
 - **Every row of tabs condenses like the plug-in tabs.** Where the names do not fit, a row under the header now shows icons only, with each tab 44 pixels wide and the tab you are on in full; the arrow keys, Home and End move along the row, and a fade shows when it scrolls. [Find out more](https://themightytrex.github.io/starboard/help/accessibility/menus-with-icons.html)
 - **One way to copy to the clipboard.** Copying log lines and the log report now say when they could not copy, and the page shares the design system's copy code.
