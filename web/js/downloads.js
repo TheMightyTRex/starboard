@@ -55,10 +55,6 @@ function timeLeftWords(text) {
 
 function percent(item) { return Math.round(item.progress || 0); }
 
-function notice(tone, title, text, iconName = tone === "danger" ? "circle-x" : tone === "warning" ? "triangle-alert" : "info") {
-  return el("div", { class: "notice", "data-tone": tone, role: "status" }, icon(iconName),
-    el("div", { class: "notice__body" }, title ? el("span", { class: "notice__title", text: title }) : null, text ? el("p", { text }) : null));
-}
 
 function newBar() {
   return el("div", { class: "progress", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100" }, el("span"));

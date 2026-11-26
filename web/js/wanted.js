@@ -60,7 +60,7 @@ function wantedRow(w) {
 // DASH-305: a wanted film or episode in full, in a slide-out: picture, story, length, genres, the quality wanted, what
 // Reelix last did for it, and See what Reelix can find (every site's releases, best first, with Get this one).
 async function wantedDetail(w, name, opener) {
-  const body = el("div", { class: "stack-4" }, el("p", { class: "muted", text: "Loading…" }));
+  const body = el("div", { class: "stack-4" }, SharedComponents.wait("Loading what Reelix knows"));
   sidePanel({ title: name, body: [body], opener, wide: true });
   let d;
   try { d = await api(`/api/wanted/detail?kind=${wantedState.kind}&id=${w.id}${w.series_id ? `&series=${w.series_id}` : ""}`); }
@@ -125,8 +125,7 @@ async function wantedLoad(more = false) {
     $("#wanted-all").disabled = !r.total;
   } catch (e) {
     wantedState.items = [];
-    list.replaceChildren(el("li", {}, el("div", { class: "notice", "data-tone": e.status === 400 ? null : "danger", role: "status" }, icon("info"),
-      el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "Reelix could not be asked" }), el("p", { text: e.message })))));
+    list.replaceChildren(el("li", {}, notice(e.status === 400 ? "info" : "danger", "Reelix could not be asked", e.message)));
   }
   wantedSelection();
 }

@@ -53,10 +53,6 @@ function cover(i, extra = "") {
   return box;
 }
 
-function notice(tone, title, text) {
-  return el("div", { class: "notice", "data-tone": tone, role: "status" }, icon(tone === "warning" ? "triangle-alert" : "info"),
-    el("div", { class: "notice__body" }, title ? el("span", { class: "notice__title", text: title }) : null, text ? el("p", { text }) : null));
-}
 
 // Filters ----------------------------------------------------------------
 

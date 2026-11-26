@@ -365,7 +365,7 @@ function cardShell(c, i, list) {
   const card = el("section", { class: `dash-card dash-card--${c.size} has-band`, "aria-labelledby": `dash-${c.id}-h`, "data-card": c.id },
     c.id.startsWith("plugin:") ? pluginBand(c) : builtinBand(c), editing ? head : null, body);
   if (editing) {
-    const size = el("select", { class: "select select--compact", "aria-label": `Size of ${nameFor(c)}` },
+    const size = el("select", { class: "select", "aria-label": `Size of ${nameFor(c)}` },
       Object.entries(SIZES).map(([v, t]) => el("option", { value: v, text: t, selected: v === c.size })));
     // The card is drawn again at its new size, with its title for that size; focus stays on its size list.
     size.addEventListener("change", () => { list[i].size = size.value; draw(); $(`[data-card="${c.id}"] .dash-card__tools select`)?.focus(); });
