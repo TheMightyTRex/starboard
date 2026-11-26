@@ -12,7 +12,7 @@ in one step for 24 hours. Starboard never switches by itself.
 
 - You can sign in to Starboard.
 - To use Emby or Plex, add its plug-in from the catalogue's **Media servers** tab, and add the app itself in **Manage
-  apps** with its address and key, as set out under **Use Emby or Plex** below. Read [Add a plug-in](add-a-plugin.md).
+  apps** with its address and key, as set out under **Use Emby or Plex**. Read [Add a plug-in](add-a-plugin.md).
 
 ## Steps
 
@@ -35,16 +35,25 @@ in one step for 24 hours. Starboard never switches by itself.
 
 ### Use Emby or Plex
 
-Emby and Plex are built into Starboard like Jellyfin, and read only for now: Starboard shows their status, libraries, what is
+Emby and Plex are built into Starboard like Jellyfin, and each is a kind of app in Manage apps with its own form, check
+and icon. They are read only for now: Starboard shows their status, libraries, what is
 playing and what was added, on the dashboard, in Activity and in System. Play in Jellyfin, Watched, Live TV and the other
 Jellyfin tools stay with Jellyfin.
 
 1. Go to **Settings**, then **Plug-ins**, then **Catalogue**, then the **Media servers** tab. Select **Install** beside
    **Emby** or **Plex**, read **What it may do**, enter your Starboard password and select **Install**.
-2. Go to **Settings**, then **Apps**, then **Manage apps**. Add the app as an **Other app** with the icon `emby` or `plex`,
-   the address Starboard uses to reach it, and its key. For Emby, make a key in its dashboard under **API keys**. For
-   Plex, use its token: in Plex's web app open an item, then **Get info**, then **View XML**, and copy the value after
-   `X-Plex-Token=` from the address.
+2. Go to **Settings**, then **Apps**, then **Manage apps** and select **Add an app**. In **Kind of app**, choose **Emby** or
+   **Plex**. Starboard names it for you and shows the usual address. Enter the address Starboard uses to reach it and its
+   key. For Emby, make a key in its dashboard under **API keys**. For Plex, use its token: in Plex's web app open an item,
+   then **Get info**, then **View XML**, and copy the value after `X-Plex-Token=` from the address.
+
+   ![The Add an app panel with Kind of app set to Plex (step 2) outlined, with example data](../images/choose-your-media-server-7-add-plex.png)
+
+   Select **Test connection**. Starboard asks the server for its version, then asks for something only the key allows, so a
+   wrong key shows as a problem here and not later. Select **Add app**.
+
+   ![Manage apps with Plex in the list, with its Edit button (step 2) outlined, with example data](../images/choose-your-media-server-8-plex-listed.png)
+
 3. Go to **Settings**, then **Apps**, then **Media server**, choose it and select **Use this media server**. Starboard
    checks that it answers first.
 
@@ -81,6 +90,8 @@ For 24 hours after a change, **The way back** says which media server you had.
   one or none. **Deactivate all plug-ins** leaves it on.
 - With **None**, the dashboard panel, Library's **Play** and **Watched** and Activity's now playing are not drawn.
   Nothing is removed.
+- If you added Plex or Emby earlier as an **Other app** with its icon, Starboard turns it into a Plex or Emby app by
+  itself when it starts, with the same name, address and key. A Starboard that never had one is not changed.
 - If you never had Jellyfin, it is added but not active, and says it is not set up. If you removed it on purpose,
   Starboard does not add it again.
 - Nothing runs for a media server plug-in, so it uses no extra container and no memory of its own. Your Jellyfin settings and backups restore
