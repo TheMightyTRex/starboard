@@ -457,7 +457,7 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(resp.status, 400)
         resp, note = self.request("POST", "/api/ux-notes", {
             "what": "<script>alert(1)</script>" + "x" * 5000, "kind": "Nonsense", "severity": "stops-me",
-            "page": "/index.html", "part": "Button: Check again", "zoom": 1.25, "display": ["contrast", 5], "extra": "dropped"})
+            "page": "/index.html", "part": "Button: Check now", "zoom": 1.25, "display": ["contrast", 5], "extra": "dropped"})
         self.assertEqual(resp.status, 200)
         self.assertEqual((note["kind"], note["severity"], note["status"], len(note["what"])), ("Other", "stops-me", "open", 4000))
         self.assertNotIn("extra", note)

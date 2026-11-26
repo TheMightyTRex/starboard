@@ -3,8 +3,8 @@
 
 # Add a plug-in
 
-Add a plug-in to give Starboard something new, such as Live TV or more styles to choose from. Before it adds
-anything, Starboard shows what the plug-in may do and tests it. At the end, the plug-in is active and what it adds
+Add a plug-in to give Starboard something new, such as Live TV or more styles to choose from. Starboard shows
+what the plug-in may do and tests it before anything is added. At the end, the plug-in is active and what it adds
 is ready to use.
 
 ## Before you begin
@@ -20,18 +20,18 @@ is ready to use.
 1. Go to **Settings**, then **Plug-ins**, then **Catalogue**. The catalogue lists the plug-ins built into
    Starboard, the Starboard plug-ins collection by kind, and the plug-ins in any catalogue you added.
 2. Find the plug-in and select **Install…**. For a plug-in built into Starboard, select **Add** and its name.
-   To add a plug-in that is not in any catalogue, use its address. Read
+   A plug-in that is not in any catalogue can be added by its address: read
    [Add a plug-in by its address](#add-a-plug-in-by-its-address).
-3. A slide-out opens. It says you install the plug-in at your own risk. Then it lists what the plug-in **can read**,
-   **can change** and **can reach**, what it runs and what it can never reach. Read it all.
+3. A slide-out opens. It says the plug-in is installed at your own risk, then lists what it **can read**, what it
+   **can change**, what it **can reach**, what it runs and what it can never reach. Read it all.
 
    ![Settings, Plug-ins, Catalogue, with the install slide-out for a made-up plug-in open: the warning, and It can read (step 3) outlined](../images/add-a-plugin-1-preview.png)
 
 4. To go ahead, enter your Starboard password and select **Install** and the plug-in's name. To stop, select
    **Cancel**: nothing is installed.
-5. The plug-in's own tab opens, under **Settings**, then **Plug-ins**. Starboard activates the plug-in, and its
-   state is **Active**. A plug-in that needs settings first says what to enter. Save them, then select **Activate**.
-   To stop it later, select **Deactivate** in **General**, **State**.
+5. The plug-in's own tab opens, under **Settings**, then **Plug-ins**, and Starboard activates it: its state is
+   **Active**. A plug-in that needs settings first says what to enter: save them, then select **Activate**. To
+   stop it later, select **Deactivate** in **General**, **State**.
 
    ![The Styles plug-in's own tab, with its state and Deactivate (step 5) outlined](../images/add-a-plugin-2-active.png)
 
@@ -43,19 +43,35 @@ is ready to use.
 
 ### Manage your plug-ins
 
-**Settings**, then **Plug-ins**, then **Manage** lists every plug-in you added. Each one shows its state, **Settings**,
+**Settings**, then **Plug-ins**, then **Manage** lists every plug-in you added, with its state, **Settings**,
 **Activate** or **Deactivate**, and **Remove**. Each plug-in also has its own tab after **Catalogue**. Its first
 tab, **General**, has a card each for **State**, **Versions**, **Jobs** (when it has any), **What it may do** and
 **Remove**. Its other tabs hold its settings, its own screens and its styles.
 
+### Find a plug-in's tab by its icon
+
+Each plug-in you add has its own tab in **Settings**, then **Plug-ins**, after **Catalogue**. Every tab has its own
+icon, drawn in the same line style as the menu's other icons, such as a bell for **Notifications** and a palette for **Styles**.
+A plug-in that has no icon of its own in Starboard shows a puzzle piece. On a phone, and whenever the names do not fit,
+the tabs show icons only. The names are still there:
+
+1. Select the icon. The tab you are on shows its name beside the icon, and the bar under it marks it as the current tab.
+2. Move to a tab with the keyboard (press **Tab**). The tab with focus shows its name too.
+3. On a computer, point at an icon to read its name as a tooltip. A screen reader reads the name of every tab.
+
+Each tab is at least 44 pixels wide, the size of a fingertip. Scroll the row sideways to reach the rest.
+
+![Settings, Plug-ins, on a computer: the tab for each plug-in has its own icon, and the Styles tab is outlined (step 1)](../images/add-a-plugin-8-tabs-computer.png)
+
+![Settings, Plug-ins, on a phone: icons only, with the Styles tab showing its name beside its icon (step 1)](../images/add-a-plugin-9-tabs-phone.png)
+
+![The same phone tabs in the Dark theme: the Notifications tab, which is open, and the Tdarr tab, which has focus, both show their name, and Tdarr is outlined (step 2)](../images/add-a-plugin-10-tabs-phone-dark.png)
+
 ### Check which system a plug-in needs
 
 Some plug-ins work with one system only, such as a plug-in for Jellyfin. Starboard says so in words, next to the
-plug-in's name, so you know before you install it. You can read the tag in three places:
-
-- the **Catalogue**
-- the list under **Settings**, **Plug-ins**, **Manage**
-- the plug-in's own **General** tab, in the **State** card, on the **What it needs** line
+plug-in's name, so you know before you install it. Read the tag in three places: the **Catalogue**, the list under
+**Settings**, **Plug-ins**, **Manage**, and the plug-in's own **General** tab, in the **State** card, on the **What it needs** line.
 
 1. In the **Catalogue**, find the tag under the plug-in's description, such as **Jellyfin only**, **Plex or Emby** or
    **Needs Reelix**.
@@ -71,10 +87,10 @@ such as Jellyfin's key. Read [The `requires` field](../developers/plugin-manifes
 
 ### Add the Stallboard catalogue
 
-Stallboard is a second catalogue, run by TheMightyTRexUK, that lists plug-ins made by other people. Before a plug-in is listed, a person reads
-its files and what it asks for. The **Reviewed** mark on Stallboard's own pages names who read it and when. The
-catalogue is off until you tick it. Ticking it installs nothing, and each plug-in still shows what it asks for before
-you install it.
+Stallboard is a second catalogue, run by TheMightyTRexUK, that lists plug-ins made by other people. A person reads
+each plug-in's files and what it asks for before it is listed, and the **Reviewed** mark on Stallboard's own pages
+names who read it and when. It is off until you tick it, and ticking it installs nothing: each plug-in still
+shows what it asks for before you install it.
 
 1. Go to **Settings**, then **Plug-ins**, then **Catalogue**.
 2. Under **Catalogue sources**, tick **Stallboard catalogue**. Starboard says "Stallboard catalogue added".
@@ -110,7 +126,7 @@ Only add catalogues from people you trust. Starboard did not make the plug-ins i
 ### Add a plug-in by its address
 
 On the **Catalogue** page, under **Add one from elsewhere**, paste the address of the plug-in's
-`starboard-plugin.json` into **The plug-in's manifest address**. Or choose the file in **Or its manifest file**.
+`starboard-plugin.json` into **The plug-in's manifest address**, or choose the file in **Or its manifest file**.
 Select **What it does**, read the test results, then select **Install** and its name. Carry on from step 3.
 
 ### From a zip file

@@ -56,7 +56,7 @@ Under **What to alert on**, each alert is active unless you deactivate it. Each 
 - **A folder gets full:** choose **At 80%**, **At 85%**, **At 90%**, **At 95%** or **Off**, for the folders on
   System, Storage. Read [Check free space and what is using it](check-storage.md).
 - **A download needs attention:** when it has needed attention for 30 minutes.
-- **The server backup fails:** from Settings, General, Backup and restore. Read
+- **The server backup fails:** from Settings, General, Backup/Logs. Read
   [Back up the whole server](back-up-the-server.md).
 - **A certificate runs out soon:** for apps with an outside `https://` address. Choose **7 days before**,
   **14 days before**, **30 days before** or **Off**. Starboard checks once a day.

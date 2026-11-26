@@ -14,11 +14,11 @@ apps, their API keys, your categories and your other settings.
 
 ### Download a backup
 
-1. Go to **Settings**, then **General**, then **Backup and restore**.
+1. Go to **Settings**, then **General**, then **Backup/Logs**.
 2. Find **Starboard's settings**.
 3. Select **Download a backup**.
 
-   ![System, Backup and restore, Starboard's settings, with Download a backup (step 3) outlined, with example data](../images/back-up-settings-1-download.png)
+   ![Settings, General, Backup/Logs, Starboard's settings, with Download a backup (step 3) outlined, with example data](../images/back-up-settings-1-download.png)
 
 4. Starboard asks for **Your password**. Enter it and select **Download**.
 
@@ -29,7 +29,7 @@ Starboard shows "Backup downloaded" and how many apps it holds.
 
 ### Restore from a file
 
-1. Go to **Settings**, then **General**, then **Backup and restore**.
+1. Go to **Settings**, then **General**, then **Backup/Logs**.
 2. In **Starboard's settings**, select **Restore from a file**.
 3. Choose the backup file you downloaded.
 4. Starboard asks **Restore Starboard's settings?** and says how many apps the file holds and when it was
@@ -39,10 +39,10 @@ Starboard shows **Settings restored** and how many apps it put back.
 
 ### Choose when backups are made
 
-1. Go to **Settings**, then **General**, then **Backup and restore**.
+1. Go to **Settings**, then **General**, then **Backup/Logs**.
 2. Under **When backups are made**, choose one. It saves at once and Starboard shows "Saved".
 
-   ![System, Backup and restore, When backups are made, with Weekly (step 2) outlined, with example data](../images/back-up-settings-3-when.png)
+   ![Settings, General, Backup/Logs, When backups are made, with Weekly (step 2) outlined, with example data](../images/back-up-settings-3-when.png)
 
 | Choice | What Starboard does |
 |---|---|

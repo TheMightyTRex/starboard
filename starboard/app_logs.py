@@ -59,7 +59,7 @@ def lines(name, tail=300, find="", docker=None, words=()):
 
 # The apps' own log limits (DASH-451): Docker keeps each container's log, and its daemon.json can cap them for every
 # container (log-opts), which Starboard cannot change (it needs the server's password). Starboard reads what each
-# container was given, to say it on Settings, General, Logs and feedback. Asked only when that page asks, and kept
+# container was given, to say it on Settings, General, Backup/Logs. Asked only when that page asks, and kept
 # for 10 minutes: one listing and one look at each container, never on a timer.
 LIMIT_KEEP = 600
 _limits = {"at": 0, "out": None}

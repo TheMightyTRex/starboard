@@ -978,7 +978,15 @@
     const fits = () => !overflows(main) && !overflows(bar) && !narrow();
     header.classList.remove(...HEADER_STEPS);
     header.querySelectorAll(".menu-tabs").forEach((nav) => nav.classList.remove("is-compact"));
-    header.querySelectorAll(".site-header__tabs .menu-tabs").forEach((nav) => nav.classList.toggle("is-compact", overflows(nav)));
+    header.querySelectorAll(".site-header__tabs .menu-tabs").forEach((nav) => {
+      nav.classList.toggle("is-compact", overflows(nav));
+      // Icons only: each tab's name is its tooltip (a title this code added is taken away again when the names fit).
+      nav.querySelectorAll("a").forEach((a) => {
+        const name = a.querySelector(".menu-tabs__label")?.textContent.trim();
+        if (nav.classList.contains("is-compact") && name && !a.title) { a.title = name; a.dataset.autoTitle = ""; }
+        else if (!nav.classList.contains("is-compact") && "autoTitle" in a.dataset) { a.removeAttribute("title"); delete a.dataset.autoTitle; }
+      });
+    });
     const steps = [() => main?.classList.add("is-compact"), ...HEADER_STEPS.map((step) => () => header.classList.add(step))];
     for (const step of steps) {
       if (fits()) break;
