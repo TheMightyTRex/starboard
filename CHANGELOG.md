@@ -34,6 +34,7 @@ add features.
 - **Plain English pilot.** The README and the help topics Add an app and How lean Starboard is now use shorter sentences and the active voice.
 
 ### Fixed
+- **Field errors say "Error:" to a screen reader.** An error under a field, such as an empty password, now starts with the hidden word Error: , as the design system asks, so it is not read as a plain sentence. The nine places that drew one by hand share one function.
 - **Spacing and error lines that were never styled.** The Bring in and cloud service pages now have the gap between their blocks, and number fields such as the number of backups to keep are narrow.
 - **A full backup that was not made is now reported.** A scheduled backup with no saved backup password used to say it had run. It now says "No full backup was made", raises an alert and shows a warning in Settings.
 
