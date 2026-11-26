@@ -153,7 +153,7 @@ def targets(app):
     update_available, can_update, why, can_roll_back, roll_back_to, note}]; an app or Reelix also has big_change
     (a new major version, from the last look at its image) and icon ({service, v}); a plug-in has logo ({url, alt}
     or None)."""
-    from . import containers, plugin_life, plugin_systems, self_update
+    from . import containers, self_update
     from . import plugins_admin as pa
     out = []
     try:
@@ -184,6 +184,16 @@ def targets(app):
                         "why": "" if r.get("update") else ("Check for updates first" if "update" not in r else "Up to date"),
                         "can_roll_back": False, "roll_back_to": "", "big_change": bool(r.get("update") and r.get("big_change")),
                         "note": "Goes back by itself when the new version is not healthy"})
+    return out + plugin_targets(app)
+
+
+def plugin_targets(app):
+    """Starboard's plug-ins, as targets() lists them (Settings, Updates; Settings, Plug-ins, Manage and Updates,
+    Plug-ins use these same rows)."""
+    from . import plugin_life, plugin_systems
+    from . import plugins_admin as pa
+    services = app.config.data["services"]
+    out = []
     known = plugin_life.updates_known(app.data_dir)
     for p in pa.listing(app.data_dir):
         if p.get("builtin"):
@@ -197,7 +207,19 @@ def targets(app):
                     "logo": p.get("logo"),  # {url, alt} of its own logo, or None for its initials (DASH-475)
                     # the system it needs, and whether it is here (DASH-567), said in Ready to update
                     "system": plugin_systems.judge(p.get("system"), plugin_systems.present_in(services))})
+        if u:  # the same words on every page that lists it: what it newly asks for, and why it waits for the owner
+            from . import plugin_updates
+            out[-1].update(plugin_updates.waiting_words(app, p["id"], p.get("version") or "", u))
     return out
+
+
+def counts(items):
+    """How many updates wait, in one place (the pages, the alert and the API all say this number): {total, by_kind}."""
+    waiting = [t for t in items if t.get("update_available")]
+    by_kind = {}
+    for t in waiting:
+        by_kind[t["kind"]] = by_kind.get(t["kind"], 0) + 1
+    return {"total": len(waiting), "by_kind": by_kind}
 
 
 def _is_reelix(services, sid):
@@ -432,7 +454,7 @@ def _start_plugin(app, pid, by, address):
     elif known:
         manifest, source = pa.fetch_manifest(known["manifest"], sha256=known.get("sha256", "")), known["manifest"]
     else:
-        raise Refused("No newer version is known. Open the Catalogue to check again, or give an address on the plug-in's page")
+        raise Refused("No newer version is known. Use Check now on the plug-in's Versions tab, or give an address on the plug-in's page")
     if manifest.get("id") != pid:
         raise ValueError("That manifest is for another plug-in")
     from . import plugins

@@ -1,0 +1,65 @@
+/* media-extras: a part of the shared components. Load it after components.css, on the pages that use it.
+ * Made by tools/parts.py from components.css in github.com/TheMightyTRex/design-system: change it there, not here. */
+@layer shared {
+  .show-art__img,
+  .show-art__text {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+  }
+  .show-art__img {
+    object-fit: contain;
+  }
+  .show-art__text {
+    display: grid;
+    place-items: center;
+    padding: var(--space-3);
+    overflow: hidden;
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-strong);
+    line-height: var(--leading-tight);
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+  .show-art__label {
+    display: grid;
+    align-content: center;
+    gap: 2px;
+    min-width: 0;
+    padding: var(--space-1) var(--space-3);
+    overflow: hidden;
+  }
+  .show-art__station {
+    overflow: hidden;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-strong);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .show-art__name {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-strong);
+    line-height: var(--leading-tight);
+    overflow-wrap: anywhere;
+  }
+  .item-header__text {
+    display: grid;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+  .item-header__byline {
+    color: var(--color-text-muted);
+  }
+  .item-header__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+}

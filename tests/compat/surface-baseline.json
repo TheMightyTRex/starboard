@@ -1,0 +1,888 @@
+{
+ "api_version": "1.20.0",
+ "card_types": [
+  "stat",
+  "list",
+  "status",
+  "guide",
+  "sparkline"
+ ],
+ "change_types": [
+  "added",
+  "changed",
+  "deprecated",
+  "removed",
+  "fixed",
+  "security"
+ ],
+ "container_fields": [
+  "build",
+  "command",
+  "entrypoint",
+  "env",
+  "files",
+  "host_port",
+  "idle_stop_minutes",
+  "image",
+  "name",
+  "network",
+  "port",
+  "publish",
+  "start",
+  "tmpfs",
+  "user",
+  "volumes"
+ ],
+ "events": {
+  "app.down": "apps:read",
+  "app.up": "apps:read",
+  "disk.changed": "system:read",
+  "disk.nearly_full": "system:read",
+  "download.failed": "downloads:read",
+  "download.finished": "downloads:read",
+  "item.added": "media:read",
+  "playback.started": "media:read",
+  "request.available": "media:read",
+  "update.available": "apps:read"
+ },
+ "key_scopes": [
+  "apps",
+  "downloads",
+  "media",
+  "system",
+  "library",
+  "requests",
+  "logs",
+  "updates"
+ ],
+ "manifest_fields": [
+  "actions",
+  "adopt",
+  "author",
+  "cards",
+  "changes",
+  "containers",
+  "description",
+  "events",
+  "first_sign_in",
+  "health",
+  "homepage",
+  "id",
+  "jellyfin_libraries",
+  "jobs",
+  "licence",
+  "logo",
+  "manifest_version",
+  "name",
+  "needs",
+  "notices",
+  "permissions",
+  "requires",
+  "resources",
+  "settings",
+  "setup_required",
+  "starboard_api",
+  "styles",
+  "support_url",
+  "update",
+  "version"
+ ],
+ "manifest_required": [
+  "author",
+  "description",
+  "homepage",
+  "id",
+  "licence",
+  "manifest_version",
+  "name",
+  "permissions",
+  "starboard_api",
+  "support_url",
+  "version"
+ ],
+ "permissions": {
+  "alerts:send": {
+   "risk": "low",
+   "scope": null
+  },
+  "appearance:styles": {
+   "risk": "low",
+   "scope": null
+  },
+  "apps:read": {
+   "risk": "low",
+   "scope": "apps"
+  },
+  "downloads:read": {
+   "risk": "low",
+   "scope": "downloads"
+  },
+  "jellyfin:key": {
+   "risk": "high",
+   "scope": null
+  },
+  "jellyfin:libraries": {
+   "risk": "medium",
+   "scope": null
+  },
+  "jellyfin:metadata": {
+   "risk": "medium",
+   "scope": null
+  },
+  "library:holding": {
+   "risk": "high",
+   "scope": null
+  },
+  "media:read": {
+   "risk": "medium",
+   "scope": "media"
+  },
+  "network:lan": {
+   "risk": "medium",
+   "scope": null
+  },
+  "network:port": {
+   "risk": "medium",
+   "scope": null
+  },
+  "network:vpn": {
+   "risk": "medium",
+   "scope": null
+  },
+  "reelix:key": {
+   "risk": "high",
+   "scope": null
+  },
+  "slot:media-server": {
+   "risk": "high",
+   "scope": null
+  },
+  "system:read": {
+   "risk": "low",
+   "scope": "system"
+  },
+  "usenet:servers": {
+   "risk": "high",
+   "scope": null
+  }
+ },
+ "routes": {
+  "GET /api/v1/": {
+   "answer": [
+    "api_version",
+    "links",
+    "starboard_version"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": null
+  },
+  "GET /api/v1/app-updates": {
+   "answer": [
+    "errors",
+    "items",
+    "next_cursor"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "apps"
+  },
+  "GET /api/v1/apps": {
+   "answer": [
+    "items",
+    "items.[].api_key_set",
+    "items.[].enabled",
+    "items.[].group",
+    "items.[].id",
+    "items.[].name",
+    "items.[].type",
+    "items.[].url",
+    "next_cursor"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "apps"
+  },
+  "GET /api/v1/apps/{id}": {
+   "answer": [
+    "api_key_set",
+    "enabled",
+    "group",
+    "id",
+    "name",
+    "type",
+    "url"
+   ],
+   "required_in": [
+    "id"
+   ],
+   "right": null,
+   "scope": "apps"
+  },
+  "GET /api/v1/backup/copies": {
+   "answer": [
+    "destinations",
+    "destinations.[].enabled",
+    "destinations.[].id",
+    "destinations.[].keep",
+    "destinations.[].keep_settings",
+    "destinations.[].kind",
+    "destinations.[].kind_words",
+    "destinations.[].service",
+    "destinations.[].shape",
+    "destinations.[].state_word",
+    "destinations.[].status",
+    "destinations.[].tested",
+    "destinations.[].title",
+    "destinations.[].where",
+    "destinations.[].where_words",
+    "keep",
+    "kind",
+    "safe",
+    "service",
+    "settings_zip",
+    "status",
+    "tested",
+    "tested.at",
+    "tested.count",
+    "tested.error",
+    "tested.free",
+    "tested.ok",
+    "tested.steps",
+    "tested.where",
+    "where",
+    "where_words"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "system"
+  },
+  "GET /api/v1/calendar": {
+   "answer": [
+    "errors",
+    "items",
+    "next_cursor"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "media"
+  },
+  "GET /api/v1/containers": {
+   "answer": [
+    "available",
+    "checked_at",
+    "items",
+    "next_cursor",
+    "restored"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "apps"
+  },
+  "GET /api/v1/download-hours": {
+   "answer": [
+    "clients",
+    "enabled",
+    "end",
+    "errors",
+    "mode",
+    "next_change",
+    "now",
+    "reason",
+    "start"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "downloads"
+  },
+  "GET /api/v1/downloads": {
+   "answer": [
+    "errors",
+    "items",
+    "next_cursor"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "downloads"
+  },
+  "GET /api/v1/downloads/issues": {
+   "answer": [
+    "apps_asked",
+    "count",
+    "errors",
+    "generated_at",
+    "items",
+    "items.[].added",
+    "items.[].age",
+    "items.[].app",
+    "items.[].app_id",
+    "items.[].app_state",
+    "items.[].app_type",
+    "items.[].can_manual_import",
+    "items.[].download_client",
+    "items.[].download_client_ids",
+    "items.[].ids",
+    "items.[].indexer",
+    "items.[].kind",
+    "items.[].messages",
+    "items.[].paths",
+    "items.[].progress",
+    "items.[].protocol",
+    "items.[].quality",
+    "items.[].reelix",
+    "items.[].size",
+    "items.[].status",
+    "items.[].time_left",
+    "items.[].title",
+    "items.[].tried",
+    "items.[].what",
+    "markdown"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "downloads"
+  },
+  "GET /api/v1/events": {
+   "answer": [],
+   "required_in": [],
+   "right": null,
+   "scope": null
+  },
+  "GET /api/v1/extras": {
+   "answer": [
+    "items"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "media"
+  },
+  "GET /api/v1/health": {
+   "answer": [
+    "errors",
+    "items",
+    "next_cursor"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "apps"
+  },
+  "GET /api/v1/history": {
+   "answer": [
+    "items",
+    "next_cursor"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "downloads"
+  },
+  "GET /api/v1/library": {
+   "answer": [
+    "recent",
+    "tabs"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "library"
+  },
+  "GET /api/v1/library/search": {
+   "answer": [
+    "items",
+    "next_cursor"
+   ],
+   "required_in": [
+    "q"
+   ],
+   "right": null,
+   "scope": "library"
+  },
+  "GET /api/v1/library/status": {
+   "answer": [
+    "errors",
+    "tabs"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "library"
+  },
+  "GET /api/v1/logs": {
+   "answer": [
+    "items",
+    "items.[].area",
+    "items.[].level",
+    "items.[].message",
+    "items.[].time",
+    "next_cursor"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "logs"
+  },
+  "GET /api/v1/logs/limits": {
+   "answer": [
+    "alerts_only",
+    "apps",
+    "apps.available",
+    "apps.capped",
+    "apps.driver",
+    "apps.max_file",
+    "apps.max_size",
+    "apps.per_app",
+    "apps.uncapped",
+    "covers",
+    "freed",
+    "keep_days",
+    "keep_days_choices",
+    "max_mb",
+    "max_mb_choices",
+    "removed",
+    "show_lines",
+    "show_lines_choices",
+    "summary",
+    "summary.bytes",
+    "summary.days",
+    "summary.files",
+    "summary.keep_days",
+    "summary.max_bytes",
+    "summary.oldest"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "logs"
+  },
+  "GET /api/v1/me": {
+   "answer": [
+    "created_at",
+    "expires_at",
+    "id",
+    "last_used_at",
+    "name",
+    "prefix",
+    "right",
+    "scopes"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": null
+  },
+  "GET /api/v1/numbers": {
+   "answer": [
+    "items",
+    "next_cursor"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "apps"
+  },
+  "GET /api/v1/openapi.json": {
+   "answer": [],
+   "required_in": [],
+   "right": null,
+   "scope": null
+  },
+  "GET /api/v1/playing": {
+   "answer": [
+    "configured",
+    "items"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "media"
+  },
+  "GET /api/v1/recent": {
+   "answer": [
+    "items",
+    "next_cursor"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "media"
+  },
+  "GET /api/v1/requests": {
+   "answer": [
+    "configured",
+    "items",
+    "next_cursor",
+    "pending"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "requests"
+  },
+  "GET /api/v1/status": {
+   "answer": [
+    "items",
+    "next_cursor"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "apps"
+  },
+  "GET /api/v1/system": {
+   "answer": [
+    "cpus",
+    "disks",
+    "load",
+    "memory",
+    "uptime_seconds"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "system"
+  },
+  "GET /api/v1/system/history": {
+   "answer": [
+    "hours",
+    "interval",
+    "points"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "system"
+  },
+  "GET /api/v1/transfer": {
+   "answer": [
+    "clients",
+    "errors",
+    "vpn"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "downloads"
+  },
+  "GET /api/v1/updates": {
+   "answer": [
+    "items",
+    "items.[].big_change",
+    "items.[].can_roll_back",
+    "items.[].can_update",
+    "items.[].current",
+    "items.[].id",
+    "items.[].kind",
+    "items.[].latest",
+    "items.[].name",
+    "items.[].note",
+    "items.[].roll_back_to",
+    "items.[].update_available",
+    "items.[].why",
+    "next_cursor",
+    "running"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "updates"
+  },
+  "GET /api/v1/updates/all": {
+   "answer": [
+    "count",
+    "held",
+    "held.[].from",
+    "held.[].kind",
+    "held.[].name",
+    "held.[].note",
+    "held.[].order",
+    "held.[].target",
+    "held.[].to",
+    "held.[].why",
+    "items",
+    "items.[].from",
+    "items.[].kind",
+    "items.[].name",
+    "items.[].note",
+    "items.[].order",
+    "items.[].target",
+    "items.[].to",
+    "items.[].why"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "updates"
+  },
+  "GET /api/v1/updates/runs": {
+   "answer": [
+    "items",
+    "items.[].action",
+    "items.[].by",
+    "items.[].finished_at",
+    "items.[].from",
+    "items.[].id",
+    "items.[].kind",
+    "items.[].name",
+    "items.[].said",
+    "items.[].started_at",
+    "items.[].state",
+    "items.[].steps",
+    "items.[].target",
+    "items.[].to",
+    "next_cursor"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "updates"
+  },
+  "GET /api/v1/updates/runs/{id}": {
+   "answer": [
+    "action",
+    "by",
+    "finished_at",
+    "from",
+    "id",
+    "kind",
+    "name",
+    "said",
+    "started_at",
+    "state",
+    "steps",
+    "steps.[].detail",
+    "steps.[].id",
+    "steps.[].label",
+    "steps.[].state",
+    "target",
+    "to"
+   ],
+   "required_in": [
+    "id"
+   ],
+   "right": null,
+   "scope": "updates"
+  },
+  "GET /api/v1/uptime": {
+   "answer": [
+    "enabled",
+    "items",
+    "next_cursor"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "apps"
+  },
+  "GET /api/v1/version": {
+   "answer": [
+    "current",
+    "latest",
+    "repo",
+    "since"
+   ],
+   "required_in": [],
+   "right": null,
+   "scope": "system"
+  },
+  "POST /api/v1/alerts/test": {
+   "answer": [
+    "ok"
+   ],
+   "required_in": [],
+   "right": "manage",
+   "scope": "system"
+  },
+  "POST /api/v1/backup/copies/test": {
+   "answer": [
+    "ok",
+    "tested",
+    "tested.at",
+    "tested.count",
+    "tested.error",
+    "tested.free",
+    "tested.ok",
+    "tested.steps",
+    "tested.where"
+   ],
+   "required_in": [],
+   "right": "manage",
+   "scope": "system"
+  },
+  "POST /api/v1/backup/settings-copy": {
+   "answer": [],
+   "required_in": [],
+   "right": "manage",
+   "scope": "system"
+  },
+  "POST /api/v1/containers/check": {
+   "answer": [
+    "available",
+    "checked_at",
+    "items",
+    "next_cursor",
+    "restored"
+   ],
+   "required_in": [],
+   "right": "manage",
+   "scope": "apps"
+  },
+  "POST /api/v1/download-hours": {
+   "answer": [
+    "clients",
+    "enabled",
+    "end",
+    "errors",
+    "mode",
+    "next_change",
+    "now",
+    "reason",
+    "start"
+   ],
+   "required_in": [
+    "body.action"
+   ],
+   "right": "manage",
+   "scope": "downloads"
+  },
+  "POST /api/v1/downloads/actions": {
+   "answer": [
+    "ok"
+   ],
+   "required_in": [
+    "body.action",
+    "body.app_id",
+    "body.id"
+   ],
+   "right": "manage",
+   "scope": "downloads"
+  },
+  "POST /api/v1/extras/{name}/run": {
+   "answer": [],
+   "required_in": [
+    "name"
+   ],
+   "right": "manage",
+   "scope": "media"
+  },
+  "POST /api/v1/library/refresh": {
+   "answer": [],
+   "required_in": [
+    "body.tab"
+   ],
+   "right": "manage",
+   "scope": "library"
+  },
+  "POST /api/v1/logs/delete": {
+   "answer": [
+    "emptied",
+    "freed",
+    "removed",
+    "summary",
+    "summary.bytes",
+    "summary.days",
+    "summary.files",
+    "summary.keep_days",
+    "summary.max_bytes",
+    "summary.oldest"
+   ],
+   "required_in": [
+    "body.confirm"
+   ],
+   "right": "manage",
+   "scope": "logs"
+  },
+  "POST /api/v1/logs/limits": {
+   "answer": [
+    "alerts_only",
+    "apps",
+    "apps.available",
+    "apps.capped",
+    "apps.driver",
+    "apps.max_file",
+    "apps.max_size",
+    "apps.per_app",
+    "apps.uncapped",
+    "covers",
+    "freed",
+    "keep_days",
+    "keep_days_choices",
+    "max_mb",
+    "max_mb_choices",
+    "removed",
+    "show_lines",
+    "show_lines_choices",
+    "summary",
+    "summary.bytes",
+    "summary.days",
+    "summary.files",
+    "summary.keep_days",
+    "summary.max_bytes",
+    "summary.oldest"
+   ],
+   "required_in": [],
+   "right": "manage",
+   "scope": "logs"
+  },
+  "POST /api/v1/mcp": {
+   "answer": [
+    "error",
+    "error.code",
+    "error.message",
+    "id",
+    "jsonrpc",
+    "result"
+   ],
+   "required_in": [],
+   "right": "read",
+   "scope": null
+  },
+  "POST /api/v1/plugin/alerts": {
+   "answer": [
+    "ok",
+    "sent"
+   ],
+   "required_in": [
+    "body.key",
+    "body.state"
+   ],
+   "right": "plugin",
+   "scope": null
+  },
+  "POST /api/v1/requests/{id}/approve": {
+   "answer": [
+    "ok"
+   ],
+   "required_in": [
+    "id"
+   ],
+   "right": "manage",
+   "scope": "requests"
+  },
+  "POST /api/v1/requests/{id}/decline": {
+   "answer": [
+    "ok"
+   ],
+   "required_in": [
+    "id"
+   ],
+   "right": "manage",
+   "scope": "requests"
+  },
+  "POST /api/v1/updates": {
+   "answer": [],
+   "required_in": [
+    "body.target"
+   ],
+   "right": "manage",
+   "scope": "updates"
+  },
+  "POST /api/v1/updates/all": {
+   "answer": [],
+   "required_in": [],
+   "right": "manage",
+   "scope": "updates"
+  },
+  "POST /api/v1/updates/rollback": {
+   "answer": [],
+   "required_in": [
+    "body.target"
+   ],
+   "right": "manage",
+   "scope": "updates"
+  }
+ },
+ "setting_types": [
+  "text",
+  "number",
+  "switch",
+  "choice",
+  "address",
+  "secret",
+  "folder",
+  "list",
+  "custom",
+  "schedule"
+ ]
+}

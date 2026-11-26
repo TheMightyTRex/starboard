@@ -65,11 +65,10 @@ function render(m, rates) {
       note: m.temps.filter((t) => !/^Core /.test(t.label)).slice(0, 6).map((t) => `${t.chip === t.label ? t.chip : `${t.chip} ${t.label}`} ${Math.round(t.c)}°C`).join(" · ") });
   }
   charts.net.update({ points, detail: Object.keys(m.net).join(", ") || null });
-  charts.disk.update({ points, detail: Object.keys(m.disks).length ? plural(Object.keys(m.disks).length) : null });
+  charts.disk.update({ points, detail: Object.keys(m.disks).length ? plural(Object.keys(m.disks).length, "disk") : null });
   renderThreads(rates.cores);
 }
 
-const plural = (n) => `${n} ${n === 1 ? "disk" : "disks"}`;
 
 // Each app's share of the whole processor since the last reading, and its memory. Needs per-app use (installer).
 function renderApps(m, prev, dt) {

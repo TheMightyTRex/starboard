@@ -32,7 +32,7 @@ async function startDownloadsSettings() {
     const save = el("button", { type: "button", class: "btn btn--primary" }, "Save and restart the VPN");
     const said = el("div", { "aria-live": "polite" });
     save.addEventListener("click", async () => {
-      if (!password.value) { setError(password, "Enter your Starboard password"); password.focus(); return; }
+      if (!password.value) { setError(password, NEED_PASSWORD); password.focus(); return; }
       save.disabled = true;
       const vpn = { provider: provider.value.trim().toLowerCase(), type: type.value, countries: countries.value.trim() };
       if (type.value === "wireguard") Object.assign(vpn, { wireguard_private_key: key.value.trim(), wireguard_addresses: address.value.trim() });
@@ -145,7 +145,7 @@ async function vpnAddSection(d) {
     const need = type.value === "wireguard" ? ["wireguard_private_key", "wireguard_addresses"] : ["openvpn_user", "openvpn_password"];
     for (const k of need) if (!inputs[k].value.trim()) { setError(inputs[k], "Enter this from your VPN provider"); inputs[k].focus(); return; }
     if (type.value === "wireguard" && !/\/\d{1,3}$/.test(inputs.wireguard_addresses.value.trim())) { setError(inputs.wireguard_addresses, "Enter the address with its /32 at the end"); inputs.wireguard_addresses.focus(); return; }
-    if (!password.value) { setError(password, "Enter your Starboard password"); password.focus(); return; }
+    if (!password.value) { setError(password, NEED_PASSWORD); password.focus(); return; }
     add.disabled = true;
     const vpn = { provider: p, type: type.value, countries: countries.value.trim(), ...Object.fromEntries(need.map((k) => [k, inputs[k].value.trim()])) };
     try {
@@ -169,7 +169,7 @@ function vpnRemoveBlock() {
   const remove = el("button", { type: "button", class: "btn btn--danger", "aria-haspopup": "dialog" }, "Remove the VPN");
   remove.addEventListener("click", async () => {
     setError(password, "");
-    if (!password.value) { setError(password, "Enter your Starboard password"); password.focus(); return; }
+    if (!password.value) { setError(password, NEED_PASSWORD); password.focus(); return; }
     const w = (await setupWords()).novpn;
     if (!(await noVpnWarning({ title: w.remove_title, confirm: w.remove_confirm }))) return;
     remove.disabled = true;

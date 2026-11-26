@@ -91,7 +91,7 @@ async function renderOwnJobs() {
 // (what found it and what it matched on) and each app it did not (the addresses it tried, what answered, and why that
 // was not a match). It reads a small saved answer; it searches nothing again. Opened by a button, closed with Escape.
 async function openWhy(opener) {
-  const panel = sidePanel({ title: "Why is this here?", opener, wide: true, body: [el("p", { class: "muted", text: "Loading…" })],
+  const panel = sidePanel({ title: "Why is this here?", opener, wide: true, body: [SharedComponents.wait("Loading the answer")],
     foot: [helpCentreLink("topics/why-is-this-here.md")] });
   let last;
   try { last = (await api("/api/discover/last")).last; }

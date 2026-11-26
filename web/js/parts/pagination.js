@@ -2,7 +2,7 @@
  * Made by tools/parts.py from components.js in github.com/TheMightyTRex/design-system: change it there, not here. */
 (() => {
   const S = window.SharedComponents;
-  const { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus } = S.kit;
+  const { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus, notice } = S.kit;
 
   /* Pagination: pagination(nav, { page, pageSize, total, noun, sizes, href, onPage, onSize, focus }) draws the
      links and "Showing 21 to 40 of 312". With href(page) each is a real link; with onPage(page) the page changes in

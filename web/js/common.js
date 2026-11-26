@@ -84,7 +84,7 @@ function helpCentreLink(page, text = "Read it in the help centre") {
 
 async function openHelp(title, { body = null, page = "", back = "", opener } = {}) {
   const close = back ? el("button", { type: "button", class: "btn", text: back }) : null;
-  const panel = sidePanel({ title, opener, wide: true, body: body ? [].concat(body) : [el("p", { class: "muted", text: "Loading…" })],
+  const panel = sidePanel({ title, opener, wide: true, body: body ? [].concat(body) : [SharedComponents.wait("Loading the help")],
     foot: [close, page ? helpCentreLink(page) : null].filter(Boolean) });
   close?.addEventListener("click", () => panel.close());
   // The star's key when the form or step this help belongs to has a required field.
@@ -581,6 +581,11 @@ function problem(message, near) {
   if (!control || !control.getClientRects().length) return window.SharedComponents.toast.error(String(message).replace(/\.$/, ""));
   return inlineError(control, message);
 }
+// What an error line says, the library's way (design system: Field): the icon, then "Error: " for screen readers, then the words.
+function errorWords(node, message) {
+  node.replaceChildren(icon("circle-alert"), el("span", {}, el("span", { class: "visually-hidden", text: "Error: " }), message));
+  return node;
+}
 function inlineError(control, message) {
   const row = control.closest(".row");
   const box = (row && $(".row__text", row)) || control.closest(".field, td, li");
@@ -588,7 +593,7 @@ function inlineError(control, message) {
   const holder = box || after.parentElement;
   $(":scope > .field-error[data-problem]", holder)?.remove();
   const text = String(message).replace(/\.?$/, ".");
-  const error = el("p", { class: "field-error", role: "alert", "data-problem": "", id: `problem-${Date.now()}` }, icon("circle-alert"), el("span", { text }));
+  const error = errorWords(el("p", { class: "field-error", role: "alert", "data-problem": "", id: `problem-${Date.now()}` }), text);
   if (box) box.append(error); else after.after(error);
   control.setAttribute("aria-describedby", [control.getAttribute("aria-describedby"), error.id].filter(Boolean).join(" "));
   // The next go clears it: a new answer replaces it, a success leaves nothing to explain.
@@ -613,6 +618,11 @@ function announce(message) {
   const node = $("#announcer");
   if (node) { node.textContent = ""; setTimeout(() => { node.textContent = message; }, 50); }
 }
+
+// "3 disks", "1 series" (the library's SharedComponents.plural: plural(n, one, many), many left out adds an s, or one
+// array [one, many]) and the time of day, 14:05.
+function plural(n, one, many) { return SharedComponents.plural(n, one, many); }
+function timeNow() { return SharedComponents.clock(); }
 
 function formatBytes(n) {
   if (!n) return "0 B";
@@ -652,22 +662,8 @@ function shortUrl(url) {
 }
 
 // The clipboard API needs HTTPS or localhost; on a home network address the old copy command still works.
-async function copyText(text) {
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch { /* fall through */ }
-  const area = el("textarea", { class: "visually-hidden", readonly: true, "aria-hidden": "true" });
-  area.value = text;
-  document.body.append(area);
-  area.select();
-  let ok = false;
-  try { ok = document.execCommand("copy"); } catch { ok = false; }
-  area.remove();
-  return ok;
-}
+// The library's copy to the clipboard (a fallback for a page that is not a secure context). true when it worked.
+function copyText(text) { return SharedComponents.copyText(text); }
 
 const COPY_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>'; // Lucide copy
 
@@ -801,6 +797,16 @@ function slideOutConfirm({ title, body, confirm = "Continue", wide = true, opene
 // (a plug-in action with a confirm, DASH-441). Escape always cancels.
 // alert: true makes it an alert dialog (a warning that needs an answer, DASH-440): announced as one with its words,
 // and focus starts on Cancel, so Enter never agrees by mistake. Escape cancels, as in every dialog.
+// Asking for the Starboard password (one label, one word when it is empty, one autocomplete). passwordInput(id) is the
+// box; passwordField(input, { hint, after }) is the field around it, for a dialog's `fields`.
+const NEED_PASSWORD = "Enter your Starboard password";
+function passwordInput(id) { return el("input", { class: "input", type: "password", id, autocomplete: "current-password", required: true }); }
+function passwordField(input, { hint = "", after = null } = {}) {
+  if (hint) input.setAttribute("aria-describedby", [`${input.id}-hint`, input.getAttribute("aria-describedby")].filter(Boolean).join(" "));
+  return el("div", { class: "field" }, el("label", { for: input.id, text: "Your Starboard password" }),
+    hint ? el("span", { class: "hint", id: `${input.id}-hint`, text: hint }) : null, input, after);
+}
+
 function confirmDialog({ title, message, confirm = "Continue", cancel = "Cancel", danger = false, careful = false, fields = [], alert = false }) {
   return new Promise((resolve) => {
     const id = `confirm-${Date.now()}`;
@@ -1123,7 +1129,7 @@ function releaseNotes(rel, level = 3) {
 }
 
 async function openReleaseNotes(opener) {
-  const panel = sidePanel({ title: "Release notes", opener, wide: true, body: [el("p", { class: "muted", text: "Loading…" })] });
+  const panel = sidePanel({ title: "Release notes", opener, wide: true, body: [SharedComponents.wait("Loading the release notes")] });
   try {
     const r = await api("/api/releases");
     const newer = isNewer(r.latest, r.current);
@@ -1160,7 +1166,7 @@ function appChanges(result, level = 3) {
 
 async function openAppChanges({ app, name, from = "", to = "", opener }) {
   const title = `What is new in ${name}`;
-  const panel = sidePanel({ title, opener, wide: true, body: [el("p", { class: "muted", text: "Loading…" })] });
+  const panel = sidePanel({ title, opener, wide: true, body: [SharedComponents.wait("Loading the changes")] });
   try {
     const r = await api(`/api/app-changes?${new URLSearchParams({ app, from, to })}`);
     const span = r.from && r.to ? `From ${r.from} to ${r.to}` : r.to ? `Version ${r.to}` : `Newer than ${r.from}`;
@@ -1390,6 +1396,12 @@ function statTile(value, label, tone = null, extra = null) {
   const [t, word] = Array.isArray(tone) ? tone : [tone, null];
   return el("div", { class: "stat", "data-tone": t || null },
     el("span", { class: "stat__value", text: value }), el("span", { class: "stat__label", text: label }), word ? chip(word, t) : extra);
+}
+
+// A notice in the page (the library's SharedComponents.notice): tone, title, text, then a button or link for the
+// third column. options: after, icon, alert, id, tabindex, heading.
+function notice(tone, title, text, action = null, options = {}) {
+  return window.SharedComponents.notice(tone, title, text, { ...options, actions: action });
 }
 
 // Settings pattern 7: what is missing and the one thing to do.
@@ -2166,14 +2178,14 @@ const logBytes = (n) => (n < 1024 ? "less than 1 KB" : formatBytes(n));
 const logDay = (d) => new Date(`${d}T12:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long" });
 async function deleteAllLogs(summary) {
   const s = summary || {};
-  const pw = el("input", { class: "input", type: "password", id: `logs-delete-pw-${Date.now()}`, autocomplete: "current-password", required: true });
+  const pw = passwordInput(`logs-delete-pw-${Date.now()}`);
   const ok = await confirmDialog({
     title: "Delete all logs?", danger: true, confirm: "Delete all logs",
     message: [
       el("p", { text: s.files ? `Every log Starboard keeps goes: ${logBytes(s.bytes)} in ${s.files} ${s.files === 1 ? "file" : "files"}${s.oldest ? `, back to ${logDay(s.oldest)}` : ""}.` : "Every log Starboard keeps goes." }),
       el("p", { text: "Today's file and the API's audit log are emptied, not removed, so Starboard keeps logging. Its first new line says the logs were deleted, from this browser, and when. The apps' own logs, which Docker keeps, stay." }),
       el("p", {}, el("strong", { text: "This cannot be undone." }))],
-    fields: [el("div", { class: "field" }, el("label", { for: pw.id, text: "Your Starboard password" }), pw)] });
+    fields: [passwordField(pw)] });
   if (!ok) return null;
   return api("/api/logs/clear", { method: "POST", body: { password: pw.value } });
 }
