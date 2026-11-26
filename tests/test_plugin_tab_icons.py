@@ -54,7 +54,7 @@ class PluginTabIcons(unittest.TestCase):
         self.assertIn(".site-header__tabs .menu-tabs.is-compact a:focus-visible .menu-tabs__label", css)
         self.assertNotIn("menu-tabs--scroll", css + read("web", "js", "common.js"))
         js = read("web", "js", "components.js")
-        self.assertIn("a.dataset.tooltip = name", js)
+        self.assertIn("a.dataset.tooltip = a.textContent.trim()", js)
         self.assertIn("ArrowRight", js)
 
     def test_plug_in_tabs_added_after_the_header_was_measured_are_measured_again(self):
