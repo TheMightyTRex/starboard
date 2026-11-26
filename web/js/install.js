@@ -158,7 +158,7 @@ async function startInstall() {
     const step = steps[index];
     let save = async () => true;
     let loading = true;
-    step.nodes = [el("p", { class: "muted", text: "Loading…" })];
+    step.nodes = [SharedComponents.wait("Loading this step")];
     const frame = () => wizardFrame({ root, steps, index, busy: loading,
       continueText: { welcome: "Begin", review: "Write the files", start: fromGuide ? "Back to the set-up guide" : "Go to Apps" }[step.id] || "Continue",
       // On the last step, Start the apps (then Add the ticked apps, or Try again) is the one primary; leaving is plain.

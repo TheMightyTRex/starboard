@@ -84,7 +84,7 @@ function helpCentreLink(page, text = "Read it in the help centre") {
 
 async function openHelp(title, { body = null, page = "", back = "", opener } = {}) {
   const close = back ? el("button", { type: "button", class: "btn", text: back }) : null;
-  const panel = sidePanel({ title, opener, wide: true, body: body ? [].concat(body) : [el("p", { class: "muted", text: "Loading…" })],
+  const panel = sidePanel({ title, opener, wide: true, body: body ? [].concat(body) : [SharedComponents.wait("Loading the help")],
     foot: [close, page ? helpCentreLink(page) : null].filter(Boolean) });
   close?.addEventListener("click", () => panel.close());
   // The star's key when the form or step this help belongs to has a required field.
@@ -1123,7 +1123,7 @@ function releaseNotes(rel, level = 3) {
 }
 
 async function openReleaseNotes(opener) {
-  const panel = sidePanel({ title: "Release notes", opener, wide: true, body: [el("p", { class: "muted", text: "Loading…" })] });
+  const panel = sidePanel({ title: "Release notes", opener, wide: true, body: [SharedComponents.wait("Loading the release notes")] });
   try {
     const r = await api("/api/releases");
     const newer = isNewer(r.latest, r.current);
@@ -1160,7 +1160,7 @@ function appChanges(result, level = 3) {
 
 async function openAppChanges({ app, name, from = "", to = "", opener }) {
   const title = `What is new in ${name}`;
-  const panel = sidePanel({ title, opener, wide: true, body: [el("p", { class: "muted", text: "Loading…" })] });
+  const panel = sidePanel({ title, opener, wide: true, body: [SharedComponents.wait("Loading the changes")] });
   try {
     const r = await api(`/api/app-changes?${new URLSearchParams({ app, from, to })}`);
     const span = r.from && r.to ? `From ${r.from} to ${r.to}` : r.to ? `Version ${r.to}` : `Newer than ${r.from}`;

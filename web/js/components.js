@@ -1076,6 +1076,23 @@
     };
   }
 
+  /* Waiting mark builder: wait(words, options) returns the .wait line (the ring, then the words) for a short wait, so a
+     page never writes a plain "Loading…". Say what is loading ("Loading the releases"). options: status (true puts
+     role="status" on the words, for words that change), id. A busy button needs no builder: aria-busy="true". */
+  function wait(words, options = {}) {
+    const box = document.createElement("span");
+    box.className = "wait";
+    if (options.id) box.id = options.id;
+    const mark = document.createElement("span");
+    mark.className = "wait__mark";
+    mark.setAttribute("aria-hidden", "true");
+    const text = document.createElement("span");
+    text.textContent = words;
+    if (options.status) text.setAttribute("role", "status");
+    box.append(mark, text);
+    return box;
+  }
+
   /* Notice builder: notice(tone, title, text, options) returns a .notice, so every page draws one in the same way.
      tone: success, info (no data-tone), warning, danger or muted; one icon each. text is words or nodes, and may be
      left out. options: actions (a button or link, or an array, in the third column), after (nodes under the text),
@@ -1227,6 +1244,7 @@
     setupSideTrees, setupSolvers, setupSearch, setupSearchIcons, setupSortables, openLayer, toast, savedNote,
     copyText, azLetter, azJump, azGo, loadMore, pageBanner, setupTooltips, say, addSetup, 
     kit: { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus, notice } };
+  Object.assign(window.SharedComponents, { wait }); // the waiting mark builder
   Object.assign(window.SharedComponents, { notice }); // the notice builder
   // An app that wires its own behaviour (Starboard's page scripts) loads this file with data-manual, or
   // sets window.SharedComponentsManual = true first, and calls setup() or openLayer() itself.
