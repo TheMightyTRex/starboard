@@ -17,7 +17,7 @@ import os
 import re
 import time
 
-from .config import DEFAULTS, DESIGNS, SCHEMA, SERVICE_TYPES, UPCOMING_DAYS, UPCOMING_VIEWS, ConfigError, migrate, validate_service
+from .config import DEFAULTS, DESIGNS, SCHEMA, SERVICE_TYPES, UPCOMING_DAYS, UPCOMING_VIEWS, ConfigError, fold_media_servers, migrate, validate_service
 
 FORMAT = "starboard-settings"
 GENERAL_KEYS = ("site_name", "server_name", "design", "own_colours", "shadows_off", "groups", "show_home_address", "show_outside_address",
@@ -184,6 +184,7 @@ def restore(config, backup):
         raise ConfigError("This backup is incomplete")
     schema = backup.get("schema") if isinstance(backup.get("schema"), int) else 1
     services = migrate({"schema": schema, "services": json.loads(json.dumps(services))})["services"]
+    fold_media_servers(services)  # a copy from the day Plex and Emby were saved as an Other app (DASH-566)
     settings = dict(settings)
     for key, allowed in (("design", DESIGNS), ("upcoming_view", UPCOMING_VIEWS), ("upcoming_days", UPCOMING_DAYS)):
         if key in settings and settings[key] not in allowed:

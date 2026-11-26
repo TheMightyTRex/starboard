@@ -3,6 +3,8 @@
 const SEARCHABLE = ["sonarr", "radarr", "lidarr", "readarr"];
 
 const NO_KEY = ["link"];
+// Plex and Emby (DASH-566): the address each one usually has, which also names the new app after its kind until it is typed over.
+const MEDIA_ADDRESS = { plex: "http://127.0.0.1:32400", emby: "http://127.0.0.1:8096" };
 
 // Manage apps ---------------------------------------------------------------
 
@@ -195,6 +197,7 @@ function openService(s = null, opener = null, { background = false, preset = nul
   const key = el("input", { class: "input", name: "api_key", type: "password", autocomplete: "off" });
   const keyHint = el("span", {});
   const keyField = field("API key", key, { hint: keyHint, span: true });
+  const keyLabel = keyField.querySelector("label");
   const testButton = el("button", { type: "button", class: "btn" }, icon("zap"), "Test connection");
   const testResult = el("div", { "aria-live": "polite" });
 
@@ -247,6 +250,8 @@ function openService(s = null, opener = null, { background = false, preset = nul
         switchRow("Show on the dashboard", null, enabled),
         switchRow("Background service", "It has no web page, so it is listed under System, Apps, Other services.", bg)),
       followsField),
+    s && /calibre/i.test(`${s.name} ${s.icon || ""}`) && typeof phoneApps === "function"
+      ? el("section", { class: "step-section", "aria-labelledby": "svc-phone-h" }, el("h3", { id: "svc-phone-h", text: "Read on your phone" }), phoneApps("h4")) : null,
     formError);
 
   const steps = el("ol", { class: "steps", "aria-label": "Steps" }, el("li", { "aria-current": "step", text: "Connection" }), el("li", { text: "Adding options" }));
@@ -276,7 +281,14 @@ function openService(s = null, opener = null, { background = false, preset = nul
       audiobookshelf: "Settings, API Keys, for an admin user. Optional: it is needed only to copy listening progress (Settings, Apps, Audiobookshelf)",
       gluetun: "its control server settings. Optional: only if you gave its control server an API key",
       nzbget: "Settings, Security: enter its control user name and password as user:password",
-      slskd: "Options, web, authentication, API keys (in its slskd.yml)" }[t] || "Settings, General";
+      slskd: "Options, web, authentication, API keys (in its slskd.yml)",
+      emby: "Dashboard, Advanced, API Keys, then New API Key. It adds Emby's state, what is playing and recently added to the dashboard, Library and Activity",
+      plex: "open any item in the Plex web app, then Get Info, then View XML, and copy what follows X-Plex-Token= in the address. It adds Plex's state, what is playing and recently added to the dashboard, Library and Activity" }[t] || "Settings, General";
+    keyLabel.firstChild.textContent = t === "plex" ? "Plex token" : "API key";
+    url.placeholder = MEDIA_ADDRESS[t] || "http://127.0.0.1:8096";
+    if (isNew && (!name.value || name.dataset.auto)) {
+      if (MEDIA_ADDRESS[t]) { name.value = config.types[t].label; name.dataset.auto = "1"; } else if (name.dataset.auto) { name.value = ""; delete name.dataset.auto; }
+    }
     keyHint.textContent = `In ${config.types[t]?.label || "the app"}: ${where}.${current?.has_api_key ? " Leave blank to keep the saved key; it is never shown again." : ""}`;
     followsField.hidden = !bg.checked;
     group.options[0].textContent = `Choose for me (${guessGroup(name.value, t) || "the last category"})`;
@@ -309,7 +321,7 @@ function openService(s = null, opener = null, { background = false, preset = nul
   updateFields();
 
   type.addEventListener("change", updateFields);
-  name.addEventListener("input", updateFields);
+  name.addEventListener("input", () => { delete name.dataset.auto; updateFields(); });
   bg.addEventListener("change", updateFields);
   remove?.addEventListener("click", () => removeService(current, { fromPanel: panel }));
 
@@ -435,6 +447,7 @@ function startManageApps() {
   else if (editId) { setAddress(null, false); problem("That app is not in your list any more"); }
   else if (params.get("add") === "background") openService(null, $("#add-service"), { background: true });
   else if (params.get("add") === "jellyfin") openService(null, $("#add-service"), { preset: { type: "jellyfin", name: "Jellyfin", url: params.get("url") || "" } });
+  else if (["plex", "emby"].includes(params.get("add"))) openService(null, $("#add-service"), { preset: { type: params.get("add"), name: config.types[params.get("add")].label, url: params.get("url") || "" } });
   else if (params.has("add") || !config.services.length) openService(null, $("#add-service"));
   loadStatus();
 }

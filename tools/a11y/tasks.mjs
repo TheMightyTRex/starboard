@@ -738,6 +738,34 @@ if (none) {
   }
 }
 
+// T-PLEX (DASH-566) Add a Plex app by keyboard alone: Add an app opens the panel with focus in it, the Kind of app list is reached
+// with Tab and Plex is chosen by typing its name, the token field is named for a screen reader as a Plex token and its hint says
+// where to find it, and Escape closes the panel with focus back on Add an app.
+await page.goto(`${base}/settings.html`);
+await settle();
+const addApp = await tabTo((f) => f.tag === "BUTTON" && /^Add an app/.test(f.text), 60);
+check("T-PLEX", "Tab reaches Add an app", !!addApp, addApp ? addApp.text : "not reached");
+if (addApp) {
+  await page.keyboard.press("Enter");
+  await settle();
+  const inPanel = await focus();
+  check("T-PLEX", "the panel opens with focus inside it", inPanel.inPanel && !inPanel.lost, JSON.stringify(inPanel));
+  const kind = await tabTo((f) => f.tag === "SELECT" && f.name === "type", 12);
+  check("T-PLEX", "Tab reaches Kind of app", !!kind, kind ? kind.name : "not reached");
+  if (kind) {
+    await page.keyboard.type("Plex");
+    const got = await page.evaluate(() => ({ kind: document.querySelector("#service-form [name=type]").value, name: document.querySelector("#service-form [name=name]").value,
+      label: document.querySelector("label[for=" + document.querySelector("#service-form [name=api_key]").id + "]").textContent.trim(),
+      hint: document.getElementById(document.querySelector("#service-form [name=api_key]").id + "-hint")?.textContent || "" }));
+    check("T-PLEX", "typing Plex chooses it, names the app and calls the key a Plex token", got.kind === "plex" && got.name === "Plex" && /^Plex token/.test(got.label), JSON.stringify(got));
+    check("T-PLEX", "the token's hint says where to find it, and is tied to the field", /X-Plex-Token/.test(got.hint), got.hint);
+  }
+  await page.keyboard.press("Escape");
+  await settle();
+  const closed = await focus();
+  check("T-PLEX", "Escape closes the panel and focus goes back to Add an app", /^Add an app/.test(closed.text), JSON.stringify(closed));
+}
+
 // T23 Reduce motion (DASH-437): Off means full movement even when the device asks for less; Match device follows the
 // device; On stills movement on a device that does not ask. Checked in the styles and scripts a slide-out, a message
 // and the loading line use, as Display leaves them after a reload.

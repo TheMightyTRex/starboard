@@ -22,6 +22,10 @@ SERVICE_TYPES = {
     "prowlarr": {"label": "Prowlarr", "api": "/api/v1", "searchable": False},
     "bazarr": {"label": "Bazarr", "api": "/api", "searchable": False},
     "jellyfin": {"label": "Jellyfin", "api": "", "searchable": False},
+    # Plex and Emby (DASH-566, owner, 26 November 2026): proper types with their own forms and checks. Each was an "Other app"
+    # with the icon plex or emby for a short while (fold_media_servers moves those).
+    "plex": {"label": "Plex", "api": "", "searchable": False},
+    "emby": {"label": "Emby", "api": "", "searchable": False},
     "qbittorrent": {"label": "qBittorrent", "api": "/api/v2", "searchable": False},
     "sabnzbd": {"label": "SABnzbd", "api": "/api", "searchable": False},
     # NZBGet signs in with its control user name and password, kept as "user:password" in the API key field.
@@ -159,6 +163,22 @@ def guess_group(service, groups):
     return groups[index] if index < len(groups) else groups[-1]  # renamed categories keep their place
 
 
+MEDIA_SERVER_TYPES = ("plex", "emby")
+
+
+def fold_media_servers(services):
+    """Plex and Emby are service types of their own. An "Other app" saved with the icon plex or emby by the first
+    media server pull request (26 November 2026) becomes that type, keeping its name, address and key. Changes the
+    list given and answers whether it changed anything; a list with none of them is left alone, so no write follows."""
+    changed = False
+    for s in services or []:
+        if isinstance(s, dict) and s.get("type") == "link" and str(s.get("icon") or "").strip().lower() in MEDIA_SERVER_TYPES:
+            s["type"] = str(s["icon"]).strip().lower()
+            s.setdefault("api_key", "")
+            changed = True
+    return changed
+
+
 _ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,39}$")
 
 
@@ -274,6 +294,8 @@ class Config:
             s["type"] = "tdarr"
             s.setdefault("api_key", "")
         if tdarr_links:
+            self._write(data)
+        if fold_media_servers(data.get("services")):  # DASH-566: Plex and Emby have their own types now
             self._write(data)
         if data.get("design") not in DESIGNS:  # a design that has since been removed
             data["design"] = DEFAULTS["design"]

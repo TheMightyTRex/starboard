@@ -1,17 +1,25 @@
 """Emby as a media server (DASH-566). Emby and Jellyfin share their questions and answers, so most of this is the
 shared MediaBrowser class: only the prefix, the key's header and the status differ. The address and key are kept in
-Settings, Manage apps, as an "Other app" with the icon emby."""
+Settings, Manage apps, as an app of the kind Emby."""
 from .. import mediaserver, services
 
 
 class Emby(mediaserver.MediaBrowser):
     id = "emby"
     name = "Emby"
-    service_type = "link"
-    service_icon = "emby"
+    service_type = "emby"
     prefix = "/emby"
     page = ""  # no page of its own yet: its address and key are in Settings, Manage apps
     capabilities = ()  # read only for now
+
+    def public_version(self, service):
+        """The version it tells anyone, with no key."""
+        got = self._send(dict(service, api_key=""), "GET", "/System/Info/Public")
+        return str(got.get("Version") or "") if isinstance(got, dict) else ""
+
+    def check_key(self, service):
+        """Asks for something only a key allows; raises ServiceError (the key was refused) when it does not answer."""
+        self._send(service, "GET", "/System/Info")
 
     def _headers(self, service):
         return {"X-Emby-Token": service.get("api_key", ""), "Accept": "application/json", "User-Agent": services.USER_AGENT}
@@ -47,4 +55,4 @@ class Emby(mediaserver.MediaBrowser):
         return out
 
     def keys_needed(self):
-        return [{"what": "API key", "where": "Emby's dashboard, Advanced, API keys", "kept": "Settings, Manage apps, as an Other app with the icon emby"}]
+        return [{"what": "API key", "where": "Emby's dashboard, Advanced, API keys", "kept": "Settings, Manage apps"}]
