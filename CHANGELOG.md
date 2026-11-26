@@ -9,6 +9,8 @@ add features.
 
 ### Added
 - **Compatibility check for the API.** A new check fails a change that takes away or tightens a route, permission, manifest field, card, event or key scope without the deprecation steps, and runs 74 older plug-in manifests against this Starboard. Draft, for review.
+- **Plug-in updates found at once, in one list.** Check now reads every plug-in catalogue again, says when it last did and why one did not answer, and waits 30 seconds between presses. Settings, Plug-ins, Manage and the new Settings, Updates, Plug-ins page list each plug-in's old and new version, what is new and any new permissions, with Update all, Update chosen, Update by themselves, History and Roll back.
+
 - **Sign in to Plex with a link code.** Manage apps has Sign in with Plex, which shows a code to enter at plex.tv/link, or you can still paste the token.
 - **A first sign-in for app plug-ins.** A plug-in can now set its app's first password, and the plug-in's page shows it once after you enter your Starboard password. Calibre-Web uses this from version 1.2.0. Find out more in the [manifest reference](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/developers/plugin-manifest-reference.md#a-first-sign-in-shown-once-first_sign_in).
 - **A wizard for switching media server.** The media server tab in Settings, Apps has Switch with help, which says what moves, what cannot and what keeps working before anything changes. Find out more in [Choose your media server](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/choose-your-media-server.md).
@@ -24,6 +26,7 @@ add features.
 - **Emby and Plex as media servers.** Both are now built-in plug-ins that the dashboard can show, read only for now. They cannot play, mark watched, show Live TV or use the Jellyfin tools.
 
 ### Changed
+- **Plug-in catalogues are read every 6 hours.** Starboard reads them again with its look at GitHub, only while a page is open and only when you have added a plug-in, instead of once a day.
 - **A notice with buttons reads properly on a phone.** On Settings, Plug-ins the offer to install a plug-in chosen in the set-up no longer squeezes its title to one letter a line, because its buttons now sit on their own row.
 - **Each plug-in's tab has its own icon.** Settings, Plug-ins now draws a different line icon on each plug-in's tab, and where the tabs show icons only, such as on a phone, the tab you are on and the tab with focus also show their name.
 - **Starboard no longer reads Plex's token.** Search for new apps does not look inside the Plex container for the token any more.
