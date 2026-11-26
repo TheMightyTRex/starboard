@@ -46,10 +46,10 @@ Nothing that tells you something is lost: only the movement goes.
 
 The Library, Wanted and History load the next 40 by themselves as you near the end. With reduced motion, they
 always wait for **Show 40 more** instead. To have the button for everyone on the server, whatever their motion
-setting, deactivate **Load more as you scroll** in **Settings**, then **General**, then **Pages and lists**, under
+setting, deactivate **Load more as you scroll** in **Settings**, then **General**, then **Lists**, under
 **Long lists**.
 
-![Settings, General, Pages and lists, with Long lists outlined: Load more as you scroll, which can be deactivated to always have Show 40 more](../images/a11y-long-lists.png)
+![Settings, General, Lists, with Long lists outlined: Load more as you scroll, which can be deactivated to always have Show 40 more](../images/a11y-long-lists.png)
 
 ## Things to note
 

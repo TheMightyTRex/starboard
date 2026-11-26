@@ -364,7 +364,7 @@ if (await wsTab.count()) {
 // T16 Where backups go (DASH-380, several places 26 November 2026): from the section's heading, Tab reaches the first
 // place's switch, then its Test, Change and Remove, then the next place; Enter on Test keeps focus on it and the result
 // is shown beside the place and said in the polite announcer.
-await page.goto(`${base}/system-backup.html`);
+await page.goto(`${base}/settings-general-backup.html`);
 await settle();
 await page.evaluate(() => { const h = document.querySelector("#bk-copies-h"); h.tabIndex = -1; h.focus(); });
 const sw16 = await tabTo((f) => f.tag === "INPUT" && f.id === "place-on-main", 8);
@@ -864,7 +864,7 @@ check("T28", "Escape cancels and gives focus back to Remove the VPN", afterWarn.
 // T30 Connect a cloud service (DASH-452) by keyboard alone: a service in Add a place opens the slide-out at the sign-in
 // with focus on its heading; the way to sign in by arrows; focus stays in the slide-out; Escape closes
 // it part way, says nothing was saved and gives focus back to the button.
-await page.goto(`${base}/system-backup.html`);
+await page.goto(`${base}/settings-general-backup.html`);
 await settle();
 await page.evaluate(() => { const h = document.querySelector("#places-add"); h.focus(); });
 const connect30 = await tabTo((f) => f.id === "place-add-drive", 10);
@@ -1040,7 +1040,7 @@ if (await picks34.count() >= 3) {
 // Starboard password, Restore this backup, then Cancel; Escape closes it with focus back on Restore and nothing
 // started. With both passwords, Enter starts it: focus is back on Restore and each step is said politely. The example
 // server restores nothing (its made-up backup password is "made-up backup").
-await page.goto(`${base}/system-backup.html`);
+await page.goto(`${base}/settings-general-backup.html`);
 await settle();
 await page.locator("#full-list li[data-key]").first().waitFor({ timeout: 10000 }).catch(() => {});
 await page.evaluate(() => { const h = [...document.querySelectorAll("#full-body h3")].find((x) => x.textContent === "Full backups in the folder"); h.tabIndex = -1; h.focus(); });
@@ -1092,7 +1092,7 @@ if (sitesLink) {
 // T35 Reelix's backup settings (DASH-385, DASH-386) by keyboard alone: the selects change with the arrow keys and
 // save at once, focus stays on the select and the saved note says so; choosing the media folder says Reelix must
 // restart, with focus still on the select.
-await page.goto(`${base}/system-backup.html`);
+await page.goto(`${base}/settings-general-backup.html`);
 await settle();
 const show35 = page.getByRole("button", { name: "Show Reelix's backups" });
 if (await show35.count()) {
@@ -1356,6 +1356,27 @@ if (dispBtn) {
   const f3 = await focus();
   check("T-SHADOWS", "Escape returns focus to Display", /Display/.test(f3.text), f3.text);
 }
+
+// T-GEN1 Settings, General, Backup/Logs (DASH-595): one page of sections with a row of in-page links. Tab walks the links in
+// reading order, Enter on one moves to its section with focus on the section's heading, and every link has a section.
+await page.goto(`${base}/settings-general-backup.html`);
+await settle();
+const linkNames = await page.locator(".page-links a").allTextContents();
+check("T-GEN1", "the in-page links are a list under a named navigation", await page.locator("nav.page-links[aria-label='On this page'] ul li a").count() === linkNames.length && linkNames.length >= 8);
+await page.evaluate(() => { document.querySelector("main h1").tabIndex = -1; document.querySelector("main h1").focus(); });
+const firstLink = await tabTo((f) => f.tag === "A" && /^When backups are made/.test(f.text), 4);
+check("T-GEN1", "Tab from the heading reaches the first link, then the rest in order", !!firstLink);
+const seen = [];
+for (let i = 1; i < linkNames.length; i++) { await page.keyboard.press("Tab"); seen.push((await focus()).text); }
+check("T-GEN1", "the links come in the order the sections do", JSON.stringify(seen) === JSON.stringify(linkNames.slice(1)), seen.join("|"));
+await page.locator(".page-links a", { hasText: "Where backups go" }).focus();
+await page.keyboard.press("Enter");
+await page.waitForTimeout(300);
+check("T-GEN1", "Enter moves to the section", (await page.evaluate(() => location.hash)) === "#bk-copies-h" && await page.locator("#bk-copies-h").isVisible());
+check("T-GEN1", "the page has one h1 and every section a heading", await page.locator("main h1").count() === 1 && await page.locator("main h2").count() >= 8);
+await page.goto(`${base}/system-backup.html`);
+await settle();
+check("T-GEN1", "the old address opens it", new URL(page.url()).pathname === "/settings-general-backup.html");
 
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);

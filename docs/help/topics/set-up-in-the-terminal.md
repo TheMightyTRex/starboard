@@ -3,16 +3,16 @@
 
 # Set up Starboard in the terminal, with no browser
 
-Use this for a server with no desktop, and no phone or other computer to finish on. The terminal asks the same
-set-up questions as the browser, in the same order. It asks for your password, the apps for your media server and your
-download hours. It takes about 10 minutes, plus the time to download the apps.
+For a server with no desktop, and no phone or other computer to finish on. The terminal asks the same set-up
+questions as the browser, in the same order: your password, the apps for your media server and your download
+hours. It takes about 10 minutes, plus the time to download the apps.
 
 ## Before you begin
 
 - Starboard downloaded, as in [Install Starboard with the installer](install-with-the-installer.md#steps), up to
   the step that starts the installer. The [Run first script](run-first.md) does this for you: choose
   **Here in the terminal** on its **Welcome** step, and go to step 2.
-- We recommend a VPN. Take your VPN provider's details for WireGuard or OpenVPN from the provider's website.
+- A VPN is recommended: your VPN provider's details for WireGuard or OpenVPN, from the provider's website.
 
 ## Steps
 
@@ -31,29 +31,27 @@ download hours. It takes about 10 minutes, plus the time to download the apps.
    restoring a backup, is in [Other answers](#other-answers).
 5. **Storage:** choose where your media goes: this computer's main disk, a separate disk, or a pool of several
    disks. Press Enter to take the media folder shown. **Your disks** follows when you chose a pool.
-6. **What to set up:** press Enter for **Basics** (recommended). It holds Reelix Lite, Jellyfin, Audiobookshelf,
-   Bazarr, and qBittorrent and NZBGet through a VPN. Press Enter again to install the apps listed. Bigger installs are in
+6. **What to set up:** press Enter for **Basics** (recommended): Reelix Lite, Jellyfin, Audiobookshelf, Bazarr,
+   and qBittorrent and NZBGet through a VPN. Press Enter again to install the apps listed. Bigger installs are in
    [Other answers](#other-answers).
    ![The What to set up step in the terminal, with Basics, Full install, Everything and Let me choose (step 6) outlined](../images/set-up-in-the-terminal-1-what-to-set-up.png)
 
-7. **VPN:** press Enter for **Use my VPN account (recommended)**.
-   - Without a VPN account, choose **Continue without a VPN**. A warning says what that means, and Enter keeps
-     **Cancel**. Read [Download without a VPN](download-without-a-vpn.md).
-   - Otherwise, enter the number of your provider. The terminal recommends no provider here. If yours is not listed,
-     choose **Another one that Gluetun supports** and enter its name as Gluetun's list writes it.
-   - Then enter its details. The password or key does not show as you enter it.
-
-   A link marked **(Ad)** is an affiliate link, as the note before the list says.
+7. **VPN:** press Enter for **Use my VPN account (recommended)**. Without a VPN account, choose **Continue without a
+   VPN**: a warning says what that means, and Enter keeps **Cancel**. Read
+   [Download without a VPN](download-without-a-vpn.md). Then enter the number of your provider. No answer is
+   recommended here. If yours is not listed, choose
+   **Another one that Gluetun supports** and enter its name as Gluetun's list writes it. Then enter its details. The
+   password or key does not show as you enter it. A link marked **(Ad)** is an affiliate link, as the note before the
+   list says.
    ![The VPN step in the terminal, with the Ad note and the list of VPN providers and their websites (step 7) outlined](../images/set-up-in-the-terminal-2-vpn.png)
 
 8. **Usenet:** your Usenet provider's details, or **Not now: torrents are enough for now** if you have none.
-9. **Sites to search** and **Films and series**, when you have Reelix. Enter the sites Reelix searches, such as
-   `1,4`, and a free TMDB key. You can leave the key empty. Read [Choose the sites Reelix searches](choose-sites-to-search.md).
-10. **How much it does:** Balanced, Small server or Everything. The recommended one is first. We recommend Small
-    server on a computer with less than 1 GB of memory. Straight after it, **Remove drop shadows?** asks the
-    same question as the browser set-up. With Reelix Lite, the recommended answer, listed first, is to remove them.
-    With any other install, it is to keep them. Drop shadows cost a little processor on every scroll, so removing them
-    helps small and older computers. Read [Remove drop shadows](display-and-accessibility.md#remove-drop-shadows).
+9. **Sites to search** and **Films and series**, when you have Reelix: the sites Reelix searches, such as `1,4`, and
+   a free TMDB key, which you can leave empty. Read [Choose the sites Reelix searches](choose-sites-to-search.md).
+10. **How much it does:** Balanced, Small server or Everything. The recommended one is first. Small server is
+    recommended on a computer with less than 1 GB of memory. Straight after it, **Remove drop shadows?** asks the
+    same question as the browser set-up: with Reelix Lite, the recommended answer, first, is to remove them; with
+    any other install, to keep them. Drop shadows cost a little processor on every scroll, so removing them helps small and older computers. Read [Remove drop shadows](display-and-accessibility.md#remove-drop-shadows).
 11. **Check:** read the list, then press Enter to write the apps' files, and again to start them. Downloading them
     can take several minutes. Starboard adds each app once it answers.
     ![The Check step in the terminal, with Write the apps' files now? (step 11) outlined](../images/set-up-in-the-terminal-3-check.png)
@@ -84,10 +82,10 @@ download hours. It takes about 10 minutes, plus the time to download the apps.
 
 ## Other answers
 
-- **How to start:** **Move from apps you already run** adds the media apps already on this computer. Read
+- **How to start:** **Move from apps you already run** adds the media apps already on this computer; read
   [Move from Radarr, Sonarr and the others to Reelix](move-your-apps-to-reelix.md). **Restore a backup** asks where
-  the backup file is, then asks only for what the backup does not hold. Starboard recommends one of these when it
-  finds media apps or a backup on this computer.
+  the backup file is, then only what the backup does not hold. Starboard recommends one of these when it finds media
+  apps or a backup on this computer.
 - **What to set up:** **Full install**, **Everything** or **Let me choose**. Read
   [Basics, Full install and Everything](install-types.md) for what each has. Full install and Everything then ask
   **Which app downloads from Usenet?**: NZBGet (recommended) or SABnzbd.
@@ -122,7 +120,7 @@ error filled in. Enter `q` at any feedback question to go back to the step.
   your feedback: one on its own could stay in it. If something private is in the report, enter `q` and start again.
 - The QR code is made to fit your window. In a window 80 characters by 24 lines it holds only the report's title; a
   larger window, or smaller text, fits more. With `STARBOARD_PLAIN=1`, there is no QR code: it shows the link.
-- The Usenet providers listed for SABnzbd are affiliate links. If you sign up through one, the provider pays a small
+- The Usenet providers listed for SABnzbd are affiliate links: if you sign up through one, the provider pays a small
   commission towards Starboard's development, and you pay the same price.
 
 ## If it does not work

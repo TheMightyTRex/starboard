@@ -4,30 +4,29 @@
 # Bring in media you already have
 
 **Bring in media** copies the films, series, music, books and audiobooks you already have into Starboard's media
-folder. It tidies and names them so that Reelix and Jellyfin match them. It reads from folders on this computer,
-another disk, a network share, OneDrive or Google Drive. Starboard only reads your media where it is now. It never
-renames, moves or deletes it.
+folder, tidied and named so Reelix and Jellyfin match them. It reads from folders on this computer, another disk,
+a network share, OneDrive or Google Drive. Nothing where your media is now is renamed, moved or deleted: Starboard only reads it.
 
-You can do it as you set up Starboard. This is an optional step, after you choose where your media goes. Or do it
-later from **Library**, **Bring in media**, or **Still to set up** on the dashboard.
+You can do it as you set up Starboard (an optional step, after you choose where your media goes), or later from
+**Library**, **Bring in media**, or **Still to set up** on the dashboard.
 
 ## Before you begin
 
 - Your media folder has room for the copies. Starboard says how much space is needed before it copies anything.
-- For a network share, you know its address and, if it needs them, a user name and password. A Windows computer or
-  a NAS uses an address such as `//192.0.2.20/media`. NFS uses an address such as `192.0.2.20:/export/media`.
+- For a network share, you know its address (such as `//192.0.2.20/media` for a Windows computer or a NAS, or
+  `192.0.2.20:/export/media` for NFS), and a user name and password if it needs one.
 
 ## Steps
 
 1. Go to **Library**, then select **Bring in media**. In the set-up, the step comes after **Storage**.
 2. **Where your media is:** select **Add a source**. Choose a place: **This computer**, one of your disks, a
-   network share, **Another network share** to add one, or OneDrive or Google Drive. Open folders until you reach the
-   one with your media, then select **Use this folder**. Each folder shows its size and what is in it.
+   network share, **Another network share** to add one, or OneDrive or Google Drive. Open folders until you are in the one with your
+   media, then select **Use this folder**. Each folder shows its size and what is in it.
 
    ![Bring in media you already have, Where your media is, with Add a source (step 2) outlined, with example data](../images/bring-in-media-you-already-have-1-sources.png)
 
-3. Add every place your media is in. Put them in order with **Move up** and **Move down**. If the same title is
-   in two places, Starboard brings in the one higher in the list. Select **Continue**.
+3. Add every place your media is in. Put them in order with **Move up** and **Move down**: when the same title is
+   in two places, the one higher in the list is brought in. Select **Continue**.
 
    ![The list of places with Move up and Move down (step 3) outlined, with example data](../images/bring-in-media-you-already-have-2-order.png)
 
@@ -45,8 +44,8 @@ later from **Library**, **Bring in media**, or **Still to set up** on the dashbo
 6. **Copy:** check the table, then select **Start copying**. (In the set-up, the copy starts once the apps are
    running.)
 7. The copy runs in the background. Its progress is on the dashboard and in **Activity**, **Downloads**. Select
-   **Pause** to stop it for now and **Carry on** to go on. When it finishes, the report lists what Starboard copied,
-   what needs attention and what it left where it is, each with what to do. Select **Got it**.
+   **Pause** to stop it for now and **Carry on** to go on. When it finishes, the report lists what was copied,
+   what needs attention and what was left where it is, each with what to do. Select **Got it**.
 
 ## How files are named and placed
 
@@ -62,7 +61,7 @@ library and gives every file Reelix's own name.
 
 - **Nothing at your sources changes.** Shares are connected read only and folders are only read. Taking a place
   off the list changes nothing there either.
-- **Exact copies are brought in once.** When two files are the same, Starboard copies one and lists the other under
+- **Exact copies are brought in once.** When two files are the same, one is copied and the other is listed under
   **Left where it is**.
 - **A title already in your library** is left where it is, and a file already in the media folder is never
   written over.
@@ -70,14 +69,14 @@ library and gives every file Reelix's own name.
   disk fills up, the copy stops cleanly: free some space, then select **Carry on**.
 - **It goes gently.** The copy runs at the lowest priority, one at a time, so your server stays quick. It carries
   on where it was after a restart.
-- **Link films and series on the same disk instead of copying them** is off to start with. When it is on, Starboard links a film or
-  episode on the same disk as your media folder instead of copying it, so it uses no extra space. The library file is
+- **Link films and series on the same disk instead of copying them** is off to start with. When it is on, a film or
+  episode on the same disk as your media folder is linked, not copied, so it uses no extra space. The library file is
   then the same file as the original, so anything that changes the file's contents changes the original too. Music,
   books and audiobooks are always copied, so their originals never change. On a pool whose disks are different, a
   link cannot be made and the file is copied instead; the report says so.
 - **OneDrive and Google Drive:** choose one as a place and sign in. Starboard asks only to read your files, and never
   receives your password. For OneDrive, choose **Complete on the phone** (when it is offered) or **Complete in this
-  browser**. For Google Drive, only **Complete in this browser** works. Google lets apps read the files you already have
+  browser**. For Google Drive, only **Complete in this browser** works: Google lets apps read the files you already have
   only when you sign in in a browser. The files are copied down to a folder on your media disk first, so they need
   twice their space until you remove that folder. At the end it is moved to `.starboard-holding` in your media folder,
   and the report says where.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
-<title>Backup and restore · Settings · Starboard</title>
+<title>Backup/Logs · General · Settings · Starboard</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#323a77">
@@ -17,22 +17,37 @@
 <link rel="stylesheet" href="/css/settings.css">
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
+<script src="/js/settings-core.js" defer></script>
+<script src="/js/settings-general.js" defer></script>
 <script src="/js/cloud-wizard.js" defer></script>
 <script src="/js/backup-places.js" defer></script>
 <script src="/js/system-backup.js" defer></script>
 <script src="/js/reelix-system.js" defer></script>
 </head>
-<body class="page-system-backup with-rail">
+<body class="page-settings page-system-backup with-rail">
 <!-- shell:start (filled in by starboard/shell.py; edit the menus there) -->
 <!-- shell:end -->
 <main id="main" tabindex="-1">
-<div class="page">
+<div class="page page--settings">
   <div class="page-head">
-    <div class="page-head__text"><h1>Backup and restore</h1><p class="page-head__summary" id="backup-summary">Two kinds of copy: Settings only, a small file, and Full without media, which rebuilds the server on a new install.</p></div>
+    <div class="page-head__text"><h1>Backup/Logs</h1><p class="page-head__summary" id="backup-summary">Backups come first: Settings only, a small file, and Full without media, which rebuilds the server on a new install. Logs and feedback follow.</p></div>
   </div>
 
+  <nav class="page-links" aria-label="On this page">
+    <p class="page-links__title" id="page-links-h">On this page</p>
+    <ul class="page-links__list" aria-labelledby="page-links-h">
+      <li><a href="#bk-when-h">When backups are made</a></li>
+      <li><a href="#bk-full-h">Full without media</a></li>
+      <li><a href="#bk-copies-h">Where backups go</a></li>
+      <li><a href="#bk-sb-h">Settings only</a></li>
+      <li><a href="#bk-server-h">The whole server</a></li>
+      <li><a href="#logs">Logs</a></li>
+      <li><a href="#testing">Send feedback</a></li>
+      <li><a href="#delete-logs">Delete all logs</a></li>
+    </ul>
+  </nav>
 
-  <section class="panel" aria-labelledby="bk-when-h">
+  <section class="panel" id="backup-when" aria-labelledby="bk-when-h">
     <div class="panel__head">
       <h2 id="bk-when-h">When backups are made</h2>
       <p class="small muted">Starboard can make the backups by itself at 03:00, when the server is quiet, and keep only the newest few.</p>
@@ -79,6 +94,8 @@
     </div>
     <div class="stack-4" id="server-body" aria-busy="true"></div>
   </section>
+
+  <div class="settings-sections" id="general-sections" data-parts="gn-logs gn-test gn-logdel" aria-busy="true"></div>
 </div>
 </main>
 </body>

@@ -41,7 +41,7 @@ Wider text spacing sets the space between lines to 1.8 times the text size, betw
 size, and between words to 0.16 of the text size. These are at least the amounts in WCAG 2.2's text spacing check.
 Text takes more room, so pages are a little longer.
 
-![Settings, General, Pages and lists with Wider text spacing deactivated](../images/a11y-spacing-before.png)
+![Settings, General, Lists with Wider text spacing deactivated](../images/a11y-spacing-before.png)
 
 ![The same page with Wider text spacing activated: more space between lines, letters and words, so the same text takes more room](../images/a11y-spacing-after.png)
 

@@ -1,4 +1,4 @@
-// Backup and restore: the whole server (the server's own backup job), then Starboard's settings (download,
+// Settings, General, Backup/Logs, the backup half: the whole server (the server's own backup job), then Starboard's settings (download,
 // restore from a file or from a copy Starboard saved). The password is asked once, in the dialog that confirms.
 
 let serverTimer = null;
@@ -6,11 +6,7 @@ let server = null;
 
 // Small helpers ------------------------------------------------------------
 
-function notice(tone, title, text, action) {
-  const icons = { success: "circle-check", warning: "triangle-alert", danger: "circle-alert", info: "info" };
-  return el("div", { class: "notice", "data-tone": tone === "info" ? null : tone, role: "status" },
-    icon(icons[tone] || "info"), el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), text ? el("p", {}, text) : null), action || null);
-}
+// notice() comes from settings-core.js, which this page loads first.
 
 function facts(pairs) {
   return el("dl", { class: "facts" }, pairs.filter(([, v]) => v !== null && v !== undefined && v !== "").flatMap(([k, v]) => [el("dt", { text: k }), el("dd", {}, v)]));
@@ -637,7 +633,7 @@ async function showGoBack() {
 
 startPage().then((session) => {
   if (!session) return;
-  // The same script runs Settings, General, Backup and restore and Settings, Updates, Restore (no download or server there).
+  // The same script runs Settings, General, Backup/Logs and Settings, Updates, Restore (no download or server there).
   if ($("#back-command")) { showGoBack(); loadSaved(); showKeepVersions(); }
   const picker = $("#restore-input");
   $("#restore-file").addEventListener("click", () => picker.click());

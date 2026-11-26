@@ -12,9 +12,9 @@ where a setting lives.
 2. In the row of icons at the top, select an area: **General**, **Apps**, **Downloads**, **Radio**,
    **Security**, **Plug-ins** or **Updates**. Each icon's name shows when you point at it or move
    to it with the keyboard.
-3. In the row under it, select a page, such as **Pages and lists** under **General**.
+3. In the row under it, select a page, such as **Lists** under **General**.
 
-   ![Settings, General, Pages and lists with example data, with Settings in the side menu (step 1) and Pages and lists in the row of pages (step 3) outlined](../images/find-a-setting-1-menus.png)
+   ![Settings, General, Lists with example data, with Settings in the side menu (step 1) and Lists in the row of pages (step 3) outlined](../images/find-a-setting-1-menus.png)
 
 4. On a page with four sections or more, a tab for each section shows under the heading. Select a tab to show
    that section.
@@ -24,27 +24,27 @@ where a setting lives.
 5. Each page opens on its basic settings. To show the rest, activate the small **More settings** switch at the
    right of the heading. More sections and tabs appear. Your choice is saved for every Settings page.
 
-   ![Settings, General, Names and apps with only its basic settings, with More settings inactive (step 5) outlined](../images/find-a-setting-3-basic.png)
+   ![Settings, General with only its basic settings, with More settings inactive (step 5) outlined](../images/find-a-setting-3-basic.png)
 
-   ![Settings, General, Names and apps with More settings active (step 5): its tabs now include Categories, App cards and Set-up guide, both outlined](../images/find-a-setting-4-advanced.png)
+   ![Settings, General with More settings active (step 5): its tabs now include Categories, App cards and Set-up guide, both outlined](../images/find-a-setting-4-advanced.png)
 
 ## General
 
-- **Names and apps:** the server and dashboard names. With **More settings**: categories, what app cards show
+- **General:** the server and dashboard names. With **More settings**: categories, what app cards show
   and the set-up guide. Read [Organise apps into categories](organise-categories.md).
 - **Appearance:** Starboard's own style and its colours, the default design and the accessibility choices for this
   browser. Read [Choose a design for the Apps page](choose-a-design.md).
-- **Pages and lists:** long lists and Library views. With **More settings**: Coming up. Read
+- **Lists:** long lists and Library views. With **More settings**: Coming up. Read
   [Find out what is coming up](coming-up.md).
-- **Discover rows:** which rows each Discover page shows.
-- **Download hours:** when downloads run. Read [Download only at certain hours](set-download-hours.md).
-- **Logs and feedback:** logs and **Send feedback**. Read [Send feedback about a page](send-feedback.md).
+- **Discover:** which rows each Discover page shows.
+- **Hours:** when downloads run. Read [Download only at certain hours](set-download-hours.md).
 - **Alerts:** where alerts go. With **More settings**: what to alert on, a weekly summary and watching. Read
   [Activate alerts](activate-alerts.md) and [Get a weekly summary](weekly-summary.md).
 - **Performance** and **Pictures:** **Performance** is for how much Starboard does. With **More settings**: each part
   of the background work, and how often pages update. Read [Make Starboard use less of your server](make-starboard-lighter.md).
-- **Backup and restore:** full backups of Starboard and every app's settings, the backup schedule, copies off this
-  computer and restoring a backup. Read [Back up Starboard's settings](back-up-settings.md). **Updates**, **Restore** also
+- **Backup/Logs:** full backups of Starboard and every app's settings, the backup schedule, copies off this
+  computer and restoring a backup, then the logs and **Send feedback**. Read [Back up Starboard's settings](back-up-settings.md),
+  [Read the log](read-the-log.md) and [Send feedback about a page](send-feedback.md). **Updates**, **Restore** also
   restores a backup.
 
 ## Apps

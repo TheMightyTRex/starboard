@@ -1187,7 +1187,7 @@
       "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
       "marks": [],
       "steps": [],
-      "alt": "Settings, General, Pages and lists with Wider text spacing deactivated"
+      "alt": "Settings, General, Lists with Wider text spacing deactivated"
     },
     {
       "topic": "accessibility",
@@ -1232,7 +1232,7 @@
         }
       ],
       "steps": [],
-      "alt": "Settings, General, Pages and lists, with Long lists outlined: Load more as you scroll, which can be deactivated to always have Show 40 more"
+      "alt": "Settings, General, Lists, with Long lists outlined: Load more as you scroll, which can be deactivated to always have Show 40 more"
     },
     {
       "topic": "accessibility",

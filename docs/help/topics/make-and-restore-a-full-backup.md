@@ -19,7 +19,7 @@ same server to go back to an earlier day.
 
 ### Make a full backup
 
-1. Go to **Settings**, then **General**, then **Backup and restore**.
+1. Go to **Settings**, then **General**, then **Backup/Logs**.
 2. Find **Full without media**.
 3. Check **Where the copies go**. Starboard says which disk the folder is on, and warns you when it is the system
    disk.
@@ -34,7 +34,7 @@ backup shows **Checked** in **Full backups in the folder**.
 
 ### Restore a full backup on this server
 
-1. Go to **Settings**, then **General**, then **Backup and restore**.
+1. Go to **Settings**, then **General**, then **Backup/Logs**.
 2. Under **Full backups in the folder**, find the backup by its date and select **Restore** beside it.
 
    ![Full backups in the folder with example data, with Restore beside the older full backup (step 2) outlined](../images/make-and-restore-a-full-backup-2-restore.png)

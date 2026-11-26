@@ -172,7 +172,7 @@ async function stepContent(id, root, step = {}) {
     const fullBox = el("div", { class: "form-stack" }, where.node, fullList,
       field("The backup's password", backupPassword, { required: true, hint: "The one chosen when the backup was made.", span: true }));
     const fileBox = el("div", { class: "form-stack", hidden: true },
-      field("Backup file", filePicker(file), { required: true, hint: "From Settings, General, Backup and restore, Settings only, Download a backup.", span: true }));
+      field("Backup file", filePicker(file), { required: true, hint: "From Settings, General, Backup/Logs, Settings only, Download a backup.", span: true }));
     kinds.forEach(({ value, input }) => input.addEventListener("change", () => { if (input.checked) { fullBox.hidden = value !== "full"; fileBox.hidden = value !== "settings"; } }));
     const restoreBox = el("div", { class: "form-stack", hidden: chosen !== "restore" },
       el("fieldset", {}, el("legend", { class: "field__label", text: "What kind of backup" }),

@@ -1,4 +1,4 @@
-/* Settings, Backup and restore, Sign in and Set up (group D). Linked after app.css on those pages only; rows,
+/* Settings, Backup/Logs, Sign in and Set up (group D). Linked after app.css on those pages only; rows,
    notices and panel heads come from the library (components.css). */
 
 /* Rows */
@@ -269,3 +269,9 @@ body:not(.show-advanced) :is([data-advanced]:has(:target), [data-advanced]:targe
 .place-add__text small { color: inherit; opacity: 0.85; }
 .place, .place__text, .place-add__text, .place-state, .tested { min-width: 0; overflow-wrap: anywhere; }
 .place { max-inline-size: 100%; }
+
+/* In-page links under a heading (Settings, General, Backup/Logs): a row of plain links to the sections below. */
+.page-links { margin-block: 0 var(--space-6, 1.5rem); }
+.page-links__title { margin: 0 0 var(--space-2, 0.5rem); font-weight: 600; color: var(--color-text); }
+.page-links__list { display: flex; flex-wrap: wrap; gap: var(--space-2, 0.5rem) var(--space-5, 1.25rem); margin: 0; padding: 0; list-style: none; }
+.page-links__list a { display: inline-flex; align-items: center; min-height: var(--control-h, 40px); }

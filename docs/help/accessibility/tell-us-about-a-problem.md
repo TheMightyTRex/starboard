@@ -10,7 +10,7 @@ personal. You can also have the page checked automatically and choose which prob
 ## Before you begin
 
 - You are signed in to Starboard, and **Send feedback** is active. It is active unless someone deactivated it in
-  **Settings**, then **General**, then **Logs and feedback**. Read [Send feedback about a page](../topics/send-feedback.md).
+  **Settings**, then **General**, then **Backup/Logs**. Read [Send feedback about a page](../topics/send-feedback.md).
 
 ## Steps
 

@@ -234,7 +234,7 @@ HELP = {
             "from another one. Change it later in Settings, General.",
     "restore": "Full without media brings back Starboard, its plug-ins and every app's settings from a .starboard file "
                "on this computer's disks. Settings only brings back Starboard's settings from the .json file downloaded "
-               "from Settings, General, Backup and restore, Settings only, such as ~/Downloads/starboard-settings.json. Each is "
+               "from Settings, General, Backup/Logs, Settings only, such as ~/Downloads/starboard-settings.json. Each is "
                "checked before anything changes.",
     "restore_full": "A full backup is in the folder chosen when it was made, such as /mnt/pool/backups/starboard. Its "
                     "password is the one chosen then; without it nobody can open the backup, Starboard included.",

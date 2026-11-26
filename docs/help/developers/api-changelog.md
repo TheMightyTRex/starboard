@@ -118,7 +118,7 @@ the next major version.
   computer (another disk, a share or a cloud service), how many are kept there, the last copy and the last Test
   connection. Never a password, key or rclone config. Read [the API reference](api-reference.md#get-apiv1backupcopies).
 - **Added:** `POST /backup/copies/test`, with the `system` scope and a manage key: Test connection, as the button on
-  Settings, General, Backup and restore. It reaches the place, writes a small file, reads it back, removes it and
+  Settings, General, Backup/Logs. It reaches the place, writes a small file, reads it back, removes it and
   checks there is room for the newest backup, in 2 minutes at most, and keeps the result. `409 not_set_up` when no
   place is set up, `409 cannot_test` when a test is already running. An `error` that starts `SIGNIN|` means a cloud
   service no longer accepts the sign-in.
@@ -145,7 +145,7 @@ the next major version.
   `{"keep_days": 14, "max_mb": 25}` changes them, from the same choices as the page, and older days go at once.
   Read [the API reference](api-reference.md#post-apiv1logslimits).
 - **Added:** `POST /logs/delete` with `{"confirm": true}` and a manage key that ticked `logs`: Delete all logs, as on
-  Settings, General, Logs and feedback. Today's file and the audit log are emptied, not removed, and the first new
+  Settings, General, Backup/Logs. Today's file and the audit log are emptied, not removed, and the first new
   line says which key deleted them.
 - **Changed:** a manage key with `logs` may change these two settings and delete the logs, the second exception to
   "a key never changes settings" after `updates`. A key with no scopes still has neither.

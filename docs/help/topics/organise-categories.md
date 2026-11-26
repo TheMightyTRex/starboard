@@ -14,12 +14,12 @@ rename, reorder and remove them, and choose each app's category. Changes apply a
 
 ### Add, rename or reorder categories
 
-1. Go to **Settings**, then **General**, then **Names and apps**.
+1. Go to **Settings**, then **General**.
 2. Activate **More settings** at the right of the heading, then select the **Categories** tab. It lists the
    categories in the order the Apps page shows them, with how many apps are in each.
 3. To add one, enter its name in **New category**, then select **Add category**.
 
-   ![Settings, General, Names and apps with More settings active and the Categories tab (step 2) outlined, and Add category (step 3) under the list](../images/organise-categories-1-categories.png)
+   ![Settings, General with More settings active and the Categories tab (step 2) outlined, and Add category (step 3) under the list](../images/organise-categories-1-categories.png)
 
 4. To rename one, select **Rename** for it. Enter the **New name**, then select **Rename category**. Its apps
    move with it.

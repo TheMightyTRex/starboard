@@ -11,24 +11,24 @@ and other choices are in [Other installs and choices](#other-installs-and-choice
 
 ## Before you begin
 
-- You have installed Docker on the server. Read [Install Docker](install-docker.md), and
+- Docker is installed on the server. Read [Install Docker](install-docker.md), and
   [What Docker is](../basics/what-is-docker.md) if it is new to you.
 - You have a folder or disk with room for your media, such as `/srv/media`.
-- We recommend an account with a VPN (virtual private network) provider. The default install sends downloads
-  through it, to keep them private. You can continue without one. Read
+- An account with a VPN (virtual private network) provider is recommended. The default install sends downloads
+  through it, to keep them private. You can continue without one: read
   [Download without a VPN](download-without-a-vpn.md).
-- Optional: With Docker access, Starboard starts the apps itself. Without it, you run one command. Read
+- Optional: Docker access lets Starboard start the apps itself. Without it, you run one command. Read
   [Change what Starboard can access](change-what-starboard-can-access.md).
 - If you are not sure what each app does, read [The apps Starboard works with](../basics/the-apps.md).
 
 ## Steps
 
 1. Go to **System**, then **Apps**, then **Install apps**. If your server is set up already, the page lists what is
-   installed. Select **Run the set-up again**, or select **Add** beside an app under 'You can add'.
+   installed: select **Run the set-up again**, or **Add** beside an app under 'You can add'.
 2. On **Start here**, read how the apps work together, then select **Begin**.
-3. On **What to set up**, under **What to install**, keep **Basics (recommended)**. It holds Reelix Lite, Jellyfin,
-   Audiobookshelf, Bazarr for subtitles, and qBittorrent and NZBGet through a VPN. It needs about 1 GB of memory.
-   You can choose a bigger install now or later. Read [Other installs and choices](#other-installs-and-choices).
+3. On **What to set up**, under **What to install**, keep **Basics (recommended)**: Reelix Lite, Jellyfin,
+   Audiobookshelf, Bazarr for subtitles, and qBittorrent and NZBGet through a VPN. About 1 GB of memory. You can
+   choose a bigger install now or later: read [Other installs and choices](#other-installs-and-choices).
 
    ![The What to set up step with example data, with Basics (recommended) (step 3) outlined](../images/install-apps-1-what-to-set-up.png)
 
@@ -36,10 +36,10 @@ and other choices are in [Other installs and choices](#other-installs-and-choice
 5. On **Folders**, enter your **Media folder**, such as `/srv/media`. If your other apps already use a media
    folder, Starboard offers it. Select **Continue**.
 6. If your install has a VPN, the **VPN** step asks how your downloads should connect. Keep
-   **Use my VPN account (recommended)**. Starboard then asks for your **VPN provider**. Each provider's link opens
-   its site in a new tab. If yours is not listed, choose **Another one that Gluetun supports** and enter its name as
-   Gluetun's list writes it. Choose **WireGuard** or **OpenVPN**. Enter the details from the provider's site, then
-   select **Continue**.
+   **Use my VPN account (recommended)**. It then asks for your **VPN provider**. Each provider's link opens its site
+   in a new tab. If yours is not listed, choose **Another one that Gluetun supports** and enter its name as Gluetun's
+   list writes it. Choose **WireGuard** or **OpenVPN**, enter the details from the provider's site, then select
+   **Continue**.
 
    The PrivadoVPN link is an affiliate link, marked **Ad**. If you sign up through it, PrivadoVPN pays a small
    commission towards Starboard's development, and you pay the same price.
@@ -50,12 +50,10 @@ and other choices are in [Other installs and choices](#other-installs-and-choice
    Select **I understand, continue without a VPN** to go on without Gluetun, or **Cancel** to go back. Read
    [Download without a VPN](download-without-a-vpn.md).
 
-7. If your install downloads from Usenet, the **Usenet** step asks 'Do you have a Usenet provider?'.
-   - Choose **Yes, I have one** to enter its server, then select **Test the server**.
-   - Choose **No, show me some providers** for a list.
-   - Choose **Not now: torrents are enough for now** to skip it.
-
-   Read [Choose a Usenet provider and add it](choose-a-usenet-provider.md). Select **Continue**.
+7. If your install downloads from Usenet, the **Usenet** step asks 'Do you have a Usenet provider?'. Choose
+   **Yes, I have one** to enter its server and select **Test the server**. Choose **No, show me some providers** for
+   a list, or **Not now: torrents are enough for now**. Read
+   [Choose a Usenet provider and add it](choose-a-usenet-provider.md). Select **Continue**.
 8. On **Sites to search**, tick the sites Reelix should search. Nothing is ticked for you, and none needs an
    account. To add your own Torznab or Newznab address, choose it and enter its address and API key. Read
    [Choose the sites Reelix searches](choose-sites-to-search.md). Select **Continue**.
@@ -132,8 +130,8 @@ Read [Basics, Full install and Everything](install-types.md#at-a-glance) to comp
   runs them keeps them: read [Move from Radarr, Sonarr and the others to Reelix](move-your-apps-to-reelix.md).
 - Starboard keeps searching for new apps for 30 minutes, even if you carry on with the set-up or it restarts.
 - To change the install later, read [Change your install](change-your-install.md).
-- You can copy in media you already have, on this computer, another disk or a network share, as you set up or
-  later. Read [Bring in media you already have](bring-in-media-you-already-have.md).
+- Media you already have, on this computer, another disk or a network share, can be copied in as you set up, or
+  later: read [Bring in media you already have](bring-in-media-you-already-have.md).
 
 ## If it does not work
 
@@ -151,7 +149,7 @@ Read [Basics, Full install and Everything](install-types.md#at-a-glance) to comp
   up. Stop Jellystat and jellystat-db, and move the `jellystat-db` folder from the apps' settings folder to a holding
   folder. Then start the apps again: the database sets itself up afresh.
 - **Reelix stops at once, and its log says "disk I/O error" (code 5386):** its settings folder is on a pool made
-  with mergerfs, and Reelix's database cannot use that. Put the apps' settings folder on a single disk, such as
+  with mergerfs, which Reelix's database cannot use. Put the apps' settings folder on a single disk, such as
   `/srv/config`, and keep only the media on the pool.
 
 ## Find out more
