@@ -47,7 +47,6 @@ function timeLeftWords(text) {
   const s = secondsLeft(text);
   if (!Number.isFinite(s)) return "";
   if (s < 60) return "less than a minute left";
-  const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
   const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
   if (d) return `${plural(d, "day")} ${plural(h, "hour")} left`;
   if (h) return `${plural(h, "hour")} ${plural(m, "minute")} left`;
@@ -56,10 +55,6 @@ function timeLeftWords(text) {
 
 function percent(item) { return Math.round(item.progress || 0); }
 
-function notice(tone, title, text, iconName = tone === "danger" ? "circle-x" : tone === "warning" ? "triangle-alert" : "info") {
-  return el("div", { class: "notice", "data-tone": tone, role: "status" }, icon(iconName),
-    el("div", { class: "notice__body" }, title ? el("span", { class: "notice__title", text: title }) : null, text ? el("p", { text }) : null));
-}
 
 function newBar() {
   return el("div", { class: "progress", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100" }, el("span"));
@@ -498,7 +493,6 @@ function refreshDetails() {
 // what happens. Results are said in the live region and shown in the slide-out; focus stays on the button that was
 // pressed, or moves to the result when the download has left the queue. Nothing here runs on the queue's timer.
 
-const plural = (n, w, many) => `${n.toLocaleString("en-GB")} ${n === 1 ? w : (many || `${w}s`)}`;
 
 function needsYou(item) {
   return item.problem || ["failed", "failedPending", "importBlocked"].includes(item.status);
