@@ -393,7 +393,7 @@ if (!pages.length || pages.some((p) => p.includes("settings-updates"))) {
     await page.goto(`${base}/settings-updates.html`);
     await settle();
     await page.locator("#check-updates-now").click();
-    await page.locator("#up-list-summary", { hasText: "Checked at" }).waitFor({ timeout: 30000 });
+    await page.locator("#up-list-summary", { hasText: "Last checked at" }).waitFor({ timeout: 30000 });
     await scan("settings-updates.html, after Check for updates");
     await page.locator("#whats-new").click();
     await page.locator("#side-panel section.release-notes").first().waitFor({ timeout: 15000 });

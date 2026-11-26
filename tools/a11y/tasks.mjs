@@ -482,10 +482,10 @@ const go32 = await tabTo((f) => f.tag === "BUTTON" && f.id === "check-updates-no
 check("T32", "Tab reaches Check for updates", !!go32, "not reached");
 if (go32) {
   await page.keyboard.press("Enter");
-  await page.locator("#up-list-summary", { hasText: "Checked at" }).waitFor({ timeout: 30000 }).catch(() => {});
+  await page.locator("#up-list-summary", { hasText: "Last checked at" }).waitFor({ timeout: 30000 }).catch(() => {});
   const f32 = await focus();
   check("T32", "focus stays on Check for updates", f32.id === "check-updates-now", `${f32.id} ${f32.text}`);
-  check("T32", "what it found is said in a polite live region", /Checked at \d\d:\d\d\./.test(await page.locator("#up-list-summary[role=status][aria-live=polite]").textContent()));
+  check("T32", "what it found is said in a polite live region", /Last checked at \d\d:\d\d/.test(await page.locator("#up-list-summary[role=status][aria-live=polite]").textContent()));
   await page.keyboard.down("Shift"); await page.keyboard.press("Tab"); await page.keyboard.up("Shift");
   const wn32 = await focus();
   check("T32", "What is new is just before it in the Tab order", wn32.id === "whats-new", `${wn32.id} ${wn32.text}`);
@@ -1371,7 +1371,7 @@ if (chk) {
   check("T-PLU", "after the check, focus is still on the button", after.id === "plu-check", `${after.id} ${after.text}`);
   const said = await page.evaluate(() => [...document.querySelectorAll("[role=status], [aria-live=polite]")].map((n) => n.textContent).join(" | "));
   check("T-PLU", "what it found is said in a polite live region", /Read \d+ catalogue|Try again in/.test(said), said);
-  const tick = await tabTo((f) => /^plu-choose-/.test(f.id), 30);
+  const tick = await tabTo((f) => /^choose-plugin:/.test(f.id), 30);
   check("T-PLU", "Tab reaches a plug-in's tick", !!tick, "not reached");
   if (tick) {
     await page.keyboard.press("Space");

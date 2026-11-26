@@ -1164,7 +1164,7 @@ await page.keyboard.press("Enter");
 await page.waitForFunction(() => /Read \d+ catalogue|Try again in/.test(document.getElementById("plu-check-result")?.textContent || ""), null, { timeout: 15000 }).catch(() => {});
 check("PU-02", "Check for updates now says what it read, keeps focus on the button and writes the summary again",
   /Read \d+ catalogue|Try again in/.test(await page.locator("#plu-check-result").innerText()) && (await page.evaluate(() => document.activeElement?.id)) === "plu-check"
-  && /last read/.test(await page.locator("#plu-summary").innerText()));
+  && /Last checked at/.test(await page.locator("#plu-summary").innerText()));
 await page.locator("#plu-check").click();
 await page.waitForTimeout(800);
 check("PU-03", "pressed again at once it says how long to wait and reads nothing more", /Try again in \d+ seconds/.test(await page.locator("#plu-check-result").innerText()));
@@ -1851,7 +1851,7 @@ console.log("\n== UPD Settings, Updates");
 await open("settings-updates.html");
 await page.locator("#updates-list:not([aria-busy])").waitFor({ timeout: 5000 }).catch(() => {});
 const ready = await page.locator("#up-list-summary").textContent();
-check("UPD-05", "Ready to update says in a live region what is ready", /updates are ready: .*Starboard/.test(ready)
+check("UPD-05", "Ready to update says in a live region what is ready", /^Last checked at \d\d:\d\d · \d+ updates available: .*Starboard|^Not checked yet · \d+ updates available: .*Starboard/.test(ready)
   && (await page.locator("#up-list-summary[role=status]").count()) === 1, ready);
 check("UPD-05", "Starboard waits for you; the plug-in updates by itself", (await page.locator('[data-key="starboard"]').textContent()).includes("Waits for you")
   && (await page.locator('[data-key="plugin:picture-shrinker"]').textContent()).includes("Updates by itself"));
@@ -1870,12 +1870,12 @@ check("UPD-09", "Ready to update has Check for updates", (await checkBtn.count()
 check("UPD-09", "nothing asks Jellyfin which plug-ins are new before it is pressed", !(await page.locator("#up-list-summary").textContent()).includes("Playback Reporting"));
 await checkBtn.focus();
 await page.keyboard.press("Enter");
-await page.locator("#up-list-summary", { hasText: "Checked at" }).waitFor({ timeout: 30000 }).catch(() => {});
+await page.locator("#up-list-summary", { hasText: "Last checked at" }).waitFor({ timeout: 30000 }).catch(() => {});
 const checkedSays = await page.locator("#up-list-summary").textContent();
-check("UPD-09", "it says in the live region when it checked and what is ready, Jellyfin's plug-ins too", /^Checked at \d\d:\d\d\. \d+ updates are ready: .*Playback Reporting 20\.0\.0\.0 for Jellyfin/.test(checkedSays), checkedSays);
+check("UPD-09", "it says in the live region when it checked and what is ready, Jellyfin's plug-ins too", /^Last checked at \d\d:\d\d · \d+ updates available: .*Playback Reporting 20\.0\.0\.0 for Jellyfin/.test(checkedSays), checkedSays);
 check("UPD-09", "focus stays on Check for updates", await page.evaluate(() => document.activeElement?.id === "check-updates-now"));
-check("UPD-09", "Jellyfin's row names the new version", (await page.locator('[data-key="jellyfin-plugins"]').textContent()).includes("New versions: Playback Reporting 20.0.0.0"));
-const readyNow = (checkedSays.match(/(\d+) updates are ready/) || [])[1];
+check("UPD-09", "Jellyfin's row names the new version", (await page.locator('[data-key="jellyfin-plugins"]').textContent()).includes("Playback Reporting 20.0.0.0"));
+const readyNow = (checkedSays.match(/(\d+) updates available/) || [])[1];
 check("UPD-09", "Install all updates counts what the check found", (await page.locator("#install-all").textContent()).trim() === `Install all ${readyNow} updates`, readyNow);
 
 // UPD-10 What is new (DASH-462): one slide-out with the notes of every waiting update, by item, under Added, Changed,

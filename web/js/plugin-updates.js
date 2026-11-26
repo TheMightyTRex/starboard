@@ -7,7 +7,7 @@ let catalogueSaid = null;  // what the last check said, kept across the page bei
 // When the catalogues were last read, in words. read: { read_at (seconds, 0 for never), errors }.
 function catalogueReadWords(read) {
   if (!read || !read.read_at) return "The catalogues have not been read since Starboard started.";
-  return `The catalogues were last read ${timeAgo(read.read_at * 1000)}.${read.errors ? ` ${read.errors === 1 ? "One" : read.errors} did not answer.` : ""}`;
+  return `The catalogues were last checked ${checkedWhen(read.read_at)}.${read.errors ? ` ${read.errors === 1 ? "One" : read.errors} did not answer.` : ""}`;
 }
 
 // The words after a check: what was read, how many plug-ins have a newer version, and what did not answer.
@@ -61,7 +61,36 @@ function catalogueCheck({ read, onDone, id = "pl-check-now", whenId = "" }) {
 // Update all, a table with the version you have beside the new one, ticks and Update chosen, What is new, and the result
 // said in a live region. The rows come from /api/plugins/updates; the update is the batch Install all updates runs
 // (a copy first, a check afterwards, the way back by itself), with the Starboard password asked once.
+
+// What is new in one plug-in's waiting update (a slide-out, read from its new manifest only when pressed).
+async function pluginWhatsNew(t, opener) {
+  const pid = t.id.split(":")[1];
+  const panel = sidePanel({ title: `What is new in ${t.name} ${t.latest}`, opener, wide: true, body: [el("p", { class: "muted", role: "status", text: "Reading the notes…" })] });
+  let s;
+  try { s = await api(`/api/plugins/${encodeURIComponent(pid)}/update`, { method: "POST", body: { preview: true } }); }
+  catch (e) { panel.setBody([notice("danger", "Starboard could not read the notes", e.message)]); return; }
+  const notes = s.whats_new?.length
+    ? s.whats_new.map((v) => el("section", { class: "release-notes" }, el("h3", { text: `Version ${v.version}${v.date ? `, ${v.date}` : ""}` }),
+      ...v.sections.flatMap((sec) => [el("h4", { text: sec.type }), el("ul", {}, sec.items.map((x) => el("li", {}, ...changeParts(x))))])))
+    : [el("p", { text: s.changelog || "Its maker did not list what changed in this version." })];
+  const perms = s.new_permissions?.length
+    ? [notice("warning", "New permissions", `Version ${s.version} asks for more than ${s.from}: ${s.new_permissions.join(", ")}. Update it on its own page, where each one is explained.`),
+      el("p", {}, el("a", { class: "btn", href: `/settings-plugin.html?id=${encodeURIComponent(pid)}` }, "Open its page"))] : [];
+  panel.setBody([...perms, ...notes]);
+}
+
 const PLUGIN_UPDATE_WAIT = "Waits for you";
+
+// A plug-in's status cell, the same on every page: Update available, New permissions (words and a shape) and Waits for you,
+// then what the new permissions are and what is new.
+function pluginStatus(t, { extraChips = [] } = {}) {
+  if (!t.update_available) return t.can_roll_back ? [chip(...STATUS.upToDate), el("div", { class: "small muted", text: `Version ${t.roll_back_to} is kept for Roll back` })] : chip(...STATUS.upToDate);
+  const perms = t.new_permissions?.length ? t.new_permissions.map((p) => `${p.words} (${p.risk} risk)`).join("; ") : "";
+  const parts = [chip(...STATUS.updateAvailable), perms ? chip("New permissions", "warning", "triangle-alert") : null,
+    t.held ? chip(PLUGIN_UPDATE_WAIT, "muted", "pause") : null, ...extraChips].filter(Boolean);
+  const words = [perms ? `New permissions: ${perms}.` : "", t.held ? `${t.held}.` : "", t.note].filter(Boolean).join(" ");
+  return [el("div", { class: "chips" }, parts), words ? el("div", { class: "small muted", text: words }) : null];
+}
 
 function pluginUpdatesArea({ mount, full = false }) {
   let data = null, batch = null;
@@ -72,66 +101,26 @@ function pluginUpdatesArea({ mount, full = false }) {
   const ready = () => data.items.filter((t) => t.update_available);
   const goes = (t) => t.update_available && !t.held;  // what Update all takes: not a plug-in that waits for you
 
-  const permissionWords = (t) => (t.new_permissions?.length
-    ? t.new_permissions.map((p) => `${p.words} (${p.risk} risk)`).join("; ") : "");
-
-  const whatsNew = async (t, opener) => {
-    const pid = t.id.split(":")[1];
-    const panel = sidePanel({ title: `What is new in ${t.name} ${t.latest}`, opener, wide: true, body: [el("p", { class: "muted", role: "status", text: "Reading the notes…" })] });
-    let s;
-    try { s = await api(`/api/plugins/${encodeURIComponent(pid)}/update`, { method: "POST", body: { preview: true } }); }
-    catch (e) { panel.setBody([notice("danger", "Starboard could not read the notes", e.message)]); return; }
-    const notes = s.whats_new?.length
-      ? s.whats_new.map((v) => el("section", { class: "release-notes" }, el("h3", { text: `Version ${v.version}${v.date ? `, ${v.date}` : ""}` }),
-        ...v.sections.flatMap((sec) => [el("h4", { text: sec.type }), el("ul", {}, sec.items.map((x) => el("li", {}, ...changeParts(x))))])))
-      : [el("p", { text: s.changelog || "Its maker did not list what changed in this version." })];
-    const perms = s.new_permissions?.length
-      ? [notice("warning", "New permissions", `Version ${s.version} asks for more than ${s.from}: ${s.new_permissions.join(", ")}. Update it on its own page, where each one is explained.`),
-        el("p", {}, el("a", { class: "btn", href: `/settings-plugin.html?id=${encodeURIComponent(pid)}` }, "Open its page"))] : [];
-    panel.setBody([...perms, ...notes]);
-  };
-
-  const status = (t) => {
-    if (!t.update_available) return t.can_roll_back ? [chip(...STATUS.upToDate), el("div", { class: "small muted", text: `Version ${t.roll_back_to} is kept for Roll back` })] : chip(...STATUS.upToDate);
-    const parts = [chip(...STATUS.updateAvailable)];
-    if (t.new_permissions?.length) parts.push(chip("New permissions", "warning", "triangle-alert"));
-    if (t.held) parts.push(chip(PLUGIN_UPDATE_WAIT, "muted", "pause"));
-    const words = [permissionWords(t) ? `New permissions: ${permissionWords(t)}.` : "", t.held ? `${t.held}.` : "", t.note].filter(Boolean).join(" ");
-    return [el("div", { class: "chips" }, parts), words ? el("div", { class: "small muted", text: words }) : null];
-  };
-
   const table = () => {
-    const rows = data.items;
-    if (!rows.length) return emptyState("No plug-ins to update", "Plug-ins you add from the catalogue are listed here.", el("a", { class: "btn", href: "/settings-plugins-catalogue.html" }, "Open the catalogue"));
-    return el("div", { class: "table-wrap", "data-stack": true },
-      el("table", { class: "table updates-table updates-table--plugins" },
-        el("caption", { class: "visually-hidden", text: "Updates for your plug-ins" }),
-        el("colgroup", {}, ["app", "installed", "latest", "status", "actions"].map((c) => el("col", { class: `updates-table__${c}` }))),
-        el("thead", {}, el("tr", {}, ["Plug-in", "Installed", "Latest", "Status"].map((h) => el("th", { scope: "col", text: h })),
-          el("th", { scope: "col" }, el("span", { class: "visually-hidden", text: "Actions" })))),
-        el("tbody", {}, rows.map((t) => {
-          const box = goes(t) ? el("input", { type: "checkbox", id: `plu-choose-${t.id}`, class: "updates-choose", "aria-label": `Choose ${t.name}`, checked: chosen.has(t.id), disabled: !!batch?.running() }) : null;
-          if (box) box.addEventListener("change", () => { if (box.checked) chosen.add(t.id); else chosen.delete(t.id); bar(); });
-          const acts = [];
-          if (t.update_available) {
-            const b = el("button", { type: "button", class: "btn btn--compact" }, "What is new", el("span", { class: "visually-hidden", text: ` in ${t.name}` }));
-            b.addEventListener("click", () => whatsNew(t, b));
-            acts.push(b);
-            if (t.held) acts.push(el("a", { class: "btn btn--compact btn--primary", href: `/settings-plugin.html?id=${encodeURIComponent(t.id.split(":")[1])}` }, "Update on its page", el("span", { class: "visually-hidden", text: `: ${t.name}` })));
-          }
-          if (full && t.can_roll_back) {
-            const r = el("button", { type: "button", class: "btn btn--compact" }, icon("undo-2"), `Roll back to ${t.roll_back_to}`, el("span", { class: "visually-hidden", text: `: ${t.name}` }));
-            r.addEventListener("click", () => rollBack(t, r));
-            acts.push(r);
-          }
-          return el("tr", {},
-            el("th", { scope: "row", "data-label": "Plug-in" }, el("div", { class: "updates-app" }, box, pluginLogo({ name: t.name, logo: t.logo }, { compact: true }),
-              el("div", {}, el("a", { href: `/settings-plugin.html?id=${encodeURIComponent(t.id.split(":")[1])}`, text: t.name }), systemChip(t.system) ? el("div", {}, systemChip(t.system)) : null))),
-            el("td", { "data-label": "Installed" }, t.current || "Not known"),
-            el("td", { "data-label": "Latest" }, t.update_available ? t.latest : ""),
-            el("td", { "data-label": "Status" }, status(t)),
-            el("td", { "data-label": "Actions" }, el("div", { class: "actions" }, acts)));
-        }))));
+    if (!data.items.length) return emptyState("No plug-ins to update", "Plug-ins you add from the catalogue are listed here.", el("a", { class: "btn", href: "/settings-plugins-catalogue.html" }, "Open the catalogue"));
+    return updateTable({ caption: "Updates for your plug-ins", nameLabel: "Plug-in", rows: data.items.map((t) => {
+      const page = `/settings-plugin.html?id=${encodeURIComponent(t.id.split(":")[1])}`;
+      const acts = [];
+      if (t.update_available) {
+        const b = el("button", { type: "button", class: "btn btn--compact" }, "What is new", el("span", { class: "visually-hidden", text: ` in ${t.name}` }));
+        b.addEventListener("click", () => pluginWhatsNew(t, b));
+        acts.push(b);
+        if (t.held) acts.push(el("a", { class: "btn btn--compact btn--primary", href: page }, "Update on its page", el("span", { class: "visually-hidden", text: `: ${t.name}` })));
+      }
+      if (full && t.can_roll_back) {
+        const r = el("button", { type: "button", class: "btn btn--compact" }, icon("undo-2"), `Roll back to ${t.roll_back_to}`, el("span", { class: "visually-hidden", text: `: ${t.name}` }));
+        r.addEventListener("click", () => rollBack(t, r));
+        acts.push(r);
+      }
+      return { id: t.id, name: updateName({ tick: goes(t) ? updateTick(t.id, t.name, chosen, bar, !!batch?.running()) : null,
+        picture: pluginLogo({ name: t.name, logo: t.logo }, { compact: true }), name: t.name, href: page, sub: systemChip(t.system) ? el("div", {}, systemChip(t.system)) : null }),
+        installed: t.current || "Not known", latest: t.update_available ? t.latest : "", status: pluginStatus(t), actions: acts };
+    }) });
   };
 
   const rollBack = async (t, opener) => {
@@ -150,19 +139,11 @@ function pluginUpdatesArea({ mount, full = false }) {
     } catch (e) { problem(e.message, opener); }
   };
 
-  const bar = () => {
-    const n = chosen.size, el1 = $("#plu-chosen");
-    if (!el1) return;
-    el1.hidden = !n;
-    $("#plu-chosen-text").textContent = `${n} chosen`;
-    $("#plu-update-chosen").disabled = !n || !!batch?.running();
-  };
+  const chosenBar = updateSelectionBar({ id: "plu-chosen", onUpdate: (b) => batch.install(b, [...chosen]), onClear: () => { chosen.clear(); draw(); announce("None chosen"); } });
+  const bar = () => chosenBar.set(chosen.size, !!batch?.running());
 
-  const summaryText = () => {
-    const n = ready().length, held = ready().filter((t) => t.held).length;
-    const found = n ? `${n} ${n === 1 ? "update" : "updates"} available${held ? `, ${held} waiting for you` : ""}` : "everything is up to date";
-    return `${catalogueReadWords(data.read)} ${found.charAt(0).toUpperCase()}${found.slice(1)}.`;
-  };
+  const summaryText = () => updateSummary({ checkedAt: data.read.read_at, count: ready().length,
+    extra: ready().some((t) => t.held) ? [`${ready().filter((t) => t.held).length} waiting for you`] : [] });
 
   const head = () => {
     const n = ready().filter(goes).length;
@@ -210,12 +191,7 @@ function pluginUpdatesArea({ mount, full = false }) {
       el("div", { class: "settings-section__head" }, el("h2", { id: "plu-h", tabindex: "-1", text: full ? "Ready to update" : "Plug-in updates" }),
         el("p", { class: "small muted", text: "Each update keeps a copy of the plug-in first, checks the new version afterwards and goes back by itself if it does not answer. Nothing changes without your Starboard password." })),
       ...head(), result, batchBox, table(),
-      el("div", { class: "selection-bar", id: "plu-chosen", role: "region", "aria-label": "Chosen updates", hidden: true },
-        el("span", { class: "selection-bar__text", id: "plu-chosen-text", "aria-live": "polite", text: "0 chosen" }),
-        (() => { const b = el("button", { type: "button", class: "btn", id: "plu-update-chosen", disabled: true }, icon("circle-arrow-up"), "Update chosen");
-          b.addEventListener("click", () => batch.install(b, [...chosen])); return b; })(),
-        (() => { const b = el("button", { type: "button", class: "btn btn--quiet" }, "Clear");
-          b.addEventListener("click", () => { chosen.clear(); draw(); announce("None chosen"); }); return b; })()),
+      chosenBar.node,
       live)];
     if (full) sections.push(autoSection(), historySection());
     else sections.push(el("p", { class: "small muted" }, "The setting for updating by themselves, and the history of updates, are in ", el("a", { href: "/settings-updates-plugins.html", text: "Updates, Plug-ins" }), "."));

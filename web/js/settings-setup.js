@@ -884,52 +884,58 @@ async function startUpdatesPlace() {
     }
   };
 
+  // The list is the same table as Apps, Updates (update-table.js): each row has the version you have beside the new one,
+  // its status, and what you can do; ticks and Update chosen update several through Install all updates' batch.
+  const chosen = new Set();
+  const bar = updateSelectionBar({ id: "up-chosen", onUpdate: (b) => batch.install(b, [...chosen]),
+    onClear: () => { chosen.clear(); drawList(); announce("None chosen"); } });
+  const ticks = () => bar.set(chosen.size, batch.running());
+  const canChoose = (t) => t.update_available && t.can_update && t.kind !== "starboard" && !t.held && !t.big_change;
   const action = (t) => {
+    const nameId = `up-${t.id}-l`;
     if (t.kind === "starboard") {
-      if (!t.update_available || !t.can_update || !selfUpdateAsk) return null;
-      const b = el("button", { type: "button", class: "btn btn--primary", "aria-haspopup": "dialog", "aria-describedby": `up-${t.id}-l` }, icon("circle-arrow-up"), "Update now");
+      if (!t.update_available || !t.can_update || !selfUpdateAsk) return [];
+      const b = el("button", { type: "button", class: "btn btn--primary btn--compact", "aria-haspopup": "dialog", "aria-describedby": nameId }, icon("circle-arrow-up"), "Update now");
       b.addEventListener("click", () => selfUpdateAsk());
-      return b;
+      return [b];
     }
     if (t.kind === "plugin") {
-      const pid = t.id.split(":")[1];
-      if (t.update_available) return el("a", { class: "btn btn--primary", href: `/settings-plugin.html?id=${encodeURIComponent(pid)}`, "aria-describedby": `up-${t.id}-l` }, "Read what is new and update");
-      if (t.can_roll_back) return el("a", { class: "btn", href: `/settings-plugin.html?id=${encodeURIComponent(pid)}`, "aria-describedby": `up-${t.id}-l` }, "Roll back");
-      return null;
+      const page = `/settings-plugin.html?id=${encodeURIComponent(t.id.split(":")[1])}`;
+      if (t.update_available) {
+        const wn = el("button", { type: "button", class: "btn btn--compact", "aria-describedby": nameId }, "What is new");
+        wn.addEventListener("click", () => pluginWhatsNew(t, wn));
+        return [wn, t.held ? el("a", { class: "btn btn--compact btn--primary", href: page, "aria-describedby": nameId }, "Update on its page") : null];
+      }
+      return t.can_roll_back ? [el("a", { class: "btn btn--compact", href: page, "aria-describedby": nameId }, "Roll back")] : [];
     }
-    if (!t.update_available || !t.can_update) return null;
-    const b = el("button", { type: "button", class: "btn btn--primary", "aria-haspopup": "dialog", "aria-describedby": `up-${t.id}-l` }, icon("circle-arrow-up"), "Update now");
+    if (!t.update_available || !t.can_update) return [];
+    const b = el("button", { type: "button", class: "btn btn--primary btn--compact", "aria-haspopup": "dialog", "aria-describedby": nameId }, icon("circle-arrow-up"), "Update now");
     b.addEventListener("click", () => startApp(t, b));
-    return b;
+    return [b];
   };
   const row = (t) => {
     const ready = t.update_available;
-    const facts = [t.current ? `You have ${t.current}` : "Version not known", ready && t.latest ? `New: ${t.latest}` : ""].filter(Boolean).join(". ");
     const unknown = !ready && /look for updates first/i.test(t.why || "");  // no look at its image yet
     const why = ready && !t.can_update && t.kind !== "plugin" ? t.why : !ready && t.why && !/up to date|no newer version/i.test(t.why) ? t.why : "";
-    const note = [t.kind === "plugin" && ready && t.new_permissions?.length ? `New permissions: ${t.new_permissions.map((x) => `${x.words} (${x.risk} risk)`).join("; ")}.` : "",
-      t.kind === "plugin" && ready && t.note ? `What is new: ${t.note}` : ""].filter(Boolean).join(" ");
-    return el("li", { class: "setting", "data-key": t.id },
-      el("div", { class: "setting__text" },
-        el("span", { class: "setting__label", id: `up-${t.id}-l`, text: t.name }),
-        el("span", { class: "setting__hint" }, `${facts}.`, why ? ` ${why}.`.replace(/\.\.$/, ".") : "", note ? ` ${note}` : ""),
-        el("span", { class: "chips" }, ready ? chip(...STATUS.updateAvailable) : unknown ? chip(...STATUS.notChecked) : chip(...STATUS.upToDate),
-          ready ? (t.automatic ? chip("Updates by itself", "muted", "clock") : chip("Waits for you", "warning", "user")) : null,
-          ready && t.new_permissions?.length ? chip("New permissions", "warning", "triangle-alert") : null,
-          t.kind === "plugin" ? systemChip(t.system) : null),
-        t.kind === "plugin" ? systemLine(t.system, true) : null),
-      el("div", { class: "setting__control" }, action(t)));
+    const who = ready && !t.held ? (t.automatic ? chip("Updates by itself", "muted", "clock") : chip("Waits for you", "warning", "user")) : null;
+    const status = t.kind === "plugin" ? pluginStatus(t, { extraChips: [who] })
+      : [el("div", { class: "chips" }, ready ? chip(...STATUS.updateAvailable) : unknown ? chip(...STATUS.notChecked) : chip(...STATUS.upToDate), who),
+        why || (ready && t.note) ? el("div", { class: "small muted", text: why || t.note }) : null];
+    const picture = t.kind === "plugin" ? pluginLogo({ name: t.name, logo: t.logo }, { compact: true })
+      : t.icon ? appIcon({ id: t.icon.service, icon: t.icon.v, name: t.name }, "app-icon app-icon--compact") : null;
+    const sub = t.kind === "plugin" && systemChip(t.system) ? el("div", {}, systemChip(t.system), systemLine(t.system, true)) : null;
+    return { id: t.id, key: t.id, name: updateName({ tick: canChoose(t) ? updateTick(t.id, t.name, chosen, ticks, batch.running()) : null, picture,
+      name: t.name, id: `up-${t.id}-l`, sub, href: t.kind === "plugin" ? `/settings-plugin.html?id=${encodeURIComponent(t.id.split(":")[1])}` : "" }),
+      installed: t.current || "Not known", latest: ready ? t.latest : "", status, actions: action(t) };
   };
   const jellyRow = () => {
     if (!jelly?.connected) return null;
     const t = { id: "jellyfin-plugins", kind: "jellyfin-plugins", name: "Jellyfin's plug-ins" };
-    const b = el("button", { type: "button", class: "btn", "aria-haspopup": "dialog", "aria-describedby": "up-jellyfin-plugins-l" }, icon("circle-arrow-up"), "Check for updates and install them");
+    const b = el("button", { type: "button", class: "btn btn--compact", "aria-haspopup": "dialog", "aria-describedby": "up-jellyfin-plugins-l" }, icon("circle-arrow-up"), "Check for updates and install them");
     b.addEventListener("click", () => startApp(t, b));
     const own = jelly.own_schedule ? " Jellyfin also updates them by itself on its own schedule." : "";
     const found = data.jellyfin_waiting || [];
-    const hint = found.length
-      ? `${jelly.count} installed. New versions: ${found.map((j) => `${j.name} ${j.latest}`).join(", ")}.${own}`
-      : `${jelly.count} installed. Jellyfin knows which have new versions: Check for updates asks it.${own}`;
+    const hint = found.length ? "New versions are listed under Latest." : "Jellyfin knows which have new versions: Check for updates asks it.";
     // Restart needed (DASH-470): new plug-in versions wait for Jellyfin's restart when someone was watching. The
     // same Restart Jellyfin stays while it works and after, so a redraw of the list keeps its status.
     if (jelly.restart && jelly.can_restart && !jellyRestart) {
@@ -941,36 +947,32 @@ async function startUpdatesPlace() {
     }
     const restarting = jellyRestart && (jelly.restart || jellyRestart.dataset.state) ? jellyRestart : null;
     if (!restarting) jellyRestart = null;
-    const chips = [found.length ? chip("Update available", "info", "circle-arrow-up") : null, jelly.restart ? chip(...STATUS.restartNeeded) : null].filter(Boolean);
-    return el("li", { class: "setting", "data-key": t.id },
-      el("div", { class: "setting__text" }, el("span", { class: "setting__label", id: "up-jellyfin-plugins-l", text: t.name }),
-        el("span", { class: "setting__hint", text: jelly.restart ? `${hint} New versions start when Jellyfin restarts.` : hint }),
-        chips.length ? el("span", { class: "chips" }, chips) : null, restarting),
-      el("div", { class: "setting__control" }, b));
+    const chips = [found.length ? chip(...STATUS.updateAvailable) : chip(...STATUS.notChecked), jelly.restart ? chip(...STATUS.restartNeeded) : null].filter(Boolean);
+    return { id: t.id, key: t.id, name: updateName({ name: t.name, id: "up-jellyfin-plugins-l" }), installed: `${jelly.count} installed`,
+      latest: found.map((j) => `${j.name} ${j.latest}`).join(", "),
+      status: [el("div", { class: "chips" }, chips), el("div", { class: "small muted", text: `${jelly.restart ? `${hint} New versions start when Jellyfin restarts.` : hint}${own}` }), restarting], actions: [b] };
   };
   const drawList = () => {
+    const had = document.activeElement?.id;
     const items = [...data.items].sort((a, b) => Number(b.update_available) - Number(a.update_available));
     const ready = [...items.filter((t) => t.update_available).map((t) => `${t.name} ${t.latest}`.trim()),
       ...(data.jellyfin_waiting || []).map((j) => `${j.name} ${j.latest} for Jellyfin`)];
     if (!checking) summary.textContent = summaryText(ready);
     list.removeAttribute("aria-busy");
-    redraw(list, [...items.map(row), jellyRow(),
+    for (const id of [...chosen]) if (!items.some((t) => t.id === id && canChoose(t))) chosen.delete(id);  // an update that is no longer waiting
+    list.replaceChildren(updateTable({ caption: "Everything Starboard can update", nameLabel: "Name", rows: [...items.map(row), jellyRow()].filter(Boolean) }), bar.node,
       // The place is said in the words as well as the link (DASH-474: read as text it said "Each app's image is on .").
-      el("li", { class: "setting", "data-key": "look" }, el("div", { class: "setting__text" },
-        el("span", { class: "setting__hint", text: "Check for updates, in Ready to update, checks every part again. Each app's image and its versions are in Apps, Updates." })),
-        el("div", { class: "setting__control" }, el("a", { class: "btn btn--quiet", href: "/apps-updates.html" }, "Open Apps, Updates"))) ].filter(Boolean));
+      el("p", { class: "small muted", "data-key": "look" }, "Check for updates, in Ready to update, checks every part again. Each app's image and its versions are in Apps, Updates. ",
+        el("a", { href: "/apps-updates.html", text: "Open Apps, Updates" }), "."));
+    ticks();
+    if (had && document.getElementById(had)) document.getElementById(had).focus();
   };
-  // What Ready to update says (a polite live region): what is ready, and after Check for updates when it looked and
-  // what it could not reach.
+  // What Ready to update says (a polite live region), in the words Apps, Updates uses: when it was last checked, how many
+  // updates wait, and what could not be reached.
   const summaryText = (ready) => {
     const kept = data.apps_checked;  // the apps' last look, kept across a restart (DASH-548)
-    const when = checked ? `Checked at ${new Date(checked.checked_at * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}. `
-      : kept ? `The apps were last checked ${checkedWhen(kept.at, kept.restored)}. ` : "";
-    const what = ready.length
-      ? `${ready.length} ${ready.length === 1 ? "update is" : "updates are"} ready: ${ready.join(", ")}.`
-      : checked ? "Everything is up to date." : "Everything Starboard knows about is up to date.";
     const missed = (checked?.parts || []).filter((p) => !p.ok).map((p) => `${p.name}: ${p.said}.`);
-    return `${when}${what}${missed.length ? ` Could not check everything. ${missed.join(" ")}` : ""}`;
+    return updateSummary({ checkedAt: checked ? checked.checked_at : kept ? kept.at : 0, restored: !checked && !!kept?.restored, count: ready.length, names: ready, missed });
   };
   const drawRecent = () => {
     const runs = data.recent || [];
