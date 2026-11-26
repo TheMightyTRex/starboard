@@ -3385,7 +3385,7 @@ class Handler(BaseHTTPRequestHandler):
             from . import livetv_move, mediaserver
             pa.ensure_default_once(app.data_dir, app.config.data["services"])  # Jellyfin as the media server plug-in (DASH-565)
             added = {p["id"] for p in pa.basics(app.data_dir)}
-            built = [{**pa.summary(m, []), "added": m["id"] in added, "logo": pa.builtin_logo(m), "media_server": pa.is_media_server(m),
+            built = [{**pa.summary(m, []), "added": m["id"] in added, "logo": pa.builtin_logo(m), "media_server": pa.is_media_server(m), "recommended": m["id"] == mediaserver.DEFAULT,  # Jellyfin is the one recommended
                       "why_not": livetv_move.can_run(app.data_dir) if m["id"] == livetv_move.PID else ""}
                      for m in pa.builtins().values()]
             updates = plugin_life.updates_known(app.data_dir)  # from catalogues already read; nothing fetched here
