@@ -1357,6 +1357,38 @@ if (dispBtn) {
   check("T-SHADOWS", "Escape returns focus to Display", /Display/.test(f3.text), f3.text);
 }
 
+// T-PLU Plug-in updates by keyboard (owner, 26 November 2026): Tab reaches Check for updates now; Enter reads the
+// catalogues, says what it found in a polite live region and focus stays on the button; Tab then reaches a tick, Space
+// ticks it and the count is said; Update all asks for the password with focus in the field, and Escape gives focus back.
+await page.goto(`${base}/settings-updates-plugins.html`);
+await settle();
+const chk = await tabTo((f) => f.id === "plu-check", 80);
+check("T-PLU", "Tab reaches Check for updates now", !!chk, "not reached");
+if (chk) {
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(() => /Read \d+ catalogue|Try again in/.test(document.getElementById("plu-result")?.textContent || ""), null, { timeout: 15000 }).catch(() => {});
+  const after = await focus();
+  check("T-PLU", "after the check, focus is still on the button", after.id === "plu-check", `${after.id} ${after.text}`);
+  const said = await page.evaluate(() => [...document.querySelectorAll("[role=status], [aria-live=polite]")].map((n) => n.textContent).join(" | "));
+  check("T-PLU", "what it found is said in a polite live region", /Read \d+ catalogue|Try again in/.test(said), said);
+  const tick = await tabTo((f) => /^plu-choose-/.test(f.id), 30);
+  check("T-PLU", "Tab reaches a plug-in's tick", !!tick, "not reached");
+  if (tick) {
+    await page.keyboard.press("Space");
+    await page.waitForTimeout(300);
+    check("T-PLU", "Space ticks it and the count is said", /1 chosen/.test(await page.locator("#plu-chosen-text").textContent()) && (await page.locator("#plu-chosen-text").getAttribute("aria-live")) === "polite");
+  }
+  await page.locator("#plu-update-all").focus();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(600);
+  const pwP = await focus();
+  check("T-PLU", "Update all asks for the password with focus in the field", pwP.inPanel && pwP.tag === "INPUT", `${pwP.tag} ${pwP.text}`);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(400);
+  const backP = await focus();
+  check("T-PLU", "Escape closes it and focus returns to Update all", backP.id === "plu-update-all", `${backP.id} ${backP.text}`);
+}
+
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

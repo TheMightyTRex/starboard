@@ -11,8 +11,37 @@ work. You can roll back to the version you had at any time.
 
 - The plug-in is added. Read [Add a plug-in](add-a-plugin.md) if it is not.
 - You know your Starboard password. Updating and rolling back ask for it.
-- Starboard reads the catalogues at most once a day. To check again now, open **Settings**, then **Plug-ins**, then
-  **Catalogue**.
+- Starboard reads the plug-in catalogues again every 6 hours. To check now, select **Check for updates now**. It is on
+  **Settings**, **Updates**, **Plug-ins**, on **Settings**, **Plug-ins**, **Manage**, on the **Catalogue** and on each
+  plug-in's **Versions**.
+
+## Check for new versions and update several at once
+
+**Settings**, **Updates**, **Plug-ins** lists every plug-in with a new version. **Settings**, **Plug-ins**, **Manage**
+shows the same list at the top. It works like **System**, **Apps**, **Updates**.
+
+1. Select **Check for updates now**. Starboard reads every catalogue again and says when it did, how many plug-ins
+   have a new version, and which catalogue did not answer and why. You can select it again after 30 seconds.
+
+   ![Settings, Updates, Plug-ins, with Check for updates now (step 1) outlined, with example data](../images/update-a-plugin-6-check.png)
+
+2. Read each row. It shows the version you have beside the new version. **What is new** shows the maker's notes.
+   A plug-in that asks for **New permissions** says what they are, with their risk. It waits for you: select **Update
+   on its page** to read the warning and update it there.
+
+3. Select **Update all** to update every plug-in that does not wait for you. Or tick some plug-ins and select **Update
+   chosen**.
+
+   ![The plug-in list, with Update all (step 3) outlined, with example data](../images/update-a-plugin-7-list.png)
+
+4. Enter your Starboard password once. Starboard shows what will update, in order, and what is held back for you.
+   Select **Install** and the number of updates.
+5. Starboard updates one plug-in at a time. Each has a copy made first and a check afterwards. A plug-in that does
+   not answer goes back by itself, and the rest carry on. The panel says what each plug-in is doing, and the page reads
+   out each change.
+
+On **Settings**, **Updates**, **Plug-ins**, **Update by themselves** activates automatic updates for plug-ins, and
+**History** lists the last updates, each with **Roll back to** when an earlier version is kept.
 
 ## Update a plug-in
 
@@ -92,8 +121,7 @@ select **What is new**. Read [Add a plug-in from a zip file](add-a-plugin-from-a
 ## If it does not work
 
 - **"An update is already running":** wait for it to finish, then try again.
-- **"No newer version is known":** open **Settings**, then **Plug-ins**, then **Catalogue**, so Starboard reads the
-  catalogues again, then open the plug-in's page again.
+- **"No newer version is known":** select **Check for updates now**, then open the plug-in's page again.
 - **"The file changed since the catalogue listed it":** the catalogue and the file do not match, so Starboard did not
   use it. Try again tomorrow, or tell the plug-in's maker, at its support address.
 - **The plug-in says Not answering after an update:** select **Roll back to** and the version you had, then tell the

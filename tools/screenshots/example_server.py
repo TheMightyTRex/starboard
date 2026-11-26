@@ -167,8 +167,14 @@ _real_fetch_catalogue = plugins_admin.fetch_catalogue
 def _offline_catalogue(address, opener=None):
     """Starboard's own collection comes from the copy it ships (plugins/catalogue.json), never from GitHub, so the
     journeys see the same catalogue with or without internet (DASH-411: the Apps you can add group)."""
-    if address == plugins_admin.CATALOGUE_URL:
-        raise ValueError("Example data: the shipped copy is used")
+    if address == plugins_admin.CATALOGUE_URL:  # read from the copy Starboard ships, as if GitHub had answered
+        import io
+
+        class _Shipped:
+            def open(self, req, timeout=None):
+                with open(plugins_admin.CATALOGUE_FILE, "rb") as f:
+                    return io.BytesIO(f.read())
+        return _real_fetch_catalogue(address, _Shipped())
     if address == plugins_admin.BUILTIN_SOURCES[0]["url"]:  # the recorded copy of Stallboard's catalogue (DASH-563), never a live request
         import io
         recorded = os.path.join(os.path.dirname(__file__), "..", "..", "tests", "fixtures", "stallboard-catalogue.json")
@@ -338,6 +344,16 @@ def _example_update_all():
         update_runs._go(app.data_dir, run, work)
         return run
     update_runs.targets, update_runs.start, update_batch._plugin_hold = targets, start, hold
+    if os.environ.get("EXAMPLE_PLUGIN_PERMISSIONS") == "1":  # Styles' new version asks for one more permission, for the plug-in updates pictures
+        from starboard import plugin_life
+        real_known = plugin_life.updates_known
+
+        def known(data_dir):
+            out = real_known(data_dir)
+            if "styles" in out:
+                out["styles"] = {**out["styles"], "permissions": sorted(set(out["styles"].get("permissions") or []) | {"apps:read"})}
+            return out
+        plugin_life.updates_known = known
     if os.environ.get("EXAMPLE_UPDATE_ALL_DONE") == "1":  # a batch that ended ten minutes ago, so the page opens with its panel
         now = time.time()
         steps = [("app:sonarr", "Sonarr 4.0.11 to 4.0.12", "went-back", "Sonarr's new version kept stopping and starting again within 2 minutes, so Starboard went back to the version before"),

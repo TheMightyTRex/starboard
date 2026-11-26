@@ -94,6 +94,44 @@
         1
       ],
       "alt": "The Styles plug-in's Versions, with Roll back to 1.0.0 (step 1) outlined"
+    },
+    {
+      "topic": "update-a-plugin",
+      "file": "update-a-plugin-6-check.png",
+      "page": "settings-updates-plugins.html",
+      "height": 900,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); for (let i = 0; i < 40 && !document.querySelector('#plu-check'); i++) await wait(250); document.querySelector('#plu-check').click(); await wait(1500); window.scrollTo(0, 0); await wait(300);",
+      "marks": [
+        {
+          "t": "$#plu-check",
+          "step": 1,
+          "side": "right",
+          "tail": 100
+        }
+      ],
+      "steps": [
+        1
+      ],
+      "alt": "Settings, Updates, Plug-ins, with Check for updates now (step 1) outlined, with example data"
+    },
+    {
+      "topic": "update-a-plugin",
+      "file": "update-a-plugin-7-list.png",
+      "page": "settings-updates-plugins.html",
+      "height": 900,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); for (let i = 0; i < 40 && !document.querySelector('#plu-update-all'); i++) await wait(250); await wait(400);",
+      "marks": [
+        {
+          "t": "$#plu-update-all",
+          "step": 3,
+          "side": "right",
+          "tail": 100
+        }
+      ],
+      "steps": [
+        3
+      ],
+      "alt": "The plug-in list, with Update all (step 3) outlined, with example data"
     }
   ]
 }

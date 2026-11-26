@@ -9,7 +9,7 @@ const password = fs.readFileSync(process.env.PASSWORD_FILE, "utf8").trim();
 const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.html", "downloads.html", "downloads-requests.html",
   "upcoming.html", "system.html", "system-storage.html", "system-disks.html", "system-monitor.html", "system-busy.html", "system-network.html",
   "system-logs.html", "system-backup.html", "settings.html", "settings-general.html", "settings-security.html",
-  "settings-general-alerts.html", "settings-updates.html", "settings-releases.html", "settings-restore.html", "settings-general-performance.html", "settings-jellyfin.html",
+  "settings-general-alerts.html", "settings-updates.html", "settings-updates-plugins.html", "settings-releases.html", "settings-restore.html", "settings-general-performance.html", "settings-jellyfin.html",
   "settings-audiobookshelf.html", "copy-settings.html", "install-apps.html", "setup-guide.html", "bring-in.html", "upgrade.html", "settings-install.html",
   // The Library, from the made-up Reelix (DASH-163)
   "library-tv.html", "library-tv-networks.html", "library-films.html", "library-films-collections.html", "library-music.html",
@@ -1153,6 +1153,35 @@ check("AP-08", "the catalogue groups the apps together, each with what it uses a
   (await apGroup.count()) === 1 && /At rest: about \d+ MB of memory/.test(await apGroup.innerText()));
 await open("settings-plugin.html?id=tdarr");
 check("AP-07", "an app plug-in that is not active says a port is chosen when it is", /chooses a free port/.test(await page.locator('section[aria-labelledby="pl-tdarr-web-h"]').innerText()));
+// Check for updates now and the plug-in update list (owner, 26 November 2026).
+await open("settings-updates-plugins.html");
+const pu = page.locator("#plugin-updates");
+check("PU-01", "Updates, Plug-ins lists each plug-in in a table with the version you have beside the new one, and a check button, Update all and When they update",
+  (await pu.locator("table.updates-table th", { hasText: "Installed" }).count()) === 1 && (await pu.locator("table.updates-table th", { hasText: "Latest" }).count()) === 1
+  && (await page.locator("#plu-check").count()) === 1 && (await page.locator("#plu-update-all").count()) === 1);
+await page.locator("#plu-check").focus();
+await page.keyboard.press("Enter");
+await page.waitForFunction(() => /Read \d+ catalogue|Try again in/.test(document.getElementById("plu-result")?.textContent || ""), null, { timeout: 15000 }).catch(() => {});
+check("PU-02", "Check for updates now says what it read, keeps focus on the button and writes the summary again",
+  /Read \d+ catalogue|Try again in/.test(await page.locator("#plu-result").innerText()) && (await page.evaluate(() => document.activeElement?.id)) === "plu-check"
+  && /last read/.test(await page.locator("#plu-summary").innerText()));
+await page.locator("#plu-check").click();
+await page.waitForTimeout(800);
+check("PU-03", "pressed again at once it says how long to wait and reads nothing more", /Try again in \d+ seconds/.test(await page.locator("#plu-result").innerText()));
+const puRow = pu.locator("tbody tr").first();
+check("PU-04", "the first row has a tick and What is new, and Update chosen shows only after a tick",
+  (await puRow.locator("input.updates-choose").count()) === 1 && (await puRow.getByRole("button", { name: /What is new/ }).count()) === 1 && (await page.locator("#plu-chosen").isHidden()));
+await puRow.locator("input.updates-choose").check();
+check("PU-05", "ticking a plug-in shows Update chosen with the count", (await page.locator("#plu-chosen").isVisible()) && /1 chosen/.test(await page.locator("#plu-chosen-text").innerText()));
+check("PU-06", "Update by themselves and History are on the page, and the menu has a Plug-ins entry under Updates",
+  (await page.locator("#plu-auto").count()) === 1 && (await page.locator("#plu-history-h").count()) === 1
+  && (await page.locator('nav a[href="/settings-updates-plugins.html"]').count()) >= 1);
+await open("settings-plugins.html");
+check("PU-07", "Manage has the same update list and check button above the plug-ins", (await page.locator("#plugin-updates table.updates-table").count()) === 1 && (await page.locator("#plu-check").count()) === 1);
+await open("settings-plugins-catalogue.html");
+check("PU-08", "the Catalogue has Check for updates now and says when the catalogues were read", (await page.locator("#pl-check-now").count()) === 1 && /catalogues/.test(await page.locator("#pl-check-now-when").innerText()));
+await open("settings-plugin.html?id=picture-shrinker");
+check("PU-09", "a plug-in's Versions tab has Check for updates now", (await page.locator("#pl-picture-shrinker-check-now").count()) === 1);
 // DASH-410: plug-in API 1.12 on the example Audio description plug-ins: a row's link opens in a new tab and says so,
 // the plug-in's own words for each state, and an upload that takes only a file.
 console.log("\n== AD Audio description sources");
@@ -1882,6 +1911,7 @@ await page.route("**/api/updates", async (route) => {
   let kept = false;
   body.items = body.items.map((t) => { if (t.update_available && !kept) { kept = true; return t; } return { ...t, update_available: false }; });
   body.jellyfin_waiting = [];
+  body.counts = { total: body.items.filter((t) => t.update_available).length, by_kind: {} };  // the one count (update_runs.counts)
   await route.fulfill({ response: r, json: body });
 });
 await open("settings-updates.html");
