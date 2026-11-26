@@ -15,8 +15,8 @@ from . import discovery
 CHOICES = [
     {"key": "new", "title": "New install",
      "about": "Set up a new media server. Starboard installs the apps you choose and connects them.",
-     "help": "For a computer with no media apps yet. Starboard asks what you want to watch, listen to and read, "
-             "then installs the apps for it, picks the folders and connects the apps to each other."},
+     "help": "For a computer with no media apps yet. Starboard asks what you want to watch, listen to and read. "
+             "It then installs the apps, picks the folders and connects the apps to each other."},
     {"key": "move", "title": "Move from apps you already run",
      "about": "Starboard adds the apps already running on this computer, such as Sonarr, Radarr and Jellyfin, and "
               "keeps their media folders.",
@@ -26,7 +26,7 @@ CHOICES = [
     {"key": "restore", "title": "Restore a backup",
      "about": "Bring back a full backup (Starboard, its plug-ins and every app's settings) or Starboard's settings only.",
      "help": "For moving to a new computer, or starting again. Full without media is a .starboard file on this "
-             "computer's disks, made in Settings, General, Backup and restore; it brings the same apps back with their "
+             "computer's disks, made in Settings, General, Backup and restore. It brings the same apps back with their "
              "settings. Settings only is a .json file downloaded there. Each is checked before anything changes, and "
              "your password stays the one you chose."},
 ]

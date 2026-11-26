@@ -114,9 +114,9 @@ WRONG_LAYOUT = {
 }
 WRONG_LAYOUT["ie"] = WRONG_LAYOUT["gb"]
 
-SET_IT_RIGHT = ("To set the right layout: run the Run first script again and choose your keyboard, or type "
-                "sudo localectl set-x11-keymap gb (with your keyboard's code in place of gb, such as ie, de or fr), "
-                "then sudo setupcon.")
+SET_IT_RIGHT = ("To set the right layout, run the Run first script again and choose your keyboard. Or type "
+                "sudo localectl set-x11-keymap gb, then sudo setupcon. "
+                "Use your keyboard's code in place of gb, such as ie, de or fr.")
 
 
 def keyboard(kid):
