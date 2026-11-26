@@ -1392,6 +1392,12 @@ function statTile(value, label, tone = null, extra = null) {
     el("span", { class: "stat__value", text: value }), el("span", { class: "stat__label", text: label }), word ? chip(word, t) : extra);
 }
 
+// A notice in the page (the library's SharedComponents.notice): tone, title, text, then a button or link for the
+// third column. options: after, icon, alert, id, tabindex, heading.
+function notice(tone, title, text, action = null, options = {}) {
+  return window.SharedComponents.notice(tone, title, text, { ...options, actions: action });
+}
+
 // Settings pattern 7: what is missing and the one thing to do.
 function emptyState(title, text, action = null) {
   return el("div", { class: "empty" }, el("p", {}, el("strong", { text: title })), text ? el("p", { text }) : null, action);
