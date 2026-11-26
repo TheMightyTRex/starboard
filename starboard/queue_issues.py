@@ -52,13 +52,13 @@ MEDIA_ROOTS = {"data", "downloads", "download", "media", "mnt", "tv", "movies", 
 KINDS = {"sonarr": "episode", "radarr": "film", "lidarr": "album", "readarr": "book",
          "movie": "film", "series": "episode", "book": "book", "album": "album", "radio_episode": "radio episode"}
 
-PROMPT = """You are helping me fix downloads on my home media server. Starboard (https://github.com/TheMightyTRex/starboard) is the dashboard. Reelix (or Sonarr, Radarr, Lidarr or Readarr) finds each release and imports it into the library, and a download client such as qBittorrent, NZBGet or SABnzbd fetches it.
+PROMPT = """You are helping me fix downloads on my home media server. Starboard (https://github.com/TheMightyTRex/starboard) is the dashboard. Reelix (or Sonarr, Radarr, Lidarr or Readarr) finds each release and imports it into the library. A download client such as qBittorrent, NZBGet or SABnzbd fetches it.
 
 Here is every download in Starboard's queue (Activity, Downloads, Queue) that needs attention or failed. For each one:
 
 1. Diagnose the issue from its state and its messages.
 2. Say the most likely cause.
-3. Say the fix to try first, in Starboard or Reelix, naming the page and the button. In Starboard: Activity, Downloads, Queue, then select the download's name for Try the import again, Ignore, Choose the episode, Find another or Remove; or Settings, Reelix, Download apps for Repair.
+3. Say the fix to try first, in Starboard or Reelix, naming the page and the button. In Starboard, go to Activity, Downloads, Queue. Select the download's name for Try the import again, Ignore, Choose the episode, Find another or Remove. For Repair, go to Settings, Reelix, Download apps.
 4. Say what to check if that does not work.
 
 Group downloads that share a cause and say so once. Ask me before suggesting anything that deletes files. Paths are as the apps see them inside their containers. Keys, passwords, tokens and private addresses have been taken out."""

@@ -198,7 +198,7 @@ GUIDED = [
      "In slskd, Options: type a Soulseek name and password under soulseek (a new name makes a free account), and "
      "choose what to share. Then select Done."),
     ("plex", "Claim your Plex server",
-     "Open Plex at its address on port 32400 and sign in with your Plex account: Plex needs one for its first set-up, and Starboard "
+     "Open Plex at its address on port 32400 and sign in with your Plex account. Plex needs one for its first set-up, and Starboard "
      "cannot make or enter it for you. Add your libraries from /data/media, then in Manage apps add Plex with its token. "
      "Then select Done."),
     ("emby", "Finish Emby's set-up",

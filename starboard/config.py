@@ -600,7 +600,7 @@ PRESET_ABOUT = {
              "Jellyfin or Audiobookshelf jobs, slower pages. Live TV and download hours stay as you set them.",
     "balanced": "The default: history every 5 minutes, card numbers, posters, normal page updates. Watching "
                 "and the hourly Jellyfin and Audiobookshelf jobs stay as you set them.",
-    "everything": "Everything on and as fresh as it goes: history every minute, watching every 5 minutes with a weekly "
+    "everything": "Everything on and as fresh as it goes. History every minute, watching every 5 minutes with a weekly "
                   "summary, the hourly Jellyfin and Audiobookshelf jobs, faster Downloads.",
 }
 PRESETS = {
