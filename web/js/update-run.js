@@ -18,12 +18,12 @@ const byWords = (by) => (by === "automatic" ? "by itself" : String(by || "").sta
 // The password dialog every update and Roll back uses: what happens, then the Starboard password. send(password)
 // does the request; a wrong password asks again in the same dialog. Returns send's answer, or null when cancelled.
 async function updateWithPassword({ title, steps, confirm, send }) {
-  const input = el("input", { class: "input", id: `up-pw-${Date.now()}`, type: "password", autocomplete: "current-password", required: true });
+  const input = passwordInput(`up-pw-${Date.now()}`);
   const err = el("span", { class: "field-error", id: `${input.id}-error`, hidden: true });
   input.setAttribute("aria-describedby", err.id);
   const what = el("div", { class: "stack-2" }, el("ul", {}, steps.map((t) => el("li", { text: t }))), el("p", { text: "Enter your Starboard password to go ahead." }));
   for (;;) {
-    const asked = confirmDialog({ title, message: what, confirm, fields: [el("div", { class: "field" }, el("label", { for: input.id, text: "Your Starboard password" }), input, err)] });
+    const asked = confirmDialog({ title, message: what, confirm, fields: [passwordField(input, { after: err })] });
     if (!(await asked)) return null;
     try { return await send(input.value); } catch (e) {
       if (e.status === 401 || e.status === 429) {
