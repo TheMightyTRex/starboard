@@ -348,24 +348,43 @@
     overflow: hidden;
     clip-path: inset(50%);
   }
-  /* A 2nd level menu with many tabs whose icons must be told apart (.menu-tabs--scroll, owner, 26 November 2026, such as
-     one tab for each plug-in): icons only, every tab keeps 44px and the row scrolls sideways instead of squeezing the
-     tabs. The current tab and the tab with focus show their name beside the icon, so tabs can be told apart. The bar
-     under the current tab and the focus ring carry the state without colour. */
-  .site-header__tabs .menu-tabs--scroll.is-compact a {
+  /* Every 2nd level menu row (.site-header__tabs) condenses the same way; the 1st level row is not changed (owner, 26 November 2026, from the plug-in tabs): when the names do not fit
+     (SharedComponents.fitHeader measures it, so large text, wider spacing and translations are handled) the row shows
+     icons only, each tab 44px wide, and the current tab and the tab with focus keep their name beside the icon. When even
+     that is too wide the row scrolls sideways; a fade on the edge with more tabs beyond it says so (.can-scroll-start and
+     .can-scroll-end, set by SharedComponents.fitHeader, because a style attribute is not allowed). The bar under the
+     current tab, its name and the focus ring carry the state without colour. */
+  .site-header__tabs .menu-tabs.is-compact a {
     flex: none;
     min-width: var(--control-h);
     justify-content: center;
+    padding-inline: calc((var(--control-h) - 18px) / 2);
   }
-  .site-header__tabs .menu-tabs--scroll.is-compact a[aria-current="page"] .menu-tabs__label,
-  .site-header__tabs .menu-tabs--scroll.is-compact a:focus-visible .menu-tabs__label {
+  .site-header__tabs .menu-tabs.is-compact a[aria-current="page"],
+  .site-header__tabs .menu-tabs.is-compact a:focus-visible {
+    padding-inline: var(--space-4);
+  }
+  .site-header__tabs .menu-tabs.is-compact a[aria-current="page"] .menu-tabs__label,
+  .site-header__tabs .menu-tabs.is-compact a:focus-visible .menu-tabs__label {
     position: static;
     width: auto;
     height: auto;
-    max-width: 12rem;
+    max-width: min(14rem, calc(100vw - 7rem));
     overflow: hidden;
     clip-path: none;
     text-overflow: ellipsis;
+  }
+  .site-header__tabs .menu-tabs.can-scroll-end:not(.can-scroll-start) {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  }
+  .site-header__tabs .menu-tabs.can-scroll-start:not(.can-scroll-end) {
+    -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent);
+  }
+  .site-header__tabs .menu-tabs.can-scroll-start.can-scroll-end {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent);
   }
   /* When even the icons do not fit (large text, wider spacing, a long server name), the header gives way in steps
      instead of cutting items off or squeezing the search box (DASH-437). SharedComponents.setupHeaderFit measures the
@@ -5484,6 +5503,7 @@
     .switch input::after { background: CanvasText; }
     .switch input:checked { background: Highlight; border-color: Highlight; }
     .switch input:checked::after { background: HighlightText; }
+    .site-header__tabs .menu-tabs.is-compact a[aria-current="page"] { outline: 2px solid Highlight; outline-offset: -2px; }
     .menu-tabs a[aria-current="page"]::after,
     .rail a[aria-current="page"]::before,
     .logo-tabs > button[aria-selected="true"]::after { background: Highlight; }

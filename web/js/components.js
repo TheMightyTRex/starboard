@@ -966,6 +966,56 @@
      A level 2 menu (.site-header__tabs) shows icons only when its names do not fit. It measures again whenever
      anything in the header changes size: the window, the text size or spacing chosen in Display, a name arriving
      after the page loads, the font loading. One ResizeObserver, no timers. */
+  /* A menu row that shows icons only (DASH-437, 26 November 2026): each icon-only tab gets the tooltip (data-tooltip, on hover and
+     keyboard focus) except the current one, which shows its name; the current tab is brought into view when the row changes
+     size; a fade shows which edge has more; the arrow keys, Home and End move between the tabs (Tab still reaches each one).
+     The row's own listeners are added once. */
+  function tabsEdges(nav) {
+    const compact = nav.classList.contains("is-compact");
+    nav.querySelectorAll("a").forEach((a) => {
+      const name = a.querySelector(".menu-tabs__label")?.textContent.trim();
+      if (compact && name && a.getAttribute("aria-current") !== "page" && a !== document.activeElement) a.dataset.tooltip = name;
+      else a.removeAttribute("data-tooltip");
+    });
+    if (!nav.dataset.tabsReady) {
+      nav.dataset.tabsReady = "1";
+      nav.addEventListener("keydown", (e) => {
+        const links = [...nav.querySelectorAll("a")];
+        const at = links.indexOf(document.activeElement);
+        if (at < 0 || e.altKey || e.ctrlKey || e.metaKey) return;
+        const rtl = getComputedStyle(nav).direction === "rtl";
+        const to = { ArrowRight: at + (rtl ? -1 : 1), ArrowLeft: at - (rtl ? -1 : 1), Home: 0, End: links.length - 1 }[e.key];
+        if (to === undefined || !links[to]) return;
+        e.preventDefault();
+        links[to].focus();
+      });
+      nav.addEventListener("focusin", (e) => {
+        e.target.closest?.("a")?.removeAttribute("data-tooltip");
+        requestAnimationFrame(() => {
+          const a = document.activeElement;
+          if (!a || !nav.contains(a)) return;
+          const r = a.getBoundingClientRect(), b = nav.getBoundingClientRect();
+          const pad = nav.classList.contains("can-scroll-start") || nav.classList.contains("can-scroll-end") ? 28 : 0;
+          if (r.left < b.left + pad) nav.scrollLeft += r.left - b.left - pad;
+          else if (r.right > b.right - pad) nav.scrollLeft += r.right - b.right + pad;
+        });
+      });
+      nav.addEventListener("focusout", () => tabsEdges(nav));
+      let queued = false;
+      nav.addEventListener("scroll", () => { if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; tabsFade(nav); }); } }, { passive: true });
+    }
+    const current = nav.querySelector('a[aria-current="page"]');
+    if (compact && current && nav.scrollWidth > nav.clientWidth + 1 && !nav.contains(document.activeElement)) {
+      const r = current.getBoundingClientRect(), b = nav.getBoundingClientRect();
+      if (r.left < b.left || r.right > b.right) nav.scrollLeft = Math.max(0, nav.scrollLeft + (r.left - b.left) - (b.width - r.width) / 2);
+    }
+    tabsFade(nav);
+  }
+  function tabsFade(nav) {
+    const max = nav.scrollWidth - nav.clientWidth;
+    nav.classList.toggle("can-scroll-start", max > 1 && nav.scrollLeft > 1);
+    nav.classList.toggle("can-scroll-end", max > 1 && nav.scrollLeft < max - 1);
+  }
   const HEADER_STEPS = ["is-search-folded", "is-actions-compact", "is-crowded"];
   function fitHeader(header) {
     if (!header || header.classList.contains("is-search-open")) return;
@@ -980,12 +1030,7 @@
     header.querySelectorAll(".menu-tabs").forEach((nav) => nav.classList.remove("is-compact"));
     header.querySelectorAll(".site-header__tabs .menu-tabs").forEach((nav) => {
       nav.classList.toggle("is-compact", overflows(nav));
-      // Icons only: each tab's name is its tooltip (a title this code added is taken away again when the names fit).
-      nav.querySelectorAll("a").forEach((a) => {
-        const name = a.querySelector(".menu-tabs__label")?.textContent.trim();
-        if (nav.classList.contains("is-compact") && name && !a.title) { a.title = name; a.dataset.autoTitle = ""; }
-        else if (!nav.classList.contains("is-compact") && "autoTitle" in a.dataset) { a.removeAttribute("title"); delete a.dataset.autoTitle; }
-      });
+      tabsEdges(nav);
     });
     const steps = [() => main?.classList.add("is-compact"), ...HEADER_STEPS.map((step) => () => header.classList.add(step))];
     for (const step of steps) {
