@@ -60,6 +60,36 @@ Jellyfin tools stay with Jellyfin.
 
 Starboard sends the key in a header, never in an address, so it does not reach a log.
 
+### Switch with the wizard
+
+The wizard is for moving over from one media server to another. It changes nothing until its last button, and the way
+back below still lasts 24 hours.
+
+1. Under **Choose a media server**, select **Switch with help**. A panel opens.
+2. On **Step 1**, choose how to switch, then **Next**:
+   - **Import your own media** points the new media server at the same folders. Nothing is copied from the old one.
+   - **Migrate from your old media server** brings libraries, users and what was watched across, as far as the new media
+     server can take them. Watch history can be copied into Jellyfin only so far, and the wizard says so.
+   - **Start fresh** starts the new media server empty.
+
+   ![The Switch media server panel, step 1, with the three ways to switch (step 2) outlined, with example data](../images/choose-your-media-server-10-wizard-start.png)
+
+3. On **Step 2**, choose the media server, or **None**, then **Next**. Only media servers that are added are listed.
+4. On **Step 3**, read what Starboard found. It asks the new media server to answer first. Then it lists what moves, what
+   cannot move (collections, hand-made artwork, Live TV settings and each server's own plug-ins), what keeps working with no
+   change (your download apps, Reelix and anything else that saves into your media folders, and your files), and each
+   plug-in that needs a media server marked **Works after the switch** or **Waits after the switch**, with the reason.
+
+   ![The Switch media server panel, step 3, with the plug-ins that wait or work after the switch (step 4) outlined, with example data](../images/choose-your-media-server-11-wizard-plan.png)
+
+5. Parts that keep their own link to the old media server, such as Reelix, Seerr, On demand and a forward for remote
+   access, are marked **Needs pointing at the new media server**: change them in those apps after the switch.
+6. Select **Switch to** and the name. If the new media server did not answer, the button is not available and nothing has changed.
+
+   ![The Switch media server panel, step 3, with Switch to Plex (step 5) outlined, with example data](../images/choose-your-media-server-12-wizard-switch.png)
+
+A plug-in that waits is not stopped: it keeps its settings and carries on when its media server is back.
+
 ### Go back
 
 For 24 hours after a change, **The way back** says which media server you had.

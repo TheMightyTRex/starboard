@@ -766,6 +766,47 @@ if (addApp) {
   check("T-PLEX", "Escape closes the panel and focus goes back to Add an app", /^Add an app/.test(closed.text), JSON.stringify(closed));
 }
 
+// T-WIZARD (DASH-565) The switch wizard by keyboard alone: Switch with help is reached with Tab and opens the slide-out with focus on the
+// step's heading, a group of radio buttons is one Tab stop moved with the arrow keys, Next goes to step 2 and focus goes to its
+// heading, Back returns, the step is said as text ("Step 1 of 3"), and Escape closes it with focus back on Switch with help.
+await page.goto(`${base}/settings-jellyfin.html`);
+await settle();
+const sw1 = await tabTo((f) => f.tag === "BUTTON" && /^Switch with help/.test(f.text), 80);
+check("T-WIZARD", "Tab reaches Switch with help", !!sw1, sw1 ? sw1.text : "not reached");
+if (sw1) {
+  await page.keyboard.press("Enter");
+  await settle();
+  const first = await focus();
+  check("T-WIZARD", "the wizard opens with focus on the step's heading", first.id === "wizard-step-h" && first.inPanel, JSON.stringify(first));
+  check("T-WIZARD", "the step is said in words", /Step 1 of 3/.test(await page.evaluate(() => document.getElementById("side-panel")?.innerText || "")));
+  const radio = await tabTo((f) => f.tag === "INPUT" && f.name === "wizard-way", 6);
+  check("T-WIZARD", "Tab reaches the way to switch, one stop for the group", !!radio, radio ? radio.id : "not reached");
+  if (radio) {
+    await page.keyboard.press("ArrowDown");
+    const moved = await focus();
+    check("T-WIZARD", "the Down arrow moves to the next way", moved.id === "wizard-way-migrate", JSON.stringify(moved));
+    const nextBtn = await tabTo((f) => f.tag === "BUTTON" && f.text === "Next", 4);
+    check("T-WIZARD", "Tab reaches Next", !!nextBtn);
+    if (nextBtn) {
+      await page.keyboard.press("Enter");
+      await settle();
+      const second = await focus();
+      check("T-WIZARD", "Next moves focus to the new step's heading", second.id === "wizard-step-h" && /Step 2 of 3/.test(await page.evaluate(() => document.getElementById("side-panel").innerText)), JSON.stringify(second));
+      const backBtn = await tabTo((f) => f.tag === "BUTTON" && f.text === "Back", 6);
+      if (backBtn) {
+        await page.keyboard.press("Enter");
+        await settle();
+        const again = await focus();
+        check("T-WIZARD", "Back returns to step 1 with focus on its heading", again.id === "wizard-step-h" && /Step 1 of 3/.test(await page.evaluate(() => document.getElementById("side-panel").innerText)), JSON.stringify(again));
+      } else check("T-WIZARD", "Tab reaches Back", false, "not reached");
+    }
+  }
+  await page.keyboard.press("Escape");
+  await settle();
+  const out = await focus();
+  check("T-WIZARD", "Escape closes the wizard and focus goes back to Switch with help", /^Switch with help/.test(out.text), JSON.stringify(out));
+}
+
 // T23 Reduce motion (DASH-437): Off means full movement even when the device asks for less; Match device follows the
 // device; On stills movement on a device that does not ask. Checked in the styles and scripts a slide-out, a message
 // and the loading line use, as Display leaves them after a reload.

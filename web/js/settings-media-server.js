@@ -87,7 +87,15 @@ async function startMediaServer() {
       $("#ms-said")?.focus();  // focus goes to what was said, not back to the top of the page
     } catch (err) { say("warning", "Nothing changed", err.message); choose.disabled = false; choose.focus(); }
   });
-  const pick = part("ms-choose", "Choose a media server", "Starboard checks a media server before it uses it, never switches by itself and keeps the one you had added.", form);
+  // Switch with help: the wizard that says what would move, what cannot and what waits, before anything changes.
+  const wizard = el("button", { type: "button", class: "btn" }, icon("arrow-up-down"), "Switch with help");
+  wizard.addEventListener("click", () => openSwitchWizard(ms, wizard, async (words) => {
+    await startMediaServer();
+    $("#ms-said")?.replaceChildren(notice("success", "Changed", words));
+    $("#ms-said")?.focus();
+  }));
+  const pick = part("ms-choose", "Choose a media server", "Starboard checks a media server before it uses it, never switches by itself and keeps the one you had added.", form,
+    el("p", { class: "small muted", text: "Moving over from another media server? The wizard lists what moves, what cannot, and which plug-ins and apps need attention first." }), el("div", { class: "actions" }, wizard));
 
   // The way back -----------------------------------------------------------------------------------------------------
   let back = null;
