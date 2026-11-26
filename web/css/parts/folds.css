@@ -1,0 +1,73 @@
+/* folds: a part of the shared components. Load it after components.css, on the pages that use it.
+ * Made by tools/parts.py from components.css in github.com/TheMightyTRex/design-system: change it there, not here. */
+@layer shared {
+  .fold-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+  }
+  .fold-tools .search-field {
+    flex: 1 1 260px;
+  }
+  .fold-tools .search-field .input {
+    width: 100%;
+  }
+  .folds {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+    min-width: 0;
+  }
+  .fold {
+    border: 1px solid var(--color-divider);
+    background: var(--color-surface);
+  }
+  .fold__head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding-right: var(--space-4);
+  }
+  .fold__title {
+    margin: 0;
+    flex: 1;
+    font-size: var(--text-md);
+  }
+  .fold__toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    min-height: var(--control-h);
+    padding: var(--space-2) var(--space-4);
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .fold__toggle:hover {
+    background: var(--color-hover);
+    box-shadow: inset 0 0 0 1px var(--color-hover-edge);
+  }
+  .fold__name {
+    flex: 1;
+    font-weight: var(--weight-strong);
+  }
+  .fold__switch {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .fold__panel {
+    padding: 0 var(--space-4) var(--space-4);
+  }
+  .fold .table td.num {
+    font-variant-numeric: tabular-nums;
+  }
+  .fold .table tr.is-off td {
+    color: var(--color-text-muted);
+  }
+}
