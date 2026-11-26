@@ -63,7 +63,7 @@ function folderBody(d) {
 }
 
 function openFolder(d, opener) {
-  const again = el("button", { type: "button", class: "btn" }, icon("refresh-cw"), el("span", { text: "Check again" }));
+  const again = el("button", { type: "button", class: "btn" }, icon("refresh-cw"), el("span", { text: "Check now" }));
   const panel = sidePanel({ title: d.label, opener, body: folderBody(d).filter(Boolean), foot: [again] });
   again.addEventListener("click", async () => {
     await load();
@@ -251,14 +251,14 @@ startPage().then(async (session) => {
   repo = session?.repo || "";
   try { perf = (await api("/api/config")).performance || {}; } catch { perf = {}; }
   const refresh = $("#refresh");
-  refresh.replaceChildren(icon("refresh-cw"), el("span", { text: "Check again" }));
+  refresh.replaceChildren(icon("refresh-cw"), el("span", { text: "Check now" }));
   refresh.addEventListener("click", async () => { await load(); announce("Checked again."); });
   await load();
   await loadUsage();
   try { spaceDays = (await api("/api/space-history")).days; renderCharts(); } catch { /* no history yet */ }
   // When you open Storage: sort by type if the last answer is over a day old (Settings, General, Performance).
   if (usage && usage.every === "open" && !usage.running && (!usage.finished || Date.now() / 1000 - usage.finished > 86400)) runUsage();
-  // Sizes update by themselves while the page is open and in view, or only with Check again.
+  // Sizes update by themselves while the page is open and in view, or only with Check now.
   if (perf.storage_refresh) setInterval(() => { if (!document.hidden) load(); }, perf.storage_refresh * 1000);
   loadDevices();
 });

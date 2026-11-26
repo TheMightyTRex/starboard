@@ -70,7 +70,7 @@ A cable is faster and more reliable than Wi-Fi for a server.
    sudo ifup enp3s0
    ```
 
-6. Check again with the `ping` command.
+6. Check now with the `ping` command.
 
 ## Connect with Wi-Fi in the terminal on Linux Mint or Raspberry Pi OS
 
@@ -90,7 +90,7 @@ These use a program called NetworkManager, which you control with the `nmcli` co
    ```
 
 3. When it asks for the password, enter it and press Enter. Nothing appears as you enter it.
-4. Check again with the `ping` command. The server connects by itself every time it starts.
+4. Check now with the `ping` command. The server connects by itself every time it starts.
 
 ## Connect with Wi-Fi in the terminal on Ubuntu Server
 
@@ -134,7 +134,7 @@ already.
    sudo netplan apply
    ```
 
-6. Check again with the `ping` command in [Check whether the server is online](#check-whether-the-server-is-online).
+6. Check now with the `ping` command in [Check whether the server is online](#check-whether-the-server-is-online).
 
 ## Connect with Wi-Fi in the terminal on Debian
 

@@ -23,6 +23,7 @@ def read(*parts):
 
 
 SHELL = load_shell()
+TITLES = {"Lists": "Pages and lists", "Discover": "Discover rows", "Hours": "Download hours"}  # tab name: page heading (DASH-595)
 SCRIPTS = "".join(read(WEB, "js", name) for name in (*sorted(n for n in os.listdir(os.path.join(WEB, "js")) if n.startswith("settings-")),  # settings.js, split by page
                                                      "radio-settings.js", "library-settings.js"))
 
@@ -39,8 +40,7 @@ def parts_of(page):
 
 class SettingsMenusTest(unittest.TestCase):
     WANT = {
-        "General": ["Names and apps", "Appearance", "Pages and lists", "Discover rows", "Download hours", "Logs and feedback",
-                    "Alerts", "Performance", "Pictures", "Backup and restore"],
+        "General": ["General", "Appearance", "Lists", "Discover", "Hours", "Alerts", "Performance", "Pictures", "Backup/Logs"],
         "Downloads": ["VPN", "Usenet", "Download hours"],
         "Radio": ["Sources", "Add a show from a link", "Your podcast library", "Station logos"],
         "Security": ["Who can open the dashboard", "Password", "Sign-in methods", "API keys", "Sign out everywhere"],
@@ -62,11 +62,11 @@ class SettingsMenusTest(unittest.TestCase):
         for group in self.WANT:
             seen = []
             for page, label, _ in level2(group):
-                if page in ("system-backup.html", "settings-general-alerts.html"):  # backup: its own page at its address (owner, 16 November 2026); alerts: one page, every part shown (DASH-584)
+                if page in ("settings-general-backup.html", "settings-general-alerts.html"):  # backup and logs: one page of panels, with its own check below (DASH-595); alerts: one page, every part shown (DASH-584)
                     continue
                 parts = parts_of(page)
                 self.assertTrue(parts, f"{page} has no data-parts")
-                self.assertIn(f"<h1>{label}</h1>", read(WEB, page))
+                self.assertIn(f"<h1>{TITLES.get(label, label)}</h1>", read(WEB, page))  # the tab's name is short; the page's heading is in full
                 for part in parts:
                     if part.startswith("dr-"):  # Discover rows: a section per area in DISCOVER_AREAS (DASH-396)
                         self.assertIn(f'["{part[3:]}", ', SCRIPTS.split("const DISCOVER_AREAS = ", 1)[1].split("\n", 1)[0], part)
@@ -136,3 +136,72 @@ class DiscoverRowsPageTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BackupLogsTabTest(unittest.TestCase):
+    """DASH-595 (owner, 26 November 2026): Backup and restore and Logs and feedback are one tab, Settings, General,
+    Backup/Logs. Nothing is lost, every old address answers 301, and the tab names stay short."""
+
+    PAGE = "settings-general-backup.html"
+
+    def test_one_page_holds_the_backups_and_the_logs(self):
+        html = read(WEB, self.PAGE)
+        for part in ("bk-when-h", "bk-full-h", "bk-copies-h", "bk-sb-h", "bk-server-h"):
+            self.assertIn(f'id="{part}"', html)
+        self.assertEqual(parts_of(self.PAGE), ["gn-logs", "gn-test", "gn-logdel"])
+        for script in ("settings-core.js", "settings-general.js", "system-backup.js", "backup-places.js", "cloud-wizard.js", "reelix-system.js"):
+            self.assertIn(f'/js/{script}"', html)
+        self.assertEqual(html.count("<h1>"), 1)
+        self.assertIn("<h1>Backup/Logs</h1>", html)
+
+    def test_every_in_page_link_has_a_place_to_go(self):
+        html = read(WEB, self.PAGE)
+        links = re.findall(r'<a href="#([^"]+)"', html)
+        self.assertGreaterEqual(len(links), 8)
+        for target in links:
+            if target in ("logs", "testing", "delete-logs"):  # drawn by settings-general.js
+                self.assertRegex(SCRIPTS, rf'id: "{target}"')
+            else:
+                self.assertIn(f'id="{target}"', html)
+
+    def test_the_old_pages_are_gone_and_their_addresses_move(self):
+        server = load_server()
+        for old in ("system-backup.html", "settings-general-logs.html"):
+            self.assertFalse(os.path.exists(os.path.join(WEB, old)), old)
+            self.assertEqual(server.MOVED_PAGES.get("/" + old), "/" + self.PAGE)
+        # Every address that moved ends on a page that exists (no chain of moves, none to a missing page).
+        for old, new in server.MOVED_PAGES.items():
+            self.assertTrue(os.path.isfile(os.path.join(WEB, new.lstrip("/").split("?")[0])), f"{old} moves to a missing page {new}")
+            self.assertNotIn(new.split("?")[0], server.MOVED_PAGES, f"{old} moves to {new}, which moved again")
+
+    def test_pages_that_moved_in_earlier_work_answer_301_too(self):
+        server = load_server()
+        want = {"/settings-alerts.html": "/settings-general-alerts.html", "/settings-performance.html": "/settings-general-performance.html",
+                "/settings-performance-pictures.html": "/settings-general-pictures.html", "/settings-media-server.html": "/settings-jellyfin.html",
+                "/wanted.html": "/wanted-films.html", "/wanted-quality.html": "/wanted-films.html?list=cutoff", "/discover-trending.html": "/discover-films.html"}
+        for old, new in want.items():
+            self.assertEqual(server.MOVED_PAGES.get(old), new, old)
+            self.assertFalse(os.path.exists(os.path.join(WEB, old.lstrip("/"))), old)
+
+    def test_old_parts_of_general_go_to_the_new_page(self):
+        block = SCRIPTS.split("const MOVED_PARTS = {", 1)[1].split("\n};", 1)[0]
+        for part in ("gn-logs", "logs", "gn-test", "testing", "feedback-list", "gn-logdel", "delete-logs"):
+            self.assertIn(f'"{part}"', block)
+        self.assertNotIn("settings-general-logs.html", SCRIPTS)
+
+    def test_logs_and_delete_all_logs_are_not_hidden_under_more_settings(self):
+        advanced = SCRIPTS.split("const ADVANCED_SECTIONS = new Set([", 1)[1].split("]);", 1)[0]
+        self.assertNotIn('"gn-logs"', advanced)
+        self.assertNotIn('"gn-logdel"', advanced)
+
+    def test_the_general_tab_names_are_short(self):
+        labels = [label for _, label, _ in level2("General")]
+        self.assertLessEqual(sum(len(label) for label in labels), 75, labels)
+        self.assertTrue(all(len(label) <= 11 for label in labels), labels)
+
+
+def load_server():
+    import sys
+    sys.path.insert(0, ROOT)
+    from starboard import server
+    return server

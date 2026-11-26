@@ -1,5 +1,5 @@
 // System, Overview, Busy now (DASH-558): the heaviest containers and processes by processor and memory. One read when the
-// page opens and one each time Check again is pressed; nothing runs between. The server reads twice, a second apart.
+// page opens and one each time Check now is pressed; nothing runs between. The server reads twice, a second apart.
 
 
 const pct = (n) => `${n < 0.1 ? "under 0.1" : n < 10 ? n.toFixed(1) : Math.round(n)}%`;

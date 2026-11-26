@@ -71,7 +71,7 @@ function renderHead() {
   $("#logs-summary").replaceChildren(
     s.files ? `${s.days} ${s.days === 1 ? "day" : "days"} of logs (${logBytes(s.bytes)}) · kept for ${keep} days, no more than ${most} MB · `
       : `No logs yet · kept for ${keep} days, no more than ${most} MB · `,
-    el("a", { href: "/settings-general-logs.html#logs", text: "Change in Settings, General, Logs and feedback" }));
+    el("a", { href: "/settings-general-backup.html#logs", text: "Change in Settings, General, Backup/Logs" }));
   const del = el("button", { type: "button", class: "btn btn--danger", id: "logs-delete-all", disabled: !s.files }, icon("trash-2"), "Delete all logs");
   del.addEventListener("click", async () => {
     let r;

@@ -66,7 +66,7 @@ function reportBody(d) {
     ["Report from", formatDate(d.checked * 1000, true)],
   ];
   const advice = tone === "danger" ? "Back up what is on it now and replace it."
-    : d.problems.length ? "Back up what is on it and plan to replace it. Check again after the next report to find out whether the counts are rising."
+    : d.problems.length ? "Back up what is on it and plan to replace it. Check now after the next report to find out whether the counts are rising."
     : isHot(d) ? "Check the airflow around the disk. Hot disks wear out sooner." : "";
   const events = eventsFor(d);
   return [
@@ -137,7 +137,7 @@ async function readNow() {
 }
 
 function openReport(d, opener) {
-  const again = el("button", { type: "button", class: "btn" }, icon("refresh-cw"), el("span", { text: "Check again" }));
+  const again = el("button", { type: "button", class: "btn" }, icon("refresh-cw"), el("span", { text: "Check now" }));
   const panel = sidePanel({ title: `${nameOf(d)}, SMART report`, opener, body: reportBody(d), foot: [again] });
   again.addEventListener("click", async () => {
     await load();
@@ -250,7 +250,7 @@ startPage().then((session) => {
   $("#read-now").addEventListener("click", readNow);
   repo = session?.repo || "";
   const refresh = $("#refresh");
-  refresh.replaceChildren(icon("refresh-cw"), el("span", { text: "Check again" }));
+  refresh.replaceChildren(icon("refresh-cw"), el("span", { text: "Check now" }));
   refresh.addEventListener("click", async () => { await load(); announce(`Checked again at ${timeNow()}.`); });
   load();
 });

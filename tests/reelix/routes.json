@@ -1,5 +1,5 @@
 {
- "about": "Every group of Reelix's API routes (/api/v1/<group>/...) and where Starboard covers it: 'starboard' says where it is shown or used, 'task' names the task that will, 'not_for_lite' says why it is not needed. tests/test_reelix_routes.py fails when Reelix adds a group with no decision (DASH-177). Check against a running Reelix with REELIX_OPENAPI=http://host:7700/api/v1/openapi.json.",
+ "about": "Every group of Reelix's API routes (/api/v1/<group>/...) and where Starboard covers it: 'starboard' says where it is shown or used, 'task' names the task that will, 'not_for_lite' says why it is not needed. tests/test_reelix_routes.py fails when Reelix adds a group with no decision (DASH-177). Check nowst a running Reelix with REELIX_OPENAPI=http://host:7700/api/v1/openapi.json.",
  "tested_with": "0.8.7",
  "routes": {
   "albums": {
