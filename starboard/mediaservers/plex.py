@@ -29,7 +29,7 @@ class Plex(mediaserver.MediaServer):
     id = "plex"
     name = "Plex"
     service_type = "plex"
-    page = ""  # no page of its own yet: its address and token are in Settings, Manage apps
+    page = mediaserver.PAGE
     capabilities = ()  # read only for now
 
     def _send(self, service, method, path):

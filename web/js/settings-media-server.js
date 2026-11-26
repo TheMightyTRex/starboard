@@ -1,5 +1,7 @@
-// Settings, Apps, Media server (DASH-565): which media server Starboard uses, a check that it answers, the choice of
-// another one or none, and the way back for 24 hours. Starboard never switches by itself; a new choice is checked first.
+// Settings, Apps, the media server tab (DASH-565): the tab is named for the media server in use (Jellyfin, Plex or Emby; Media
+// server when there is none). It says whether it is set up, has a check that it answers, the choice of another one or none
+// and the way back for 24 hours. Starboard never switches by itself; a new choice is checked first. Jellyfin's own sections
+// (settings-jellyfin.js) draw above these while Jellyfin is in use; Plex and Emby have their address and token in Manage apps.
 
 const HOURS = (until) => Math.max(1, Math.ceil((until - Date.now() / 1000) / 3600));
 
@@ -8,9 +10,21 @@ async function startMediaServer() {
   let ms;
   try { ms = await api("/api/media-server"); } catch (e) { root.replaceChildren(notice("danger", "Could not load the media server", e.message)); return; }
   root.removeAttribute("aria-busy");
+  const name = ms.name || "Media server";
+  const title = $("#ms-title");
+  if (title) title.textContent = name;
+  document.title = document.title.replace(/^[^·]*/, `${name} `);
+  const summary = $("#ms-summary");
+  if (summary) summary.textContent = ms.active === "jellyfin" ? "Live TV, moving your watch history to Jellyfin, defaults for every user, and which media server Starboard uses."
+    : ms.active ? `${name} is the media server Starboard shows on the dashboard, in Library, in Activity and in System. Choose another one under Choose a media server, or check that ${name} answers.`
+      : "No media server is in use. Choose one under Choose a media server: Starboard shows the one you choose on the dashboard, in Library, in Activity and in System.";
   const said = el("div", { class: "stack-2", role: "status", "aria-live": "polite", id: "ms-said", tabindex: "-1" });
   const say = (kind, title, text, ...more) => { said.replaceChildren(notice(kind, title, text), ...more.filter(Boolean)); };
   const current = ms.available.find((a) => a.id === ms.active);
+
+  // A part of the one section: its own heading and words (an h3, whose id a link or a test can name).
+  const part = (id, title, text, ...content) => el("div", { class: "stack-2", "data-part": id },
+    el("h3", { id: `${id}-h`, text: title }), text ? el("p", { class: "small muted", text }) : null, ...content);
 
   // In use ----------------------------------------------------------------------------------------------------------
   const check = el("button", { type: "button", class: "btn", disabled: !current }, icon("activity"), "Check it now",
@@ -24,12 +38,25 @@ async function startMediaServer() {
     } catch (err) { say("danger", "The check did not run", err.message); }
     finally { check.disabled = false; check.focus(); }
   });
-  const using = section("ms-use", "In use", current
+  const using = part("ms-use", "In use", current
     ? `${current.name} is your media server. ${ms.configured ? "It is set up." : "It is not set up yet: add its address and key in Settings, Manage apps."}`
     : "No media server is in use. The dashboard panel, Library's Play and Watched and Activity's now playing are not drawn until you choose one.",
     el("p", {}, chip(...(current ? (ms.configured ? ["In use", "success", "circle-check"] : ["Not set up", "warning", "triangle-alert"]) : ["None", "muted", "minus"]))),
-    el("div", { class: "actions" }, check, current?.page ? el("a", { class: "btn btn--quiet", href: current.page }, icon("settings"), `Open ${current.name} settings`) : null),
+    el("div", { class: "actions" }, check),
     said);
+
+  // Its own settings: Jellyfin has its sections above; Plex and Emby keep their address and token in Manage apps ------------
+  let own = null;
+  if (current && ms.active !== "jellyfin") {
+    const app = (typeof config !== "undefined" && config?.services || []).find((s) => s.type === ms.active);
+    own = part("ms-own", `Your ${current.name}`, app
+      ? `${current.name} is kept in Manage apps as ${app.name}, with its address and ${ms.active === "plex" ? "token" : "key"}. The key is never shown again after saving.`
+      : `${current.name} is not in Manage apps yet. Add it with its address and ${ms.active === "plex" ? "token" : "key"} so Starboard can ask it for its libraries, what is playing and what was added.`,
+      el("div", { class: "actions" }, app
+        ? el("a", { class: "btn", href: `/settings.html?edit=${encodeURIComponent(app.id)}` }, icon("pencil"), `Edit ${app.name}`)
+        : el("a", { class: "btn btn--primary", href: `/settings.html?add=${encodeURIComponent(ms.active)}` }, icon("plus"), `Add ${current.name}`)),
+      el("p", { class: "small muted", text: `Play, Watched, Live TV and the other Jellyfin tools stay with Jellyfin: ${current.name} is read only for now.` }));
+  }
 
   // Choose ----------------------------------------------------------------------------------------------------------
   const options = [...ms.available.map((a) => ({ id: a.id, name: a.name, added: ms.added.includes(a.id) })), { id: "", name: "None", added: true }];
@@ -60,7 +87,7 @@ async function startMediaServer() {
       $("#ms-said")?.focus();  // focus goes to what was said, not back to the top of the page
     } catch (err) { say("warning", "Nothing changed", err.message); choose.disabled = false; choose.focus(); }
   });
-  const pick = section("ms-choose", "Choose a media server", "Starboard checks a media server before it uses it, never switches by itself and keeps the one you had added.", form);
+  const pick = part("ms-choose", "Choose a media server", "Starboard checks a media server before it uses it, never switches by itself and keeps the one you had added.", form);
 
   // The way back -----------------------------------------------------------------------------------------------------
   let back = null;
@@ -71,10 +98,10 @@ async function startMediaServer() {
       try { const r = await api("/api/media-server/back", { method: "POST" }); announce(r.said); await startMediaServer(); $("#ms-said")?.replaceChildren(notice("success", "Changed back", r.said)); $("#ms-said")?.focus(); }
       catch (err) { say("danger", "It did not change back", err.message); go.disabled = false; go.focus(); }
     });
-    back = section("ms-back", "The way back", `You changed your media server. For about ${HOURS(ms.back.until)} more ${HOURS(ms.back.until) === 1 ? "hour" : "hours"} you can go back to ${ms.back.name || "no media server"} in one step.`,
+    back = part("ms-back", "The way back", `You changed your media server. For about ${HOURS(ms.back.until)} more ${HOURS(ms.back.until) === 1 ? "hour" : "hours"} you can go back to ${ms.back.name || "no media server"} in one step.`,
       el("div", { class: "actions" }, go));
   }
-  root.replaceChildren(...[using, pick, back].filter(Boolean));
+  root.replaceChildren(section("ms-section", "Media server", "The media server Starboard shows on the dashboard, in Library, in Activity and in System. Starboard uses one at a time.",
+    ...[using, own, pick, back].filter(Boolean)));
 }
 
-document.addEventListener("DOMContentLoaded", () => { if ($("#media-server-sections")) startMediaServer(); });

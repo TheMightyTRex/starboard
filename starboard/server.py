@@ -492,7 +492,9 @@ def _installer_started_since(app, since):
         return False
 
 
-MOVED_PAGES = {"/settings-alerts.html": "/settings-general-alerts.html", "/settings-performance.html": "/settings-general-performance.html",
+# Pages whose address changed: the old address answers 301 with the new one (a link from a bookmark, a plug-in or an older help page).
+MOVED_PAGES = {"/settings-media-server.html": "/settings-jellyfin.html",  # Settings, Apps: the media server tab (DASH-565)
+               "/settings-alerts.html": "/settings-general-alerts.html", "/settings-performance.html": "/settings-general-performance.html",
                "/settings-performance-pictures.html": "/settings-general-pictures.html"}  # DASH-584: Alerts and Performance are in General now
 MOVED_BY_REELIX = ("radarr", "sonarr", "lidarr", "bookshelf", "prowlarr", "seerr")  # what Reelix's migrator reads
 
@@ -1163,7 +1165,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(404, b"Not found", "text/plain; charset=utf-8")
         if path == "/":
             path = "/dashboard.html"  # the landing page (DASH-239)
-        if path in MOVED_PAGES:  # an address that moved: the old one answers 301 with the new one, keeping what follows the page
+        if path in MOVED_PAGES:  # an address that moved (DASH-565, DASH-584): the old one answers 301 with the new one, keeping what follows the page
             query = urllib.parse.urlsplit(self.path).query
             return self.send(301, extra={"Location": MOVED_PAGES[path] + ("?" + query if query else ""), "Cache-Control": "no-cache"})
         if not path.endswith(".html") and "." not in posixpath.basename(path):
@@ -1371,6 +1373,8 @@ class Handler(BaseHTTPRequestHandler):
                     "ux_notes": bool(signed_in and app.config.data.get("ux_notes")),
                     # The plug-ins added: their menu items show only then (owner, 12 November 2026).
                     "plugins": plugins_admin.added(app.data_dir) if signed_in else [],
+                    # The name on Settings, Apps' media server tab (DASH-565): the one in use, "" for none.
+                    "media_server": self.media_server_name() if signed_in else None,
                 })
             if path == "/api/feedback" and method == "POST":
                 # Snaglist sends without cookies, so the key it was given while signed in stands in for them.
@@ -3371,6 +3375,12 @@ class Handler(BaseHTTPRequestHandler):
         token = app.sessions.create(days, app.session_version, remember)
         return {"Set-Cookie": self.session_cookie(token, days * 86400 if remember else None)}
 
+    def media_server_name(self):
+        """The active media server's name for the menu tab, from the settings alone (nothing is asked of the server)."""
+        from . import mediaserver
+        one = mediaserver.active(self.app.config.data)
+        return one.name if one else ""
+
     def media_servers_added(self):
         """The ids of the media server plug-ins that are added and active (DASH-565): a media server can be chosen only then."""
         from . import mediaserver, plugins_admin as pa
@@ -3708,7 +3718,7 @@ class Handler(BaseHTTPRequestHandler):
             from . import mediaserver
             if mediaserver.in_use(app.config.data, pid):  # DASH-565: Starboard would be left with no media server by accident
                 return self.error(409, f"{next(p['name'] for p in pa.basics(app.data_dir) if p['id'] == pid)} is your media server, so it stays on. "
-                                       "Choose another one, or none, in Settings, Media server first")
+                                       "Choose another one, or none, in Settings, Apps, the media server tab first")
         if what == "settings" and method == "PUT":
             return self.json(200, {"settings": pa.save_settings(app.data_dir, pid, self.body().get("settings") or {})})
         if method != "POST":

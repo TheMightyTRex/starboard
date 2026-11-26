@@ -1969,6 +1969,13 @@ function loadMore(box, options) {
   return window.SharedComponents?.loadMore(box, { auto: () => listLoading === "auto", ...options }) || null;
 }
 
+// Settings, Apps (DASH-565): one tab for the media server in use, named for it (Jellyfin, Plex or Emby; "Media server" when there
+// is none). The name comes with the session, so no extra request is made.
+function mediaServerTab(name) {
+  if (name === undefined || name === null) return;
+  $$('nav a[href="/settings-jellyfin.html"] .menu-tabs__label').forEach((n) => { n.textContent = name || "Media server"; });
+}
+
 // Settings, Plug-ins (DASH-318): the level 2 menu is Manage, Catalogue, then one tab for each plug-in added.
 function pluginTabs(list) {
   const nav = $('.site-header__tabs nav[aria-label="Plug-ins"]');
@@ -2096,6 +2103,7 @@ async function startPage() {
     const added = new Set((session.plugins || []).map((p) => p.id));
     $$("[data-plugin]").forEach((n) => { n.hidden = !added.has(n.dataset.plugin); });
     pluginTabs(session.plugins || []);
+    mediaServerTab(session.media_server);
     showVersion(session.version, session.repo, session.latest);
     upgradeNotice(session.upgrade);
     if (session.ux_notes) startFeedback(session).catch(() => { /* the page works without it */ });
