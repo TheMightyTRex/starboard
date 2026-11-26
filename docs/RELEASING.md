@@ -18,7 +18,11 @@ guide and the notes on GitHub, so they always say the same thing.
 3. **Notes.** Run `python3 tools/release_notes.py`. It writes `docs/releases/vX.Y.Z.md`.
 4. **Changelog.** `CHANGELOG.md` follows the design system's changelog rules (`docs/CHANGELOGS.md` in the
    design system). Each change goes under `## [Unreleased]` as it is made, under Added, Changed, Deprecated,
-   Removed, Fixed or Security, in that order, with every security fix under Security. At release time:
+   Removed, Fixed or Security, in that order, with every security fix under Security. **Each entry is one plain
+   sentence** of about 15 to 20 words, never over 25, after a short bold title: `- **Title.** What changed for the
+   reader.` Add a second short sentence only for a real warning or a number people need, and "Find out more in
+   [help topic](link)" when a topic exists. Keep the long detail, owner quotes and ticket numbers in `TASKS.md` and
+   the help, not in the changelog. The release entry in `starboard/releases.py` uses the same words. At release time:
    - rename `## [Unreleased]` to `## [X.Y.Z] (4 November 2026)`, with the release date written that way, and
      add a new, empty `## [Unreleased]` above it;
    - check it says the same as the release entry in `starboard/releases.py`, in the same types;
