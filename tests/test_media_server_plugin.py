@@ -170,7 +170,8 @@ class Routes(unittest.TestCase):
         self.assertEqual((one["builtin"], one["media_server"]), (True, True))
         self.assertEqual((got["media_server"]["active"], got["media_server"]["name"]), ("jellyfin", "Jellyfin"))
         built = next(b for b in got["builtin"] if b["id"] == "jellyfin")
-        self.assertTrue(built["added"] and built["media_server"])
+        self.assertTrue(built["added"] and built["media_server"] and built["recommended"])
+        self.assertFalse(next(b for b in got["builtin"] if b["id"] == "livetv")["recommended"])
         self.assertFalse(next(b for b in got["builtin"] if b["id"] == "livetv")["media_server"])
 
     def test_the_one_in_use_cannot_be_deactivated_or_removed(self):
