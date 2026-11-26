@@ -1,4 +1,4 @@
-// Settings, Alerts.
+// Settings, General, Alerts.
 
 // Alerts --------------------------------------------------------------------
 

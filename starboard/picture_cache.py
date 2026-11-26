@@ -1,7 +1,7 @@
 """The picture cache (owner, 12 November 2026: "are you caching the images? Remove old images after a period of time,
 with a clear cache in the settings"). Every poster, cover and logo Starboard shows is fetched once by the server and
 kept in data/posters, so browsers never call image sites. Pictures are fetched again after a week when shown; any
-not shown for four weeks are removed; Settings, Performance shows the size and has Clear the picture cache.
+not shown for four weeks are removed; Settings, General, Performance shows the size and has Clear the picture cache.
 Clearing only empties this cache: every picture comes back the next time a page shows it."""
 import os
 import time

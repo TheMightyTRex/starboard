@@ -38,7 +38,7 @@ const AppDetails = (() => {
       state.updateErrors = Object.fromEntries(errors.map((e) => [e.service, e.message]));
     },
     uptime: async () => { state.uptime = await api("/api/uptime"); },
-    numbers: async () => {  // the small numbers on cards: off in Settings, Performance saves a request per app
+    numbers: async () => {  // the small numbers on cards: off in Settings, General, Performance saves a request per app
       if (state.config?.performance?.card_numbers === false) { state.numbers = {}; state.sites = {}; return; }
       const got = await api(fresh("/api/numbers"));
       state.numbers = got.items;
@@ -213,7 +213,7 @@ const AppDetails = (() => {
     out.push(section("Addresses", "app-details-addr", facts.length ? el("dl", { class: "facts" }, facts)
       : el("p", { class: "muted", text: s.follows ? `No address. Starboard shows the status of ${service(s.follows)?.name || "the app it follows"}.` : "No address yet. Add one in Edit." })));
 
-    // Uptime, when Starboard watches in the background (Settings, Alerts).
+    // Uptime, when Starboard watches in the background (Settings, General, Alerts).
     out.push(section("Uptime", "app-details-uptime", uptimeBlock(s)));
 
     // The last checks Starboard made of this app since it started (kept in memory, up to 20).
@@ -318,7 +318,7 @@ const AppDetails = (() => {
     const row = u.items[s.id];
     if (!u.enabled && !row?.pct7 && row?.pct7 !== 0) {
       return el("p", { class: "muted" }, "Starboard keeps uptime history only while it watches in the background. Activate it in ",
-        el("a", { href: "/settings-alerts.html", text: "Settings, Alerts" }), ".");
+        el("a", { href: "/settings-general-alerts.html", text: "Settings, General, Alerts" }), ".");
     }
     if (!row || row.pct24 === null) return el("p", { class: "muted", text: "No history yet. It starts with the next check." });
     const pct = (v) => `${String(v).replace(/\.0$/, "")}%`;

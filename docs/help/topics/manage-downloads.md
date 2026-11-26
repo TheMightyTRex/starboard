@@ -151,7 +151,7 @@ This needs the full version of Reelix. Read [Switch between the two versions of 
 
 - The page updates itself while it is open. Select **Pause updates** to stop that while you read, and select it
   again to carry on. **Check again** asks the apps straight away. To change how often it updates, go to
-  **Settings**, then **Performance**, activate **More settings**, and change **Downloads page updates**.
+  **Settings**, then **General**, then **Performance**, activate **More settings**, and change **Downloads page updates**.
 - **Open the queue in** and the app's name opens the app's own queue in a new tab, for anything Starboard
   cannot do.
 - The tiles show each download app's speed. With a VPN (Gluetun), a tile shows whether it is connected. Without

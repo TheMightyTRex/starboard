@@ -1,7 +1,7 @@
 // Monitor: live charts while the page is open, using the same line chart as Overview. The server sends raw
 // counters; rates are worked out here. Charts and thread meters update in place, so focus stays where it is.
 
-let every = 2; // seconds between readings; Settings, Performance
+let every = 2; // seconds between readings; Settings, General, Performance
 let POINTS = 90; // 3 minutes of readings
 const points = [];
 let previous = null;

@@ -1228,7 +1228,7 @@ with urllib.request.urlopen(req, timeout=10) as r:
 
 ### POST /api/v1/alerts/test
 
-Send a test alert to the channel set in Settings, Alerts.
+Send a test alert to the channel set in Settings, General, Alerts.
 
 - **Key:** a key made with Read and manage whose scopes are empty or include `system` (processor, memory, disks and alerts). A key without it gets `404 not_found`.
 - **Needs:** `manage`. A read key gets `403 right_needed`. Send a JSON body; `Idempotency-Key` makes a retry safe.

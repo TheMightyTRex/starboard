@@ -60,6 +60,30 @@ Jellyfin tools stay with Jellyfin.
 
 Starboard sends the key in a header, never in an address, so it does not reach a log.
 
+### Install Plex or Emby with Starboard
+
+You can run all three media servers side by side to try them. Only one is your media server at a time; the others are
+installed and not in use. Plex and Emby are not part of Basics or Full install; you add them here.
+
+1. Go to **System**, then **Apps**, then **Install apps**.
+2. Under **You can add**, select **Add** beside **Plex** or **Emby**, then follow the set-up's steps to the end. Add the
+   other one afterwards if you want both. Starboard gives each its own folders in your settings folder and mounts your
+   media folder in each as **read only**, so neither can change your files. Each is capped at 2 GB of memory and at 4
+   processors, or fewer if this computer has fewer. Plex uses port 32400 and Emby uses port 8097, because Jellyfin has 8096.
+
+   ![Install apps, under You can add, with Add beside Plex and Emby (step 2) outlined, with example data](../images/choose-your-media-server-9-install.png)
+
+3. When the apps run, Starboard adds each to **Manage apps** as the kind **Plex** or **Emby**, with its address.
+4. Finish each one's set-up, which Starboard lists under **Still to set up**:
+   - **Plex** needs a Plex account for its first set-up. Open Plex on port 32400, sign in, and add your libraries from
+     `/data/media`. Starboard cannot make or enter the account for you. Then add Plex's token in **Manage apps**.
+   - **Emby** needs no account. Open it on port 8097, follow its first-run steps and add your libraries from
+     `/data/media`. Then make an API key in its **Dashboard** and add it in **Manage apps**.
+5. Choose the media server to use, as set out under **Choose another media server, or none**.
+
+Emby's hardware video conversion and recording need Emby Premiere, and Plex's hardware conversion needs Plex Pass: Starboard
+does not change that.
+
 ### Switch with the wizard
 
 The wizard is for moving over from one media server to another. It changes nothing until its last button, and the way
@@ -89,6 +113,7 @@ back, set out under Go back, still lasts 24 hours.
    ![The Switch media server panel, step 3, with Switch to Plex (step 5) outlined, with example data](../images/choose-your-media-server-12-wizard-switch.png)
 
 A plug-in that waits is not stopped: it keeps its settings and carries on when its media server is back.
+
 
 ### Go back
 
