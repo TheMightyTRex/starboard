@@ -1,5 +1,5 @@
 /*
- * Shared design tokens for Storyarr and Starboard (version 1, 2 November 2026).
+ * Shared design tokens for Starboard, its plug-ins and Stallboard (version 1, 2 November 2026).
  *
  * Role names only: components use these and nothing else, so both apps look like one family and a
  * theme is a change of values, not of components. Three themes: Light, Dark, High contrast (light and
