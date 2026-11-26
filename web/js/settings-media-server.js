@@ -16,8 +16,8 @@ async function startMediaServer() {
   document.title = document.title.replace(/^[^·]*/, `${name} `);
   const summary = $("#ms-summary");
   if (summary) summary.textContent = ms.active === "jellyfin" ? "Live TV, moving your watch history to Jellyfin, defaults for every user, and which media server Starboard uses."
-    : ms.active ? `${name} is the media server Starboard shows on the dashboard, in Library, in Activity and in System. Choose another one below, or check that ${name} answers.`
-      : "No media server is in use. Choose one below: Starboard shows the one you choose on the dashboard, in Library, in Activity and in System.";
+    : ms.active ? `${name} is the media server Starboard shows on the dashboard, in Library, in Activity and in System. Choose another one under Choose a media server, or check that ${name} answers.`
+      : "No media server is in use. Choose one under Choose a media server: Starboard shows the one you choose on the dashboard, in Library, in Activity and in System.";
   const said = el("div", { class: "stack-2", role: "status", "aria-live": "polite", id: "ms-said", tabindex: "-1" });
   const say = (kind, title, text, ...more) => { said.replaceChildren(notice(kind, title, text), ...more.filter(Boolean)); };
   const current = ms.available.find((a) => a.id === ms.active);
