@@ -76,5 +76,5 @@ class PlainTextBoxes(unittest.TestCase):
 class General(unittest.TestCase):
     def test_general_holds_the_five_cards_and_plug_in_pages_have_tabs_from_two(self):
         js = (ROOT / "web" / "js" / "plugins.js").read_text(encoding="utf-8")
-        self.assertIn('groupSection(`pl-${p.id}-general`, "General", stateSec, versions, jobs, may, remove)', js)
+        self.assertIn('groupSection(`pl-${p.id}-general`, "General", stateSec, slot, versions, jobs, may, remove)', js)
         self.assertIn('data-topic-min="2"', (ROOT / "web" / "settings-plugin.html").read_text(encoding="utf-8"))

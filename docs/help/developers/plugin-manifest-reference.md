@@ -66,6 +66,7 @@ people read every one, and the plug-in's API key gets only the read permissions 
 | `jellyfin:libraries` | Have Starboard add its own libraries to Jellyfin, for folders it fills in your media folder (API 1.15) | medium | none |
 | `library:holding` | Move films and series from your library into the holding folder in your media folder, and put them back (API 1.15) | high | none |
 | `alerts:send` | Send alerts through Starboard, to where it sends its own (ntfy, Gotify, a webhook, and plug-ins that pass them on) (API 1.17). The one thing the plug-in's read-only key may change: read [Sending alerts](plugin-api-reference.md#sending-alerts-api-117) | low | none |
+| `slot:media-server` | Be Starboard's media server: answer for the dashboard panel, Library, Activity and System, using the address and key kept in Settings, Apps. Reserved for plug-ins that come with Starboard (Jellyfin first); any other plug-in that asks for it is refused for now | high | none |
 
 The plug-in's risk is its highest permission's risk. Read [What a plug-in can change](../basics/what-plugins-can-change.md)
 for how this is shown to people.

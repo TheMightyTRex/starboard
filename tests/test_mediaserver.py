@@ -127,7 +127,7 @@ class Slot(unittest.TestCase):
         with mock.patch.object(services, "_fetch", side_effect=AssertionError("nothing is asked of the server")):
             got = mediaserver.state({"services": [JF], "extras": {}})
             self.assertEqual((got["active"], got["name"], got["configured"], got["page"]), ("jellyfin", "Jellyfin", True, "/settings-jellyfin.html"))
-            self.assertEqual(got["available"], [{"id": "jellyfin", "name": "Jellyfin"}])
+            self.assertEqual(got["available"], [{"id": "jellyfin", "name": "Jellyfin", "page": "/settings-jellyfin.html"}])
             self.assertIn("restart", got["capabilities"])
             self.assertFalse(mediaserver.state({"services": [], "extras": {}})["configured"])
             none = mediaserver.state({"services": [JF], "extras": {"media_server": ""}})

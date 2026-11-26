@@ -367,7 +367,14 @@ function dropStyleOf(p) {
 }
 
 // Activate or Deactivate one plug-in.
-function stateButton(p, redraw, primary = false) {
+// The media server slot (DASH-565): a plug-in that fills it is in use or not, in words and with a shape, never by colour
+// alone. The one in use stays on until another is chosen (Settings, Media server), so it has no Deactivate or Remove.
+const SLOT_IN_USE = ["In use as media server", "success", "circle-check"];
+const SLOT_NOT_IN_USE = ["Not in use", "muted", "minus"];
+const inUse = (p, ms) => !!(p.media_server && ms && ms.active === p.id);
+const slotChip = (p, ms) => (p.media_server ? chip(...(inUse(p, ms) ? SLOT_IN_USE : SLOT_NOT_IN_USE)) : null);
+function stateButton(p, redraw, primary = false, ms = null) {
+  if (inUse(p, ms)) return el("span", { class: "visually-hidden", text: `${p.name} stays active while it is your media server` });
   if (stateOf(p) === "needs-setup") {  // set up first (DASH-330): Activate waits until the required settings are in
     return el("button", { type: "button", class: "btn btn--primary", onclick: () => {
       // The Settings part may be in a topic tab that is not showing: show it, then go to the first empty required field.
@@ -617,6 +624,7 @@ function whatsNew(p) {
 // "plugins need to show the version number in the state page in settings").
 function stateWords(p) {
   const version = p.version ? `Version ${p.version}` : "Version not known";
+  if (p.builtin && p.media_server) return `${version}, built into Starboard: it runs inside Starboard, with no container of its own, and updates with Starboard.`;
   if (p.builtin) return `${version}, built into Starboard: it runs on Starboard's own image and updates with Starboard.`;
   return `${version}${p.author ? `, by ${p.author}` : ""}.`;
 }
@@ -648,7 +656,7 @@ function topicOf(node) {
 // A plug-in's own page, Settings, Plug-ins, <its name> (DASH-318), laid out like every Settings page (DASH-307):
 // General first (its state and its one button, versions, jobs, what it may do and Remove, a card each), then its web
 // page, styles, settings by group, its screens and its own buttons (Actions).
-function pluginPage(p, redraw) {
+function pluginPage(p, redraw, ms = null) {
   const said = el("p", { class: "small", role: "status" });  // what a button did, said here rather than in a toast
   const buttons = (p.actions || []).map((a) => {
     const b = el("button", { type: "button", class: "btn", disabled: p.state !== "enabled" }, a.label);
@@ -675,8 +683,8 @@ function pluginPage(p, redraw) {
   // State (issue #8): the chip at the right of the heading's line and the version under it, in the grey band; Activate
   // or Deactivate first in the white body under the band (owner, 19 November 2026).
   const stateSec = section(`pl-${p.id}-state`, "State", stateWords(p),
-    headChip(...chipOf(p)), fix || healthNote(p) || (p.message ? el("p", { class: "small", text: p.message }) : null));
-  $(".settings-section__head", stateSec).after(el("div", { class: "actions" }, first));
+    headChip(...chipOf(p)), p.media_server ? el("div", { class: "stack-2" }, el("p", {}, slotChip(p, ms)), inUse(p, ms) ? el("p", { class: "small", text: "It stays active while it is your media server." }) : null) : null, fix || healthNote(p) || (p.message ? el("p", { class: "small", text: p.message }) : null));
+  if (!inUse(p, ms)) $(".settings-section__head", stateSec).after(el("div", { class: "actions" }, first));
   const news = whatsNew(p);
   if (news) stateSec.append(news);
   if (offerSaid) { stateSec.append(notice("success", offerSaid)); offerSaid = ""; }
@@ -690,10 +698,13 @@ function pluginPage(p, redraw) {
   const jobs = p.jobs?.length ? section(`pl-${p.id}-jobs`, "Jobs", "Starboard runs these for it, and lists them in System with when each last ran.",
     el("ul", {}, p.jobs.map((j) => el("li", { text: j }))), el("a", { class: "btn btn--quiet", href: "/system.html#jobs-panel" }, "Open System, Jobs")) : null;
   const may = section(`pl-${p.id}-may`, "What it may do", "What you allowed when you installed it.", pluginPermissions(p.permissions));
-  const remove = dangerSection(`pl-${p.id}-remove`, "Remove", "Stops it and takes it off this Starboard. Its folder is kept.",
-    el("div", { class: "actions" }, removeButton(p, () => { location.href = "/settings-plugins.html"; })));
+  const remove = inUse(p, ms)
+    ? section(`pl-${p.id}-remove`, "Remove", `${p.name} is your media server, so it stays added and active.`)
+    : dangerSection(`pl-${p.id}-remove`, "Remove", "Stops it and takes it off this Starboard. Its folder is kept.",
+      el("div", { class: "actions" }, removeButton(p, () => { location.href = "/settings-plugins.html"; })));
+  const slot = p.media_server ? mediaServerSection(p, ms) : null;
   return [
-    groupSection(`pl-${p.id}-general`, "General", stateSec, versions, jobs, may, remove),
+    groupSection(`pl-${p.id}-general`, "General", stateSec, slot, versions, jobs, may, remove),
     webSection(p),
     adoptSection(p, redraw),
     p.looks?.length ? section(`pl-${p.id}-styles`, "Styles", "Colours for Starboard from this plug-in. Choose one for this browser, as in Display.", styleGallery(p)) : null,
@@ -1365,7 +1376,7 @@ function testerSection() {
 
 // Plug-ins that ship inside Starboard, such as Live TV (DASH-285): Add asks for the password and activates it.
 function builtinSection(list, redraw) {
-  const rows = list.filter((b) => !b.added);
+  const rows = list.filter((b) => !b.added && !b.media_server);  // media servers have their own section
   if (!rows.length) return null;
   return section("pl-builtin", "Built into Starboard", "Plug-ins that come with Starboard. Add one only if you want it.",
     el("ul", { class: "rows" }, rows.map((b) => {
@@ -1379,6 +1390,44 @@ function builtinSection(list, redraw) {
       return el("li", { class: "row" }, pluginLogo(b), el("div", {}, el("div", { class: "row__title", text: b.name }),
         el("div", { class: "row__meta", text: b.why_not ? `${b.description} Not here: ${b.why_not}.` : b.description })),
         el("div", { class: "row__side" }, add));
+    })));
+}
+
+// What a media server plug-in does for Starboard, and where its own settings are (DASH-565).
+function mediaServerSection(p, ms) {
+  const mine = (ms?.available || []).find((a) => a.id === p.id);
+  const using = inUse(p, ms);
+  return section(`pl-${p.id}-slot`, "Media server",
+    using ? `${p.name} answers for the dashboard panel, Library, Activity and System. Starboard uses one media server at a time.`
+      : `${p.name} is added but another media server is in use, or none.`,
+    using && ms.configured === false ? notice("warning", `${p.name} is not set up yet`, "Add its address and key in Settings, Apps, and the dashboard panel will show it.") : null,
+    el("div", { class: "actions" },
+      mine?.page ? el("a", { class: "btn", href: mine.page }, icon("settings"), `Open ${p.name} settings`) : null));
+}
+
+// Media servers in the catalogue (DASH-565): the ones that come with Starboard, with Jellyfin recommended. Starboard
+// uses one at a time; adding one here does not switch to it.
+function mediaServerCatalogue(list, ms, redraw) {
+  const rows = list.filter((b) => b.media_server);
+  if (!rows.length) return null;
+  return section("pl-media-servers", "Media servers", "Plug-ins that fill Starboard's one media server place: the dashboard panel, Library, Activity and System. Starboard uses one at a time, and adding one does not switch to it.",
+    el("ul", { class: "rows" }, rows.map((b) => {
+      let side;
+      if (b.added) side = el("a", { class: "btn btn--quiet btn--compact", href: `/settings-plugin.html?id=${encodeURIComponent(b.id)}` }, icon("circle-check"), "Added",
+        el("span", { class: "visually-hidden", text: ` ${b.name}` }));
+      else {
+        side = el("button", { type: "button", class: "btn btn--compact" }, icon("plus"), "Install…", el("span", { class: "visually-hidden", text: ` ${b.name}` }));
+        side.addEventListener("click", async () => {
+          const password = await installWarning(b, { builtin: true, opener: side });
+          if (password === null) return;
+          try { await api("/api/plugins/add-builtin", { method: "POST", body: { id: b.id, password } }); announce(`${b.name} installed and active`); redraw(); }
+          catch (err) { problem(err.message, side); }
+        });
+      }
+      return el("li", { class: "row" }, pluginLogo(b), el("div", {},
+        el("h4", { class: "row__title" }, b.name, " ", chip("Recommended", "info"), ms && ms.active === b.id ? [" ", chip(...SLOT_IN_USE)] : null),
+        el("div", { class: "row__meta", text: b.description }), el("div", { class: "row__meta", text: `Version ${b.version}, built into Starboard` })),
+        el("div", { class: "row__side" }, side));
     })));
 }
 
@@ -1592,11 +1641,11 @@ async function startPlugins() {
           // Four fixed columns, so the chips, Open, Settings and the state button line up from row to row (issue #10;
           // owner, 13 November 2026: a plug-in with its own page, such as Jellystat, pushed its row out of line). The
           // Open column is there, empty, for a plug-in without a page of its own.
-          el("div", { class: "row__side plugin-row__side" }, el("span", { class: "plugin-row__chips" }, chip(...chipOf(p)), p.update ? chip("Update", "info") : null),
+          el("div", { class: "row__side plugin-row__side" }, el("span", { class: "plugin-row__chips" }, chip(...chipOf(p)), slotChip(p, r.media_server), p.update ? chip("Update", "info") : null),
             el("span", { class: "plugin-row__open" }, ...(p.state === "enabled" ? webLinks(p, true) || [] : [])),
             el("a", { class: "btn btn--quiet btn--compact", href: `/settings-plugin.html?id=${encodeURIComponent(p.id)}` }, icon("settings"), "Settings",
               el("span", { class: "visually-hidden", text: ` for ${p.name}` })),
-            stateButton(p, draw))))),
+            stateButton(p, draw, false, r.media_server))))),
         el("div", { class: "actions" }, el("a", { class: "btn", href: "/settings-plugins-catalogue.html" }, icon("plus"), "Add a plug-in"))),
       dangerSection("pl-all", "All plug-ins at once", "Stops every plug-in, for example while you find the cause of a problem.", el("div", { class: "actions" }, stopAll)));
   };
@@ -1665,6 +1714,7 @@ async function startCatalogue() {
     };
     holder.replaceChildren(...[
       ...setupOffers(r, c, draw),
+      mediaServerCatalogue(r.builtin || [], r.media_server, draw),
       builtinSection(r.builtin || [], draw),
       ...c.catalogues.map((cat, n) => {
         const rows = c.plugins.filter((e) => e.catalogue === cat.name && e.own === cat.own);
@@ -1767,7 +1817,7 @@ async function startPluginPage() {
     else title.parentElement.firstElementChild.replaceWith(pluginLogo(p, { alt: true }));
     $("#plugin-summary").textContent = p.description || "";
     document.title = document.title.replace(/^[^·]*·/, `${p.name} ·`);
-    holder.replaceChildren(...pluginPage(p, draw));
+    holder.replaceChildren(...pluginPage(p, draw, r.media_server));
   };
   draw();
 }

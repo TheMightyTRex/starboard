@@ -29,7 +29,7 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   // Radio's, Performance's and Security's level 2 pages (DASH-391)
   "settings-radio-link.html", "settings-radio-library.html", "settings-radio-logos.html", "settings-performance-pictures.html",
   "settings-security-password.html", "settings-security-signin.html", "settings-security-keys.html", "settings-security-sessions.html",
-  "settings-plugins.html", "settings-plugins-catalogue.html", "settings-plugin.html?id=direct-play"];  // with the set-up's Audio description offer (DASH-399)
+  "settings-plugins.html", "settings-plugins-catalogue.html", "settings-plugin.html?id=direct-play", "settings-plugin.html?id=jellyfin"];  // with the set-up's Audio description offer (DASH-399)
 const SECRET = "made-up-journey-key-7f3a9c1e5b";
 const XSS = `<img src=x onerror="window.__xss='name'">`;
 
