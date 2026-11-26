@@ -291,7 +291,7 @@ def cancel():
     return {"state": "none"}
 
 
-def start(data_dir, sid, way="browser", read_only=False):
+def start(data_dir, sid, way="browser", read_only=False, dest=None):
     """Starts signing in to a service: the link (browser), the code (phone), or nothing to wait for (keys, paste). read_only asks the service only to read files (Bring in media)."""
     global _session
     s = service(sid)
@@ -303,7 +303,8 @@ def start(data_dir, sid, way="browser", read_only=False):
         raise CloudError("Complete on the phone is not offered for this service. Choose Complete in this browser")
     cancel()
     sess = {"id": secrets.token_hex(8), "service": sid, "way": way if s["signin"] == "oauth" else s["signin"], "state": "starting",
-            "data_dir": data_dir, "started": time.time(), "deadline": time.time() + SIGNIN_LIMIT, "read_only": bool(read_only)}
+            "data_dir": data_dir, "started": time.time(), "deadline": time.time() + SIGNIN_LIMIT, "read_only": bool(read_only),
+            "dest": dest or "", "rname": remote_name(data_dir, sid, dest)}
     with _lock:
         _session = sess
     _note(sess, "info", "started" + (" (asking only to read files)" if read_only else ""))
@@ -322,6 +323,31 @@ def start(data_dir, sid, way="browser", read_only=False):
         cancel()
         raise
     return _public(sess)
+
+
+def remote_name(data_dir, sid, dest=None):
+    """The rclone remote's name for a connection. The first keeps starboard-cloud, so a place made before several places
+    keeps working; each next one has its own (starboard-onedrive, starboard-onedrive-2), so one sign-in never overwrites
+    another. Signing in again to a place keeps that place's name."""
+    used = {}
+    for d in backup_copies.destinations(data_dir):
+        if d["kind"] == "rclone" and d["remote"]:
+            used[d["remote"].split(":", 1)[0]] = d["id"]
+    if dest:
+        for name, did in used.items():
+            if did == dest and re.match(r"^[A-Za-z0-9_.-]{1,60}$", name):
+                return name
+    if REMOTE not in used:
+        return REMOTE
+    for n in range(1, 21):
+        name = f"starboard-{sid}" if n == 1 else f"starboard-{sid}-{n}"
+        if name not in used:
+            return name
+    return f"starboard-{sid}-{secrets.token_hex(2)}"
+
+
+def _rname(sess):
+    return sess.get("rname") or REMOTE
 
 
 def _mine(sid):
@@ -577,11 +603,11 @@ def _rclone_token(got):
     return json.dumps(tok, separators=(",", ":"))
 
 
-def _section(lines):
+def _section(lines, rname=REMOTE):
     for k, v in lines:
         if any(c in str(v) for c in "\r\n") or not re.match(r"^[a-z_]+$", k):
             raise ValueError("That sign-in has a line break in it, so Starboard did not keep it")
-    return f"[{REMOTE}]\n" + "".join(f"{k} = {v}\n" for k, v in lines if v != "")
+    return f"[{rname}]\n" + "".join(f"{k} = {v}\n" for k, v in lines if v != "")
 
 
 def _signed_in(sess, got, own_client=None):
@@ -603,7 +629,7 @@ def _signed_in(sess, got, own_client=None):
         sess["account"] = str((drive.get("owner") or {}).get("user", {}).get("displayName") or "")[:100]
     lines.append(("token", token))
     with _lock:
-        sess.update(config=_section(lines), state="signed-in", error="", deadline=None)
+        sess.update(config=_section(lines, _rname(sess)), state="signed-in", error="", deadline=None)
         _end(sess)
     _note(sess, "info", "signed in" + (f", OneDrive {dict(lines).get('drive_type')}" if sid == "onedrive" else ""))
 
@@ -635,12 +661,12 @@ def details(sid, given):
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write(v)
             args.append(f'{k}="$(cat /c/v/{k})"')
-        script = (f"rclone --config /c/rclone.conf config create {REMOTE} {RCLONE_TYPE[sess['service']]} {' '.join(args)} "
+        script = (f"rclone --config /c/rclone.conf config create {_rname(sess)} {RCLONE_TYPE[sess['service']]} {' '.join(args)} "
                   "--obscure --non-interactive >/c/said 2>&1; code=$?; chown -R $(stat -c %u:%g /c) /c 2>/dev/null; exit $code")
         code, said = RUN.short(sess, script, work)
         backup_copies.log_detail(sess.get("data_dir"), f"Connecting {_name(sess)}, making the remote", said, code)
         config = _read(os.path.join(work, "rclone.conf"))
-        if code or f"[{REMOTE}]" not in config:
+        if code or f"[{_rname(sess)}]" not in config:
             raise CloudError("rclone could not use those details: " + (said.strip().splitlines() or ["no reason given"])[-1][:200])
         with _lock:
             sess.update(config=config, state="signed-in")
@@ -650,7 +676,7 @@ def details(sid, given):
 
 
 def _remote_root(sess):
-    return sess.get("remote") or f"{REMOTE}:"
+    return sess.get("remote") or f"{_rname(sess)}:"
 
 
 def _with_config(sess, script, label):
@@ -789,13 +815,25 @@ def save(data_dir, sid, keep, way_remembered=None):
         raise ValueError("Keep the newest: give a number from 1 to 50") from None
     if not 1 <= keep <= 50:
         raise ValueError("Keep the newest: give a number from 1 to 50")
-    old = backup_copies.settings(data_dir)
-    new = {**old, "kind": "rclone", "remote": _target(sess), "keep": keep, "service": sess["service"],
+    dest = sess.get("dest") or ""
+    if dest and not backup_copies._pick(data_dir, dest):
+        dest = ""  # the place was removed while signing in: it is added again
+    if not dest:
+        dest = backup_copies.new_id(data_dir)
+        old = backup_copies.blank(data_dir)
+        old["id"] = dest
+        if len(backup_copies.destinations(data_dir)) >= backup_copies.MAX_PLACES:
+            raise ValueError(f"Starboard keeps up to {backup_copies.MAX_PLACES} places. Remove one first")
+    else:
+        old = backup_copies.settings(data_dir, dest)
+    new = {**old, "id": dest, "kind": "rclone", "remote": _target(sess), "keep": keep, "service": sess["service"], "enabled": True,
+           "account": sess.get("account") or old.get("account", ""),
            "signin_way": sess["way"] if sess["way"] in ("browser", "phone") else old.get("signin_way", "")}
-    sec = {**backup_copies.secrets(data_dir), "rclone_config": sess["config"]}
-    backup_copies.save(data_dir, new, sec)
+    sec = {**(backup_copies.secrets(data_dir, dest) if backup_copies._pick(data_dir, dest) else {"smb_password": ""}), "rclone_config": sess["config"]}
+    new.pop("detailed_log", None)
+    backup_copies.save(data_dir, new, sec, dest)
     result = {**sess["test"], "where": new["remote"]}
-    backup_copies.save_test(data_dir, result)
+    backup_copies.save_test(data_dir, result, dest)
     with _lock:
         global _session
         _end(sess, keep_config=False)

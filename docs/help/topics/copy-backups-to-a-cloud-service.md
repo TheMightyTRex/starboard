@@ -3,13 +3,18 @@
 
 # Copy backups to a cloud service
 
-Starboard can copy each new full backup to a cloud service, so a failed disk, a theft or a fire does not take every
-copy. **Connect a cloud service** signs in, chooses the folder and tests it in 5 steps, in a slide-out. The backups
-are encrypted with your backup password before they leave this computer.
+Starboard can copy each new full backup to a cloud service, and to several other places at once, so a failed disk, a
+theft or a fire does not take every copy. **Where backups go** lists every place: a folder on this server or the pool,
+an SMB share, an NFS share, and each cloud service you connect. Each place has its own switch, its own number of
+backups to keep, and its own last copy, shown in words and with a shape. The backups are encrypted with your backup
+password before they leave this computer.
+
+You can connect more than one cloud service, and the same service more than once. Each connection keeps its own rclone
+remote, so connecting OneDrive never replaces Google Drive.
 
 The services: Google Drive, OneDrive, Dropbox, Backblaze B2, an S3-compatible service (such as Amazon S3,
 Cloudflare R2, Wasabi or MinIO), Nextcloud or another WebDAV server, and an SFTP server. If you already use rclone,
-you can paste your own remote instead.
+you can use your own remote instead.
 
 ## Before you begin
 
@@ -20,28 +25,63 @@ you can paste your own remote instead.
 ## Steps
 
 1. Go to **Settings**, then **General**, then **Backup and restore**.
-2. Find **Copies off this computer** and select **A cloud service**.
+2. Find **Where backups go**. Each place has a switch, **Test**, **Change** and **Remove**. A new Starboard has no
+   places yet.
 
-   ![Settings, General, Backup and restore, with A cloud service (step 2) outlined, with example data](../images/copy-backups-to-a-cloud-service-1-cloud.png)
+   ![Where backups go, with the switch for Google Drive (step 2) outlined, with example data](../images/copy-backups-to-a-cloud-service-1-places.png)
 
-3. Select **Connect a cloud service**. A slide-out opens.
+3. Under **Add a place**, select the service, such as **OneDrive**. A slide-out opens.
 
-   ![Copies off this computer with A cloud service chosen, with Connect a cloud service (step 3) outlined, with example data](../images/copy-backups-to-a-cloud-service-2-connect.png)
+   ![Add a place with OneDrive (step 3) outlined, with example data](../images/copy-backups-to-a-cloud-service-2-add.png)
 
-4. **Choose a service**, then select **Continue**.
+4. **Sign in.** For Google Drive and OneDrive, choose **Complete on the phone** or **Complete in this browser**. What
+   you do depends on the service: read [Signing in to each service](#signing-in-to-each-service). You sign in on the
+   service's own page. Starboard never receives your password.
 
-   ![The Connect a cloud service panel, with a service chosen and Continue (step 4) outlined, with example data](../images/copy-backups-to-a-cloud-service-3-choose.png)
+   ![The OneDrive sign-in, with Complete in this browser (step 4) outlined, with example data](../images/copy-backups-to-a-cloud-service-3-signin.png)
 
-5. **Sign in.** What you do depends on the service. Read [Signing in to each service](#signing-in-to-each-service).
-6. **Choose the folder.** **Make a new folder (recommended)** is chosen, named `starboard-backups`. You can change
+5. **Choose the folder.** **Make a new folder (recommended)** is chosen, named `starboard-backups`. You can change
    the name, or choose a folder that is there already. Select **Continue to the test**.
-7. **Test the connection.** Starboard makes the folder, writes a small file, reads it back and removes it. Each
+6. **Test the connection.** Starboard makes the folder, writes a small file, reads it back and removes it. Each
    check shows **Done** when it works. Starboard then shows **Connected**. Select **Continue**.
-8. **Check and save.** Enter how many backups to keep there in **Keep the newest** (5 unless you change it) and
+7. **Check and save.** Enter how many backups to keep there in **Keep the newest** (5 unless you change it) and
    **Your Starboard password**. Select **Save and finish**.
 
-The slide-out closes and **Copies off this computer** shows "Connected to" with the service and the folder. Each new
-full backup is copied there, and the oldest there is removed once there are more than you keep.
+The slide-out closes and the service is in the list, activated. Each new full backup is copied to it, and the oldest
+there is removed once there are more than you keep. To add another service, select it under **Add a place** and go
+through the steps again.
+
+## When a backup counts as safe
+
+At the top of **Where backups go**, Starboard says **Safe** or **Not yet safe**. A backup is safe only when every place
+that is activated has copied it and read it back. If a place fails, the others are still made, and an alert says
+which place failed.
+
+## Change a place
+
+- **Switch:** deactivate a place to leave it out of new backups. It keeps its settings.
+- **Test:** checks the place again. It writes a small file, reads it back, removes it and checks there is room for the
+  newest backup. The result shows beside the place: **Connected** with when it was tested, or **Not connected** with
+  what to do. Starboard keeps the last result.
+- **Change:** a cloud service opens its sign-in and folder steps again. A folder or a share opens its form.
+- **Remove:** Starboard forgets the place's password or sign-in. Copies already there stay.
+- **Copy the newest full backup now** copies to every place that is activated.
+
+## Server settings backup, encrypted
+
+The server's own backup job writes a zip of the apps' settings. It holds API keys and passwords, so Starboard sends it
+to the same places only after encrypting it with rclone crypt. The plain file is never uploaded.
+
+1. Under **Server settings backup, encrypted**, select **Make the key**. Starboard asks for your password.
+2. Starboard shows the key once. Select **Copy the key** or **Save the key as a file**, store it in your password manager and
+   on paper, then select **I have stored it**. Without it the copies cannot be opened.
+
+   ![Server settings backup, encrypted, with Make the key (step 1) outlined, with example data](../images/copy-backups-to-a-cloud-service-4-key.png)
+
+3. The server's backup job asks Starboard to send each new zip. You can also select **Copy the newest server settings
+   backup now**. Each place shows **Encrypted, copied and read back** or the reason it failed.
+
+Each place keeps the newest 2 settings zips unless you change it with **Change**, because each is large.
 
 ## Signing in to each service
 
@@ -109,14 +149,7 @@ and **Password**, then select **Continue**.
 
 If you made a remote with rclone already, choose **Your own rclone remote**. Enter it as `name:folder` and paste the
 part of your `rclone.conf` from `[name]` to the next `[`. The command `rclone config file` shows where your
-`rclone.conf` is. You can also select **Paste your own rclone remote instead** on **Copies off this computer**.
-
-## Test the connection later
-
-**Test connection** on **Copies off this computer** checks the place again at any time. It writes a small file,
-reads it back, removes it and checks there is room for the newest backup. The result shows beside the place:
-**Connected** with when it was tested, or **Not connected** with what to do. Starboard keeps the last result, so it
-shows when you open the page again.
+`rclone.conf` is. You can also paste it in the form that **Change** opens on a place you made that way.
 
 ## Things to note
 
@@ -125,14 +158,14 @@ shows when you open the page again.
 - Signing in, the folder list, the test and each copy run in a short-lived helper. It is removed when it finishes,
   and when you close the slide-out part way.
 - Closing the slide-out before **Save and finish** saves nothing.
-- To stop copying, select **Stop making copies**. The copies already there stay.
+- To stop copying to a place, deactivate it, or select **Remove**. The copies already there stay.
 - Each step of signing in goes to Starboard's log, on **System**, **Logs**: when it started, when the sign-in page was
   ready, when the address was pasted back, and why one did not finish. The sign-in's address, code and token are never
   written.
 
 ## Detailed log for backup connections
 
-**Detailed log for backup connections**, at the end of **Copies off this computer**, adds the service's own words for
+**Detailed log for backup connections**, at the end of **Where backups go**, adds the service's own words for
 each step to Starboard's log: each **Test connection**, each copy, and each step of connecting a cloud service, such
 as the reason Microsoft or Google gave for refusing a sign-in. Lines with a password, a key, a token or a sign-in code
 are left out, and the log takes out addresses and names as it does everywhere. It is off unless you choose it, and it

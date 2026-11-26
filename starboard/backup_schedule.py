@@ -30,6 +30,9 @@ KEEP = {"monthly": 6, "weekly": 4, "nightly": 7}
 HOUR = 3
 REMIND_DAYS = 30
 STATE = "backup-schedule.json"
+NO_KEY = ("No full backup was made: Starboard is not keeping a backup password, so it cannot make one by itself. "
+          "Go to Settings, General, Backup and restore, Schedule, and keep the password")
+PERIOD_DAYS = {"monthly": 31, "weekly": 7, "nightly": 1}
 
 
 def keep_for(mode):
@@ -151,7 +154,7 @@ class Scheduler:
         """Makes the scheduled backups now. Returns what happened in one sentence."""
         app, mode = self.app, self.mode()
         keep = keep_for(mode)
-        said = []
+        said, problems = [], []
         saved = full_backup.saved_key(app.data_dir)
         if saved:
             try:
@@ -160,6 +163,13 @@ class Scheduler:
                 said.append(self._wait_full())
             except full_backup.BackupError as e:
                 said.append(f"The full backup did not start: {e}")
+                problems.append(said[-1])
+        else:
+            # 26 November 2026: with no kept password this used to say nothing about the full backup, so the schedule
+            # looked healthy for two weeks while no full backup was made. It now says so, in the page and as an alert.
+            problems.append(NO_KEY)
+            if backup.server_status()["can_run"]:  # with nothing else done, "Nothing was backed up" below says it
+                said.append(NO_KEY)
         if backup.server_status()["can_run"]:
             try:
                 backup.request_server_backup(keep=keep, scheduled=True)
@@ -172,7 +182,15 @@ class Scheduler:
         state = self.load()
         state.update(last_run=time.time(), last_result=result)
         self.save(state)
-        logs.event("info" if not result.startswith("Nothing") and "did not" not in result else "warning", "backup", f"Scheduled backup: {result}")
+        failed = problems or result.startswith("Nothing") or "did not" in result
+        logs.event("warning" if failed else "info", "backup", f"Scheduled backup: {result}")
+        watch = getattr(app, "watch", None)
+        if problems and watch:
+            try:
+                watch.alert(f"backup-schedule:{time.strftime('%Y-%m-%d')}", "The scheduled full backup was not made",
+                            f"{problems[0]} The server's settings backup is not a full backup of the apps.", "problem")
+            except Exception as e:  # noqa: BLE001 - an alert that cannot be sent never stops the run
+                logs.event("warning", "backup", f"Could not raise the alert: {e}")
         return result
 
     def _wait_full(self, limit=3 * 3600):
@@ -196,7 +214,9 @@ class Scheduler:
         server = backup.server_status()
         newest = max([full_backup.status(self.app.data_dir).get("finished") or 0]
                      + [(server.get("status") or {}).get("finished") or 0 if (server.get("status") or {}).get("status") == "done" else 0])
-        return {"mode": mode, "modes": list(MODES), "keep": keep_for(mode), "next": nxt.timestamp() if nxt else None,
+        full_done = full_backup.status(self.app.data_dir).get("finished") if full_backup.status(self.app.data_dir).get("state") == "done" else None
+        late = bool(KEEP.get(mode)) and (not full_done or time.time() - full_done > PERIOD_DAYS[mode] * 2 * 86400 + 86400)
+        return {"late": late, "mode": mode, "modes": list(MODES), "keep": keep_for(mode), "next": nxt.timestamp() if nxt else None,
                 "last_run": state.get("last_run"), "last_result": state.get("last_result", ""),
                 "key": {"folder": saved["folder"], "pictures": saved["pictures"], "saved": saved["saved"]} if saved else None,
                 "server_job": bool(server["can_run"]), "newest": newest or None,

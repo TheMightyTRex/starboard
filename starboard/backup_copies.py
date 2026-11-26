@@ -70,17 +70,85 @@ def _write(path, value, private=False):
     os.replace(path + ".tmp", path)
 
 
-def settings(data_dir):
-    s = _read(os.path.join(data_dir, SETTINGS), {})
-    kind = s.get("kind") if s.get("kind") in KINDS else "off"
-    return {"kind": kind, "folder": str(s.get("folder") or ""), "smb": str(s.get("smb") or ""), "smb_user": str(s.get("smb_user") or ""),
-            "nfs": str(s.get("nfs") or ""), "remote": str(s.get("remote") or ""),
-            "keep": max(1, min(int(s.get("keep") or KEEP_DEFAULT), 50)),
+MAX_PLACES = 8
+KIND_WORDS = {"disk": "Folder on this server or the pool", "smb": "Network share (SMB)", "nfs": "Network share (NFS)", "rclone": "Cloud service"}
+ID_RE = re.compile(r"^[a-z0-9]{1,16}$")
+
+
+def _clean(d):
+    """One place, as the page and the copy use it: every key there, whatever the file held."""
+    kind = d.get("kind") if d.get("kind") in KINDS else "off"
+    try:
+        keep = max(1, min(int(d.get("keep") or KEEP_DEFAULT), 50))
+    except (TypeError, ValueError):
+        keep = KEEP_DEFAULT
+    try:  # how many of the server's settings zips stay there (each is large): fewer than the full backups
+        keep_settings = max(1, min(int(d.get("keep_settings") or 2), 50))
+    except (TypeError, ValueError):
+        keep_settings = 2
+    return {"id": str(d.get("id") or "main")[:16], "name": str(d.get("name") or "").strip()[:60], "enabled": d.get("enabled") is not False,
+            "kind": kind, "folder": str(d.get("folder") or ""), "smb": str(d.get("smb") or ""), "smb_user": str(d.get("smb_user") or ""),
+            "nfs": str(d.get("nfs") or ""), "remote": str(d.get("remote") or ""), "keep": keep, "keep_settings": keep_settings,
             # Connect a cloud service (DASH-452): which service the wizard connected ("" for a remote pasted by hand),
             # and how the person last signed in (browser or phone), offered first next time.
-            "service": str(s.get("service") or "") if kind == "rclone" else "", "signin_way": str(s.get("signin_way") or ""),
-            # Detailed log for backup connections (owner, 19 November 2026): off unless chosen.
-            "detailed_log": bool(s.get("detailed_log"))}
+            "service": str(d.get("service") or "") if kind == "rclone" else "", "signin_way": str(d.get("signin_way") or ""),
+            "account": str(d.get("account") or "")[:100]}
+
+
+def _items(raw):
+    """The places, in the order they were added. A file from before several places (one flat place) is the first, id "main"."""
+    if isinstance(raw.get("destinations"), list):
+        out, seen = [], set()
+        for d in raw["destinations"][:MAX_PLACES]:
+            if isinstance(d, dict) and d.get("kind") in KINDS and d.get("kind") != "off":
+                c = _clean(d)
+                if c["id"] not in seen:
+                    seen.add(c["id"])
+                    out.append(c)
+        return out
+    if raw.get("kind") in KINDS and raw.get("kind") != "off":
+        return [_clean({**raw, "id": "main", "enabled": True})]
+    return []
+
+
+def _raw_settings(data_dir):
+    return _read(os.path.join(data_dir, SETTINGS), {})
+
+
+def destinations(data_dir):
+    return _items(_raw_settings(data_dir))
+
+
+def _pick(data_dir, dest=None):
+    items = destinations(data_dir)
+    return next((i for i in items if i["id"] == dest), None) if dest else (items[0] if items else None)
+
+
+def _id(data_dir, dest=None):
+    """The id a dest argument means: itself, else the first place's, else "main"."""
+    if dest:
+        return dest
+    first = _pick(data_dir)
+    return first["id"] if first else "main"
+
+
+def settings(data_dir, dest=None):
+    """One place's settings (dest is its id; none means the first). Off when there is none."""
+    d = _pick(data_dir, dest) or _clean({"kind": "off", "id": dest or ""})
+    return {**d, "detailed_log": bool(_raw_settings(data_dir).get("detailed_log"))}
+
+
+def new_id(data_dir):
+    have = {i["id"] for i in destinations(data_dir)}
+    while True:
+        n = "d" + _random.token_hex(3)
+        if n not in have:
+            return n
+
+
+def blank(data_dir):
+    """A place not saved yet, for the form that adds one."""
+    return {**_clean({"kind": "off", "id": new_id(data_dir)}), "detailed_log": False}
 
 
 # Detailed log for backup connections ---------------------------------------------------------------------------------
@@ -145,18 +213,77 @@ def log_detail(data_dir, what, said, code=None):
         logs.event("info", "backup connection", f"{what}: {ln}")
 
 
-def secrets(data_dir):
-    s = _read(os.path.join(data_dir, SECRET), {})
+def _per_place(data_dir, name, dest):
+    """One place's part of a file that keeps one part for each place ({"items": {id: part}}); the file from before
+    several places (one flat part) is the first place's."""
+    raw = _read(os.path.join(data_dir, name), {})
+    want = _id(data_dir, dest)
+    if isinstance(raw.get("items"), dict):
+        got = raw["items"].get(want)
+        return got if isinstance(got, dict) else None
+    return raw if raw and want == "main" else None
+
+
+def _set_per_place(data_dir, name, dest, value, private=False):
+    path = os.path.join(data_dir, name)
+    raw = _read(path, {})
+    if not isinstance(raw.get("items"), dict):  # the flat file of one place becomes the first place's part
+        first = (_pick(data_dir) or {}).get("id") or "main"
+        raw = {"items": {first: raw} if raw else {}}
+    if value is None:
+        raw["items"].pop(_id(data_dir, dest), None)
+    else:
+        raw["items"][_id(data_dir, dest)] = value
+    _write(path, raw, private=private)
+
+
+def secrets(data_dir, dest=None):
+    s = _per_place(data_dir, SECRET, dest) or {}
     return {"smb_password": str(s.get("smb_password") or ""), "rclone_config": str(s.get("rclone_config") or "")}
 
 
-def public(data_dir):
-    """What the page shows: the settings, whether each secret is set (never the secret), and the last copy."""
-    sec = secrets(data_dir)
-    s = settings(data_dir)
+def public(data_dir, dest=None):
+    """What the page shows: the settings, whether each secret is set (never the secret), and the last copy. With no dest,
+    the first place's, plus every place and whether the newest backup is safe."""
+    out = _public_one(data_dir, dest, settings(data_dir, dest))
+    if not dest:
+        out["destinations"] = [_public_one(data_dir, d["id"], settings(data_dir, d["id"])) for d in destinations(data_dir)]
+        out["safe"] = safe(data_dir)
+        out["max_places"] = MAX_PLACES
+    return out
+
+
+def _public_one(data_dir, dest, s):
+    sec = secrets(data_dir, s["id"] if s["kind"] != "off" else dest)
+    st = status(data_dir, s["id"]) if s["kind"] != "off" else {"state": "none"}
+    word, shape = state_words(s, st)
     return {**s, "smb_password_set": bool(sec["smb_password"]), "rclone_config_set": bool(sec["rclone_config"]),
-            "status": status(data_dir), "where": where(s), "where_words": where_words(s), "service_name": _service_name(s),
-            "kinds": list(KINDS), "tested": tested(data_dir)}
+            "status": st, "where": where(s), "where_words": where_words(s), "service_name": _service_name(s),
+            "kinds": list(KINDS), "tested": tested(data_dir, s["id"]) if s["kind"] != "off" else None,
+            "title": title_of(s), "kind_words": KIND_WORDS.get(s["kind"], ""), "state_word": word, "shape": shape}
+
+
+def title_of(s):
+    """The name the person gave it, else its kind and where, in words."""
+    if s.get("name"):
+        return s["name"]
+    if s["kind"] == "rclone":
+        return _service_name(s) or "Cloud service"
+    return KIND_WORDS.get(s["kind"], "Backup place")
+
+
+def state_words(s, st):
+    """The place's last copy in one or two words, and a shape (an icon name) so the state never rests on colour."""
+    if not s.get("enabled", True):
+        return "Deactivated", "minus"
+    state = (st or {}).get("state")
+    if state == "running":
+        return "Copying", "refresh-cw"
+    if state == "done" and st.get("verified", True):
+        return "Copied and read back", "circle-check"
+    if state == "failed":
+        return "Failed", "circle-alert"
+    return "Not copied yet", "circle"
 
 
 def _service_name(s):
@@ -172,7 +299,7 @@ def _service_name(s):
 def where_words(s):
     """The other place for people: "Google Drive, starboard-backups" for a service the wizard connected."""
     name = _service_name(s)
-    if name and s["remote"].startswith("starboard-cloud:"):
+    if name and ":" in s["remote"] and s["remote"].split(":", 1)[0].startswith("starboard-"):
         return f"{name}, {s['remote'].split(':', 1)[1] or 'the top folder'}"
     return where(s)
 
@@ -187,10 +314,21 @@ def remote_names(config):
 
 
 def check(data_dir, incoming):
-    """Checks what the page sent; returns (settings, secrets) to keep, or raises ValueError with a sentence."""
-    old, sec = settings(data_dir), secrets(data_dir)
+    """Checks what the page sent; returns (settings, secrets) to keep, or raises ValueError with a sentence.
+    incoming["id"] names the place to change ("new" adds one); none means the first place, as before several places."""
+    want = str(incoming.get("id") or "")
+    if want == "new":
+        if len(destinations(data_dir)) >= MAX_PLACES:
+            raise ValueError(f"Starboard keeps up to {MAX_PLACES} places. Remove one first")
+        old, sec = blank(data_dir), {"smb_password": "", "rclone_config": ""}
+    else:
+        if want and not ID_RE.match(want):
+            raise ValueError("Choose a place from the list")
+        if want and not _pick(data_dir, want):
+            raise ValueError("That place is not in the list any more")
+        old, sec = settings(data_dir, want or None), secrets(data_dir, want or None)
     kind = str(incoming.get("kind") or "off")
-    if kind not in KINDS:
+    if kind not in KINDS or (want == "new" and kind == "off"):
         raise ValueError("Choose where the copies go")
     try:
         given = incoming.get("keep")
@@ -200,6 +338,17 @@ def check(data_dir, incoming):
     if not 1 <= keep <= 50:
         raise ValueError("Keep the newest: give a number from 1 to 50")
     new = {**old, "kind": kind, "keep": keep}
+    if incoming.get("keep_settings") not in (None, ""):
+        try:
+            new["keep_settings"] = int(incoming["keep_settings"])
+        except (TypeError, ValueError):
+            raise ValueError("Keep the newest server settings backups: give a number from 1 to 50") from None
+        if not 1 <= new["keep_settings"] <= 50:
+            raise ValueError("Keep the newest server settings backups: give a number from 1 to 50")
+    if "name" in incoming:
+        new["name"] = str(incoming.get("name") or "").strip()[:60]
+    if "enabled" in incoming:
+        new["enabled"] = bool(incoming.get("enabled"))
     if kind == "disk":
         folder = folders.tidy(incoming.get("folder") or "")
         if not folders.allowed(folder):
@@ -240,35 +389,89 @@ def check(data_dir, incoming):
     return new, sec
 
 
-def save(data_dir, new, sec):
-    before = settings(data_dir)
-    if (before["kind"], where(before)) != (new.get("kind"), where({**before, **new})):
-        _write(os.path.join(data_dir, STATUS), {"state": "none"})  # the last copy was to the other place (DASH-452)
-    _write(os.path.join(data_dir, SETTINGS), new)
-    _write(os.path.join(data_dir, SECRET), sec, private=True)
+def save(data_dir, new, sec, dest=None):
+    """Keeps one place (new["id"], else dest, else the first, else a new one) and its secrets."""
+    items = destinations(data_dir)
+    pid = new.get("id") or dest or (items[0]["id"] if items else None) or new_id(data_dir)
+    if new.get("kind") == "off":  # Off (as before several places) removes it
+        return _remove(data_dir, pid)
+    mine = _clean({**new, "id": pid})
+    before = next((i for i in items if i["id"] == pid), None)
+    if before is None and len(items) >= MAX_PLACES:
+        raise ValueError(f"Starboard keeps up to {MAX_PLACES} places. Remove one first")
+    if before is None or (before["kind"], where(before)) != (mine["kind"], where(mine)):
+        _set_per_place(data_dir, STATUS, pid, {"state": "none"})  # the last copy was to another place (DASH-452)
+    items = [mine if i["id"] == pid else i for i in items] if before else items + [mine]
+    raw = _raw_settings(data_dir)
+    _write(os.path.join(data_dir, SETTINGS), {"destinations": items, "detailed_log": bool(raw.get("detailed_log"))})
+    _set_per_place(data_dir, SECRET, pid, {"smb_password": sec.get("smb_password", ""), "rclone_config": sec.get("rclone_config", "")}, private=True)
+    return mine
+
+
+def _remove(data_dir, pid):
+    items = [i for i in destinations(data_dir) if i["id"] != pid]
+    raw = _raw_settings(data_dir)
+    for name in (SECRET, STATUS, TESTED):  # first, while the file may still be the flat one of a single place
+        _set_per_place(data_dir, name, pid, None, private=name == SECRET)
+    _write(os.path.join(data_dir, SETTINGS), {"destinations": items, "detailed_log": bool(raw.get("detailed_log"))})
+    return None
+
+
+def set_enabled(data_dir, dest, on):
+    """Switch one place on or off: a switched-off place keeps its settings and is left out of each new backup."""
+    s = _pick(data_dir, dest)
+    if not s:
+        raise ValueError("That place is not in the list any more")
+    save(data_dir, {**s, "enabled": bool(on)}, secrets(data_dir, dest))
+    return settings(data_dir, dest)
 
 
 # Status -------------------------------------------------------------------------------------------------------------
 
-def status(data_dir):
-    return _read(os.path.join(data_dir, STATUS), {"state": "none"})
+def status(data_dir, dest=None):
+    return _per_place(data_dir, STATUS, dest) or {"state": "none"}
 
 
-def tested(data_dir):
+def tested(data_dir, dest=None):
     """The last Test connection for the place set up now, or None (a test of another place does not count)."""
-    t = _read(os.path.join(data_dir, TESTED), {})
-    return t if t and t.get("where") == where(settings(data_dir)) and t.get("kind") == settings(data_dir)["kind"] else None
+    t = _per_place(data_dir, TESTED, dest) or {}
+    s = settings(data_dir, dest)
+    return t if t and t.get("where") == where(s) and t.get("kind") == s["kind"] else None
 
 
-def save_test(data_dir, result):
-    s = settings(data_dir)
-    _write(os.path.join(data_dir, TESTED), {**result, "where": where(s), "kind": s["kind"], "at": result.get("at") or time.time()})
+def save_test(data_dir, result, dest=None):
+    s = settings(data_dir, dest)
+    _set_per_place(data_dir, TESTED, dest or s["id"], {**result, "where": where(s), "kind": s["kind"], "at": result.get("at") or time.time()})
 
 
-def _say(data_dir, **kw):
-    now = status(data_dir)
+def _say(data_dir, dest=None, **kw):
+    now = status(data_dir, dest)
     now.update(kw)
-    _write(os.path.join(data_dir, STATUS), now)
+    _set_per_place(data_dir, STATUS, dest, now)
+
+
+def safe(data_dir):
+    """Whether the newest full backup is safe: it counts only when every place that is activated has copied it and
+    read it back. {"safe": bool, "words": one sentence, "places": [{id, title, ok, words}]}"""
+    on = [d for d in destinations(data_dir) if d["enabled"]]
+    try:
+        newest_file = newest(data_dir)
+    except Exception:  # noqa: BLE001 - without Docker the folder cannot be worked out: nothing is safe yet
+        newest_file = None
+    if not on:
+        return {"safe": False, "words": "The newest full backup is only on this computer: no place is activated for copies", "places": []}
+    rows = []
+    for d in on:
+        st = status(data_dir, d["id"])
+        ok = bool(newest_file) and st.get("state") == "done" and st.get("file") == newest_file and st.get("verified", True)
+        rows.append({"id": d["id"], "title": title_of(d), "ok": ok,
+                     "words": "Copied and read back" if ok else "Copying" if st.get("state") == "running"
+                     else "Failed: " + str(st.get("error") or "")[:160] if st.get("state") == "failed" else "Not copied yet"})
+    if all(r["ok"] for r in rows):
+        return {"safe": True, "words": f"Safe: the newest full backup was copied and read back at {len(rows)} {'place' if len(rows) == 1 else 'places'}", "places": rows}
+    bad = [r["title"] for r in rows if not r["ok"]]
+    return {"safe": False, "words": "Not yet safe: " + ", ".join(bad) + " has not read back the newest full backup" if len(bad) == 1
+            else "Not yet safe: " + ", ".join(bad) + " have not read back the newest full backup", "places": rows}
 
 
 # Running a copy -------------------------------------------------------------------------------------------------------
@@ -373,11 +576,11 @@ def _prune_script(inner, keep):
             f"while read -r old; do rm -f {_q(inner)}/\"$old\"; done")
 
 
-def _run(data_dir, source, test=False):
+def _run(data_dir, source, test=False, dest=None):
     """Copies source (a full backup's path on this computer) to the other place and prunes there. With test, writes and
     removes a small file instead and counts the backups there. Returns one sentence."""
     from . import stack
-    s, sec = settings(data_dir), secrets(data_dir)
+    s, sec = settings(data_dir, dest), secrets(data_dir, dest)
     if s["kind"] == "off":
         raise CopyError("Choose where the copies go first")
     env = stack.env_values(data_dir)
@@ -461,7 +664,11 @@ def _rclone(data_dir, s, sec, binds, src, name, test):
         from . import cloud_connect
         script = f"timeout {TEST_LIMIT} sh -c {_q(cloud_connect.test_script(remote, _random.token_hex(6)))}"
     else:
-        script = f"{rc} copyto {_q(src)} {_q(base + name)} && {prune} && {count}"
+        # Read back (owner, 26 November 2026): after the copy, ask the cloud for the file's size and compare it with the
+        # backup's own. Only then does the place count as safe.
+        back = (f"[ \"$({rc} lsf --format s --files-only {_q(base + name)})\" = \"$(wc -c < {_q(src)})\" ] || "
+                "{ echo 'The copy is not the same size'; exit 4; }")
+        script = f"{rc} copyto {_q(src)} {_q(base + name)} && {back} && {prune} && {count}"
     script = f"{script}; code=$?; chown {owner} /c/rclone.conf 2>/dev/null; chmod 600 /c/rclone.conf 2>/dev/null; exit $code"
     try:
         code, said = _helper(script, binds + [f"{os.path.dirname(host)}/{WORK}:/c"], image=RCLONE_IMAGE, network="bridge",
@@ -471,7 +678,7 @@ def _rclone(data_dir, s, sec, binds, src, name, test):
             with open(conf, encoding="utf-8") as f:
                 after = f.read()
             if after.strip() and after != sec["rclone_config"]:
-                save(data_dir, settings(data_dir), {**sec, "rclone_config": after})
+                save(data_dir, {k: v for k, v in s.items() if k != "detailed_log"}, {**sec, "rclone_config": after}, s["id"])
         except OSError:
             pass
     finally:
@@ -502,24 +709,52 @@ def _plain(said, s):
 
 
 def after_full(data_dir, file_path):
-    """Called at the end of each full backup, in its own thread. Never raises: a failed copy is said on the page and in
-    the log, and the backup itself stays good."""
+    """Called at the end of each full backup, in its own thread. Never raises: a failed copy is said on the page, in
+    the log and as an alert that names the place, and the backup itself stays good. Every place that is activated gets
+    its turn; one that fails never stops the others."""
     from . import logs
-    if settings(data_dir)["kind"] == "off":
+    places = [d for d in destinations(data_dir) if d["enabled"]]
+    if not places:
         return
-    full_backup._say(data_dir, step="Copying it off this computer")
-    _copy(data_dir, file_path)
-    s = status(data_dir)
-    logs.event("info" if s.get("state") == "done" else "warning", "backup", f"Copy off this computer: {s.get('said') or s.get('error')}")
+    failed = []
+    for d in places:
+        full_backup._say(data_dir, step=f"Copying it to {title_of(d)}")
+        _copy(data_dir, file_path, d["id"])
+        st = status(data_dir, d["id"])
+        ok = st.get("state") == "done"
+        logs.event("info" if ok else "warning", "backup", f"Copy to {title_of(d)}: {st.get('said') or st.get('error')}")
+        if not ok:
+            failed.append((title_of(d), st.get("error") or "it did not work"))
+    if failed:
+        alert(data_dir, failed, len(places))
 
 
-def _copy(data_dir, file_path):
-    _say(data_dir, state="running", started=time.time(), finished=None, file=file_path, where=where(settings(data_dir)), error="", said="")
+def failures(data_dir):
+    """The places whose last copy failed: [{key, title, error}], for the alerts. The key changes with each try."""
+    out = []
+    for d in destinations(data_dir):
+        st = status(data_dir, d["id"])
+        if d["enabled"] and st.get("state") == "failed":
+            out.append({"key": f"backup-copy:{d['id']}:{int(st.get('started') or 0)}", "title": title_of(d), "error": str(st.get("error") or "it did not work")[:200]})
+    return out
+
+
+def alert(data_dir, failed, total):
+    """One alert that says which places failed (area "backup", level error, so the alert channels and the page see it)."""
+    from . import logs
+    names = ", ".join(n for n, _ in failed)
+    logs.event("error", "backup", f"Backup not safe: {len(failed)} of {total} places failed ({names}). "
+               + " ".join(f"{n}: {why}." for n, why in failed)[:600])
+
+
+def _copy(data_dir, file_path, dest=None):
+    d = _id(data_dir, dest)
+    _say(data_dir, d, state="running", started=time.time(), finished=None, file=file_path, where=where(settings(data_dir, d)), error="", said="", verified=False)
     try:
-        said = _run(data_dir, file_path)
-        _say(data_dir, state="done", finished=time.time(), said=said)
+        said = _run(data_dir, file_path, dest=d)
+        _say(data_dir, d, state="done", finished=time.time(), said=said, verified=True)
     except Exception as e:  # noqa: BLE001 - whatever stops it, the page says what
-        _say(data_dir, state="failed", finished=time.time(), error=str(e) or e.__class__.__name__)
+        _say(data_dir, d, state="failed", finished=time.time(), error=str(e) or e.__class__.__name__, verified=False)
 
 
 def newest(data_dir):
@@ -534,13 +769,15 @@ def newest(data_dir):
     return got[0]["path"] if got else None
 
 
-def copy_now(data_dir):
-    """Copy the newest full backup now, in the background; refused while a backup or a copy runs."""
+def copy_now(data_dir, dest=None):
+    """Copy the newest full backup now, in the background (to one place, or to every place that is activated);
+    refused while a backup or a copy runs."""
     from . import containers
     if not containers.available():
         raise CopyError("Starboard needs Docker access to make copies")
-    if settings(data_dir)["kind"] == "off":
-        raise CopyError("Choose where the copies go first")
+    places = [_pick(data_dir, dest)] if dest else [d for d in destinations(data_dir) if d["enabled"]]
+    if not places or places[0] is None:
+        raise CopyError("Choose where the copies go first" if not dest else "That place is not in the list any more")
     source = newest(data_dir)
     if not source:
         raise CopyError("There is no full backup to copy yet. Make one first")
@@ -548,13 +785,21 @@ def copy_now(data_dir):
         raise CopyError("A backup is being made already: it is copied when it finishes")
 
     def go():
+        failed = []
         try:
-            _copy(data_dir, source)
+            for d in places:
+                _copy(data_dir, source, d["id"])
+                st = status(data_dir, d["id"])
+                if st.get("state") != "done":
+                    failed.append((title_of(d), st.get("error") or "it did not work"))
+            if failed:
+                alert(data_dir, failed, len(places))
         finally:
             full_backup._lock.release()
-    _say(data_dir, state="running", started=time.time(), finished=None, file=source, error="", said="")
+    for d in places:
+        _say(data_dir, d["id"], state="running", started=time.time(), finished=None, file=source, error="", said="", verified=False)
     threading.Thread(target=go, name="backup-copy", daemon=True).start()
-    return status(data_dir)
+    return status(data_dir, places[0]["id"])
 
 
 def newest_size(data_dir):
@@ -566,21 +811,21 @@ def newest_size(data_dir):
         return None
 
 
-def test(data_dir):
+def test(data_dir, dest=None):
     """Test connection (DASH-452, owner, 16 November 2026: "Can you add a test button to items to check they are connected
     ok?"): reach the place, write a small file, read it back, remove it, check there is room for the newest backup and,
     for a cloud service, that the sign-in still works. The result is kept, so the page shows it when opened again."""
     from . import cloud_connect, containers
     if not containers.available():
         raise CopyError("Starboard needs Docker access to make copies")
-    s = settings(data_dir)
+    s = settings(data_dir, dest)
     if s["kind"] == "off":
         raise CopyError("Choose where the copies go first")
     if not _lock.acquire(blocking=False):
         raise CopyError("A test is running already")
     try:
         try:
-            code, said = _run(data_dir, "", test=True)
+            code, said = _run(data_dir, "", test=True, dest=s["id"])
         except CopyError as e:
             code, said = 1, str(e)
         signin = "oauth" if s["kind"] == "rclone" and s["service"] in ("drive", "onedrive", "dropbox") else ""
@@ -588,16 +833,15 @@ def test(data_dir):
         if result["ok"]:
             m = re.search(r"COUNT (\d+)", said)
             result["count"] = int(m.group(1)) if m else None
-        save_test(data_dir, result)
-        return tested(data_dir)
+        save_test(data_dir, result, s["id"])
+        return tested(data_dir, s["id"])
     finally:
         _lock.release()
 
 
-def forget(data_dir):
-    """Copies stop: the settings go back to Off and the kept passwords go. Copies already made stay where they are."""
-    save(data_dir, {**settings(data_dir), "kind": "off", "service": ""}, {"smb_password": "", "rclone_config": ""})
-    try:
-        os.remove(os.path.join(data_dir, TESTED))
-    except OSError:
-        pass
+def forget(data_dir, dest=None):
+    """One place stops (dest), or every place when none is given: the settings go and the kept passwords go. Copies
+    already made stay where they are."""
+    for d in ([_pick(data_dir, dest)] if dest else destinations(data_dir)):
+        if d:
+            _remove(data_dir, d["id"])

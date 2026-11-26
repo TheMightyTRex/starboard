@@ -399,7 +399,7 @@ Source: docs/help/developers/api-reference.md
 
 # API reference
 
-This page is made from Starboard's API description, `starboard/openapi.json` (version 1.8.0), by `tools/make_api_reference.py`. It lists every address in version 1 of the API.
+This page is made from Starboard's API description, `starboard/openapi.json` (version 1.9.0), by `tools/make_api_reference.py`. It lists every address in version 1 of the API.
 
 - Every address starts with `/api/v1` on your Starboard, such as `http://192.168.1.20:8095/api/v1/apps`.
 - Every request except the description itself needs a key, sent as `Authorization: Bearer` and the key. Addresses that change something are `POST` and need a key made with **Read and manage**. Read [Authentication and keys].
@@ -1895,6 +1895,9 @@ The answer:
 | `keep` | a whole number | no |
 | `status` | an object (its fields vary) | no |
 | `tested` | an object or null | no |
+| `destinations` | a list of an object | no |
+| `safe` | an object (its fields vary) | no |
+| `settings_zip` | an object (its fields vary) | no |
 
 Other answers:
 
@@ -1916,6 +1919,54 @@ import json, os, urllib.request
 
 req = urllib.request.Request("http://192.168.1.20:8095/api/v1/backup/copies",
                              headers={"Authorization": "Bearer " + os.environ["STARBOARD_KEY"]})
+with urllib.request.urlopen(req, timeout=10) as r:
+    print(json.load(r))
+```
+
+### POST /api/v1/backup/settings-copy
+
+Copy the server's settings zip to every place that is activated, encrypted with rclone crypt first, as the server's own backup job asks after writing it (1.9.0). Body: name, the zip's file name in the server backups folder (the newest when left out). Never sent without a key.
+
+- **Key:** a key made with Read and manage whose scopes are empty or include `system` (processor, memory, disks and alerts). A key without it gets `404 not_found`.
+- **Needs:** `manage`. A read key gets `403 right_needed`. Send a JSON body; `Idempotency-Key` makes a retry safe.
+- **Operation id:** `copyServerSettings`.
+
+Parameters:
+
+| Name | In | What it is |
+|---|---|---|
+| `Idempotency-Key` | header | Send the same value again to get the first answer back without doing it twice. Kept for 24 hours. |
+
+The answer:
+
+| Field | What it is | Always there |
+|---|---|---|
+| `accepted` | true or false | yes |
+| `status` | text | no |
+| `settings_zip` | an object (its fields vary) | no |
+
+Errors:
+
+- **400:** [`bad_request`].
+- **401:** [`key_needed`].
+- **403:** [`right_needed`].
+- **404:** [`not_found`].
+- **409:** [`not_set_up`].
+- **413:** [`too_large`].
+- **429:** [`too_many_attempts`], [`rate_limited`].
+
+Example:
+
+```bash
+curl -s -H "Authorization: Bearer $STARBOARD_KEY" -X POST -H "Content-Type: application/json" -d '{}' "http://192.168.1.20:8095/api/v1/backup/settings-copy"
+```
+
+```python
+import json, os, urllib.request
+
+req = urllib.request.Request("http://192.168.1.20:8095/api/v1/backup/settings-copy", method="POST", data=b'{}',
+                             headers={"Authorization": "Bearer " + os.environ["STARBOARD_KEY"],
+                                      "Content-Type": "application/json"})
 with urllib.request.urlopen(req, timeout=10) as r:
     print(json.load(r))
 ```

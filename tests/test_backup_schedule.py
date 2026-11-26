@@ -176,6 +176,23 @@ class Run(unittest.TestCase):
             s = bs.Scheduler(self.app(d, "weekly"))
             self.assertTrue(s.run().startswith("Nothing was backed up"))
 
+    def test_no_kept_password_is_said_and_alerted_not_hidden(self):
+        # 26 November 2026: a weekly schedule with no kept password asked only the server's job and said it had run, so no full
+        # backup was made for two weeks and nothing said so.
+        with tempfile.TemporaryDirectory() as d, tempfile.TemporaryDirectory() as jobs:
+            os.makedirs(os.path.join(jobs, "requests"))
+            alerts = []
+            app = self.app(d, "weekly")
+            app.watch = types.SimpleNamespace(alert=lambda key, title, message, level="problem": alerts.append((key, title, message, level)))
+            with mock.patch.dict(os.environ, {"STARBOARD_JOBS_DIR": jobs}):
+                s = bs.Scheduler(app)
+                said = s.run()
+                self.assertIn("No full backup was made", said)
+                self.assertIn("server's backup job", said)
+                self.assertEqual(len(alerts), 1)
+                self.assertEqual(alerts[0][1], "The scheduled full backup was not made")
+                self.assertTrue(s.status()["late"])
+
     def test_manual_reminds_when_there_is_no_recent_backup(self):
         with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {"STARBOARD_JOBS_DIR": ""}):
             self.assertTrue(bs.Scheduler(self.app(d, "manual")).status()["remind"])

@@ -245,3 +245,25 @@ body:not(.show-advanced) :is([data-advanced]:has(:target), [data-advanced]:targe
 .qr-card--stack .qr-card__code { justify-self: center; }
 .qr-card--stack .command { width: 100%; }
 .qr-card--stack .code-block { overflow-wrap: anywhere; }
+
+/* Where backups go (several places, 26 November 2026): each place a card with its logo, name, switch and last copy. The logo
+   is one colour (the text colour), so it reads in Light, Dark and High contrast; its name always sits beside it. */
+.places, .place-adds { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.place-adds { grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+.place { display: grid; gap: var(--space-2); padding: var(--space-3) var(--space-4); border: 1px solid var(--color-divider); border-radius: var(--radius-md, 8px); }
+.place__head { display: flex; align-items: flex-start; gap: var(--space-3); }
+.place__text { flex: 1 1 auto; min-width: 0; }
+.place__title { margin: 0; font-size: var(--text-md); }
+.place__switch { flex: none; }
+.place-logo { flex: none; display: inline-grid; place-items: center; inline-size: 36px; block-size: 36px; color: var(--color-text); }
+.place-logo__img { fill: currentColor; }
+.place-state, .tested { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0; }
+.place-state[data-tone="success"], .tested[data-tone="success"] { color: var(--color-success-text, var(--color-text)); }
+.place-state[data-tone="danger"], .tested[data-tone="danger"] { color: var(--color-danger-text, var(--color-text)); }
+.place-add { display: flex; align-items: flex-start; gap: var(--space-3); inline-size: 100%; padding: var(--space-3); text-align: start; color: var(--color-text);
+  background: transparent; border: 1px solid var(--color-divider); border-radius: var(--radius-md, 8px); cursor: pointer; font: inherit; }
+.place-add:hover { background: var(--color-surface-sunken); }
+.place-add:focus-visible { outline: 3px solid var(--color-focus, currentColor); outline-offset: 2px; }
+.place-add:disabled { cursor: not-allowed; opacity: 0.6; }
+.place-add__text { display: grid; gap: 2px; min-width: 0; }
+.place-add__text small { color: inherit; opacity: 0.85; }

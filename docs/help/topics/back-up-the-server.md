@@ -184,8 +184,11 @@ request within a minute. The new file then appears in the list of server backups
   steps an AI assistant with a shell can follow to rebuild the server. The example script does not write one.
 - Select a backup in the list to open its details, then **Download** to save it. Starboard asks for your
   password first, because a server backup can hold API keys and private files.
-- The backups are on the same server. If its disk fails, they go with it, so copy the newest one to another
-  disk or computer.
+- The backups are on the same server. If its disk fails, they go with it. Starboard can send each new settings zip
+  to your other places (a folder, a share, Google Drive, OneDrive and more), encrypted first: read **Server settings
+  backup, encrypted** in [Copy backups to a cloud service](copy-backups-to-a-cloud-service.md). Your job asks Starboard
+  to do it with `POST /api/v1/backup/settings-copy` and a key with the Manage right and the System scope. The zip is
+  never sent without Starboard's key for it.
 - With only `STARBOARD_BACKUP_DIR` set, the page lists the backups but cannot start one.
 - Your job can also write `included` and `unreadable` (lists of what went in and what could not be read),
   `exit` (its exit code) and `runs` (earlier results). Starboard shows them when they are there.

@@ -403,7 +403,19 @@ spec["paths"]["/api/v1/backup/copies"] = {"get": {
     "responses": ok({"type": "object", "required": ["kind"], "properties": {
         "kind": {"type": "string", "enum": ["off", "disk", "smb", "nfs", "rclone"]}, "where": {"type": "string"}, "where_words": {"type": "string"},
         "service": {"type": "string", "description": "The cloud service the wizard connected (drive, onedrive, dropbox, b2, s3, webdav, sftp), or empty"},
-        "keep": {"type": "integer"}, "status": ANY, "tested": TESTED}})}}
+        "keep": {"type": "integer"}, "status": ANY, "tested": TESTED,
+        "destinations": {"type": "array", "description": "Added in 1.9.0: every place a backup can go, each with its own switch (enabled), keep counts, last copy (status, state_word, shape) and last test. The fields above are the first place's.",
+                         "items": {"type": "object", "properties": {"id": {"type": "string"}, "title": {"type": "string"}, "kind": {"type": "string"},
+                                                                    "kind_words": {"type": "string"}, "enabled": {"type": "boolean"}, "where": {"type": "string"},
+                                                                    "where_words": {"type": "string"}, "service": {"type": "string"}, "keep": {"type": "integer"},
+                                                                    "keep_settings": {"type": "integer"}, "status": ANY, "tested": TESTED,
+                                                                    "state_word": {"type": "string"}, "shape": {"type": "string"}}}},
+        "safe": {**ANY, "description": "Added in 1.9.0: safe is true only when every place that is activated has copied the newest full backup and read it back; words says it, places says which."},
+        "settings_zip": {**ANY, "description": "Added in 1.9.0: the key for the server settings copies (set, never the key) and each place's last settings copy."}}})}}
+spec["paths"]["/api/v1/backup/settings-copy"] = {"post": write(
+    {"type": "object", "required": ["accepted"], "properties": {"accepted": {"type": "boolean"}, "status": {"type": "string"}, "settings_zip": ANY}},
+    "Copy the server's settings zip to every place that is activated, encrypted with rclone crypt first, as the server's own backup job asks after writing it (1.9.0). Body: name, the zip's file name in the server backups folder (the newest when left out). Never sent without a key.",
+    "copyServerSettings", "System", status="202", extra={"409": {"$ref": "#/components/responses/Problem"}})}
 spec["paths"]["/api/v1/backup/copies/test"] = {"post": write(
     {"type": "object", "required": ["ok", "tested"], "properties": {"ok": {"type": "boolean"}, "tested": TESTED}},
     "Test connection: reach the place, write a small file, read it back, remove it and check the room, as the page's button does",

@@ -9,6 +9,7 @@ projects and free data sources are used too, with thanks.
 |---|---|---|
 | [cryptography](https://cryptography.io/) | Encrypting full backups (AES-256-GCM; only while a full backup is made or restored; System, Backup and restore) | Apache-2.0 or BSD-3-Clause |
 | [Lucide](https://lucide.dev/) | Icons | ISC (`tools/LICENSE-lucide.txt`) |
+| [Simple Icons](https://simpleicons.org/) | Logos of Google Drive, OneDrive, Dropbox, Backblaze, Amazon S3 and Nextcloud in Backup and restore (`web/icons/services.svg`), each beside its name to identify that service only | CC0 1.0 for the artwork; each logo remains its owner's trademark |
 | [Atkinson Hyperlegible Next](https://www.brailleinstitute.org/freefont/) | The typeface | SIL Open Font Licence (`web/fonts/LICENSE-OFL.txt`) |
 
 ## Data
