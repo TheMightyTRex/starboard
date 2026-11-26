@@ -359,6 +359,12 @@ def check(service):
             req = urllib.request.Request(service["url"].rstrip("/") + "/System/Info/Public", headers={"User-Agent": USER_AGENT})
             with urllib.request.urlopen(req, timeout=5) as resp:  # app addresses are checked to be http(s) when saved (config.validate_service)  # nosec B310
                 version = json.loads(resp.read(200000)).get("Version", "")
+        elif kind in ("plex", "emby"):  # DASH-566: its version without a key, then the key (a wrong one shows as a problem)
+            from . import mediaserver
+            one = mediaserver.ADAPTERS[kind]()
+            version = one.public_version(service)
+            if service.get("api_key"):
+                one.check_key(service)
         else:
             req = urllib.request.Request(service["url"], headers={"User-Agent": USER_AGENT})
             try:
