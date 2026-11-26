@@ -2,7 +2,7 @@
  * Made by tools/parts.py from components.js in github.com/TheMightyTRex/design-system: change it there, not here. */
 (() => {
   const S = window.SharedComponents;
-  const { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus } = S.kit;
+  const { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus, notice } = S.kit;
 
   /* Combobox (ARIA 1.2, a list that filters as you enter text, without choosing by itself): SharedComponents.combobox
      (box, { options, onChoose, always }) or .combobox[data-combobox] with role="option" items in the markup. Focus
