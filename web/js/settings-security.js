@@ -88,7 +88,7 @@ async function startSecurity() {
     days.removeAttribute("aria-invalid");
     days.setAttribute("aria-describedby", "days-h");
     const fail = (m) => {
-      daysError.replaceChildren(icon("circle-alert"), el("span", { text: m }));
+      errorWords(daysError, m);
       daysError.hidden = false;
       days.setAttribute("aria-invalid", "true");
       days.setAttribute("aria-describedby", "days-h days-e");
