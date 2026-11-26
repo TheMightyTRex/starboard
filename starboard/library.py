@@ -1166,6 +1166,9 @@ def act(reelix, tab, item_id, action, scope="item", season=None, episode=None, d
             raise ValueError("Choose how many episodes to keep")
         services._api(reelix, f"/radio/shows/{item_id}", method="PUT", body={"keep_episodes": keep})
         return "Reelix keeps every episode" if keep is None else f"Reelix keeps the newest {keep} episodes and deletes older ones"
+    if tab == "radio" and action == "get":  # Find wanted episodes: Reelix searches this show's wanted episodes (job radio_episode_search)
+        services._api(reelix, f"/radio/shows/{item_id}/search", method="POST", body={})
+        return "Reelix is searching for this show's wanted episodes now"
     if tab == "radio" and action in ("follow", "unfollow"):
         # DASH-158: Every episode, New episodes from now on, or Not following.
         choice = scope if scope in ("all", "from_now_on", "none") else ("all" if action == "follow" else "none")

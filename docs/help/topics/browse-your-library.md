@@ -45,10 +45,11 @@ albums or reading order.
 
 A title's page has buttons for what Reelix can do with it. Each one shows only when it applies.
 
-- **Get it**, or **Get the missing episodes** for a series: Reelix searches for it now. A season you do not
-  have all of has **Get the** number **missing**.
+- **Find it**, or **Find wanted episodes** with a number for a series, **Find wanted albums** for an artist and
+  **Find wanted episodes** for a radio show: Reelix searches for it now. A season you do not have all of has
+  **Find** a number **wanted episodes**. An artist's button searches for up to 100 albums at a time.
 - **Choose a download**, for a film you do not have or a season: Reelix lists what its sites have, best first.
-  Select **Get this one**. A copy Reelix turned down says why, and has **Get it anyway**.
+  Select **Use this one**. A copy Reelix turned down says why, and has **Use it anyway**.
 - **Follow** or **Stop following**: whether Reelix keeps searching for new episodes, releases or books.
 - **Watched** or **Not watched**: from Jellyfin. Select it to change it, for a title, a season or an episode.
   It shows only when Jellyfin has the title.
