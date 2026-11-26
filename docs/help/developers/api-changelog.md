@@ -15,6 +15,18 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Plug-in API 1.19.0 (not released yet), 25 November 2026
+
+- **Added:** `requires`, the system a plug-in needs, as a list of up to four needs: `"jellyfin"`, `"jellyfin only"`,
+  `"plex or emby"`, `"reelix"`. Starboard shows it as a tag in words on the Catalogue, the plug-in's page, Manage and
+  Ready to update, and says why when the system is not on this Starboard. An empty list says it needs nothing. Read
+  [What it needs](plugin-manifest-reference.md#what-it-needs-requires).
+- **Changed:** nothing a plug-in relies on. A manifest without `requires` gets its tag from the permissions it already
+  asks for: `jellyfin:key`, `jellyfin:metadata` and `jellyfin:libraries` mean Jellyfin, `reelix:key` means Reelix and
+  `usenet:servers` means SABnzbd or NZBGet. No plug-in is stopped, refused or failed because its system is missing.
+- Version 1.18 is kept for the `power:hold` permission and the time setting type (DASH-572). Name `>=1.19` in
+  `starboard_api` to use `requires`.
+
 ## Plug-in API 1.17.0, Starboard 0.31.0, 25 November 2026
 
 - **Fixed:** a `sparkline` card may answer an empty list of `series`, with a `note` that says why, for a plug-in that is

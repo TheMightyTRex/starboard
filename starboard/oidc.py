@@ -102,7 +102,8 @@ def allowed_peer(ip):
 _REQUEST_PATH = re.compile(r"/[\x21-\x7e]*")  # printable ASCII, no space, no line break: nothing that could start another request
 
 
-def _addresses(host, port):
+def _addresses(host, port, peer=None):
+    peer = peer or allowed_peer  # what may be connected to: the sign-in provider's rule, or a stricter one (custom cards)
     try:
         found = [host] if ipaddress.ip_address(host.split("%", 1)[0]) else []
     except ValueError:
@@ -114,17 +115,18 @@ def _addresses(host, port):
         why = outside.bad_address(ip)
         if why:
             raise OSError(f"{host} is not allowed: {why}")
-        if not allowed_peer(ip):
-            raise OSError(f"{host} is not allowed: it is not an ordinary public, home network or local address")
+        if not peer(ip):
+            raise OSError(f"{host} is not allowed: it is not an ordinary public, home network or local address" if peer is allowed_peer
+                          else f"{host} is not allowed: it is not on your home network")
     return found
 
 
-def _connect(parts, deadline):
+def _connect(parts, deadline, peer=None):
     """The address is looked up once, checked, and the connection made to that very address, with the name kept for the
     Host header and for TLS: a name that answers differently a moment later (DNS rebinding) gets nothing."""
     host, port = parts.hostname, parts.port or (443 if parts.scheme == "https" else 80)
     last = None
-    for ip in _addresses(host, port):
+    for ip in _addresses(host, port, peer):
         try:
             sock = socket.create_connection((ip, port), timeout=max(1, deadline - time.monotonic()))
         except OSError as e:

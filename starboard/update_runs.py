@@ -153,7 +153,7 @@ def targets(app):
     update_available, can_update, why, can_roll_back, roll_back_to, note}]; an app or Reelix also has big_change
     (a new major version, from the last look at its image) and icon ({service, v}); a plug-in has logo ({url, alt}
     or None)."""
-    from . import containers, plugin_life, self_update
+    from . import containers, plugin_life, plugin_systems, self_update
     from . import plugins_admin as pa
     out = []
     try:
@@ -194,7 +194,9 @@ def targets(app):
                     "latest": (u or {}).get("version") or "", "update_available": bool(u), "can_update": bool(u),
                     "why": "" if u else "No newer version is known from the catalogues", "can_roll_back": bool(st.get("can_roll_back")),
                     "roll_back_to": st.get("previous_version") or "", "note": (u or {}).get("changelog") or "",
-                    "logo": p.get("logo")})  # {url, alt} of its own logo, or None for its initials (DASH-475)
+                    "logo": p.get("logo"),  # {url, alt} of its own logo, or None for its initials (DASH-475)
+                    # the system it needs, and whether it is here (DASH-567), said in Ready to update
+                    "system": plugin_systems.judge(p.get("system"), plugin_systems.present_in(services))})
     return out
 
 

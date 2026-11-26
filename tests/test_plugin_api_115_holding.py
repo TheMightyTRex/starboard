@@ -24,7 +24,7 @@ def cleanup_manifest(vol="media:holding", perm=True, user="media"):
 
 class Permission(unittest.TestCase):
     def test_the_version(self):
-        self.assertEqual(plugins.API_VERSION, "1.17.0")
+        self.assertGreaterEqual(tuple(map(int, plugins.API_VERSION.split("."))), (1, 17, 0))
         self.assertTrue(plugins._range_ok(">=1.15 <2.0"))
 
     def test_only_with_the_permission(self):

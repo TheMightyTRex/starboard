@@ -2026,6 +2026,8 @@ class Handler(BaseHTTPRequestHandler):
                     log = ""
                 return self.json(200, {**{k: progress.get(k) for k in ("state", "n", "of", "name")}, "log": log,
                                        "window": stack.starter_waiting(app.data_dir)})
+            if path.startswith("/api/json-cards"):  # custom cards for any service's JSON (DASH-555; not part of the public API)
+                return self.json_cards(method, path, fresh)
             if path == "/api/discover" and method == "GET":
                 got = discovery.search(cfg.data["services"])
                 discovery.save(app.data_dir)  # a person's own search: kept, so Why is this here? shows it after a restart
@@ -3345,6 +3347,7 @@ class Handler(BaseHTTPRequestHandler):
     def plugins_route(self, method, path):
         """Settings, Plug-ins (DASH-149): add (password), enable, disable, remove (password), Stop all, settings."""
         from . import plugins_admin as pa
+        from . import plugin_systems
         app = self.app
         media = (stack.env_values(app.data_dir).get("DATA_DIR") or "").rstrip("/")
         media = f"{media}/media" if media else "/nonexistent-media-folder"
@@ -3359,7 +3362,10 @@ class Handler(BaseHTTPRequestHandler):
             from . import plugin_watch
             listed = pa.listing(app.data_dir)
             well = plugin_watch.health(app.data_dir, listed)  # asked now, at most once a minute each (DASH-357)
+            here = plugin_systems.present_in(app.config.data["services"])  # DASH-567: is the system each one needs here
+            built = [{**b, "system": plugin_systems.judge(b.get("system"), here)} for b in built]
             return self.json(200, {"plugins": [{**p, "update": updates.get(p["id"]), "health": well.get(p["id"]),
+                                                "system": plugin_systems.judge(p.get("system"), here),
                                                 "resting": plugin_watch.resting(app.data_dir, p["id"])} for p in listed], "builtin": built,
                                    "wanted": pa.wanted_from_setup(app.config, {p["id"] for p in listed})})
         if path == "/api/plugins/wanted" and method == "POST":  # Not now on a plug-in chosen in the set-up (DASH-399)
@@ -3422,8 +3428,9 @@ class Handler(BaseHTTPRequestHandler):
             # The Catalogue page (DASH-318): the Starboard plug-ins collection, each marked when already added.
             have = {p["id"] for p in pa.added(app.data_dir)}
             cats, items = pa.catalogue(app.config)
+            here = plugin_systems.present_in(app.config.data["services"])  # DASH-567
             return self.json(200, {"catalogues": cats, "choices": pa.builtin_choices(app.config),
-                                   "plugins": [{**e, "added": e["id"] in have} for e in items]})
+                                   "plugins": [{**e, "added": e["id"] in have, "system": plugin_systems.judge(e.get("system"), here)} for e in items]})
         if path == "/api/plugins/catalogues" and method == "POST":
             # Catalogue sources added from a link (owner, 12 November 2026). Adding one installs nothing.
             body = self.body()
@@ -3553,6 +3560,7 @@ class Handler(BaseHTTPRequestHandler):
             if path.endswith("preview"):
                 from . import plugin_logo
                 return self.json(200, {**pa.summary(manifest), "test": plugin_tester.report(manifest, logo_problem=logo_why),
+                                       "system": plugin_systems.judge(plugin_systems.describe(manifest), plugin_systems.present_in(app.config.data["services"])),
                                        "logo": {"url": plugin_logo.as_data(*logo), "alt": manifest["logo"]["alt"]} if logo else None})
             self.check_password(body)
             if not plugin_tester.report(manifest)["ok"]:
@@ -4004,6 +4012,38 @@ class Handler(BaseHTTPRequestHandler):
         body = ('<!doctype html><html lang="en-GB"><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=' + to
                 + '"><title>Signing in</title><p>Signing in. <a href="' + to + '">Continue</a></p>').encode()
         self.send(200, body, "text/html; charset=utf-8", dict({"Cache-Control": "no-store"}, **(extra or {})))
+
+    def json_cards(self, method, path, fresh):
+        """Custom cards: the list (nothing is asked), saving, removing, choosing fields, the allow switch, and one card's answer."""
+        from . import json_cards
+        cfg = self.app.config
+        try:
+            if path == "/api/json-cards" and method == "GET":
+                return self.json(200, json_cards.listing(cfg))
+            m = re.match(r"^/api/json-cards/(jc[0-9a-f]{8})/answer$", path)
+            if m and method == "GET":
+                return self.json(200, json_cards.answer(cfg, m.group(1), fresh=fresh))
+            if method != "POST":
+                return self.error(404, "Not found")
+            data = self.body()
+            if path == "/api/json-cards":
+                card = json_cards.save_card(cfg, data)
+                logs.event("info", "settings", f"Custom card saved: {card['name']}")
+                return self.json(200, {"card": card, **json_cards.listing(cfg)})
+            if path == "/api/json-cards/delete":
+                json_cards.delete_card(cfg, str(data.get("id", "")))
+                logs.event("info", "settings", "A custom card was removed")
+                return self.json(200, json_cards.listing(cfg))
+            if path == "/api/json-cards/probe":
+                return self.json(200, json_cards.probe(cfg, data))
+            if path == "/api/json-cards/allow-outside":
+                json_cards.set_allow_outside(cfg, bool(data.get("allow")))
+                logs.event("warning" if data.get("allow") else "info", "settings",
+                           "Custom cards may ask addresses outside the home network" if data.get("allow") else "Custom cards ask home network addresses only")
+                return self.json(200, json_cards.listing(cfg))
+        except json_cards.CardError as e:
+            return self.error(e.status, e.text)
+        return self.error(404, "Not found")
 
     def signin_settings(self, method, path):
         """Settings, Security, Sign-in: the two-step code, single sign-on and the password's switch. Each change asks for the password."""

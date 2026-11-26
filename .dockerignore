@@ -8,3 +8,4 @@ demo
 .github
 **/__pycache__
 **/*.pyc
+!tools/minify.py

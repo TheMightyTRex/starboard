@@ -1588,6 +1588,12 @@ class FakeArr(BaseHTTPRequestHandler):
 
     def do_GET(self):
         p = self.path
+        if p.startswith("/json/status"):  # a made-up service's JSON, for the custom card (DASH-555): it wants its key
+            if self.headers.get("X-Api-Key") != "example-json-key":
+                return self.send_json({"error": "key needed"}, 401)
+            return self.send_json({"state": "Downloading", "version": "4.2.1", "queue": {"waiting": 3, "downloading": 2, "failed": 0, "speed_mb": 41.5},
+                                   "disk": {"free_gb": 1180, "path": "/data/downloads"}, "titles": [{"name": "Harbour Lights"}, {"name": "Night Shift"}],
+                                   "api_token": "example-token-never-shown"})
         if p.startswith("/jellyfin/"):
             return self.jellyfin("GET")
         default = example_default_app(p)
@@ -2251,6 +2257,14 @@ def main():
                     more.update(url=os.environ["EXAMPLE_JELLYFIN_URL"], api_key=os.environ.get("EXAMPLE_JELLYFIN_KEY", ""))
             call("POST", "/api/services", {"name": name, "type": kind, "group": group, "url": f"http://127.0.0.1:{FAKE_PORT}/{path}",
                                            "api_key": key, "icon": icon, **more}, cookie)
+        # A custom card for a made-up service's JSON (DASH-555): in Other services, not on the dashboard until a shot adds it.
+        call("POST", "/api/json-cards", {"name": "Download client", "url": f"http://127.0.0.1:{FAKE_PORT}/json/status", "key": "example-json-key",
+                                         "key_style": "x-api-key", "refresh": 60, "fields": [
+            {"path": "state", "label": "State", "unit": "", "rule": {"op": "not_equals", "value": "Error", "bad": "problem"}},
+            {"path": "queue.waiting", "label": "Waiting", "unit": "items", "rule": {"op": "below", "value": "10", "bad": "warning"}},
+            {"path": "queue.failed", "label": "Failed", "unit": "", "rule": {"op": "below", "value": "1", "bad": "problem"}},
+            {"path": "queue.speed_mb", "label": "Speed", "unit": "MB/s", "rule": None},
+            {"path": "disk.free_gb", "label": "Free space", "unit": "GB", "rule": {"op": "above", "value": "100", "bad": "warning"}}]}, cookie)
         # Reelix, as Install apps adds it: a link with the manager key, so radio shows in Coming up and Downloads.
         call("POST", "/api/services", {"name": "Reelix", "type": "link", "group": FIND, "icon": "reelix",
                                        "url": f"http://127.0.0.1:{FAKE_PORT}/reelix", "api_key": KEY}, cookie)
