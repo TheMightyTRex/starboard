@@ -4,7 +4,7 @@
 # Plug-in manifest reference
 
 Every field of `starboard-plugin.json`, version 1, with the check Starboard runs on it and why. Starboard refuses
-any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.19.0
+any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.20.0
 (`API_VERSION` in `starboard/plugins.py`).
 
 The same rules are in a JSON Schema, `starboard/plugin-manifest.schema.json`, for editors and other tools. The
@@ -35,6 +35,7 @@ runs it too. For a first plug-in, read [Make your first plug-in](make-a-plugin.m
 | `health` | no | A path that answers 200 while it works | A path such as `/health` |
 | `needs` | no | Apps it needs, shown before install | A list of app names such as `jellyfin`: 2 to 30 lower case letters, numbers and hyphens |
 | `requires` | no | The system it works with, shown as a tag | A list of up to four needs. Read [What it needs](#what-it-needs-requires). API 1.19 |
+| `first_sign_in` | no | A password Starboard makes for the app and shows once on its page | Read [A first sign-in shown once](#a-first-sign-in-shown-once-first_sign_in). API 1.20 |
 | `styles` | no | Styles for **Display** | Read [Styles](#styles) |
 | `notices` | no | Things people must know before install | Read [Notices](#notices). API 1.4 |
 | `events` | no | Events Starboard sends it | Read [Events](#events). API 1.4 |
@@ -77,6 +78,30 @@ system is not on this Starboard.
   the system is there. Installing is still possible, because a person may add the system next.
 - A system is there when Starboard has an active app of that type with an address (Reelix by its icon), or, from
   the media server plug-ins of DASH-565, an active media server plug-in.
+
+## A first sign-in shown once (first_sign_in)
+
+From API 1.20, an app plug-in whose app starts with a password everyone knows, such as Calibre-Web's `admin123`, can
+ask Starboard for a long random one instead and show it once on the plug-in's page.
+
+```json
+"first_sign_in": {"user": "admin", "secret": "admin_password", "ready_file": "app/starboard-first-sign-in.done"}
+```
+
+| Field | What it is | Check |
+|---|---|---|
+| `user` | The sign-in name | Up to 40 letters, numbers and `. _ @ -` |
+| `secret` | The `{secret:name}` the plug-in uses in a container's `env` or `files` | Must be one the plug-in uses. Starboard makes it once and keeps it owner-only, as every secret |
+| `ready_file` | A file the app's start-up writes once the password is set | `<container>/<file name>`, inside that container's data folder |
+
+- The app sets the password itself, before it first starts, from the environment value. It never prints it, never puts it
+  on a command line and never writes it to a log.
+- Until `ready_file` is there, the page offers nothing, so a plug-in that was already set up is never shown a password
+  that was not set.
+- **Show the password** asks for the Starboard password, shows the password once and marks it shown. The listing never
+  holds it, and the log says only that it was shown.
+- Name `>=1.20` in `starboard_api`, so an older Starboard, which would make a password nobody is shown, is offered the
+  earlier version of the plug-in instead.
 
 ## Permissions
 
@@ -763,6 +788,7 @@ it is missing, because What is new then cannot say what changed. Say when settin
 | 1.12 | 13 November 2026 | `"user": "media"` on a container that mounts `media/<one folder>`; `link` and `state_label` on a custom setting's item; `file_only` on its add box |
 | 1.13 | 13 November 2026 | App plug-ins: `network:port` and `publish` on `lan` with `host_port`, `{secret:...}` and `{jellyfin:...}` in `env`, `tmpfs`, `data:<path>` and `media/<one folder>:ro`, `pids`, and `adopt` |
 | 1.14 | 14 November 2026 | A card's own refresh time, `refresh_seconds`, in the manifest and in its answer, 10 seconds at the quickest; `recommended` on a catalogue entry; `logo` (and `logo`, `logo_alt` on a catalogue entry); every card drawn with a grey band holding the logo, the name, a status chip and when it last updated (`status`, `status_label` and `updated` in its answer); a `schedule` setting and a job's `schedule`; the `jellyfin:metadata` permission with the `jellyfin-metadata` volume; `update` (a `before` and an `after` step, `health_wait_seconds` and settings `migrations`), with the health wait and an automatic Roll back after every update, and **What is new** shown before an update too |
+| 1.20 | 26 November 2026 | `first_sign_in`: a password Starboard makes for an app plug-in, set by the app before it first starts and shown once on the plug-in's page |
 | 1.19 | 25 November 2026 | `requires`: the system a plug-in needs, shown as a tag (Jellyfin only, Plex or Emby, Needs Reelix), worked out from the permissions of older manifests; 1.18 is DASH-572's |
 | 1.17 | 20 November 2026 | The `sparkline` card: a small line for each series, with the latest, lowest and highest value in words; the `alerts:send` permission, with `POST /api/v1/plugin/alerts` to raise and clear alerts through Starboard's own |
 | 1.16 | 19 November 2026 | The `disk.changed` event; a plug-in is activated when installed; a custom setting's `add` box and an item's `attach` form take plain text; `STARBOARD_HOME_ADDRESS` for a container with `publish` on the `lan` network |

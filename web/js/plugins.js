@@ -503,6 +503,44 @@ function adoptSection(p, redraw) {
     stateOf(p) === "enabled" ? null : el("div", { class: "actions" }, go), said);
 }
 
+// A first sign-in Starboard made for the app (API 1.20, DASH-590): shown once, after the Starboard password. The
+// password is held only in this page until it is left, and never sent again.
+function firstSignInSection(p) {
+  const f = p.first_sign_in;
+  if (!f) return null;
+  const said = el("div", { class: "stack-2", "aria-live": "polite" });
+  const words = f.state === "shown"
+    ? `Starboard showed the password for ${f.user} on ${new Date(f.shown_at).toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short" })} and does not show it again. Change it in ${p.name} when you like.`
+    : f.state === "ready"
+      ? `Starboard made a long password for ${p.name} and set it before ${p.name} first started. Sign in as ${f.user}. Starboard shows the password once, after you enter your Starboard password.`
+      : `Starboard makes a password for ${p.name} when it first starts and shows it here once. If ${p.name} was set up before this version, keep signing in as you do now.`;
+  const body = [];
+  if (f.state === "ready") {
+    const go = el("button", { type: "button", class: "btn" }, icon("eye"), "Show the password…");
+    go.addEventListener("click", async () => {
+      go.disabled = true;
+      try {
+        const pw = el("input", { class: "input", type: "password", id: `pl-${p.id}-fsi-pw`, autocomplete: "current-password" });
+        const ok = await confirmDialog({ title: `Show the first sign-in for ${p.name}?`, confirm: "Show it once",
+          message: el("p", { text: "Starboard shows the password once. Have somewhere ready to keep it, such as a password manager." }),
+          fields: [el("div", { class: "field" }, el("label", { for: pw.id, text: "Your Starboard password" }), pw)] });
+        if (!ok) return;
+        const r = await api(`/api/plugins/${p.id}/first-sign-in`, { method: "POST", body: { password: pw.value } });
+        const out = el("input", { class: "input", id: `pl-${p.id}-fsi-out`, type: "text", readonly: true, value: r.password, "aria-describedby": `pl-${p.id}-fsi-note` });
+        said.replaceChildren(
+          el("p", { id: `pl-${p.id}-fsi-note`, text: `Sign in to ${p.name} as ${r.user} with this password. This is the only time Starboard shows it.` }),
+          el("div", { class: "field" }, el("label", { for: out.id, text: `Password for ${r.user}` }), el("div", { class: "actions" }, out, copyButton(r.password, `Copy the password for ${r.user}`))));
+        go.remove();
+        out.focus();
+        out.select();
+      } catch (err) { problem(err.message, go); }
+      finally { go.disabled = false; }
+    });
+    body.push(el("div", { class: "actions" }, go));
+  }
+  return section(`pl-${p.id}-first-sign-in`, "Its first sign-in", words, ...body, said);
+}
+
 // After an update or a roll back the page is drawn again: show the State topic and put focus on its heading, so the
 // person hears the new version and state rather than losing their place.
 function focusState(p) {
@@ -712,6 +750,7 @@ function pluginPage(p, redraw, ms = null) {
     groupSection(`pl-${p.id}-general`, "General", stateSec, slot, versions, jobs, may, remove),
     webSection(p),
     adoptSection(p, redraw),
+    firstSignInSection(p),
     p.looks?.length ? section(`pl-${p.id}-styles`, "Styles", "Colours for Starboard from this plug-in. Choose one for this browser, as in Display.", styleGallery(p)) : null,
     appSettingsSection(p),
     ...groups.map((g) => section(g.id, g.group || "Settings", "Saved for everyone who uses this Starboard.", g.body)),

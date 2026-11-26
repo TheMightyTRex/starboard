@@ -3654,6 +3654,16 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, plugin_cards.action(app.data_dir, ma.group(1), ma.group(2)))
             except LookupError as e:
                 return self.error(404, str(e))
+        mfs = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/first-sign-in$", path)
+        if mfs and method == "POST":  # API 1.20 (DASH-590): the password Starboard made for the app, shown once
+            try:
+                self.check_password(self.body())
+                from . import plugin_first_sign_in
+                got = plugin_first_sign_in.reveal(app.data_dir, mfs.group(1))
+            except LookupError as e:
+                return self.error(404, str(e))
+            logs.event("info", "plug-ins", f"{mfs.group(1)}: its first sign-in was shown")  # never the password itself
+            return self.json(200, {**got, "said": "Shown once. Starboard does not show it again", "plugins": pa.listing(app.data_dir)})
         mad = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/adopt$", path)
         if mad and method == "POST":  # API 1.13 (DASH-411): copy the app you already have into the plug-in
             body = self.body()
