@@ -8,7 +8,7 @@ you choose a preset, or activate and deactivate each piece of work one by one.
 
 ## Steps
 
-1. Go to **Settings**, then **Performance**.
+1. Go to **Settings**, then **General**, then **Performance**.
 2. Under **Preset**, choose one. The change applies at once.
    - **Small server:** for a small or busy server. No history, no watching, no card numbers, no posters, no hourly
      Jellyfin or Audiobookshelf jobs, and slower pages.
@@ -17,17 +17,17 @@ you choose a preset, or activate and deactivate each piece of work one by one.
      summary.
    - **Custom:** your own choices. Changing any single item yourself makes the preset **Custom**.
 
-   ![Settings, Performance, with the presets Small server and Balanced (step 2) outlined, with example data](../images/make-starboard-lighter-1-preset.png)
+   ![Settings, General, Performance, with the presets Small server and Balanced (step 2) outlined, with example data](../images/make-starboard-lighter-1-preset.png)
 
 3. Optional: to change single items, activate **More settings**. Then change any item under
    **Background work** or **While a page is open**. Each one applies at once.
 
-   ![Settings, Performance, with the Background work tab (step 3) outlined, with example data](../images/make-starboard-lighter-2-background.png)
+   ![Settings, General, Performance, with the Background work tab (step 3) outlined, with example data](../images/make-starboard-lighter-2-background.png)
 
 With **More settings** active, **Starboard now** also shows Starboard's own **Memory**, its **Processor** use
 and what is **Running**.
 
-![Settings, Performance, Starboard now, showing the memory, processor and what is running, with example data](../images/make-starboard-lighter-3-now.png)
+![Settings, General, Performance, Starboard now, showing the memory, processor and what is running, with example data](../images/make-starboard-lighter-3-now.png)
 
 ## Remove drop shadows
 

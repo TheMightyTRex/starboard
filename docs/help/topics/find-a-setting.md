@@ -9,8 +9,8 @@ where a setting lives.
 ## Find your way
 
 1. Select **Settings** in the side menu. **Sign out** is in the side menu too, under **Feedback**.
-2. In the row of icons at the top, select an area: **General**, **Apps**, **Downloads**, **Radio**, **Alerts**,
-   **Performance**, **Security**, **Plug-ins** or **Updates**. Each icon's name shows when you point at it or move
+2. In the row of icons at the top, select an area: **General**, **Apps**, **Downloads**, **Radio**,
+   **Security**, **Plug-ins** or **Updates**. Each icon's name shows when you point at it or move
    to it with the keyboard.
 3. In the row under it, select a page, such as **Pages and lists** under **General**.
 
@@ -39,6 +39,10 @@ where a setting lives.
 - **Discover rows:** which rows each Discover page shows.
 - **Download hours:** when downloads run. Read [Download only at certain hours](set-download-hours.md).
 - **Logs and feedback:** logs and **Send feedback**. Read [Send feedback about a page](send-feedback.md).
+- **Alerts:** where alerts go. With **More settings**: what to alert on, a weekly summary and watching. Read
+  [Activate alerts](activate-alerts.md) and [Get a weekly summary](weekly-summary.md).
+- **Performance** and **Pictures:** **Performance** is for how much Starboard does. With **More settings**: each part
+  of the background work, and how often pages update. Read [Make Starboard use less of your server](make-starboard-lighter.md).
 - **Backup and restore:** full backups of Starboard and every app's settings, the backup schedule, copies off this
   computer and restoring a backup. Read [Back up Starboard's settings](back-up-settings.md). **Updates**, **Restore** also
   restores a backup.
@@ -67,10 +71,6 @@ where a setting lives.
   [Download without a VPN](download-without-a-vpn.md) and [Download only at certain hours](set-download-hours.md).
 - **Radio:** **Sources**, **Add a show from a link**, **Your podcast library** and **Station logos**. Read
   [Follow radio shows and podcasts](follow-radio-shows.md).
-- **Alerts:** where alerts go. With **More settings**: what to alert on, a weekly summary and watching. Read
-  [Activate alerts](activate-alerts.md) and [Get a weekly summary](weekly-summary.md).
-- **Performance:** **Preset**, for how much Starboard does, and **Pictures**. With **More settings**: each part
-  of the background work, and how often pages update. Read [Make Starboard use less of your server](make-starboard-lighter.md).
 - **Security:** four pages: **Who can open the dashboard**, **Password**, **API keys** and **Sign out everywhere**.
   Read [Choose who can open Starboard](choose-who-can-open-starboard.md),
   [Change your password](change-your-password.md), [Make an API key and use Starboard's API](use-starboards-api.md)

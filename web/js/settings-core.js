@@ -122,7 +122,7 @@ const MOVED_PARTS = {
   "/settings-general-lists.html": { "discover-rows": "settings-general-discover.html", "discover-rows-s": "settings-general-discover.html" },
   "/settings-downloads.html": { "dl-usenet": "settings-downloads-usenet.html", "dl-hours": "settings-downloads-hours.html" },
   "/settings-radio.html": { "radio-link": "settings-radio-link.html", "radio-library": "settings-radio-library.html", "radio-logos": "settings-radio-logos.html" },
-  "/settings-performance.html": { "pf-pictures": "settings-performance-pictures.html", "pf-danger": "settings-performance-pictures.html" },
+  "/settings-general-performance.html": { "pf-pictures": "settings-general-pictures.html", "pf-danger": "settings-general-pictures.html" },
   "/settings-security.html": { "sc-pw": "settings-security-password.html", "sc-keys": "settings-security-keys.html", "sc-mcp": "settings-security-keys.html",
     "sc-ses": "settings-security-sessions.html", "sc-danger": "settings-security-sessions.html" },
 };

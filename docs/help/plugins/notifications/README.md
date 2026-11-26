@@ -32,7 +32,7 @@ Starboard runs its job **Send New this week on the chosen day** daily at 09:00.
 - **Tell the person who asked too**: By the email address or Telegram chat given for them under People.
 - **A download failed**: A download that stops with a problem.
 - **An app stops answering, and when it is back**: After two checks in a row with no answer.
-- **A disk is nearly full**: At the limit set for alerts in Settings, Alerts, or 90%.
+- **A disk is nearly full**: At the limit set for alerts in Settings, General, Alerts, or 90%.
 - **A disk is erased, added or taken out**: Every change Starboard's disk pool helper makes, however it was asked for.
 - **An update is ready**: For Starboard, your apps and your plug-ins.
 - **New this week**: Films, series and more that arrived in the last 7 days, once a week at 09:00.
