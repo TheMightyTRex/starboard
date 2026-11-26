@@ -148,11 +148,11 @@
    }
   ],
   "refresh_question": "Storage page updates",
-  "refresh_hint": "Sizes update by themselves while the page is open, or only when you press Check again.",
+  "refresh_hint": "Sizes update by themselves while the page is open, or only when you press Check now.",
   "refresh": [
    {
     "value": 0,
-    "label": "Only when I press Check again"
+    "label": "Only when I press Check now"
    },
    {
     "value": 60,

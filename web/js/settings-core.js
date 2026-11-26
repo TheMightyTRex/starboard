@@ -252,7 +252,7 @@ const COSTS = {
   logKeep: "Costs about: a few kilobytes a day on disk (about 100 KB a month for a quiet server). Nothing in memory.",
   logSize: "Costs about: nothing between days. Starboard counts what it writes as it writes it, so the size is only checked when the count passes the limit.",
   logDetail: "Costs about: one short line per page request and per call to your apps, about 1 to 5 MB a day on a busy dashboard. For 24 hours deactivates itself, so it cannot fill the disk.",
-  storageRefresh: "Each update checks the size of each folder, under a thousandth of a second. Inactive means only when you open the page or press Check again.",
+  storageRefresh: "Each update checks the size of each folder, under a thousandth of a second. Inactive means only when you open the page or press Check now.",
   posters: "Costs about: a small download per new poster, kept for a week (a few megabytes on disk).",
   icons: "Costs about: one download per app, once.",
 };

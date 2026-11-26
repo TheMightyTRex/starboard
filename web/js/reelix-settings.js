@@ -957,8 +957,8 @@ function rxSiteListSection() {
       }
       catch (e) { update.disabled = false; problem(e.message, update); }
     });
-    // No polling (lightweight): while Reelix updates, Check again asks once.
-    const again = r.syncing ? el("button", { type: "button", class: "btn btn--quiet", "data-check-again": true }, "Check again") : null;
+    // No polling (lightweight): while Reelix updates, Check now asks once.
+    const again = r.syncing ? el("button", { type: "button", class: "btn btn--quiet", "data-check-again": true }, "Check now") : null;
     again?.addEventListener("click", async () => {
       try {
         const o = await rxCall("extras", "site-list", {}, "show the site list");
@@ -975,7 +975,7 @@ function rxSiteListSection() {
       el("div", { class: "disclosure__body" }, el("ul", { class: "small" }, r.failed.map((f) => el("li", { text: `${f.id}: ${f.error}` }))))) : null;
     body.replaceChildren(...[
       r.state === "failed" ? notice("danger", "The last update failed", `${r.error} Reelix keeps the list it has. Try Update now later.`) : null,
-      r.syncing ? notice("info", "Reelix is updating the site list", "It takes a minute or so. Select Check again to find out how it went.", again) : null,
+      r.syncing ? notice("info", "Reelix is updating the site list", "It takes a minute or so. Select Check now to find out how it went.", again) : null,
       el("ul", { class: "settings-rows" },
         settingRow("Update the site list automatically", "Reelix fetches the newest list of sites and how to search each one. Your sites and their settings stay as they are. Recommended.", el("label", { class: "switch" }, on), "rx-list-on-l"),
         settingRow("How often", "", every, "rx-list-every-l")),

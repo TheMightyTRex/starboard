@@ -1343,7 +1343,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _api(self, method, path):
         app = self.app
-        fresh = "fresh=1" in urllib.parse.urlparse(self.path).query  # "Check again": skip the shared answers
+        fresh = "fresh=1" in urllib.parse.urlparse(self.path).query  # "Check now": skip the shared answers
         if method != "GET":
             services.forget()  # a change (an app added, a setting saved) makes the shared answers out of date
         try:
@@ -2579,7 +2579,7 @@ class Handler(BaseHTTPRequestHandler):
                 cfg.update_general({"last_version": app.version})
                 return self.json(200, {"ok": True})
             if path == "/api/busy" and method == "GET":
-                # What is using the processor now (DASH-558): read when the page is opened or Check again is pressed, never kept.
+                # What is using the processor now (DASH-558): read when the page is opened or Check now is pressed, never kept.
                 from . import busy
                 try:
                     return self.json(200, busy.read(cfg.data["services"]))

@@ -5,7 +5,7 @@ let range = null;
 let config = null;
 const charts = {};
 
-function checkAgainLabel(button) { button.replaceChildren(icon("refresh-cw"), el("span", { text: "Check again" })); }
+function checkAgainLabel(button) { button.replaceChildren(icon("refresh-cw"), el("span", { text: "Check now" })); }
 
 const tempTone = (c) => (c == null ? null : c >= 85 ? ["danger", "Very hot"] : c >= 75 ? ["warning", "Hot"] : null);
 const busyTone = (pct, word) => (pct >= 90 ? ["warning", word] : null);
