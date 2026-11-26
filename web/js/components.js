@@ -71,6 +71,104 @@
     });
   }
 
+  /* Notice builder: notice(tone, title, text, options) returns a .notice, so every page draws one in the same way.
+     tone: success, info (no data-tone), warning, danger or muted; one icon each. text is words or nodes, and may be
+     left out. options: actions (a button or link, or an array, in the third column), after (nodes under the text),
+     icon (another icon name), alert (role="alert", for an error that blocks; the default is role="status"), id,
+     tabindex, heading ("h3": the title is a heading). */
+  const NOTICE_ICONS = { success: "circle-check", info: "info", warning: "triangle-alert", danger: "circle-alert", muted: "info" };
+  function svgIcon(name) {
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("class", "i");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    const use = document.createElementNS(ns, "use");
+    use.setAttribute("href", `${window.SharedComponentsSprite || scriptSprite}#i-${name}`);
+    svg.append(use);
+    return svg;
+  }
+  function notice(tone, title, text, options = {}) {
+    const box = document.createElement("div");
+    box.className = "notice";
+    if (tone && tone !== "info") box.dataset.tone = tone;
+    box.setAttribute("role", options.alert ? "alert" : "status");
+    if (options.id) box.id = options.id;
+    if (options.tabindex != null) box.tabIndex = options.tabindex;
+    const body = document.createElement("div");
+    body.className = "notice__body";
+    if (title) {
+      const head = document.createElement(options.heading || "span");
+      head.className = "notice__title";
+      head.textContent = title;
+      body.append(head);
+    }
+    if (text) {
+      const p = document.createElement("p");
+      p.append(...[].concat(text).map((x) => (x instanceof Node ? x : document.createTextNode(String(x)))));
+      body.append(p);
+    }
+    if (options.after) body.append(...[].concat(options.after).filter(Boolean));
+    box.append(svgIcon(options.icon || NOTICE_ICONS[tone] || "info"), body);
+    if (options.actions) box.append(...[].concat(options.actions).filter(Boolean));
+    return box;
+  }
+  /* Waiting mark builder: wait(words, options) returns the .wait line (the ring, then the words) for a short wait, so a
+     page never writes a plain "Loading…". Say what is loading ("Loading the releases"). options: status (true puts
+     role="status" on the words, for words that change), id. A busy button needs no builder: aria-busy="true". */
+  function wait(words, options = {}) {
+    const box = document.createElement("span");
+    box.className = "wait";
+    if (options.id) box.id = options.id;
+    const mark = document.createElement("span");
+    mark.className = "wait__mark";
+    mark.setAttribute("aria-hidden", "true");
+    const text = document.createElement("span");
+    text.textContent = words;
+    if (options.status) text.setAttribute("role", "status");
+    box.append(mark, text);
+    return box;
+  }
+  /* Progress builder: progress({ label, value, max, tone, busy, valuetext, decorative, img, labelledby, id }) returns a
+     .progress with the right role. A count or share: role="progressbar" with aria-valuenow. busy: the striped band, for a
+     wait with no count (aria-valuetext "Waiting"). img: a bar that shows how full something is, not a task, so
+     role="img" with the value in its label ("79% used"). decorative: aria-hidden, when words beside it say the same.
+     setProgress(bar, value, valuetext) moves it (the width is set in script: a page's policy can block style attributes). */
+  function setProgress(bar, value, valuetext) {
+    const max = bar._max || 100;
+    const share = Math.max(0, Math.min(100, (Number(value) / max) * 100));
+    bar.firstElementChild.style.width = `${share}%`;
+    if (bar.getAttribute("role") === "progressbar" && !bar.classList.contains("progress--busy")) bar.setAttribute("aria-valuenow", String(Math.round(Number(value))));
+    if (valuetext != null) bar.setAttribute(bar.getAttribute("role") === "img" ? "aria-label" : "aria-valuetext", valuetext);
+  }
+  function progress(options = {}) {
+    const bar = document.createElement("div");
+    bar.className = options.busy ? "progress progress--busy" : "progress";
+    bar._max = options.max || 100;
+    if (options.tone) bar.dataset.tone = options.tone;
+    if (options.id) bar.id = options.id;
+    bar.append(document.createElement("span"));
+    if (options.decorative) {
+      bar.setAttribute("aria-hidden", "true");
+    } else if (options.img) {
+      bar.setAttribute("role", "img");
+      bar.setAttribute("aria-label", options.label || "");
+    } else {
+      bar.setAttribute("role", "progressbar");
+      if (options.labelledby) bar.setAttribute("aria-labelledby", options.labelledby);
+      else if (options.label) bar.setAttribute("aria-label", options.label);
+      if (options.busy) {
+        bar.setAttribute("aria-valuetext", options.valuetext || "Waiting");
+      } else {
+        bar.setAttribute("aria-valuemin", "0");
+        bar.setAttribute("aria-valuemax", String(bar._max));
+        if (options.valuetext) bar.setAttribute("aria-valuetext", options.valuetext);
+      }
+    }
+    if (!options.busy && options.value != null) setProgress(bar, options.value);
+    return bar;
+  }
+
   /* Slide-out and phone menu: a layer opened by a button with data-opens="<id>". Focus moves to the
      close button; Tab stays inside; Escape, the close button and a press on the backdrop close it,
      and focus goes back to the button that opened it. The page behind cannot scroll. */
@@ -1017,6 +1115,14 @@
   const num = (n) => Number(n).toLocaleString("en-GB");
   const fold = (s) => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const andList = (list) => (list.length < 2 ? list.join("") : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`);
+  /* Counts and clock times in words. plural(3, "disk") is "3 disks"; plural(1, "series", "series") is "1 series"; the
+     words may be one array, plural(n, ["film", "films"]). The number has its thousands separator (1,250 files).
+     clock(date) is the time of day as 14:05, the same everywhere; with no date it is now. */
+  const plural = (n, one, many) => {
+    const [single, several] = Array.isArray(one) ? one : [one, many || `${one}s`];
+    return `${num(n)} ${Number(n) === 1 ? single : several}`;
+  };
+  const clock = (when = new Date()) => new Date(when).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   /* Say something through the shared polite region (or the alert region when urgent). Never put a secret in it. */
   function say(text, urgent = false) {
     const region = announcer(urgent ? "toast-alert" : "toast-status", urgent ? "alert" : "status");
@@ -1074,49 +1180,6 @@
       banner.hidden = true;
       banner.replaceChildren();
     };
-  }
-
-  /* Notice builder: notice(tone, title, text, options) returns a .notice, so every page draws one in the same way.
-     tone: success, info (no data-tone), warning, danger or muted; one icon each. text is words or nodes, and may be
-     left out. options: actions (a button or link, or an array, in the third column), after (nodes under the text),
-     icon (another icon name), alert (role="alert", for an error that blocks; the default is role="status"), id,
-     tabindex, heading ("h3": the title is a heading). */
-  const NOTICE_ICONS = { success: "circle-check", info: "info", warning: "triangle-alert", danger: "circle-alert", muted: "info" };
-  function svgIcon(name) {
-    const ns = "http://www.w3.org/2000/svg";
-    const svg = document.createElementNS(ns, "svg");
-    svg.setAttribute("class", "i");
-    svg.setAttribute("aria-hidden", "true");
-    svg.setAttribute("focusable", "false");
-    const use = document.createElementNS(ns, "use");
-    use.setAttribute("href", `${window.SharedComponentsSprite || scriptSprite}#i-${name}`);
-    svg.append(use);
-    return svg;
-  }
-  function notice(tone, title, text, options = {}) {
-    const box = document.createElement("div");
-    box.className = "notice";
-    if (tone && tone !== "info") box.dataset.tone = tone;
-    box.setAttribute("role", options.alert ? "alert" : "status");
-    if (options.id) box.id = options.id;
-    if (options.tabindex != null) box.tabIndex = options.tabindex;
-    const body = document.createElement("div");
-    body.className = "notice__body";
-    if (title) {
-      const head = document.createElement(options.heading || "span");
-      head.className = "notice__title";
-      head.textContent = title;
-      body.append(head);
-    }
-    if (text) {
-      const p = document.createElement("p");
-      p.append(...[].concat(text).map((x) => (x instanceof Node ? x : document.createTextNode(String(x)))));
-      body.append(p);
-    }
-    if (options.after) body.append(...[].concat(options.after).filter(Boolean));
-    box.append(svgIcon(options.icon || NOTICE_ICONS[tone] || "info"), body);
-    if (options.actions) box.append(...[].concat(options.actions).filter(Boolean));
-    return box;
   }
 
   /* Tooltip: data-tooltip="Connected" on anything that shows only an icon (an icon button, a .status-icon with
@@ -1246,6 +1309,9 @@
     copyText, azLetter, azJump, azGo, loadMore, pageBanner, setupTooltips, say, addSetup, 
     kit: { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus } };
   Object.assign(window.SharedComponents, { notice }); // the notice builder
+  Object.assign(window.SharedComponents, { wait }); // the waiting mark builder
+  Object.assign(window.SharedComponents, { plural, clock, num }); // counts and clock times in words
+  Object.assign(window.SharedComponents, { progress, setProgress }); // the progress bar builder
   // An app that wires its own behaviour (Starboard's page scripts) loads this file with data-manual, or
   // sets window.SharedComponentsManual = true first, and calls setup() or openLayer() itself.
   const manual = window.SharedComponentsManual || document.currentScript?.hasAttribute("data-manual");
