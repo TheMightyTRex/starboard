@@ -215,10 +215,10 @@ async function drawJellyfinMetadata(holder) {
   }
   const go = el("button", { type: "button", class: "btn" }, icon("folder-input"), "Move them out of the settings folder…");
   go.addEventListener("click", async () => {
-    const pw = el("input", { class: "input", type: "password", id: "jf-metadata-pw", autocomplete: "current-password" });
+    const pw = passwordInput("jf-metadata-pw");
     const ok = await confirmDialog({ title: "Move Jellyfin's pictures and details?", confirm: "Move them",
       message: "Jellyfin stops for a few minutes while they move to the jellyfin-metadata folder beside its settings, then starts again. A link stays at the old address, so every picture still shows. Nothing is deleted.",
-      fields: [el("div", { class: "field" }, el("label", { for: pw.id, text: "Your Starboard password" }), pw)] });
+      fields: [passwordField(pw)] });
     if (!ok) return;
     try {
       const r = await api("/api/jellyfin/metadata/move", { method: "POST", body: { password: pw.value } });

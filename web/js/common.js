@@ -806,6 +806,16 @@ function slideOutConfirm({ title, body, confirm = "Continue", wide = true, opene
 // (a plug-in action with a confirm, DASH-441). Escape always cancels.
 // alert: true makes it an alert dialog (a warning that needs an answer, DASH-440): announced as one with its words,
 // and focus starts on Cancel, so Enter never agrees by mistake. Escape cancels, as in every dialog.
+// Asking for the Starboard password (one label, one word when it is empty, one autocomplete). passwordInput(id) is the
+// box; passwordField(input, { hint, after }) is the field around it, for a dialog's `fields`.
+const NEED_PASSWORD = "Enter your Starboard password";
+function passwordInput(id) { return el("input", { class: "input", type: "password", id, autocomplete: "current-password", required: true }); }
+function passwordField(input, { hint = "", after = null } = {}) {
+  if (hint) input.setAttribute("aria-describedby", [`${input.id}-hint`, input.getAttribute("aria-describedby")].filter(Boolean).join(" "));
+  return el("div", { class: "field" }, el("label", { for: input.id, text: "Your Starboard password" }),
+    hint ? el("span", { class: "hint", id: `${input.id}-hint`, text: hint }) : null, input, after);
+}
+
 function confirmDialog({ title, message, confirm = "Continue", cancel = "Cancel", danger = false, careful = false, fields = [], alert = false }) {
   return new Promise((resolve) => {
     const id = `confirm-${Date.now()}`;
@@ -2177,14 +2187,14 @@ const logBytes = (n) => (n < 1024 ? "less than 1 KB" : formatBytes(n));
 const logDay = (d) => new Date(`${d}T12:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long" });
 async function deleteAllLogs(summary) {
   const s = summary || {};
-  const pw = el("input", { class: "input", type: "password", id: `logs-delete-pw-${Date.now()}`, autocomplete: "current-password", required: true });
+  const pw = passwordInput(`logs-delete-pw-${Date.now()}`);
   const ok = await confirmDialog({
     title: "Delete all logs?", danger: true, confirm: "Delete all logs",
     message: [
       el("p", { text: s.files ? `Every log Starboard keeps goes: ${logBytes(s.bytes)} in ${s.files} ${s.files === 1 ? "file" : "files"}${s.oldest ? `, back to ${logDay(s.oldest)}` : ""}.` : "Every log Starboard keeps goes." }),
       el("p", { text: "Today's file and the API's audit log are emptied, not removed, so Starboard keeps logging. Its first new line says the logs were deleted, from this browser, and when. The apps' own logs, which Docker keeps, stay." }),
       el("p", {}, el("strong", { text: "This cannot be undone." }))],
-    fields: [el("div", { class: "field" }, el("label", { for: pw.id, text: "Your Starboard password" }), pw)] });
+    fields: [passwordField(pw)] });
   if (!ok) return null;
   return api("/api/logs/clear", { method: "POST", body: { password: pw.value } });
 }

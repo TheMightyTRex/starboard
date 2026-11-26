@@ -281,7 +281,7 @@ function confirmView() {
   const go = async (e) => {
     const confirm = Object.fromEntries($$("[data-drive]").map((i) => [i.dataset.drive, i.value.trim()]));
     const password = $("#pool-password").value;
-    if (!password) return inlineError($("#pool-password"), "Enter your password");
+    if (!password) return inlineError($("#pool-password"), NEED_PASSWORD);
     const bad = drives.find((d, n) => $(`#serial-${n}`).value.replace(/[^a-z0-9]/gi, "").toUpperCase() !== d.ends);
     if (bad) return inlineError($(`#serial-${drives.indexOf(bad)}`), `Type ${bad.ends}, the last 4 characters of the serial number`);
     e.target.disabled = true;

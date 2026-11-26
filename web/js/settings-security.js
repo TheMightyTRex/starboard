@@ -102,12 +102,12 @@ async function startSecurity() {
   const everywhere = el("button", { type: "button", class: "btn btn--danger", text: "Sign out everywhere" });
   // The password again (DASH-280), so a session someone else has cannot sign everyone out.
   everywhere.addEventListener("click", async () => {
-    const pw = el("input", { class: "input", type: "password", id: "end-all-password", autocomplete: "current-password", required: true });
+    const pw = passwordInput("end-all-password");
     const ok = await confirmDialog({
       title: "Sign out everywhere?",
       message: "Every browser and phone signed in to Starboard is signed out, including this one. Everyone needs the password to sign in again.",
       confirm: "Sign out everywhere", danger: true,
-      fields: [el("div", { class: "field" }, el("label", { for: pw.id, text: "Your Starboard password" }), pw)],
+      fields: [passwordField(pw)],
     });
     if (!ok) return;
     try { await api("/api/sessions/end-all", { method: "POST", body: { password: pw.value } }); }
