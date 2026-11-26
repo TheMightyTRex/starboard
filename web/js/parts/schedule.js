@@ -2,7 +2,7 @@
  * Made by tools/parts.py from components.js in github.com/TheMightyTRex/design-system: change it there, not here. */
 (() => {
   const S = window.SharedComponents;
-  const { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus } = S.kit;
+  const { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus, notice } = S.kit;
 
   /* Schedule picker: .schedule[data-schedule] with [data-schedule-repeat] (day, week or hour), [data-schedule-time],
      [data-schedule-minute], day checkboxes valued 0 (Sunday) to 6 in [data-schedule-days], and [data-schedule-words]
