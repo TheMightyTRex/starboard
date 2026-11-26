@@ -256,7 +256,7 @@ const AppDetails = (() => {
       const button = el("button", { type: "button", class: "btn btn--quiet" }, "Show its sign-in");
       button.addEventListener("click", async () => {
         const input = el("input", { class: "input", type: "password", id: `signin-pw-${s.id}`, autocomplete: "current-password" });
-        const error = el("p", { class: "field__error", role: "alert" });
+        const error = el("p", { class: "field-error", role: "alert" });
         if (!await confirmDialog({ title: `Show ${s.name}'s sign-in`, message: `Starboard made up ${s.name}'s sign-in when it installed it. Enter your Starboard password to show it.`,
           confirm: "Show", fields: [el("div", { class: "field" }, el("label", { for: input.id, text: "Your Starboard password" }), input, error)] })) return;
         try {
