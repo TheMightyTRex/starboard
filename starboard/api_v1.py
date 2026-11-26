@@ -44,7 +44,9 @@ import time
 import urllib.parse
 import uuid
 
-API_VERSION = "1.9.0"  # 1.9.0 (26 November 2026): several backup places in /backup/copies (destinations, safe, settings_zip), the test for each, and POST /backup/settings-copy. 1.8.0 (20 November 2026, plug-in API 1.17): POST /plugin/alerts, alerts from a plug-in with alerts:send, answered only to its own key. 1.7.0 (19 November 2026, DASH-464): /mcp, read-only tools for AI assistants, off until activated. 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
+from . import deprecations
+
+API_VERSION = "1.10.0"  # 1.10.0 (26 November 2026, DASH-603): deprecations in GET /, Deprecation and Sunset headers on a route that is going, 410 gone once removed. 1.9.0 (26 November 2026): several backup places in /backup/copies (destinations, safe, settings_zip), the test for each, and POST /backup/settings-copy. 1.8.0 (20 November 2026, plug-in API 1.17): POST /plugin/alerts, alerts from a plug-in with alerts:send, answered only to its own key. 1.7.0 (19 November 2026, DASH-464): /mcp, read-only tools for AI assistants, off until activated. 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
 KEYS_FILE = "api-keys.json"
 RIGHTS = ("read", "manage")  # manage: read, and the everyday actions (DASH-274). "admin" stays with the pages
 SCOPES = ("apps", "downloads", "media", "system", "library", "requests")
@@ -417,7 +419,8 @@ def routes():
 
     def root(h, m, q):
         return {"api_version": API_VERSION, "starboard_version": h.app.version,
-                "links": {"openapi": "/api/v1/openapi.json", "me": "/api/v1/me", "apps": "/api/v1/apps", "events": "/api/v1/events", "mcp": "/api/v1/mcp"}}
+                "links": {"openapi": "/api/v1/openapi.json", "me": "/api/v1/me", "apps": "/api/v1/apps", "events": "/api/v1/events", "mcp": "/api/v1/mcp"},
+                "deprecations": deprecations.public()}
 
     def me(h, m, q):
         return public(h.api_key)
@@ -957,6 +960,11 @@ def handle(h, method, path):
         body = {"type": PROBLEM + code, "title": title, "status": status, "detail": detail or title, "instance": rid, "code": code}
         h.send(status, json.dumps(body).encode(), "application/problem+json", {**base, **(extra or {})})
 
+    going = deprecations.entry(method, path)  # DASH-603: a feature that is going says so on every answer, and one that is gone says 410
+    if going:
+        base.update(deprecations.headers(going))
+        if going["removed"]:
+            return problem(410, "gone", "This address has been removed", going["replacement"] or "It was removed after its notice period")
     if path == "/api/v1/openapi.json" and method == "GET":
         raw = json.dumps(spec()).encode()
         return h.send(200, raw, "application/json", {**base, "Cache-Control": "public, max-age=3600", "ETag": etag(raw)})

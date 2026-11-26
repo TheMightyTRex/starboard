@@ -15,6 +15,15 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Starboard API 1.10.0 (not released yet), 26 November 2026
+
+- **Added:** `deprecations` in `GET /api/v1/`: the features that are going, each with `method`, `path`, `deprecated` and `sunset`
+  (dates), `replacement` and `removed`. It is empty until something is deprecated.
+- **Added:** every answer from a route that is going carries `Deprecation: @<Unix time>` ([RFC 9745](https://www.rfc-editor.org/rfc/rfc9745)),
+  `Sunset: <date>` ([RFC 8594](https://www.rfc-editor.org/rfc/rfc8594)) and a `Link` with `rel="deprecation"` to the page about the change.
+  Once it is removed it answers [`410 gone`](../../api/errors.md#gone), never a bare not found.
+- Nothing was taken away: every 1.9.0 address answers as before.
+
 ## Plug-in API 1.20.0 (not released yet), 26 November 2026
 
 - **Added:** `first_sign_in`, a password Starboard makes for an app plug-in and shows once on its page, so the app does
