@@ -172,7 +172,7 @@ def fetch(manifest_url, file, opener=None):
         raise ValueError("The logo must be at an https address, beside the manifest")
     outside.check_url(url)
     req = urllib.request.Request(url, headers={"User-Agent": "Starboard", "Accept": "image/svg+xml, image/png"})
-    with (opener or urllib.request.build_opener()).open(req, timeout=5) as r:  # checked above  # nosec B310
+    with (opener or outside.guarded_opener()).open(req, timeout=5) as r:  # checked above, on redirects and when it connects  # nosec B310
         raw = r.read(PNG_MAX + 1)
     return clean(raw, file)
 

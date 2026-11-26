@@ -100,6 +100,7 @@ class Check(unittest.TestCase):
     def test_catalogues_read_again(self):
         from starboard import plugins_admin as pa
         app = App(self.tmp.name)
+        pa._forced["at"] = 0
         pa._catalogues["https://example.invalid/c.json"] = {"at": time.time(), "name": "Old", "items": [], "error": ""}
         self.addCleanup(pa._catalogues.pop, "https://example.invalid/c.json", None)
         with mock.patch.object(pa, "sources", return_value=[{"url": "https://example.invalid/c.json", "own": False}]), \
@@ -340,6 +341,28 @@ class Routes(unittest.TestCase):
         r, body = self.request("GET", "/api/updates")
         self.assertEqual(r.status, 200)
         self.assertIn("jellyfin_waiting", body)
+        self.assertEqual(body["counts"]["total"], sum(1 for t in body["items"] if t["update_available"]))  # one count
+
+    def test_plug_in_routes(self):
+        """Check for updates now, the plug-in update list, and the plan for plug-ins alone (owner, 26 November 2026)."""
+        from starboard import plugins_admin as pa
+        self.sign_in()
+        r, _ = self.request("POST", "/api/plugins/catalogue/check", cookie=False)
+        self.assertIn(r.status, (401, 403))
+        pa._forced["at"] = 0
+        fake = {"checked_at": 5, "too_soon": False, "wait": 0, "failed": 0, "said": "Read 1 catalogue.",
+                "catalogues": [{"url": "https://x", "name": "X", "own": True, "count": 1, "error": "", "read_at": 5, "ok": True}]}
+        with mock.patch.object(pa, "refresh", return_value=fake):
+            r, body = self.request("POST", "/api/plugins/catalogue/check")
+        self.assertEqual((r.status, body["said"], body["updates"]), (200, "Read 1 catalogue.", 0))
+        r, body = self.request("GET", "/api/plugins/updates")
+        self.assertEqual(r.status, 200, body)
+        self.assertEqual(set(body), {"items", "counts", "read", "auto", "hours_words", "recent", "running"})
+        r, body = self.request("GET", "/api/plugins/catalogue")
+        self.assertIn("read", body)
+        # kinds must be known kinds of update; the password comes first
+        r, _ = self.request("POST", "/api/updates/all/plan")
+        self.assertIn(r.status, (400, 401))
 
 
 if __name__ == "__main__":
