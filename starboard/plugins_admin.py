@@ -16,7 +16,7 @@ import threading
 import urllib.parse
 import urllib.request
 
-from . import api_v1, plugins
+from . import api_v1, plugin_systems, plugins
 
 STATES = ("installed", "enabled", "disabled", "failed")  # stored; plugin_life.status adds needs-setup and not-supported
 MAX_MANIFEST = 256 * 1024
@@ -181,6 +181,7 @@ def summary(manifest, problems=None):
     return {"id": manifest.get("id"), "name": manifest.get("name"), "version": manifest.get("version"),
             "description": manifest.get("description"), "author": manifest.get("author"), "licence": manifest.get("licence"),
             "homepage": manifest.get("homepage"), "needs": manifest.get("needs") or [],
+            "system": plugin_systems.describe(manifest),  # API 1.19 (DASH-567): the tag, from `requires` or the permissions
             "permissions": plugins.permission_words(manifest) if isinstance(manifest.get("permissions"), list) else [],
             "containers": [{"name": c.get("name"), "network": c.get("network", "default"), "volumes": c.get("volumes") or []}
                            for c in manifest.get("containers") or [] if isinstance(c, dict)],
@@ -314,6 +315,8 @@ def _clean_entry(e):
     return {"id": e["id"], "name": str(e.get("name") or e["id"])[:40], "description": str(e.get("description") or "")[:240],
             "kind": str(e.get("kind") or "Other")[:30], "author": str(e.get("author") or "")[:60],
             "permissions": [p for p in e.get("permissions") or [] if p in plugins.PERMISSIONS],
+            "system": plugin_systems.describe({"requires": [x for x in e["requires"] if isinstance(x, str)][:plugin_systems.MAX_NEEDS]}
+                                              if isinstance(e.get("requires"), list) else {"permissions": e.get("permissions") or []}),
             "notices": [n for n in e.get("notices") or [] if n in plugins.NOTICES],
             "manifest": (best or {}).get("manifest", ""), "version": (best or {}).get("version", ""),
             "sha256": (best or {}).get("sha256", ""), "changelog": (best or {}).get("changelog", ""),

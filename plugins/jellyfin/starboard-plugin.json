@@ -9,5 +9,5 @@
  "homepage": "https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/choose-your-media-server.md",
  "support_url": "https://github.com/TheMightyTRex/starboard/issues",
  "starboard_api": ">=1.17 <2.0",
- "permissions": ["slot:media-server", "jellyfin:key"]
+ "permissions": ["slot:media-server"]
 }
