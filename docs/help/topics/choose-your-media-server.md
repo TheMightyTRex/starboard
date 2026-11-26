@@ -73,7 +73,7 @@ For 24 hours after a change, **The way back** says which media server you had.
 4. For the list of media servers Starboard has, select **Catalogue**, then the **Media servers** tab. Jellyfin is
    **Recommended**. Adding another one does not switch to it.
 
-   ![The catalogue's Media servers, with Jellyfin Added (step 2) outlined, with example data](../images/choose-your-media-server-3-catalogue.png)
+   ![The catalogue's Media servers, with Jellyfin Added and Emby and Plex to install (step 4) outlined, with example data](../images/choose-your-media-server-3-catalogue.png)
 
 ## What to expect
 
