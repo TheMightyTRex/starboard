@@ -1369,6 +1369,7 @@ if (chk) {
   await page.waitForFunction(() => /Read \d+ catalogue|Try again in/.test(document.getElementById("plu-check-result")?.textContent || ""), null, { timeout: 15000 }).catch(() => {});
   const after = await focus();
   check("T-PLU", "after the check, focus is still on the button", after.id === "plu-check", `${after.id} ${after.text}`);
+  await page.waitForFunction(() => /Read \d+ catalogue|Try again in/.test([...document.querySelectorAll("[role=status], [aria-live=polite]")].map((n) => n.textContent).join(" | ")), null, { timeout: 4000 }).catch(() => {});
   const said = await page.evaluate(() => [...document.querySelectorAll("[role=status], [aria-live=polite]")].map((n) => n.textContent).join(" | "));
   check("T-PLU", "what it found is said in a polite live region", /Read \d+ catalogue|Try again in/.test(said), said);
   const tick = await tabTo((f) => /^choose-plugin:/.test(f.id), 30);
