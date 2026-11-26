@@ -15,6 +15,16 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Plug-in API 1.21.0 and Starboard API 1.11.0 (not released yet), 26 November 2026
+
+- **Added:** `starboard_tested`, the newest plug-in API version a plug-in was tested with, and `capabilities`, the optional
+  parts it needs or uses by name. `GET /api/v1/` answers `capabilities`, the names this Starboard has. A plug-in that needs a
+  name that is not there is not added, and a catalogue version with `capabilities_needed` that this Starboard lacks is not
+  offered. Read [Capabilities](plugin-manifest-reference.md#capabilities-api-121).
+- **Changed:** the plug-in tester warns when `starboard_api` has no top end or reaches past the next major version, or starts
+  lower than the version a field you use came in at. The tester also says when `starboard_tested` is missing.
+- Nothing was taken away. Name `>=1.21` in `starboard_api` to use either field.
+
 ## Starboard API 1.10.0 (not released yet), 26 November 2026
 
 - **Added:** `deprecations` in `GET /api/v1/`: the features that are going, each with `method`, `path`, `deprecated` and `sunset`

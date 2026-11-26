@@ -116,6 +116,7 @@ def clean_versions(entry):
             continue
         out.append({"version": str(v.get("version") or "")[:30], "starboard_api": str(v.get("starboard_api") or "")[:40],
                     "manifest": address, "sha256": sha if re.match(r"^[0-9a-f]{64}$", sha) else "",
+                    "capabilities_needed": [str(n)[:40] for n in (v.get("capabilities_needed") if isinstance(v.get("capabilities_needed"), list) else [])[:12]],
                     "changelog": whole_words(v.get("changelog"), 600), "released": str(v.get("released") or "")[:10]})
 
     def key(v):
@@ -130,10 +131,12 @@ def best_version(versions):
     """(the newest version this Starboard can run, or None; how many newer were hidden; the API they need)."""
     hidden, needs = 0, ""
     for v in versions:
-        if not v["starboard_api"] or plugins._range_ok(v["starboard_api"], plugins.API_VERSION):
+        from . import plugin_capabilities
+        gone = plugin_capabilities.missing(v.get("capabilities_needed"))  # API 1.21: a version that needs a part this Starboard lacks
+        if (not v["starboard_api"] or plugins._range_ok(v["starboard_api"], plugins.API_VERSION)) and not gone:
             return v, hidden, needs
         hidden += 1
-        needs = needs or v["starboard_api"]
+        needs = needs or (("needs " + ", ".join(gone)) if gone else v["starboard_api"])
     return None, hidden, needs
 
 
