@@ -148,7 +148,8 @@ HELP_PAGES = {
     "installs": "topics/install-types.html", "folders": "topics/install-apps.html", "vpn": "topics/install-apps.html",
     "reelix-edition": "topics/switch-reelix-version.html", "usenet": "topics/choose-a-usenet-provider.html",
     "hours": "topics/set-download-hours.html", "check": "topics/install-apps.html", "keep": "topics/install-apps.html",
-    "storage": "topics/check-storage.html", "extras": "topics/set-up-live-tv.html", "alerts": "topics/activate-alerts.html",
+    "storage": "topics/check-storage.html", "extras": "topics/set-up-live-tv.html",
+    "people": "topics/add-the-people-who-use-your-apps.html", "alerts": "topics/activate-alerts.html",
     "health": "topics/check-disk-health.html", "name": "guides/set-up-your-dashboard.html",
     "restore": "topics/restore-a-saved-copy.html", "found": "topics/search-for-new-apps.html",
     "sites": "topics/choose-sites-to-search.html", "films": "topics/choose-sites-to-search.html",
@@ -222,6 +223,9 @@ HELP = {
              "q to stop. The apps' files are written to Starboard's data folder, then the apps are downloaded and started.",
     "keep": "Your password is already saved. Change it later in Starboard, Settings, Security.",
     "storage": "The media folder holds your films, series, books and downloads together.",
+    "people": "Single sign-on gives each person who uses your apps their own sign-in, and you keep the list in Starboard, Settings, "
+              "People. Leave it off on a server only you use, so nothing extra runs. It is a plug-in, installed in Settings, "
+              "Plug-ins. Its address is your server's Tailscale name. You choose the name once: passkeys are tied to it for ever.",
     "extras": "Live TV builds free channel playlists and TV guides for Jellyfin once a day. Watch history brings what "
               "everyone has watched from Plex, Emby or another Jellyfin. Defaults set Jellyfin's options for users who "
               "have not chosen their own. Audio description adds a plug-in for blind and partially sighted people, "
@@ -569,7 +573,7 @@ def question(step_id):
 
 
 STEPS = [title(i) for i in ("password", "place", "keyboard", "start", "storage", "apps", "vpn", "usenet", "sites", "films", "preset", "shadows", "check", "keys",
-                            "extras", "hours", "updates", "alerts", "storage-page", "docker", "cleanup")]  # the move's own steps are counted by job_steps
+                            "extras", "people", "hours", "updates", "alerts", "storage-page", "docker", "cleanup")]  # the move's own steps are counted by job_steps
 POOL_HELPER = "/usr/local/bin/starboard-pool"
 
 
@@ -1924,6 +1928,7 @@ def job_steps(state):
         ids.append("keys")
     if not state.get("no_extras"):
         ids.append("extras")
+    ids.append("people")  # DASH-589: Will other people use your apps? Always asked, straight after Jellyfin extras
     if not state.get("no_hours"):
         ids.append("hours")
     ids.append("updates")  # DASH-417: after Download hours, so it can name the quiet hours
@@ -3572,6 +3577,28 @@ def step_connect(api, term, state):
     return True
 
 
+def step_people(api, term, state):
+    """Will other people use your apps? One yes or no, no by default, in the same words as the browser set-up
+    (web/setup-answers.json, DASH-589). Yes saves a wish to install the Single sign-on plug-in; nothing is installed here."""
+    from . import setup_answers
+    config = api.call("GET", "/api/config")
+    w = setup_answers.WORDS["single_sign_on"]
+    head(term, state, "people")
+    term.note(w["hint"])
+    while True:
+        yes = term.yes_no(w["ask"], state.get("people", bool(config["extras"].get("single_sign_on"))), help_key="people")
+        state["people"] = yes
+        try:
+            api.call("PUT", "/api/config/general", {"extras": {"single_sign_on": yes}})
+            break
+        except Problem as e:
+            refused(term, e)
+    if yes:
+        term.note(w["chosen"])
+    term.ok("Saved. Change it later in Settings, Plug-ins.")
+    return True
+
+
 def step_alerts(api, term, state):
     """Alerts and disk health: a push service for alerts, and the disk health reports (set up at the end). A restore
     brought its alerts back, so it asks only disk health, a change to this computer (DASH-265)."""
@@ -3869,7 +3896,7 @@ def step_cleanup(api, term, state):
 
 
 STEP_FUNCTIONS = [step_password, step_place, step_keyboard, step_start, step_find, step_docker_move, step_movehow, step_storage, step_bring, step_apps, step_vpn,
-                  step_usenet, step_sites, step_films, step_preset, step_shadows, step_check, step_move, step_keys, step_connect, step_hours, step_updates, step_alerts,
+                  step_usenet, step_sites, step_films, step_preset, step_shadows, step_check, step_move, step_keys, step_connect, step_people, step_hours, step_updates, step_alerts,
                   step_storage_page, step_docker_end, step_cleanup]
 
 

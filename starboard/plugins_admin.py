@@ -16,7 +16,7 @@ import threading
 import urllib.parse
 import urllib.request
 
-from . import api_v1, plugin_systems, plugins
+from . import api_v1, deprecations, plugin_systems, plugins
 
 STATES = ("installed", "enabled", "disabled", "failed")  # stored; plugin_life.status adds needs-setup and not-supported
 MAX_MANIFEST = 256 * 1024
@@ -71,27 +71,6 @@ def share(where):
             f.write(raw)
         os.chmod(tmp, 0o644)
         os.replace(tmp, dst)
-
-
-_ONE = r'(\s*- )"([^"\n]*)/(?:settings\.json|key|jellyfin\.json):/run/starboard/(?:settings\.json|key|jellyfin\.json):ro"\n'
-OLD_MOUNTS = re.compile(rf"^{_ONE}(?:\s*- \"[^\"\n]*/(?:settings\.json|key|jellyfin\.json):/run/starboard/[a-z.]+:ro\"\n)*", re.M)
-
-
-def upgrade_mounts(where):
-    """A Compose file from before DASH-357 mounts settings.json, key and jellyfin.json one by one, so a running
-    plug-in kept the file it started with. Rewrites each container's lines as the one run/ folder. True if changed."""
-    path = os.path.join(where, "compose.yaml")
-    try:
-        with open(path, encoding="utf-8") as f:
-            text = f.read()
-    except OSError:
-        return False
-    new = OLD_MOUNTS.sub(lambda m: f'{m.group(1)}"{m.group(2)}/run:/run/starboard:ro"\n', text)
-    if new == text:
-        return False
-    share(where)
-    _write(path, new, 0o644)
-    return True
 
 
 def _read(path, default=None):
@@ -180,6 +159,7 @@ def summary(manifest, problems=None):
     """What the Add a plug-in screen shows before anything is installed."""
     return {"id": manifest.get("id"), "name": manifest.get("name"), "version": manifest.get("version"),
             "description": manifest.get("description"), "author": manifest.get("author"), "licence": manifest.get("licence"),
+            "note": plugins.clean_note(manifest.get("replaces_or_adds")),  # API 1.23 (DASH-585)
             "homepage": manifest.get("homepage"), "needs": manifest.get("needs") or [],
             "system": plugin_systems.describe(manifest),  # API 1.19 (DASH-567): the tag, from `requires` or the permissions
             "permissions": plugins.permission_words(manifest) if isinstance(manifest.get("permissions"), list) else [],
@@ -286,7 +266,7 @@ def added(data_dir):
     for p in names:
         m = _read_kept(os.path.join(folder(data_dir, p), "manifest.json")) if re.match(plugins.ID, p) else None
         if isinstance(m, dict) and not is_media_server(m):  # a media server plug-in shows in Manage and the Catalogue only (DASH-565)
-            out.append({"id": p, "name": str(m.get("name") or p)[:40]})
+            out.append({"id": p, "name": str(m.get("name") or p)[:40], "icon": plugins.clean_icon(m.get("icon"))})  # icon: API 1.23 (DASH-604)
     return sorted(out, key=lambda x: x["name"].lower())
 
 
@@ -318,6 +298,7 @@ def _clean_entry(e):
             "system": plugin_systems.describe({"requires": [x for x in e["requires"] if isinstance(x, str)][:plugin_systems.MAX_NEEDS]}
                                               if isinstance(e.get("requires"), list) else {"permissions": e.get("permissions") or []}),
             "notices": [n for n in e.get("notices") or [] if n in plugins.NOTICES],
+            "note": plugins.clean_note(e.get("replaces_or_adds")),  # API 1.23 (DASH-585): the catalogue's own line
             "manifest": (best or {}).get("manifest", ""), "version": (best or {}).get("version", ""),
             "sha256": (best or {}).get("sha256", ""), "changelog": (best or {}).get("changelog", ""),
             "versions": [best] if best else [], "hidden": hidden, "hidden_needs": needs,
@@ -539,7 +520,7 @@ def listing(data_dir):
                      for x in m.get("styles") or [] if isinstance(x, dict)]
             from . import plugin_life
             out.append({**summary(m, []), "logo": logo_info(data_dir, pid, m), "looks": looks, "builtin": bool(st.get("builtin")), "state": st.get("state", "installed"), "installed_at": st.get("installed_at"),
-                        "status": plugin_life.status(data_dir, pid, m, st), "whats_new": plugin_life.whats_new(data_dir, pid, m, st), "jobs": job_lines(data_dir, pid, m),
+                        "status": plugin_life.status(data_dir, pid, m, st), "retiring": [deprecations.warning_sentence(w) for w in deprecations.for_manifest(m)], "whats_new": plugin_life.whats_new(data_dir, pid, m, st), "jobs": job_lines(data_dir, pid, m),
                         "message": st.get("message", ""), "settings": public_settings(data_dir, pid, m),
                         "web": web_pages(data_dir, pid, m, st), "publishes": bool(plugins.published_lan(m)),
                         "adopt": adopt_info(m), "adopted": st.get("adopted"),
@@ -569,7 +550,7 @@ def job_lines(data_dir, pid, m):
 # Plug-ins the set-up offers (DASH-399): the extras key the tick saves, and the plug-in it asks for. Ticking saves a
 # wish only. The plug-in is installed from the catalogue, where its permissions are shown and the password asked, as
 # for any other, and stays inactive until someone activates it.
-FROM_SETUP = {"audio_description": "audio-description"}
+FROM_SETUP = {"audio_description": "audio-description", "single_sign_on": "single-sign-on"}
 
 
 def _setup_words():
@@ -1222,7 +1203,6 @@ def enable(data_dir, pid, helper=None, services=None):
         except (ValueError, OSError) as e:
             set_state(data_dir, pid, "failed", str(e))
             raise ValueError(f"It did not start: {e}") from None
-    upgrade_mounts(where)
     share(where)  # also after Roll back, which moves files rather than writing them
     from . import plugin_socket
     plugin_socket.serve(data_dir, pid)  # DASH-482: its API socket, there before its containers start
@@ -1395,27 +1375,18 @@ def refresh_builtins(data_dir, media_dir, services, helper=None, host=None):
 
 
 def upgrade_all(data_dir, services, helper=None):
-    """At each start, for plug-ins added before DASH-357: run/ is filled and the Compose file mounts it; an active
-    one is started again once so it reads the folder. Returns the names started again."""
-    done = []
+    """At each start: every plug-in's files are written again as they are now (Reelix's key and the news servers, API 1.6)
+    and shared into run/, where its containers read them. The rewriting of Compose files from before DASH-357 is gone
+    (DASH-596): any version since 0.17.0 has done it at every start."""
     for p in basics(data_dir):
         where = folder(data_dir, p["id"])
         try:
-            if p["state"] == "enabled":  # Reelix's key and the news servers as they are now (API 1.6)
+            if p["state"] == "enabled":
                 write_reelix(data_dir, p["id"], services)
                 write_usenet(data_dir, p["id"], services)
             share(where)
-            changed = upgrade_mounts(where)
         except OSError as e:
             set_state(data_dir, p["id"], p["state"], f"Its files could not be shared: {e}")
-            continue
-        if changed and p["state"] == "enabled":
-            try:
-                enable(data_dir, p["id"], helper=helper, services=services)
-                done.append(p["name"])
-            except ValueError:
-                pass
-    return done
 
 
 def stop_all(data_dir, helper=None, keep=()):
@@ -1441,6 +1412,8 @@ def public_settings(data_dir, pid, manifest=None):
         shown = v
         if v is None and s.get("type") == "schedule" and not plugins.schedule_problem(s.get("default")):
             shown = s["default"]  # the schedule the job really uses until one is saved (plugin_life.schedule_of), not a guess in the page
+        if v is None and s.get("type") == "time" and isinstance(s.get("default"), str) and re.match(plugins.TIME, s["default"]):
+            shown = s["default"]  # API 1.24: the time the plug-in uses until one is saved
         out.append({**{k: s[k] for k in ("key", "label", "type", "hint", "min", "max", "unit", "required", "group") if k in s},
                     **({"choices": [{"value": v, "label": w} for v, w in plugins.choices(s)]} if s["type"] == "choice"
                        else {"choices": s["choices"]} if "choices" in s else {}),
@@ -1483,6 +1456,9 @@ def save_settings(data_dir, pid, incoming):
                 v = v.rstrip("/") or "/"
                 if ".." in v.split("/") or not any(v == top or v.startswith(top + "/") for top in inside):
                     raise ValueError(f"{s['label']}: choose a folder inside {', '.join(inside) or 'the media folder'}")
+        elif t == "time":  # API 1.24 (DASH-572): one time of day, such as 22:00
+            if not isinstance(v, str) or not re.match(plugins.TIME, v):
+                raise ValueError(f"{s['label']}: give a time such as 22:00")
         elif t == "schedule":  # API 1.14 (DASH-432): every day, week or month at a time, checked before it is kept
             problem = plugins.schedule_problem(v)
             if problem:

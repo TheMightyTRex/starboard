@@ -463,6 +463,26 @@ def _example_tdarr():
     tdarr.save = save
 
 
+def _example_speed_limits():
+    """Settings, Downloads, Speed limits (DASH-578): a made-up qBittorrent and NZBGet that keep what is set while the example
+    server runs. Nothing is sent anywhere."""
+    from starboard import speed_limits
+    rows = {"qbittorrent": {"id": "qbittorrent", "name": "qBittorrent", "kind": "torrent", "down": 0, "up": 500, "alt": False},
+            "nzbget": {"id": "nzbget", "name": "NZBGet", "kind": "usenet", "down": 2000, "up": None, "alt": None}}
+    speed_limits.clients = lambda all_services: [{"id": k, "name": v["name"], "type": "qbittorrent" if k == "qbittorrent" else "nzbget"} for k, v in rows.items()]
+    speed_limits.read = lambda service: dict(rows[service["id"]])
+
+    def apply(service, body):
+        row = rows[service["id"]]
+        for key in ("down", "up", "alt"):
+            if key in body:
+                if key != "alt":
+                    speed_limits._limit(body, key, "Download limit" if key == "down" else "Upload limit")
+                row[key] = body[key]
+        return dict(row)
+    speed_limits.apply = apply
+
+
 def _example_copies(data):
     """Copies off this computer (DASH-380): set to a made-up USB disk, with last night's copy made. The helper is a
     stand-in that answers as the real one would, so Test and Copy the newest now work without Docker."""
@@ -2255,6 +2275,7 @@ def main():
     _example_reelix_backup_place()
     _example_copies(DATA)
     _example_tdarr()
+    _example_speed_limits()
     _example_self_update()
     _example_updates(DATA)
     _example_update_all()

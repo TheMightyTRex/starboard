@@ -2021,7 +2021,7 @@ function pluginTabs(list) {
     a.href = `/settings-plugin.html?id=${encodeURIComponent(p.id)}`;
     a.removeAttribute("aria-current");
     if (p.id === here) a.setAttribute("aria-current", "page");
-    a.querySelector("svg")?.replaceWith(icon(PLUGIN_TAB_ICONS[p.id] || "puzzle"));
+    a.querySelector("svg")?.replaceWith(icon(p.icon || PLUGIN_TAB_ICONS[p.id] || "puzzle"));  // its own icon (API 1.23, DASH-604), then the list here, then the puzzle piece
     a.querySelector(".menu-tabs__label").textContent = p.name;
     nav.append(a);
   }

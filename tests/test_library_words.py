@@ -31,6 +31,12 @@ class VocabularyTest(unittest.TestCase):
             for old in OLD[:-1]:
                 self.assertNotIn(f'"{old}"', text, f"{old} in {name}")
 
+    def test_a_collection_adds_the_rest_not_the_missing(self):
+        text = (WEB / "js" / "library.js").read_text()
+        self.assertIn("Add the rest (", text)
+        self.assertNotIn("Add missing", text)
+        self.assertNotIn(" missing ${", text)
+
 
 if __name__ == "__main__":
     unittest.main()

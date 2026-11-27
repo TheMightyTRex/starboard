@@ -218,6 +218,8 @@ class App:
         self.listening_busy = None  # reading listening progress, if it is running
         self.listening_read = None
         self.schedule = schedule.Schedule(self.config)
+        from . import power_hold  # DASH-572: a hold starting or ending wakes the download hours thread at once
+        power_hold.on_change(self.schedule.ensure)
         if os.environ.get("STARBOARD_SCHEDULE", "1") != "0":
             self.schedule.start()
         from .config import prune_saved
@@ -235,6 +237,7 @@ class App:
         self.trust_proxy = os.environ.get("STARBOARD_TRUST_PROXY", "") == "1"
         self.machine_name = socket.gethostname().split(".", 1)[0].lower()
         self.allowed_hosts = {h.strip().lower() for h in os.environ.get("STARBOARD_ALLOWED_HOSTS", "").split(",") if h.strip()}
+        self._told_proxy = set()
         self.proxy_addresses = {"127.0.0.1", "::1", *[a.strip() for a in os.environ.get("STARBOARD_PROXY_ADDRESSES", "").split(",") if a.strip()]}
         self.port = int(os.environ.get("STARBOARD_PORT", "8095"))
         self.forced_host = os.environ.get("STARBOARD_HOST", "")  # when set, Settings cannot change the address
@@ -293,6 +296,15 @@ class App:
     def feedback_key_valid(self, key):
         token = self._feedback_keys.get(key) if key else None
         return bool(token) and self.sessions.valid(token, self.session_version)
+
+    def warn_unlisted_proxy(self, address):
+        """One line in the log, once for each address, when a request says it was forwarded but the sender is not a proxy Starboard
+        trusts (DASH-603). Starboard then counts every visitor behind it as that one address, so a few wrong passwords lock them all out."""
+        if address in self._told_proxy or len(self._told_proxy) > 20:
+            return
+        self._told_proxy.add(address)
+        logs.event("warning", "security", f"A request from {address} says it was forwarded, but {address} is not a proxy Starboard trusts, so everyone "
+                   "behind it counts as one visitor. If it is your reverse proxy, set STARBOARD_TRUST_PROXY=1 and add its address to STARBOARD_PROXY_ADDRESSES.")
 
     def host_allowed(self, name):
         # host.docker.internal: the name plug-ins on the home network use for this computer. It exists only inside
@@ -830,7 +842,7 @@ def _move_livetv(app):
             # Built-in plug-ins follow Starboard's update: their files are written again and active ones restarted.
             from . import plugin_life, plugins_admin
             again = plugins_admin.refresh_builtins(app.data_dir, media_dir, app.config.data["services"])
-            again += [n for n in plugins_admin.upgrade_all(app.data_dir, app.config.data["services"]) if n not in again]
+            plugins_admin.upgrade_all(app.data_dir, app.config.data["services"])
             if again:
                 logs.event("info", "plug-ins", f"Started again with this version of Starboard: {', '.join(again)}")
             stopped = plugin_life.stop_unfit(app.data_dir)  # a plug-in this Starboard cannot run is stopped, with its reason (DASH-603)
@@ -942,6 +954,10 @@ class Handler(BaseHTTPRequestHandler):
             forwarded = self.headers.get("X-Forwarded-For", "")
             if forwarded:
                 return forwarded.split(",")[0].strip()
+        elif self.headers.get("X-Forwarded-For") and not is_loopback(self.client_address[0]):
+            warn = getattr(self.app, "warn_unlisted_proxy", None)
+            if warn:
+                warn(self.client_address[0])  # DASH-603: said once, so a proxy that is not listed is found
         return self.client_address[0]
 
     def is_https(self):
@@ -2040,6 +2056,17 @@ class Handler(BaseHTTPRequestHandler):
                                            reading=bool(app.listening_busy), read_result=app.listening_read))
             if path == "/api/listening/read" and method == "POST":
                 return self.start_listening(self.body())
+            if path == "/api/listening/scan" and method == "POST":  # DASH-578: scan Audiobookshelf's libraries from here
+                abs_service = listening.abs_app(cfg.data["services"])
+                if not abs_service:
+                    return self.error(400, "Give Audiobookshelf an admin API key in Manage apps first")
+                try:
+                    names = listening.abs_scan(abs_service)
+                except services.ServiceError as e:
+                    return self.error(502, str(e))
+                logs.event("info", "audiobookshelf", f"Asked Audiobookshelf to scan {len(names)} {'library' if len(names) == 1 else 'libraries'}")
+                return self.json(200, {"libraries": names, "said": (f"Audiobookshelf is scanning {', '.join(names)}. It says when it is done, in its own page." if names
+                                                                      else "Audiobookshelf has no libraries to scan")})
             if path == "/api/listening/mapping" and method == "PUT":
                 listening.set_mapping(cfg.data_dir, self.body().get("mapping") or {})
                 return self.json(200, {"ok": True})
@@ -2789,6 +2816,29 @@ class Handler(BaseHTTPRequestHandler):
                 services.forget("transfer")
                 logs.event("info", "downloads", f"{s['name']}: unpacking and folder scanning resumed")
                 return self.json(200, {"said": f"{s['name']} is unpacking again"})
+            if path == "/api/speed-limits" and method == "GET":  # DASH-578: asked only while the page is open
+                from . import speed_limits
+                items, errors = [], []
+                for c in speed_limits.clients(cfg.data["services"]):
+                    try:
+                        items.append(speed_limits.read(c))
+                    except services.ServiceError as e:
+                        errors.append({"id": c["id"], "name": c["name"], "message": str(e)})
+                return self.json(200, {"items": items, "errors": errors})
+            m = re.match(r"^/api/speed-limits/([A-Za-z0-9_-]{1,64})$", path)
+            if m and method == "POST":
+                from . import speed_limits
+                s = cfg.service(m.group(1))
+                if not s or s["type"] not in speed_limits.KINDS:
+                    return self.error(404, "No qBittorrent or NZBGet with that id")
+                try:
+                    row = speed_limits.apply(s, self.body())
+                except ValueError as e:
+                    return self.error(400, str(e))
+                except services.ServiceError as e:
+                    return self.error(502, str(e))
+                logs.event("info", "downloads", f"{s['name']}: speed limits now {speed_limits.words(row)}")
+                return self.json(200, row)
             if path == "/api/transfer" and method == "GET":
                 return self.json(200, services.cached("transfer", 5, lambda: transfer_with_vpn(app.data_dir, cfg.data["services"]), fresh))
             if path == "/api/numbers" and method == "GET":
@@ -3129,6 +3179,12 @@ class Handler(BaseHTTPRequestHandler):
                         data = self.body()
                         got = backup_copies.set_enabled(app.data_dir, str(data.get("id") or ""), bool(data.get("on")))
                         logs.event("info", "backup", f"Backup place {backup_copies.title_of(got)} switched {'on' if data.get('on') else 'off'}")
+                        return self.json(200, backup_copies.public(app.data_dir))
+                    if path == "/api/backup/copies/every" and method == "POST":
+                        # How often one place gets a copy (27 November 2026): every backup, at most weekly or at most monthly.
+                        data = self.body()
+                        got = backup_copies.set_every(app.data_dir, str(data.get("id") or ""), str(data.get("every") or ""))
+                        logs.event("info", "backup", f"Backup place {backup_copies.title_of(got)} gets copies: {backup_copies.EVERY[got['every']][0].lower()}")
                         return self.json(200, backup_copies.public(app.data_dir))
                     if path == "/api/backup/copies/now" and method == "POST":
                         backup_copies.copy_now(app.data_dir, str(self.body().get("id") or "") or None)
@@ -3685,6 +3741,15 @@ class Handler(BaseHTTPRequestHandler):
             # public lists and installs nothing). At most one read every 30 seconds, however often it is pressed.
             got = pa.refresh(app.config)
             return self.json(200, {**got, "updates": len(plugin_life.updates_known(app.data_dir))})
+        if path == "/api/plugins/retiring" and method == "GET":  # the compatibility report (DASH-603): what is going and who still uses it
+            from . import deprecations
+            mine = []
+            for p in plugins_admin.basics(app.data_dir):
+                m = plugins_admin._read_kept(os.path.join(plugins_admin.folder(app.data_dir, p["id"]), "manifest.json"), {})
+                found = [deprecations.warning_sentence(w) for w in deprecations.for_manifest(m)]
+                if found:
+                    mine.append({"id": p["id"], "name": p["name"], "uses": found})
+            return self.json(200, {"going": deprecations.public(), "routes_in_use": deprecations.routes_in_use(app.data_dir), "plugins": mine})
         if path == "/api/plugins/catalogue" and method == "GET":
             # The Catalogue page (DASH-318): the Starboard plug-ins collection, each marked when already added.
             have = {p["id"] for p in pa.added(app.data_dir)}
