@@ -409,6 +409,18 @@ if (!(await findAll.isDisabled())) {
 }
 await open("wanted-films.html");
 check("LIB-08", "the Wanted page says Find all wanted", (await page.locator("#wanted-all").textContent()).trim() === "Find all wanted");
+// LIB-09: Select several on every tab (owner, 27 November 2026), with Delete everywhere but Radio.
+console.log("\n== LIB-09 Select several on every tab");
+for (const tab of ["films", "tv", "music", "radio", "books", "audiobooks"]) {
+  await open(`library-${tab}.html`);
+  await page.locator("#lib-select").waitFor({ timeout: 8000 }).catch(() => {});
+  check("LIB-09", `${tab}: has Select several`, (await page.locator("#lib-select").count()) === 1);
+  await page.locator("#lib-select").click().catch(() => {});
+  await page.locator("#lib-bulk").waitFor({ timeout: 4000 }).catch(() => {});
+  const names = (await page.locator("#lib-bulk button").allTextContents()).map((t) => t.trim());
+  check("LIB-09", `${tab}: Follow and Stop following${tab === "radio" ? ", no Delete" : " and Delete"}`,
+    names.includes("Follow") && names.includes("Stop following") && (names.includes("Delete") === (tab !== "radio")), names.join(" | "));
+}
 // DASH-261: narrator pages, and Narrated by on an audiobook's summary links to them.
 await open("library-audiobooks-narrators.html");
 check("LIB-02", "Narrators lists each narrator", await page.locator("#groups .collection-card__link").count() >= 3);

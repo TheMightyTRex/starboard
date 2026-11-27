@@ -583,7 +583,7 @@ function bulkCount() {
 }
 
 function setUpBulk() {
-  if (!["films", "tv"].includes(TAB)) return;
+  if (!["films", "tv", "music", "books", "audiobooks", "radio"].includes(TAB)) return;
   state.ticked = new Set();
   const start = el("button", { type: "button", class: "btn btn--quiet", id: "lib-select", "aria-pressed": "false" }, icon("list-checks"), "Select several");
   $("#lib-actions")?.append(start);  // with Save this view, in the page head: not a filter, so not in the toolbar (R8)
@@ -613,7 +613,7 @@ function setUpBulk() {
     el("span", { id: "lib-bulk-count", "aria-live": "polite" }),
     el("button", { type: "button", class: "btn", "data-needs-ticks": "", onclick: (e) => run("follow", e.currentTarget) }, "Follow"),
     el("button", { type: "button", class: "btn", "data-needs-ticks": "", onclick: (e) => run("unfollow", e.currentTarget) }, "Stop following"),
-    el("button", { type: "button", class: "btn btn--danger", "data-needs-ticks": "", onclick: (e) => run("delete", e.currentTarget) }, icon("trash-2"), "Delete"),
+    TAB === "radio" ? null : el("button", { type: "button", class: "btn btn--danger", "data-needs-ticks": "", onclick: (e) => run("delete", e.currentTarget) }, icon("trash-2"), "Delete"),
     el("button", { type: "button", class: "btn btn--quiet", onclick: () => { stop(); start.focus(); } }, "Done"));
   $("#lib-wall").before(bar);
   const redraw = () => {
