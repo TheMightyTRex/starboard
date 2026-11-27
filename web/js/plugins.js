@@ -1474,6 +1474,30 @@ function mediaServerSection(p, ms) {
       el("a", { class: "btn btn--quiet", href: "/settings-jellyfin.html" }, "Open the media server settings")));
 }
 
+// Jellyfin, Plex and Emby side by side (DASH-580): what each uses at rest, measured the same way on 27 November 2026 and kept in a small
+// file, so nothing is measured or asked while you watch the page. One bar chart for each figure, each with its table (charts.js).
+async function mediaServerComparison() {
+  const holder = el("div", { class: "stack-2", "data-part": "ms-compare", "aria-live": "polite" });
+  let d;
+  try { d = await api("/api/media-server/comparison"); } catch { return null; }
+  if (!d.servers?.length || typeof barChart !== "function") return null;
+  const chart = (title, key, unit, digits = 0, detail = "") => {
+    const rows = d.servers.filter((s) => s[key] != null).map((s) => ({ label: s.name, value: s[key], note: s.note || "" }));
+    const card = barChart({ title, detail, rows, format: (v) => `${v.toLocaleString("en-GB", { maximumFractionDigits: digits })} ${unit}` });
+    const h = card.querySelector("h2");  // a part of the section above, so a level 3 heading
+    if (h) h.replaceWith(el("h3", { text: title }));
+    return card;
+  };
+  holder.append(el("h3", { id: "ms-compare-h", text: "How much each uses" }),
+    el("p", { class: "small muted", text: d.method }),
+    chart("Memory at rest", "memory_mib", "MiB", 0, "Median of 36 readings, lower is lighter"),
+    chart("Processor at rest", "cpu_pct", "%", 2, "Median of 36 readings of one processor core"),
+    chart("Time to start", "startup_s", "seconds", 0, "From start to its first answer, median of 3"),
+    chart("Size of the image", "image_mb", "MB", 0, "Downloaded and unpacked"),
+    el("p", { class: "small muted", text: d.caveat }));
+  return holder;
+}
+
 // Media servers in the catalogue (DASH-565): the ones that come with Starboard, with Jellyfin recommended. Starboard
 // uses one at a time; adding one here does not switch to it.
 function mediaServerCatalogue(list, ms, redraw) {
@@ -1497,7 +1521,7 @@ function mediaServerCatalogue(list, ms, redraw) {
         el("h3", { class: "row__title" }, b.name, b.recommended ? [" ", chip("Recommended", "info")] : null, ms && ms.active === b.id ? [" ", chip(...SLOT_IN_USE)] : null),
         el("div", { class: "row__meta", text: b.description }), el("div", { class: "row__meta", text: `Version ${b.version}, built into Starboard` })),
         el("div", { class: "row__side" }, side));
-    })));
+    })), (() => { const slot = el("div", { class: "stack-2" }); mediaServerComparison().then((c) => { if (c) slot.replaceChildren(c); }); return slot; })());
 }
 
 function addPluginSection(redraw) {

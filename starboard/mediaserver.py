@@ -534,3 +534,16 @@ def admin_do(data, what, target="", how="new"):
         one.admin_run_task(saved, target)
         return {"said": f"{one.name} was asked to run the task"}
     raise LookupError(f"{one.name} does not give Starboard that")
+
+
+def comparison():
+    """The measured comparison of Jellyfin, Plex and Emby (DASH-580), from the small file kept with Starboard (measured once, on
+    the date it says; tools/bench/bench.sh makes the figures). Read when asked and not kept: nothing is measured here."""
+    import json
+    import os
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "media_server_comparison.json"), encoding="utf-8") as f:
+            got = json.load(f)
+    except (OSError, ValueError):
+        return {"servers": [], "method": "", "caveat": ""}
+    return got if isinstance(got, dict) else {"servers": [], "method": "", "caveat": ""}
