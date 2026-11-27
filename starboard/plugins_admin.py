@@ -16,7 +16,7 @@ import threading
 import urllib.parse
 import urllib.request
 
-from . import api_v1, plugin_systems, plugins
+from . import api_v1, deprecations, plugin_systems, plugins
 
 STATES = ("installed", "enabled", "disabled", "failed")  # stored; plugin_life.status adds needs-setup and not-supported
 MAX_MANIFEST = 256 * 1024
@@ -180,6 +180,7 @@ def summary(manifest, problems=None):
     """What the Add a plug-in screen shows before anything is installed."""
     return {"id": manifest.get("id"), "name": manifest.get("name"), "version": manifest.get("version"),
             "description": manifest.get("description"), "author": manifest.get("author"), "licence": manifest.get("licence"),
+            "note": plugins.clean_note(manifest.get("replaces_or_adds")),  # API 1.23 (DASH-585)
             "homepage": manifest.get("homepage"), "needs": manifest.get("needs") or [],
             "system": plugin_systems.describe(manifest),  # API 1.19 (DASH-567): the tag, from `requires` or the permissions
             "permissions": plugins.permission_words(manifest) if isinstance(manifest.get("permissions"), list) else [],
@@ -286,7 +287,7 @@ def added(data_dir):
     for p in names:
         m = _read_kept(os.path.join(folder(data_dir, p), "manifest.json")) if re.match(plugins.ID, p) else None
         if isinstance(m, dict) and not is_media_server(m):  # a media server plug-in shows in Manage and the Catalogue only (DASH-565)
-            out.append({"id": p, "name": str(m.get("name") or p)[:40]})
+            out.append({"id": p, "name": str(m.get("name") or p)[:40], "icon": plugins.clean_icon(m.get("icon"))})  # icon: API 1.23 (DASH-604)
     return sorted(out, key=lambda x: x["name"].lower())
 
 
@@ -318,6 +319,7 @@ def _clean_entry(e):
             "system": plugin_systems.describe({"requires": [x for x in e["requires"] if isinstance(x, str)][:plugin_systems.MAX_NEEDS]}
                                               if isinstance(e.get("requires"), list) else {"permissions": e.get("permissions") or []}),
             "notices": [n for n in e.get("notices") or [] if n in plugins.NOTICES],
+            "note": plugins.clean_note(e.get("replaces_or_adds")),  # API 1.23 (DASH-585): the catalogue's own line
             "manifest": (best or {}).get("manifest", ""), "version": (best or {}).get("version", ""),
             "sha256": (best or {}).get("sha256", ""), "changelog": (best or {}).get("changelog", ""),
             "versions": [best] if best else [], "hidden": hidden, "hidden_needs": needs,
@@ -539,7 +541,7 @@ def listing(data_dir):
                      for x in m.get("styles") or [] if isinstance(x, dict)]
             from . import plugin_life
             out.append({**summary(m, []), "logo": logo_info(data_dir, pid, m), "looks": looks, "builtin": bool(st.get("builtin")), "state": st.get("state", "installed"), "installed_at": st.get("installed_at"),
-                        "status": plugin_life.status(data_dir, pid, m, st), "whats_new": plugin_life.whats_new(data_dir, pid, m, st), "jobs": job_lines(data_dir, pid, m),
+                        "status": plugin_life.status(data_dir, pid, m, st), "retiring": [deprecations.warning_sentence(w) for w in deprecations.for_manifest(m)], "whats_new": plugin_life.whats_new(data_dir, pid, m, st), "jobs": job_lines(data_dir, pid, m),
                         "message": st.get("message", ""), "settings": public_settings(data_dir, pid, m),
                         "web": web_pages(data_dir, pid, m, st), "publishes": bool(plugins.published_lan(m)),
                         "adopt": adopt_info(m), "adopted": st.get("adopted"),

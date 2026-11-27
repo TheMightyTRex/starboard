@@ -68,6 +68,7 @@
   "first_sign_in",
   "health",
   "homepage",
+  "icon",
   "id",
   "jellyfin_libraries",
   "jobs",
@@ -79,6 +80,7 @@
   "needs_plugins",
   "notices",
   "permissions",
+  "replaces_or_adds",
   "requires",
   "resources",
   "settings",
@@ -233,6 +235,7 @@
    "answer": [
     "destinations",
     "destinations.[].enabled",
+    "destinations.[].every",
     "destinations.[].id",
     "destinations.[].keep",
     "destinations.[].keep_settings",

@@ -413,7 +413,7 @@ spec["paths"]["/api/v1/backup/copies"] = {"get": {
                          "items": {"type": "object", "properties": {"id": {"type": "string"}, "title": {"type": "string"}, "kind": {"type": "string"},
                                                                     "kind_words": {"type": "string"}, "enabled": {"type": "boolean"}, "where": {"type": "string"},
                                                                     "where_words": {"type": "string"}, "service": {"type": "string"}, "keep": {"type": "integer"},
-                                                                    "keep_settings": {"type": "integer"}, "status": ANY, "tested": TESTED,
+                                                                    "keep_settings": {"type": "integer"}, "every": {"type": "string", "description": "How often this place gets a copy: each, weekly or monthly"}, "status": ANY, "tested": TESTED,
                                                                     "state_word": {"type": "string"}, "shape": {"type": "string"}}}},
         "safe": {**ANY, "description": "Added in 1.9.0: safe is true only when every place that is activated has copied the newest full backup and read it back; words says it, places says which."},
         "settings_zip": {**ANY, "description": "Added in 1.9.0: the key for the server settings copies (set, never the key) and each place's last settings copy."}}})}}

@@ -4077,6 +4077,10 @@
              "keep_settings": {
               "type": "integer"
              },
+             "every": {
+              "type": "string",
+              "description": "How often this place gets a copy: each, weekly or monthly"
+             },
              "status": {
               "type": "object",
               "additionalProperties": true

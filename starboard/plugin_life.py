@@ -76,6 +76,10 @@ def does_not_fit(manifest):
     if manifest.get("starboard_api") and not plugins._range_ok(manifest["starboard_api"], plugins.API_VERSION):
         return (f"It was made for Starboard's plug-in API {manifest['starboard_api']}, and this Starboard has "
                 f"{plugins.API_VERSION}.")
+    from . import plugin_capabilities
+    lacking = plugin_capabilities.missing((manifest.get("capabilities") or {}).get("needs") if isinstance(manifest.get("capabilities"), dict) else None)
+    if lacking:  # API 1.22: an optional part it cannot work without, which this Starboard does not have
+        return f"It needs {', '.join(lacking[:3])}, which this Starboard does not have."
     gone = []
     gone += [f"the manifest field {k}" for k in sorted(set(manifest) - plugins.TOP)]
     gone += [f"the permission {p}" for p in (manifest.get("permissions") or []) if isinstance(p, str) and p not in plugins.PERMISSIONS]

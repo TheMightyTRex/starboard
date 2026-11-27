@@ -28,6 +28,15 @@ the next major version.
 - Nothing was taken away. Plug-in API 1.18 was left for this change; the next additive version is 1.24 (1.23 is taken by DASH-585 and DASH-604). Name `>=1.24` in
   `starboard_api` to use either addition.
 
+## Plug-in API 1.23.0 (not released yet), 27 November 2026
+
+- **Added:** `replaces_or_adds`, one line (up to 140 characters) on what a plug-in replaces or adds to, in the manifest and in a
+  catalogue entry, and `icon`, the name of one icon in Starboard's set for the plug-in's tab in Settings, Plug-ins. Read
+  [What it replaces or adds to](plugin-manifest-reference.md#what-it-replaces-or-adds-to-replaces_or_adds) and
+  [The tab icon](plugin-manifest-reference.md#the-tab-icon-icon).
+- **Changed:** nothing a plug-in relies on. A plug-in that does not use the new fields works as before. `GET /api/session` lists
+  each added plug-in with `icon` (empty when it names none or names one Starboard does not have).
+
 ## Plug-in API 1.21.0 (not released yet), 27 November 2026
 
 - **Added:** `needs_plugins`, the plug-ins a plug-in needs, and `switch`, the setting that is a plug-in's main switch. Deactivating a
@@ -44,6 +53,8 @@ the next major version.
   offered. Read [Capabilities](plugin-manifest-reference.md#capabilities-api-122).
 - **Changed:** the plug-in tester warns when `starboard_api` has no top end or reaches past the next major version, or starts
   lower than the version a field you use came in at. The tester also says when `starboard_tested` is missing.
+- **Added:** a plug-in that uses a manifest part that is going shows a warning on its page and in the plug-in tester, with the day it stops
+  (an error once it has been removed). Starboard counts, on this computer, which key still calls a route that is going.
 - Nothing was taken away. Name `>=1.22` in `starboard_api` to use either field.
 
 ## Starboard API 1.10.0 (not released yet), 26 November 2026
@@ -53,6 +64,8 @@ the next major version.
 - **Added:** every answer from a route that is going carries `Deprecation: @<Unix time>` ([RFC 9745](https://www.rfc-editor.org/rfc/rfc9745)),
   `Sunset: <date>` ([RFC 8594](https://www.rfc-editor.org/rfc/rfc8594)) and a `Link` with `rel="deprecation"` to the page about the change.
   Once it is removed it answers [`410 gone`](../../api/errors.md#gone), never a bare not found.
+- **Added:** an entry in `deprecations` may name a part of a plug-in's manifest, in `manifest` (such as `permission:jellyfin:key`), instead of
+  `method` and `path`.
 - Nothing was taken away: every 1.9.0 address answers as before.
 
 ## Plug-in API 1.20.0 (not released yet), 26 November 2026

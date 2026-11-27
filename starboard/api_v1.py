@@ -644,7 +644,7 @@ def routes():
     def backup_copies_get(h, m, q):  # DASH-452 (API 1.6.0): where copies go, the last copy and the last Test connection
         from . import backup_copies
         p = backup_copies.public(h.app.data_dir)
-        places = [{k: d.get(k) for k in ("id", "title", "kind", "kind_words", "enabled", "where", "where_words", "service", "keep", "keep_settings",
+        places = [{k: d.get(k) for k in ("id", "title", "kind", "kind_words", "enabled", "every", "where", "where_words", "service", "keep", "keep_settings",
                                           "status", "tested", "state_word", "shape")} for d in p.get("destinations") or []]
         from . import settings_zip
         return scrub({**{k: p.get(k) for k in ("kind", "where", "where_words", "service", "keep", "status", "tested")},
@@ -1013,6 +1013,8 @@ def handle(h, method, path):
         return problem(429, "rate_limited", f"Up to {PER_MINUTE} requests a minute for each key", extra={**rate, "Retry-After": str(wait)})
     note_use(h.app.data_dir, k)
     h.api_key = k
+    if going and not going.get("removed"):
+        deprecations.note_use(h.app.data_dir, k["id"], going)  # DASH-603: who still calls a route that is going
     if mcp:
         from . import mcp as mcp_server
         return mcp_server.handle(h, k, base, rate, problem)
