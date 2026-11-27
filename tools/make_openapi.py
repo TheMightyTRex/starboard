@@ -81,7 +81,9 @@ spec = {
                                   "content": {"application/problem+json": {"schema": {"$ref": "#/components/schemas/Problem"}}}}},
         "schemas": {
             "Root": {"type": "object", "required": ["api_version", "starboard_version", "links"],
-                     "properties": {"api_version": {"type": "string"}, "starboard_version": {"type": "string"}, "links": {"type": "object"}}},
+                     "properties": {"api_version": {"type": "string"}, "starboard_version": {"type": "string"}, "links": {"type": "object"},
+                                   "deprecations": {"type": "array", "description": "Features that are going: each has method, path, deprecated, sunset (dates), replacement and removed.",
+                                                    "items": {"type": "object", "additionalProperties": True}}}},
             "Key": {"type": "object", "required": ["id", "name", "right", "scopes", "created_at", "prefix"],
                     "properties": {"id": {"type": "string"}, "name": {"type": "string"}, "right": {"type": "string", "enum": list(api_v1.RIGHTS)},
                                    "scopes": {"type": "array", "items": {"type": "string", "enum": list(api_v1.ALL_SCOPES)}},

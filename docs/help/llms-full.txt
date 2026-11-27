@@ -416,7 +416,7 @@ Source: docs/help/developers/api-reference.md
 
 # API reference
 
-This page is made from Starboard's API description, `starboard/openapi.json` (version 1.9.0), by `tools/make_api_reference.py`. It lists every address in version 1 of the API.
+This page is made from Starboard's API description, `starboard/openapi.json` (version 1.10.0), by `tools/make_api_reference.py`. It lists every address in version 1 of the API.
 
 - Every address starts with `/api/v1` on your Starboard, such as `http://192.168.1.20:8095/api/v1/apps`.
 - Every request except the description itself needs a key, sent as `Authorization: Bearer` and the key. Addresses that change something are `POST` and need a key made with **Read and manage**. Read [Authentication and keys].
@@ -2913,6 +2913,7 @@ The named objects the answers use.
 | `api_version` | text | yes |
 | `starboard_version` | text | yes |
 | `links` | an object (its fields vary) | yes |
+| `deprecations` | a list of an object (its fields vary) | no |
 
 ### UpdateRun
 
@@ -3000,6 +3001,12 @@ what works.
 **403.** The key only reads, and this address changes something. Make a key with **Read and manage** in
 **Settings**, **Security**, **API keys**, with only the scopes it needs.
 
+## gone
+
+**410.** This address was removed after its notice period. `detail` names what replaces it, and a `Link` header points to
+the page about the change. Before it was removed, every answer from it carried `Deprecation` and `Sunset` headers, and
+`GET /api/v1/` listed it under `deprecations`.
+
 ## too_large
 
 **413.** The body is larger than 64 KB. Send a JSON object of up to 64 KB.
@@ -3061,6 +3068,15 @@ the next major version.
   `GET /api/v1/` answers `api_version`.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added].
+
+## Starboard API 1.10.0 (not released yet), 26 November 2026
+
+- **Added:** `deprecations` in `GET /api/v1/`: the features that are going, each with `method`, `path`, `deprecated` and `sunset`
+  (dates), `replacement` and `removed`. It is empty until something is deprecated.
+- **Added:** every answer from a route that is going carries `Deprecation: @<Unix time>` ([RFC 9745](https://www.rfc-editor.org/rfc/rfc9745)),
+  `Sunset: <date>` ([RFC 8594](https://www.rfc-editor.org/rfc/rfc8594)) and a `Link` with `rel="deprecation"` to the page about the change.
+  Once it is removed it answers [`410 gone`], never a bare not found.
+- Nothing was taken away: every 1.9.0 address answers as before.
 
 ## Plug-in API 1.20.0 (not released yet), 26 November 2026
 

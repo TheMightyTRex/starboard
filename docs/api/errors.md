@@ -37,6 +37,12 @@ what works.
 **403.** The key only reads, and this address changes something. Make a key with **Read and manage** in
 **Settings**, **Security**, **API keys**, with only the scopes it needs.
 
+## gone
+
+**410.** This address was removed after its notice period. `detail` names what replaces it, and a `Link` header points to
+the page about the change. Before it was removed, every answer from it carried `Deprecation` and `Sunset` headers, and
+`GET /api/v1/` listed it under `deprecations`.
+
 ## too_large
 
 **413.** The body is larger than 64 KB. Send a JSON object of up to 64 KB.
