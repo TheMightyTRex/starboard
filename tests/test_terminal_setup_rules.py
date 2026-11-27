@@ -133,23 +133,23 @@ class StepCountTest(unittest.TestCase):
         moving = ts.job_steps({"start": "move", "no_extras": True, "reelix_there": True, "place_answered": True, "no_disks": True})
         # DASH-267 and DASH-266: Docker access before any move, then what happens to the apps, then the move itself.
         # DASH-271: Find your apps is its own step, and API keys follow the move, as in the browser set-up.
-        self.assertEqual(moving, ["password", "start", "find", "docker", "movehow", "preset", "shadows", "move", "keys", "hours", "updates", "alerts"])
+        self.assertEqual(moving, ["password", "start", "find", "docker", "movehow", "preset", "shadows", "move", "keys", "people", "hours", "updates", "alerts"])
         beside = ts.job_steps({"start": "move", "no_extras": True, "choice": {"apps": ["reelix", "nzbget"]}, "place_answered": True,
                                "keys_missing": False, "no_disks": True})
         self.assertEqual(beside, ["password", "start", "find", "docker", "movehow", "apps", "usenet", "films", "preset", "shadows", "check", "move",
-                                  "hours", "updates", "alerts"])  # Reelix beside the old apps first; sites come with the move
+                                  "people", "hours", "updates", "alerts"])  # Reelix beside the old apps first; sites come with the move
         kept = ts.job_steps({"start": "move", "no_extras": True, "move_into": False, "place_answered": True, "no_hours": True})
-        self.assertEqual(kept, ["password", "start", "find", "docker", "movehow", "preset", "shadows", "keys", "updates", "alerts", "storage-page"])
+        self.assertEqual(kept, ["password", "start", "find", "docker", "movehow", "preset", "shadows", "keys", "people", "updates", "alerts", "storage-page"])
         self.assertNotIn("docker", ts.job_steps({"start": "move", "docker_access": True}))
 
     def test_a_new_install_leaves_out_what_the_apps_do_not_need(self):
         state = {"start": "new", "storage": {"key": "disk"}, "choice": {"apps": ["jellyfin"]}}
         self.assertEqual(ts.job_steps(state), ["password", "place", "keyboard", "start", "storage", "apps", "preset", "shadows", "check",
-                                               "extras", "hours", "updates", "alerts", "storage-page", "docker"])  # DASH-265: How much it does before Check; Docker last
+                                               "extras", "people", "hours", "updates", "alerts", "storage-page", "docker"])  # DASH-265: How much it does before Check; Docker last
         term, _ = boxed()
         term._page = lambda *a: None
         ts.head(term, state, "check")
-        self.assertIn("step 9 of 15", term.header[1])  # DASH-417: Updates after Download hours
+        self.assertIn("step 9 of 16", term.header[1])  # DASH-417: Updates after Download hours
 
 
 class ResizeTest(unittest.TestCase):

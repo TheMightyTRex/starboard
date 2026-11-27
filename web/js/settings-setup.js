@@ -338,6 +338,13 @@ async function stepContent(id, root, step = {}) {
       }
       return true;
     };
+  } else if (id === "people") {
+    // DASH-589: Will other people use your apps? One tick, unticked until chosen, in the same words as the terminal set-up
+    // (web/setup-answers.json). It saves a wish to install the Single sign-on plug-in; nothing is installed here.
+    const w = (await setupWords()).single_sign_on;
+    const tick = el("input", { type: "checkbox", checked: !!config.extras.single_sign_on });
+    nodes = [el("label", { class: "check" }, tick, el("span", { class: "check__text" }, el("strong", { text: w.label }), el("span", { class: "check__hint", text: w.hint })))];
+    save = async () => { await saveGeneral({ extras: { single_sign_on: tick.checked } }); return true; };
   } else if (id === "hours") {
     const on = el("input", { type: "checkbox", checked: config.download_hours.enabled });
     const hour = (v) => el("select", { class: "select" }, Array.from({ length: 24 }, (_, h) => el("option", { value: String(h), text: `${String(h).padStart(2, "0")}:00`, selected: h === v })));
@@ -609,6 +616,7 @@ async function startGuide() {
     }
     const coming = (keys) => !!flow && keys.some((k) => flow.state.apps.has(k));  // installed by this set-up
     if (types(["jellyfin"]).length || coming(["jellyfin"])) list.push({ id: "jellyfin", ...stepNamed(T, "extras"), intro: "Each one is inactive until you tick it. All are in Settings, Apps, Jellyfin later." });
+    list.push({ id: "people", ...stepNamed(T, "people"), intro: "You can change this later in Settings, Plug-ins, and add people in Settings, People." });
     if (types(["qbittorrent", "nzbget", "sabnzbd"]).some((s) => s.has_api_key) || coming(["qbittorrent", "nzbget", "sabnzbd"])) list.push({ id: "hours", ...stepNamed(T, "hours"), intro: "Starboard pauses qBittorrent, NZBGet, SABnzbd and Soulseek (slskd) outside these hours, for example to keep the internet free in the day." });
     // DASH-417: after Download hours, so it can name the quiet hours; Reelix's choice only when Reelix is being installed.
     list.push({ id: "updates", ...stepNamed(T, "updates"), has: { reelix: coming(["reelix"]), jellyfin: coming(["jellyfin"]) } });
@@ -683,7 +691,7 @@ async function startGuide() {
       const uw = (await setupWords()).updates;  // DASH-417, as the terminal says it
       const facts = [
         ["Apps", `${apps} ${apps === 1 ? "app" : "apps"}${keyless.length ? `; still without a key: ${keyless.join(", ")}` : ""}`, "/settings.html"],
-        ["Jellyfin extras", ["livetv", "import_keep", "defaults", "audio_description"].filter((k) => config.extras[k]).map((k) => ({ livetv: "Live TV", import_keep: "history import", defaults: "user defaults", audio_description: "audio description (to install in Settings, Plug-ins)" })[k]).join(", ") || "None", "/settings-jellyfin.html"],
+        ["Jellyfin extras", ["livetv", "import_keep", "defaults", "audio_description", "single_sign_on"].filter((k) => config.extras[k]).map((k) => ({ livetv: "Live TV", import_keep: "history import", defaults: "user defaults", audio_description: "audio description (to install in Settings, Plug-ins)", single_sign_on: "single sign-on (to install in Settings, Plug-ins)" })[k]).join(", ") || "None", "/settings-jellyfin.html"],
         [uw.summary, updatesSummary(uw, config), "/settings-updates.html"],
         ["Download hours", config.download_hours.enabled ? `${String(config.download_hours.start).padStart(2, "0")}:00 to ${String(config.download_hours.end).padStart(2, "0")}:00` : "Deactivated", "/settings-downloads-hours.html"],
         ["Alerts", config.watch.enabled ? `Activated, to ${config.watch.channel.kind || "nowhere yet"}` : "Deactivated", "/settings-general-alerts.html"],

@@ -76,6 +76,8 @@ async function startPeople() {
     if (limit) add.disabled = true;
     box.replaceChildren(
       section("people", "People", null,
+        notice("info", "Single sign-on is recommended when other people use your apps", "It gives each person their own sign-in. Leave it off on a server only you use, so nothing extra runs. It is a plug-in: add it in Settings, Plug-ins, Catalogue. Its address is your server's Tailscale name, which you choose once, because changing it later makes every passkey stop working.",
+          el("a", { class: "btn", href: "/settings-plugins-catalogue.html" }, "Open the plug-in catalogue")),
         notice("info", "What Starboard does in your apps", "In Jellyfin and Audiobookshelf, Starboard can make an account, pause it, resume it and delete it, and give a child limits. Open More beside an account. In other apps, such as Emby and Kavita, it only records the account and the password: make and change them in the app, then choose It is set in the app."),
         el("div", { class: "actions" }, add, savedNote("people-saved"), limit ? el("span", { class: "small muted", text: `Starboard keeps up to ${data.limit} people.` }) : null),
         peopleTable("People, with their role, state and accounts", ["Name", "Role", "State", "Accounts", "Manage"], rows),

@@ -152,6 +152,12 @@
    "help": "topics/set-up-live-tv.md"
   },
   {
+   "id": "people",
+   "title": "Other people",
+   "question": "Will other people use your apps?",
+   "help": "topics/add-the-people-who-use-your-apps.md"
+  },
+  {
    "id": "hours",
    "title": "Download hours",
    "question": "Only download at set hours?",
