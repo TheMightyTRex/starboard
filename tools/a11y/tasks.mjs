@@ -799,6 +799,56 @@ if (sw1) {
   check("T-WIZARD", "Escape closes the wizard and focus goes back to Switch with help", /^Switch with help/.test(out.text), JSON.stringify(out));
 }
 
+// T-WIZARD3 (DASH-587) Carrying a media server move across by keyboard alone, with made-up answers for the servers: step 3 names
+// each part with a tick box that has its words, Tab reaches the ticks and the last button, Enter starts it, the progress is said
+// in a polite live region, focus lands on Close when it ends, and Escape returns focus to Switch with help.
+await page.goto(`${base}/settings-jellyfin.html`);
+await settle();
+await page.evaluate(async () => {
+  const real = window.api;
+  const mig = { problem: "", inside: "/data/media", libraries: [{ name: "Films", type: "movies", folders: ["/data/media/movies"], action: "add", why: "" }],
+    users: [{ name: "Sam", action: "add", why: "" }], history: { can: true, says: "Read from Jellyfin and marked in Emby for each person with the same name." } };
+  const done = { state: "done", said: "Done. The old media server stays added, and you can go back to it for 24 hours.", steps: [
+    { part: "libraries", title: "Libraries", state: "done", said: "Added 1 library to Emby", items: [] }, { part: "switch", title: "The switch", state: "done", said: "Emby is now your media server", items: [] }] };
+  window.api = async (p, o) => {
+    if (p === "/api/media-server" && !o) return { ...(await real(p, o)), available: [{ id: "jellyfin", name: "Jellyfin", page: "/settings-jellyfin.html", set_up: true, has_app: true }, { id: "emby", name: "Emby", page: "/settings-jellyfin.html", set_up: true, has_app: true }], added: ["jellyfin", "emby"] };
+    if (p === "/api/media-server/plan") return { ...(await real(p, o)), migration: mig, check: { ok: true, name: "Emby", said: "It answered.", libraries: ["Films"] } };
+    if (p === "/api/media-server/migrate") return done;
+    return real(p, o);
+  };
+  await startMediaServer();
+});
+await settle();
+const sw3 = await tabTo((f) => f.tag === "BUTTON" && /^Switch with help/.test(f.text), 80);
+if (sw3) {
+  await page.keyboard.press("Enter");
+  await settle();
+  const r3 = await tabTo((f) => f.tag === "INPUT" && f.name === "wizard-way", 6);
+  if (r3) await page.keyboard.press("ArrowDown");
+  for (let i = 0; i < 2; i++) {
+    const n = await tabTo((f) => f.tag === "BUTTON" && f.text === "Next", 6);
+    if (n) { await page.keyboard.press("Enter"); await settle(); }
+  }
+  await page.waitForFunction(() => /^Carry across/.test([...document.querySelectorAll("#side-panel button")].map((b) => b.textContent).find((t) => /^Carry across/.test(t)) || ""), null, { timeout: 8000 }).catch(() => {});
+  const labelled = await page.evaluate(() => [...document.querySelectorAll("#side-panel input[type=checkbox]")].map((i) => !!(i.labels && i.labels[0] && i.labels[0].textContent.trim())));
+  check("T-WIZARD3", "every tick on step 3 has its words", labelled.length >= 2 && labelled.every(Boolean), JSON.stringify(labelled));
+  const tick = await tabTo((f) => f.tag === "INPUT" && /^wizard-part-/.test(f.id), 10);
+  check("T-WIZARD3", "Tab reaches a tick", !!tick, tick ? tick.id : "not reached");
+  const go3 = await tabTo((f) => f.tag === "BUTTON" && /^Carry across/.test(f.text), 30);
+  check("T-WIZARD3", "Tab reaches Carry across and switch", !!go3, go3 ? go3.text : "not reached");
+  if (go3) {
+    await page.keyboard.press("Enter");
+    await page.waitForSelector("#wizard-progress .notice", { timeout: 8000 }).catch(() => {});
+    await settle();
+    const live3 = await page.evaluate(() => { const l = document.getElementById("wizard-progress"); return { role: l?.getAttribute("role"), live: l?.getAttribute("aria-live"), text: l?.innerText || "" }; });
+    check("T-WIZARD3", "progress is said in a polite status region, in words", live3.role === "status" && live3.live === "polite" && /Finished/.test(live3.text) && /Libraries/.test(live3.text), JSON.stringify(live3));
+    const end3 = await focus();
+    check("T-WIZARD3", "when it ends focus is on Close", /^Close/.test(end3.text) && end3.inPanel, JSON.stringify(end3));
+    await page.keyboard.press("Escape");
+    await settle();
+  }
+} else check("T-WIZARD3", "Tab reaches Switch with help", false, "not reached");
+
 // T23 Reduce motion (DASH-437): Off means full movement even when the device asks for less; Match device follows the
 // device; On stills movement on a device that does not ask. Checked in the styles and scripts a slide-out, a message
 // and the loading line use, as Display leaves them after a reload.

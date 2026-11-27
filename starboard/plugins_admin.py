@@ -817,6 +817,40 @@ def ensure_default(data_dir, services):
     return True
 
 
+def ensure_installed(data_dir, services):
+    """DASH-586: Plex and Emby installed from Starboard (or added in Manage apps) show as media servers that are installed
+    and not in use, with no second step in the catalogue. When a Plex or Emby app is in Manage apps, its built-in media
+    server plug-in is added as a record (nothing runs), and made active once the app has its key, so it can be chosen.
+    It is additive and idempotent: it never changes a state a person chose, only the one it made itself ("auto"), and it
+    does not add a plug-in that was removed on purpose. Returns the ids it added or woke."""
+    done = []
+    for pid in ("plex", "emby"):
+        svc = next((s for s in services or [] if isinstance(s, dict) and s.get("type") == pid and s.get("enabled", True) and s.get("url")), None)
+        shipped = builtins().get(pid) if svc else None
+        if not shipped:
+            continue
+        where = folder(data_dir, pid)
+        has_key = bool(svc.get("api_key"))
+        if not _read(os.path.join(where, "manifest.json")):
+            try:
+                if any(n.startswith(f"{pid}-") for n in os.listdir(os.path.join(root(data_dir), ".removed"))):
+                    continue
+            except OSError:
+                pass
+            install(data_dir, shipped, "", builtin=True, listed=False)
+            st = _read(os.path.join(where, "state.json"), {}) or {}
+            _write(os.path.join(where, "state.json"), {**st, "auto": True})
+            if has_key:
+                set_state(data_dir, pid, "enabled")
+            done.append(pid)
+        else:
+            st = _read(os.path.join(where, "state.json"), {}) or {}
+            if st.get("auto") and st.get("state") == "installed" and has_key:
+                set_state(data_dir, pid, "enabled")
+                done.append(pid)
+    return done
+
+
 _default_seen = set()
 _default_lock = threading.Lock()
 

@@ -1,4 +1,4 @@
-// Settings, Apps, the media server tab (DASH-565): the tab is named for the media server in use (Jellyfin, Plex or Emby; Media
+// Settings, Apps, the media server tab (DASH-565; side by side, DASH-586): the tab is named for the media server in use (Jellyfin, Plex or Emby; Media
 // server when there is none). It says whether it is set up, has a check that it answers, the choice of another one or none
 // and the way back for 24 hours. Starboard never switches by itself; a new choice is checked first. Jellyfin's own sections
 // (settings-jellyfin.js) draw above these while Jellyfin is in use; Plex and Emby have their address and token in Manage apps.
@@ -58,6 +58,38 @@ async function startMediaServer() {
       el("p", { class: "small muted", text: `Play, Watched, Live TV and the other Jellyfin tools stay with Jellyfin: ${current.name} is read only for now.` }));
   }
 
+  // Side by side (DASH-586): Jellyfin, Plex and Emby can all be installed to try. One is in use; each of the others is "installed, not in
+  // use" once it is set up, and can be checked here without switching. One that is not installed links to Install apps.
+  const stateOf = (a) => a.id === ms.active ? ["In use", "success", "circle-check"]
+    : a.set_up ? ["Installed, not in use", "info", "circle-check"]
+      : a.has_app ? ["Added, not set up", "warning", "triangle-alert"] : ["Not installed", "muted", "minus"];
+  const sideRows = ms.available.map((a) => {
+    const [words, tone, ic] = stateOf(a);
+    const row = el("li", { class: "row", "data-server": a.id }, el("div", { class: "row__main" },
+      el("strong", { class: "row__title", text: a.name }), el("div", {}, chip(words, tone, ic)),
+      el("span", { class: "small muted", text: a.id === ms.active ? "Starboard shows this one on the dashboard, in Library, in Activity and in System."
+        : a.set_up ? "Starboard asks it nothing until you use it, so it costs your computer only what the server itself uses."
+          : a.has_app ? `Add its ${a.id === "plex" ? "token" : "key"} in Manage apps so Starboard can ask it to answer.` : "Add it from Install apps, or add one you already run in Manage apps." })));
+    const acts = el("div", { class: "actions" });
+    if (a.set_up && a.id !== ms.active) {
+      const b = el("button", { type: "button", class: "btn" }, icon("activity"), "Check it now", el("span", { class: "visually-hidden", text: ` ${a.name}` }));
+      b.addEventListener("click", async () => {
+        b.disabled = true;
+        say("info", "Checking…", `Asking ${a.name} to answer. Nothing changes.`);
+        try { const r = await api("/api/media-server/check", { method: "POST", body: { id: a.id } }); say(r.ok ? "success" : "warning", r.ok ? `${r.name} answered` : `${r.name} did not answer`, r.said); }
+        catch (err) { say("danger", "The check did not run", err.message); } finally { b.disabled = false; b.focus(); }
+      });
+      acts.append(b);
+    } else if (!a.has_app) {
+      acts.append(el("a", { class: "btn", href: "/install-apps.html" }, icon("plus"), `Install ${a.name}`, el("span", { class: "visually-hidden", text: " with Starboard" })));
+    } else if (!a.set_up) {
+      acts.append(el("a", { class: "btn", href: `/settings.html?edit=${encodeURIComponent((config?.services || []).find((s) => s.type === a.id)?.id || "")}` }, icon("pencil"), `Edit ${a.name}`));
+    }
+    row.append(acts);
+    return row;
+  });
+  const side = part("ms-side", "Installed side by side", "You can run Jellyfin, Plex and Emby together to try them. Only one is in use at a time.", el("ul", { class: "rows" }, sideRows));
+
   // Choose ----------------------------------------------------------------------------------------------------------
   const options = [...ms.available.map((a) => ({ id: a.id, name: a.name, added: ms.added.includes(a.id) })), { id: "", name: "None", added: true }];
   const radios = options.map((o) => ({ o, input: el("input", { type: "radio", name: "ms-choice", value: o.id, id: `ms-choice-${o.id || "none"}`, checked: o.id === ms.active, disabled: !o.added }) }));
@@ -110,6 +142,6 @@ async function startMediaServer() {
       el("div", { class: "actions" }, go));
   }
   root.replaceChildren(section("ms-section", "Media server", "The media server Starboard shows on the dashboard, in Library, in Activity and in System. Starboard uses one at a time.",
-    ...[using, own, pick, back].filter(Boolean)));
+    ...[using, own, side, pick, back].filter(Boolean)));
 }
 

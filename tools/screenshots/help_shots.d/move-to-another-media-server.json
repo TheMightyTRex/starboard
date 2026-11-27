@@ -1,0 +1,61 @@
+{
+  "shots": [
+    {
+      "topic": "move-to-another-media-server",
+      "file": "move-to-another-media-server-1-side-by-side.png",
+      "page": "settings-jellyfin.html",
+      "height": 800,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const until = async (f, n = 60) => { for (let i = 0; i < n && !f(); i++) await wait(250); return f(); }; await until(() => document.querySelector('#ms-use-h')); const real = window.api; window.api = async (p, o) => (p === '/api/media-server' && !o ? { ...(await real(p, o)), available: [{ id: 'jellyfin', name: 'Jellyfin', page: '/settings-jellyfin.html', set_up: true, has_app: true }, { id: 'emby', name: 'Emby', page: '/settings-jellyfin.html', set_up: false, has_app: false }, { id: 'plex', name: 'Plex', page: '/settings-jellyfin.html', set_up: true, has_app: true }], added: ['jellyfin', 'plex'] } : real(p, o)); await startMediaServer(); await until(() => document.querySelector('li[data-server=plex] button')); const b = document.querySelector('li[data-server=plex] button'); b.dataset.shot = 'check'; document.querySelector('#ms-side-h').scrollIntoView({ block: 'start' }); await wait(400);",
+      "marks": [
+        {
+          "t": "$button[data-shot=check]",
+          "step": 3,
+          "side": "right",
+          "tail": 110
+        }
+      ],
+      "steps": [
+        3
+      ],
+      "alt": "Installed side by side, with Check it now beside Plex (step 3) outlined, with example data"
+    },
+    {
+      "topic": "move-to-another-media-server",
+      "file": "move-to-another-media-server-2-plan.png",
+      "page": "settings-jellyfin.html",
+      "height": 800,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const until = async (f, n = 60) => { for (let i = 0; i < n && !f(); i++) await wait(250); return f(); }; await until(() => document.querySelector('#ms-use-h')); const real = window.api; const MIG = { problem: '', inside: '/data/media', libraries: [{ name: 'Films', type: 'movies', folders: ['/data/media/movies'], action: 'add', why: '' }, { name: 'Series', type: 'tvshows', folders: ['/data/media/tv'], action: 'add', why: '' }, { name: 'Music', type: 'music', folders: ['/data/media/music'], action: 'exists', why: 'The new media server has it already' }], users: [{ name: 'Sam', action: 'add', why: '' }, { name: 'Alex', action: 'exists', why: 'The new media server has this person already' }], history: { can: true, says: 'Read from Jellyfin and marked in Emby for each person with the same name. Run it again when Emby has scanned its libraries' } }; window.api = async (p, o) => { if (p === '/api/media-server' && !o) return { ...(await real(p, o)), available: [{ id: 'jellyfin', name: 'Jellyfin', page: '/settings-jellyfin.html', set_up: true, has_app: true }, { id: 'emby', name: 'Emby', page: '/settings-jellyfin.html', set_up: true, has_app: true }, { id: 'plex', name: 'Plex', page: '/settings-jellyfin.html', set_up: false, has_app: false }], added: ['jellyfin', 'emby'] }; if (p === '/api/media-server/plan') { const got = await real(p, o); return { ...got, migration: MIG, check: { ok: true, name: 'Emby', said: 'It answered (version 4.8.10). It has 3 libraries: Films, Series, Music.', libraries: ['Films', 'Series', 'Music'] } }; } return real(p, o); }; await startMediaServer(); const open = [...document.querySelectorAll('button')].find((x) => x.textContent.includes('Switch with help')); open.scrollIntoView({ block: 'center' }); open.click(); await until(() => document.querySelector('#wizard-way-own')); document.querySelector('#wizard-way-migrate').click(); const nx = () => [...document.querySelectorAll('#side-panel button')].find((x) => /^(Next|Carry across)/.test(x.textContent)); nx().click(); await until(() => document.querySelector('#wizard-target-emby')); nx().click(); await until(() => [...document.querySelectorAll('#side-panel button')].some((x) => /^Carry across/.test(x.textContent))); await wait(500); const ticks = [...document.querySelectorAll('#side-panel .check')]; ticks.forEach((c) => { c.dataset.shot = 'ticks'; }); ticks[0].scrollIntoView({ block: 'center' }); await wait(400);",
+      "marks": [
+        {
+          "t": "$$[data-shot=ticks]",
+          "step": 4,
+          "side": "auto",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        4
+      ],
+      "alt": "Step 3 of the wizard, with the ticks for libraries, people and what was watched (step 4) outlined, with example data"
+    },
+    {
+      "topic": "move-to-another-media-server",
+      "file": "move-to-another-media-server-3-done.png",
+      "page": "settings-jellyfin.html",
+      "height": 800,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const until = async (f, n = 60) => { for (let i = 0; i < n && !f(); i++) await wait(250); return f(); }; await until(() => document.querySelector('#ms-use-h')); const real = window.api; const MIG = { problem: '', inside: '/data/media', libraries: [{ name: 'Films', type: 'movies', folders: ['/data/media/movies'], action: 'add', why: '' }, { name: 'Series', type: 'tvshows', folders: ['/data/media/tv'], action: 'add', why: '' }, { name: 'Music', type: 'music', folders: ['/data/media/music'], action: 'exists', why: 'The new media server has it already' }], users: [{ name: 'Sam', action: 'add', why: '' }, { name: 'Alex', action: 'exists', why: 'The new media server has this person already' }], history: { can: true, says: 'Read from Jellyfin and marked in Emby for each person with the same name. Run it again when Emby has scanned its libraries' } }; const DONE = { state: 'done', said: 'Done. The old media server stays added, and you can go back to it for 24 hours.', steps: [{ part: 'libraries', title: 'Libraries', state: 'done', said: 'Added 2 libraries to Emby', items: [] }, { part: 'users', title: 'People', state: 'done', said: 'Made 1 person in Emby. Each has a password nobody has seen: set one in the Emby dashboard under Users', items: [] }, { part: 'history', title: 'What was watched', state: 'partly', said: 'Marked 412 as watched and set 3 resume points in Emby; 9 are not there yet. Run this again when it has scanned its libraries', items: [{ name: 'Sam: Harbour S01E04', state: 'skipped', why: 'Not in the new media server yet' }] }, { part: 'switch', title: 'The switch', state: 'done', said: 'Emby answered and is now your media server. Jellyfin stays added; you can go back to it for 24 hours', items: [] }] }; window.api = async (p, o) => { if (p === '/api/media-server' && !o) return { ...(await real(p, o)), available: [{ id: 'jellyfin', name: 'Jellyfin', page: '/settings-jellyfin.html', set_up: true, has_app: true }, { id: 'emby', name: 'Emby', page: '/settings-jellyfin.html', set_up: true, has_app: true }, { id: 'plex', name: 'Plex', page: '/settings-jellyfin.html', set_up: false, has_app: false }], added: ['jellyfin', 'emby'] }; if (p === '/api/media-server/plan') { const got = await real(p, o); return { ...got, migration: MIG, check: { ok: true, name: 'Emby', said: 'It answered (version 4.8.10). It has 3 libraries: Films, Series, Music.', libraries: ['Films', 'Series', 'Music'] } }; } if (p === '/api/media-server/migrate') return DONE; return real(p, o); }; await startMediaServer(); const open = [...document.querySelectorAll('button')].find((x) => x.textContent.includes('Switch with help')); open.scrollIntoView({ block: 'center' }); open.click(); await until(() => document.querySelector('#wizard-way-own')); document.querySelector('#wizard-way-migrate').click(); const nx = () => [...document.querySelectorAll('#side-panel button')].find((x) => /^(Next|Carry across)/.test(x.textContent)); nx().click(); await until(() => document.querySelector('#wizard-target-emby')); nx().click(); await until(() => [...document.querySelectorAll('#side-panel button')].some((x) => /^Carry across/.test(x.textContent))); await wait(500); nx().click(); await until(() => document.querySelector('#wizard-progress .notice')); await wait(600); const live = document.querySelector('#wizard-progress'); live.dataset.shot = 'steps'; live.scrollIntoView({ block: 'start' }); await wait(300);",
+      "marks": [
+        {
+          "t": "$[data-shot=steps]",
+          "step": 2,
+          "side": "auto",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        2
+      ],
+      "alt": "The result of the move, with the Libraries, People and What was watched steps (step 2) outlined, with example data"
+    }
+  ]
+}

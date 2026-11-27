@@ -59,20 +59,21 @@ class Plan(unittest.TestCase):
             self.assertEqual(feats[name]["state"], "repoint", name)
 
     def test_the_three_ways_say_different_things_and_all_say_what_is_unaffected(self):
-        with self.fake_check():
+        with self.fake_check(), mock.patch("starboard.media_migrate.preview", return_value={"libraries": [], "users": [], "history": None, "problem": "", "inside": ""}):
             own, mig, fresh = (sw.plan(DATA, "plex", m, LISTED) for m in ("own", "migrate", "fresh"))
         self.assertIn("same media folders", own["moves"][0])
-        self.assertTrue(any("cannot be copied into Plex yet" in m for m in mig["moves"]))
+        self.assertTrue(any("Plex accounts belong to plex.tv" in m for m in mig["moves"]))
+        self.assertTrue(any("owns the token only" in m for m in mig["moves"]))
         self.assertFalse(mig["import_history"])
         self.assertIn("starts empty", fresh["moves"][0])
         for p in (own, mig, fresh):
             self.assertTrue(any("download apps" in u for u in p["unaffected"]))
             self.assertTrue(any("Collections" in c for c in p["cannot_move"]))
-        with self.fake_check():
+        with self.fake_check(), mock.patch("starboard.media_migrate.preview", return_value={"libraries": [], "users": [], "history": None, "problem": "", "inside": ""}):
             self.assertTrue(sw.plan({**DATA, "extras": {"media_server": "plex"}}, "jellyfin", "migrate", LISTED)["import_history"])
 
     def test_the_new_server_is_asked_first_and_a_server_that_does_not_answer_is_said(self):
-        with self.fake_check(ok=False) as c:
+        with self.fake_check(ok=False) as c, mock.patch("starboard.media_migrate.preview", return_value={"libraries": [], "users": [], "history": None, "problem": "Cannot reach Plex", "inside": ""}):
             p = sw.plan(DATA, "plex", "own", LISTED)
         c.assert_called_once()
         self.assertFalse(p["check"]["ok"])
