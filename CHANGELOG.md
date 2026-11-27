@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Changed
+- **The next version cannot be undone, so the updates stop at it.** Starboard 0.40.0 is a clean break. The automatic update and Install all updates now hold it back and wait for you. Update now says in plain words that you cannot go back to an older Starboard after it, saves a backup of your settings first, shows the backup's name in the update log and needs your yes. An update from a script or an AI assistant is refused with the same words. Nothing else changes.
+
 ## [0.31.0] (25 November 2026)
 
 ### Added
