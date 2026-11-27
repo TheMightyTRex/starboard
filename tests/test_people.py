@@ -8,7 +8,7 @@ import threading
 import unittest
 from unittest import mock
 
-from starboard import auth, logs, people, shell
+from starboard import auth, logs, people, services as services_mod, shell
 from starboard.server import make_server
 
 PASSWORD = "correct horse battery"
@@ -378,3 +378,107 @@ class Page(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Stage3Routes(Server):
+    """The routes that reach into the apps, with the app calls themselves stood in (tests/test_people_accounts.py checks those).
+    It builds on the server above, so its own tests run again here: that is cheap and harmless."""
+
+    def make(self, name, role="household"):
+        pid = self.api("POST", "/api/people", {"name": name, "role": role})[1]["person"]
+        for app in ("jellyfin", "audiobookshelf"):
+            self.api("POST", f"/api/people/{pid}/accounts/{app}/password", {})
+        return pid
+
+    def test_the_app_list_says_where_accounts_can_be_made(self):
+        apps = self.api("GET", "/api/people")[1]["apps"]
+        self.assertEqual({a["id"]: a["can_accounts"] for a in apps}, {"jellyfin": True, "audiobookshelf": True})
+
+    def test_making_the_account_asks_the_starboard_password_and_records_it_as_set(self):
+        from starboard import people_accounts
+        pid, path = self.make("Maker"), None
+        path = f"/api/people/{pid}/accounts/jellyfin/in-app"
+        seen = []
+        with mock.patch.object(people_accounts, "ensure", lambda s, app, user, pw, child=False, limits=None: seen.append((app, user, pw, child, limits)) or "Made the account in Jellyfin"):
+            self.assertEqual(self.api("POST", path, {"action": "make"})[0], 401)
+            self.assertEqual(seen, [])
+            status, out = self.api("POST", path, {"action": "make", "password": PASSWORD, "libraries": ["a"]})
+        self.assertEqual(status, 200)
+        self.assertEqual(seen[0][:2] + seen[0][3:], ("jellyfin", "Maker", False, {"rating": "", "libraries": ["a"]}))
+        self.assertEqual(seen[0][2], people.reveal(self.tmp.name, pid, "jellyfin")["password"])
+        self.assertEqual(next(a for p in out["people"] if p["id"] == pid for a in p["accounts"] if a["app"] == "jellyfin")["state"], "in-use")
+
+    def test_a_child_is_made_with_a_child_s_limits(self):
+        from starboard import people_accounts
+        pid = self.make("Kid", "child")
+        seen = []
+        with mock.patch.object(people_accounts, "ensure", lambda s, app, user, pw, child=False, limits=None: seen.append(child) or "ok"):
+            self.api("POST", f"/api/people/{pid}/accounts/audiobookshelf/in-app", {"action": "make", "password": PASSWORD})
+        self.assertEqual(seen, [True])
+
+    def test_removing_in_the_app_needs_the_password_and_a_plain_confirm(self):
+        from starboard import people_accounts
+        pid = self.make("Remover")
+        path = f"/api/people/{pid}/accounts/jellyfin/in-app"
+        gone = []
+        with mock.patch.object(people_accounts, "remove", lambda s, app, user: gone.append(user) or "Removed the account in Jellyfin"):
+            self.assertEqual(self.api("POST", path, {"action": "remove", "confirm": True})[0], 401)
+            self.assertEqual(self.api("POST", path, {"action": "remove", "password": PASSWORD})[0], 400)  # no confirm
+            self.assertEqual(gone, [])
+            self.assertEqual(self.api("POST", path, {"action": "remove", "password": PASSWORD, "confirm": True})[0], 200)
+        self.assertEqual(gone, ["Remover"])
+
+    def test_pausing_a_person_can_pause_their_accounts_and_a_failed_app_does_not_stop_the_rest(self):
+        from starboard import people_accounts
+        pid = self.make("Pauser")
+        calls = []
+
+        def paused(s, app, user, p):
+            calls.append((app, user, p))
+            if app == "audiobookshelf":
+                raise services_mod.ServiceError("Audiobookshelf did not answer")
+            return "Paused the account in Jellyfin"
+        with mock.patch.object(people_accounts, "set_paused", paused):
+            status, out = self.api("POST", f"/api/people/{pid}/pause", {"also_apps": True})
+        self.assertEqual(status, 200)
+        self.assertEqual(calls, [("audiobookshelf", "Pauser", True), ("jellyfin", "Pauser", True)])
+        self.assertEqual([(r["app"], r["ok"]) for r in out["apps"]], [("audiobookshelf", False), ("jellyfin", True)])
+        self.assertEqual(next(p for p in out["people"] if p["id"] == pid)["state"], "paused")
+        with mock.patch.object(people_accounts, "set_paused", lambda s, app, user, p: calls.append((app, p)) or "ok"):
+            self.api("POST", f"/api/people/{pid}/resume", {"also_apps": True})
+        self.assertEqual(calls[-2:], [("audiobookshelf", False), ("jellyfin", False)])
+        with mock.patch.object(people_accounts, "set_paused", lambda s, app, user, p: calls.append("never") or "ok"):
+            self.api("POST", f"/api/people/{pid}/pause", {})  # no also_apps: the apps are not touched
+        self.assertNotIn("never", calls)
+
+    def test_forgetting_can_delete_the_accounts_and_stops_if_one_cannot_be_deleted(self):
+        from starboard import people_accounts
+        pid = self.make("Forgetter")
+        self.api("POST", f"/api/people/{pid}/remove", {})
+        data = people._read(self.tmp.name)
+        next(p for p in data["people"] if p["id"] == pid)["removed_at"] = "2026-01-01T00:00:00Z"
+        people._write(self.tmp.name, data)
+
+        def fail(s, app, user):
+            raise services_mod.ServiceError("Jellyfin refused the API key")
+        with mock.patch.object(people_accounts, "remove", fail):
+            status, out = self.api("POST", f"/api/people/{pid}/forget", {"password": PASSWORD, "delete_in_apps": True})
+        self.assertEqual(status, 502)
+        self.assertIn("Not forgotten", out["error"])
+        self.assertTrue(any(p["id"] == pid for p in people.listing(self.tmp.name, SERVICES)["people"]))  # still here
+        removed = []
+        with mock.patch.object(people_accounts, "remove", lambda s, app, user: removed.append(app) or "Removed"):
+            self.assertEqual(self.api("POST", f"/api/people/{pid}/forget", {"password": PASSWORD, "delete_in_apps": True})[0], 200)
+        self.assertEqual(removed, ["audiobookshelf", "jellyfin"])
+        self.assertFalse(any(p["id"] == pid for p in people.listing(self.tmp.name, SERVICES)["people"]))
+
+    def test_nothing_secret_is_logged(self):
+        from starboard import people_accounts
+        pid = self.make("Quiet")
+        kept = people.reveal(self.tmp.name, pid, "jellyfin")["password"]
+        lines = []
+        with mock.patch.object(people_accounts, "ensure", lambda *a, **k: "Made the account in Jellyfin"), \
+                mock.patch.object(logs, "event", lambda level, area, message, **k: lines.append(message)):
+            self.api("POST", f"/api/people/{pid}/accounts/jellyfin/in-app", {"action": "make", "password": PASSWORD})
+        self.assertTrue(lines)
+        self.assertFalse([m for m in lines if kept in m or PASSWORD in m])

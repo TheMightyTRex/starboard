@@ -1397,6 +1397,39 @@ if (mk) {
   check("T-PEOPLE-PW", "Escape gives focus back to Make a password", /^Make a password for Alex/.test(d3.text), d3.text);
 }
 
+// T-PEOPLE-APP (DASH-589, stage 3) the account's More menu by keyboard: Enter opens it, the arrow keys reach Delete in Jellyfin, Enter
+// opens a danger dialog that starts on Cancel (and holds the "I am sure" tick and the Starboard password), Escape closes it, and focus
+// is back on More.
+await page.goto(`${base}/settings-people.html`);
+await settle();
+await page.locator('[data-person]', { hasText: "Alex" }).first().focus();
+await page.keyboard.press("Enter");
+await page.waitForTimeout(700);
+const peMore = await tabTo((f) => f.tag === "BUTTON" && /^More for Alex in Jellyfin/.test(f.text), 40);
+check("T-PEOPLE-APP", "More for the Jellyfin account can be reached with Tab", !!peMore, peMore?.text);
+if (peMore) {
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  let reached = null;
+  for (let i = 0; i < 9 && !reached; i++) {
+    await page.keyboard.press("ArrowDown");
+    const f = await focus();
+    if (/^Delete in Jellyfin/.test(f.text)) reached = f;
+  }
+  check("T-PEOPLE-APP", "the arrow keys reach Delete in Jellyfin", !!reached);
+  if (reached) {
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(500);
+    const d1 = await focus();
+    check("T-PEOPLE-APP", "the dialog starts on Cancel, so Enter never deletes by mistake", /^Cancel/.test(d1.text), d1.text);
+    check("T-PEOPLE-APP", "it asks for a plain yes and the Starboard password", await page.evaluate(() => !!document.querySelector("dialog[open] input[type=checkbox]") && !!document.querySelector("dialog[open] input[type=password]")));
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(500);
+    const d2 = await focus();
+    check("T-PEOPLE-APP", "Escape closes it and focus returns to the menu button", /^More for Alex in Jellyfin/.test(d2.text) || d2.inPanel, d2.text);
+  }
+}
+
 // T-TRANSCODE (DASH-515) Test hardware video conversion by keyboard alone: Test now is reached with Tab, nothing runs
 // until it is pressed, the wait is said, and focus ends on the result's summary, which is read out.
 await page.goto(`${base}/system.html`);
