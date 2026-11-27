@@ -842,7 +842,7 @@ def _move_livetv(app):
             # Built-in plug-ins follow Starboard's update: their files are written again and active ones restarted.
             from . import plugin_life, plugins_admin
             again = plugins_admin.refresh_builtins(app.data_dir, media_dir, app.config.data["services"])
-            again += [n for n in plugins_admin.upgrade_all(app.data_dir, app.config.data["services"]) if n not in again]
+            plugins_admin.upgrade_all(app.data_dir, app.config.data["services"])
             if again:
                 logs.event("info", "plug-ins", f"Started again with this version of Starboard: {', '.join(again)}")
             stopped = plugin_life.stop_unfit(app.data_dir)  # a plug-in this Starboard cannot run is stopped, with its reason (DASH-603)
