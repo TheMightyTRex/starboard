@@ -1,7 +1,7 @@
 """Change a person's password inside an app (DASH-589, single sign-on stage 1): "Also change it in the app".
 
-Only where Starboard already holds an admin key for the app: Jellyfin and Emby (the key Settings, Apps keeps) and
-Audiobookshelf (an admin key). It finds the person's account by its account name and changes its password. It makes no account,
+Only where Starboard already holds an admin key for the app and the change is switched on (VERIFIED below): Jellyfin and
+Audiobookshelf today. Emby is built but off until it has been tried on a real Emby. It finds the person's account by its account name and changes its password. It makes no account,
 removes none and changes nothing else (stage 3 does those). Any other app is changed by hand, and Starboard only records it.
 
 Read on 27 November 2026 from the apps' own source and documentation, and tried only against stand-ins (tests/test_people_apps.py):
@@ -23,11 +23,14 @@ import urllib.request
 from . import listening, mediaserver, services
 from .people import PeopleError
 
-APPS = ("jellyfin", "emby", "audiobookshelf")
+APPS = ("jellyfin", "emby", "audiobookshelf")  # the apps this module can change a password in
+# The apps whose change is offered and accepted. Emby is built and tested against a stand-in but has not been tried on a real Emby, and
+# its documentation does not give the body, so it is left out: add "emby" here to turn it on (owner's decision, 27 November 2026).
+VERIFIED = ("jellyfin", "audiobookshelf")
 
 
 def supports(service):
-    return isinstance(service, dict) and service.get("type") in APPS and bool(service.get("api_key")) and bool(service.get("url"))
+    return isinstance(service, dict) and service.get("type") in APPS and service.get("type") in VERIFIED and bool(service.get("api_key")) and bool(service.get("url"))
 
 
 def _service(services_list, service_id):

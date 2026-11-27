@@ -4,6 +4,7 @@ travels only in the body, that a missing account or a refusal is said in words w
 import json
 import threading
 import unittest
+from unittest import mock
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from starboard import people, people_apps, services
@@ -61,10 +62,21 @@ class Changing(unittest.TestCase):
         self.assertIn("admin-key", headers["Authorization"])
         self.assertEqual([x[0] for x in app.seen], ["GET", "POST"])  # the list, then one change
 
-    def test_emby_uses_its_own_path_and_header(self):
+    def test_emby_is_built_but_off_until_it_has_been_tried_on_a_real_one(self):
+        self.assertNotIn("emby", people_apps.VERIFIED)
         app = App([{"Id": "9", "Name": "Sam"}])
         self.addCleanup(app.stop)
-        people_apps.change_password([service("emby", app.url)], "emby", "Sam", "a long new password")
+        self.assertFalse(people_apps.supports(service("emby", app.url)))
+        with self.assertRaises(people.PeopleError) as e:
+            people_apps.change_password([service("emby", app.url)], "emby", "Sam", "a long new password")
+        self.assertIn("Change it in the app", str(e.exception))
+        self.assertEqual(app.seen, [])  # nothing was asked of it
+
+    def test_emby_uses_its_own_path_and_header_when_switched_on(self):
+        app = App([{"Id": "9", "Name": "Sam"}])
+        self.addCleanup(app.stop)
+        with mock.patch.object(people_apps, "VERIFIED", ("emby",)):
+            people_apps.change_password([service("emby", app.url)], "emby", "Sam", "a long new password")
         method, path, headers, body = app.seen[-1]
         self.assertEqual((method, path, headers["X-Emby-Token"]), ("POST", "/emby/Users/9/Password", "admin-key"))
         self.assertEqual(json.loads(body), {"CurrentPw": "", "NewPw": "a long new password", "ResetPassword": False})

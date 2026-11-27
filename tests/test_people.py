@@ -354,6 +354,8 @@ class Server(unittest.TestCase):
     def test_the_app_list_says_which_apps_starboard_can_change_and_the_rule(self):
         apps = self.api("GET", "/api/people")[1]["apps"]
         self.assertEqual({a["id"]: a["can_change"] for a in apps}, {"jellyfin": True, "audiobookshelf": True})
+        from starboard import people_apps
+        self.assertFalse(people_apps.supports({"type": "emby", "url": "http://e", "api_key": "k"}))  # Emby is off until tried on a real one
         self.assertTrue(all(a["rule"]["min"] == 10 for a in apps))
 
     def test_the_people_file_is_not_in_a_settings_backup(self):

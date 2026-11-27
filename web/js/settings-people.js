@@ -269,7 +269,7 @@ async function startPeople() {
       const alsoNode = also
         ? el("label", { class: "check", for: also.id }, also, el("span", { class: "check__text" }, el("strong", { text: `Also change it in ${name}` }),
           el("span", { class: "check__hint", text: `Starboard changes the password of the account called ${acct?.username || p.name} in ${name} and records it as set. The account must be there already. Asks for your Starboard password.` })))
-        : el("p", { class: "small muted", text: `Starboard cannot change passwords in ${name}. Change it there yourself, then choose It is set in the app.` });
+        : el("p", { class: "small muted", text: `Starboard only records the password for ${name}. Change it in ${name} yourself, then choose It is set in the app.` });
       const pwBox = passwordInput(`${rowId}-starboard-pw`);
       const pwField = passwordField(pwBox, { hint: "Needed to replace a password or to change it in the app." });
       pwField.hidden = !replace;
