@@ -62,7 +62,9 @@ add features.
 
 ### Removed
 - **Unused code.** Eight unused names and one unused option are gone from Starboard's code, and one condition that could never be true is gone from the tool that builds the AI-readable help. Nothing you see changes.
+- **Old release note files and two unused documents.** The notes files of 57 releases from 0.5.0 to 0.28.0, an unused picture of all the screenshots and the design record for building plug-ins in isolation are gone from the repository. `CHANGELOG.md` and the notes in Starboard still list every release, and the files stay in the history. The help and the app do not change.
 - **Four hand-run test scripts.** The scripts that tried Bring in on shares, copies off this computer, connecting a cloud service and a full restore by hand, on made-up data, are gone from the tools folder. The tests that run with every change stay, and the scripts stay in the history. The help and the app do not change.
+
 
 
 ### Fixed
