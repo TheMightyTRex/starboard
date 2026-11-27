@@ -31,6 +31,10 @@ the next major version.
   offered. Read [Capabilities](plugin-manifest-reference.md#capabilities-api-122).
 - **Changed:** the plug-in tester warns when `starboard_api` has no top end or reaches past the next major version, or starts
   lower than the version a field you use came in at. The tester also says when `starboard_tested` is missing.
+- **Added (Starboard API 1.11.0, DASH-566):** `GET /api/v1/` answers `media_server`: `id` (`jellyfin`, `plex`, `emby`, or empty when
+  none is in use), `name` and `capabilities`, the jobs Starboard can do with that server (`play`, `watched`, `restart` and the rest).
+  A plug-in that works with more than one media server can read it to draw only what the server in use can do. It is read from
+  Starboard's settings alone, so asking costs nothing. Plex and Emby now offer `play` and `watched`.
 - Nothing was taken away. Name `>=1.22` in `starboard_api` to use either field.
 
 ## Starboard API 1.10.0 (not released yet), 26 November 2026

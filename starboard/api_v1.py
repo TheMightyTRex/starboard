@@ -422,13 +422,21 @@ def _reelix(h):
     return reelix
 
 
+def _media_server(data):
+    """The media server in use, for a plug-in that works with more than one (added in 1.11.0, DASH-566): id (jellyfin, plex, emby or
+    "" for none), name and the capabilities it offers, from the settings alone; nothing is asked of the server."""
+    from . import mediaserver
+    one = mediaserver.active(data)
+    return {"id": one.id if one else "", "name": one.name if one else "", "capabilities": list(one.capabilities) if one else []}
+
+
 def routes():
     from . import activity, containers, library, services, stack, sysinfo
 
     def root(h, m, q):
         return {"api_version": API_VERSION, "starboard_version": h.app.version,
                 "links": {"openapi": "/api/v1/openapi.json", "me": "/api/v1/me", "apps": "/api/v1/apps", "events": "/api/v1/events", "mcp": "/api/v1/mcp"},
-                "deprecations": deprecations.public(), "capabilities": plugin_capabilities.names()}
+                "deprecations": deprecations.public(), "capabilities": plugin_capabilities.names(), "media_server": _media_server(h.app.config.data)}
 
     def me(h, m, q):
         return public(h.api_key)

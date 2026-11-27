@@ -1,7 +1,12 @@
 """Emby as a media server (DASH-566). Emby and Jellyfin share their questions and answers, so most of this is the
 shared MediaBrowser class: only the prefix, the key's header and the status differ. The address and key are kept in
 Settings, Manage apps, as an app of the kind Emby."""
+import re
+import urllib.parse
+
 from .. import mediaserver, services
+
+ID_RE = re.compile(r"^[0-9A-Za-z]{1,40}$")
 
 
 class Emby(mediaserver.MediaBrowser):
@@ -10,7 +15,20 @@ class Emby(mediaserver.MediaBrowser):
     service_type = "emby"
     prefix = "/emby"
     page = mediaserver.PAGE
-    capabilities = ()  # read only for now
+    capabilities = ("play", "watched")  # DASH-566: Play links and Watched; the rest are Jellyfin's so far (limits)
+    limits = {
+        "restart": "Emby's restart is in its own dashboard; Starboard restarts its container from Settings, Manage apps",
+        "own_plugins": "Emby's own plug-ins are managed in Emby's dashboard, Plugins",
+        "conversion_test": "Starboard's test of video conversion runs against Jellyfin's ffmpeg only",
+        "live_tv": "Starboard sets up Live TV channels in Jellyfin only; Emby's Live TV needs Emby Premiere and is set up in Emby",
+        "libraries_add": "Plug-ins that fill a library fill Jellyfin's only",
+        "first_run": "Starboard makes Emby's first account and libraries only after you try it on a copy (not tried here)",
+        "history_import": "Importing watch history is into Jellyfin only; the move wizard carries watched state to Emby",
+        "user_defaults": "Defaults for every user are Jellyfin's only",
+        "metadata_folder": "Moving the metadata folder is Jellyfin's only",
+        "detect": "Starboard finds Emby when you search for new apps",
+        "updates": "Starboard updates Emby's container through Ready to update; it checks Emby's own version only",
+    }
 
     def public_version(self, service):
         """The version it tells anyone, with no key."""
@@ -56,3 +74,82 @@ class Emby(mediaserver.MediaBrowser):
 
     def keys_needed(self):
         return [{"what": "API key", "where": "Emby's dashboard, Advanced, API keys", "kept": "Settings, Manage apps"}]
+
+    # Play and Watched (DASH-566): the same questions as Jellyfin's, under /emby. Written from Emby's published API and tried
+    # only against recorded answers (no real Emby was available).
+    def play_info(self, services_list):
+        found = self.find_service(services_list)
+        if not found:
+            return {}
+        got = self._send(dict(found, api_key=""), "GET", "/System/Info/Public")
+        return {"server_id": str(got.get("Id") or "")} if isinstance(got, dict) else {}
+
+    def play_link(self, base, item_id, server_id=""):
+        """Opens the item's page in Emby's web app, whose Play button starts it."""
+        if not ID_RE.match(str(item_id)) or not server_id:
+            return ""
+        return f"{base.rstrip('/')}/web/index.html#!/item?id={urllib.parse.quote(str(item_id))}&serverId={urllib.parse.quote(server_id)}"
+
+    def _pages(self, found, path, params):
+        start = 0
+        while True:
+            page = self._send(found, "GET", f"{path}?{urllib.parse.urlencode({**params, 'StartIndex': start, 'Limit': 1000})}") or {}
+            items = [i for i in page.get("Items") or [] if isinstance(i, dict)]
+            if items:
+                yield items
+            start += len(items)
+            if not items or start >= (page.get("TotalRecordCount") or 0):
+                return
+
+    def film_ids(self, services_list):
+        out = {}
+        for page in self._pages(self._service(services_list), "/Items", {"Recursive": "true", "IncludeItemTypes": "Movie", "Fields": "ProviderIds",
+                                                                         "EnableImages": "false", "EnableUserData": "false"}):
+            for it in page:
+                iid = str(it.get("Id") or "")
+                if not ID_RE.match(iid):
+                    continue
+                ids = {k.lower(): str(v) for k, v in (it.get("ProviderIds") or {}).items() if v}
+                for kind in ("tmdb", "imdb"):
+                    if ids.get(kind):
+                        out.setdefault((kind, ids[kind]), iid)
+        return out
+
+    def watched_user(self, services_list, wanted=""):
+        users = self._send(self._service(services_list), "GET", "/Users") or []
+        users = [u for u in users if isinstance(u, dict) and u.get("Id")]
+        found = next((u for u in users if u.get("Name") == wanted), None) if wanted else None
+        found = found or next((u for u in users if (u.get("Policy") or {}).get("IsAdministrator")), None) or (users[0] if users else None)
+        return (str(found["Id"]), str(found.get("Name") or "")) if found else None
+
+    def _find(self, found, uid, kind, tmdb):
+        q = urllib.parse.urlencode({"Recursive": "true", "IncludeItemTypes": kind, "AnyProviderIdEquals": f"tmdb.{tmdb}",
+                                    "Fields": "ProviderIds", "Limit": 5, "EnableImages": "false"})
+        items = (self._send(found, "GET", f"/Users/{urllib.parse.quote(uid)}/Items?{q}") or {}).get("Items") or []
+        # The match on provider ids can be loose: keep only the exact TMDB id.
+        return next((i for i in items if isinstance(i, dict) and str((i.get("ProviderIds") or {}).get("Tmdb", (i.get("ProviderIds") or {}).get("tmdb", ""))) == str(tmdb)), None)
+
+    def watched_film(self, services_list, who, tmdb):
+        it = self._find(self._service(services_list), who[0], "Movie", tmdb)
+        return {"id": str(it["Id"]), "watched": bool((it.get("UserData") or {}).get("Played")), "user": who[1]} if it else None
+
+    def watched_series(self, services_list, who, tmdb):
+        found = self._service(services_list)
+        s = self._find(found, who[0], "Series", tmdb)
+        if not s:
+            return None
+        q = urllib.parse.urlencode({"UserId": who[0], "Fields": "UserData", "EnableImages": "false"})
+        eps = (self._send(found, "GET", f"/Shows/{urllib.parse.quote(str(s['Id']))}/Episodes?{q}") or {}).get("Items") or []
+        out = {}
+        for e in eps:
+            if isinstance(e, dict) and e.get("ParentIndexNumber") is not None and e.get("IndexNumber") is not None:
+                out[(int(e["ParentIndexNumber"]), int(e["IndexNumber"]))] = {"id": str(e["Id"]), "watched": bool((e.get("UserData") or {}).get("Played"))}
+        return {"id": str(s["Id"]), "episodes": out, "user": who[1]}
+
+    def mark(self, services_list, who, ids, watched):
+        found = self._service(services_list)
+        for i in ids:
+            if not ID_RE.match(str(i)):
+                raise ValueError("That is not an item Emby knows")
+            self._send(found, "POST" if watched else "DELETE", f"/Users/{urllib.parse.quote(who[0])}/PlayedItems/{urllib.parse.quote(str(i))}")
+        return len(ids)

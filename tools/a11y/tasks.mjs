@@ -799,6 +799,24 @@ if (sw1) {
   check("T-WIZARD", "Escape closes the wizard and focus goes back to Switch with help", /^Switch with help/.test(out.text), JSON.stringify(out));
 }
 
+// T-CAN (DASH-566) What each can do: a table with a caption, a column for each media server, a row header for each job, and every No
+// says why in words (never a colour alone). Read in the page's own order, after Installed side by side.
+await page.goto(`${base}/settings-jellyfin.html`);
+await settle();
+const can = await page.evaluate(() => {
+  const h = document.getElementById("ms-can-h");
+  const t = h?.closest("[data-part]")?.querySelector("table");
+  const rows = [...(t?.querySelectorAll("tbody tr") || [])];
+  const side = document.getElementById("ms-side-h");
+  return { has: !!t, caption: t?.querySelector("caption")?.textContent || "", cols: [...(t?.querySelectorAll("thead th") || [])].map((x) => x.textContent),
+    rowHeads: rows.filter((r) => r.querySelector("th[scope=row]")).length, rows: rows.length,
+    noWithoutWhy: rows.flatMap((r) => [...r.querySelectorAll("td")]).filter((c) => /^No/.test(c.textContent) && c.textContent.trim() === "No").length,
+    after: !!(side && h && (side.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING)) };
+});
+check("T-CAN", "the table has a caption, the three servers and a row header for each job", can.has && /Jellyfin, Plex and Emby/.test(can.caption) && can.cols.join() === "Job,Jellyfin,Plex,Emby" && can.rows > 5 && can.rowHeads === can.rows, JSON.stringify(can));
+check("T-CAN", "every No says why", can.noWithoutWhy === 0, String(can.noWithoutWhy));
+check("T-CAN", "it follows Installed side by side", can.after, "order");
+
 // T-WIZARD3 (DASH-587) Carrying a media server move across by keyboard alone, with made-up answers for the servers: step 3 names
 // each part with a tick box that has its words, Tab reaches the ticks and the last button, Enter starts it, the progress is said
 // in a polite live region, focus lands on Close when it ends, and Escape returns focus to Switch with help.

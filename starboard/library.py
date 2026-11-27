@@ -540,13 +540,13 @@ def _path(data_dir, tab):
     return os.path.join(data_dir, "library", f"{tab}.json")
 
 
-def _write(data_dir, tab, entries):
+def _write(data_dir, tab, entries, server=""):
     folder = os.path.join(data_dir, "library")
     os.makedirs(folder, mode=0o700, exist_ok=True)
     path = _path(data_dir, tab)
     tmp = path + ".tmp"
     with open(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
-        json.dump({"built": int(time.time()), "v": INDEX_VERSION, "items": entries}, f, separators=(",", ":"), ensure_ascii=False)
+        json.dump({"built": int(time.time()), "v": INDEX_VERSION, **({"ms": server} if server else {}), "items": entries}, f, separators=(",", ":"), ensure_ascii=False)
     os.replace(tmp, path)
 
 
@@ -586,8 +586,9 @@ def build_and_write(data_dir, reelix, tab):
     """Reads one tab from Reelix and writes its index file: {"count", "posters"}. The running server does this in a
     short-lived process (child.py, DASH-79), so the memory used reading Reelix's lists is given back when it ends."""
     from . import jellyfin_play
-    entries = build(reelix, tab, jellyfin_play.film_ids_for_index(data_dir) if tab == "films" else None)
-    _write(data_dir, tab, entries)
+    server, ids = jellyfin_play.index_ids(data_dir) if tab == "films" else ("", None)
+    entries = build(reelix, tab, ids)
+    _write(data_dir, tab, entries, server)
     return {"count": len(entries), "posters": [e["p"] for e in entries if isinstance(e, dict) and e.get("p")]}
 
 
@@ -692,6 +693,17 @@ def forget(data_dir):
 
 
 # Walls -----------------------------------------------------------------------------------------------------
+
+def _for_server(index, data, data_dir, reelix, tab):
+    """The films index with Play ids only when they came from the media server in use (DASH-566). After a switch the ids are
+    the old server's, so they are left out and the index is built again in the background, from the new one."""
+    from . import mediaserver
+    now = mediaserver.active_id(data)
+    if (index.get("ms") or mediaserver.DEFAULT) == now or not any(isinstance(e, dict) and e.get("jf") for e in index.get("items") or []) and now == "":
+        return index
+    _background(data_dir, reelix, tab)
+    return {**index, "items": [{k: v for k, v in e.items() if k != "jf"} if isinstance(e, dict) else e for e in index.get("items") or []]}
+
 
 def _card(tab, e):
     word = STATUS.get(e["w"], ("", "muted"))
@@ -1008,7 +1020,7 @@ def item(data_dir, reelix, tab, item_id, cfg=None):
     out.setdefault("listen", None)
     if tab in ("films", "tv") and cfg:  # Play in Jellyfin (DASH-480): where Play links go, or that no address is set yet
         from . import jellyfin_play
-        out["play"] = jellyfin_play.address(cfg.data["services"])
+        out["play"] = jellyfin_play.address_for(cfg.data)
     return out
 
 
@@ -1677,6 +1689,8 @@ def handle(h, method, path):
     used(data_dir, tab, get_reelix)
     if path == "/api/library/wall" and method == "GET":
         index = load(data_dir, reelix, tab)
+        if tab == "films":
+            index = _for_server(index, cfg.data, data_dir, reelix, tab)
         if tab in ("audiobooks", "books") and q.get("group"):  # an opened series (12 November 2026)
             from . import group_complete
             index = group_complete.tag_audiobooks(index, cfg.data["services"])
@@ -1691,7 +1705,7 @@ def handle(h, method, path):
         out["view"] = views(data_dir).get(tab, {})
         if tab == "films":  # Play in Jellyfin (DASH-480): where Play links go, or that no address is set yet
             from . import jellyfin_play
-            out["play"] = jellyfin_play.address(cfg.data["services"])
+            out["play"] = jellyfin_play.address_for(cfg.data)
         return h.json(200, out)
     if path == "/api/library/network-logo/tone" and method == "POST":
         # A browser measured a logo (12 November 2026): kept for everyone, so no logo is measured twice. Networks and
@@ -1835,7 +1849,8 @@ def handle(h, method, path):
         except ValueError as e:
             return h.error(400, str(e))
         except services.ServiceError as e:
-            return h.error(502, f"Jellyfin said no: {e}")
+            from . import mediaserver
+            return h.error(502, f"{(mediaserver.active(cfg.data) or mediaserver.ADAPTERS[mediaserver.DEFAULT]()).name} said no: {e}")
         services.forget(f"library-item-{tab}-{item_id}")
         said = ("Marked as watched" if b.get("watched") else "Marked as not watched") + (f" ({n} episodes)" if n > 1 else "")
         return h.json(200, {"said": said, "item": item(data_dir, reelix, tab, item_id, cfg)})

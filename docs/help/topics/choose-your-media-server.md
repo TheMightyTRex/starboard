@@ -38,9 +38,18 @@ answers, choose another server or none, and go back in one step for 24 hours. St
 ### Use Emby or Plex
 
 Emby and Plex are built into Starboard like Jellyfin. Each is a kind of app in Manage apps with its own form, check
-and icon. They are read only for now. On the dashboard, in Activity and in System, Starboard shows their status,
-libraries, what is playing and what was added. Play in Jellyfin, Watched, Live TV and the other Jellyfin tools stay
-with Jellyfin.
+and icon. On the dashboard, in Activity and in System, Starboard shows their status, libraries, what is playing and what
+was added. In Library, **Play** opens a film or episode in the server's own web app, and **Watched** shows and sets what
+you have watched. Live TV and the other Jellyfin tools stay with Jellyfin. Under **What each can do** on the media server
+tab, a table lists every job for Jellyfin, Plex and Emby, and says why a job is not offered.
+
+- **Play** needs the address you open the server with in your browser, in Manage apps under **Address to open in your
+  browser**. Plex and Emby links need the server to answer, so Starboard asks it once an hour for its own name.
+- **Watched** is the owner's in Plex, because Starboard holds the owner's token. In Emby it is the first administrator's.
+- After you change media server, Library builds its list of films again, from the new server, the next time you open it.
+  Play links come back when that finishes.
+- Starboard has only tried these calls against recorded answers from each server's documented interface, not against a
+  real Plex or Emby. If a link does not open the right page, say so on the Starboard Discord support server.
 
 1. Starboard adds the plug-in for you once the app is in **Manage apps**, so you can skip this step. To add it first,
    go to **Settings**, then **Plug-ins**, then **Catalogue**, then the **Media servers** tab. Select **Install** beside

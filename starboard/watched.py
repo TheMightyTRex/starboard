@@ -10,6 +10,21 @@ from . import migrate, services
 ID_RE = re.compile(r"^[0-9a-f]{32}$")
 
 
+def _server(cfg):
+    """The adapter of the media server in use when it is not Jellyfin (DASH-566): Plex and Emby answer through their own
+    adapters. (None, False) with no media server in use, so nothing is drawn; (None, True) for Jellyfin, handled below."""
+    from . import mediaserver
+    one = mediaserver.active(cfg.data)
+    if one is None:
+        return None, False
+    return (None, True) if one.id == "jellyfin" else (one, True)
+
+
+def _who(cfg, one):
+    wanted = str((cfg.data.get("extras") or {}).get("media_user") or "")
+    return services.cached(f"ms-who-{one.id}", 600, lambda: one.watched_user(cfg.data["services"], wanted))
+
+
 def _jf(cfg):
     return migrate.jellyfin_app(cfg.data["services"])
 
@@ -36,6 +51,17 @@ def _find(jf, uid, kind, tmdb):
 
 def film(cfg, tmdb):
     """{"id", "watched"} for a film, or None when Jellyfin is not set up or does not have it."""
+    one, on = _server(cfg)
+    if not on:
+        return None
+    if one:
+        if "watched" not in one.capabilities or not tmdb:
+            return None
+        try:
+            who = _who(cfg, one)
+            return one.watched_film(cfg.data["services"], who, tmdb) if who else None
+        except (services.ServiceError, ValueError):
+            return None
     jf = _jf(cfg)
     who = user(cfg, jf) if jf and tmdb else None
     if not who:
@@ -49,6 +75,17 @@ def film(cfg, tmdb):
 
 def series(cfg, tmdb):
     """{"id", "episodes": {(season, episode): {"id", "watched"}}} for a series, or None."""
+    one, on = _server(cfg)
+    if not on:
+        return None
+    if one:
+        if "watched" not in one.capabilities or not tmdb:
+            return None
+        try:
+            who = _who(cfg, one)
+            return one.watched_series(cfg.data["services"], who, tmdb) if who else None
+        except (services.ServiceError, ValueError):
+            return None
     jf = _jf(cfg)
     who = user(cfg, jf) if jf and tmdb else None
     if not who:
@@ -70,6 +107,17 @@ def series(cfg, tmdb):
 
 def mark(cfg, ids, watched):
     """Marks Jellyfin items (a film, episodes, or a season's or series' own item) watched or not, for the user."""
+    one, on = _server(cfg)
+    if one or not on:
+        if not one or "watched" not in one.capabilities:
+            raise ValueError("The media server in use cannot mark things as watched through Starboard")
+        who = _who(cfg, one)
+        if not who:
+            raise ValueError(f"Add {one.name} with its {'token' if one.id == 'plex' else 'key'} in Settings, Manage apps, to show what you have watched")
+        ids = [i for i in ids or [] if isinstance(i, str)][:500]
+        if not ids:
+            raise ValueError("Nothing to mark")
+        return one.mark(cfg.data["services"], who, ids, watched)
     jf = _jf(cfg)
     who = user(cfg, jf) if jf else None
     if not who:

@@ -2,12 +2,16 @@
 The address and token are kept in Settings, Manage apps, as an app of the kind Plex; the token is sent in the
 X-Plex-Token header, never in an address, so it does not reach a log."""
 import datetime as dt
+import re
+import urllib.parse
 import urllib.request
 
 from .. import mediaserver, services
 
 TYPES = {"movie": "Movie", "episode": "Episode", "track": "Audio", "album": "MusicAlbum", "show": "Series", "season": "Season",
          "artist": "MusicArtist", "clip": "Video"}
+KEY_RE = re.compile(r"^[0-9]{1,12}$")
+PAGE = 500  # items a page, when reading a section
 SECTIONS = {"movie": "movies", "show": "tvshows", "artist": "music", "photo": "photos"}
 
 
@@ -30,7 +34,20 @@ class Plex(mediaserver.MediaServer):
     name = "Plex"
     service_type = "plex"
     page = mediaserver.PAGE
-    capabilities = ()  # read only for now
+    capabilities = ("play", "watched")  # DASH-566: Play links and Watched; the rest are Jellyfin's so far (limits)
+    limits = {
+        "restart": "Plex has no restart in its documented API; Starboard restarts its container from Settings, Manage apps",
+        "own_plugins": "Plex retired its plug-ins in 2018, so there is nothing to list or update",
+        "conversion_test": "Starboard's test of video conversion runs against Jellyfin's ffmpeg only",
+        "live_tv": "Starboard sets up Live TV channels in Jellyfin only; Plex's Live TV and DVR need Plex Pass and are set up in Plex",
+        "libraries_add": "Plug-ins that fill a library fill Jellyfin's only",
+        "first_run": "Plex needs a claim token from your Plex account (valid for 4 minutes), which only you can make, so Starboard cannot do the first set-up",
+        "history_import": "Importing watch history is into Jellyfin only; the move wizard cannot write watched state into Plex",
+        "user_defaults": "Plex users and their rights are held by plex.tv, so Starboard cannot set defaults for them",
+        "metadata_folder": "Plex's metadata folder is set when its container is made",
+        "detect": "Starboard finds Plex when you search for new apps",
+        "updates": "Starboard updates Plex's container through Ready to update; it cannot read Plex's own update flag",
+    }
 
     def _send(self, service, method, path):
         req = urllib.request.Request(service["url"].rstrip("/") + path, method=method, headers={
@@ -120,3 +137,92 @@ class Plex(mediaserver.MediaServer):
     def keys_needed(self):
         return [{"what": "Plex token", "where": "Plex's web app: open an item, Get info, View XML, and copy X-Plex-Token from the address",
                  "kept": "Settings, Manage apps"}]
+
+    # Play and Watched (DASH-566). Plex has no search by TMDB id, so Starboard reads each film and show section once, with
+    # their guids, and keeps the id list for ten minutes. The watched state is the owner's, whose token Starboard holds.
+    def play_info(self, services_list):
+        found = self.find_service(services_list)
+        if not found:
+            return {}
+        box = (self._send(dict(found, api_key=""), "GET", "/identity") or {}).get("MediaContainer")
+        return {"server_id": str((box or {}).get("machineIdentifier") or "")} if isinstance(box, dict) else {}
+
+    def play_link(self, base, item_id, server_id=""):
+        """Opens the item's page in Plex's web app, whose Play button starts it."""
+        if not KEY_RE.match(str(item_id)) or not server_id or not re.match(r"^[0-9a-fA-F]{8,64}$", server_id):
+            return ""
+        return f"{base.rstrip('/')}/web/index.html#!/server/{server_id}/details?key=" + urllib.parse.quote(f"/library/metadata/{item_id}", safe="")
+
+    def _all(self, found, section):
+        start = 0
+        while True:
+            q = urllib.parse.urlencode({"includeGuids": 1, "X-Plex-Container-Start": start, "X-Plex-Container-Size": PAGE})
+            got = self._send(found, "GET", f"/library/sections/{urllib.parse.quote(section)}/all?{q}")
+            rows = _list(got, "Metadata")
+            yield from rows
+            start += len(rows)
+            total = ((got or {}).get("MediaContainer") or {}).get("totalSize") if isinstance(got, dict) else None
+            if not rows or start >= (total or 0):
+                return
+
+    def _guids(self, row):
+        out = {}
+        for g in row.get("Guid") or []:
+            m = re.match(r"^(tmdb|imdb)://([A-Za-z0-9]+)$", str(g.get("id") if isinstance(g, dict) else ""))
+            if m:
+                out[m.group(1)] = m.group(2)
+        return out
+
+    def _index(self, services_list, kind):
+        """{("tmdb"|"imdb", id): ratingKey} for the films ("movie") or shows ("show") Plex has."""
+        found = self._service(services_list)
+
+        def read():
+            out = {}
+            for d in _list(self._send(found, "GET", "/library/sections"), "Directory"):
+                if d.get("type") == kind and KEY_RE.match(str(d.get("key") or "")):
+                    for row in self._all(found, str(d["key"])):
+                        rk = str(row.get("ratingKey") or "")
+                        if KEY_RE.match(rk):
+                            for k, v in self._guids(row).items():
+                                out.setdefault((k, v), rk)
+            return out
+        return services.cached(f"plex-index-{kind}-{found.get('id', '')}", 600, read)
+
+    def film_ids(self, services_list):
+        return self._index(services_list, "movie")
+
+    def watched_user(self, services_list, wanted=""):
+        found = self._service(services_list)
+        name = str((self._identity(found) or {}).get("myPlexUsername") or "") or "the Plex owner"
+        return ("owner", name)
+
+    def _one(self, found, rating_key):
+        rows = _list(self._send(found, "GET", f"/library/metadata/{rating_key}"), "Metadata")
+        return rows[0] if rows else None
+
+    def watched_film(self, services_list, who, tmdb):
+        found = self._service(services_list)
+        rk = self._index(services_list, "movie").get(("tmdb", str(tmdb)))
+        row = self._one(found, rk) if rk else None
+        return {"id": rk, "watched": bool(row.get("viewCount")), "user": who[1]} if row else None
+
+    def watched_series(self, services_list, who, tmdb):
+        found = self._service(services_list)
+        rk = self._index(services_list, "show").get(("tmdb", str(tmdb)))
+        if not rk:
+            return None
+        out = {}
+        for e in _list(self._send(found, "GET", f"/library/metadata/{rk}/allLeaves"), "Metadata"):
+            if e.get("parentIndex") is not None and e.get("index") is not None and KEY_RE.match(str(e.get("ratingKey") or "")):
+                out[(int(e["parentIndex"]), int(e["index"]))] = {"id": str(e["ratingKey"]), "watched": bool(e.get("viewCount"))}
+        return {"id": rk, "episodes": out, "user": who[1]}
+
+    def mark(self, services_list, who, ids, watched):
+        found = self._service(services_list)
+        for i in ids:
+            if not KEY_RE.match(str(i)):
+                raise ValueError("That is not an item Plex knows")
+            self._send(found, "GET", f"/:/{'scrobble' if watched else 'unscrobble'}?" + urllib.parse.urlencode({"key": i, "identifier": "com.plexapp.plugins.library"}))
+        services.forget(f"plex-index-movie-{found.get('id', '')}")
+        return len(ids)
