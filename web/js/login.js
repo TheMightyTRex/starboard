@@ -72,7 +72,7 @@ startPage().then((session) => {
     if (why) { showFormError(why); }
   }
   const codeForm = $("#code-form");
-  codeForm.addEventListener("submit", async (e) => {
+  codeForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     clearErrors(codeForm);
     const input = $("#code");

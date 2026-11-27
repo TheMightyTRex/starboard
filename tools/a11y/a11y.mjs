@@ -7,6 +7,7 @@
 // regions; labels and errors tied to their fields. Prints one line per finding and a summary; writes a11y.json.
 import { chromium } from "playwright";
 import fs from "fs";
+import { labelInName } from "./voice.mjs";
 
 const base = process.env.BASE || "http://127.0.0.1:18796";
 const password = fs.readFileSync(process.env.PASSWORD_FILE, "utf8").trim();
@@ -72,6 +73,14 @@ async function structure(name) {
   if (s.unlabelled.length) add(name, "screen reader", "field-label", s.unlabelled.join(", "), s.unlabelled.length);
   if (s.iconOnly.length) add(name, "screen reader", "icon-button-name", s.iconOnly.join(" | "), s.iconOnly.length);
   if (s.small.length) add(name, "size", "target-24px", s.small.slice(0, 6).join(", "), s.small.length);
+  await voice(name);
+}
+
+// Voice control (owner, 27 November 2026): the accessible name holds the visible words (WCAG 2.5.3). See tools/a11y/voice.mjs.
+async function voice(name) {
+  const names = await page.evaluate(labelInName);
+  for (const m of names) console.log(`VOICE ${name} | ${m.selector} | shows "${m.visible}" | named "${m.name}"`);
+  if (names.length) add(name, "voice", "label-in-name", names.slice(0, 5).map((m) => `${m.selector} shows "${m.visible}", is named "${m.name}"`).join(" | "), names.length);
 }
 
 async function keyboard(name) {

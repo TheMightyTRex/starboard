@@ -60,6 +60,11 @@ which place failed.
 ## Change a place
 
 - **Switch:** deactivate a place to leave it out of new backups. It keeps its settings.
+- **Copy:** each place has its own rule for how often it gets a copy: **Every backup**, **At most once a week** or **At most
+  once a month**. It applies at once. Use it for a slow or small place, such as a cloud account, so a nightly schedule does
+  not fill it. A backup still counts as safe at a place on a weekly or monthly rule while its last copy there was read back
+  inside that time, and the page says so. **Copy the newest full backup now** copies to every activated place whatever its
+  rule. The rule applies to full backups; the server settings zips follow **Keep the newest server settings backups**.
 - **Test:** checks the place again. It writes a small file, reads it back, removes it and checks there is room for the
   newest backup. The result shows beside the place: **Connected** with when it was tested, or **Not connected** with
   what to do. Starboard keeps the last result.

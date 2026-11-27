@@ -247,6 +247,37 @@ function renderJobs(d) {
   if (busy) jobTimer = setTimeout(loadJobs, 5000);  // only while a job runs
 }
 
+// Backups (27 November 2026): the answer to "can I get back?" on System, read once when the page opens (three small reads, no
+// timer). The checks and Restore are on Settings, General, Backup/Logs, so each line there is a link to it.
+async function loadBackups() {
+  const panel = $("#backups-panel");
+  let sch, full, copies;
+  try {
+    [sch, full, copies] = await Promise.all([api("/api/backup/schedule"), api("/api/backup/full").catch(() => null), api("/api/backup/copies").catch(() => null)]);
+  } catch { return; }  // the page works without it
+  const can = !!(full && full.installed && full.docker && !full.cannot);
+  const st = full?.status || {};
+  const lines = [];
+  if (can) {
+    if (st.state === "done" && st.finished) lines.push(["success", "circle-check", "Newest full backup", `${formatDate(st.finished * 1000, true)}. It was read back after it was made.`]);
+    else if (st.state === "failed") lines.push(["danger", "circle-alert", "The last full backup did not finish", String(st.error || "").slice(0, 200)]);
+    else if (st.state === "running") lines.push(["neutral", "refresh-cw", "A full backup is being made", st.step || ""]);
+    else lines.push(["warning", "circle-alert", "No full backup has been made", "Make one under Settings, General, Backup/Logs."]);
+    if (!sch.key) lines.push(["warning", "key-round", "Full backups by themselves are not set up", "Starboard needs a backup password kept as a key first."]);
+    else if (sch.late) lines.push(["warning", "clock", "The newest full backup is late", "Read the last result on the backups page."]);
+  } else lines.push(["neutral", "info", "Full backups are for servers Starboard set up", "Settings only backups still work."]);
+  if (copies) {
+    const safe = copies.safe || {};
+    lines.push([safe.safe ? "success" : "warning", safe.safe ? "circle-check" : "circle-alert", safe.safe ? "Safe in other places" : "Only partly safe", (safe.words || "").replace(/^(Safe|Not yet safe): /, "").replace(/^./, (c) => c.toUpperCase())]);
+  }
+  panel.hidden = !lines.length;
+  panel.querySelector("#backups-sum").replaceChildren(
+    el("ul", { class: "rows" }, lines.map(([tone, ic, title, text]) => el("li", { class: "row row--no-lead" },
+      el("div", {}, el("div", { class: "row__title", text: title }), el("div", { class: "row__meta", text: text })),
+      el("div", { class: "row__side" }, chip(tone === "success" ? "Good" : tone === "danger" ? "Problem" : tone === "warning" ? "Needs attention" : "Note", tone === "neutral" ? "muted" : tone))))),
+    el("div", { class: "actions" }, el("a", { class: "btn", href: "/settings-general-backup.html#bk-full-h", id: "backups-link" }, icon("archive"), "Check and restore backups")));
+}
+
 async function loadJobs() {
   try { renderJobs(await api("/api/jobs")); } catch { /* the page works without it */ }
 }
@@ -353,4 +384,5 @@ startPage().then(async () => {
   load();
   loadJellyfin();
   loadJobs();
+  loadBackups();
 });
