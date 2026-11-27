@@ -8,7 +8,7 @@ title: Find your answer
 start: Audio description tracks is not working as it should
 q: What does its tab say?
   Failed or Not answering -> 1
-  Not supported -> 2
+  Needs an update -> 2
   Active, but a file is not added -> q2
   Idle -> 7
 q2: What does the file say?

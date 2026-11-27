@@ -25,13 +25,13 @@ async function startReelix() {
     const password = el("input", { class: "input", type: "password", autocomplete: "current-password", required: true });
     const button = el("button", { type: "submit", class: "btn btn--primary", text: "Switch", disabled: true });
     const form = el("form", { novalidate: true }, el("div", { class: "form-stack" }, cards,
-      field("Your password", password, { required: true, hint: "Switching downloads the other version and restarts Reelix, which takes a minute or two." })),
+      field("Your Starboard password", password, { required: true, hint: "Switching downloads the other version and restarts Reelix, which takes a minute or two." })),
       el("div", { class: "actions" }, button));
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       setError(password, "");
       if (!want || want === d.current) return;
-      if (!password.value) { setError(password, "Enter your password"); password.focus(); return; }
+      if (!password.value) { setError(password, NEED_PASSWORD); password.focus(); return; }
       button.disabled = true;
       status.replaceChildren(el("p", { class: "muted", text: `Switching to ${names[want]}…` }));
       let r;
@@ -73,12 +73,12 @@ async function startReelix() {
     const go = el("button", { type: "submit", class: "btn btn--primary", text: "Finish setting up Reelix" });
     const said = el("div", { class: "stack-2", "aria-live": "polite" });
     const form = el("form", { novalidate: true }, el("div", { class: "form-stack" },
-      field("Your password", pw, { required: true, hint: "Reelix's admin account gets the same password as Starboard, so one password opens both. It is used for this and not kept." })),
+      field("Your Starboard password", pw, { required: true, hint: "Reelix's admin account gets the same password as Starboard, so one password opens both. It is used for this and not kept." })),
       el("div", { class: "actions" }, go));
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       setError(pw, "");
-      if (!pw.value) { setError(pw, "Enter your password"); pw.focus(); return; }
+      if (!pw.value) { setError(pw, NEED_PASSWORD); pw.focus(); return; }
       go.disabled = true;
       said.replaceChildren(el("p", { class: "muted", text: "Setting up Reelix…" }));
       let r;

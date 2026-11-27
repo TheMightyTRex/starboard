@@ -78,7 +78,7 @@ function radioSourcesSection() {
 }
 
 function radioLogosSection() {
-  const body = el("div", { class: "stack-4" }, el("p", { class: "muted", text: "Loading…" }));
+  const body = el("div", { class: "stack-4" }, SharedComponents.wait("Loading the radio logos"));
   const draw = (s) => {
     const file = el("input", { type: "file", id: "radio-logo-zip", accept: ".zip,application/zip", class: "input" });
     const add = el("button", { type: "submit", class: "btn" }, icon("upload"), "Add logos");
@@ -119,7 +119,7 @@ const RADIO_FOLLOW_HINTS = { all: "Old and new: Reelix fills the gaps.", from_no
 const lengthOf = (secs) => (secs ? `${Math.floor(secs / 3600) ? `${Math.floor(secs / 3600)} h ` : ""}${Math.round((secs % 3600) / 60)} min` : "");
 
 function radioLibrarySection() {
-  const body = el("div", { class: "stack-4" }, el("p", { class: "muted", text: "Loading…" }));
+  const body = el("div", { class: "stack-4" }, SharedComponents.wait("Loading your podcast library"));
   const node = section("radio-library", "Your podcast library", "What Audiobookshelf's Radio library holds that Reelix has not matched to a show or an episode.", body);
   const head = () => node.querySelector("h2");
   const openPodcast = async (g, opener) => {

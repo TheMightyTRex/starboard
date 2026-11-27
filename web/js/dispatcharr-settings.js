@@ -27,7 +27,7 @@ function dpConnect(s) {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     setError(pw, "");
-    if (!pw.value) { setError(pw, "Enter your Starboard password"); pw.focus(); return; }
+    if (!pw.value) { setError(pw, NEED_PASSWORD); pw.focus(); return; }
     go.disabled = true;
     try {
       const out = await api("/api/dispatcharr/connect", { method: "POST", body: { password: pw.value } });

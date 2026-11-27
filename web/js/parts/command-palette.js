@@ -2,7 +2,7 @@
  * Made by tools/parts.py from components.js in github.com/TheMightyTRex/design-system: change it there, not here. */
 (() => {
   const S = window.SharedComponents;
-  const { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus } = S.kit;
+  const { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus, notice } = S.kit;
   const { combobox } = S;
 
   /* Command palette: a button with data-command-palette opens it, and so do Ctrl+K and Command+K unless the page has

@@ -154,8 +154,7 @@ async function renderNoip() {
       setTimeout(renderNoip, 60000);
     } catch (err) { problem(err.message, form); }
   });
-  const refused = r.state === "refused" ? el("div", { class: "notice", "data-tone": "danger", role: "status" }, icon("circle-alert"),
-    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "No-IP refused the sign-in" }), el("p", { text: r.said }))) : null;
+  const refused = r.state === "refused" ? notice("danger", "No-IP refused the sign-in", r.said) : null;
   $("#noip-body").replaceChildren(refused, facts, form);
 }
 
