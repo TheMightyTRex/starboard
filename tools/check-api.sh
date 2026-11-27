@@ -29,6 +29,8 @@ python3 tools/make_llms_full.py --check
 step "API compatibility: nothing taken away, older plug-in manifests still pass (DASH-603)"
 python3 tools/api_compat.py --check
 python3 tools/api_compat.py --frozen
+step "Public API: nothing breaking since the last release (oasdiff, DASH-603; says Not run when oasdiff is not installed)"
+bash tools/oasdiff-check.sh
 step "API contract tests"
 python3 -m unittest tests.test_api_v1
 step "Plug-in tests"

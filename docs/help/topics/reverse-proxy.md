@@ -92,7 +92,8 @@ If that is new to you, use a VPN (virtual private network) instead. Read
   address, deactivate the switch in **Settings**, **Security**, under **More settings**.
 - **A few wrong passwords lock everyone out, not only one device:** Starboard treats every visit as coming
   from the proxy, because it does not trust it yet. Add the proxy's address to `STARBOARD_PROXY_ADDRESSES`,
-  then repeat step 5.
+  then repeat step 5. Starboard also writes one warning in its log, with the address, the first time it
+  gets a forwarded request from a proxy it does not trust.
 
 ## Find out more
 

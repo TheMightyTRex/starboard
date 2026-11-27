@@ -180,6 +180,7 @@ def summary(manifest, problems=None):
     """What the Add a plug-in screen shows before anything is installed."""
     return {"id": manifest.get("id"), "name": manifest.get("name"), "version": manifest.get("version"),
             "description": manifest.get("description"), "author": manifest.get("author"), "licence": manifest.get("licence"),
+            "note": plugins.clean_note(manifest.get("replaces_or_adds")),  # API 1.23 (DASH-585)
             "homepage": manifest.get("homepage"), "needs": manifest.get("needs") or [],
             "system": plugin_systems.describe(manifest),  # API 1.19 (DASH-567): the tag, from `requires` or the permissions
             "permissions": plugins.permission_words(manifest) if isinstance(manifest.get("permissions"), list) else [],
@@ -286,7 +287,7 @@ def added(data_dir):
     for p in names:
         m = _read_kept(os.path.join(folder(data_dir, p), "manifest.json")) if re.match(plugins.ID, p) else None
         if isinstance(m, dict) and not is_media_server(m):  # a media server plug-in shows in Manage and the Catalogue only (DASH-565)
-            out.append({"id": p, "name": str(m.get("name") or p)[:40]})
+            out.append({"id": p, "name": str(m.get("name") or p)[:40], "icon": plugins.clean_icon(m.get("icon"))})  # icon: API 1.23 (DASH-604)
     return sorted(out, key=lambda x: x["name"].lower())
 
 
@@ -318,6 +319,7 @@ def _clean_entry(e):
             "system": plugin_systems.describe({"requires": [x for x in e["requires"] if isinstance(x, str)][:plugin_systems.MAX_NEEDS]}
                                               if isinstance(e.get("requires"), list) else {"permissions": e.get("permissions") or []}),
             "notices": [n for n in e.get("notices") or [] if n in plugins.NOTICES],
+            "note": plugins.clean_note(e.get("replaces_or_adds")),  # API 1.23 (DASH-585): the catalogue's own line
             "manifest": (best or {}).get("manifest", ""), "version": (best or {}).get("version", ""),
             "sha256": (best or {}).get("sha256", ""), "changelog": (best or {}).get("changelog", ""),
             "versions": [best] if best else [], "hidden": hidden, "hidden_needs": needs,

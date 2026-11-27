@@ -61,6 +61,7 @@ function installWarning(s, { builtin = false, opener, verb = "Install" } = {}) {
           w.risk ? chip(`${RISK[w.risk][0]} risk`, RISK[w.risk][1]) : null),
         el("p", { class: "small install-warning__by", text: [s.author && `By ${s.author}`, s.licence, s.homepage].filter(Boolean).join(" · ") }),
         s.description ? el("p", { text: s.description }) : null,
+        s.note ? el("p", { class: "small", text: s.note }) : null,  // what it replaces or adds to (API 1.23, DASH-585)
         s.system?.tag ? el("p", { class: "small" }, systemChip(s.system), s.system.ok === false ? ` ${s.system.reason}.` : "") : null,
         // An update (DASH-330): what changed, and anything it may do that the installed version may not.
         s.whats_new?.length ? null : s.changelog ? el("p", { class: "small" }, el("strong", { text: `New in ${s.version}: ` }), s.changelog) : null,
@@ -1459,7 +1460,8 @@ function builtinSection(list, redraw) {
         catch (err) { problem(err.message, add); }
       });
       return el("li", { class: "row" }, pluginLogo(b), el("div", {}, el("div", { class: "row__title", text: b.name }),
-        el("div", { class: "row__meta", text: b.why_not ? `${b.description} Not here: ${b.why_not}.` : b.description })),
+        el("div", { class: "row__meta", text: b.why_not ? `${b.description} Not here: ${b.why_not}.` : b.description }),
+        b.note ? el("div", { class: "row__meta" }, el("strong", { text: b.note })) : null),
         el("div", { class: "row__side" }, add));
     })));
 }
@@ -1499,7 +1501,8 @@ function mediaServerCatalogue(list, ms, redraw) {
       }
       return el("li", { class: "row" }, pluginLogo(b), el("div", {},
         el("h3", { class: "row__title" }, b.name, b.recommended ? [" ", chip("Recommended", "info")] : null, ms && ms.active === b.id ? [" ", chip(...SLOT_IN_USE)] : null),
-        el("div", { class: "row__meta", text: b.description }), el("div", { class: "row__meta", text: `Version ${b.version}, built into Starboard` })),
+        el("div", { class: "row__meta", text: b.description }), b.note ? el("div", { class: "row__meta" }, el("strong", { text: b.note })) : null,
+        el("div", { class: "row__meta", text: `Version ${b.version}, built into Starboard` })),
         el("div", { class: "row__side" }, side));
     })));
 }
@@ -1711,6 +1714,7 @@ async function startPlugins() {
         el("ul", { class: "rows" }, r.plugins.map((p) => el("li", { class: "row" }, pluginLogo(p),  // its logo or initials (API 1.14)
           el("div", {}, el("h3", { class: "row__title" }, el("a", { href: `/settings-plugin.html?id=${encodeURIComponent(p.id)}`, text: p.name })),
             el("div", { class: "row__meta", text: [`Version ${p.version}`, p.builtin ? "Built into Starboard" : p.author && `By ${p.author}`, p.message].filter(Boolean).join(" · ") }),
+            p.note ? el("div", { class: "row__meta" }, el("strong", { text: p.note })) : null,  // what it replaces or adds to (API 1.23, DASH-585)
             systemChip(p.system) ? el("div", { class: "row__meta" }, systemChip(p.system)) : null, systemLine(p.system, true)),
           // Four fixed columns, so the chips, Open, Settings and the state button line up from row to row (issue #10;
           // owner, 13 November 2026: a plug-in with its own page, such as Jellystat, pushed its row out of line). The
@@ -1780,6 +1784,7 @@ async function startCatalogue() {
       return el("li", { class: "row" }, pluginLogo(e),  // the catalogue's logo, cleaned by Starboard, or its initials (API 1.14)
         el("div", {}, el("h4", { class: "row__title" }, e.name, e.recommended ? " " : null, e.recommended ? chip("Recommended", "info") : null),
           el("div", { class: "row__meta", text: e.description }),
+          e.note ? el("div", { class: "row__meta" }, el("strong", { text: e.note })) : null,  // what it replaces or adds to (API 1.23, DASH-585)
           // Versions for this Starboard only (DASH-330): newer ones that need a newer Starboard are said, not offered.
           // An app plug-in (DASH-411): what it uses when nobody is using it, measured, so a small server can choose.
           systemChip(e.system) ? el("div", { class: "row__meta" }, systemChip(e.system)) : null, systemLine(e.system),
@@ -1892,6 +1897,8 @@ async function startPluginPage() {
     }
     else title.parentElement.firstElementChild.replaceWith(pluginLogo(p, { alt: true }));
     $("#plugin-summary").textContent = p.description || "";
+    const note = $("#plugin-note");
+    if (note) { note.textContent = p.note || ""; note.hidden = !p.note; }  // what it replaces or adds to (API 1.23, DASH-585)
     document.title = document.title.replace(/^[^·]*·/, `${p.name} ·`);
     holder.replaceChildren(...pluginPage(p, draw, r.media_server, r.catalogue_read));
   };

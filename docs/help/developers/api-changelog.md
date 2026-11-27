@@ -15,6 +15,15 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Plug-in API 1.23.0 (not released yet), 27 November 2026
+
+- **Added:** `replaces_or_adds`, one line (up to 140 characters) on what a plug-in replaces or adds to, in the manifest and in a
+  catalogue entry, and `icon`, the name of one icon in Starboard's set for the plug-in's tab in Settings, Plug-ins. Read
+  [What it replaces or adds to](plugin-manifest-reference.md#what-it-replaces-or-adds-to-replaces_or_adds) and
+  [The tab icon](plugin-manifest-reference.md#the-tab-icon-icon).
+- **Changed:** nothing a plug-in relies on. A plug-in that does not use the new fields works as before. `GET /api/session` lists
+  each added plug-in with `icon` (empty when it names none or names one Starboard does not have).
+
 ## Plug-in API 1.21.0 (not released yet), 27 November 2026
 
 - **Added:** `needs_plugins`, the plug-ins a plug-in needs, and `switch`, the setting that is a plug-in's main switch. Deactivating a

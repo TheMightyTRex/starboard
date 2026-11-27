@@ -4,6 +4,7 @@
  "name": "Live TV",
  "version": "1.0.0",
  "description": "Free TV channels and guides for Jellyfin's Live TV, from Samsung TV Plus, Pluto TV and Free-TV, numbered like Sky.",
+ "replaces_or_adds": "Adds to Jellyfin: free TV channels and guides in Live TV. Replaces nothing.",
  "author": "TheMightyTRexUK",
  "licence": "MIT",
  "homepage": "https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/set-up-live-tv.md",
