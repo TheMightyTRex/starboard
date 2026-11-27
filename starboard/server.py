@@ -3459,6 +3459,8 @@ class Handler(BaseHTTPRequestHandler):
                     return self.error(404, "No key with that id")
                 logs.event("info", "security", "API key revoked")
                 return self.json(200, {"keys": api_v1.list_keys(app.data_dir)})
+            if path == "/api/people" or path.startswith("/api/people/"):  # People (DASH-589, single sign-on stage 1)
+                return self.people_route(method, path)
             if path == "/api/sessions/end-all" and method == "POST":
                 # The password again (DASH-280), as changing it asks: a stolen session cannot lock everyone out.
                 self.check_password(self.body())
@@ -4280,6 +4282,69 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, signin.set_password_login(app, bool(data.get("allowed")), address))
         except signin.SigninError as e:
             return self.error(e.status, e.message)
+        return self.error(404, "Not found")
+
+    def people_route(self, method, path):
+        """Settings, People: the owner's list of people and their accounts in the apps. Signed-in owner only (a plug-in's key
+        never reaches /api/people). A password is shown only after the Starboard password is entered again, and never logged."""
+        from . import people
+        app = self.app
+        data_dir, services = app.data_dir, app.config.data["services"]
+        none = {"Cache-Control": "no-store"}
+
+        def full(**extra):
+            return self.json(200, {**people.listing(data_dir, services), **extra}, none)
+        try:
+            if path == "/api/people" and method == "GET":
+                return full()
+            if path == "/api/people" and method == "POST":
+                b = self.body()
+                p = people.add(data_dir, b.get("name"), b.get("email"), b.get("role"))
+                logs.event("info", "people", f"Person added: {p['name']} ({people.ROLES[p['role']][0]})")
+                return full(said=f"Added {p['name']}", person=p["id"])
+            m = re.match(r"^/api/people/(p-[0-9a-f]{8})$", path)
+            if m and method == "POST":
+                b = self.body()
+                p = people.update(data_dir, m.group(1), b.get("name"), b.get("email"), b.get("role"))
+                logs.event("info", "people", f"Person changed: {p['name']}")
+                return full(said=f"Saved {p['name']}", person=p["id"])
+            m = re.match(r"^/api/people/(p-[0-9a-f]{8})/(pause|resume|remove|restore)$", path)
+            if m and method == "POST":
+                p = people.set_state(data_dir, m.group(1), m.group(2))
+                words = {"pause": "Paused", "resume": "Resumed", "remove": "Removed", "restore": "Put back"}[m.group(2)]
+                logs.event("info", "people", f"{words}: {p['name']}")
+                return full(said=f"{words} {p['name']}", person=p["id"])
+            m = re.match(r"^/api/people/(p-[0-9a-f]{8})/forget$", path)
+            if m and method == "POST":
+                self.check_password(self.body())
+                p = people.forget(data_dir, m.group(1))
+                logs.event("info", "people", f"Person forgotten: {p['name']}")
+                return full(said=f"Forgot {p['name']}")
+            m = re.match(r"^/api/people/(p-[0-9a-f]{8})/accounts/([a-z0-9-]{1,41})(?:/(password|reveal|set|unset|remove))?$", path)
+            if m and method == "POST":
+                pid, app_id, what = m.groups()
+                b = self.body()
+                if what is None:
+                    p = people.save_account(data_dir, services, pid, app_id, b.get("username"))
+                    return full(said="Saved the account name", person=pid)
+                if what == "password":
+                    p = people.new_password(data_dir, services, pid, app_id, replace=bool(b.get("replace")))
+                    logs.event("info", "people", f"A password was made for {p['name']} in {app_id}")  # never the password
+                    return full(said="Made a password", person=pid)
+                if what == "reveal":
+                    self.check_password(b)
+                    got = people.reveal(data_dir, pid, app_id)
+                    logs.event("info", "people", f"A password was shown for {pid} in {app_id}")
+                    return self.json(200, {**got, "said": "Shown. Starboard asks for your password each time"}, none)
+                if what in ("set", "unset"):
+                    people.mark_set(data_dir, services, pid, app_id, what == "set")
+                    return full(said="Saved", person=pid)
+                if what == "remove":
+                    p = people.drop_account(data_dir, pid, app_id)
+                    logs.event("info", "people", f"An account and its password were taken out of Starboard's list for {p['name']} in {app_id}")
+                    return full(said="Took the account out of Starboard's list", person=pid)
+        except LookupError as e:
+            return self.error(404, str(e))
         return self.error(404, "Not found")
 
     def check_password(self, data):

@@ -111,6 +111,8 @@ MENU = [
                                       ("settings-security-signin.html", "Sign-in methods", "shield-check"),
                                       ("settings-security-keys.html", "API keys", "lock"),
                                       ("settings-security-sessions.html", "Sign out everywhere", "log-out")]),
+        # Owner, 26 November 2026 (DASH-589, single sign-on stage 1): the people who use the apps and their passwords in each.
+        ("People", "users", [("settings-people.html", "People", "users")]),
         # Level 2: Manage, Catalogue, then one tab per added plug-in, which common.js adds from /api/session (DASH-318).
         ("Plug-ins", "puzzle", [("settings-plugins.html", "Manage", "list-checks"),
                                 ("settings-plugins-catalogue.html", "Catalogue", "layout-grid")]),
@@ -171,6 +173,7 @@ HELP = {
     "history-apps.html": ("topics/check-what-happened-across-your-apps.md", "checking what was added, failed and upgraded across your apps"),
     "system.html": ("README.md#your-server", "your server"),
     "system-monitor.html": ("topics/monitor-apps.md", "finding out what each app is using"),
+    "settings-people.html": ("topics/add-the-people-who-use-your-apps.md", "adding the people who use your apps"),
     "system-busy.html": ("topics/find-out-what-is-using-the-processor.md", "finding out what is using the processor"),
     "index.html": ("README.md#apps", "apps"),
     "apps-services.html": ("topics/add-a-background-service.md", "adding a background service"),

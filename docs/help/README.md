@@ -66,6 +66,7 @@ Each guide is a journey through several topics, in order.
 ### Apps
 
 - [Add an app](topics/add-an-app.md)
+- [Add the people who use your apps](topics/add-the-people-who-use-your-apps.md)
 - [Read your Calibre-Web books on your phone](topics/read-calibre-web-books-on-your-phone.md)
 - [Choose a Usenet provider and add it](topics/choose-a-usenet-provider.md)
 - [Find an app's API key](topics/find-an-api-key.md)
