@@ -3873,7 +3873,18 @@ class Handler(BaseHTTPRequestHandler):
                 return self.error(409, f"{next(p['name'] for p in pa.basics(app.data_dir) if p['id'] == pid)} is your media server, so it stays on. "
                                        "Choose another one, or none, in Settings, Apps, the media server tab first")
         if what == "settings" and method == "PUT":
-            return self.json(200, {"settings": pa.save_settings(app.data_dir, pid, self.body().get("settings") or {})})
+            body = self.body()
+            deps = pa.dependents(app.data_dir, pid) if pa.switching_off(app.data_dir, pid, body.get("settings") or {}) else []
+            if deps and not body.get("confirm_dependents"):  # API 1.21 (DASH-589): ask first, naming them
+                name = next(p["name"] for p in pa.basics(app.data_dir) if p["id"] == pid)
+                return self.json(409, {"error": pa.dependents_words(name, deps, "switch it off"), "dependents": deps})
+            for d in deps:
+                pa.disable(app.data_dir, d["id"])
+                logs.event("info", "plug-ins", f"Deactivated {d['id']}: it needs {pid}, which was switched off")
+            if deps:
+                app.plugin_clock.ensure()
+                app.plugin_idle.ensure()
+            return self.json(200, {"settings": pa.save_settings(app.data_dir, pid, body.get("settings") or {}), "deactivated": deps})
         if method != "POST":
             return self.error(405, "Not allowed")
         if what == "remove":
@@ -3887,6 +3898,13 @@ class Handler(BaseHTTPRequestHandler):
         elif what == "enable":
             pa.enable(app.data_dir, pid, services=app.config.data["services"])
         else:
+            deps = pa.dependents(app.data_dir, pid)
+            if deps and not self.body().get("confirm_dependents"):  # API 1.21 (DASH-589): ask first, naming them
+                name = next(p["name"] for p in pa.basics(app.data_dir) if p["id"] == pid)
+                return self.json(409, {"error": pa.dependents_words(name, deps, "deactivate it"), "dependents": deps})
+            for d in deps:
+                pa.disable(app.data_dir, d["id"])
+                logs.event("info", "plug-ins", f"Deactivated {d['id']}: it needs {pid}, which was deactivated")
             pa.disable(app.data_dir, pid)
         app.plugin_clock.ensure()  # jobs start or stop with their plug-in
         app.plugin_idle.ensure()  # and idle stop with a when_needed one (DASH-357)

@@ -1160,6 +1160,39 @@ def enable(data_dir, pid, helper=None, services=None):
         plugin_libraries.ensure(data_dir, pid, services)
 
 
+def dependents(data_dir, pid):
+    """The added plug-ins that are on and need this one (API 1.21, DASH-589: needs_plugins in their manifest): [{id, name}]."""
+    out = []
+    for p in basics(data_dir):
+        if p["id"] == pid or p.get("state") != "enabled":
+            continue
+        m = _read_kept(os.path.join(folder(data_dir, p["id"]), "manifest.json"), {}) or {}
+        if pid in (m.get("needs_plugins") or []):
+            out.append({"id": p["id"], "name": p.get("name") or p["id"]})
+    return out
+
+
+def switching_off(data_dir, pid, incoming):
+    """True when `incoming` (a settings save) turns the plug-in's own on and off switch (the manifest's `switch`, API 1.21) from on
+    to off. A plug-in with no switch, or a save that does not touch it, is never switching off."""
+    m = _read_kept(os.path.join(folder(data_dir, pid), "manifest.json"), {}) or {}
+    key = m.get("switch")
+    if not key or key not in (incoming or {}):
+        return False
+    now = (_read(os.path.join(folder(data_dir, pid), "settings.json"), {}) or {}).get(key)
+    if now is None:
+        now = next((x.get("default") for x in m.get("settings") or [] if x.get("key") == key), False)
+    return bool(now) and not bool(incoming[key])
+
+
+def dependents_words(name, deps, what):
+    """The plain-English warning before something that other plug-ins need is turned off."""
+    names = [d["name"] for d in deps]
+    listed = ", ".join(names[:-1]) + (" and " if len(names) > 1 else "") + names[-1]
+    return (f"{listed} {'need' if len(names) > 1 else 'needs'} {name}. If you {what}, {'they' if len(names) > 1 else 'it'} will be deactivated too, "
+            "and nothing is deleted. Continue?")
+
+
 def disable(data_dir, pid, helper=None):
     if _runs_nothing(data_dir, pid):
         set_state(data_dir, pid, "disabled")
