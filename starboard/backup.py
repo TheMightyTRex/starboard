@@ -72,7 +72,9 @@ def export(config, version, data_dir=None):
 
 
 def plugin_settings(data_dir):
-    """Each added plug-in: where it came from, whether it is active, and its settings (secrets as the apps' keys)."""
+    """Each added plug-in: where it came from, whether it is active, and its settings. Never a plug-in's keys or secrets (DASH-603):
+    a `secret` setting is left out, so a settings file that is lost or shared holds none. Restoring leaves the secret the plug-in
+    has now as it is, and says nothing is lost; after a restore on a new server, the plug-in asks for it again."""
     from . import plugins_admin
     out = {}
     root = os.path.join(data_dir, "plugins")
@@ -81,8 +83,11 @@ def plugin_settings(data_dir):
             continue
         read = lambda name, default: plugins_admin._read(os.path.join(root, pid, name), default)  # noqa: E731
         manifest = read("manifest.json", {})
+        secret = {s.get("key") for s in manifest.get("settings") or [] if isinstance(s, dict) and s.get("type") == "secret"}
+        state = {k: v for k, v in (read("state.json", {}) or {}).items() if k not in ("key", "key_id")}
         out[pid] = {"name": manifest.get("name", pid), "version": manifest.get("version", ""), "manifest": manifest,
-                    "state": read("state.json", {}), "settings": read("settings.json", {})}
+                    "state": state, "settings": {k: v for k, v in (read("settings.json", {}) or {}).items() if k not in secret},
+                    "secrets_left_out": sorted(k for k in secret if k)}
     return out
 
 
