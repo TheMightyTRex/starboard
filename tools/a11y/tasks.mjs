@@ -1586,6 +1586,40 @@ if (chk) {
   check("T-PLU", "Escape closes it and focus returns to Update all", backP.id === "plu-update-all", `${backP.id} ${backP.text}`);
 }
 
+// T-SPEED Speed limits by keyboard alone (DASH-578): Tab reaches Download limit with its label, a figure typed and left is
+// saved with "Saved" said beside it and focus stays, a wrong figure is refused in words tied to the box with the old figure
+// back, the alternative limits switch has a name and Space turns it on, and Enter on nothing is needed (no save button).
+await page.goto(`${base}/settings-downloads-speed.html`);
+await settle();
+const dl = await tabTo((f) => f.tag === "INPUT" && /^dl-speed-qbittorrent-down$/.test(f.id), 60);
+check("T-SPEED", "Tab reaches qBittorrent's Download limit", !!dl, dl ? dl.id : "not reached");
+if (dl) {
+  const named = await page.evaluate(() => { const i = document.activeElement; const l = document.querySelector(`label[for="${i.id}"]`); return { label: l && l.textContent.trim(), type: i.type, hint: !!i.getAttribute("aria-describedby") }; });
+  check("T-SPEED", "it has its label and a hint tied to it", named.label === "Download limit" && named.hint && named.type === "number", JSON.stringify(named));
+  await page.keyboard.press("Control+a");
+  await page.keyboard.type("1500");
+  await page.keyboard.press("Tab");
+  await page.waitForTimeout(700);
+  check("T-SPEED", "leaving the box says Saved", /Saved/.test(await said()), await said());
+  const upF = await focus();
+  check("T-SPEED", "focus moves on to Upload limit and is not lost", upF.id === "dl-speed-qbittorrent-up", `${upF.id} ${upF.text}`);
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Control+a");
+  await page.keyboard.type("-5");
+  await page.keyboard.press("Tab");
+  await page.waitForTimeout(500);
+  const bad = await page.evaluate(() => { const i = document.getElementById("dl-speed-qbittorrent-down"); const e = document.getElementById(`${i.id}-error`); return { invalid: i.getAttribute("aria-invalid"), text: e && !e.hidden ? e.textContent : "", back: i.value, tied: (i.getAttribute("aria-describedby") || "").includes(`${i.id}-error`) }; });
+  check("T-SPEED", "a wrong figure is refused in words tied to the box, with the old figure back", bad.invalid === "true" && /whole number/.test(bad.text) && bad.back === "1500" && bad.tied, JSON.stringify(bad));
+  const alt = await tabTo((f) => /^dl-speed-qbittorrent-alt$/.test(f.id), 8);
+  const altName = await page.evaluate(() => { const i = document.getElementById("dl-speed-qbittorrent-alt"); return `${i.getAttribute("role")} ${i.closest("label")?.textContent.trim()}`; });
+  check("T-SPEED", "Tab reaches the alternative limits switch, a switch with its name", !!alt && /^switch /.test(altName) && /alternative speed limits/i.test(altName), altName);
+  if (alt) {
+    await page.keyboard.press("Space");
+    await page.waitForTimeout(700);
+    const on = await page.evaluate(() => document.getElementById("dl-speed-qbittorrent-alt").checked);
+    check("T-SPEED", "Space turns it on and says Saved", on && /Saved/.test(await said()), await said());
+  }
+}
 // T-SYSBACKUP System, Backups (DASH-588): the panel is reached in the Tab order and its one link, named for what it does,
 // opens the backup page at Full without media with Enter.
 await page.goto(`${base}/system.html`);

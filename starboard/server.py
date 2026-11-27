@@ -2805,6 +2805,29 @@ class Handler(BaseHTTPRequestHandler):
                 services.forget("transfer")
                 logs.event("info", "downloads", f"{s['name']}: unpacking and folder scanning resumed")
                 return self.json(200, {"said": f"{s['name']} is unpacking again"})
+            if path == "/api/speed-limits" and method == "GET":  # DASH-578: asked only while the page is open
+                from . import speed_limits
+                items, errors = [], []
+                for c in speed_limits.clients(cfg.data["services"]):
+                    try:
+                        items.append(speed_limits.read(c))
+                    except services.ServiceError as e:
+                        errors.append({"id": c["id"], "name": c["name"], "message": str(e)})
+                return self.json(200, {"items": items, "errors": errors})
+            m = re.match(r"^/api/speed-limits/([A-Za-z0-9_-]{1,64})$", path)
+            if m and method == "POST":
+                from . import speed_limits
+                s = cfg.service(m.group(1))
+                if not s or s["type"] not in speed_limits.KINDS:
+                    return self.error(404, "No qBittorrent or NZBGet with that id")
+                try:
+                    row = speed_limits.apply(s, self.body())
+                except ValueError as e:
+                    return self.error(400, str(e))
+                except services.ServiceError as e:
+                    return self.error(502, str(e))
+                logs.event("info", "downloads", f"{s['name']}: speed limits now {speed_limits.words(row)}")
+                return self.json(200, row)
             if path == "/api/transfer" and method == "GET":
                 return self.json(200, services.cached("transfer", 5, lambda: transfer_with_vpn(app.data_dir, cfg.data["services"]), fresh))
             if path == "/api/numbers" and method == "GET":
