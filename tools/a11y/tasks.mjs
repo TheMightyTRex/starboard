@@ -1320,6 +1320,33 @@ if (addPerson) {
   check("T-PEOPLE", "the result is said", /Added Keyboard Kim/.test(s3), s3);
 }
 
+// T-PEOPLE-PW (DASH-589) Make a password by keyboard alone: the dialog starts in the account name, Generate one is the choice
+// and the own-password box is hidden, an arrow key chooses Use my own and shows the box while focus stays on the choice, and
+// Escape gives focus back to the button that opened the dialog.
+await page.goto(`${base}/settings-people.html`);
+await settle();
+await page.locator('[data-person]', { hasText: "Alex" }).first().focus();
+await page.keyboard.press("Enter");
+await page.waitForTimeout(700);
+const mk = await tabTo((f) => f.tag === "BUTTON" && /^Make a password for Alex in Audiobookshelf/.test(f.text), 40);
+check("T-PEOPLE-PW", "Make a password can be reached with Tab", !!mk, mk?.text);
+if (mk) {
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(600);
+  const d1 = await focus();
+  check("T-PEOPLE-PW", "the dialog starts in the account name", d1.inPanel && /-user$/.test(d1.id), d1.id || d1.text);
+  check("T-PEOPLE-PW", "Generate one is chosen and the own password box is hidden", await page.evaluate(() => document.querySelector("#acct-audiobookshelf-mode-generate")?.checked && document.querySelector("#acct-audiobookshelf-own")?.closest(".field").hidden));
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("ArrowDown");
+  await page.waitForTimeout(300);
+  const d2 = await focus();
+  check("T-PEOPLE-PW", "an arrow key chooses Use my own, shows its box, and focus stays on the choice", d2.id === "acct-audiobookshelf-mode-own" && await page.evaluate(() => !document.querySelector("#acct-audiobookshelf-own").closest(".field").hidden), d2.id || d2.text);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(500);
+  const d3 = await focus();
+  check("T-PEOPLE-PW", "Escape gives focus back to Make a password", /^Make a password for Alex/.test(d3.text), d3.text);
+}
+
 // T-TRANSCODE (DASH-515) Test hardware video conversion by keyboard alone: Test now is reached with Tab, nothing runs
 // until it is pressed, the wait is said, and focus ends on the result's summary, which is read out.
 await page.goto(`${base}/system.html`);

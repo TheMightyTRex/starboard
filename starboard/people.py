@@ -37,6 +37,14 @@ ALPHABET = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 PASSWORD_LENGTH = 24  # about 139 bits; the design asks for 20 or more
 # The apps people sign in to, found by the name or kind of each service. Download apps and tools such as Jellystat and
 # Wizarr are the owner's, never given to a person (design section 3).
+MIN_OWN = 10  # the shortest password a person may choose (owner, 27 November 2026); nothing else is asked for (no capitals or symbols)
+MAX_OWN = 128
+OWN_RULES = (f"Use at least {MIN_OWN} characters. A few random words in a row is a good password. "
+             "Starboard does not ask for capitals, numbers or symbols.")
+# An app that enforces a rule of its own, by app type: {"min": the shortest it accepts, "note": the rule in plain English}.
+# Only a rule that can be checked in the app's documentation or code goes here. None has been checked yet, so every app
+# uses the minimum above and the page says the app may refuse the password (owner, 27 November 2026).
+APP_RULES = {}
 PEOPLE_APPS = ("jellyfin", "plex", "emby", "audiobookshelf", "kavita", "komga", "calibre-web", "navidrome", "immich",
                "seerr", "jellyseerr", "overseerr", "ombi")
 
@@ -79,19 +87,21 @@ def _write(data_dir, data):
     os.replace(tmp, path)
 
 
-def make_password():
-    return "".join(secrets.choice(ALPHABET) for _ in range(PASSWORD_LENGTH))
+def make_password(length=PASSWORD_LENGTH):
+    return "".join(secrets.choice(ALPHABET) for _ in range(max(PASSWORD_LENGTH, int(length))))
 
 
 def apps_from(services):
-    """[{id, name, address}] of the owner's apps a person can have an account in, from Starboard's list of apps."""
+    """[{id, name, address, can_change}] of the owner's apps a person can have an account in, from Starboard's list of apps."""
     out = []
     for s in services or []:
         if not isinstance(s, dict) or s.get("enabled") is False:
             continue
         slug = re.sub(r"[^a-z0-9]+", "-", str(s.get("name", "")).lower()).strip("-")
         if s.get("type") in PEOPLE_APPS or slug in PEOPLE_APPS or any(slug.startswith(p + "-") for p in PEOPLE_APPS):
-            out.append({"id": str(s["id"]), "name": str(s.get("name") or s["id"]), "address": str(s.get("link") or s.get("url") or "")})
+            from . import people_apps
+            out.append({"id": str(s["id"]), "name": str(s.get("name") or s["id"]), "address": str(s.get("link") or s.get("url") or ""),
+                        "can_change": people_apps.supports(s), "rule": rule_for(s)})
     return out
 
 
@@ -152,7 +162,7 @@ def public(person, apps):
         if acct.get("password"):
             state = "in-use" if acct.get("set_at") else "made"
         accounts.append({"app": app_id, "app_name": names.get(app_id, ""), "app_present": app_id in names,
-                         "username": acct.get("username", ""), "state": state, "made_at": acct.get("made_at", ""),
+                         "username": acct.get("username", ""), "state": state, "own": bool(acct.get("own")), "made_at": acct.get("made_at", ""),
                          "set_at": acct.get("set_at", "")})
     removed_days = _days_since(person.get("removed_at")) if person.get("state") == "removed" else 0
     return {"id": person["id"], "name": person["name"], "email": person.get("email", ""), "role": person["role"],
@@ -169,7 +179,7 @@ def listing(data_dir, services):
         data = _read(data_dir)
     people = [public(p, apps) for p in data["people"] if p.get("role") in ROLES]
     people.sort(key=lambda p: (STATES.index(p["state"]) if p["state"] in STATES else 0, p["name"].casefold()))
-    return {"people": people, "apps": apps, "roles": [{"id": k, "name": v[0], "about": v[1]} for k, v in ROLES.items()],
+    return {"people": people, "apps": apps, "own_rules": OWN_RULES, "own_min": MIN_OWN, "roles": [{"id": k, "name": v[0], "about": v[1]} for k, v in ROLES.items()],
             "limit": MAX_PEOPLE, "name_max": NAME_MAX, "forget_after_days": FORGET_AFTER_DAYS}
 
 
@@ -279,21 +289,63 @@ def save_account(data_dir, services, person_id, app_id, username):
         return p
 
 
-def new_password(data_dir, services, person_id, app_id, replace=False):
-    """Make a long password for the account. An existing one is replaced only when asked, and that clears "set in the app"."""
+def rule_for(service):
+    """The password rule for one app: {"min", "known", "note"}. The longer of Starboard's minimum and the app's own."""
+    known = APP_RULES.get((service or {}).get("type")) if isinstance(service, dict) else None
+    name = (service or {}).get("name") or "The app"
+    if known:
+        return {"min": max(MIN_OWN, int(known["min"])), "known": True, "note": known["note"]}
+    return {"min": MIN_OWN, "known": False, "note": f"{name} may refuse it if it has a rule of its own. Starboard says so if it does."}
+
+
+def check_own_password(text, minimum=MIN_OWN):
+    """The password a person chose, or what is wrong with it in words. Only the length is checked: no capitals, numbers or
+    symbols are asked for. The words never repeat the password."""
+    if not isinstance(text, str) or not text.strip():
+        raise PeopleError("Enter the password you want to use, or choose Generate one")
+    if text != text.strip():
+        raise PeopleError("The password starts or ends with a space. Remove it, so it is the same everywhere it is typed")
+    if any(ord(c) < 32 or ord(c) == 127 for c in text):
+        raise PeopleError("The password has a character that cannot be entered in a box. Use letters, numbers, symbols and spaces")
+    if len(text) < minimum:
+        raise PeopleError(f"The password is too short. Use at least {minimum} characters. " + OWN_RULES.split(". ", 1)[1])
+    if len(text) > MAX_OWN:
+        raise PeopleError(f"The password is too long. Use {MAX_OWN} characters or fewer")
+    return text
+
+
+def set_password(data_dir, services, person_id, app_id, replace=False, own=None, push=None):
+    """Make or replace the password for one account: a generated one, or `own` when given (checked by check_own_password).
+    An existing password is replaced only when asked. `push(account_name, password)`, when given, changes it in the app first
+    and may raise; then nothing is recorded, so Starboard never holds a password the app does not have. When it works, the
+    password is recorded as set in the app. Starboard's own password check is the caller's."""
     apps = apps_from(services)
+    service = next((x for x in services or [] if isinstance(x, dict) and str(x.get("id")) == str(app_id)), None)
+    rule = rule_for(service)
+    chosen = check_own_password(own, rule["min"]) if own is not None else None
     with _lock:
         data = _read(data_dir)
         p, acct = _account(data, person_id, app_id, apps)
         if acct is None:
             acct = p["accounts"][app_id] = {"username": _clean_username("", p["name"])}
         if acct.get("password") and not replace:
-            raise PeopleError("There is a password already. Choose Make a new password to replace it")
-        acct["password"] = make_password()
+            raise PeopleError("There is a password already. Choose Reset the password to replace it")
+        new = chosen if chosen is not None else make_password(rule["min"])
+        if push:
+            push(acct["username"], new)
+        acct["password"] = new
+        acct["own"] = chosen is not None
         acct["made_at"] = _now()
         acct.pop("set_at", None)
+        if push:
+            acct["set_at"] = _now()
         _write(data_dir, data)
         return p
+
+
+def new_password(data_dir, services, person_id, app_id, replace=False):
+    """A generated password (see set_password)."""
+    return set_password(data_dir, services, person_id, app_id, replace=replace)
 
 
 def reveal(data_dir, person_id, app_id):

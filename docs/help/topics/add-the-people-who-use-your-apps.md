@@ -31,21 +31,33 @@ password Starboard made, and tell Starboard you did. A later version will do thi
    ![Add a person, with the Role field (step 2) outlined, with example data](../images/add-the-people-who-use-your-apps-2-add.png)
 
 3. Select **Manage** on the person's row. Under **Accounts in your apps**, find the app and select **Make a password**.
-   Check the **Account name**, which is the name the person signs in with, and select **Make a password** again.
 
-4. Select **Show password**, enter your Starboard password and select **Show password**. Select **Copy**. In the app,
-   make the account with that name and set the password.
+   ![A person's accounts, with Make a password (step 3) and Show password (step 5) outlined, with example data](../images/add-the-people-who-use-your-apps-3-accounts.png)
 
-   ![A person's accounts, with Make a password and Show password (steps 3 and 4) outlined, with example data](../images/add-the-people-who-use-your-apps-3-accounts.png)
+4. Check the **Account name**, which is the name the person signs in with. Then choose the password:
+   - **Generate one** is the best choice: a long random password.
+   - **Use my own** lets you enter your own, of at least 10 characters. Starboard asks for nothing else, no capitals, numbers or symbols, because a longer password is stronger than a complicated short one. A few random words in a row is a good password.
+   - For Jellyfin, Emby and Audiobookshelf, tick **Also change it in the app**. Starboard then changes the password of the account in the app for you, and records it as set. The account must be there already, and Starboard asks for your Starboard password first.
 
-5. Back in Starboard, select **It is set in the app**. The account now says **Password set in the app**, so you know
-   which accounts are done.
-6. To give the person their details, select **Print how to sign in**. The page lists each app's address and the
+   ![The password choices, with Use my own and Also change it in the app (step 4) outlined, with example data](../images/add-the-people-who-use-your-apps-5-password.png)
+
+5. Select **Make a password**. Then select **Show password**, enter your Starboard password and select **Show password**. Select **Copy**. In the app, make the account with that name and set the password. Skip this if you ticked **Also change it in the app** and the account was already there.
+6. Back in Starboard, select **It is set in the app**. The account now says **Password set in the app**, so you know which accounts are done.
+7. To give the person their details, select **Print how to sign in**. The page lists each app's address and the
    account name. **Print with the passwords** asks for your Starboard password first. Keep a page with passwords
    private, and throw it away once the passwords are in a password manager.
-7. To stop someone using your apps, select **Manage** and use **Pause or remove**. The next section says what each choice does.
+8. To stop someone using your apps, select **Manage** and use **Pause or remove**. The last section says what each choice does.
 
-   ![A person's Pause or remove choices (step 7) outlined, with example data](../images/add-the-people-who-use-your-apps-4-pause.png)
+   ![A person's Pause or remove choices (step 8) outlined, with example data](../images/add-the-people-who-use-your-apps-4-pause.png)
+
+## Reset a password
+
+1. Select **Manage** on the person's row, then select **More** beside the app, then **Reset the password**.
+2. Choose **Generate one** or **Use my own**, and tick **Also change it in the app** where it is offered.
+3. Enter your Starboard password. Starboard always asks for it before it replaces a password.
+4. Select **Reset the password**. Starboard forgets the old password. If you did not tick **Also change it in the app**, the old password stays right in the app until you set the new one there, so set it and then select **It is set in the app**.
+
+For other apps, such as Kavita, Starboard has no way to change a password, so the page says so. Change it in the app, then select **It is set in the app**. Starboard only records it.
 
 ## Pause, remove or put back
 
@@ -63,14 +75,15 @@ password Starboard made, and tell Starboard you did. A later version will do thi
 - **Roles** are for your own sorting for now. A **Child** has no limits yet, because each app sets its own, such as an age
   rating. Set them in the app. Starboard will say where an app cannot limit a child, so you do not think a child is
   protected where they are not.
-- Each password has 24 letters and numbers, with none that could be mistaken for another, such as the letter O and the number 0. Each
+- A generated password has 24 letters and numbers, with none that could be mistaken for another, such as the letter O and the number 0. Each
   person has a different password in each app.
+- A password you enter must have at least 10 characters. If an app has a rule of its own, Starboard follows it and says what it is. Starboard does not know the rules of every app, so an app may still refuse a password, and Starboard says so.
+- Starboard changes a password in an app with the app's own admin key. It was written from the apps' documentation and has not yet been tried against a real Jellyfin, Emby or Audiobookshelf, so check the account works after the first change.
 - Starboard keeps the passwords in a file only Starboard can read, in its data folder. They are never in a Settings
   backup, a log, an address or an error message. A full backup keeps them, as it keeps your apps' keys.
 - Starboard keeps up to 50 people.
 - Nothing runs in the background for this page. Starboard reads the list when you open the page or change a person.
-- When you replace a password with **Make a new password**, the old one is forgotten. The old password stops being right
-  once you set the new one in the app.
+- When you reset a password, Starboard forgets the old one.
 - If you set a password in an app and Starboard does not know, select **It is set in the app** so the page is right.
 
 ## Find out more

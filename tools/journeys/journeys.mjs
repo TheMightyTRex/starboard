@@ -3089,6 +3089,29 @@ check("PEOPLE-05", "the right password shows a hidden 24 character value that is
 await page.getByRole("button", { name: "It is set in the app" }).click();
 await page.waitForFunction(() => /Password set in the app/.test(document.querySelector("#acct-jellyfin-more")?.textContent || ""), null, { timeout: 8000 }).catch(() => {});
 check("PEOPLE-06", "saying it is set changes the row, and the password is hidden again", /Password set in the app/.test(await page.locator("#acct-jellyfin-more").innerText()) && await page.locator("#acct-jellyfin-secret").count() === 0);
+// Reset with a password of the owner's own: a short one keeps the dialog open, the Starboard password is asked for, and Show
+// password then gives back exactly what was typed.
+await page.locator("#acct-jellyfin-more .menu-wrap > button").click();
+await page.getByRole("menuitem", { name: "Reset the password" }).click();
+await page.waitForSelector("dialog[open] #acct-jellyfin-mode-own", { timeout: 8000 });
+check("PEOPLE-09", "Reset asks for the Starboard password at once, and offers Generate one as the default", await page.locator("#acct-jellyfin-mode-generate").isChecked() && await page.locator("#acct-jellyfin-starboard-pw").isVisible());
+await page.locator("#acct-jellyfin-mode-own").check();
+await page.fill("#acct-jellyfin-own", "tooshort");
+await page.fill("#acct-jellyfin-starboard-pw", password);
+await page.locator("dialog[open] button[value=ok]").click();
+await page.waitForTimeout(500);
+check("PEOPLE-10", "a password under 10 characters is refused and the dialog stays open", await page.locator("dialog[open]").count() === 1 && /10 characters/.test(await page.locator("dialog[open] #acct-jellyfin-own").evaluate((i) => i.validationMessage)));
+await page.fill("#acct-jellyfin-own", "my own journey password");
+await page.locator("dialog[open] button[value=ok]").click();
+await page.waitForFunction(() => !document.querySelector("dialog[open]"), null, { timeout: 8000 }).catch(() => {});
+await page.waitForTimeout(500);
+check("PEOPLE-11", "after a reset the account is made, not set in the app, and says it was chosen by you", /Password made, not set/.test(await page.locator("#acct-jellyfin-more").innerText()) && /Chosen by you/.test(await page.locator("#acct-jellyfin-reveal").evaluate((n) => n.parentElement.innerText)));
+await page.locator("#acct-jellyfin-show").click();
+await page.waitForSelector("dialog[open] #acct-jellyfin-pw", { timeout: 8000 });
+await page.fill("#acct-jellyfin-pw", password);
+await page.locator("dialog[open] button[value=ok]").click();
+await page.waitForSelector("#acct-jellyfin-secret", { timeout: 8000 });
+check("PEOPLE-12", "Show password gives back the password that was typed", await page.locator("#acct-jellyfin-secret").evaluate((i) => i.value) === "my own journey password");
 await page.locator("#person-remove").click();
 await page.waitForSelector("dialog[open]", { timeout: 8000 });
 check("PEOPLE-07", "Remove asks first and starts on Cancel", await page.evaluate(() => /Cancel/.test(document.activeElement?.textContent || "")));

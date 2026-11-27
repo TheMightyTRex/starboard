@@ -134,6 +134,64 @@ class Model(unittest.TestCase):
         with self.assertRaises(LookupError):
             people.reveal(self.dir, pid, "jellyfin")
 
+    def test_a_password_of_your_own_needs_ten_characters_and_nothing_else(self):
+        p = self.add()
+        for bad, words in (("", "Enter the password"), ("   ", "Enter the password"), ("short", "at least 10"), ("123456789", "at least 10"),
+                           (" leadingspace1", "starts or ends with a space"), ("x" * 129, "128 characters or fewer"), ("tab\there-now", "cannot be entered")):
+            with self.assertRaises(people.PeopleError, msg=bad) as e:
+                people.set_password(self.dir, SERVICES, p["id"], "jellyfin", own=bad)
+            self.assertIn(words, str(e.exception))
+            if len(bad.strip()) >= 9:
+                self.assertNotIn(bad.strip(), str(e.exception))  # the words never repeat it
+        for fine in ("abcdefghij", "all lower case words only", "NoDigitsOrSymbolsHere"):  # no capitals, numbers or symbols asked for
+            q = self.add(f"P {fine[:5]}")
+            people.set_password(self.dir, SERVICES, q["id"], "jellyfin", own=fine)
+            self.assertEqual(people.reveal(self.dir, q["id"], "jellyfin")["password"], fine)
+
+    def test_an_own_password_is_recorded_as_chosen_and_a_generated_one_is_not(self):
+        p = self.add()
+        people.set_password(self.dir, SERVICES, p["id"], "jellyfin", own="my own long password")
+        people.set_password(self.dir, SERVICES, p["id"], "audiobookshelf")
+        by = {a["app"]: a for a in people.listing(self.dir, SERVICES)["people"][0]["accounts"]}
+        self.assertEqual((by["jellyfin"]["own"], by["audiobookshelf"]["own"]), (True, False))
+        self.assertEqual(len(people.reveal(self.dir, p["id"], "audiobookshelf")["password"]), 24)
+
+    def test_replacing_needs_replace_and_clears_set_in_the_app(self):
+        p = self.add()
+        people.set_password(self.dir, SERVICES, p["id"], "jellyfin")
+        people.mark_set(self.dir, SERVICES, p["id"], "jellyfin", True)
+        with self.assertRaises(people.PeopleError):
+            people.set_password(self.dir, SERVICES, p["id"], "jellyfin", own="another long one")
+        people.set_password(self.dir, SERVICES, p["id"], "jellyfin", replace=True, own="another long one")
+        acct = people.listing(self.dir, SERVICES)["people"][0]["accounts"][0]
+        self.assertEqual((acct["state"], acct["own"]), ("made", True))
+
+    def test_changing_it_in_the_app_is_recorded_only_when_the_app_took_it(self):
+        p = self.add()
+        calls = []
+        people.set_password(self.dir, SERVICES, p["id"], "jellyfin", own="first long password", push=lambda u, pw: calls.append((u, pw)))
+        self.assertEqual(calls, [("Sam", "first long password")])
+        self.assertEqual(people.listing(self.dir, SERVICES)["people"][0]["accounts"][0]["state"], "in-use")  # the app has it
+
+        def refuse(user, pw):
+            raise people.PeopleError("Jellyfin has no account called Sam")
+        with self.assertRaises(people.PeopleError):
+            people.set_password(self.dir, SERVICES, p["id"], "jellyfin", replace=True, own="second long password", push=refuse)
+        self.assertEqual(people.reveal(self.dir, p["id"], "jellyfin")["password"], "first long password")  # nothing was recorded
+
+    def test_an_app_rule_raises_the_minimum_and_generated_passwords_meet_it(self):
+        with mock.patch.dict(people.APP_RULES, {"jellyfin": {"min": 30, "note": "Jellyfin needs 30 characters."}}):
+            self.assertEqual(people.rule_for(SERVICES[0]), {"min": 30, "known": True, "note": "Jellyfin needs 30 characters."})
+            p = self.add()
+            with self.assertRaises(people.PeopleError) as e:
+                people.set_password(self.dir, SERVICES, p["id"], "jellyfin", own="a" * 29)
+            self.assertIn("at least 30", str(e.exception))
+            people.set_password(self.dir, SERVICES, p["id"], "jellyfin")
+            self.assertGreaterEqual(len(people.reveal(self.dir, p["id"], "jellyfin")["password"]), 30)
+        self.assertEqual(people.rule_for(SERVICES[0])["min"], 10)  # no rule known: ten, and the app may refuse it
+        self.assertIn("may refuse", people.rule_for(SERVICES[0])["note"])
+        self.assertEqual(people.listing(self.dir, SERVICES)["own_min"], 10)
+
     def test_every_person_and_app_gets_its_own_password(self):
         a, b = self.add("Sam"), self.add("Alex")
         for who in (a, b):
@@ -244,7 +302,7 @@ class Server(unittest.TestCase):
         lines = []
         with mock.patch.object(logs, "event", lambda level, area, message, **k: lines.append(message)):
             status, out = self.api("POST", path, {"password": PASSWORD})
-            self.api("POST", f"/api/people/{pid}/accounts/audiobookshelf/password", {"replace": True})
+            self.api("POST", f"/api/people/{pid}/accounts/audiobookshelf/password", {"replace": True, "password": PASSWORD})
         self.assertEqual((status, out["password"]), (200, kept))
         self.assertEqual(out["username"], "Reveal")
         self.assertTrue(lines)
@@ -256,6 +314,40 @@ class Server(unittest.TestCase):
         self.assertEqual(self.api("POST", f"/api/people/{pid}/forget", {})[0], 401)
         status, out = self.api("POST", f"/api/people/{pid}/forget", {"password": PASSWORD})
         self.assertEqual(status, 400, out)  # the password was right: it is too soon
+
+    def test_own_passwords_and_resets_over_the_route(self):
+        pid = self.api("POST", "/api/people", {"name": "Own", "role": "household"})[1]["person"]
+        path = f"/api/people/{pid}/accounts/jellyfin/password"
+        status, out = self.api("POST", path, {"own_password": "short"})
+        self.assertEqual(status, 400)
+        self.assertIn("at least 10", out["error"])
+        self.assertNotIn("short", out["error"].replace("too short", ""))
+        self.assertEqual(self.api("POST", path, {"own_password": "my own long password"})[0], 200)  # a first one needs no Starboard password
+        self.assertEqual(people.reveal(self.tmp.name, pid, "jellyfin")["password"], "my own long password")
+        self.assertEqual(self.api("POST", path, {"replace": True, "own_password": "a new long password"})[0], 401)  # a reset needs it
+        self.assertEqual(self.api("POST", path, {"replace": True, "own_password": "a new long password", "password": "wrong password"})[0], 401)
+        self.assertEqual(people.reveal(self.tmp.name, pid, "jellyfin")["password"], "my own long password")
+        self.assertEqual(self.api("POST", path, {"replace": True, "own_password": "a new long password", "password": PASSWORD})[0], 200)
+        self.assertEqual(people.reveal(self.tmp.name, pid, "jellyfin")["password"], "a new long password")
+
+    def test_also_change_it_in_the_app_asks_the_password_calls_the_app_and_never_logs_it(self):
+        from starboard import people_apps
+        pid = self.api("POST", "/api/people", {"name": "Also", "role": "household"})[1]["person"]
+        path = f"/api/people/{pid}/accounts/jellyfin/password"
+        seen, lines = [], []
+        with mock.patch.object(people_apps, "change_password", lambda services, app, user, pw: seen.append((app, user, pw)) or "ok"), \
+                mock.patch.object(logs, "event", lambda level, area, message, **k: lines.append(message)):
+            self.assertEqual(self.api("POST", path, {"also_change": True, "own_password": "typed long password"})[0], 401)
+            self.assertEqual(seen, [])
+            status, out = self.api("POST", path, {"also_change": True, "own_password": "typed long password", "password": PASSWORD})
+        self.assertEqual((status, seen), (200, [("jellyfin", "Also", "typed long password")]))
+        self.assertEqual(next(a for p in out["people"] if p["id"] == pid for a in p["accounts"])["state"], "in-use")
+        self.assertFalse([m for m in lines if "typed long password" in m])
+
+    def test_the_app_list_says_which_apps_starboard_can_change_and_the_rule(self):
+        apps = self.api("GET", "/api/people")[1]["apps"]
+        self.assertEqual({a["id"]: a["can_change"] for a in apps}, {"jellyfin": True, "audiobookshelf": True})
+        self.assertTrue(all(a["rule"]["min"] == 10 for a in apps))
 
     def test_the_people_file_is_not_in_a_settings_backup(self):
         from starboard import backup

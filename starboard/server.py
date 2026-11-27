@@ -4328,9 +4328,19 @@ class Handler(BaseHTTPRequestHandler):
                     p = people.save_account(data_dir, services, pid, app_id, b.get("username"))
                     return full(said="Saved the account name", person=pid)
                 if what == "password":
-                    p = people.new_password(data_dir, services, pid, app_id, replace=bool(b.get("replace")))
-                    logs.event("info", "people", f"A password was made for {p['name']} in {app_id}")  # never the password
-                    return full(said="Made a password", person=pid)
+                    # A generated password, or one the owner typed (own_password). Replacing one, or changing it in the app
+                    # too (also_change, for the apps that allow it), needs the Starboard password. Never logged.
+                    replace, also, own = bool(b.get("replace")), bool(b.get("also_change")), b.get("own_password")
+                    if replace or also:
+                        self.check_password(b)
+                    push = None
+                    if also:
+                        from . import people_apps
+                        push = lambda user, pw: people_apps.change_password(services, app_id, user, pw)  # noqa: E731
+                    p = people.set_password(data_dir, services, pid, app_id, replace=replace, own=own if own is not None else None, push=push)
+                    how = ("chosen" if own is not None else "generated") + (", also changed in the app" if also else "")
+                    logs.event("info", "people", f"A password ({how}) was recorded for {p['name']} in {app_id}")  # never the password
+                    return full(said=("Changed it in the app and recorded it" if also else "Recorded the password"), person=pid)
                 if what == "reveal":
                     self.check_password(b)
                     got = people.reveal(data_dir, pid, app_id)

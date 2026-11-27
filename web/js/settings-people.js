@@ -238,7 +238,7 @@ async function startPeople() {
     const state = acct?.state || "none";
     const meta = !acct ? "No account recorded."
       : state === "none" ? `Account name: ${acct.username}. No password made yet.`
-        : state === "made" ? `Account name: ${acct.username}. Made on ${peopleDate(acct.made_at)}. Set it in ${name}, then say so.`
+        : state === "made" ? `Account name: ${acct.username}. ${acct.own ? "Chosen by you" : "Made"} on ${peopleDate(acct.made_at)}. Set it in ${name}, then say so.`
           : `Account name: ${acct.username}. Set in the app on ${peopleDate(acct.set_at)}.`;
     const base = `/api/people/${p.id}/accounts/${app}`;
     const rowId = `acct-${app}`;
@@ -249,16 +249,53 @@ async function startPeople() {
       b.addEventListener("click", run);
       return b;
     };
+    // Make a password, or reset one: a generated one (the default) or one the owner types, and for the apps Starboard can
+    // reach, "Also change it in the app". Replacing, or changing it in the app, asks for the Starboard password.
     const makeIt = async (replace) => {
-      const input = el("input", { class: "input", id: `${rowId}-user`, autocomplete: "off", value: acct?.username || p.name });
+      const info = data.apps.find((a) => a.id === app);
+      const rule = info?.rule || { min: data.own_min, note: "" };
+      const nameBox = el("input", { class: "input", id: `${rowId}-user`, autocomplete: "off", value: acct?.username || p.name });
+      const radio = (value, label, hint, checked) => {
+        const input = el("input", { type: "radio", name: `${rowId}-mode`, value, id: `${rowId}-mode-${value}`, checked });
+        return { input, node: el("label", { class: "check", for: input.id }, input, el("span", { class: "check__text" }, el("strong", { text: label }), el("span", { class: "check__hint", text: hint }))) };
+      };
+      const generate = radio("generate", "Generate one", "A long random password with no characters that can be mistaken for each other. This is the best choice.", true);
+      const own = radio("own", "Use my own", "Enter one you will remember, or one from your password manager.", false);
+      const ownBox = el("input", { class: "input", type: "password", id: `${rowId}-own`, autocomplete: "new-password", spellcheck: "false", maxlength: 128 });
+      const ownField = field("Your password", ownBox, { hint: `${data.own_rules} ${rule.note}`.trim() });
+      ownField.hidden = true;
+      const mode = el("fieldset", { class: "form-stack" }, el("legend", { class: "field__label", text: "Password" }), generate.node, own.node);
+      const also = info?.can_change ? el("input", { type: "checkbox", id: `${rowId}-also` }) : null;
+      const alsoNode = also
+        ? el("label", { class: "check", for: also.id }, also, el("span", { class: "check__text" }, el("strong", { text: `Also change it in ${name}` }),
+          el("span", { class: "check__hint", text: `Starboard changes the password of the account called ${acct?.username || p.name} in ${name} and records it as set. The account must be there already. Asks for your Starboard password.` })))
+        : el("p", { class: "small muted", text: `Starboard cannot change passwords in ${name}. Change it there yourself, then choose It is set in the app.` });
+      const pwBox = passwordInput(`${rowId}-starboard-pw`);
+      const pwField = passwordField(pwBox, { hint: "Needed to replace a password or to change it in the app." });
+      pwField.hidden = !replace;
+      const refresh = () => {
+        const mine = own.input.checked;
+        ownField.hidden = !mine;
+        ownBox.required = mine;
+        pwField.hidden = !(replace || also?.checked);
+        pwBox.required = !pwField.hidden;
+      };
+      generate.input.addEventListener("change", refresh);
+      own.input.addEventListener("change", refresh);
+      also?.addEventListener("change", refresh);
+      ownBox.addEventListener("input", () => ownBox.setCustomValidity(ownBox.value.trim().length && ownBox.value.length < rule.min ? `Use at least ${rule.min} characters` : ""));
+      refresh();
       const intro = replace
-        ? `Starboard makes a new password for ${p.name} in ${name} and forgets the old one. The old one stops being right once you set the new one in the app.`
-        : `Starboard makes a long password for ${p.name} in ${name}. Make the account in ${name} with this name, then set the password.`;
-      const fields = replace ? [] : [field(`Account name in ${name}`, input, { hint: "The name they sign in with. It can be changed later." })];
-      if (!await confirmDialog({ title: replace ? `Make a new password for ${p.name}?` : `Make a password for ${p.name} in ${name}`, message: intro, confirm: replace ? "Make a new password" : "Make a password", careful: replace, fields })) return;
+        ? `Choose a new password for ${p.name} in ${name}. Starboard forgets the old one.${also ? "" : ` The old one stays right in ${name} until you set the new one there.`}`
+        : `Choose a password for ${p.name} in ${name}. Make the account in ${name} with this account name, then set the password there${also ? ", or let Starboard change it" : ""}.`;
+      const fields = [...(replace ? [] : [field(`Account name in ${name}`, nameBox, { hint: "The name they sign in with. It can be changed later." })]), mode, ownField, alsoNode, pwField];
+      if (!await confirmDialog({ title: replace ? `Reset the password for ${p.name} in ${name}?` : `Make a password for ${p.name} in ${name}`, message: intro, confirm: replace ? "Reset the password" : "Make a password", careful: replace, fields })) return;
       try {
-        if (!replace || input.value) await call(`${base}`, { username: replace ? acct.username : input.value });
-        const r = await call(`${base}/password`, { replace: !!replace });
+        if (!replace && nameBox.value) await call(`${base}`, { username: nameBox.value });
+        const body = { replace: !!replace, also_change: !!also?.checked };
+        if (own.input.checked) body.own_password = ownBox.value;
+        if (replace || body.also_change) body.password = pwBox.value;
+        const r = await call(`${base}/password`, body);
         redraw(`#${rowId}-show`, `${r.said} for ${p.name} in ${name}`);
         drawPage();
       } catch (err) { problem(err.message); }
@@ -303,7 +340,7 @@ async function startPeople() {
     const more = [];
     if (acct) more.push({ label: "Change the account name", icon: "pencil", onSelect: rename });
     if (state === "in-use") more.push({ label: "Not set in the app any more", icon: "undo-2", onSelect: setIt(false) });
-    if (state !== "none") more.push({ label: "Make a new password", icon: "refresh-cw", onSelect: () => makeIt(true) });
+    if (state !== "none") more.push({ label: "Reset the password", icon: "refresh-cw", onSelect: () => makeIt(true) });
     if (acct) more.push({ label: "Take out of the list", icon: "trash-2", danger: true, onSelect: dropIt });
     const side = el("div", { class: "row__side", id: `${rowId}-more` }, chip(...ACCOUNT_STATE[state]), ...buttons, more.length ? menuButton(`More for ${p.name} in ${name}`, more) : null);
     return el("li", { class: "row row--no-lead" },
