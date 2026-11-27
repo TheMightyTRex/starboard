@@ -1351,6 +1351,8 @@ const apSaid = await page.locator('section[aria-labelledby="pl-tdarr-adopt-h"] [
 check("AP-06", "with no such app, it says so plainly in a live region", /found no Tdarr|Docker/.test(apSaid), apSaid);
 await open("settings-plugins-catalogue.html");
 const apGroup = page.locator('section[aria-label="Apps you can add"]');
+check("NOTE-01", "every plug-in in the catalogue says what it replaces or adds to (plug-in API 1.23, DASH-585)",
+  (await page.locator("#plugins-catalogue li.row").count()) > 0 && (await page.locator("#plugins-catalogue li.row").evaluateAll((rows) => rows.filter((r) => !/^(Adds to|Replaces|Stands alone)/.test(r.querySelector(".row__meta strong")?.textContent || "")).length)) === 0);
 check("AP-08", "the catalogue groups the apps together, each with what it uses at rest",
   (await apGroup.count()) === 1 && /At rest: about \d+ MB of memory/.test(await apGroup.innerText()));
 await open("settings-plugin.html?id=tdarr");

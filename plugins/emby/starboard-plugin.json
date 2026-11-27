@@ -4,6 +4,7 @@
  "name": "Emby",
  "version": "1.0.0",
  "description": "Emby as Starboard's media server, read only for now: its status, libraries, what is playing and what was added, on the dashboard, in Library, Activity and System.",
+ "replaces_or_adds": "Replaces Jellyfin when you choose it. Read only for now; your Jellyfin stays added.",
  "author": "TheMightyTRexUK",
  "licence": "MIT",
  "homepage": "https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/choose-your-media-server.md",
