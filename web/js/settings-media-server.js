@@ -55,7 +55,7 @@ async function startMediaServer() {
       el("div", { class: "actions" }, app
         ? el("a", { class: "btn", href: `/settings.html?edit=${encodeURIComponent(app.id)}` }, icon("pencil"), `Edit ${app.name}`)
         : el("a", { class: "btn btn--primary", href: `/settings.html?add=${encodeURIComponent(ms.active)}` }, icon("plus"), `Add ${current.name}`)),
-      el("p", { class: "small muted", text: `Play, Watched, Live TV and the other Jellyfin tools stay with Jellyfin: ${current.name} is read only for now.` }));
+      el("p", { class: "small muted", text: `Play and Watched work with ${current.name}. Live TV and the other Jellyfin tools stay with Jellyfin: What each can do says why.` }));
   }
 
   // Side by side (DASH-586): Jellyfin, Plex and Emby can all be installed to try. One is in use; each of the others is "installed, not in
@@ -89,6 +89,15 @@ async function startMediaServer() {
     return row;
   });
   const side = part("ms-side", "Installed side by side", "You can run Jellyfin, Plex and Emby together to try them. Only one is in use at a time.", el("ul", { class: "rows" }, sideRows));
+
+  // What each can do (DASH-566): every part of Starboard that asks a media server, for each one, in words. A No has its reason.
+  const labels = ms.available[0]?.capability_rows || [];
+  const can = part("ms-can", "What each can do", "What Starboard can do with each media server, from what the server's own documented interface allows. A No says why, and where the job is done instead.",
+    el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table table--middle" },
+      el("caption", { class: "visually-hidden", text: "What Starboard can do with Jellyfin, Plex and Emby" }),
+      el("thead", {}, el("tr", {}, el("th", { scope: "col", text: "Job" }), ms.available.map((a) => el("th", { scope: "col", text: a.name })))),
+      el("tbody", {}, labels.map((row, i) => el("tr", {}, el("th", { scope: "row", text: row.label }),
+        ms.available.map((a) => { const r = (a.capability_rows || [])[i] || { can: false, why: "Not known" }; return el("td", {}, el("strong", { text: r.can ? "Yes" : "No" }), r.can ? null : el("div", { class: "small muted", text: r.why })); })))))));
 
   // Choose ----------------------------------------------------------------------------------------------------------
   const options = [...ms.available.map((a) => ({ id: a.id, name: a.name, added: ms.added.includes(a.id) })), { id: "", name: "None", added: true }];
@@ -142,6 +151,6 @@ async function startMediaServer() {
       el("div", { class: "actions" }, go));
   }
   root.replaceChildren(section("ms-section", "Media server", "The media server Starboard shows on the dashboard, in Library, in Activity and in System. Starboard uses one at a time.",
-    ...[using, own, side, pick, back].filter(Boolean)));
+    ...[using, own, side, can, pick, back].filter(Boolean)));
 }
 

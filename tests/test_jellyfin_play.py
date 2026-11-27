@@ -136,7 +136,8 @@ class ItemTest(unittest.TestCase):
             f = library.item("/nowhere", REELIX, "films", 7, self.cfg)
             s = library.item("/nowhere", REELIX, "tv", 3, self.cfg)
         self.assertEqual(f["jf"], A)
-        self.assertEqual(f["play"], {"app": "jf1", "home": "http://192.168.1.20:8096", "outside": "", "local": None})
+        self.assertEqual(f["play"], {"app": "jf1", "home": "http://192.168.1.20:8096", "outside": "", "local": None,
+                                     "kind": "jellyfin", "name": "Jellyfin", "server_id": ""})
         rows = s["lists"][0]["rows"]
         self.assertEqual([(r["jf"], r["has_file"]) for r in rows], [(A, True), (None, True), (None, False)])  # Two: not in Jellyfin yet
         self.assertEqual(s["play"]["home"], "http://192.168.1.20:8096")

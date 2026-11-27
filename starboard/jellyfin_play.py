@@ -70,13 +70,37 @@ def address(services):
     home or "", "outside": its outside address or "", "local": {"scheme", "port", "path"} when the only address is local to
     this computer, else None}. All three empty means no address can be made, and the page says where to add one.
     None when Starboard has no Jellyfin app with a key."""
-    jf = app(services)
+    return _address_of(app(services))
+
+
+def _address_of(jf):
     if not jf:
         return None
     clean = lambda u: str(u or "").strip().rstrip("/") if for_browsers(u) else ""  # noqa: E731
     home = clean(jf.get("link"))
     local = None if home else (local_port(jf.get("link")) or (None if jf.get("link") else local_port(jf.get("url"))))
     return {"app": jf.get("id", ""), "home": home, "outside": clean(jf.get("outside_link")), "local": local}
+
+
+def address_for(data):
+    """address() for the media server in use (DASH-566): the same addresses, with `kind` (jellyfin, plex or emby), `name` and,
+    for Plex and Emby, the `server_id` their web apps need in a link. None when no media server is in use, it cannot play,
+    or it has no app with an address and key."""
+    from . import mediaserver, services as svc
+    one = mediaserver.active(data)
+    if one is None or "play" not in one.capabilities:
+        return None
+    saved = (data or {}).get("services") or []
+    got = address(saved) if one.id == "jellyfin" else _address_of(one.find_service(saved))
+    if not got:
+        return None
+    got.update(kind=one.id, name=one.name, server_id="")
+    if one.id != "jellyfin":
+        try:
+            got["server_id"] = svc.cached(f"play-info-{one.id}", 3600, lambda: one.play_info(saved).get("server_id", ""))
+        except svc.ServiceError:
+            pass
+    return got
 
 
 def web_link(base, item_id):
@@ -114,17 +138,31 @@ def film_ids(jf):
 
 
 def film_ids_for_index(data_dir):
-    """film_ids() for the Library's index build, or {} when there is no Jellyfin or it does not answer (the index is
-    still written; the wall shows no Play links until the next build)."""
-    jf = _saved_app(data_dir)
-    if not jf:
-        return {}
-    from . import logs, services
+    """film_ids() for the Library's index build, or {} when there is no media server or it does not answer (the index is
+    still written; the wall shows no Play links until the next build). Read from the media server in use (DASH-566)."""
+    return index_ids(data_dir)[1]
+
+
+def index_ids(data_dir):
+    """(the id of the media server the ids come from, {("tmdb" or "imdb", id): its item id}) for the index build, which runs
+    in its own short-lived process and reads the settings file only."""
+    from . import logs, mediaserver, services
     try:
-        return film_ids(jf)
+        with open(os.path.join(data_dir, "config.json"), encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError, AttributeError):
+        return "", {}
+    one = mediaserver.active(data)
+    if one is None or "play" not in one.capabilities:
+        return (one.id if one else ""), {}
+    try:
+        if one.id == "jellyfin":
+            jf = app(data.get("services"))
+            return one.id, film_ids(jf) if jf else {}
+        return one.id, one.film_ids(data.get("services") or [])
     except (services.ServiceError, OSError, ValueError) as e:
-        logs.detail("library", f"Jellyfin's films not read for Play links: {e}")
-        return {}
+        logs.detail("library", f"{one.name}'s films not read for Play links: {e}")
+        return one.id, {}
 
 
 def match(ids, tmdb=None, imdb=None):

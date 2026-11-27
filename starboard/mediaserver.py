@@ -21,6 +21,15 @@ PAGE = "/settings-jellyfin.html"  # Settings, Apps: the active media server's ta
 # What a media server may offer beyond the nine required calls; a page draws a part only when it is listed.
 CAPABILITIES = ("play", "watched", "restart", "own_plugins", "conversion_test", "live_tv", "libraries_add", "first_run",
                 "history_import", "user_defaults", "metadata_folder", "detect", "updates")
+# What each capability means to a person, and why a server without it says so (the Media server tab lists every one for each
+# server, so nothing is hidden: "Yes", or "No" with the reason in words). A server's own reasons are in its `limits`.
+CAPABILITY_LABELS = {
+    "play": "Play from Library", "watched": "Watched and not watched", "restart": "Restart from Starboard",
+    "own_plugins": "The server's own plug-ins and their updates", "conversion_test": "Test of video conversion",
+    "live_tv": "Live TV channels", "libraries_add": "Libraries filled by plug-ins", "first_run": "First set-up by Starboard",
+    "history_import": "Watch history import", "user_defaults": "Defaults for every user",
+    "metadata_folder": "Pictures and details folder", "detect": "Finding it on this computer", "updates": "Checking and updating the server",
+}
 REQUIRED = ("describe", "status", "libraries", "playing", "recent", "refresh", "users", "sign_in_check", "keys_needed")
 
 
@@ -45,8 +54,44 @@ class MediaServer:
             raise services.ServiceError(f"{self.name} is not set up yet. Add it with its API key in Settings, Apps")
         return found
 
+    limits = {}  # capability id: the plain reason this server does not offer it (or offers it only in part)
+
+    def capability_rows(self):
+        """Every capability, each marked Yes or No for this server with a reason in words (never a colour alone)."""
+        return [{"id": c, "label": CAPABILITY_LABELS[c], "can": c in self.capabilities,
+                 "why": "" if c in self.capabilities else self.limits.get(c, f"{self.name} does not offer this through Starboard yet")}
+                for c in CAPABILITIES]
+
+    # Items in the server, for Play and Watched (optional: offered when "play" or "watched" is a capability) -------------
+    def play_info(self, services_list):
+        """What a Play link needs besides the item's id: {"server_id": ...} or {}."""
+        return {}
+
+    def play_link(self, base, item_id, server_id=""):
+        raise NotImplementedError
+
+    def film_ids(self, services_list):
+        """{("tmdb" or "imdb", id): the server's own id} for every film it has."""
+        raise NotImplementedError
+
+    def watched_user(self, services_list, wanted=""):
+        """(id, name) of the person whose watched state is shown, or None."""
+        raise NotImplementedError
+
+    def watched_film(self, services_list, who, tmdb):
+        """{"id", "watched"} for a film, or None when the server does not have it."""
+        raise NotImplementedError
+
+    def watched_series(self, services_list, who, tmdb):
+        """{"id", "episodes": {(season, episode): {"id", "watched"}}} for a series, or None."""
+        raise NotImplementedError
+
+    def mark(self, services_list, who, ids, watched):
+        raise NotImplementedError
+
     def describe(self):
-        return {"id": self.id, "name": self.name, "kind": "media-server", "page": self.page, "capabilities": list(self.capabilities)}
+        return {"id": self.id, "name": self.name, "kind": "media-server", "page": self.page, "capabilities": list(self.capabilities),
+                "capability_rows": self.capability_rows()}
 
     def status(self, services_list):
         raise NotImplementedError
@@ -206,7 +251,7 @@ def state(data, added=None, now=None):
             "capabilities": list(one.capabilities) if one else [], "page": one.page if one else "",
             # set_up: its address and key are saved; has_app: it is in Manage apps at all (with or without its key). A media
             # server that is set up and not the active one is "installed, not in use" (DASH-586).
-            "available": [{"id": c.id, "name": c.name, "page": c.page, "set_up": bool(c().find_service(saved)),
+            "available": [{"id": c.id, "name": c.name, "page": c.page, "capability_rows": c().capability_rows(), "set_up": bool(c().find_service(saved)),
                            "has_app": any(isinstance(x, dict) and x.get("type") == c.service_type and x.get("enabled", True) and x.get("url") for x in saved)}
                           for c in ADAPTERS.values()],
             "added": sorted(added if added is not None else ADAPTERS), "back": back_info(data, now)}
@@ -291,3 +336,17 @@ def _write(cfg, wanted, back):
         cfg.data["extras"]["media_server_back"] = back
         cfg.save()
     services.forget()  # the dashboard's panel and System ask the new one at once, not from a saved answer
+
+
+def watching(data, app_id):
+    """How many people are watching now on the media server whose app is `app_id`, or 0 when it is not the media server in use,
+    does not answer or nobody is. Asked only when an update of that app is about to start (DASH-566), so nothing runs at rest."""
+    one = active(data)
+    saved = (data or {}).get("services") or []
+    mine = next((x for x in saved if isinstance(x, dict) and x.get("id") == app_id and one and x.get("type") == one.service_type), None)
+    if not one or not mine:
+        return 0
+    try:
+        return len(one.playing(saved))
+    except (services.ServiceError, OSError, ValueError):
+        return 0

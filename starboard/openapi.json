@@ -4768,6 +4768,24 @@
        "type": "string"
       },
       "description": "The names of the optional plug-in parts this Starboard has, such as first-sign-in and media-server-slot."
+     },
+     "media_server": {
+      "type": "object",
+      "description": "The media server in use: id (jellyfin, plex, emby, or empty for none), name and capabilities, the jobs it offers through Starboard (play, watched, restart, live_tv and the rest). From the settings alone.",
+      "properties": {
+       "id": {
+        "type": "string"
+       },
+       "name": {
+        "type": "string"
+       },
+       "capabilities": {
+        "type": "array",
+        "items": {
+         "type": "string"
+        }
+       }
+      }
      }
     }
    },
