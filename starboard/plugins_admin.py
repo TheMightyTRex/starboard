@@ -1441,6 +1441,8 @@ def public_settings(data_dir, pid, manifest=None):
         shown = v
         if v is None and s.get("type") == "schedule" and not plugins.schedule_problem(s.get("default")):
             shown = s["default"]  # the schedule the job really uses until one is saved (plugin_life.schedule_of), not a guess in the page
+        if v is None and s.get("type") == "time" and isinstance(s.get("default"), str) and re.match(plugins.TIME, s["default"]):
+            shown = s["default"]  # API 1.23: the time the plug-in uses until one is saved
         out.append({**{k: s[k] for k in ("key", "label", "type", "hint", "min", "max", "unit", "required", "group") if k in s},
                     **({"choices": [{"value": v, "label": w} for v, w in plugins.choices(s)]} if s["type"] == "choice"
                        else {"choices": s["choices"]} if "choices" in s else {}),
@@ -1483,6 +1485,9 @@ def save_settings(data_dir, pid, incoming):
                 v = v.rstrip("/") or "/"
                 if ".." in v.split("/") or not any(v == top or v.startswith(top + "/") for top in inside):
                     raise ValueError(f"{s['label']}: choose a folder inside {', '.join(inside) or 'the media folder'}")
+        elif t == "time":  # API 1.23 (DASH-572): one time of day, such as 22:00
+            if not isinstance(v, str) or not re.match(plugins.TIME, v):
+                raise ValueError(f"{s['label']}: give a time such as 22:00")
         elif t == "schedule":  # API 1.14 (DASH-432): every day, week or month at a time, checked before it is kept
             problem = plugins.schedule_problem(v)
             if problem:

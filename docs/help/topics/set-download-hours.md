@@ -58,6 +58,13 @@ Starboard downloads that one item and keeps everything else paused. Read
 - Starboard checks every minute while download hours are active. To check less often, go to **Settings**, then
   **Performance**, activate **More settings**, and change **Download hours check**. Read [Make Starboard use less of your server](make-starboard-lighter.md#background-work).
 
+## When a plug-in holds downloads
+
+A plug-in you allowed to hold heavy jobs, such as UPS and power, may pause downloads while your computer runs on battery.
+**Downloads** then says "Downloads are paused" and gives the reason. This happens even when download hours are
+deactivated, and even after you chose **Resume downloads now**. When the mains power is back, or the plug-in stops asking
+for 30 minutes at most, Starboard starts again only what it paused. Anything you stopped yourself stays stopped.
+
 ## If it does not work
 
 - **No qBittorrent, NZBGet or SABnzbd with an API key is set up yet:** add the app's API key. Read

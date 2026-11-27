@@ -7,6 +7,8 @@ add features.
 
 ## [Unreleased]
 
+- **Plug-ins can hold heavy jobs on battery (DASH-572, plug-in API 1.23, Starboard API 1.12.0):** a plug-in with the new `power:hold` permission, such as UPS and power, asks Starboard to hold its background jobs, scheduled backups, other plug-ins' scheduled jobs and downloads while the computer runs on battery. A hold ends by itself after 10 minutes unless the plug-in asks again, and everything that was due starts again afterwards. Anything you start yourself still runs. The Downloads page says why downloads are paused. Plug-ins also get a `time` setting type for one time of day, such as quiet hours. New in the developer help: Holding heavy jobs.
+
 - **Phone apps for Kavita (DASH-583):** Manage apps and the Kavita plug-in's page now name KOReader and Kover for Android, and Sutra and Komic for iPhone and iPad, with what each needs: your Kavita address and Auth key, iOS 17 for Sutra, and https away from home for Komic. New help topic: Read your Kavita books and comics on your phone.
 ### Added
 - **People.** Settings, People lists the people who use your apps, and Starboard makes a long, unique password for each person in each app, shown only after you enter your Starboard password. You can enter your own password of at least 10 characters instead, and reset one later. For Jellyfin and Audiobookshelf, Starboard can also change the password in the app. For other apps it records the password. It does not yet make or remove accounts inside the apps. Find out more in [Add the people who use your apps](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/add-the-people-who-use-your-apps.md).

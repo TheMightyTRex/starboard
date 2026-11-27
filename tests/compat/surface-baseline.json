@@ -1,5 +1,5 @@
 {
- "api_version": "1.20.0",
+ "api_version": "1.23.0",
  "card_types": [
   "stat",
   "list",
@@ -59,6 +59,7 @@
   "actions",
   "adopt",
   "author",
+  "capabilities",
   "cards",
   "changes",
   "containers",
@@ -75,6 +76,7 @@
   "manifest_version",
   "name",
   "needs",
+  "needs_plugins",
   "notices",
   "permissions",
   "requires",
@@ -82,8 +84,10 @@
   "settings",
   "setup_required",
   "starboard_api",
+  "starboard_tested",
   "styles",
   "support_url",
+  "switch",
   "update",
   "version"
  ],
@@ -149,6 +153,10 @@
    "risk": "medium",
    "scope": null
   },
+  "power:hold": {
+   "risk": "low",
+   "scope": null
+  },
   "reelix:key": {
    "risk": "high",
    "scope": null
@@ -170,6 +178,8 @@
   "GET /api/v1/": {
    "answer": [
     "api_version",
+    "capabilities",
+    "deprecations",
     "links",
     "starboard_version"
    ],
@@ -285,6 +295,11 @@
     "enabled",
     "end",
     "errors",
+    "held",
+    "held.by",
+    "held.held",
+    "held.reason",
+    "held.until",
     "mode",
     "next_change",
     "now",
@@ -714,6 +729,11 @@
     "enabled",
     "end",
     "errors",
+    "held",
+    "held.by",
+    "held.held",
+    "held.reason",
+    "held.until",
     "mode",
     "next_change",
     "now",
@@ -830,6 +850,20 @@
    "right": "plugin",
    "scope": null
   },
+  "POST /api/v1/plugin/hold": {
+   "answer": [
+    "by",
+    "held",
+    "ok",
+    "reason",
+    "until"
+   ],
+   "required_in": [
+    "body.on"
+   ],
+   "right": "plugin",
+   "scope": null
+  },
   "POST /api/v1/requests/{id}/approve": {
    "answer": [
     "ok"
@@ -883,6 +917,7 @@
   "folder",
   "list",
   "custom",
-  "schedule"
+  "schedule",
+  "time"
  ]
 }
