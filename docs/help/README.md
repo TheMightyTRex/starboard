@@ -239,6 +239,7 @@ For people who make plug-ins, or write scripts and apps that read Starboard. AI 
 - [Plug-in API reference](developers/plugin-api-reference.md)
 - [Test and publish a plug-in](developers/test-and-publish-a-plugin.md)
 - [Write a plug-in that updates safely](developers/update-a-plugin-safely.md)
+- [Our promise to plug-in developers](developers/compatibility-promise.md)
 - [API quickstart](developers/api-quickstart.md)
 - [Authentication and keys](developers/api-authentication.md)
 - [What the API covers](developers/api-coverage.md)
