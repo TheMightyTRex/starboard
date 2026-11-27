@@ -18,6 +18,7 @@ PAGES = [
     "developers/api-reference.md", "../api/errors.md", "developers/api-changelog.md",
     "developers/make-a-plugin.md", "developers/plugin-manifest-reference.md", "developers/plugin-api-reference.md",
     "developers/test-and-publish-a-plugin.md", "developers/update-a-plugin-safely.md",
+    "developers/compatibility-promise.md",
 ]
 HEAD = """# Starboard: the developer pages in one file
 
