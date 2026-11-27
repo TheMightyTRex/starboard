@@ -32,7 +32,7 @@ printf '\n######## A. Starboard %s, installed with its own installer\n' "$FROM"
 # A release from 0.31.0 on installs the newest release it can see (DASH-416), so the first install sees an origin
 # without the made-up releases, and the full one is put back as soon as it has answered.
 cp -r /e2e/origin.git /e2e/origin-old.git && chown -R tester /e2e/origin-old.git
-for t in $(git -C /e2e/origin-old.git tag -l 'v0.40.9*'); do git -C /e2e/origin-old.git tag -d "$t" >/dev/null; done
+as "for t in \$(git -C /e2e/origin-old.git tag -l 'v0.40.9*'); do git -C /e2e/origin-old.git tag -d \$t >/dev/null; done"
 as "git clone -q /e2e/origin-old.git $H && cp -r /e2e/origin-old.git $H/.e2e-origin.git && cd $H && git remote set-url origin $H/.e2e-origin.git && git -c advice.detachedHead=false checkout -q $FROM"
 started=$SECONDS
 as "cd $H && ./install.sh --yes --port $PORT --docker --no-starter --local-only" > /e2e/install.log 2>&1
