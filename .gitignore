@@ -35,3 +35,4 @@ tools/a11y/shots/
 
 # A help picture taken only to set up the next ones (tools/screenshots/help_shots.d/read-calibre-web-books-on-your-phone.json)
 docs/help/images/*-0-setup.png
+/done-check-out/
