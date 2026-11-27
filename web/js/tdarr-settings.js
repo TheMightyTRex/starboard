@@ -10,11 +10,6 @@ function tdSection(id, title, desc, ...content) {
     ...content.filter(Boolean));
 }
 
-function tdNotice(tone, title, text, action) {
-  return el("div", { class: "notice", "data-tone": tone, role: "status" }, icon(tone === "info" ? "info" : "circle-alert"),
-    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text })), action || null);
-}
-
 function tdChoice(name, value, label, hint, checked) {
   return el("label", { class: "option-card" }, el("input", { type: "radio", name, value, checked }), el("strong", { text: label }),
     el("small", { text: hint }));
@@ -29,7 +24,7 @@ async function tdDraw(said, box = $("#tdarr-sections"), inPlugin = false) {
     if (e.data?.reason === "not_installed") {
       box.removeAttribute("aria-busy");
       const add = el("a", { class: "btn btn--primary", href: "/settings-plugins-catalogue.html" }, icon("plus"), "Add the Tdarr plug-in");
-      box.replaceChildren(tdNotice("info", "Tdarr is not installed", "Starboard has no Tdarr on Apps, so there is nothing to set here. Add the Tdarr plug-in from the Catalogue to install it again.", add));
+      box.replaceChildren(notice("info", "Tdarr is not installed", "Starboard has no Tdarr on Apps, so there is nothing to set here. Add the Tdarr plug-in from the Catalogue to install it again.", add));
       return;
     }
     // No key yet: Starboard gives Tdarr one (Tdarr restarts once), so nobody signs in to Tdarr.
@@ -52,7 +47,7 @@ async function tdDraw(said, box = $("#tdarr-sections"), inPlugin = false) {
       catch (err) { problem(err.message, go); go.disabled = false; go.textContent = "Connect Tdarr"; }
     });
     box.removeAttribute("aria-busy");
-    box.replaceChildren(tdNotice("info", "Tdarr is not connected yet", "Connect gives Tdarr a key Starboard keeps, so you never sign in to Tdarr; it restarts once.", go));
+    box.replaceChildren(notice("info", "Tdarr is not connected yet", "Connect gives Tdarr a key Starboard keeps, so you never sign in to Tdarr; it restarts once.", go));
     return;
   }
   // Every choice applies at once and says so beside itself (settings pattern 2): there is nothing to type here.
@@ -91,13 +86,12 @@ async function tdDraw(said, box = $("#tdarr-sections"), inPlugin = false) {
   box.removeAttribute("aria-busy");
   const others = s.other_libraries.length ? `Tdarr also has libraries you made yourself: ${s.other_libraries.join(", ")}. Starboard leaves them as they are.` : null;
   if (inPlugin) {  // inside the plug-in page's Settings section: its heading and line are already there
-    box.replaceChildren(...[said ? tdNotice("success", said, "") : null, form, el("h3", { text: "So far" }),
+    box.replaceChildren(...[said ? notice("success", said, "") : null, form, el("h3", { text: "So far" }),
       others ? el("p", { class: "small muted", text: others }) : null, done].filter(Boolean));
     return;
   }
   box.replaceChildren(...[
-    said ? el("div", { class: "notice", "data-tone": "success", role: "status" }, icon("circle-check"),
-      el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: said }))) : null,
+    said ? notice("success", said) : null,
     tdSection("td-choices", "What Tdarr does", "Starboard writes these into Tdarr; Tdarr's own page still shows everything.", form),
     tdSection("td-done", "So far", others, done)].filter(Boolean));  // replaceChildren would write an empty notice as "null"
 }

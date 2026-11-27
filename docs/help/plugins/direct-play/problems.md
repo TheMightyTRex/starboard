@@ -9,7 +9,7 @@ start: Direct play is not working as it should
 q: What does its tab say?
   Needs setting up -> 1
   Failed or Not answering -> 2
-  Not supported -> 3
+  Needs an update -> 3
   Active, but nothing is converted -> q2
 q2: What does the Direct play card say?
   No devices chosen -> 1

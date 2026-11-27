@@ -393,7 +393,7 @@ if (!pages.length || pages.some((p) => p.includes("settings-updates"))) {
     await page.goto(`${base}/settings-updates.html`);
     await settle();
     await page.locator("#check-updates-now").click();
-    await page.locator("#up-list-summary", { hasText: "Checked at" }).waitFor({ timeout: 30000 });
+    await page.locator("#up-list-summary", { hasText: "Last checked at" }).waitFor({ timeout: 30000 });
     await scan("settings-updates.html, after Check for updates");
     await page.locator("#whats-new").click();
     await page.locator("#side-panel section.release-notes").first().waitFor({ timeout: 15000 });
@@ -444,6 +444,36 @@ if (!pages.length || pages.some((p) => p.startsWith("downloads.html"))) {
 // Restart where it is needed (DASH-470): Restart Jellyfin on System, Overview, Settings, Updates and Settings, Apps,
 // Jellyfin, while Jellyfin says Restart needed (made up with page routes), and while it works, in Light, Dark and
 // High contrast, with its structure. Nothing is restarted: the restart itself is a made-up answer that never ends.
+// Plug-in updates (owner, 26 November 2026): the list, after Check for updates now, and What is new.
+if (!pages.length || pages.some((p) => p.includes("settings-updates-plugins") || p.includes("settings-plugins"))) {
+  const scanP = async (name) => {
+    await axe(name, "light");
+    await structure(name);
+    await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+    await page.waitForTimeout(150);
+    await axe(name, "dark");
+    await page.evaluate(() => { document.documentElement.removeAttribute("data-theme"); document.documentElement.classList.add("pref-contrast"); });
+    await page.waitForTimeout(150);
+    await axe(name, "high contrast");
+    await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
+  };
+  try {
+    for (const name of ["settings-updates-plugins.html", "settings-plugins.html"]) {
+      await page.goto(`${base}/${name}`);
+      await settle();
+      await page.locator("#plu-check").click();
+      await page.locator("#plu-check-result", { hasText: /Read \d+ catalogue|Try again in/ }).waitFor({ timeout: 30000 });
+      await scanP(`${name}, after Check for updates now`);
+    }
+    await page.locator("#plugin-updates button", { hasText: "What is new" }).first().click();
+    await page.locator("#side-panel").waitFor({ timeout: 15000 });
+    await page.waitForTimeout(800);
+    await scanP("settings-plugins.html, What is new in a plug-in");
+    await page.keyboard.press("Escape");
+    console.log("checked the plug-in update list");
+  } catch (e) { add("settings-updates-plugins.html", "page", "error", e.message.split("\n")[0]); }
+}
+
 if (!pages.length || pages.some((p) => /^system\.html|settings-updates|settings-jellyfin/.test(p))) {
   const scan = async (name) => {
     await axe(name, "light");

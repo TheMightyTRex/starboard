@@ -89,6 +89,7 @@ page. It stays on the same control drawn again, or moves to the nearest thing th
 
 ## Find out more
 
+- [Use menus that show icons only](menus-with-icons.md)
 - [Accessibility in Starboard](overview.md)
 - [Use a screen reader](use-a-screen-reader.md)
 - [Zoom and large screens](zoom-and-large-screens.md)

@@ -197,7 +197,7 @@ const FILTER_KINDS = [["all", "Everything"], ["films", "Films"], ["tv", "Series"
   ["books", "Books"], ["audiobooks", "Audiobooks"]];
 const NO_FILTERS = { where: "all", kind: "all", decade: "", genre: "", status: [], release: "", followed: "", language: "", rating: "", source: "", more: false };
 let filters = { ...NO_FILTERS, status: [] };
-const STATUS_WORDS = [["have", "Have it"], ["missing", "Not in library"], ["downloading", "Downloading"], ["below", "Below the quality wanted"]];
+const STATUS_WORDS = [["have", "In library"], ["missing", "Wanted"], ["downloading", "Downloading"], ["below", "Below quality"]];
 const languageName = (() => {
   let names = null;
   try { names = new Intl.DisplayNames(["en-GB"], { type: "language" }); } catch { names = null; }

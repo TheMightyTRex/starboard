@@ -6,7 +6,6 @@ let server = null;
 
 // Small helpers ------------------------------------------------------------
 
-// notice() comes from settings-core.js, which this page loads first.
 
 function facts(pairs) {
   return el("dl", { class: "facts" }, pairs.filter(([, v]) => v !== null && v !== undefined && v !== "").flatMap(([k, v]) => [el("dt", { text: k }), el("dd", {}, v)]));
@@ -25,11 +24,11 @@ function took(start, end) {
 async function withPassword({ title, message, confirm, danger = false, run }) {
   let error = "";
   for (;;) {
-    const input = el("input", { class: "input", id: "confirm-password", type: "password", autocomplete: "current-password", required: true });
-    const errorNode = el("span", { class: "field-error", id: "confirm-password-error" }, icon("circle-alert"), el("span", { text: error }));
+    const input = passwordInput("confirm-password");
+    const errorNode = errorWords(el("span", { class: "field-error", id: "confirm-password-error" }), error);
     errorNode.hidden = !error;
     if (error) { input.setAttribute("aria-invalid", "true"); input.setAttribute("aria-describedby", errorNode.id); }
-    const asked = confirmDialog({ title, message, confirm, danger, fields: [el("div", { class: "field" }, el("label", { for: input.id, text: "Your password" }), input, errorNode)] });
+    const asked = confirmDialog({ title, message, confirm, danger, fields: [passwordField(input, { after: errorNode })] });
     input.focus();
     if (!(await asked)) return null;
     try {
@@ -414,7 +413,7 @@ async function restoreFull(b, opener, showRestore) {
   for (;;) {
     const field = (key, id, label, hint, autocomplete) => {
       const input = el("input", { class: "input", id, type: "password", autocomplete, required: true });
-      const error = el("span", { class: "field-error", id: `${id}-error` }, icon("circle-alert"), el("span", { text: errors[key] }));
+      const error = errorWords(el("span", { class: "field-error", id: `${id}-error` }), errors[key]);
       error.hidden = !errors[key];
       input.setAttribute("aria-describedby", [hint ? `${id}-hint` : "", errors[key] ? error.id : ""].filter(Boolean).join(" "));
       if (errors[key]) input.setAttribute("aria-invalid", "true");

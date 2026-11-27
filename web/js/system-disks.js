@@ -4,8 +4,6 @@
 let repo = "";
 let data = null;
 
-const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-const timeNow = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 const short = (d) => (d.device || "").replace("/dev/", "");
 const nameOf = (d) => `${d.model}${short(d) ? ` (${short(d)})` : ""}`;
 const keyOf = (d) => d.serial || d.device || d.model;
@@ -71,8 +69,7 @@ function reportBody(d) {
   const events = eventsFor(d);
   return [
     tone === "danger" || tone === "warning"
-      ? el("div", { class: "notice", "data-tone": tone, role: "status" }, icon("triangle-alert"),
-        el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: `${word}: ${reason}` }), advice ? el("p", { text: advice }) : null))
+      ? notice(tone, `${word}: ${reason}`, advice)
       : headChip(word, tone),
     el("dl", { class: "facts" }, facts.flatMap(([k, v]) => [el("dt", { text: k }), el("dd", { class: "numeric" }, v)])),
     el("section", { class: "sys-block", "aria-labelledby": "smart-counters" },

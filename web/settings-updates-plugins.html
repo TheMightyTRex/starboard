@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
-<title>Discover rows · General · Settings · Starboard</title>
+<title>Plug-in updates · Settings · Starboard</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#323a77">
@@ -15,10 +15,13 @@
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/designs.css">
 <link rel="stylesheet" href="/css/settings.css">
+<link rel="stylesheet" href="/css/apps.css">
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
 <script src="/js/settings-core.js" defer></script>
-<script src="/js/library-settings.js" defer></script>
+<script src="/js/update-table.js" defer></script>
+<script src="/js/update-run.js" defer></script>
+<script src="/js/plugin-updates.js" defer></script>
 </head>
 <body class="page-settings with-rail">
 <!-- shell:start (filled in by starboard/shell.py; edit the menus there) -->
@@ -27,11 +30,11 @@
 <div class="page page--settings">
   <div class="page-head">
     <div class="page-head__text">
-      <h1>Discover rows</h1>
-      <p class="page-head__summary">Which rows each area of Discover shows, and their order. Changes apply at once.</p>
+      <h1>Plug-in updates</h1>
+      <p class="page-head__summary">The plug-ins with a new version, what is new in each, and what updates by itself. Every other update is in Updates.</p>
     </div>
   </div>
-  <div class="settings-sections" id="discover-areas" data-parts="dr-films dr-tv dr-music dr-radio dr-books dr-audiobooks"></div>
+  <div class="settings-sections" id="plugin-updates" aria-busy="true"></div>
 </div>
 </main>
 </body>
