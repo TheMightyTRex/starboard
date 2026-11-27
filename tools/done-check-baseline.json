@@ -56,6 +56,19 @@
     "smoke library-cleanup preview": 1
    }
   },
+  "unit": {
+   "known": {
+    "tests.test_design_system_copies.CopiesMatchTest.test_every_copy_matches_the_library": 1
+   },
+   "note": "The design system library moved ahead of Starboard's copies (library pull requests 48 to 51, 27 November 2026); the next sync pull request clears this and these two items."
+  },
+  "ds": {
+   "known": {
+    "a copy of a design system file differs from the library": 1,
+    "tests.test_design_system_copies.CopiesMatchTest.test_every_copy_matches_the_library": 1
+   },
+   "note": "Same cause as the unit item: run the library's tools/sync.py, then remove both."
+  },
   "axe": {
    "known": {
     "settings-general-backup.html, full backups with Checked and Restore|axe light|target-size": 1,
