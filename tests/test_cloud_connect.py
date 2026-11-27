@@ -1,7 +1,7 @@
 """Connect a cloud service (DASH-452): the checks on everything entered or pasted, the two ways to sign in (the link with
 the address pasted back, and the phone with the device flow) against a stand-in sign-in service, the time limits, the
 clean-up when the slide-out closes, and Save. Test connection on Copies off this computer is at the end. No real cloud
-account is used; the real rclone runs are in tools/try-cloud-connect.py."""
+account is used."""
 import json
 import os
 import tempfile
