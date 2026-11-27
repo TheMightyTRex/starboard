@@ -3128,6 +3128,12 @@ class Handler(BaseHTTPRequestHandler):
                         got = backup_copies.set_enabled(app.data_dir, str(data.get("id") or ""), bool(data.get("on")))
                         logs.event("info", "backup", f"Backup place {backup_copies.title_of(got)} switched {'on' if data.get('on') else 'off'}")
                         return self.json(200, backup_copies.public(app.data_dir))
+                    if path == "/api/backup/copies/every" and method == "POST":
+                        # How often one place gets a copy (27 November 2026): every backup, at most weekly or at most monthly.
+                        data = self.body()
+                        got = backup_copies.set_every(app.data_dir, str(data.get("id") or ""), str(data.get("every") or ""))
+                        logs.event("info", "backup", f"Backup place {backup_copies.title_of(got)} gets copies: {backup_copies.EVERY[got['every']][0].lower()}")
+                        return self.json(200, backup_copies.public(app.data_dir))
                     if path == "/api/backup/copies/now" and method == "POST":
                         backup_copies.copy_now(app.data_dir, str(self.body().get("id") or "") or None)
                         logs.event("info", "backup", "Copy off this computer started by hand")
