@@ -218,6 +218,8 @@ class App:
         self.listening_busy = None  # reading listening progress, if it is running
         self.listening_read = None
         self.schedule = schedule.Schedule(self.config)
+        from . import power_hold  # DASH-572: a hold starting or ending wakes the download hours thread at once
+        power_hold.on_change(self.schedule.ensure)
         if os.environ.get("STARBOARD_SCHEDULE", "1") != "0":
             self.schedule.start()
         from .config import prune_saved
@@ -840,7 +842,7 @@ def _move_livetv(app):
             # Built-in plug-ins follow Starboard's update: their files are written again and active ones restarted.
             from . import plugin_life, plugins_admin
             again = plugins_admin.refresh_builtins(app.data_dir, media_dir, app.config.data["services"])
-            again += [n for n in plugins_admin.upgrade_all(app.data_dir, app.config.data["services"]) if n not in again]
+            plugins_admin.upgrade_all(app.data_dir, app.config.data["services"])
             if again:
                 logs.event("info", "plug-ins", f"Started again with this version of Starboard: {', '.join(again)}")
             stopped = plugin_life.stop_unfit(app.data_dir)  # a plug-in this Starboard cannot run is stopped, with its reason (DASH-603)
@@ -3674,6 +3676,15 @@ class Handler(BaseHTTPRequestHandler):
             # public lists and installs nothing). At most one read every 30 seconds, however often it is pressed.
             got = pa.refresh(app.config)
             return self.json(200, {**got, "updates": len(plugin_life.updates_known(app.data_dir))})
+        if path == "/api/plugins/retiring" and method == "GET":  # the compatibility report (DASH-603): what is going and who still uses it
+            from . import deprecations
+            mine = []
+            for p in plugins_admin.basics(app.data_dir):
+                m = plugins_admin._read_kept(os.path.join(plugins_admin.folder(app.data_dir, p["id"]), "manifest.json"), {})
+                found = [deprecations.warning_sentence(w) for w in deprecations.for_manifest(m)]
+                if found:
+                    mine.append({"id": p["id"], "name": p["name"], "uses": found})
+            return self.json(200, {"going": deprecations.public(), "routes_in_use": deprecations.routes_in_use(app.data_dir), "plugins": mine})
         if path == "/api/plugins/catalogue" and method == "GET":
             # The Catalogue page (DASH-318): the Starboard plug-ins collection, each marked when already added.
             have = {p["id"] for p in pa.added(app.data_dir)}

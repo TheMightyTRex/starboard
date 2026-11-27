@@ -62,12 +62,6 @@ class TdarrTest(unittest.TestCase):
         self.assertEqual(tdarr.quiet_hours(mock.Mock(data={})), (1, 6))
         self.assertTrue(all(o["checked"] for o in tdarr._schedule(False)))
 
-    def test_an_old_tdarr_link_becomes_a_tdarr_app(self):
-        d = tempfile.mkdtemp()
-        with open(os.path.join(d, "config.json"), "w") as f:
-            json.dump({**json.loads(json.dumps(config.DEFAULTS)), "schema": config.SCHEMA,
-                       "services": [{"id": "t", "name": "Tdarr", "type": "link", "icon": "tdarr", "url": "http://x:8265"}]}, f)
-        self.assertEqual(config.Config(d).data["services"][0]["type"], "tdarr")
 
 
 if __name__ == "__main__":

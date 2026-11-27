@@ -17,7 +17,7 @@ import os
 import re
 import time
 
-from .config import DEFAULTS, DESIGNS, SCHEMA, SERVICE_TYPES, UPCOMING_DAYS, UPCOMING_VIEWS, ConfigError, fold_media_servers, migrate, validate_service
+from .config import DEFAULTS, DESIGNS, OLDEST_SCHEMA, OLDEST_VERSION, SCHEMA, SERVICE_TYPES, UPCOMING_DAYS, UPCOMING_VIEWS, ConfigError, fold_media_servers, migrate, validate_service
 
 FORMAT = "starboard-settings"
 GENERAL_KEYS = ("site_name", "server_name", "design", "own_colours", "shadows_off", "groups", "show_home_address", "show_outside_address",
@@ -178,8 +178,8 @@ def apps_to_bring_back(backup, data_dir):
 def restore(config, backup):
     """Replaces apps and settings with the backup's, after checking every part. Password and sessions stay.
 
-    A backup from an older version is brought up to date the way an old settings file is (backups before 0.7.4
-    say no schema, so they count as schema 1). Unknown settings are ignored, a choice that no longer exists goes
+    A backup from 0.31.0 or later (schema 4 up) is brought up to date the way a settings file is; an older one is
+    refused with the version to restore it on (DASH-596). Unknown settings are ignored, a choice that no longer exists goes
     back to the default, and an app of a kind Starboard no longer knows becomes a plain link."""
     if not isinstance(backup, dict) or backup.get("format") != FORMAT:
         raise ConfigError("This is not a Starboard settings backup")
@@ -187,7 +187,9 @@ def restore(config, backup):
     settings = backup.get("settings") or {}
     if not isinstance(services, list) or not isinstance(settings, dict):
         raise ConfigError("This backup is incomplete")
-    schema = backup.get("schema") if isinstance(backup.get("schema"), int) else 1
+    schema = backup.get("schema") if isinstance(backup.get("schema"), int) else 0
+    if schema < OLDEST_SCHEMA:  # DASH-596: the steps for settings from before 0.31.0 are gone
+        raise ConfigError(f"This backup was made by a Starboard before {OLDEST_VERSION}. Restore it on Starboard {OLDEST_VERSION} first, then update")
     services = migrate({"schema": schema, "services": json.loads(json.dumps(services))})["services"]
     fold_media_servers(services)  # a copy from the day Plex and Emby were saved as an Other app (DASH-566)
     settings = dict(settings)
