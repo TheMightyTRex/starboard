@@ -36,6 +36,7 @@ add features.
 - **Emby and Plex as media servers.** Both are now built-in plug-ins that the dashboard can show, read only for now. They cannot play, mark watched, show Live TV or use the Jellyfin tools.
 
 ### Changed
+- **Add the rest on a collection or series.** The button that adds what a collection, book series or audiobook series lists and Reelix does not have is now Add the rest (n), and its question says Add n films to Reelix.
 - **One verb for searching in the Library.** Get it, Get the missing episodes, Get the n missing and Search are now Find it, Find wanted episodes with a count, Find wanted albums and Find n wanted episodes, and a radio show has Find wanted episodes too. Choose a download keeps its name, and its buttons are Use this one and Use it anyway.
 - **One set of words for what you have and want in the Library.** Every tab now says In library, Partly in library, Wanted, Downloading, Below quality, Not followed, Not added or Not released, where it said Not in library, Episodes not in library, Tracks not in library, Not wanted, Not requested and more. Wanted is now a neutral chip, not a warning.
 - **General has seven tabs.** Discover rows are now sections of Lists, and Pictures is a section of Performance, each with a list of links at the top of the page. The old addresses still open the right section.
