@@ -17,6 +17,11 @@ the next major version.
 
 ## Plug-in API 1.20.0 (not released yet), 26 November 2026
 
+- **Changed:** a plug-in that this Starboard cannot run is now stopped when Starboard starts, and shows **Needs an update**
+  (before, **Not supported**, and it kept running). It cannot run when its `starboard_api` leaves out this API, or when it
+  uses a field, permission, card type, setting type, event or container option that no longer exists. Its settings, data
+  and key are kept, the page says why in words, and **Check for an update** or **Roll back** work as before. No 1.x
+  release removes anything, so this changes nothing for a plug-in that fits.
 - **Added:** `first_sign_in`, a password Starboard makes for an app plug-in and shows once on its page, so the app does
   not start with a default one that everyone knows. The manifest names the sign-in name, the `{secret:name}` the app
   reads from its environment and a file the app's start-up writes once it has set the password. Starboard offers

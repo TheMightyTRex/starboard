@@ -66,6 +66,7 @@ add features.
 - **Requests with a Transfer-Encoding are refused.** Starboard now answers 400 and closes the connection, so a proxy in front of it cannot hide a second request inside a body.
 - **One guarded way to fetch a plug-in's manifest, catalogue and logo.** Starboard now checks every redirect and the address it connects to, so an address that redirects, or changes its answer, cannot reach your home network's private services or a cloud metadata address.
 
+- **A plug-in Starboard cannot run is stopped, and says why.** When Starboard starts, a plug-in whose API range leaves out this Starboard, or that uses something that is gone, is stopped (not removed) and shows **Needs an update** with the reason. Its settings and data are kept. Before, it showed Not supported but kept running.
 
 ## [0.31.0] (25 November 2026)
 
