@@ -60,6 +60,7 @@ up to a day late, and a monthly one at any time before the next 1st.
 - The backup holds your apps' API keys. Keep the file somewhere private, such as a USB stick you keep at
   home, and do not share it.
 - The backup never holds your password or anyone's sign-in. A restore leaves both as they are.
+- The backup never holds a plug-in's own key or its secret settings, such as a token. After a restore on a new server, a plug-in asks for them again. A restore on the same server leaves the ones it has.
 - A restore replaces all your apps, categories and settings with the ones in the file.
 - Before every restore, Starboard saves a copy of the settings you had. To go back, read
   [Restore a saved copy of your settings](restore-a-saved-copy.md).

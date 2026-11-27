@@ -37,7 +37,7 @@ class PluginTabIcons(unittest.TestCase):
         self.assertEqual(sorted(ids - set(tab_icons())), [])
 
     def test_a_plug_in_without_one_gets_the_neutral_puzzle_piece(self):
-        self.assertIn('icon(PLUGIN_TAB_ICONS[p.id] || "puzzle")', read("web", "js", "common.js"))
+        self.assertIn('icon(p.icon || PLUGIN_TAB_ICONS[p.id] || "puzzle")', read("web", "js", "common.js"))
 
     def test_the_icon_is_hidden_from_screen_readers_and_the_name_stays_as_text(self):
         js = read("web", "js", "common.js")
