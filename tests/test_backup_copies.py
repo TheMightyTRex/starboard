@@ -1,6 +1,5 @@
 """Copies off this computer (DASH-380): what the page may save, what never comes back to it, and the scripts the
-helper runs. Docker is never called here: the helper is replaced by one that records what it was asked to do.
-tools/try-backup-copies.py runs the real thing against scratch folders and local stand-ins."""
+helper runs. Docker is never called here: the helper is replaced by one that records what it was asked to do."""
 import base64
 import json
 import os

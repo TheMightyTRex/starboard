@@ -7,12 +7,18 @@ add features.
 
 ## [Unreleased]
 
+- **Phone apps for Kavita (DASH-583):** Manage apps and the Kavita plug-in's page now name KOReader and Kover for Android, and Sutra and Komic for iPhone and iPad, with what each needs: your Kavita address and Auth key, iOS 17 for Sutra, and https away from home for Komic. New help topic: Read your Kavita books and comics on your phone.
 ### Added
 - **People.** Settings, People lists the people who use your apps, and Starboard makes a long, unique password for each person in each app, shown only after you enter your Starboard password. You can enter your own password of at least 10 characters instead, and reset one later. For Jellyfin and Audiobookshelf, Starboard can also change the password in the app. For other apps it records the password. It does not yet make or remove accounts inside the apps. Find out more in [Add the people who use your apps](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/add-the-people-who-use-your-apps.md).
+- **Starboard 0.40.0 is a clean break: update from 0.31.0 or later, and you cannot go back by the usual way.** The update stops before it changes anything if you have a version before 0.31.0, and says to update to 0.31.0 first. Before any other change it saves a backup of your settings, checks that it reads back, and says in plain words that you cannot go back to an older Starboard afterwards. Your settings move to the new layout once, and Starboard keeps every setting and every app it does not understand. To go back to a version before 0.40.0, run `./update.sh --to` with that version and `--restore` with the name of the backup: this is the safe way, and settings you changed since are lost. Without `--restore`, the updater warns you that your settings may not match, saves a fresh backup and goes on. Settings, Updates, Restore and the terminal settings say so. Find out more in [Update Starboard](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/update-starboard.md#update-to-0400-from-an-older-version).
 - **Find all wanted.** Every Library tab and every Wanted page has Find all wanted. It counts what is wanted, asks you to confirm how many and what Reelix will be asked, then searches 10 at a time with a minute between groups, up to 100 in a run, leaving out anything searched in the last day, with progress, Stop and a summary. It waits while Download hours pause downloads. Radio searches each show that has wanted episodes.
 - **Compatibility check for the API.** A new check fails a change that takes away or tightens a route, permission, manifest field, card, event or key scope without the deprecation steps, and runs 74 older plug-in manifests against this Starboard. Draft, for review.
 - **Plug-in updates found at once, in one list.** Check now reads every plug-in catalogue again, says when it last did and why one did not answer, and waits 30 seconds between presses. Settings, Plug-ins, Manage and the new Settings, Updates, Plug-ins page list each plug-in's old and new version, what is new and any new permissions, with Update all, Update chosen, Update by themselves, History and Roll back.
+- **The API says when a feature is going, and answers 410 when it is gone.** `GET /api/v1/` lists the features that are going (none yet), and a route that is going carries `Deprecation` and `Sunset` headers. Once removed, it answers 410 with what replaces it.
+- **A page that says what we promise plug-in developers.** It covers what never breaks inside version 1, how a feature is retired, how a plug-in says what it needs and what people are shown when one stops. The Update a plug-in help says what Needs an update means.
 
+- **Carry your libraries, people and watched state to another media server.** Switch with help now reads both servers first, lists each library and person it would carry across, and does nothing until you confirm. It works for Jellyfin, Plex and Emby, switches last, and keeps the old server for 24 hours. Find out more in [Move to another media server](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/move-to-another-media-server.md).
+- **Jellyfin, Plex and Emby side by side.** Plex or Emby from Install apps, or added in Manage apps, now shows as installed and not in use, ready to check and choose with no extra step in the catalogue. The media server tab has Installed side by side, with Check it now for each.
 - **Sign in to Plex with a link code.** Manage apps has Sign in with Plex, which shows a code to enter at plex.tv/link, or you can still paste the token.
 - **A first sign-in for app plug-ins.** A plug-in can now set its app's first password, and the plug-in's page shows it once after you enter your Starboard password. Calibre-Web uses this from version 1.2.0. Find out more in the [manifest reference](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/developers/plugin-manifest-reference.md#a-first-sign-in-shown-once-first_sign_in).
 - **A wizard for switching media server.** The media server tab in Settings, Apps has Switch with help, which says what moves, what cannot and what keeps working before anything changes. Find out more in [Choose your media server](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/choose-your-media-server.md).
@@ -56,6 +62,13 @@ add features.
 - **Two small savings.** The dashboard now asks for the settings once instead of twice. The Bring in progress page stops asking for its status while its tab is hidden.
 - **Plain English pilot.** The README and the help topics Add an app and How lean Starboard is now use shorter sentences and the active voice.
 
+### Removed
+- **Unused code.** Eight unused names and one unused option are gone from Starboard's code, and one condition that could never be true is gone from the tool that builds the AI-readable help. Nothing you see changes.
+- **Old release note files and two unused documents.** The notes files of 57 releases from 0.5.0 to 0.28.0, an unused picture of all the screenshots and the design record for building plug-ins in isolation are gone from the repository. `CHANGELOG.md` and the notes in Starboard still list every release, and the files stay in the history. The help and the app do not change.
+- **Four hand-run test scripts.** The scripts that tried Bring in on shares, copies off this computer, connecting a cloud service and a full restore by hand, on made-up data, are gone from the tools folder. The tests that run with every change stay, and the scripts stay in the history. The help and the app do not change.
+
+
+
 ### Fixed
 - **Field errors say "Error:" to a screen reader.** An error under a field, such as an empty password, now starts with the hidden word Error: , as the design system asks, so it is not read as a plain sentence. The nine places that drew one by hand share one function.
 - **An artist's Get it searches for every wanted album, up to 100.** It used to stop at 20 without saying so. Now it sends one request, and says how many are left when there are more than 100.
@@ -66,6 +79,8 @@ add features.
 ### Security
 - **Requests with a Transfer-Encoding are refused.** Starboard now answers 400 and closes the connection, so a proxy in front of it cannot hide a second request inside a body.
 - **One guarded way to fetch a plug-in's manifest, catalogue and logo.** Starboard now checks every redirect and the address it connects to, so an address that redirects, or changes its answer, cannot reach your home network's private services or a cloud metadata address.
+- **A plug-in Starboard cannot run is stopped, and says why.** When Starboard starts, a plug-in whose API range leaves out this Starboard, or that uses something that is gone, is stopped (not removed) and shows **Needs an update** with the reason. Its settings and data are kept. Before, it showed Not supported but kept running.
+- **A plug-in's own key changes each time it starts, and ends when it is not used.** The key is new at every start and update, ends 30 days after its last use, and works on the plug-in's socket only when the plug-in cannot reach Starboard's port anyway. A copied key stops working soon.
 
 
 ## [0.31.0] (25 November 2026)

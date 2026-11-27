@@ -357,7 +357,7 @@ only, so any user a container runs as can read these files:
 | In the container | What it is |
 |---|---|
 | `/run/starboard/settings.json` | The settings, as one JSON object of `key` and value, secrets included. A `schedule` setting is an object, such as `{"every": "month", "date": 31, "time": "03:30"}` (API 1.14) |
-| `/run/starboard/key` | The plug-in's own API key, as one line of text |
+| `/run/starboard/key` | The plug-in's own API key, as one line of text. Starboard makes a new one each time the plug-in starts or updates and revokes the old one, so read the file for each call, not once at start-up (Starboard's helper does). The key ends 30 days after it was last used |
 | `/run/starboard/jellyfin.json` | Only with `jellyfin:key`: `{"url": ..., "api_key": ...}`. An address on the server itself is given as `host.docker.internal` |
 | `/run/starboard/reelix.json` | Only with `reelix:key` (API 1.6): `{"url": ..., "api_key": ...}`, Reelix's address and key |
 | `/run/starboard/usenet.json` | Only with `usenet:servers` (API 1.6): `{"servers": [{"name", "host", "port", "ssl", "user", "password", "connections", "level"}]}`, the active news servers from NZBGet (or SABnzbd), first choice first. Use fewer connections than `connections`: the download app uses the same account |
@@ -377,7 +377,7 @@ Starboard runs on the server's own network, so it cannot join a plug-in's own ne
 plug-in on the `default` network can reach nothing outside it, Starboard's port included. Starboard listens for it
 on a Unix socket in its run folder instead, `STARBOARD_API_SOCKET`. Send the same HTTP requests to that socket, with
 the path from `STARBOARD_API`, any `Host` and the plug-in's own key. The socket answers only `/api/v1`, and only to
-that plug-in's key: another key is refused with `401`. A plug-in on the `lan` network may use either. The helper
+that plug-in's key: another key is refused with `401`. A plug-in with no container on the `lan` network can reach no other address, so its key works on the socket alone, and the port refuses it. A plug-in on the `lan` network may use either. The helper
 `sbplugin.py` in the example plug-ins uses the socket whenever `STARBOARD_API_SOCKET` names one that is there.
 
 Starboard writes `reelix.json` and `usenet.json` again each time it starts and each time the plug-in is activated,
@@ -506,10 +506,12 @@ Starboard keeps one state for each plug-in, and shows each with one sentence and
 | `disabled` | Deactivated: stopped, with its settings and data kept | **Activate** |
 | `failed` | It did not start, or stopped answering. The message says why | **Try again**, or **Roll back** to the version before within 10 minutes of an update |
 | `needs-setup` | A required setting is empty, or `setup_required` and it has never been set up | **Finish setting up** |
-| `not-supported` | This Starboard's plug-in API is outside the plug-in's `starboard_api`, so it is stopped | **Check for an update** |
+| `not-supported` | Shown as **Needs an update**. This Starboard cannot run the plug-in: its `starboard_api` leaves out this Starboard's plug-in API, or it uses something this Starboard no longer has. Starboard stops it, keeps its settings and data, and says why | **Check for an update** |
 
 The first four are stored in the plug-in's `state.json`. Starboard works out `needs-setup` and `not-supported` each
-time, and a plug-in in either cannot be activated. **Deactivate all plug-ins** stops every active plug-in at once.
+time, and a plug-in in either cannot be activated. When Starboard starts, it stops every active plug-in that is
+**Needs an update**. It stops the containers, never removes them, and keeps the settings, data and key. Docker does not
+start a stopped container again, whatever its restart policy says. **Deactivate all plug-ins** stops every active plug-in at once.
 
 ## Updates and Roll back
 

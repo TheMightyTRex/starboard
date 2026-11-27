@@ -15,6 +15,7 @@ you: it restarts Starboard). Other sections follow the same pattern. 13 November
 
 import argparse
 import os
+import re
 import subprocess  # nosec B404: git tag only, read only, in Starboard's own folder
 import sys
 
@@ -32,7 +33,8 @@ HELP.update({
                "Settings, Updates. Install Reelix updates automatically: "
                "in the quiet hours, once a day at most, Starboard installs a new Reelix. It saves the settings first and goes back to the "
                "version before if the new one is not healthy. Update Starboard with ./update.sh in the Starboard "
-               "folder; ./update.sh --to and a version goes back to that version, restoring the settings it saved.",
+               "folder; ./update.sh --to and a version goes back to that version. Going back to a version before 0.40.0 is "
+               "safest with --restore and the name of the backup the update to 0.40.0 saved; without it, Starboard warns you and goes on.",
     "settings-password": "The password you chose for Starboard, the one you sign in with from a browser. Forgotten "
                          "it? Stop with q and run ./reset-password.sh in the Starboard folder.",
 })
@@ -50,6 +52,12 @@ def releases(folder=".", run=None):
     except (OSError, subprocess.SubprocessError):
         tags = []
     return tags[:5]
+
+
+def before_the_break(tag):
+    """A version before 0.40.0 (DASH-596): going back to it is safest with the backup the update to 0.40.0 saved."""
+    parts = re.match(r"^v?(\d+)\.(\d+)\.(\d+)$", str(tag))
+    return bool(parts) and tuple(int(x) for x in parts.groups()) < (0, 40, 0)
 
 
 def sign_in(api, term):
@@ -108,10 +116,13 @@ def automatic_updates(api, term, version, folder="."):
         else:
             tags = releases(folder)
             rows = [("Update to the newest", "./update.sh"), ("Only check", "./update.sh --check")]
-            rows += [(f"Go back to {t}" if i else f"Install {t} again", f"./update.sh --to {t}") for i, t in enumerate(tags)]
+            rows += [(f"Go back to {t}" if i else f"Install {t} again", f"./update.sh --to {t}" + (" --restore backups/NAME" if before_the_break(t) else ""))
+                     for i, t in enumerate(tags)]
             term.card("In the Starboard folder", rows)
             term.note("Each one saves Starboard's settings first and restarts Starboard, so this window signs out. "
-                      "If the new version does not start, it goes back to the one you had.")
+                      "If the new version does not start, it goes back to the one you had. Going back to a "
+                      "version before 0.40.0 is safest with the backup that the update to 0.40.0 saved: add --restore and its "
+                      "name in the backups folder.")
         term.text("Press Enter to carry on", help_key="updates")
 
 
