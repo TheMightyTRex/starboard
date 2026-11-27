@@ -173,8 +173,8 @@ async function startPeople() {
       removed ? el("p", { class: "small muted", text: "Put this person back to change their accounts." }) : accountsList(p)));
     // How to sign in
     if (!removed && p.accounts.length) {
-      const print = el("button", { type: "button", class: "btn" }, icon("file-text"), "Print how to sign in");
-      const printWith = el("button", { type: "button", class: "btn" }, icon("file-text"), "Print with the passwords");
+      const print = el("button", { type: "button", class: "btn" }, icon("printer"), "Print how to sign in");
+      const printWith = el("button", { type: "button", class: "btn" }, icon("printer"), "Print with the passwords");
       print.addEventListener("click", () => printCard(p, false, print));
       printWith.addEventListener("click", () => printCard(p, true, printWith));
       out.push(el("section", { "aria-labelledby": "person-card-h", class: "stack-4" }, el("h3", { id: "person-card-h", text: "How to sign in" }),
