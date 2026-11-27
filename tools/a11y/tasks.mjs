@@ -1586,6 +1586,23 @@ if (chk) {
   check("T-PLU", "Escape closes it and focus returns to Update all", backP.id === "plu-update-all", `${backP.id} ${backP.text}`);
 }
 
+// T-PLACERULE How often a place gets a copy (DASH-588) by keyboard alone: Tab from a place's switch reaches its Copy select,
+// named for the place; the arrow key changes it, which applies at once and is said politely; the choice survives a reload.
+await page.goto(`${base}/settings-general-backup.html`);
+await settle();
+await page.locator("#place-on-main").waitFor({ timeout: 10000 }).catch(() => {});
+await page.locator("#place-on-main").focus();
+const sel16 = await tabTo((f) => f.tag === "SELECT" && f.id === "place-every-main", 4);
+check("T-PLACERULE", "Tab reaches the Copy select, named for its place", !!sel16 && /How often .* gets a copy/.test(sel16.text), sel16 ? sel16.text : "not reached");
+if (sel16) {
+  await page.keyboard.press("ArrowDown");
+  await page.waitForTimeout(600);
+  check("T-PLACERULE", "the arrow key changes it and the change is said", (await page.locator("#place-every-main").inputValue()) === "weekly" && /Saved: .* at most once a week/.test(await page.locator("#announcer").innerText()), await page.locator("#announcer").innerText());
+  await page.reload(); await settle();
+  await page.locator("#place-every-main").waitFor({ timeout: 10000 }).catch(() => {});
+  check("T-PLACERULE", "the choice is still there after a reload", (await page.locator("#place-every-main").inputValue()) === "weekly");
+}
+
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
