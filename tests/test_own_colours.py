@@ -23,20 +23,6 @@ class OwnColoursTest(unittest.TestCase):
         self.assertEqual(self.config.data["own_colours"], "blue")
         self.assertEqual(self.config.public()["own_colours"], "blue")
 
-    def test_the_old_default_teal_moves_to_blue_once(self):
-        """Mica became the default (DASH-479): a settings file from before, on Teal, the old default, moves to Blue;
-        Teal chosen after that stays Teal."""
-        path = os.path.join(self.dir.name, "config.json")
-        with open(path) as f:
-            data = json.load(f)
-        data.update(schema=2, own_colours="teal")
-        with open(path, "w") as f:
-            json.dump(data, f)
-        moved = config.Config(self.dir.name)
-        self.assertEqual(moved.data["own_colours"], "blue")
-        moved.update_general({"own_colours": "teal"})
-        self.assertEqual(config.Config(self.dir.name).data["own_colours"], "teal")
-
     def test_a_palette_is_saved_and_another_word_refused(self):
         self.config.update_general({"own_colours": "lime"})
         self.assertEqual(config.Config(self.dir.name).data["own_colours"], "lime")
@@ -56,18 +42,10 @@ class OwnColoursTest(unittest.TestCase):
 
     def test_a_renamed_palette_moves_to_its_new_name(self):
         """The design system replaced Indigo, Forest, Plum and Ember with Dusk, Lime, Rose and Amber (20 November
-        2026): a settings file, a backup or a page from before that names an old one gets the new one."""
-        path = os.path.join(self.dir.name, "config.json")
-        with open(path) as f:
-            data = json.load(f)
-        data["own_colours"] = "forest"
-        with open(path, "w") as f:
-            json.dump(data, f)
+        2026): a page from before that names an old one gets the new one. (A settings file from before 0.31.0 is no
+        longer converted when it loads, DASH-596.)"""
         moved = config.Config(self.dir.name)
-        self.assertEqual(moved.data["own_colours"], "lime")
-        with open(path) as f:
-            self.assertEqual(json.load(f)["own_colours"], "lime")
-        for old, new in (("indigo", "dusk"), ("plum", "rose"), ("ember", "amber")):
+        for old, new in (("forest", "lime"), ("indigo", "dusk"), ("plum", "rose"), ("ember", "amber")):
             moved.update_general({"own_colours": old})
             self.assertEqual(moved.data["own_colours"], new)
         with open(os.path.join(ROOT, "web", "js", "common.js")) as f:
