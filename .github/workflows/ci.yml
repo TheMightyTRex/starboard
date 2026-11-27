@@ -33,3 +33,19 @@ jobs:
           docker run -d --name perm --read-only --tmpfs /tmp --tmpfs /data:uid=10001,gid=10001,mode=0700 -p 127.0.0.1:18095:8095 starboard:perm
           for i in $(seq 1 15); do curl -fsS http://127.0.0.1:18095/healthz && exit 0; sleep 2; done
           docker logs perm; exit 1
+  oasdiff:
+    # Public API changes that break an outside tool fail here (DASH-603). The baseline is the last release tag.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install oasdiff 1.41.0 (checked against its published checksum)
+        run: |
+          curl -fsSL -o oasdiff.tar.gz https://github.com/oasdiff/oasdiff/releases/download/v1.41.0/oasdiff_1.41.0_linux_amd64.tar.gz
+          echo "96365453163118e6503eb71742643d9ee67f91aedbaadd1a1ce9c6213e3b71c7  oasdiff.tar.gz" | sha256sum -c -
+          tar -xzf oasdiff.tar.gz oasdiff
+          sudo install -m 0755 oasdiff /usr/local/bin/oasdiff
+      - name: No breaking change to the public API since the last release
+        run: OASDIFF=required bash tools/oasdiff-check.sh

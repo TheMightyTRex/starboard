@@ -73,3 +73,12 @@ class StopUnfit(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MissingCapability(unittest.TestCase):
+    def test_a_needed_capability_this_starboard_lacks_is_named(self):
+        m = {**ON_DEMAND, "capabilities": {"needs": ["teleport", "first-sign-in"]}}
+        self.assertEqual(plugin_life.does_not_fit(m), "It needs teleport, which this Starboard does not have.")
+
+    def test_a_capability_it_has_or_only_uses_is_fine(self):
+        self.assertEqual(plugin_life.does_not_fit({**ON_DEMAND, "capabilities": {"needs": ["first-sign-in"], "uses": ["teleport"]}}), "")
