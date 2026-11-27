@@ -1586,6 +1586,21 @@ if (chk) {
   check("T-PLU", "Escape closes it and focus returns to Update all", backP.id === "plu-update-all", `${backP.id} ${backP.text}`);
 }
 
+// T-SYSBACKUP System, Backups (DASH-588): the panel is reached in the Tab order and its one link, named for what it does,
+// opens the backup page at Full without media with Enter.
+await page.goto(`${base}/system.html`);
+await settle();
+await page.locator("#backups-panel:not([hidden])").waitFor({ timeout: 10000 }).catch(() => {});
+if (await page.locator("#backups-panel:not([hidden])").count()) {
+  check("T-SYSBACKUP", "the panel has a heading and says whether the newest full backup was read back", /Backups/.test(await page.locator("#backups-title").innerText()) && /full backup|Full backups/i.test(await page.locator("#backups-sum").innerText()));
+  const lk = await tabTo((f) => f.tag === "A" && /Check and restore backups/.test(f.text), 120);
+  check("T-SYSBACKUP", "Tab reaches Check and restore backups", !!lk, lk ? lk.text : "not reached");
+  if (lk) {
+    await page.keyboard.press("Enter");
+    await page.waitForURL(/settings-general-backup\.html/, { timeout: 8000 }).catch(() => {});
+    check("T-SYSBACKUP", "Enter opens Backup/Logs at Full without media", /settings-general-backup\.html#bk-full-h/.test(page.url()), page.url());
+  }
+} else check("T-SYSBACKUP", "the example server shows the Backups panel", false, "hidden");
 // T-PLACERULE How often a place gets a copy (DASH-588) by keyboard alone: Tab from a place's switch reaches its Copy select,
 // named for the place; the arrow key changes it, which applies at once and is said politely; the choice survives a reload.
 await page.goto(`${base}/settings-general-backup.html`);
