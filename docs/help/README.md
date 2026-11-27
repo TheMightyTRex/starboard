@@ -111,6 +111,7 @@ Each guide is a journey through several topics, in order.
 - [Check what was added, failed and upgraded across your apps](topics/check-what-happened-across-your-apps.md)
 - [Copy download issues for an AI helper](topics/copy-download-issues.md)
 - [Download only at certain hours](topics/set-download-hours.md)
+- [Limit how fast your downloads go](topics/set-speed-limits.md)
 - [Download without a VPN](topics/download-without-a-vpn.md)
 - [Approve or decline requests](topics/approve-requests.md)
 - [Find out what is coming up](topics/coming-up.md)

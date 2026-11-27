@@ -6,6 +6,7 @@
 // asks the server for nothing more.
 async function startDownloadsSettings() {
   const root = $("#downloads-sections");
+  if (partsOf(root)?.includes("dl-speed")) { await speedLimitsPage(root); return; }  // DASH-578
   if (!wants(root, "dl-vpn") && !wants(root, "dl-usenet")) {
     root.replaceChildren(...onlyParts(root, [downloadHoursSection("dl-hours")]));
     root.removeAttribute("aria-busy");
@@ -184,4 +185,63 @@ function vpnRemoveBlock() {
     el("p", { class: "small muted", text: "Downloads would then use your home internet address. Not recommended." }),
     el("div", { class: "form-stack" }, field("Your Starboard password", password, { required: true })),
     el("div", { class: "actions" }, remove), said);
+}
+
+
+// Speed limits (DASH-578): qBittorrent's and NZBGet's limits, set here so nobody has to use their own pages. A number
+// applies when you leave it and says "Saved" beside itself (Settings pattern 2); the switch applies at once. The page
+// asks each app once when it opens and again only when a person changes something.
+const SPEED_HINT = "Kilobytes a second. 0 means no limit. 1,000 is about 1 megabyte a second, enough for one film in HD to stream.";
+
+function speedNumber(row, key, label, id) {
+  const input = el("input", { class: "input", id, type: "number", min: "0", step: "1", value: String(row[key]) });
+  let was = input.value;
+  input.addEventListener("change", async () => {
+    setError(input, "");
+    if (input.value.trim() === "" || !/^\d+$/.test(input.value.trim())) {
+      setError(input, "Give a whole number of kilobytes a second. 0 means no limit"); input.value = was; return;
+    }
+    try {
+      const r = await api(`/api/speed-limits/${encodeURIComponent(row.id)}`, { method: "POST", body: { [key]: Number(input.value) } });
+      was = input.value = String(r[key]);
+      settingSaved("Saved");
+    } catch (e) { input.value = was; setError(input, e.message); }
+  });
+  return field(label, unitInput(input, "KB/s"), { hint: SPEED_HINT });
+}
+
+function speedSection(row) {
+  const base = `dl-speed-${row.id}`;
+  const parts = [speedNumber(row, "down", "Download limit", `${base}-down`)];
+  if (row.kind === "torrent") {
+    parts.push(speedNumber(row, "up", "Upload limit", `${base}-up`));
+    const alt = el("input", { type: "checkbox", id: `${base}-alt` });
+    alt.checked = !!row.alt;
+    let was = alt.checked;
+    alt.addEventListener("change", async () => {
+      try {
+        const r = await api(`/api/speed-limits/${encodeURIComponent(row.id)}`, { method: "POST", body: { alt: alt.checked } });
+        was = alt.checked = !!r.alt;
+        settingSaved("Saved");
+      } catch (e) { alt.checked = was; problem(e.message, alt); }
+    });
+    parts.push(switchRow("Use the alternative speed limits", "The second pair of limits you set in qBittorrent, often used for the daytime.", alt));
+  }
+  return section(base, row.name, row.kind === "torrent" ? "The limits for every torrent together." : "The limit for every download together.",
+    el("div", { class: "form-stack" }, ...parts));
+}
+
+async function speedLimitsPage(root) {
+  let d;
+  try { d = await api("/api/speed-limits"); }
+  catch (e) { root.replaceChildren(notice("danger", "Could not read the speed limits", e.message)); root.removeAttribute("aria-busy"); return; }
+  const nodes = d.items.map(speedSection);
+  for (const e of d.errors) nodes.push(notice("warning", `${e.name} did not answer`, `${e.message}. Check that it is running, then open this page again.`));
+  if (!nodes.length) {
+    nodes.push(notice("info", "No download app with a key yet",
+      "Add qBittorrent or NZBGet, with its API key, in Manage apps. Its speed limits then appear here.",
+      el("a", { class: "btn", href: "/settings.html", text: "Open Manage apps" })));
+  }
+  root.replaceChildren(...nodes);
+  root.removeAttribute("aria-busy");
 }

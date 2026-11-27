@@ -25,7 +25,7 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "settings-general-appearance.html", "settings-general-lists.html", "settings-general-hours.html", "settings-general-backup.html",
   "discover-tv.html", "discover-books.html",  // Discover rows are sections of Lists, one per area (DASH-396)
   // Downloads' level 2 pages (DASH-390)
-  "settings-downloads.html", "settings-downloads-usenet.html", "settings-downloads-hours.html",
+  "settings-downloads.html", "settings-downloads-usenet.html", "settings-downloads-hours.html", "settings-downloads-speed.html",
   // Radio's, Performance's and Security's level 2 pages (DASH-391)
   "settings-radio-link.html", "settings-radio-library.html", "settings-radio-logos.html", "settings-general-performance.html",
   "settings-security-password.html", "settings-security-signin.html", "settings-security-keys.html", "settings-security-sessions.html",

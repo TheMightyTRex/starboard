@@ -7,6 +7,8 @@ add features.
 
 ## [Unreleased]
 
+- **Speed limits for qBittorrent and NZBGet (DASH-578):** Settings, Downloads, Speed limits sets how fast each may download, and how fast qBittorrent may upload, with the switch for qBittorrent's alternative limits. Each change applies when you leave the box and says Saved beside it. Starboard asks the apps only when the page is open. It is the first piece of running more of each app inside Starboard, starting with the apps whose own pages are hardest to use with a keyboard or a screen reader. New help: Limit how fast your downloads go.
+
 - **Logos of services, used only as the companies allow (DASH-588):** Google Drive and OneDrive show the plain cloud icon and their full name, not a redrawn logo. Google allows only its own logo, unchanged, and Microsoft allows its logos only with a licence. The logos that stay are one-colour marks of Dropbox, Backblaze, Amazon S3 and Nextcloud, each beside its name to say which service it is. `docs/LOGOS.md` lists each one with the company's rules.
 
 - **Phone apps for Kavita (DASH-583):** Manage apps and the Kavita plug-in's page now name KOReader and Kover for Android, and Sutra and Komic for iPhone and iPad, with what each needs: your Kavita address and Auth key, iOS 17 for Sutra, and https away from home for Komic. New help topic: Read your Kavita books and comics on your phone.
