@@ -1,0 +1,27 @@
+{
+  "about": "Every wizard and multi-step flow in the browser, and the keyboard tasks that cover it (tools/a11y/tasks.mjs and wizards.mjs). tools/check-wizard-coverage.py fails when a flow here has no task, a task id is not in those files, a script that draws a wizard is in no flow, or a file named here is missing. A flow in the terminal (browser false) names the tests that cover it instead. Add the flow here when you add a wizard.",
+  "flows": [
+    { "id": "first-password", "name": "Create your first password with the set-up code", "files": ["web/setup.html", "web/js/login.js"], "tasks": ["T-FIRSTPW"] },
+    { "id": "sign-in", "name": "Sign in, with the two-step code when it is on", "files": ["web/login.html", "web/js/login.js"], "tasks": ["T1", "T-LOGIN2"] },
+    { "id": "setup-guide", "name": "The set-up guide (every step, every branch the example data reaches)", "files": ["web/setup-guide.html", "web/setup-steps.json", "web/js/settings-setup.js", "web/js/settings-core.js"], "tasks": ["T-SETUP", "T2"] },
+    { "id": "install-apps", "name": "Install apps: choose, folders, start with the password, take over", "files": ["web/install-apps.html", "web/js/install.js"], "tasks": ["T-INSTALL", "T-SETUP"] },
+    { "id": "upgrade-guide", "name": "The upgrade guide after an update", "files": ["web/upgrade.html"], "tasks": ["T-UPGRADE"] },
+    { "id": "bring-in", "name": "Bring in media you already have (four parts)", "files": ["web/bring-in.html", "web/js/bring-in.js"], "tasks": ["T31", "T-BRING"] },
+    { "id": "switch-media-server", "name": "Switch media server: how, which, what happens, carry across", "files": ["web/js/media-server-wizard.js", "web/js/settings-media-server.js", "web/js/settings-jellyfin.js"], "tasks": ["T-WIZARD", "T-WIZARD3", "T37", "T-WSTEPS"] },
+    { "id": "plex-link", "name": "Add a Plex app and sign in with Plex", "files": ["web/js/settings-apps.js"], "tasks": ["T-PLEX"] },
+    { "id": "cloud-service", "name": "Connect a cloud service (five steps)", "files": ["web/js/cloud-wizard.js"], "tasks": ["T30", "T-WSTEPS"] },
+    { "id": "backup-places", "name": "Where backups go: folder, share, cloud", "files": ["web/js/backup-places.js", "web/settings-general-backup.html"], "tasks": ["T16", "T30"] },
+    { "id": "backup-restore", "name": "Restore from a saved copy or a file", "files": ["web/settings-restore.html", "web/js/system-backup.js"], "tasks": ["T34", "T-RESTORE"] },
+    { "id": "plugin-install-update-rollback", "name": "Plug-in install, update, roll back and Put back", "files": ["web/js/plugins.js", "web/js/plugin-updates.js"], "tasks": ["T19", "T22", "T27", "T-PLU"] },
+    { "id": "starboard-update", "name": "Update Starboard and its apps, with the password", "files": ["web/js/update-run.js", "web/js/update-table.js", "web/settings-updates.html"], "tasks": ["T29", "T32"] },
+    { "id": "people", "name": "People and passwords", "files": ["web/js/settings-people.js"], "tasks": ["T-PEOPLE", "T-PEOPLE-PW"] },
+    { "id": "sign-in-settings", "name": "Two-step code and single sign-on set-up", "files": ["web/js/settings-signin.js", "web/settings-security-signin.html"], "tasks": ["T-SIGNIN"] },
+    { "id": "stallboard-catalogue", "name": "Add the Stallboard catalogue", "files": ["web/settings-plugins-catalogue.html"], "tasks": ["T-STALLBOARD"] },
+    { "id": "settings-slide-outs", "name": "Settings slide-outs and dialogs: edit an app, keys, custom card, Why is this here", "files": ["web/js/settings-apps.js", "web/js/json-cards.js"], "tasks": ["T6", "T7", "T-JSON", "T-WHY"] },
+    { "id": "library-add", "name": "Add a title from Search or Discover (the Add slide-out)", "files": ["web/js/add-panel.js"], "tasks": ["T-ADD"] },
+    { "id": "library-choose-download", "name": "Choose a download for a title", "files": ["web/js/library-item.js"], "tasks": ["T-CHOOSE"] },
+    { "id": "find-all-wanted", "name": "Find all wanted (count, confirm, progress, stop)", "files": ["web/js/find-wanted.js"], "tasks": ["T-FINDALL", "T36"] },
+    { "id": "pool-jobs", "name": "Pool: Add a disk, Balance the files, Take out of the pool", "files": ["web/js/system-pool.js", "web/system-pool.html"], "tasks": ["T-POOL"] },
+    { "id": "terminal-setup", "name": "The terminal installer and set-up (install.sh, run-first.sh, terminal set-up)", "browser": false, "files": ["install.sh", "run-first.sh", "starboard/terminal_setup.py"], "covered_by": ["tests/test_terminal_setup.py", "tests/test_terminal_frame.py", "tests/test_terminal_bring_in.py"] }
+  ]
+}

@@ -280,7 +280,7 @@ async function bringWhat(ctx) {
         el("thead", {}, el("tr", {}, el("th", { scope: "col", text: "Kind" }), el("th", { scope: "col", text: "Found" }), el("th", { scope: "col", text: "Size" }))),
         el("tbody", {}, rows))) : emptyState("No media found here", "Choose another folder in the sources, or change Everything in it is."),
       el("div", { class: "field bring-whole" }, el("label", { for: `whole-${s.id}`, text: "Everything in it is" }),
-        Object.assign(fixSelect(s, "", l.fix, `Everything in ${s.name}`), { id: `whole-${s.id}` })),
+        Object.assign(fixSelect(s, "", l.fix, `Everything in it is, for ${s.name}`), { id: `whole-${s.id}` })),
       folderRows.length ? el("details", { class: "fold", open: (l.folders || []).length <= 8 ? true : null },
         el("summary", {}, `Folders in it (${(l.folders || []).length})`),
         el("div", { class: "table-wrap", "data-stack": "" }, el("table", { class: "table table--middle bring-folders" },
