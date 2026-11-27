@@ -15,7 +15,7 @@ class Emby(mediaserver.MediaBrowser):
     service_type = "emby"
     prefix = "/emby"
     page = mediaserver.PAGE
-    capabilities = ("play", "watched", "updates")  # DASH-566: Play links and Watched; the rest are Jellyfin's so far (limits)
+    capabilities = ("admin_libraries", "admin_tasks", "admin_activity", "admin_logs", "play", "watched", "updates")  # DASH-566: Play links and Watched; the rest are Jellyfin's so far (limits)
     limits = {
         "restart": "Emby's restart is in its own dashboard; Starboard restarts its container from Settings, Manage apps",
         "own_plugins": "Emby's own plug-ins are managed in Emby's dashboard, Plugins",
@@ -28,6 +28,24 @@ class Emby(mediaserver.MediaBrowser):
         "metadata_folder": "Moving the metadata folder is Jellyfin's only",
         "detect": "Starboard finds Emby when you search for new apps",
     }
+
+    admin_coverage_rows = (
+        ("Libraries: list, scan new and changed files, refresh everything", "starboard", "On this tab, under Administration.", ""),
+        ("Libraries: add, rename or remove one, and change its folders and options", "later", "Not in Starboard yet. Use Emby's dashboard, Library.", "/web/index.html#!/dashboard"),
+        ("People: their passwords", "later", "Starboard's change of an Emby password is built but stays hidden until it is tried on a real Emby. Use Emby's dashboard, Users.", "/web/index.html#!/users"),
+        ("People: add or remove an account, their rights and the libraries they see", "later", "Not in Starboard yet. Use Emby's dashboard, Users.", "/web/index.html#!/users"),
+        ("Scheduled tasks: read, and run now", "starboard", "On this tab, under Administration.", ""),
+        ("Scheduled tasks: change when they run", "later", "Not in Starboard yet. Use Emby's dashboard, Scheduled Tasks.", "/web/index.html#!/scheduledtasks"),
+        ("Activity and server logs", "starboard", "On this tab, under Administration.", ""),
+        ("Video conversion", "server", "Hardware conversion needs Emby Premiere and is set in Emby's dashboard, Transcoding.", "/web/index.html#!/transcoding"),
+        ("Remote access, ports and the network", "later", "Not in Starboard yet. Use Emby's dashboard, Network.", "/web/index.html#!/networking"),
+        ("Emby's own plug-ins and their updates", "later", "Not in Starboard yet. Use Emby's dashboard, Plugins.", "/web/index.html#!/plugins"),
+        ("Devices, sessions and API keys", "later", "Not in Starboard yet. Use Emby's dashboard, Devices and API Keys.", "/web/index.html#!/devices"),
+        ("Server name, language and branding", "later", "Not in Starboard yet. Use Emby's dashboard, Settings.", "/web/index.html#!/dashboard"),
+        ("Update the server", "starboard", "Ready to update changes its container and waits while anyone is watching.", ""),
+        ("Live TV and recording", "server", "Needs Emby Premiere, and is set up in Emby's dashboard, Live TV.", "/web/index.html#!/livetv"),
+        ("Backup of the server's own database", "no", "Emby has no way to do it through its interface. Starboard's backups copy its settings folder.", ""),
+    )
 
     def public_version(self, service):
         """The version it tells anyone, with no key."""
