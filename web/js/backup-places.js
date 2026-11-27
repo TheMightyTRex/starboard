@@ -10,7 +10,10 @@ const PLACE_KINDS = [
   ["nfs", "Network share (NFS)", "Such as 192.168.1.20:/export/backups."],
 ];
 const KIND_ICON = { disk: "hard-drive", smb: "network", nfs: "server", rclone: "cloud" };
-const BRAND_LOGOS = ["drive", "onedrive", "dropbox", "b2", "s3", "webdav"];
+// Google Drive and OneDrive have no logo here (27 November 2026): Google allows only its own unchanged logo and Microsoft
+// allows its logos only with a licence, so each shows the plain cloud icon and its full name. Add the official, unchanged
+// mark here only when the owner has it from the company (docs/LOGOS.md).
+const BRAND_LOGOS = ["dropbox", "b2", "s3", "webdav"];
 
 // The logo of a service (the plain name always sits beside it, so it is decorative for a screen reader) or, for a place
 // on this network, a plain icon. The brand logos load from one small file, only on this page.
