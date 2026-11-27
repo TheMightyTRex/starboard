@@ -384,6 +384,11 @@ check("LIB-08", "every tab has Find all wanted first in the row", (await page.lo
 await page.waitForTimeout(600);
 const findText = (await findAll.textContent()).trim();
 check("LIB-08", "the button carries the count", /^Find all wanted \(\d+\)$/.test(findText), findText);
+await open("library-radio.html");
+await page.locator("#lib-chips label").first().waitFor({ timeout: 8000 }).catch(() => {});
+await page.waitForTimeout(500);
+check("LIB-08", "Radio's button carries how many shows have wanted episodes", /^Find all wanted \(\d+ shows?\)$/.test(((await page.locator("#lib-actions [data-find-all]").textContent()) || "").trim()));
+await open("library-films.html");
 if (!(await findAll.isDisabled())) {
   await findAll.click();
   const dlg = page.locator("dialog.dialog[open]");

@@ -24,6 +24,15 @@ function findButton(tab, { onRun } = {}) {
   return button;
 }
 
+// Radio has no cheap count of wanted episodes, so its button says how many shows have some, from the Wanted filter.
+function findRadioCount(shows) {
+  const button = document.querySelector('[data-find-all="radio"]');
+  if (!button) return;
+  button.replaceChildren(icon("search"), `Find all wanted (${findPlural(shows, ["show", "shows"])})`);
+  button.disabled = !shows;
+  button.title = shows ? "" : "Nothing is wanted";
+}
+
 function findPanel(anchor) {
   let panel = document.getElementById("find-panel");
   if (!panel) { panel = el("section", { id: "find-panel", class: "find-panel", "aria-labelledby": "find-panel-h", tabindex: "-1" }); anchor.after(panel); }
