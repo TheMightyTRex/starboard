@@ -953,7 +953,9 @@ class Handler(BaseHTTPRequestHandler):
             if forwarded:
                 return forwarded.split(",")[0].strip()
         elif self.headers.get("X-Forwarded-For") and not is_loopback(self.client_address[0]):
-            self.app.warn_unlisted_proxy(self.client_address[0])  # DASH-603: said once, so a proxy that is not listed is found
+            warn = getattr(self.app, "warn_unlisted_proxy", None)
+            if warn:
+                warn(self.client_address[0])  # DASH-603: said once, so a proxy that is not listed is found
         return self.client_address[0]
 
     def is_https(self):
