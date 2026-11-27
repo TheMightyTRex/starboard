@@ -416,7 +416,7 @@ Source: docs/help/developers/api-reference.md
 
 # API reference
 
-This page is made from Starboard's API description, `starboard/openapi.json` (version 1.10.0), by `tools/make_api_reference.py`. It lists every address in version 1 of the API.
+This page is made from Starboard's API description, `starboard/openapi.json` (version 1.11.0), by `tools/make_api_reference.py`. It lists every address in version 1 of the API.
 
 - Every address starts with `/api/v1` on your Starboard, such as `http://192.168.1.20:8095/api/v1/apps`.
 - Every request except the description itself needs a key, sent as `Authorization: Bearer` and the key. Addresses that change something are `POST` and need a key made with **Read and manage**. Read [Authentication and keys].
@@ -2914,6 +2914,7 @@ The named objects the answers use.
 | `starboard_version` | text | yes |
 | `links` | an object (its fields vary) | yes |
 | `deprecations` | a list of an object (its fields vary) | no |
+| `capabilities` | a list of text | no |
 
 ### UpdateRun
 
@@ -3068,6 +3069,16 @@ the next major version.
   `GET /api/v1/` answers `api_version`.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added].
+
+## Plug-in API 1.21.0 and Starboard API 1.11.0 (not released yet), 26 November 2026
+
+- **Added:** `starboard_tested`, the newest plug-in API version a plug-in was tested with, and `capabilities`, the optional
+  parts it needs or uses by name. `GET /api/v1/` answers `capabilities`, the names this Starboard has. A plug-in that needs a
+  name that is not there is not added, and a catalogue version with `capabilities_needed` that this Starboard lacks is not
+  offered. Read [Capabilities].
+- **Changed:** the plug-in tester warns when `starboard_api` has no top end or reaches past the next major version, or starts
+  lower than the version a field you use came in at. The tester also says when `starboard_tested` is missing.
+- Nothing was taken away. Name `>=1.21` in `starboard_api` to use either field.
 
 ## Starboard API 1.10.0 (not released yet), 26 November 2026
 
@@ -3735,7 +3746,7 @@ Source: docs/help/developers/plugin-manifest-reference.md
 # Plug-in manifest reference
 
 Every field of `starboard-plugin.json`, version 1, with the check Starboard runs on it and why. Starboard refuses
-any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.20.0
+any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.21.0
 (`API_VERSION` in `starboard/plugins.py`).
 
 The same rules are in a JSON Schema, `starboard/plugin-manifest.schema.json`, for editors and other tools. The
@@ -3756,6 +3767,8 @@ runs it too. For a first plug-in, read [Make your first plug-in].
 | `homepage` | yes | Its page | An `https` address |
 | `support_url` | yes | Where people report problems | An `https` address |
 | `starboard_api` | yes | The plug-in API versions it works with | A range such as `>=1.0 <2.0`, using `>=`, `>`, `<=`, `<` and `=`; this Starboard's API must be inside it |
+| `starboard_tested` | no | The newest plug-in API version you tested with (API 1.21) | Text such as `1.21`. Starboard never refuses a plug-in for it; the plug-in tester says when it is missing or newer than this Starboard |
+| `capabilities` | no | Optional parts it needs or uses, by name (API 1.21) | An object with `needs` and `uses`, each up to 12 names from [Capabilities]. A plug-in that needs a name this Starboard does not have is not added, and a catalogue version that needs one is not offered |
 | `permissions` | yes | What it may do | A list from [Permissions]; may be empty |
 | `containers` | no | The small apps Starboard runs for it | One to four; none only for a plug-in with only `styles` |
 | `resources` | no | Memory and processor for each container | Read [Resources] |
@@ -4505,6 +4518,34 @@ it is missing, because What is new then cannot say what changed. Say when settin
 ]
 ```
 
+## Capabilities (API 1.21)
+
+A version number says this Starboard has the whole API up to there. An optional part is better asked for by name.
+Name what your plug-in **needs** (it cannot work without it) and what it **uses** if it is there:
+
+```json
+"capabilities": {"needs": ["first-sign-in"], "uses": ["sparkline-card"]}
+```
+
+`GET /api/v1/` answers `capabilities`, the names this Starboard has. A plug-in that needs a name that is not there is not
+added, and the catalogue offers the newest version that fits. For a name you only use, read `GET /api/v1/` when your
+plug-in starts and work without it. Names are never reused or renamed.
+
+| Name | What it is |
+|---|---|
+| `media-server-slot` | Be Starboard's media server (API 1.17) |
+| `first-sign-in` | A first password Starboard makes and shows once (API 1.20) |
+| `sparkline-card` | The sparkline card (API 1.17) |
+| `guide-card` | The guide card, what is on now (API 1.8) |
+| `alerts-send` | Raise and clear alerts through Starboard (API 1.17) |
+| `partial-pages` | Custom pages that save in place, choose several and come in cards (API 1.16) |
+| `api-socket` | Starboard's API on a Unix socket in the run folder (API 1.16) |
+| `update-steps` | Steps before and after an update, a health wait and settings that move with a version (API 1.14) |
+| `app-plugins` | A whole app as a plug-in, with its own port, secrets and data (API 1.13) |
+| `schedule-setting` | A setting that is a time of day, week or month, and a job that uses it (API 1.14) |
+
+A catalogue version may carry `capabilities_needed`, a list of the same names, next to its `starboard_api`.
+
 ## What each API version added
 
 | Version | Date | Added |
@@ -4524,6 +4565,7 @@ it is missing, because What is new then cannot say what changed. Say when settin
 | 1.12 | 13 November 2026 | `"user": "media"` on a container that mounts `media/<one folder>`; `link` and `state_label` on a custom setting's item; `file_only` on its add box |
 | 1.13 | 13 November 2026 | App plug-ins: `network:port` and `publish` on `lan` with `host_port`, `{secret:...}` and `{jellyfin:...}` in `env`, `tmpfs`, `data:<path>` and `media/<one folder>:ro`, `pids`, and `adopt` |
 | 1.14 | 14 November 2026 | A card's own refresh time, `refresh_seconds`, in the manifest and in its answer, 10 seconds at the quickest; `recommended` on a catalogue entry; `logo` (and `logo`, `logo_alt` on a catalogue entry); every card drawn with a grey band holding the logo, the name, a status chip and when it last updated (`status`, `status_label` and `updated` in its answer); a `schedule` setting and a job's `schedule`; the `jellyfin:metadata` permission with the `jellyfin-metadata` volume; `update` (a `before` and an `after` step, `health_wait_seconds` and settings `migrations`), with the health wait and an automatic Roll back after every update, and **What is new** shown before an update too |
+| 1.21 | 26 November 2026 | `starboard_tested` and `capabilities`: named optional parts a plug-in needs or uses, listed by `GET /api/v1/`; the plug-in tester checks the range a plug-in names |
 | 1.20 | 26 November 2026 | `first_sign_in`: a password Starboard makes for an app plug-in, set by the app before it first starts and shown once on the plug-in's page |
 | 1.19 | 25 November 2026 | `requires`: the system a plug-in needs, shown as a tag (Jellyfin only, Plex or Emby, Needs Reelix), worked out from the permissions of older manifests; 1.18 is DASH-572's |
 | 1.17 | 20 November 2026 | The `sparkline` card: a small line for each series, with the latest, lowest and highest value in words; the `alerts:send` permission, with `POST /api/v1/plugin/alerts` to raise and clear alerts through Starboard's own |
