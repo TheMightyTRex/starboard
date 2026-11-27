@@ -813,7 +813,7 @@ const can = await page.evaluate(() => {
     noWithoutWhy: rows.flatMap((r) => [...r.querySelectorAll("td")]).filter((c) => /^No/.test(c.textContent) && c.textContent.trim() === "No").length,
     after: !!(side && h && (side.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING)) };
 });
-check("T-CAN", "the table has a caption, the three servers and a row header for each job", can.has && /Jellyfin, Plex and Emby/.test(can.caption) && can.cols.join() === "Job,Jellyfin,Plex,Emby" && can.rows > 5 && can.rowHeads === can.rows, JSON.stringify(can));
+check("T-CAN", "the table has a caption, the three servers (Jellyfin, Emby, Plex) and a row header for each job", can.has && /Jellyfin, Plex and Emby/.test(can.caption) && can.cols.join() === "Job,Jellyfin,Emby,Plex" && can.rows > 5 && can.rowHeads === can.rows, JSON.stringify(can));
 check("T-CAN", "every No says why", can.noWithoutWhy === 0, String(can.noWithoutWhy));
 check("T-CAN", "it follows Installed side by side", can.after, "order");
 
