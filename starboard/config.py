@@ -11,6 +11,8 @@ import time
 from . import shadows
 
 SCHEMA = 5
+OLDEST_SCHEMA = 4  # settings written by 0.31.0 or later; the update guard refuses an older Starboard (DASH-596)
+OLDEST_VERSION = "0.31.0"
 BACKUP_SCHEDULES = ("off", "manual", "monthly", "weekly", "nightly")
 KEEP_VERSIONS = (5, 10, 20)
 
@@ -130,7 +132,6 @@ DEFAULTS = {
     "backup_keep_versions": 5,
     "setup_guide_done": False,
     "ux_notes": True,  # Send feedback (Snaglist) on every page: on by default since 0.15.2 (owner); Settings, General
-    "feedback_default_on": True,  # the one-time switch-on for installs from before 0.15.2 is done (or never needed)
     "last_version": "",  # the version the upgrade wizard last finished, so it opens once per upgrade
     "auth": {"password_hash": "", "session_version": 1},
     "services": [],
@@ -261,7 +262,6 @@ class Config:
             # DASH-238: a new Starboard shows only the set-up wizard until the first set-up has finished. A settings
             # file from before has no such mark, so an existing server is never shut in the wizard.
             data["first_setup_pending"] = True
-            data["feedback_default_on"] = True  # Send feedback is on already (DEFAULTS); nothing to switch on later
             data["network_access"] = os.environ.get("STARBOARD_NETWORK", "1") != "0"
             name = os.environ.get("STARBOARD_NAME", "").strip()[:60]
             if name:
@@ -274,15 +274,6 @@ class Config:
             self.backup("before-migration")
             data = migrate(data)
             self._write(data)
-        if "server_name" not in data:  # added in 0.8: a short dashboard name becomes the server name
-            name = str(data.get("site_name", "")).strip()
-            data["server_name"] = name if name != "Starboard" and len(name) <= SERVER_NAME_MAX else ""
-        if not data.get("feedback_default_on"):
-            # Send feedback is on by default (owner, 10 November 2026): switched on once for an install from before,
-            # after which Settings, General's switch decides and this never runs again.
-            data["ux_notes"] = True
-            data["feedback_default_on"] = True
-            self._write(data)
         for key, value in DEFAULTS.items():
             data.setdefault(key, json.loads(json.dumps(value)))
         for key, value in DEFAULTS["performance"].items():  # settings added in later versions
@@ -291,19 +282,10 @@ class Config:
             data["logs"].setdefault(key, value)
         for key, value in DEFAULTS["watch"]["host"].items():  # host alerts, added in 0.31.0
             data["watch"].setdefault("host", {}).setdefault(key, json.loads(json.dumps(value)))
-        tdarr_links = [s for s in data.get("services") or [] if s.get("type") == "link" and (s.get("icon") or "") == "tdarr"]
-        for s in tdarr_links:  # DASH-306: Tdarr is set up from Starboard now, with a key it gives Tdarr
-            s["type"] = "tdarr"
-            s.setdefault("api_key", "")
-        if tdarr_links:
-            self._write(data)
         if fold_media_servers(data.get("services")):  # DASH-566: Plex and Emby have their own types now
             self._write(data)
         if data.get("design") not in DESIGNS:  # a design that has since been removed
             data["design"] = DEFAULTS["design"]
-            self._write(data)
-        if data.get("own_colours") in RENAMED_COLOURS:  # a palette the design system renamed
-            data["own_colours"] = RENAMED_COLOURS[data["own_colours"]]
             self._write(data)
         if data.get("own_colours", "blue") not in OWN_COLOURS:  # a palette the design system no longer has
             data["own_colours"] = "blue"
@@ -900,27 +882,13 @@ def validate_service(s):
 
 
 def migrate(data):
-    """Bring an older settings file up to SCHEMA. Add a step for every schema change."""
+    """Bring a settings file up to SCHEMA. Add a step for every schema change. Files from before 0.31.0 (schema 4) have
+    no steps any more (DASH-596): the update guard refuses to update from such a version, and a file that is older anyway
+    is kept as it is, after Config saves a copy, and marked as the current schema. Nothing is removed from it."""
     version = data.get("schema", 0)
-    if version < 1:
-        data.setdefault("auth", {"password_hash": "", "session_version": 1})
-        data["schema"] = 1
-    if version < 2:  # Audiobookshelf has its own type, for its API key and listening progress
-        for s in data.get("services", []):
-            if s.get("type") == "link" and re.sub(r"[^a-z]", "", str(s.get("name", "")).lower()) == "audiobookshelf":
-                s["type"] = "audiobookshelf"
-        data["schema"] = 2
-    if version < 3:  # Mica is the default design (DASH-479, owner, 18 November 2026): Teal was the default, so it moves to Blue
-        if data.get("own_colours", "teal") == "teal":
-            data["own_colours"] = "blue"
-        data["schema"] = 3
-    if version < 4:  # DASH-536: an install that exists today keeps its shadows, and is told once
-        data["shadows_off"] = False
-        data["shadows_note"] = True
-        data["schema"] = 4
     if version < 5:  # DASH-596, the clean break (0.40.0): settings are marked as written by 0.40.0 or later. Nothing is
         # changed or removed here: an unknown key or an app of an unknown kind stays as it is. There is no way back by
-        # running an older Starboard on these settings; update.sh says so and restores the backup it made (--restore).
+        # running an older Starboard on these settings without warning; update.sh says so and --restore puts back the backup.
         data["schema"] = 5
     return data
 

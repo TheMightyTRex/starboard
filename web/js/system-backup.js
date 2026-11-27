@@ -525,6 +525,14 @@ function scheduleState(s, canFull) {
     parts.push(notice("warning", s.newest ? "Your newest backup is more than 30 days old" : "No backup has been made yet",
       s.newest ? `It was made ${formatDate(s.newest * 1000, true)}. Make a backup now.` : "Make a backup now."));
   }
+  if (!s.key && canFull && !scheduled) {
+    // First run (27 November 2026): a server that never kept the backup password made no full backup by itself for weeks.
+    // Say it plainly, in steps, whatever the schedule is.
+    parts.push(el("div", { class: "notice", "data-tone": "warning", role: "status" }, icon("key-round"), el("div", { class: "notice__body" },
+      el("span", { class: "notice__title", text: "Full backups by themselves are not set up" }),
+      el("p", { text: "A full backup without media is made by itself only when Starboard keeps a key made from a backup password. Step 1: choose a backup password (Starboard can suggest one). Step 2: store it where you can find it. Step 3: choose Monthly, Weekly or Nightly under When backups are made." }),
+      el("div", { class: "actions" }, el("button", { type: "button", class: "btn btn--compact", id: "keep-key", onclick: (e) => openKeepKey(e.currentTarget) }, "Set up full backups")))));
+  }
   if (s.key) {
     const forget = el("button", { type: "button", class: "btn btn--quiet btn--compact", id: "forget-key" }, "Forget it");
     forget.addEventListener("click", () => forgetKey());
@@ -563,6 +571,35 @@ function openKeepKey(opener) {
     el("p", { class: "small muted", text: "Starboard keeps a key made from the password, never the password itself, in its own folder. Anyone who can read that folder can already read your apps' keys. The backups still open only with the password." }),
     field("A password for the backups", pw1, "At least 10 characters. Write it down: without it, nobody can open the backups, Starboard included."),
     field("The same password again", pw2), field("Your Starboard password", mine));
+  // A suggested password is made here, in the browser, and is never sent anywhere but as the backup password itself.
+  // Starboard never keeps it: it keeps only a key made from it. It is shown once, with the choice to copy it or save it.
+  const sure = el("input", { type: "checkbox", id: "key-sure", disabled: true });
+  const shown = el("input", { class: "input", id: "key-shown", type: "text", readonly: true, spellcheck: "false", autocomplete: "off", "aria-label": "The suggested backup password" });
+  const suggest = el("button", { type: "button", class: "btn", id: "key-suggest" }, icon("key-round"), "Suggest a password");
+  const copyPw = el("button", { type: "button", class: "btn", id: "key-copy-pw" }, icon("copy"), "Copy it");
+  const savePw = el("button", { type: "button", class: "btn", id: "key-save-pw" }, icon("download"), "Save it as a file");
+  const sureRow = el("label", { class: "check", for: "key-sure" }, sure, el("span", { class: "check__text", text: "I have stored this password where I can find it, such as a password manager" }));
+  const box = el("div", { class: "stack-2", id: "key-suggested", hidden: true },
+    el("label", { for: "key-shown", text: "Your suggested password. It is shown once." }), shown,
+    el("div", { class: "actions" }, copyPw, savePw), sureRow);
+  suggest.addEventListener("click", () => {
+    const letters = "abcdefghjkmnpqrstuvwxyz23456789"; // no letters that look alike
+    const pick = new Uint8Array(24); crypto.getRandomValues(pick);
+    const chars = [...pick].map((n) => letters[n % letters.length]);
+    const pw = [0, 6, 12, 18].map((i) => chars.slice(i, i + 6).join("")).join("-");
+    pw1.value = pw; pw2.value = pw; shown.value = pw; box.hidden = false; sure.checked = false; sure.disabled = false;
+    shown.focus(); shown.select();
+    announce("A password is suggested and filled in. Store it before you choose Keep it");
+  });
+  copyPw.addEventListener("click", async () => { const ok = await copyText(shown.value); announce(ok ? "The password is copied" : "Select the password and copy it"); if (!ok) shown.select(); });
+  savePw.addEventListener("click", () => {
+    const url = URL.createObjectURL(new Blob([`Starboard backup password: ${shown.value}\n`], { type: "text/plain" }));
+    const a = el("a", { href: url, download: "starboard-backup-password.txt" });
+    document.body.append(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    announce("The password is saved as a file. Move it somewhere private");
+  });
+  form.insertBefore(el("div", { class: "actions" }, suggest), form.children[2]);
+  form.insertBefore(box, form.children[3]);
   const panel = sidePanel({ title: "Keep the backup password", opener, body: [form], foot: [go, cancel] });
   cancel.addEventListener("click", () => panel.close());
   const say = (input, text) => { const e = $(`#${input.id}-error`); e.textContent = text; e.hidden = !text; input.setAttribute("aria-invalid", text ? "true" : "false"); if (text) input.focus(); };
@@ -571,6 +608,7 @@ function openKeepKey(opener) {
     [pw1, pw2, mine].forEach((i) => say(i, ""));
     if (pw1.value.length < 10) { say(pw1, "Use at least 10 characters"); return; }
     if (pw1.value !== pw2.value) { say(pw2, "The two passwords are not the same"); return; }
+    if (!box.hidden && !sure.checked) { say(pw1, "Store the suggested password first, then tick that you have"); return; }
     go.disabled = true;
     try {
       await api("/api/backup/schedule/key", { method: "POST", body: { password: mine.value, backup_password: pw1.value, folder, pictures } });

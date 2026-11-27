@@ -149,6 +149,16 @@
    "type": "string",
    "maxLength": 200
   },
+  "replaces_or_adds": {
+   "type": "string",
+   "minLength": 1,
+   "maxLength": 140,
+   "pattern": "^[^<>`\\r\\n]+$"
+  },
+  "icon": {
+   "type": "string",
+   "pattern": "^[a-z0-9-]+$"
+  },
   "author": {
    "type": "string",
    "maxLength": 60
@@ -188,6 +198,7 @@
      "network:lan",
      "network:port",
      "network:vpn",
+     "power:hold",
      "reelix:key",
      "slot:media-server",
      "system:read",
@@ -673,7 +684,8 @@
        "folder",
        "list",
        "custom",
-       "schedule"
+       "schedule",
+       "time"
       ]
      },
      "required": {

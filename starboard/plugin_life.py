@@ -15,7 +15,7 @@ import time
 import urllib.error
 import urllib.request
 
-from . import api_v1, logs, plugins
+from . import api_v1, logs, plugins, power_hold
 from . import plugins_admin as pa
 
 # Each state: one sentence and one button (the button's action, for the page).
@@ -76,6 +76,10 @@ def does_not_fit(manifest):
     if manifest.get("starboard_api") and not plugins._range_ok(manifest["starboard_api"], plugins.API_VERSION):
         return (f"It was made for Starboard's plug-in API {manifest['starboard_api']}, and this Starboard has "
                 f"{plugins.API_VERSION}.")
+    from . import plugin_capabilities
+    lacking = plugin_capabilities.missing((manifest.get("capabilities") or {}).get("needs") if isinstance(manifest.get("capabilities"), dict) else None)
+    if lacking:  # API 1.22: an optional part it cannot work without, which this Starboard does not have
+        return f"It needs {', '.join(lacking[:3])}, which this Starboard does not have."
     gone = []
     gone += [f"the manifest field {k}" for k in sorted(set(manifest) - plugins.TOP)]
     gone += [f"the permission {p}" for p in (manifest.get("permissions") or []) if isinstance(p, str) and p not in plugins.PERMISSIONS]
@@ -726,6 +730,7 @@ class Clock:
         self.events = EventWatch()
         self._manifests = {}
         self.app = None  # set by the server: its disks and what it knows of updates, for the API 1.11 events
+        power_hold.on_change(self.wake.set)  # DASH-572: a hold starting or ending is looked at at once
 
     def _active_jobs(self):
         out = []
@@ -786,10 +791,12 @@ class Clock:
             for pid, job in todo:
                 if job.get("quiet_hours") and not _in_quiet_hours(self.cfg, now):
                     continue
+                if power_hold.held(exempt=pid if "power:hold" in ((self._manifests.get(pid) or {}).get("permissions") or []) else None):
+                    continue  # DASH-572: on battery; the job is due still, so it runs at the first look after the hold ends
                 sched = schedule_of(self.data_dir, pid, self._manifests.get(pid) or {}, job) if "schedule" in job else None
                 if due(job, (last.get(f"{pid}/{job['id']}") or {}).get("started"), now, self.started_at, sched):
                     run_job(self.data_dir, pid, job["id"])
-            self.wake.wait(300)
+            self.wake.wait(power_hold.CHECK_EVERY if power_hold.held() else 300)
             self.wake.clear()
 
     def ensure(self):

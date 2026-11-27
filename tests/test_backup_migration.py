@@ -66,17 +66,18 @@ class BackupTest(unittest.TestCase):
         reread = config.Config(self.dirs[1])  # and it is on disk, not only in memory
         self.assertEqual(len(reread.data["services"]), 3)
 
-    def test_bak02_backup_from_before_audiobookshelf_had_its_own_type(self):
-        old = {"format": "starboard-settings", "version": "0.5.2", "settings": {"site_name": "Old Media"},
-               "services": [{"id": "abs", "name": "Audiobookshelf", "type": "link", "url": "http://abs:80"},
-                            {"id": "books", "name": "Books", "type": "link", "url": "http://books:80"}]}
-        backup.restore(self.new, old)
-        self.assertEqual([s["type"] for s in self.new.data["services"]], ["audiobookshelf", "link"])
-        self.assertEqual(self.new.data["site_name"], "Old Media")
-        # A backup made now says its schema, so a deliberate link stays a link
-        self.new.data["services"][0]["type"] = "link"
-        backup.restore(self.new, backup.export(self.new, "0.7.4"))
-        self.assertEqual(self.new.data["services"][0]["type"], "link")
+    def test_bak02_backup_from_before_0_31_0_is_refused_with_the_version_to_restore_it_on(self):
+        for old in ({"format": "starboard-settings", "version": "0.5.2", "settings": {"site_name": "Old Media"}, "services": []},
+                    {"format": "starboard-settings", "version": "0.30.0", "schema": 3, "settings": {}, "services": []}):
+            with self.assertRaises(config.ConfigError) as r:
+                backup.restore(self.new, old)
+            self.assertIn("before 0.31.0", str(r.exception))
+            self.assertIn("Restore it on Starboard 0.31.0 first", str(r.exception))
+        self.assertNotEqual(self.new.data["site_name"], "Old Media")
+        # A backup from 0.31.0 (schema 4) restores; a backup made now says its schema, so a deliberate link stays a link
+        backup.restore(self.new, {"format": "starboard-settings", "version": "0.31.0", "schema": 4, "settings": {"site_name": "Old Media"},
+                                  "services": [{"id": "abs", "name": "Audiobookshelf", "type": "link", "url": "http://abs:80"}]})
+        self.assertEqual((self.new.data["site_name"], self.new.data["services"][0]["type"]), ("Old Media", "link"))
 
     def test_bak03_not_a_backup_changes_nothing(self):
         before = json.dumps(self.old.data, sort_keys=True)
@@ -105,7 +106,7 @@ class BackupTest(unittest.TestCase):
         self.assertEqual(d["site_name"], "Made-up Media")
 
     def test_bak05_copies_before_a_restore_and_an_update_can_be_restored(self):
-        backup.restore(self.old, {"format": "starboard-settings", "settings": {"site_name": "Replaced"}, "services": []})
+        backup.restore(self.old, {"format": "starboard-settings", "schema": 4, "settings": {"site_name": "Replaced"}, "services": []})
         self.assertEqual(self.old.data["services"], [])
         copies = backup.saved_copies(self.old)
         self.assertEqual(copies[0]["reason"], "Before a restore")
@@ -119,13 +120,13 @@ class BackupTest(unittest.TestCase):
         d = tempfile.mkdtemp()
         self.dirs.append(d)
         with open(os.path.join(d, "config.json"), "w") as f:
-            json.dump({"schema": 1, "site_name": "Before 0.6", "services": [{"id": "abs", "name": "Audiobookshelf", "type": "link", "url": "http://abs:80"}],
+            json.dump({"schema": 4, "site_name": "Before 0.40", "services": [{"id": "abs", "name": "Audiobookshelf", "type": "link", "url": "http://abs:80"}],
                        "auth": {"password_hash": "kept", "session_version": 1}}, f)
         updated = config.Config(d)
         copy = backup.saved_copies(updated)[0]
         self.assertEqual(copy["reason"], "Before an update changed the settings")
         self.assertEqual(backup.restore_saved(updated, copy["name"]), 1)
-        self.assertEqual(updated.data["services"][0]["type"], "audiobookshelf")
+        self.assertEqual(updated.data["services"][0]["type"], "link")  # nothing is changed in the services
         self.assertEqual(updated.data["auth"]["password_hash"], "kept")
 
     def test_bak06_07_server_backup_job_running_done_failed_and_alert(self):

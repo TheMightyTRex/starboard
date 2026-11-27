@@ -17,7 +17,7 @@ import os
 import re
 import time
 
-from .config import DEFAULTS, DESIGNS, SCHEMA, SERVICE_TYPES, UPCOMING_DAYS, UPCOMING_VIEWS, ConfigError, fold_media_servers, migrate, validate_service
+from .config import DEFAULTS, DESIGNS, OLDEST_SCHEMA, OLDEST_VERSION, SCHEMA, SERVICE_TYPES, UPCOMING_DAYS, UPCOMING_VIEWS, ConfigError, fold_media_servers, migrate, validate_service
 
 FORMAT = "starboard-settings"
 GENERAL_KEYS = ("site_name", "server_name", "design", "own_colours", "shadows_off", "groups", "show_home_address", "show_outside_address",
@@ -72,7 +72,9 @@ def export(config, version, data_dir=None):
 
 
 def plugin_settings(data_dir):
-    """Each added plug-in: where it came from, whether it is active, and its settings (secrets as the apps' keys)."""
+    """Each added plug-in: where it came from, whether it is active, and its settings. Never a plug-in's keys or secrets (DASH-603):
+    a `secret` setting is left out, so a settings file that is lost or shared holds none. Restoring leaves the secret the plug-in
+    has now as it is, and says nothing is lost; after a restore on a new server, the plug-in asks for it again."""
     from . import plugins_admin
     out = {}
     root = os.path.join(data_dir, "plugins")
@@ -81,8 +83,11 @@ def plugin_settings(data_dir):
             continue
         read = lambda name, default: plugins_admin._read(os.path.join(root, pid, name), default)  # noqa: E731
         manifest = read("manifest.json", {})
+        secret = {s.get("key") for s in manifest.get("settings") or [] if isinstance(s, dict) and s.get("type") == "secret"}
+        state = {k: v for k, v in (read("state.json", {}) or {}).items() if k not in ("key", "key_id")}
         out[pid] = {"name": manifest.get("name", pid), "version": manifest.get("version", ""), "manifest": manifest,
-                    "state": read("state.json", {}), "settings": read("settings.json", {})}
+                    "state": state, "settings": {k: v for k, v in (read("settings.json", {}) or {}).items() if k not in secret},
+                    "secrets_left_out": sorted(k for k in secret if k)}
     return out
 
 
@@ -173,8 +178,8 @@ def apps_to_bring_back(backup, data_dir):
 def restore(config, backup):
     """Replaces apps and settings with the backup's, after checking every part. Password and sessions stay.
 
-    A backup from an older version is brought up to date the way an old settings file is (backups before 0.7.4
-    say no schema, so they count as schema 1). Unknown settings are ignored, a choice that no longer exists goes
+    A backup from 0.31.0 or later (schema 4 up) is brought up to date the way a settings file is; an older one is
+    refused with the version to restore it on (DASH-596). Unknown settings are ignored, a choice that no longer exists goes
     back to the default, and an app of a kind Starboard no longer knows becomes a plain link."""
     if not isinstance(backup, dict) or backup.get("format") != FORMAT:
         raise ConfigError("This is not a Starboard settings backup")
@@ -182,7 +187,9 @@ def restore(config, backup):
     settings = backup.get("settings") or {}
     if not isinstance(services, list) or not isinstance(settings, dict):
         raise ConfigError("This backup is incomplete")
-    schema = backup.get("schema") if isinstance(backup.get("schema"), int) else 1
+    schema = backup.get("schema") if isinstance(backup.get("schema"), int) else 0
+    if schema < OLDEST_SCHEMA:  # DASH-596: the steps for settings from before 0.31.0 are gone
+        raise ConfigError(f"This backup was made by a Starboard before {OLDEST_VERSION}. Restore it on Starboard {OLDEST_VERSION} first, then update")
     services = migrate({"schema": schema, "services": json.loads(json.dumps(services))})["services"]
     fold_media_servers(services)  # a copy from the day Plex and Emby were saved as an Other app (DASH-566)
     settings = dict(settings)

@@ -1,5 +1,6 @@
 """Parts of the design system load only where they are used (DASH-507). A page that loads a script which uses a part must
 load that part's styles and script, in order after components.js; a page may not load a part nothing on it uses."""
+import json
 import pathlib
 import re
 import unittest
@@ -9,7 +10,7 @@ WEB = pathlib.Path(__file__).resolve().parents[1] / "web"
 NEEDS = {"app-logs.js": ["log-view"], "library-item.js": ["tabs"], "system.js": ["charts"],
          "settings-apps.js": ["error-summary"], "dispatcharr-settings.js": ["error-summary"],
          "settings-security.js": ["error-summary", "secret-field"], "settings-people.js": ["secret-field"], "reelix-settings.js": ["tag-input"]}
-NEEDS_PART = {"secret-field": ["error-summary"], "alerts": ["popover"], "command-palette": ["combobox"]}
+NEEDS_PART = {"secret-field": ["error-summary"]}
 
 
 def loaded(text):
@@ -36,8 +37,7 @@ class PartsLoaded(unittest.TestCase):
                         self.assertLess(js.index(need), js.index(part), f"{page.name}: {need} before {part}")
 
     def test_part_files_exist_and_the_core_has_none_of_them(self):
-        for part in ("log-view", "tabs", "combobox", "charts", "pagination", "error-summary", "secret-field", "schedule",
-                     "tag-input", "popover", "alerts", "command-palette"):
+        for part in json.loads((WEB / "parts-used.json").read_text())["use"]:
             self.assertTrue((WEB / "js/parts" / f"{part}.js").exists() and (WEB / "css/parts" / f"{part}.css").exists(), part)
         core = (WEB / "js/components.js").read_text()
         self.assertNotIn("function logView", core)
