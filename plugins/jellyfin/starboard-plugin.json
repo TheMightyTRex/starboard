@@ -4,6 +4,7 @@
  "name": "Jellyfin",
  "version": "1.0.0",
  "description": "Jellyfin as Starboard's media server: its panel on the dashboard, Library, Activity, System and its own settings.",
+ "replaces_or_adds": "Stands alone: the media server Starboard uses until you choose another one.",
  "author": "TheMightyTRexUK",
  "licence": "MIT",
  "homepage": "https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/choose-your-media-server.md",
