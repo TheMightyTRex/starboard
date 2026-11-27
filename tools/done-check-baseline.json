@@ -68,6 +68,18 @@
     "tests.test_design_system_copies.CopiesMatchTest.test_every_copy_matches_the_library": 1
    },
    "note": "Same cause as the unit item: run the library's tools/sync.py, then remove both."
+  },
+  "axe": {
+   "known": {
+    "settings-general-backup.html, full backups with Checked and Restore|axe light|target-size": 1,
+    "settings-general-backup.html, full backups with Checked and Restore|axe dark|target-size": 1,
+    "settings-general-backup.html, full backups with Checked and Restore|axe high contrast|target-size": 1,
+    "Restore a full backup, restoring|axe light|target-size": 1,
+    "Restore a full backup, restored|axe light|target-size": 1,
+    "Restore a full backup, restored|axe dark|target-size": 1,
+    "Restore a full backup, restored|axe high contrast|target-size": 1
+   },
+   "note": "Target size findings in the full backups panel and its restore states, merged to main by DASH-588 on 27 November 2026; fix them in the panel's pull request and remove these items."
   }
  }
 }

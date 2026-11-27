@@ -301,7 +301,7 @@ async function stepContent(id, root, step = {}) {
     let read = { found: [], missing: [] };
     try { read = await api("/api/services/read-keys", { method: "POST", body: {} }); config = read.config; } catch { /* the boxes below still work */ }
     const rows = types(Object.keys(KEY_PLACE)).filter((s) => !s.has_api_key).map((s) => {
-      const input = el("input", { class: "input", type: "password", autocomplete: "off", "aria-label": `API key for ${s.name}` });
+      const input = el("input", { class: "input", type: "password", autocomplete: "off", "aria-label": `${s.name} API key` });
       return { s, input, node: field(`${s.name} API key`, input, { hint: `In ${s.name}: ${KEY_PLACE[s.type]}.`, span: true }) };
     });
     const got = read.found.length ? notice("success", `Starboard has ${read.found.length === 1 ? "the key" : "the keys"} for ${read.found.join(", ")}`,
