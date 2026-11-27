@@ -258,3 +258,44 @@ class SettingsZip(Base):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PlaceRule(Base):
+    """Each place has its own rule for how often it gets a copy (27 November 2026)."""
+
+    def test_default_is_every_backup_and_a_bad_word_is_refused(self):
+        a = self.add("disk")
+        self.assertEqual(bc.settings(self.d, a)["every"], "each")
+        with self.assertRaisesRegex(ValueError, "at most once a week"):
+            bc.set_every(self.d, a, "daily")
+        with self.assertRaisesRegex(ValueError, "not in the list"):
+            bc.set_every(self.d, "zzz", "weekly")
+
+    def test_a_weekly_place_is_left_alone_while_its_last_copy_is_recent_and_the_others_still_get_it(self):
+        a, b = self.add("disk", folder="/media/usb/a"), self.add("disk", folder="/media/usb/b")
+        bc._copy(self.d, SOURCE, a)
+        bc.set_every(self.d, a, "weekly")
+        self.calls.clear()
+        bc.after_full(self.d, SOURCE.replace("13", "14"))
+        self.assertEqual(len(self.calls), 1, "only the place with every backup was copied to")
+        self.assertIn("usb/b", self.calls[0]["script"])
+
+    def test_it_is_copied_again_once_its_period_has_passed_and_a_failed_last_copy_is_never_skipped(self):
+        a = self.add("disk")
+        bc._copy(self.d, SOURCE, a)
+        bc.set_every(self.d, a, "monthly")
+        st = bc.status(self.d, a)
+        d = bc.settings(self.d, a)
+        self.assertTrue(bc.recent_enough(d, st, now=st["finished"] + 10 * 86400))
+        self.assertFalse(bc.recent_enough(d, st, now=st["finished"] + 28 * 86400))
+        self.assertFalse(bc.recent_enough(d, {**st, "state": "failed"}))
+        self.assertFalse(bc.recent_enough({**d, "every": "each"}, st))
+
+    def test_safe_counts_a_recent_enough_earlier_copy_and_says_so(self):
+        a = self.add("disk")
+        bc._copy(self.d, SOURCE, a)
+        bc.set_every(self.d, a, "weekly")
+        with mock.patch.object(bc, "newest", lambda d: SOURCE.replace("13", "14")):
+            s = bc.safe(self.d)
+        self.assertTrue(s["safe"])
+        self.assertIn("at most once a week", s["places"][0]["words"])
