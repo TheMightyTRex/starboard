@@ -15,17 +15,17 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
-## Plug-in API 1.23.0 and Starboard API 1.12.0 (not released yet), 27 November 2026
+## Plug-in API 1.24.0 and Starboard API 1.12.0 (not released yet), 27 November 2026
 
 - **Added:** the permission `power:hold` and `POST /api/v1/plugin/hold`, so a plug-in such as UPS and power asks Starboard to hold
   its heavy automatic work while the computer runs on battery. While a hold lasts, Starboard does not start by itself its
   background jobs (Live TV, watch history, listening progress and the automatic updates), its scheduled backups or other plug-ins'
   scheduled jobs, and it pauses downloads as Download hours does. A hold ends by itself after 10 minutes unless the plug-in asks
   again (30 at most), and what was due starts at the next check. Anything a person starts with a click still runs. Read
-  [Holding heavy jobs](plugin-api-reference.md#holding-heavy-jobs-api-123).
+  [Holding heavy jobs](plugin-api-reference.md#holding-heavy-jobs-api-124).
 - **Added:** the setting type `time`, one time of day such as `22:00`, drawn as a time box that saves when you leave it.
 - **Added:** `held` in the answers of `/api/v1/download-hours`: whether a plug-in holds heavy work now, why, until when and by whom.
-- Nothing was taken away. Plug-in API 1.18 was left for this change; the next additive version is 1.23. Name `>=1.23` in
+- Nothing was taken away. Plug-in API 1.18 was left for this change; the next additive version is 1.24 (1.23 is taken by DASH-585 and DASH-604). Name `>=1.24` in
   `starboard_api` to use either addition.
 
 ## Plug-in API 1.21.0 (not released yet), 27 November 2026

@@ -1,4 +1,4 @@
-"""Plug-in API 1.23 (27 November 2026, DASH-572): the permission power:hold with POST /api/v1/plugin/hold (Starboard API
+"""Plug-in API 1.24 (27 November 2026, DASH-572): the permission power:hold with POST /api/v1/plugin/hold (Starboard API
 1.12.0), so a plug-in such as UPS and power holds Starboard's heavy automatic jobs and downloads on battery, and the
 time setting type. Held work must start again when the hold ends or runs out."""
 import http.client
@@ -327,7 +327,7 @@ class Route(unittest.TestCase):
 
 class Manifest(unittest.TestCase):
     def test_the_permission_and_the_time_setting_are_known(self):
-        m = {**ON_DEMAND, "starboard_api": ">=1.23 <2.0", "permissions": [*ON_DEMAND["permissions"], "network:lan", "power:hold"],
+        m = {**ON_DEMAND, "starboard_api": ">=1.24 <2.0", "permissions": [*ON_DEMAND["permissions"], "network:lan", "power:hold"],
              "settings": [{"key": "quiet_from", "label": "Quiet from", "type": "time", "default": "22:00"}]}
         self.assertEqual(plugins.check(m), [])
         self.assertEqual(plugins.PERMISSIONS["power:hold"][1:], ("low", None))

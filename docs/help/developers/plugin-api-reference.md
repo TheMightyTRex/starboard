@@ -495,7 +495,7 @@ print(json.load(c.getresponse()))  # {"ok": true, "sent": true}
 
 When the router answers again, send `{"key": "check-router", "state": "cleared", "title": "Router is answering again"}`.
 
-## Holding heavy jobs (API 1.23)
+## Holding heavy jobs (API 1.24)
 
 A plug-in with the `power:hold` permission may ask Starboard to hold its heavy automatic work, for example while the UPS and
 power plug-in sees the computer run on battery. It sends `POST /api/v1/plugin/hold` (Starboard API 1.12.0) with its own key,

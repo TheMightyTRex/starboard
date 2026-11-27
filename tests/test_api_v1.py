@@ -245,7 +245,7 @@ class ApiV1Test(unittest.TestCase):
                     continue
                 found = [a for a in api_v1.actions() if a[1] == method.upper() and re.match(a[0], sample(path))]
                 self.assertTrue(found, f"{method} {path} has no route")
-                if found[0][2] in api_v1.PLUGIN_PERMISSION:  # API 1.8.0, 1.12.0: a plug-in's own key (tests/test_plugin_api_117.py, _123.py)
+                if found[0][2] in api_v1.PLUGIN_PERMISSION:  # API 1.8.0, 1.12.0: a plug-in's own key (tests/test_plugin_api_117.py, _124.py)
                     self.assertEqual((op.get("x-right"), op.get("x-scope")), ("plugin", None), path)
                     continue
                 self.assertEqual(op.get("x-right"), "manage", f"{method} {path}")

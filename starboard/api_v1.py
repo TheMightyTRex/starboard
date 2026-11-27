@@ -46,7 +46,7 @@ import uuid
 
 from . import deprecations, plugin_capabilities
 
-API_VERSION = "1.12.0"  # 1.12.0 (27 November 2026, DASH-572, plug-in API 1.23): POST /plugin/hold, a hold on heavy work from a plug-in with power:hold, answered only to its own key; /download-hours says what is held. 1.11.0 (26 November 2026, DASH-603): capabilities in GET /, the names of the optional plug-in parts this Starboard has. 1.10.0 (26 November 2026, DASH-603): deprecations in GET /, Deprecation and Sunset headers on a route that is going, 410 gone once removed. 1.9.0 (26 November 2026): several backup places in /backup/copies (destinations, safe, settings_zip), the test for each, and POST /backup/settings-copy. 1.8.0 (20 November 2026, plug-in API 1.17): POST /plugin/alerts, alerts from a plug-in with alerts:send, answered only to its own key. 1.7.0 (19 November 2026, DASH-464): /mcp, read-only tools for AI assistants, off until activated. 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
+API_VERSION = "1.12.0"  # 1.12.0 (27 November 2026, DASH-572, plug-in API 1.24): POST /plugin/hold, a hold on heavy work from a plug-in with power:hold, answered only to its own key; /download-hours says what is held. 1.11.0 (26 November 2026, DASH-603): capabilities in GET /, the names of the optional plug-in parts this Starboard has. 1.10.0 (26 November 2026, DASH-603): deprecations in GET /, Deprecation and Sunset headers on a route that is going, 410 gone once removed. 1.9.0 (26 November 2026): several backup places in /backup/copies (destinations, safe, settings_zip), the test for each, and POST /backup/settings-copy. 1.8.0 (20 November 2026, plug-in API 1.17): POST /plugin/alerts, alerts from a plug-in with alerts:send, answered only to its own key. 1.7.0 (19 November 2026, DASH-464): /mcp, read-only tools for AI assistants, off until activated. 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
 KEYS_FILE = "api-keys.json"
 RIGHTS = ("read", "manage")  # manage: read, and the everyday actions (DASH-274). "admin" stays with the pages
 SCOPES = ("apps", "downloads", "media", "system", "library", "requests")
@@ -942,7 +942,7 @@ def actions():
         return 200, {"ok": True, "sent": plugin_alert(h.app, h.api_plugin, b)}
 
     def plugin_hold(h, m, q, b):
-        """A plug-in's hold on heavy work (API 1.12.0, plug-in API 1.23): started, renewed or ended."""
+        """A plug-in's hold on heavy work (API 1.12.0, plug-in API 1.24): started, renewed or ended."""
         from . import power_hold
         on = b.get("on")
         if not isinstance(on, bool):

@@ -213,7 +213,7 @@ function pluginSettingsGroups(p, redraw) {
         rows.push(row(select));
       } else if (s.type === "schedule") {  // API 1.14 (DASH-432): every day, week or month at a time, applied at once
         rows.push(scheduleRow(s, id, noteId, put));
-      } else if (s.type === "time") {  // API 1.23 (DASH-572): one time of day, applied when you leave it
+      } else if (s.type === "time") {  // API 1.24 (DASH-572): one time of day, applied when you leave it
         const input = el("input", { class: "input", id, type: "time", value: s.value ?? "", "aria-labelledby": `${id}-l` });
         let was = input.value;
         input.addEventListener("change", async () => {

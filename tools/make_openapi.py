@@ -491,7 +491,7 @@ _alerts["requestBody"]["content"]["application/json"]["example"] = {
     "key": "check-router", "state": "raised", "title": "Router is not answering", "message": "Ping: no answer for 3 checks in a row.",
     "level": "problem"}
 
-# Added in 1.12.0 (plug-in API 1.23, DASH-572): a hold on heavy work from a plug-in, answered only to its own key.
+# Added in 1.12.0 (plug-in API 1.24, DASH-572): a hold on heavy work from a plug-in, answered only to its own key.
 spec["paths"]["/api/v1/plugin/hold"] = {"post": write(
     {"type": "object", "required": ["ok", "held"], "properties": {
         "ok": {"type": "boolean"},

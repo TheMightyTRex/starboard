@@ -1,4 +1,4 @@
-"""Power hold (plug-in API 1.23, DASH-572): a plug-in that was approved power:hold, such as UPS and power, may ask
+"""Power hold (plug-in API 1.24, DASH-572): a plug-in that was approved power:hold, such as UPS and power, may ask
 Starboard to hold its heavy automatic work while the computer runs on battery.
 
 What a hold stops, while it lasts:
