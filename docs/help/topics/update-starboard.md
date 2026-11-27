@@ -55,6 +55,23 @@ This works if you used the installer and Starboard has Docker access, or if you 
 Closing the dialog does not stop the update. If **Update now** is not there, the page says why, such as a Starboard
 from the ready-made image, which you update on the server.
 
+## Update to 0.40.0 from an older version
+
+Starboard 0.40.0 is a clean break. It removes the old code that kept very old installs working, so it makes
+Starboard simpler. Two things follow.
+
+- **You can update to 0.40.0 only from 0.31.0 or later.** If you have an older version, the update stops before it
+  changes anything and tells you which version to update to first, such as `./update.sh --to v0.31.0`. Then run
+  `./update.sh` again.
+- **You cannot go back to an older Starboard after this update.** Starboard first saves a backup of your settings,
+  checks that it reads back and says its name. If anything goes wrong, you can put it back. Settings you change
+  after the update are lost when you do. Read
+  [Go back to a version before 0.40.0](go-back-to-an-earlier-version.md#go-back-to-a-version-before-0400).
+
+The updater says this in its own words, under "This update cannot be undone", before it saves the backup. Your
+apps, plug-ins, library, downloads and the plug-ins' own data folders stay as they are. Starboard never deletes a
+setting or an app that it does not understand.
+
 ## Install all updates at once
 
 When one or more updates are waiting, for Starboard, Reelix, your other apps or plug-ins, you can install them all

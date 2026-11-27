@@ -5,6 +5,8 @@
 #   --to v0.2.0      Install a particular release (also how you go back to an older one)
 #   --main           Follow the main branch instead of releases (for testing). An install made with
 #                    ./install.sh --main follows it without this (STARBOARD_CHANNEL in .env, DASH-416)
+#   --restore FILE   With --to: put back the settings backup FILE (from ./backups) when going back to a version before
+#                    0.40.0, which cannot read the settings 0.40.0 and later write (DASH-596)
 #
 # Before updating it backs up ./data to ./backups, except each plug-in's own data folder, which belongs to the
 # plug-in's user and stays where it is. If the new version does not start, it goes back to the version you had and
@@ -23,6 +25,7 @@ trap 'rm -f "$0"' EXIT
 cd "$STARBOARD_UPDATE_DIR"
 TARGET=""
 CHECK=0
+RESTORE_FILE=""
 CHANNEL=release
 
 while [ $# -gt 0 ]; do
@@ -30,7 +33,8 @@ while [ $# -gt 0 ]; do
     --check) CHECK=1 ;;
     --to) TARGET="${2:?--to needs a version, for example v0.2.0}"; shift ;;
     --main) CHANNEL=main ;;
-    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+    --restore) RESTORE_FILE="${2:?--restore needs a backup file from the backups folder}"; shift ;;
+    -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
   shift
@@ -76,7 +80,63 @@ if [ "$WANT" = "$CURRENT" ]; then
   echo "Already up to date."
   exit 0
 fi
+# DASH-596 (the clean break): Starboard 0.40.0 and later cannot update from a version before 0.31.0, and nobody can go
+# back to a version before 0.40.0 by running an older one on newer settings. The versions are read from each side's
+# VERSION file, so a test build or the main branch is judged by what it says it is.
+SUPPORTED_FROM=0.31.0
+ONE_WAY_FROM=0.40.0
+
+version_of() {  # version_of <text>: x.y.z from "v0.31.0", "0.31.0" or a VERSION file's text; nothing if it is not one
+  printf '%s' "$1" | tr -d '[:space:]' | sed -n 's/^v\{0,1\}\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)$/\1/p'
+}
+
+older_than() {  # older_than <a> <b>: version a is older than version b
+  local IFS=.
+  local -a a b
+  read -ra a <<< "$1"
+  read -ra b <<< "$2"
+  local i
+  for i in 0 1 2; do
+    if [ "${a[i]}" -lt "${b[i]}" ]; then return 0; fi
+    if [ "${a[i]}" -gt "${b[i]}" ]; then return 1; fi
+  done
+  return 1
+}
+
+CURRENT_VERSION="$(version_of "$(cat VERSION 2>/dev/null || true)")"
+[ -n "$CURRENT_VERSION" ] || CURRENT_VERSION="$(version_of "$(git describe --tags --abbrev=0 2>/dev/null || true)")"
+WANT_VERSION="$(version_of "$(git show "$WANT:VERSION" 2>/dev/null || true)")"
+[ -n "$WANT_VERSION" ] || WANT_VERSION="$(version_of "$WANT_NAME")"
+GOING_ONE_WAY=0  # this update crosses the clean break going forward
+GOING_BACK_PAST=0  # this one crosses it going back
+if [ -n "$CURRENT_VERSION" ] && [ -n "$WANT_VERSION" ]; then
+  if ! older_than "$WANT_VERSION" "$ONE_WAY_FROM" && older_than "$CURRENT_VERSION" "$ONE_WAY_FROM"; then
+    if older_than "$CURRENT_VERSION" "$SUPPORTED_FROM"; then
+      FIRST="$({ git tag -l 'v0.31.*' --sort=-v:refname | grep -E '^v0\.31\.[0-9]+$' || true; } | head -n 1)"
+      FIRST="${FIRST:-v$SUPPORTED_FROM}"
+      if [ "$CHECK" = 1 ]; then
+        echo "Starboard $WANT_VERSION can only be installed from Starboard $SUPPORTED_FROM or later. Update to $FIRST first: ./update.sh --to $FIRST"
+        exit 0
+      fi
+      fail "you have Starboard $CURRENT_VERSION, and Starboard $WANT_VERSION can only be installed from $SUPPORTED_FROM or later. Update to $FIRST first by running: ./update.sh --to $FIRST. Then run ./update.sh again. Nothing was changed"
+    fi
+    GOING_ONE_WAY=1
+  elif older_than "$WANT_VERSION" "$ONE_WAY_FROM" && ! older_than "$CURRENT_VERSION" "$ONE_WAY_FROM"; then
+    GOING_BACK_PAST=1
+  fi
+fi
+if [ -n "$RESTORE_FILE" ] && [ "$GOING_BACK_PAST" != 1 ]; then
+  fail "--restore is only for going back to a version before $ONE_WAY_FROM, with --to"
+fi
+if [ "$GOING_BACK_PAST" = 1 ] && [ "$CHECK" != 1 ]; then
+  if [ -z "$RESTORE_FILE" ]; then
+    fail "Starboard $CURRENT_VERSION changed how your settings are stored, and $WANT_NAME cannot read them, so it cannot go back by itself. Going back needs the backup of your settings that the update to $ONE_WAY_FROM saved in the backups folder, and settings you changed since are lost. To go back, run: ./update.sh --to $WANT_NAME --restore backups/NAME, with the name of that backup (list them with: ls -t backups)"
+  fi
+  { [ -f "$RESTORE_FILE" ] && tar -tzf "$RESTORE_FILE" >/dev/null 2>&1; } || fail "the backup $RESTORE_FILE could not be read, so nothing was changed"
+fi
+
 if [ "$CHECK" = 1 ]; then
+  [ "$GOING_ONE_WAY" != 1 ] || echo "This update cannot be undone: you cannot go back to an older Starboard after it. Starboard saves a backup of your settings first."
   echo "Run ./update.sh to install it."
   exit 0
 fi
@@ -257,6 +317,12 @@ restore_data() {  # restore_data <file>: data goes to data.failed-update, the ba
 }
 # update-data-functions-end
 
+if [ "$GOING_ONE_WAY" = 1 ]; then
+  say "This update cannot be undone"
+  echo "Starboard $WANT_VERSION changes how your settings are stored. You cannot go back to an older Starboard after this update."
+  echo "Starboard saves a backup of your settings first. To go back, you restore that backup. Settings you change after the update are lost when you do."
+fi
+
 say "Backing up your settings"
 mkdir -p backups
 chmod 700 backups
@@ -268,6 +334,9 @@ if ! backup_err="$(backup_data "$BACKUP" 2>&1)"; then
   exit 1
 fi
 echo "Saved $BACKUP (the plug-ins' own data folders are not in it: they stay where they are; nor are posters, icons, logs and the Library's lists, which Starboard makes again)"
+if [ "$GOING_ONE_WAY" = 1 ]; then
+  echo "Keep $BACKUP: it is your way back. To go back, run ./update.sh --to vX.Y.Z --restore $BACKUP, with the version you had."
+fi
 # DASH-109: keep the copies of the last versions only (Settings, Updates, Restore: 5, 10 or 20; 5 if unset). These are
 # update.sh's own rolling copies, one per update, so the older ones are removed rather than kept elsewhere.
 if command -v python3 >/dev/null 2>&1; then
@@ -288,6 +357,10 @@ done
 
 say "Installing $WANT_NAME"
 git -c advice.detachedHead=false checkout --quiet "$WANT"
+if [ -n "$RESTORE_FILE" ]; then
+  say "Putting back your settings from $RESTORE_FILE"
+  restore_data "$RESTORE_FILE"
+fi
 restart "$WANT_NAME"
 
 if healthy; then

@@ -439,6 +439,8 @@
         "label": "Server and downloads",
         "ids": [
           "disk-forecast",
+          "backups-watch",
+          "ups-power",
           "notifications",
           "download-summary",
           "vpn-check"
@@ -457,6 +459,8 @@
         "label": "Home and appearance",
         "ids": [
           "home-assistant",
+          "philips-hue",
+          "immich",
           "styles"
         ]
       },
@@ -467,6 +471,7 @@
           "navidrome",
           "kavita",
           "calibre-web",
+          "calibre-library",
           "wizarr",
           "maintainerr",
           "uptime-kuma",
@@ -534,6 +539,15 @@
       },
       "tv-station": {
         "icon": "tv"
+      },
+      "backups-watch": {
+        "icon": "hard-drive"
+      },
+      "ups-power": {
+        "icon": "zap"
+      },
+      "immich": {
+        "icon": "image"
       }
     }
   }

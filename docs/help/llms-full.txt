@@ -416,7 +416,7 @@ Source: docs/help/developers/api-reference.md
 
 # API reference
 
-This page is made from Starboard's API description, `starboard/openapi.json` (version 1.9.0), by `tools/make_api_reference.py`. It lists every address in version 1 of the API.
+This page is made from Starboard's API description, `starboard/openapi.json` (version 1.10.0), by `tools/make_api_reference.py`. It lists every address in version 1 of the API.
 
 - Every address starts with `/api/v1` on your Starboard, such as `http://192.168.1.20:8095/api/v1/apps`.
 - Every request except the description itself needs a key, sent as `Authorization: Bearer` and the key. Addresses that change something are `POST` and need a key made with **Read and manage**. Read [Authentication and keys].
@@ -2913,6 +2913,7 @@ The named objects the answers use.
 | `api_version` | text | yes |
 | `starboard_version` | text | yes |
 | `links` | an object (its fields vary) | yes |
+| `deprecations` | a list of an object (its fields vary) | no |
 
 ### UpdateRun
 
@@ -3000,6 +3001,12 @@ what works.
 **403.** The key only reads, and this address changes something. Make a key with **Read and manage** in
 **Settings**, **Security**, **API keys**, with only the scopes it needs.
 
+## gone
+
+**410.** This address was removed after its notice period. `detail` names what replaces it, and a `Link` header points to
+the page about the change. Before it was removed, every answer from it carried `Deprecation` and `Sunset` headers, and
+`GET /api/v1/` listed it under `deprecations`.
+
 ## too_large
 
 **413.** The body is larger than 64 KB. Send a JSON object of up to 64 KB.
@@ -3062,8 +3069,26 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added].
 
+## Starboard API 1.10.0 (not released yet), 26 November 2026
+
+- **Added:** `deprecations` in `GET /api/v1/`: the features that are going, each with `method`, `path`, `deprecated` and `sunset`
+  (dates), `replacement` and `removed`. It is empty until something is deprecated.
+- **Added:** every answer from a route that is going carries `Deprecation: @<Unix time>` ([RFC 9745](https://www.rfc-editor.org/rfc/rfc9745)),
+  `Sunset: <date>` ([RFC 8594](https://www.rfc-editor.org/rfc/rfc8594)) and a `Link` with `rel="deprecation"` to the page about the change.
+  Once it is removed it answers [`410 gone`], never a bare not found.
+- Nothing was taken away: every 1.9.0 address answers as before.
+
 ## Plug-in API 1.20.0 (not released yet), 26 November 2026
 
+- **Changed:** a plug-in that this Starboard cannot run is now stopped when Starboard starts, and shows **Needs an update**
+  (before, **Not supported**, and it kept running). It cannot run when its `starboard_api` leaves out this API, or when it
+  uses a field, permission, card type, setting type, event or container option that no longer exists. Its settings, data
+  and key are kept, the page says why in words, and **Check for an update** or **Roll back** work as before. No 1.x
+  release removes anything, so this changes nothing for a plug-in that fits.
+- **Changed (security):** a plug-in's own key is new each time the plug-in starts or updates (the old one is revoked), and ends
+  30 days after it was last used, so a copied key stops working. A plug-in must read `/run/starboard/key` for each call, as
+  Starboard's helper does. The key of a plug-in with no container on the `lan` network works on its socket only. Keys made
+  before get 30 days from the first start of this version and stay the same until the plug-in next starts.
 - **Added:** `first_sign_in`, a password Starboard makes for an app plug-in and shows once on its page, so the app does
   not start with a default one that everyone knows. The manifest names the sign-in name, the `{secret:name}` the app
   reads from its environment and a file the app's start-up writes once it has set the password. Starboard offers
@@ -4877,7 +4902,7 @@ only, so any user a container runs as can read these files:
 | In the container | What it is |
 |---|---|
 | `/run/starboard/settings.json` | The settings, as one JSON object of `key` and value, secrets included. A `schedule` setting is an object, such as `{"every": "month", "date": 31, "time": "03:30"}` (API 1.14) |
-| `/run/starboard/key` | The plug-in's own API key, as one line of text |
+| `/run/starboard/key` | The plug-in's own API key, as one line of text. Starboard makes a new one each time the plug-in starts or updates and revokes the old one, so read the file for each call, not once at start-up (Starboard's helper does). The key ends 30 days after it was last used |
 | `/run/starboard/jellyfin.json` | Only with `jellyfin:key`: `{"url": ..., "api_key": ...}`. An address on the server itself is given as `host.docker.internal` |
 | `/run/starboard/reelix.json` | Only with `reelix:key` (API 1.6): `{"url": ..., "api_key": ...}`, Reelix's address and key |
 | `/run/starboard/usenet.json` | Only with `usenet:servers` (API 1.6): `{"servers": [{"name", "host", "port", "ssl", "user", "password", "connections", "level"}]}`, the active news servers from NZBGet (or SABnzbd), first choice first. Use fewer connections than `connections`: the download app uses the same account |
@@ -4897,7 +4922,7 @@ Starboard runs on the server's own network, so it cannot join a plug-in's own ne
 plug-in on the `default` network can reach nothing outside it, Starboard's port included. Starboard listens for it
 on a Unix socket in its run folder instead, `STARBOARD_API_SOCKET`. Send the same HTTP requests to that socket, with
 the path from `STARBOARD_API`, any `Host` and the plug-in's own key. The socket answers only `/api/v1`, and only to
-that plug-in's key: another key is refused with `401`. A plug-in on the `lan` network may use either. The helper
+that plug-in's key: another key is refused with `401`. A plug-in with no container on the `lan` network can reach no other address, so its key works on the socket alone, and the port refuses it. A plug-in on the `lan` network may use either. The helper
 `sbplugin.py` in the example plug-ins uses the socket whenever `STARBOARD_API_SOCKET` names one that is there.
 
 Starboard writes `reelix.json` and `usenet.json` again each time it starts and each time the plug-in is activated,
@@ -5026,10 +5051,12 @@ Starboard keeps one state for each plug-in, and shows each with one sentence and
 | `disabled` | Deactivated: stopped, with its settings and data kept | **Activate** |
 | `failed` | It did not start, or stopped answering. The message says why | **Try again**, or **Roll back** to the version before within 10 minutes of an update |
 | `needs-setup` | A required setting is empty, or `setup_required` and it has never been set up | **Finish setting up** |
-| `not-supported` | This Starboard's plug-in API is outside the plug-in's `starboard_api`, so it is stopped | **Check for an update** |
+| `not-supported` | Shown as **Needs an update**. This Starboard cannot run the plug-in: its `starboard_api` leaves out this Starboard's plug-in API, or it uses something this Starboard no longer has. Starboard stops it, keeps its settings and data, and says why | **Check for an update** |
 
 The first four are stored in the plug-in's `state.json`. Starboard works out `needs-setup` and `not-supported` each
-time, and a plug-in in either cannot be activated. **Deactivate all plug-ins** stops every active plug-in at once.
+time, and a plug-in in either cannot be activated. When Starboard starts, it stops every active plug-in that is
+**Needs an update**. It stops the containers, never removes them, and keeps the settings, data and key. Docker does not
+start a stopped container again, whatever its restart policy says. **Deactivate all plug-ins** stops every active plug-in at once.
 
 ## Updates and Roll back
 
@@ -5488,3 +5515,91 @@ Starboard's own checks do the same with an example plug-in: `python3 tools/updat
 - [Test and publish a plug-in]
 - [Update a plug-in and roll it back]
 - [API changelog]
+
+---
+
+Source: docs/help/developers/compatibility-promise.md
+
+# Our promise to plug-in developers
+
+A plug-in you write for Starboard 1 keeps working while Starboard stays on version 1. This page says exactly what we
+promise, how a feature is retired, how your plug-in says what it needs, and what people are shown if it stops. It applies to the
+plug-in API and to the public API at `/api/v1`.
+
+## What never breaks inside version 1
+
+- **Routes.** An address that answers today keeps its address, method, scope and the fields it answers, with the same meaning.
+- **Manifests.** A manifest Starboard accepts today is accepted later. We never remove, rename or require a field, card
+  type, setting type, event or container option.
+- **Permissions and scopes.** A permission keeps its meaning. A key scope keeps what it opens.
+- **What your plug-in reads.** The files in `/run/starboard` and the `STARBOARD_` names keep their names and shape.
+- **What Starboard sends your plug-in.** The health check, events, card paths and update steps keep their form.
+- **Cards.** A card answer that draws today still draws.
+- **Errors.** An error code keeps its meaning. A new code may appear, so treat one you do not know as a general failure.
+- **Limits.** A limit only gets looser. The one exception is a security fix (read Security fixes).
+
+## What we may add
+
+New routes, answer fields, optional inputs, permissions, scopes, events, card types, setting types, manifest fields and
+error codes. Your plug-in must ignore anything it does not know. A list of choices in an answer may get new values.
+
+## What we do not promise
+
+The appearance of Starboard's pages, the words on them, the order of fields in an answer, the exact text of an error, timing, and
+anything the reference pages do not describe. A feature marked as a preview may change in a minor release.
+
+## How a feature goes
+
+1. **We announce it.** The [API changelog] gets a Deprecated entry that names what replaces the feature.
+   The plug-in tester will warn when your manifest uses it (planned).
+2. **It keeps working, and warns.** The public API adds a `Deprecation` header and a `Sunset` date to each answer, and
+   `GET /api/v1/` lists the feature under `deprecations`. A plug-in that uses a retiring feature will show a warning on its page (planned).
+3. **We wait.** At least 12 months and two Starboard releases for the plug-in API. At least 6 months for the public API. We
+   may wait longer. We never wait less.
+4. **We remove it only in version 2.0.** A removed address answers `410 gone` and names what replaces it. We do not plan a
+   version 2.0 until it is needed.
+
+A security fix is the one exception, and it has its own rules in Security fixes.
+
+## How your plug-in says what it needs
+
+- **`starboard_api` is required.** It is a range such as `>=1.14 <2.0`. Name the lowest version that has what you use. The
+  top, `<2.0`, means "made for version 1".
+- **Version 2.0 stops only what it must.** A plug-in that uses nothing removed keeps running. One that does is stopped.
+- **Optional parts are asked for by name, not by version number.** `requires` already names the system a plug-in needs
+  (Jellyfin, Plex or Emby, Reelix). Named capabilities for other optional parts are planned for plug-in API 1.21.
+- **Read your key file for each call.** Starboard makes a new key each time your plug-in starts or updates.
+
+## What people are shown if your plug-in stops
+
+If this Starboard cannot run a plug-in, Starboard stops it when it starts. People are shown **Needs an update**, with a
+warning shape and a reason in words, such as "It uses the permission jellyfin:key, which this Starboard does not have."
+
+![The Versions panel of a plug-in, where a newer version is offered with Update to, with example data]
+
+The plug-in stays installed. Starboard keeps its settings, data and key, and never starts it again by itself. **Check for
+an update** finds the newest version that works with this Starboard, and **Activate** works again once one fits.
+
+![A plug-in's State after an update, with What is new and Got it, with example data]
+
+**Roll back** goes to the version before, with one select.
+
+![A plug-in's Versions panel with Roll back, with example data]
+
+## Security fixes
+
+A fix for a flaw may break an older plug-in at once, in a patch release, when keeping the old behaviour leaves a hole open.
+We then say so the same day in the changelog under Security, in Starboard, and in the plug-in tester, name the fixed
+version, and give the reason. A plug-in the fix stops is shown as **Needs an update** like any other.
+
+## Check your plug-in
+
+Run the plug-in tester on your manifest ([Test and publish a plug-in]). Starboard's own tests
+also run 74 older manifests from the plug-in collection against each new Starboard, and fail a change that removes
+anything from the API without these steps.
+
+## Find out more
+
+- [API changelog]: every change, with its type.
+- [Plug-in manifest reference]: `starboard_api` and every field.
+- [Write a plug-in that updates safely]: settings that move with a version.

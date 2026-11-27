@@ -8,7 +8,7 @@ title: Find your answer
 start: Checkrr is not working as it should
 q: What does its tab say?
   Did not start -> 1
-  Not supported -> 2
+  Needs an update -> 2
   Active, but something is wrong -> q2
 q2: What is wrong?
   The card lists bad files -> 3

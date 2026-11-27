@@ -8,7 +8,7 @@ title: Find your answer
 start: Watch statistics is not working as it should
 q: What does its tab say?
   Failed or Not answering -> 1
-  Not supported -> 2
+  Needs an update -> 2
   Active, but a card or table is wrong -> q2
 q2: What does it say?
   Needs Playback Reporting or Last plays only -> 3
