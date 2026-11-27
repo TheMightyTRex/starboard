@@ -16,7 +16,7 @@ import threading
 import urllib.parse
 import urllib.request
 
-from . import api_v1, plugin_systems, plugins
+from . import api_v1, deprecations, plugin_systems, plugins
 
 STATES = ("installed", "enabled", "disabled", "failed")  # stored; plugin_life.status adds needs-setup and not-supported
 MAX_MANIFEST = 256 * 1024
@@ -520,7 +520,7 @@ def listing(data_dir):
                      for x in m.get("styles") or [] if isinstance(x, dict)]
             from . import plugin_life
             out.append({**summary(m, []), "logo": logo_info(data_dir, pid, m), "looks": looks, "builtin": bool(st.get("builtin")), "state": st.get("state", "installed"), "installed_at": st.get("installed_at"),
-                        "status": plugin_life.status(data_dir, pid, m, st), "whats_new": plugin_life.whats_new(data_dir, pid, m, st), "jobs": job_lines(data_dir, pid, m),
+                        "status": plugin_life.status(data_dir, pid, m, st), "retiring": [deprecations.warning_sentence(w) for w in deprecations.for_manifest(m)], "whats_new": plugin_life.whats_new(data_dir, pid, m, st), "jobs": job_lines(data_dir, pid, m),
                         "message": st.get("message", ""), "settings": public_settings(data_dir, pid, m),
                         "web": web_pages(data_dir, pid, m, st), "publishes": bool(plugins.published_lan(m)),
                         "adopt": adopt_info(m), "adopted": st.get("adopted"),
@@ -1412,6 +1412,8 @@ def public_settings(data_dir, pid, manifest=None):
         shown = v
         if v is None and s.get("type") == "schedule" and not plugins.schedule_problem(s.get("default")):
             shown = s["default"]  # the schedule the job really uses until one is saved (plugin_life.schedule_of), not a guess in the page
+        if v is None and s.get("type") == "time" and isinstance(s.get("default"), str) and re.match(plugins.TIME, s["default"]):
+            shown = s["default"]  # API 1.24: the time the plug-in uses until one is saved
         out.append({**{k: s[k] for k in ("key", "label", "type", "hint", "min", "max", "unit", "required", "group") if k in s},
                     **({"choices": [{"value": v, "label": w} for v, w in plugins.choices(s)]} if s["type"] == "choice"
                        else {"choices": s["choices"]} if "choices" in s else {}),
@@ -1454,6 +1456,9 @@ def save_settings(data_dir, pid, incoming):
                 v = v.rstrip("/") or "/"
                 if ".." in v.split("/") or not any(v == top or v.startswith(top + "/") for top in inside):
                     raise ValueError(f"{s['label']}: choose a folder inside {', '.join(inside) or 'the media folder'}")
+        elif t == "time":  # API 1.24 (DASH-572): one time of day, such as 22:00
+            if not isinstance(v, str) or not re.match(plugins.TIME, v):
+                raise ValueError(f"{s['label']}: give a time such as 22:00")
         elif t == "schedule":  # API 1.14 (DASH-432): every day, week or month at a time, checked before it is kept
             problem = plugins.schedule_problem(v)
             if problem:

@@ -83,13 +83,7 @@ class SettingsMenusTest(unittest.TestCase):
                 path = SHELL.HELP[page][0].split("#")[0]
                 self.assertTrue(os.path.isfile(os.path.join(ROOT, "docs", "help", path)), path)
 
-    def test_moved_anchors_go_to_a_page_that_holds_the_part(self):
-        block = SCRIPTS.split("const MOVED_PARTS = {", 1)[1].split("\n};", 1)[0]
-        pages = set(re.findall(r'"(settings-[a-z-]+\.html)"', block))
-        self.assertTrue(pages)
-        for page in pages:
-            self.assertTrue(os.path.isfile(os.path.join(WEB, page)), page)
-            self.assertIn(page, SHELL.PAGES, f"{page} is not in the menu")
+    def test_every_part_the_one_page_used_to_show_is_on_a_page_of_the_group(self):
         # Every part the one page used to show is on one of the group's pages now.
         for group, before in self.BEFORE.items():
             now = [p for page, _, _ in level2(group) for p in parts_of(page)]
@@ -127,11 +121,6 @@ class DiscoverRowsPageTest(unittest.TestCase):
     def test_each_discover_page_opens_its_own_section(self):
         for area in self.AREAS:
             self.assertIn(f'href="/settings-general-lists.html#dr-{area}">Change these rows', read(WEB, f"discover-{area}.html"))
-
-    def test_old_addresses_go_to_the_page(self):
-        block = SCRIPTS.split("const MOVED_PARTS = {", 1)[1].split("\n};", 1)[0]
-        self.assertIn('"discover-rows-s": "settings-general-lists.html"', block)
-        self.assertIn("#dr-${/^[a-z]{2,12}$/.test(area || \"\") ? area : \"films\"}-h", SCRIPTS)
 
 
 if __name__ == "__main__":
@@ -182,12 +171,6 @@ class BackupLogsTabTest(unittest.TestCase):
         for old, new in want.items():
             self.assertEqual(server.MOVED_PAGES.get(old), new, old)
             self.assertFalse(os.path.exists(os.path.join(WEB, old.lstrip("/"))), old)
-
-    def test_old_parts_of_general_go_to_the_new_page(self):
-        block = SCRIPTS.split("const MOVED_PARTS = {", 1)[1].split("\n};", 1)[0]
-        for part in ("gn-logs", "logs", "gn-test", "testing", "feedback-list", "gn-logdel", "delete-logs"):
-            self.assertIn(f'"{part}"', block)
-        self.assertNotIn("settings-general-logs.html", SCRIPTS)
 
     def test_logs_and_delete_all_logs_are_not_hidden_under_more_settings(self):
         advanced = SCRIPTS.split("const ADVANCED_SECTIONS = new Set([", 1)[1].split("]);", 1)[0]

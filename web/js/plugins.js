@@ -12,6 +12,10 @@ const chipOf = (p) => {
   if (stateOf(p) === "enabled" && p.resting?.length) return ["Resting", "muted"];
   return STATE[stateOf(p)] || ["Unknown", "muted"];
 };
+// A plug-in that uses a part of the API that is going (DASH-603): one plain sentence each, with the day it stops.
+const retiringNote = (p) => (p.retiring?.length ? el("div", { class: "notice", "data-tone": "warning", role: "note" }, icon("triangle-alert"),
+  el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "Uses a feature that is going" }),
+    ...p.retiring.map((t) => el("p", { text: t })))) : null);
 const healthNote = (p) => {
   if (stateOf(p) !== "enabled") return null;
   if (p.health && p.health !== "ok") return el("div", { class: "notice", "data-tone": "warning", role: "note" }, icon("triangle-alert"),
@@ -214,6 +218,15 @@ function pluginSettingsGroups(p, redraw) {
         rows.push(row(select));
       } else if (s.type === "schedule") {  // API 1.14 (DASH-432): every day, week or month at a time, applied at once
         rows.push(scheduleRow(s, id, noteId, put));
+      } else if (s.type === "time") {  // API 1.24 (DASH-572): one time of day, applied when you leave it
+        const input = el("input", { class: "input", id, type: "time", value: s.value ?? "", "aria-labelledby": `${id}-l` });
+        let was = input.value;
+        input.addEventListener("change", async () => {
+          if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(input.value)) { problem(`${s.label}: give a time such as 22:00`, input); input.value = was; return; }
+          try { await put({ [s.key]: input.value }); was = input.value; showSaved(noteId); }
+          catch (err) { input.value = was; problem(err.message, input); }
+        });
+        rows.push(row(input));
       } else if (s.type === "number" && !s.required) {  // pattern 2: a number applies when you leave it, unit beside it
         const input = el("input", { class: "input", id, type: "number", value: s.value ?? "", min: s.min, max: s.max, "aria-labelledby": `${id}-l` });
         let was = input.value;
@@ -743,7 +756,7 @@ function pluginPage(p, redraw, ms = null, read = null) {
   // State (issue #8): the chip at the right of the heading's line and the version under it, in the grey band; Activate
   // or Deactivate first in the white body under the band (owner, 19 November 2026).
   const stateSec = section(`pl-${p.id}-state`, "State", stateWords(p),
-    headChip(...chipOf(p)), p.media_server ? el("div", { class: "stack-2" }, el("p", {}, slotChip(p, ms)), inUse(p, ms) ? el("p", { class: "small", text: "It stays active while it is your media server." }) : null) : null, fix || healthNote(p) || (p.message ? el("p", { class: "small", text: p.message }) : null));
+    headChip(...chipOf(p)), p.media_server ? el("div", { class: "stack-2" }, el("p", {}, slotChip(p, ms)), inUse(p, ms) ? el("p", { class: "small", text: "It stays active while it is your media server." }) : null) : null, fix || healthNote(p) || (p.message ? el("p", { class: "small", text: p.message }) : null), retiringNote(p));
   if (!inUse(p, ms)) $(".settings-section__head", stateSec).after(el("div", { class: "actions" }, first));
   // What it needs (DASH-567): the system its tag names, in words, in the State card (General keeps its five cards); when
   // that system is not here it says the plug-in is waiting.

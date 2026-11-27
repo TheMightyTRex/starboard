@@ -15,7 +15,7 @@ import threading
 import time
 from datetime import datetime, timedelta
 
-from . import logs, services
+from . import logs, power_hold, services
 from .services import ServiceError
 
 PAUSED = ("stoppedDL", "pausedDL")
@@ -67,7 +67,9 @@ class Schedule:
                 if s["type"] in ("qbittorrent", "sabnzbd", "nzbget", "slskd") and s.get("enabled", True) and s.get("url") and s.get("api_key")]
 
     def wanted(self, state, now):
-        """("run" or "pause", "manual" or "hours")"""
+        """("run" or "pause", "manual", "hours" or "power")"""
+        if power_hold.held():  # DASH-572: a plug-in holds heavy work (the UPS on battery): paused whatever the hours say
+            return "pause", "power"
         if state["override"] and state["until"] > now.timestamp():
             return state["override"], "manual"
         h = self.hours()
@@ -226,7 +228,7 @@ class Schedule:
     # The minute-by-minute check -------------------------------------------------
 
     def tick(self):
-        if not self.hours()["enabled"] and not os.path.exists(self.path):
+        if not self.hours()["enabled"] and not os.path.exists(self.path) and not power_hold.held():
             return  # never used: nothing to check or undo, and no file to write
         with self.lock:
             state = self.load()
@@ -234,7 +236,7 @@ class Schedule:
             now = datetime.now()
             if state["override"] and state["until"] <= now.timestamp():
                 state["override"], state["until"] = None, 0
-            if not self.hours()["enabled"]:
+            if not self.hours()["enabled"] and not power_hold.held():
                 if state["applied"] == "pause":
                     self.apply("run", state)  # starts again only what Starboard stopped
                 state.update(applied=None, override=None, until=0)
@@ -243,7 +245,8 @@ class Schedule:
                 # Pausing is checked every minute (it catches new downloads); running only when it changes.
                 if want == "pause" or state["applied"] != want:
                     if state["applied"] != want:
-                        logs.event("info", "download hours", "Downloads paused" if want == "pause" else "Downloads running again")
+                        why = " (on battery)" if self.wanted(state, now)[1] == "power" else ""
+                        logs.event("info", "download hours", ("Downloads paused" + why) if want == "pause" else "Downloads running again")
                     self.apply(want, state, enforcing=want == "pause" and state["applied"] == "pause")
                     state["applied"] = want
             if json.dumps(state, sort_keys=True) != before:  # write only when something changed
@@ -251,7 +254,7 @@ class Schedule:
 
     def needed(self):
         """On, or off but still holding downloads it paused (they are started again first)."""
-        return self.hours()["enabled"] or self.load().get("applied") == "pause"
+        return self.hours()["enabled"] or self.load().get("applied") == "pause" or power_hold.held()
 
     def loop(self):
         while True:
@@ -283,7 +286,7 @@ class Schedule:
         h = self.hours()
         state = self.load()
         now = datetime.now()
-        out = {"enabled": h["enabled"], "start": h["start"], "end": h["end"],
+        out = {"enabled": h["enabled"], "start": h["start"], "end": h["end"], "held": power_hold.state(),  # DASH-572
                "clients": [c["name"] for c in self.clients()],
                "now": [{"title": a["title"], "kind": a["kind"], "id": a["id"]} for a in state.get("now") or [] if a["until"] > time.time()]}
         if not h["enabled"]:

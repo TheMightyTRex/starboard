@@ -198,6 +198,7 @@
      "network:lan",
      "network:port",
      "network:vpn",
+     "power:hold",
      "reelix:key",
      "slot:media-server",
      "system:read",
@@ -683,7 +684,8 @@
        "folder",
        "list",
        "custom",
-       "schedule"
+       "schedule",
+       "time"
       ]
      },
      "required": {
