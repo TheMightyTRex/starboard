@@ -4,6 +4,7 @@
     python3 tools/api_compat.py --freeze     # rewrite tests/compat/surface-baseline.json (after a deliberate, announced change)
     python3 tools/api_compat.py --frozen     # run every frozen older plug-in manifest against this Starboard
     python3 tools/api_compat.py --rehearse permission:library:holding   # who would break if this were removed
+    python3 tools/api_compat.py --usage DATA_FOLDER   # who still uses what is going, from the counter and the installed manifests
 
 The baseline lists what a plug-in or an outside tool may rely on: routes (with scope, right, answer fields, required
 inputs), permissions, key scopes, manifest fields, container fields, card, setting and event names. Adding is always
@@ -213,6 +214,16 @@ def main(argv):
         for pid, ver, name in hit:
             print(f"  {name} {ver}: Needs an update. It uses {argv[1].split(':', 1)[1]}, which this Starboard no longer has. "
                   "It stays installed and stopped; its settings and data are kept.")
+        return 0
+    if argv[0] == "--usage" and len(argv) == 2:  # who still uses what is going (DASH-603); argv[1] is Starboard's data folder
+        from starboard import deprecations, plugins_admin
+        print(f"{len(deprecations.items())} feature(s) going.")
+        for r in deprecations.routes_in_use(argv[1]):
+            print(f"  route {r['route']}: {r['calls']} call(s) from key {r['key']}, last {r['last']}")
+        for p in plugins_admin.basics(argv[1]):
+            m = plugins_admin._read_kept(os.path.join(plugins_admin.folder(argv[1], p["id"]), "manifest.json"), {})
+            for w in deprecations.for_manifest(m):
+                print(f"  plug-in {p['name']}: {deprecations.warning_sentence(w)}")
         return 0
     print(__doc__)
     return 2

@@ -1,0 +1,33 @@
+name: Compatibility, weekly
+# Once a week (and on request), the frozen older plug-in manifests and the plug-in collection's own example plug-ins are run against
+# main (DASH-603). It costs about 10 minutes of a free runner a week and no heavy slot on the owner's computer. Nothing is installed
+# on anyone's server.
+on:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: TheMightyTRex/starboard-plugins
+          path: plugins-collection
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: The API has lost nothing, and every frozen older manifest still passes
+        run: |
+          python tools/api_compat.py --check
+          python tools/api_compat.py --frozen
+          python -m unittest tests.test_api_compat tests.test_plugin_collection
+      - name: Every plug-in in the collection starts, answers and updates (the example plug-ins smoke test)
+        run: STARBOARD_SRC="$GITHUB_WORKSPACE" python plugins-collection/tools/smoke_test.py

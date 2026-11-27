@@ -4,7 +4,7 @@
 # Plug-in manifest reference
 
 Every field of `starboard-plugin.json`, version 1, with the check Starboard runs on it and why. Starboard refuses
-any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.22.0
+any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.24.0
 (`API_VERSION` in `starboard/plugins.py`).
 
 The same rules are in a JSON Schema, `starboard/plugin-manifest.schema.json`, for editors and other tools. The
@@ -25,6 +25,8 @@ runs it too. For a first plug-in, read [Make your first plug-in](make-a-plugin.m
 | `homepage` | yes | Its page | An `https` address |
 | `support_url` | yes | Where people report problems | An `https` address |
 | `starboard_api` | yes | The plug-in API versions it works with | A range such as `>=1.0 <2.0`, using `>=`, `>`, `<=`, `<` and `=`; this Starboard's API must be inside it |
+| `replaces_or_adds` | no | One line on what it replaces or adds to (API 1.23) | Plain text on one line, up to 140 characters, with no `<`, `>` or back quotes. Read [What it replaces or adds to](#what-it-replaces-or-adds-to-replaces_or_adds) |
+| `icon` | no | The icon for its tab in Settings, Plug-ins (API 1.23) | The name of one icon in Starboard's set, such as `bell` or `tv`. Read [The tab icon](#the-tab-icon-icon) |
 | `starboard_tested` | no | The newest plug-in API version you tested with (API 1.22) | Text such as `1.22`. Starboard never refuses a plug-in for it; the plug-in tester says when it is missing or newer than this Starboard |
 | `capabilities` | no | Optional parts it needs or uses, by name (API 1.22) | An object with `needs` and `uses`, each up to 12 names from [Capabilities](#capabilities-api-122). A plug-in that needs a name this Starboard does not have is not added, and a catalogue version that needs one is not offered |
 | `permissions` | yes | What it may do | A list from [Permissions](#permissions); may be empty |
@@ -149,6 +151,7 @@ people read every one, and the plug-in's API key gets only the read permissions 
 | `jellyfin:libraries` | Have Starboard add its own libraries to Jellyfin, for folders it fills in your media folder (API 1.15) | medium | none |
 | `library:holding` | Move films and series from your library into the holding folder in your media folder, and put them back (API 1.15) | high | none |
 | `alerts:send` | Send alerts through Starboard, to where it sends its own (ntfy, Gotify, a webhook, and plug-ins that pass them on) (API 1.17). The one thing the plug-in's read-only key may change: read [Sending alerts](plugin-api-reference.md#sending-alerts-api-117) | low | none |
+| `power:hold` | Ask Starboard to hold its heavy jobs and downloads, for example while the computer runs on battery (API 1.24) | low | none |
 | `slot:media-server` | Be Starboard's media server: answer for the dashboard panel, Library, Activity and System, using the address and key kept in Settings, Apps. Reserved for plug-ins that come with Starboard (Jellyfin first); any other plug-in that asks for it is refused for now | high | none |
 
 The plug-in's risk is its highest permission's risk. Read [What a plug-in can change](../basics/what-plugins-can-change.md)
@@ -454,6 +457,7 @@ them in the plug-in's `settings.json`. Read [Settings and key files](plugin-api-
 | `list` | A box with one value a line | Saved as a list of strings, blank lines left out. Up to 200, each up to 500 characters |
 | `custom` | A list the plug-in describes, drawn by Starboard | `choices` is a path on the plug-in. Read [Custom pages](plugin-api-reference.md#custom-pages) |
 | `schedule` | How often (every day, every week or every month), the day or the date, and a time, side by side | Every day, week or month; a day of the week for a week; a date from 1 to 31 for a month; a time such as `03:30`. A month without the date runs on its last day. API 1.14. Read [A job on a schedule from its settings](#a-job-on-a-schedule-from-its-settings) |
+| `time` | A time box | One time of day such as `22:00`, kept as that text. `default` may be one. Saved when you leave the box. API 1.24 |
 
 ### Setting up before it starts
 
@@ -793,6 +797,28 @@ it is missing, because What is new then cannot say what changed. Say when settin
 ]
 ```
 
+## What it replaces or adds to (replaces_or_adds)
+
+From API 1.23, a plug-in may say in one line what it replaces or adds to. Starboard shows it on the plug-in's card in the
+Catalogue, in the warning before you install it, on the plug-in's page and in Manage. Start with what it does to what is
+already there:
+
+- `"Adds to Jellyfin: stops it converting files as they play."`
+- `"Replaces Jellyfin when you choose it."`
+- `"Stands alone: a separate music server. It never changes your music folder."`
+
+Write it for someone who has not read the plug-in's page, and keep it true: say what it does, not what you hope. A
+catalogue entry may carry the same field, so a plug-in shows its line in the Catalogue before its manifest is fetched. A
+plug-in without the field works as before and shows no line. Name `>=1.23` in `starboard_api` to use it.
+
+## The tab icon (icon)
+
+From API 1.23, a plug-in may name one icon from Starboard's own set, such as `"icon": "bell"`. Settings, Plug-ins draws it on
+the plug-in's tab, in the same line style as the other menu icons, so a person on a phone can tell the tabs apart. Starboard
+checks the name against the set: a name that is not in it is refused by the plug-in tester and, if it ever reaches Starboard,
+is ignored, and the tab shows the puzzle piece. A plug-in that names no icon gets the one Starboard knows for it, or the
+puzzle piece. Name `>=1.23` in `starboard_api` to use it.
+
 ## Capabilities (API 1.22)
 
 A version number says this Starboard has the whole API up to there. An optional part is better asked for by name.
@@ -841,6 +867,8 @@ A catalogue version may carry `capabilities_needed`, a list of the same names, n
 | 1.13 | 13 November 2026 | App plug-ins: `network:port` and `publish` on `lan` with `host_port`, `{secret:...}` and `{jellyfin:...}` in `env`, `tmpfs`, `data:<path>` and `media/<one folder>:ro`, `pids`, and `adopt` |
 | 1.14 | 14 November 2026 | A card's own refresh time, `refresh_seconds`, in the manifest and in its answer, 10 seconds at the quickest; `recommended` on a catalogue entry; `logo` (and `logo`, `logo_alt` on a catalogue entry); every card drawn with a grey band holding the logo, the name, a status chip and when it last updated (`status`, `status_label` and `updated` in its answer); a `schedule` setting and a job's `schedule`; the `jellyfin:metadata` permission with the `jellyfin-metadata` volume; `update` (a `before` and an `after` step, `health_wait_seconds` and settings `migrations`), with the health wait and an automatic Roll back after every update, and **What is new** shown before an update too |
 | 1.20 | 26 November 2026 | `first_sign_in`: a password Starboard makes for an app plug-in, set by the app before it first starts and shown once on the plug-in's page |
+| 1.24 | 27 November 2026 | The `power:hold` permission, with `POST /api/v1/plugin/hold`, so a plug-in holds Starboard's heavy automatic jobs and downloads on battery; the `time` setting type |
+| 1.23 | 27 November 2026 | `replaces_or_adds`: one line on what a plug-in replaces or adds to, shown on the Catalogue card, before install, on its page and in Manage; `icon`: one icon from Starboard's set for its tab in Settings, Plug-ins |
 | 1.22 | 27 November 2026 | `starboard_tested` and `capabilities`: named optional parts a plug-in needs or uses, listed by `GET /api/v1/`; the plug-in tester checks the range a plug-in names |
 | 1.21 | 27 November 2026 | `needs_plugins` and `switch`: a plug-in may list the plug-ins it needs and name its own main switch; deactivating a plug-in or saving its switch as inactive a plug-in that others need asks first and deactivates them too |
 | 1.19 | 25 November 2026 | `requires`: the system a plug-in needs, shown as a tag (Jellyfin only, Plex or Emby, Needs Reelix), worked out from the permissions of older manifests; 1.18 is DASH-572's |

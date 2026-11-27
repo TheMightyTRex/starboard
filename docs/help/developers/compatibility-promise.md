@@ -32,9 +32,9 @@ anything the reference pages do not describe. A feature marked as a preview may 
 ## How a feature goes
 
 1. **We announce it.** The [API changelog](api-changelog.md) gets a Deprecated entry that names what replaces the feature.
-   The plug-in tester will warn when your manifest uses it (planned).
+   The plug-in tester warns when your manifest uses it, with the day it stops.
 2. **It keeps working, and warns.** The public API adds a `Deprecation` header and a `Sunset` date to each answer, and
-   `GET /api/v1/` lists the feature under `deprecations`. A plug-in that uses a retiring feature will show a warning on its page (planned).
+   `GET /api/v1/` lists the feature under `deprecations`. A plug-in that uses a retiring feature shows a warning on its page, with the day it stops. Starboard also counts, on this computer only, which key still calls a retiring route, so the owner removes a feature only when nobody uses it.
 3. **We wait.** At least 12 months and two Starboard releases for the plug-in API. At least 6 months for the public API. We
    may wait longer. We never wait less.
 4. **We remove it only in version 2.0.** A removed address answers `410 gone` and names what replaces it. We do not plan a
@@ -48,7 +48,7 @@ A security fix is the one exception, and it has its own rules in Security fixes.
   top, `<2.0`, means "made for version 1".
 - **Version 2.0 stops only what it must.** A plug-in that uses nothing removed keeps running. One that does is stopped.
 - **Optional parts are asked for by name, not by version number.** `requires` already names the system a plug-in needs
-  (Jellyfin, Plex or Emby, Reelix). Named capabilities for other optional parts are in plug-in API 1.22 (`capabilities`).
+  (Jellyfin, Plex or Emby, Reelix). Named capabilities for other optional parts are in plug-in API 1.22 (`capabilities`). A plug-in that needs one this Starboard lacks is stopped and shown as Needs an update.
 - **Read your key file for each call.** Starboard makes a new key each time your plug-in starts or updates.
 
 ## What people are shown if your plug-in stops
@@ -77,7 +77,8 @@ version, and give the reason. A plug-in the fix stops is shown as **Needs an upd
 
 Run the plug-in tester on your manifest ([Test and publish a plug-in](test-and-publish-a-plugin.md)). Starboard's own tests
 also run 74 older manifests from the plug-in collection against each new Starboard, and fail a change that removes
-anything from the API without these steps.
+anything from the API without these steps. A check with oasdiff fails a change that would break an outside tool, using the last
+release as the baseline, and a weekly run tries the collection's plug-ins against the newest Starboard.
 
 ## Find out more
 

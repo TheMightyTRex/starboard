@@ -12,6 +12,10 @@ const chipOf = (p) => {
   if (stateOf(p) === "enabled" && p.resting?.length) return ["Resting", "muted"];
   return STATE[stateOf(p)] || ["Unknown", "muted"];
 };
+// A plug-in that uses a part of the API that is going (DASH-603): one plain sentence each, with the day it stops.
+const retiringNote = (p) => (p.retiring?.length ? el("div", { class: "notice", "data-tone": "warning", role: "note" }, icon("triangle-alert"),
+  el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "Uses a feature that is going" }),
+    ...p.retiring.map((t) => el("p", { text: t })))) : null);
 const healthNote = (p) => {
   if (stateOf(p) !== "enabled") return null;
   if (p.health && p.health !== "ok") return el("div", { class: "notice", "data-tone": "warning", role: "note" }, icon("triangle-alert"),
@@ -57,6 +61,7 @@ function installWarning(s, { builtin = false, opener, verb = "Install" } = {}) {
           w.risk ? chip(`${RISK[w.risk][0]} risk`, RISK[w.risk][1]) : null),
         el("p", { class: "small install-warning__by", text: [s.author && `By ${s.author}`, s.licence, s.homepage].filter(Boolean).join(" · ") }),
         s.description ? el("p", { text: s.description }) : null,
+        s.note ? el("p", { class: "small", text: s.note }) : null,  // what it replaces or adds to (API 1.23, DASH-585)
         s.system?.tag ? el("p", { class: "small" }, systemChip(s.system), s.system.ok === false ? ` ${s.system.reason}.` : "") : null,
         // An update (DASH-330): what changed, and anything it may do that the installed version may not.
         s.whats_new?.length ? null : s.changelog ? el("p", { class: "small" }, el("strong", { text: `New in ${s.version}: ` }), s.changelog) : null,
@@ -213,6 +218,15 @@ function pluginSettingsGroups(p, redraw) {
         rows.push(row(select));
       } else if (s.type === "schedule") {  // API 1.14 (DASH-432): every day, week or month at a time, applied at once
         rows.push(scheduleRow(s, id, noteId, put));
+      } else if (s.type === "time") {  // API 1.24 (DASH-572): one time of day, applied when you leave it
+        const input = el("input", { class: "input", id, type: "time", value: s.value ?? "", "aria-labelledby": `${id}-l` });
+        let was = input.value;
+        input.addEventListener("change", async () => {
+          if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(input.value)) { problem(`${s.label}: give a time such as 22:00`, input); input.value = was; return; }
+          try { await put({ [s.key]: input.value }); was = input.value; showSaved(noteId); }
+          catch (err) { input.value = was; problem(err.message, input); }
+        });
+        rows.push(row(input));
       } else if (s.type === "number" && !s.required) {  // pattern 2: a number applies when you leave it, unit beside it
         const input = el("input", { class: "input", id, type: "number", value: s.value ?? "", min: s.min, max: s.max, "aria-labelledby": `${id}-l` });
         let was = input.value;
@@ -742,7 +756,7 @@ function pluginPage(p, redraw, ms = null, read = null) {
   // State (issue #8): the chip at the right of the heading's line and the version under it, in the grey band; Activate
   // or Deactivate first in the white body under the band (owner, 19 November 2026).
   const stateSec = section(`pl-${p.id}-state`, "State", stateWords(p),
-    headChip(...chipOf(p)), p.media_server ? el("div", { class: "stack-2" }, el("p", {}, slotChip(p, ms)), inUse(p, ms) ? el("p", { class: "small", text: "It stays active while it is your media server." }) : null) : null, fix || healthNote(p) || (p.message ? el("p", { class: "small", text: p.message }) : null));
+    headChip(...chipOf(p)), p.media_server ? el("div", { class: "stack-2" }, el("p", {}, slotChip(p, ms)), inUse(p, ms) ? el("p", { class: "small", text: "It stays active while it is your media server." }) : null) : null, fix || healthNote(p) || (p.message ? el("p", { class: "small", text: p.message }) : null), retiringNote(p));
   if (!inUse(p, ms)) $(".settings-section__head", stateSec).after(el("div", { class: "actions" }, first));
   // What it needs (DASH-567): the system its tag names, in words, in the State card (General keeps its five cards); when
   // that system is not here it says the plug-in is waiting.
@@ -1455,7 +1469,8 @@ function builtinSection(list, redraw) {
         catch (err) { problem(err.message, add); }
       });
       return el("li", { class: "row" }, pluginLogo(b), el("div", {}, el("div", { class: "row__title", text: b.name }),
-        el("div", { class: "row__meta", text: b.why_not ? `${b.description} Not here: ${b.why_not}.` : b.description })),
+        el("div", { class: "row__meta", text: b.why_not ? `${b.description} Not here: ${b.why_not}.` : b.description }),
+        b.note ? el("div", { class: "row__meta" }, el("strong", { text: b.note })) : null),
         el("div", { class: "row__side" }, add));
     })));
 }
@@ -1495,7 +1510,8 @@ function mediaServerCatalogue(list, ms, redraw) {
       }
       return el("li", { class: "row" }, pluginLogo(b), el("div", {},
         el("h3", { class: "row__title" }, b.name, b.recommended ? [" ", chip("Recommended", "info")] : null, ms && ms.active === b.id ? [" ", chip(...SLOT_IN_USE)] : null),
-        el("div", { class: "row__meta", text: b.description }), el("div", { class: "row__meta", text: `Version ${b.version}, built into Starboard` })),
+        el("div", { class: "row__meta", text: b.description }), b.note ? el("div", { class: "row__meta" }, el("strong", { text: b.note })) : null,
+        el("div", { class: "row__meta", text: `Version ${b.version}, built into Starboard` })),
         el("div", { class: "row__side" }, side));
     })));
 }
@@ -1707,6 +1723,7 @@ async function startPlugins() {
         el("ul", { class: "rows" }, r.plugins.map((p) => el("li", { class: "row" }, pluginLogo(p),  // its logo or initials (API 1.14)
           el("div", {}, el("h3", { class: "row__title" }, el("a", { href: `/settings-plugin.html?id=${encodeURIComponent(p.id)}`, text: p.name })),
             el("div", { class: "row__meta", text: [`Version ${p.version}`, p.builtin ? "Built into Starboard" : p.author && `By ${p.author}`, p.message].filter(Boolean).join(" · ") }),
+            p.note ? el("div", { class: "row__meta" }, el("strong", { text: p.note })) : null,  // what it replaces or adds to (API 1.23, DASH-585)
             systemChip(p.system) ? el("div", { class: "row__meta" }, systemChip(p.system)) : null, systemLine(p.system, true)),
           // Four fixed columns, so the chips, Open, Settings and the state button line up from row to row (issue #10;
           // owner, 13 November 2026: a plug-in with its own page, such as Jellystat, pushed its row out of line). The
@@ -1776,6 +1793,7 @@ async function startCatalogue() {
       return el("li", { class: "row" }, pluginLogo(e),  // the catalogue's logo, cleaned by Starboard, or its initials (API 1.14)
         el("div", {}, el("h4", { class: "row__title" }, e.name, e.recommended ? " " : null, e.recommended ? chip("Recommended", "info") : null),
           el("div", { class: "row__meta", text: e.description }),
+          e.note ? el("div", { class: "row__meta" }, el("strong", { text: e.note })) : null,  // what it replaces or adds to (API 1.23, DASH-585)
           // Versions for this Starboard only (DASH-330): newer ones that need a newer Starboard are said, not offered.
           // An app plug-in (DASH-411): what it uses when nobody is using it, measured, so a small server can choose.
           systemChip(e.system) ? el("div", { class: "row__meta" }, systemChip(e.system)) : null, systemLine(e.system),
@@ -1888,6 +1906,8 @@ async function startPluginPage() {
     }
     else title.parentElement.firstElementChild.replaceWith(pluginLogo(p, { alt: true }));
     $("#plugin-summary").textContent = p.description || "";
+    const note = $("#plugin-note");
+    if (note) { note.textContent = p.note || ""; note.hidden = !p.note; }  // what it replaces or adds to (API 1.23, DASH-585)
     document.title = document.title.replace(/^[^·]*·/, `${p.name} ·`);
     holder.replaceChildren(...pluginPage(p, draw, r.media_server, r.catalogue_read));
   };

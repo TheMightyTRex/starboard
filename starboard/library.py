@@ -1070,13 +1070,43 @@ def change_choices(reelix, tab, item_id):
             "folders": [{"id": f["id"], "path": f.get("path"), "free": f.get("free_space")} for f in folders if f.get("id")]}
 
 
+BULK_ONE_BY_ONE = {"music": ("artist", "artists"), "books": ("book", "books"), "audiobooks": ("audiobook", "audiobooks"),
+                   "radio": ("show", "shows")}
+BULK_ONE_BY_ONE_MAX = 100
+
+
+def _bulk_one_by_one(reelix, tab, ids, action, delete_files):
+    """Several artists, books, audiobooks or radio shows at once: Reelix has no bulk route for them, so each is done on its
+    own with the same call as its page, and the answer says how many worked."""
+    if action not in ("follow", "unfollow", "delete"):
+        raise ValueError("Choose Follow, Stop following or Delete")
+    if action == "delete" and tab == "radio":
+        raise ValueError("A radio show cannot be deleted here")
+    one, many = BULK_ONE_BY_ONE[tab]
+    done = failed = 0
+    for item_id in ids:
+        try:
+            act(reelix, tab, item_id, action, delete_files=delete_files)
+            done += 1
+        except (services.ServiceError, ValueError):
+            failed += 1
+    verb = {"follow": "follows", "unfollow": "no longer follows", "delete": "deleted"}[action]
+    said = (f"Deleted {done} {one if done == 1 else many}" + (", with their files" if delete_files else "; their files stay")
+            if action == "delete" else f"Reelix {verb} {done} {one if done == 1 else many}")
+    if failed:
+        said += f". {failed} could not be changed"
+    return said
+
+
 def bulk(reelix, tab, ids, action, delete_files=False):
     """DASH-206, several at once: follow, stop following or delete films or series in one go."""
     ids = sorted({int(i) for i in ids if str(i).isdigit()})[:500]
     if not ids:
         raise ValueError("Tick at least one")
+    if tab in BULK_ONE_BY_ONE:  # music, books, audiobooks and radio: one request to Reelix for each, 100 at most
+        return _bulk_one_by_one(reelix, tab, ids[:BULK_ONE_BY_ONE_MAX], action, delete_files)
     if tab not in ("films", "tv"):
-        raise ValueError("Several at once works for films and series")
+        raise ValueError("Choose a Library tab")
     base = "/movies/bulk" if tab == "films" else "/series/bulk"
     what = f"{len(ids)} " + ("series" if tab == "tv" else "film" if len(ids) == 1 else "films")
     if action == "delete":
@@ -1726,7 +1756,7 @@ def handle(h, method, path):
         except services.ServiceError as e:
             return h.error(502, f"Reelix did not answer: {e}")
         return h.json(200, got or {"name": q.get("group", ""), "total": 0, "have": 0, "missing": 0, "items": []})
-    if path == "/api/library/group-missing" and method == "POST":  # Add missing
+    if path == "/api/library/group-missing" and method == "POST":  # Add the rest
         from . import group_complete
         body = h.body()
         try:

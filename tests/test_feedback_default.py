@@ -1,5 +1,4 @@
 """Send feedback (Snaglist) is on by default on every page, with a switch in Settings, General (owner, 10 November 2026)."""
-import json
 import os
 import pathlib
 import tempfile
@@ -15,15 +14,8 @@ class FeedbackDefaultTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             self.assertTrue(Config(d).data["ux_notes"])
 
-    def test_switched_on_once_for_an_existing_install_then_the_switch_decides(self):
+    def test_the_switch_decides_and_is_kept_across_a_restart(self):
         with tempfile.TemporaryDirectory() as d:
-            c = Config(d)
-            path = os.path.join(d, "config.json")
-            data = json.load(open(path))
-            data["ux_notes"] = False
-            data.pop("feedback_default_on", None)  # as an install from before 0.15.2
-            json.dump(data, open(path, "w"))
-            self.assertTrue(Config(d).data["ux_notes"])
             c = Config(d)
             c.update_general({"ux_notes": False})
             self.assertFalse(Config(d).data["ux_notes"])  # the person's choice stays

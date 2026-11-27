@@ -102,7 +102,8 @@ MENU = [
                                 ("settings-tdarr.html", "Tdarr", "cpu"), ("settings-dispatcharr.html", "Dispatcharr", "radio")]),
         # Level 2 (owner, 13 November 2026: "VPN, Usenet and Download hours should be on menu 2"; DASH-390).
         ("Downloads", "download", [("settings-downloads.html", "VPN", "lock"), ("settings-downloads-usenet.html", "Usenet", "server"),
-                                   ("settings-downloads-hours.html", "Download hours", "clock")]),
+                                   ("settings-downloads-hours.html", "Download hours", "clock"),
+                                   ("settings-downloads-speed.html", "Speed limits", "gauge")]),
         # Level 2 (owner, 13 November 2026: "All should have those on Menu 2"; DASH-391), as General and Downloads.
         ("Radio", "radio", [("settings-radio.html", "Sources", "radio"), ("settings-radio-link.html", "Add a show from a link", "link"),
                             ("settings-radio-library.html", "Your podcast library", "library"), ("settings-radio-logos.html", "Station logos", "layout-grid")]),
@@ -208,6 +209,7 @@ HELP = {
     "settings-downloads.html": ("topics/change-your-install.md", "your install and its VPN"),
     "settings-downloads-usenet.html": ("topics/choose-a-usenet-provider.md", "your Usenet provider"),
     "settings-downloads-hours.html": ("topics/set-download-hours.md", "setting download hours"),
+    "settings-downloads-speed.html": ("topics/set-speed-limits.md", "setting speed limits"),
     "settings-plugins.html": ("topics/add-a-plugin.md", "plug-ins"),
     "settings-radio.html": ("topics/follow-radio-shows.md", "following radio shows and where they come from"),
     "settings-radio-link.html": ("topics/follow-radio-shows.md#find-and-follow-a-show", "following a show"),

@@ -65,7 +65,7 @@ class Route(unittest.TestCase):
 
         def start(data_dir, version, file_path, password, apply_settings, site_name=""):
             seen.update(file=file_path, password=password)
-            seen["count"] = apply_settings({"schema": 1, "site_name": "Harbour", "services": [
+            seen["count"] = apply_settings({"schema": 4, "site_name": "Harbour", "services": [
                 {"id": "notes", "type": "link", "name": "Notes", "url": "http://notes.example:8080", "category": "Tools"}]})
             full_backup._tell(data_dir, state="done", finished=1.0)
         with mock.patch.object(full_backup, "start_restore", start):
