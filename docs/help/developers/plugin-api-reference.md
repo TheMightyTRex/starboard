@@ -495,6 +495,58 @@ print(json.load(c.getresponse()))  # {"ok": true, "sent": true}
 
 When the router answers again, send `{"key": "check-router", "state": "cleared", "title": "Router is answering again"}`.
 
+## Holding heavy jobs (API 1.24)
+
+A plug-in with the `power:hold` permission may ask Starboard to hold its heavy automatic work, for example while the UPS and
+power plug-in sees the computer run on battery. It sends `POST /api/v1/plugin/hold` (Starboard API 1.12.0) with its own key,
+through `STARBOARD_API_SOCKET`, or over HTTP for a plug-in on the `lan` network.
+
+```json
+{"on": true, "reason": "On battery", "minutes": 10}
+```
+
+| Field | What it is | Rules |
+|---|---|---|
+| `on` | `true` starts or renews the hold, `false` lets it go | Required |
+| `reason` | A line people read, such as "On battery" | Up to 80 characters, one line. "On battery" when left out |
+| `minutes` | How long the hold lasts if it is not renewed | A whole number from 1 to 30. 10 when left out |
+
+The answer is `{"ok": true, "held": true, "reason": "On battery", "until": 1795364538, "by": "UPS and power"}`. `held` is
+`false` when nothing is held. If more than one plug-in holds, the answer is about the hold that lasts longest.
+
+- **What is held.** Starboard's own background jobs (Live TV, watch history, listening progress and the automatic updates of
+  Starboard, Reelix, apps and plug-ins), its scheduled backups, the scheduled jobs of other plug-ins, and downloads, which pause as
+  Download hours pauses them, even when Download hours is off and even after a person chose Resume now.
+- **What is not held.** Anything a person starts with a click, the two light jobs (Jellyfin user defaults and VPN port
+  forwarding), and your own plug-in's jobs.
+- **It ends by itself.** Ask again before `minutes` pass to keep it. A plug-in that stops, crashes or loses its network
+  cannot hold Starboard for ever. A good rhythm is to ask every minute with `minutes` of 5 while on battery, and to send
+  `"on": false` as soon as the mains power is back.
+- **Held work resumes.** What was due while the hold lasted starts at the next check after it ends, within a minute.
+  Downloads that Starboard paused start again at once; downloads a person had stopped stay stopped.
+- **Starboard restarts.** A hold is kept in memory only, so ask again after Starboard starts. Your next call does that.
+- **People see it.** The Downloads page says why downloads are paused, and Starboard's log says when a hold starts and ends.
+- **Errors.** A body that does not follow the rules gets `400 bad_request` saying what to change. Any key but the plug-in's
+  own, a plug-in without `power:hold`, or one that is not active, gets `404 not_found`.
+- Every call is written to the audit log, as every change through the API is.
+
+```python
+import http.client, json, os, socket, urllib.parse
+
+class Starboard(http.client.HTTPConnection):
+    def connect(self):
+        self.sock = socket.socket(socket.AF_UNIX)
+        self.sock.settimeout(10)
+        self.sock.connect(os.environ["STARBOARD_API_SOCKET"])
+
+key = open(os.environ["STARBOARD_API_KEY_FILE"]).read().strip()
+path = urllib.parse.urlsplit(os.environ["STARBOARD_API"]).path + "plugin/hold"
+c = Starboard("localhost", timeout=10)
+c.request("POST", path, body=json.dumps({"on": True, "reason": "On battery", "minutes": 5}),
+          headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"})
+print(json.load(c.getresponse()))  # {"ok": true, "held": true, ...}
+```
+
 ## States
 
 Starboard keeps one state for each plug-in, and shows each with one sentence and one button.

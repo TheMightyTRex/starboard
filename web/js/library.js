@@ -96,6 +96,7 @@ function query(extra = {}) {
 
 // One at a time (DASH-309, R4): a segmented control with All first, not filter chips that undo each other.
 function renderChips(chips) {
+  if (TAB === "radio" && typeof findRadioCount === "function") findRadioCount(chips.find((c) => c.key === "wanted")?.count || 0);
   const box = $("#lib-chips");
   box.hidden = !chips.length;
   box.removeAttribute("role");
@@ -251,7 +252,7 @@ function showGroup() {
 }
 
 // An opened collection or series, complete (owner, 12 November 2026): how many you have of how many, every one in
-// order with the missing ones as outlines, and Add missing, which adds them all to Reelix.
+// order with the missing ones as outlines, and Add the rest, which adds them all to Reelix.
 async function groupComplete() {
   const box = el("section", { class: "group-complete", "aria-label": "The whole collection" }, el("p", { class: "small muted", text: "Searching for the rest…" }));
   $(".page-head").after(box);
@@ -261,11 +262,11 @@ async function groupComplete() {
   catch (e) { box.replaceChildren(notice("info", "Could not search for the rest", e.message)); return; }
   if (!d.total) { box.remove(); return; }
   const noun = TAB === "films" ? ["film", "films"] : ["book", "books"];
-  const add = el("button", { type: "button", class: "btn btn--primary" }, icon("plus"), `Add missing (${d.missing})`);
+  const add = el("button", { type: "button", class: "btn btn--primary" }, icon("plus"), `Add the rest (${d.missing})`);
   add.disabled = !d.missing;
   add.addEventListener("click", async () => {
     const titles = d.items.filter((i) => !i.have && !i.wanted).map((i) => i.title);
-    if (!await confirmDialog({ title: `Add ${titles.length} missing ${titles.length === 1 ? noun[0] : noun[1]}?`, confirm: "Add them",
+    if (!await confirmDialog({ title: `Add ${titles.length} ${titles.length === 1 ? noun[0] : noun[1]} to Reelix?`, confirm: `Add ${titles.length} ${titles.length === 1 ? noun[0] : noun[1]}`,
       message: [el("p", { text: TAB === "films" ? "Reelix adds each one with the collection's quality and folder, and starts searching for them."
         : `Reelix adds each one as ${TAB === "books" ? "an ebook" : "an audiobook"} and starts searching for them.` }),
         el("ul", {}, titles.slice(0, 30).map((t) => el("li", { text: t })))] })) return;
@@ -276,7 +277,7 @@ async function groupComplete() {
       toast(`Added ${out.added.length}${out.failed.length ? `; ${out.failed.length} could not be found: ${out.failed.join(", ")}` : ""}`);
       box.remove();
       groupComplete();
-    } catch (e) { problem(e.message, add); add.disabled = false; add.textContent = `Add missing (${d.missing})`; }
+    } catch (e) { problem(e.message, add); add.disabled = false; add.textContent = `Add the rest (${d.missing})`; }
   });
   const ring = el("span", { class: `collection-ring${d.have === d.total ? " is-complete" : ""}`, role: "img", "aria-label": `${d.have} of ${d.total} in your library` },
     el("span", { class: "collection-ring__text", "aria-hidden": "true", text: `${d.have}/${d.total}` }));
@@ -285,7 +286,7 @@ async function groupComplete() {
     i.poster ? el("img", { src: i.poster, alt: "", loading: "lazy" }) : el("span", { class: "group-complete__blank", "aria-hidden": "true" }),
     el("span", { class: "group-complete__title", text: i.title }),
     el("span", { class: "small muted", text: [i.when, i.have ? "" : i.wanted ? STATUS.wanted[0] : "Not added"].filter(Boolean).join(" · ") }))));
-  // Add missing at the right of the heading's line (issue #14), where a page's own buttons go.
+  // Add the rest at the right of the heading's line (issue #14), where a page's own buttons go.
   $(".page-head").append(el("div", { class: "actions", id: "lib-add-missing" }, add));
   box.replaceChildren(
     titleChip(el("p", { class: "group-complete__count", text: `${d.have} of ${d.total} ${d.total === 1 ? noun[0] : noun[1]} in your library` }), ring),
@@ -582,7 +583,7 @@ function bulkCount() {
 }
 
 function setUpBulk() {
-  if (!["films", "tv"].includes(TAB)) return;
+  if (!["films", "tv", "music", "books", "audiobooks", "radio"].includes(TAB)) return;
   state.ticked = new Set();
   const start = el("button", { type: "button", class: "btn btn--quiet", id: "lib-select", "aria-pressed": "false" }, icon("list-checks"), "Select several");
   $("#lib-actions")?.append(start);  // with Save this view, in the page head: not a filter, so not in the toolbar (R8)
@@ -612,7 +613,7 @@ function setUpBulk() {
     el("span", { id: "lib-bulk-count", "aria-live": "polite" }),
     el("button", { type: "button", class: "btn", "data-needs-ticks": "", onclick: (e) => run("follow", e.currentTarget) }, "Follow"),
     el("button", { type: "button", class: "btn", "data-needs-ticks": "", onclick: (e) => run("unfollow", e.currentTarget) }, "Stop following"),
-    el("button", { type: "button", class: "btn btn--danger", "data-needs-ticks": "", onclick: (e) => run("delete", e.currentTarget) }, icon("trash-2"), "Delete"),
+    TAB === "radio" ? null : el("button", { type: "button", class: "btn btn--danger", "data-needs-ticks": "", onclick: (e) => run("delete", e.currentTarget) }, icon("trash-2"), "Delete"),
     el("button", { type: "button", class: "btn btn--quiet", onclick: () => { stop(); start.focus(); } }, "Done"));
   $("#lib-wall").before(bar);
   const redraw = () => {

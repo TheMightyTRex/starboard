@@ -46,7 +46,7 @@ import uuid
 
 from . import deprecations, plugin_capabilities
 
-API_VERSION = "1.11.0"  # 1.11.0 (26 November 2026, DASH-603): capabilities in GET /, the names of the optional plug-in parts this Starboard has. 1.10.0 (26 November 2026, DASH-603): deprecations in GET /, Deprecation and Sunset headers on a route that is going, 410 gone once removed. 1.9.0 (26 November 2026): several backup places in /backup/copies (destinations, safe, settings_zip), the test for each, and POST /backup/settings-copy. 1.8.0 (20 November 2026, plug-in API 1.17): POST /plugin/alerts, alerts from a plug-in with alerts:send, answered only to its own key. 1.7.0 (19 November 2026, DASH-464): /mcp, read-only tools for AI assistants, off until activated. 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
+API_VERSION = "1.12.0"  # 1.12.0 (27 November 2026, DASH-572, plug-in API 1.24): POST /plugin/hold, a hold on heavy work from a plug-in with power:hold, answered only to its own key; /download-hours says what is held. 1.11.0 (26 November 2026, DASH-603): capabilities in GET /, the names of the optional plug-in parts this Starboard has. 1.10.0 (26 November 2026, DASH-603): deprecations in GET /, Deprecation and Sunset headers on a route that is going, 410 gone once removed. 1.9.0 (26 November 2026): several backup places in /backup/copies (destinations, safe, settings_zip), the test for each, and POST /backup/settings-copy. 1.8.0 (20 November 2026, plug-in API 1.17): POST /plugin/alerts, alerts from a plug-in with alerts:send, answered only to its own key. 1.7.0 (19 November 2026, DASH-464): /mcp, read-only tools for AI assistants, off until activated. 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
 KEYS_FILE = "api-keys.json"
 RIGHTS = ("read", "manage")  # manage: read, and the everyday actions (DASH-274). "admin" stays with the pages
 SCOPES = ("apps", "downloads", "media", "system", "library", "requests")
@@ -652,7 +652,7 @@ def routes():
     def backup_copies_get(h, m, q):  # DASH-452 (API 1.6.0): where copies go, the last copy and the last Test connection
         from . import backup_copies
         p = backup_copies.public(h.app.data_dir)
-        places = [{k: d.get(k) for k in ("id", "title", "kind", "kind_words", "enabled", "where", "where_words", "service", "keep", "keep_settings",
+        places = [{k: d.get(k) for k in ("id", "title", "kind", "kind_words", "enabled", "every", "where", "where_words", "service", "keep", "keep_settings",
                                           "status", "tested", "state_word", "shape")} for d in p.get("destinations") or []]
         from . import settings_zip
         return scrub({**{k: p.get(k) for k in ("kind", "where", "where_words", "service", "keep", "status", "tested")},
@@ -706,6 +706,8 @@ def routes():
 # active and was approved alerts:send". Any other key gets 404 (AS6), as for a scope it does not have.
 
 PLUGIN_ONLY = "plugin"
+PLUGIN_HOLD = "plugin-hold"  # API 1.12.0 (DASH-572): the same, for a plug-in approved power:hold
+PLUGIN_PERMISSION = {PLUGIN_ONLY: "alerts:send", PLUGIN_HOLD: "power:hold"}
 ALERT_KEY = re.compile(r"^[A-Za-z0-9._:-]{1,80}$")
 ALERT_LEVELS = ("problem", "warning", "info")
 ALERTS_AN_HOUR = 30
@@ -947,6 +949,17 @@ def actions():
         """A plug-in's alert (API 1.8.0, plug-in API 1.17): raised or cleared, through Starboard's own alerts."""
         return 200, {"ok": True, "sent": plugin_alert(h.app, h.api_plugin, b)}
 
+    def plugin_hold(h, m, q, b):
+        """A plug-in's hold on heavy work (API 1.12.0, plug-in API 1.24): started, renewed or ended."""
+        from . import power_hold
+        on = b.get("on")
+        if not isinstance(on, bool):
+            raise ValueError("Send on: true to hold heavy jobs or false to let them go")
+        reason = b.get("reason", "")
+        if not isinstance(reason, str) or len(reason) > 80 or re.search(r"[\x00-\x1f\x7f]", reason):
+            raise ValueError("reason must be one line of words, up to 80 characters")
+        return 200, {"ok": True, **power_hold.set_hold(h.api_plugin, on, reason, b.get("minutes"))}
+
     return [
         (r"^/api/v1/downloads/actions$", "POST", "downloads", download_action),
         (r"^/api/v1/download-hours$", "POST", "downloads", hours_action),
@@ -963,6 +976,7 @@ def actions():
         (r"^/api/v1/logs/delete$", "POST", "logs", log_delete),
         (r"^/api/v1/updates/all$", "POST", "updates", update_all),
         (r"^/api/v1/plugin/alerts$", "POST", PLUGIN_ONLY, plugin_alerts),  # the plug-in's own key (API 1.8.0)
+        (r"^/api/v1/plugin/hold$", "POST", PLUGIN_HOLD, plugin_hold),  # the plug-in's own key (API 1.12.0)
     ]
 
 
@@ -1007,6 +1021,8 @@ def handle(h, method, path):
         return problem(429, "rate_limited", f"Up to {PER_MINUTE} requests a minute for each key", extra={**rate, "Retry-After": str(wait)})
     note_use(h.app.data_dir, k)
     h.api_key = k
+    if going and not going.get("removed"):
+        deprecations.note_use(h.app.data_dir, k["id"], going)  # DASH-603: who still calls a route that is going
     if mcp:
         from . import mcp as mcp_server
         return mcp_server.handle(h, k, base, rate, problem)
@@ -1050,8 +1066,8 @@ def _write(h, k, method, path, query, writes, base, rate, problem):
     """One write: the key's scope, then its right, then the body, then the action, with an audit line (AS9)."""
     from . import services
     pattern, _, scope, fn = next(a for a in writes if a[1] == method)
-    if scope == PLUGIN_ONLY:  # the one write a plug-in's read-only key may do (API 1.8.0)
-        h.api_plugin = plugin_of_key(h.app.data_dir, k, "alerts:send")
+    if scope in PLUGIN_PERMISSION:  # the writes a plug-in's read-only key may do (API 1.8.0, 1.12.0)
+        h.api_plugin = plugin_of_key(h.app.data_dir, k, PLUGIN_PERMISSION[scope])
         if not h.api_plugin:
             return problem(404, "not_found", "Nothing here for this key")
     elif not _scoped(k, scope):

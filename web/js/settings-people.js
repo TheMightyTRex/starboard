@@ -76,6 +76,8 @@ async function startPeople() {
     if (limit) add.disabled = true;
     box.replaceChildren(
       section("people", "People", null,
+        notice("info", "Single sign-on is recommended when other people use your apps", "It gives each person their own sign-in. Leave it off on a server only you use, so nothing extra runs. It is a plug-in: add it in Settings, Plug-ins, Catalogue. Its address is your server's Tailscale name, which you choose once, because changing it later makes every passkey stop working.",
+          el("a", { class: "btn", href: "/settings-plugins-catalogue.html" }, "Open the plug-in catalogue")),
         notice("info", "Starboard keeps the list and the passwords for now", "It does not yet make, pause or remove an account inside an app. You make the account in the app, set the password Starboard made, and say so here. When you pause or remove someone, stop their account working in each app yourself."),
         el("div", { class: "actions" }, add, savedNote("people-saved"), limit ? el("span", { class: "small muted", text: `Starboard keeps up to ${data.limit} people.` }) : null),
         peopleTable("People, with their role, state and accounts", ["Name", "Role", "State", "Accounts", "Manage"], rows),

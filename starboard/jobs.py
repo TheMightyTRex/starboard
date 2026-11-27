@@ -11,7 +11,7 @@ import os
 import threading
 import time
 
-from . import child, listening, livetv, logs, migrate, vpn_ports
+from . import child, listening, livetv, logs, migrate, power_hold, vpn_ports
 
 JOBS = {
     "livetv": {"title": "Live TV channels and guide", "every": 3600, "what": "Refreshes Jellyfin's free TV guides daily, and its channels when a channel list changes"},
@@ -29,6 +29,8 @@ JOBS = {
 }
 AUTO = {"reelixupdate": "reelix_auto_update", "starboardupdate": "starboard_auto_update", "appsupdate": "apps_auto_update",
         "pluginsupdate": "plugins_auto_update", "jellyfinpluginsupdate": "jellyfin_plugins_auto_update"}
+# DASH-572: while a plug-in holds heavy jobs (the UPS on battery), these do not start by themselves. Both light ones keep going.
+LIGHT = ("defaults", "vpnport")
 SETTING = {"livetv": "livetv", "import": "import_keep", "defaults": "defaults", "listening": "listening_keep"}
 PAGE = {"listening": "/settings-audiobookshelf.html"}
 
@@ -42,6 +44,7 @@ class Jobs:
         self.running = set()
         self.wake = threading.Event()
         self.thread = None
+        power_hold.on_change(self.wake.set)  # a hold starting or ending is looked at at once
 
     def settings(self):
         return self.app.config.data["extras"]
@@ -133,12 +136,14 @@ class Jobs:
             for key, job in JOBS.items():
                 if key == "reelixupdate" and not self.quiet_now():
                     continue  # DASH-417: Reelix's automatic update waits for the quiet hours, as Starboard's does
+                if key not in LIGHT and power_hold.held():
+                    continue  # DASH-572: on battery; it is due still, so it starts at the first look after the hold ends
                 if self.enabled(key) and time.time() - (last.get(key, {}).get("started") or 0) >= job["every"]:
                     self.run(key)
             if not any(self.enabled(k) for k in JOBS):
                 self.thread = None
                 return  # nothing on: the thread ends, and starts again when a job is turned on
-            self.wake.wait(600)
+            self.wake.wait(power_hold.CHECK_EVERY if power_hold.held() else 600)
             self.wake.clear()
             if not any(self.enabled(k) for k in JOBS):
                 self.thread = None

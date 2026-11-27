@@ -1171,6 +1171,46 @@
     return box;
   }
 
+  /* Progress builder: progress({ label, value, max, tone, busy, valuetext, decorative, img, labelledby, id }) returns a
+     .progress with the right role. A count or share: role="progressbar" with aria-valuenow. busy: the striped band, for a
+     wait with no count (aria-valuetext "Waiting"). img: a bar that shows how full something is, not a task, so
+     role="img" with the value in its label ("79% used"). decorative: aria-hidden, when words beside it say the same.
+     setProgress(bar, value, valuetext) moves it (the width is set in script: a page's policy can block style attributes). */
+  function setProgress(bar, value, valuetext) {
+    const max = bar._max || 100;
+    const share = Math.max(0, Math.min(100, (Number(value) / max) * 100));
+    bar.firstElementChild.style.width = `${share}%`;
+    if (bar.getAttribute("role") === "progressbar" && !bar.classList.contains("progress--busy")) bar.setAttribute("aria-valuenow", String(Math.round(Number(value))));
+    if (valuetext != null) bar.setAttribute(bar.getAttribute("role") === "img" ? "aria-label" : "aria-valuetext", valuetext);
+  }
+  function progress(options = {}) {
+    const bar = document.createElement("div");
+    bar.className = options.busy ? "progress progress--busy" : "progress";
+    bar._max = options.max || 100;
+    if (options.tone) bar.dataset.tone = options.tone;
+    if (options.id) bar.id = options.id;
+    bar.append(document.createElement("span"));
+    if (options.decorative) {
+      bar.setAttribute("aria-hidden", "true");
+    } else if (options.img) {
+      bar.setAttribute("role", "img");
+      bar.setAttribute("aria-label", options.label || "");
+    } else {
+      bar.setAttribute("role", "progressbar");
+      if (options.labelledby) bar.setAttribute("aria-labelledby", options.labelledby);
+      else if (options.label) bar.setAttribute("aria-label", options.label);
+      if (options.busy) {
+        bar.setAttribute("aria-valuetext", options.valuetext || "Waiting");
+      } else {
+        bar.setAttribute("aria-valuemin", "0");
+        bar.setAttribute("aria-valuemax", String(bar._max));
+        if (options.valuetext) bar.setAttribute("aria-valuetext", options.valuetext);
+      }
+    }
+    if (!options.busy && options.value != null) setProgress(bar, options.value);
+    return bar;
+  }
+
   /* Tooltip: data-tooltip="Connected" on anything that shows only an icon (an icon button, a .status-icon with
      tabindex="0"). It shows on hover after a moment and at once on keyboard focus, stays while the pointer is on it
      or on the tooltip, and Escape closes it (WCAG 1.4.13). The words must already be the thing's name (aria-label or
@@ -1300,6 +1340,7 @@
   Object.assign(window.SharedComponents, { wait }); // the waiting mark builder
   Object.assign(window.SharedComponents, { notice }); // the notice builder
   Object.assign(window.SharedComponents, { plural, clock, num }); // counts and clock times in words
+  Object.assign(window.SharedComponents, { progress, setProgress }); // the progress bar builder
   // An app that wires its own behaviour (Starboard's page scripts) loads this file with data-manual, or
   // sets window.SharedComponentsManual = true first, and calls setup() or openLayer() itself.
   const manual = window.SharedComponentsManual || document.currentScript?.hasAttribute("data-manual");
