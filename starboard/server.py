@@ -2056,6 +2056,17 @@ class Handler(BaseHTTPRequestHandler):
                                            reading=bool(app.listening_busy), read_result=app.listening_read))
             if path == "/api/listening/read" and method == "POST":
                 return self.start_listening(self.body())
+            if path == "/api/listening/scan" and method == "POST":  # DASH-578: scan Audiobookshelf's libraries from here
+                abs_service = listening.abs_app(cfg.data["services"])
+                if not abs_service:
+                    return self.error(400, "Give Audiobookshelf an admin API key in Manage apps first")
+                try:
+                    names = listening.abs_scan(abs_service)
+                except services.ServiceError as e:
+                    return self.error(502, str(e))
+                logs.event("info", "audiobookshelf", f"Asked Audiobookshelf to scan {len(names)} {'library' if len(names) == 1 else 'libraries'}")
+                return self.json(200, {"libraries": names, "said": (f"Audiobookshelf is scanning {', '.join(names)}. It says when it is done, in its own page." if names
+                                                                      else "Audiobookshelf has no libraries to scan")})
             if path == "/api/listening/mapping" and method == "PUT":
                 listening.set_mapping(cfg.data_dir, self.body().get("mapping") or {})
                 return self.json(200, {"ok": True})
