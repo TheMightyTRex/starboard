@@ -88,9 +88,9 @@ class SparklineCard(unittest.TestCase):
         self.assertGreaterEqual(tuple(map(int, plugins.API_VERSION.split("."))), (1, 17, 0))
 
 
-ALERTING = {**ON_DEMAND, "id": "advanced-dashboard", "name": "Advanced dashboard", "permissions": ["apps:read", "alerts:send"],
-            "containers": [{**ON_DEMAND["containers"][0], "network": "default"}], "resources": {"main": {"memory": 40}}}
-QUIET = {**ALERTING, "id": "quiet-one", "name": "Quiet one", "permissions": ["apps:read"]}
+ALERTING = {**ON_DEMAND, "id": "advanced-dashboard", "name": "Advanced dashboard", "permissions": ["apps:read", "alerts:send", "network:lan"],
+            "containers": [{**ON_DEMAND["containers"][0], "network": "lan"}], "resources": {"main": {"memory": 40}}}  # on the home network, so its key also works on the port (DASH-603)
+QUIET = {**ALERTING, "id": "quiet-one", "name": "Quiet one", "permissions": ["apps:read", "network:lan"]}
 RAISE = {"key": "check-router", "state": "raised", "title": "Router is not answering", "message": "Ping: no answer for 3 checks in a row.",
          "level": "problem"}
 

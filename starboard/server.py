@@ -835,6 +835,7 @@ def _move_livetv(app):
             stopped = plugin_life.stop_unfit(app.data_dir)  # a plug-in this Starboard cannot run is stopped, with its reason (DASH-603)
             if stopped:
                 logs.event("warning", "plug-ins", f"Stopped because they need an update: {', '.join(stopped)}")
+            plugins_admin.renew_old_keys(app.data_dir)  # keys made before 30 day keys: given an end date once (DASH-603)
     except Exception as e:  # Live TV carries on inside Starboard
         logs.error("live tv", f"Live TV stays in Starboard for now: {e}", e)
 

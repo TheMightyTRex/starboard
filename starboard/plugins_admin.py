@@ -649,7 +649,7 @@ def install(data_dir, manifest, media_dir, dev=False, builtin=False, defaults=No
     _write(os.path.join(where, "settings.json"), values)
     item = {"id": None}
     if manifest.get("containers"):  # only something that runs gets an API key and a Compose file
-        key, item = api_v1.create_key(data_dir, f"Plug-in: {manifest['name']}"[:60], "read", plugins.key_scopes(manifest), None)
+        key, item = _make_key(data_dir, manifest)
         _write(os.path.join(where, "key"), key)
         hosted = (host or host_for_builtin()) if builtin else None
         _write(os.path.join(where, "compose.yaml"), plugins.compose(manifest, host_path(data_dir, pid), media_dir, hosted,
@@ -771,6 +771,63 @@ def _compose_run(data_dir, pid, command, helper=None):
     except containers.DockerError as e:
         return False, f"Starboard cannot reach Docker ({e})"
     return code == 0, text
+
+
+KEY_DAYS = 30
+
+
+def key_socket_only(manifest):
+    """True when no container of the plug-in can reach Starboard's port, so its key may work on its socket alone (DASH-603).
+    A plug-in on the home network (`lan`) may use either, so its key works on both."""
+    cs = [c for c in (manifest.get("containers") or []) if isinstance(c, dict)]
+    return bool(cs) and all(c.get("network") != "lan" for c in cs)
+
+
+def _make_key(data_dir, manifest):
+    """A plug-in's own key (DASH-603): read scopes as approved, 30 days, moved on while it is used, socket only where it can be."""
+    return api_v1.create_key(data_dir, f"Plug-in: {manifest['name']}"[:60], "read", plugins.key_scopes(manifest), KEY_DAYS,
+                             socket_only=key_socket_only(manifest), slide=True)
+
+
+def new_key(data_dir, pid):
+    """A new key for the plug-in each time it starts or updates (DASH-603): the old one is revoked, the new one is written
+    to the key file the plug-in reads. A plug-in that reads the file for each call (Starboard's helper does) never notices."""
+    where = folder(data_dir, pid)
+    m = _read_kept(os.path.join(where, "manifest.json"), {}) or {}
+    st = _read(os.path.join(where, "state.json"), {}) or {}
+    if not m.get("containers") or not st.get("key_id"):
+        return
+    key, item = _make_key(data_dir, m)
+    _write(os.path.join(where, "key"), key)
+    old = st["key_id"]
+    st["key_id"] = item["id"]
+    _write(os.path.join(where, "state.json"), st)
+    api_v1.revoke_key(data_dir, old)
+    api_v1.audit(data_dir, "plugin_key_renewed", plugin=pid)
+
+
+def renew_old_keys(data_dir):
+    """Once, at start-up: a plug-in key made before this had no end date. Give it 30 days from now that move on while it is used,
+    and make it socket only where its plug-in cannot use the port anyway. The key itself does not change, so nothing running breaks."""
+    keys = api_v1._load(data_dir)
+    if not any(str(k.get("name", "")).startswith("Plug-in: ") and not k.get("slide_days") for k in keys):
+        return 0
+    manifests = {}
+    for p in basics(data_dir):
+        st = _read(os.path.join(folder(data_dir, p["id"]), "state.json"), {}) or {}
+        if st.get("key_id"):
+            manifests[st["key_id"]] = _read_kept(os.path.join(folder(data_dir, p["id"]), "manifest.json"), {}) or {}
+    n = 0
+    for k in keys:
+        if k["id"] in manifests and not k.get("slide_days"):
+            k["expires_at"] = api_v1._iso(api_v1._now() + dt.timedelta(days=KEY_DAYS))
+            k["slide_days"] = KEY_DAYS
+            if key_socket_only(manifests[k["id"]]):
+                k["socket_only"] = True
+            n += 1
+    if n:
+        api_v1._save(data_dir, keys)
+    return n
 
 
 def set_state(data_dir, pid, state, message=""):
@@ -1119,6 +1176,7 @@ def enable(data_dir, pid, helper=None, services=None):
         set_state(data_dir, pid, "enabled")
         api_v1.audit(data_dir, "plugin_enabled", plugin=pid)
         return
+    new_key(data_dir, pid)  # a new key each time it starts or updates (DASH-603)
     write_jellyfin(data_dir, pid, services)
     write_reelix(data_dir, pid, services)
     write_usenet(data_dir, pid, services)
