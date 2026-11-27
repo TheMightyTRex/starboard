@@ -171,5 +171,38 @@ class Routing(unittest.TestCase):
                 self.assertEqual(jellyfin_play.index_ids(d), ("plex", {("tmdb", "603"): "301", ("imdb", "tt0133093"): "301"}))
 
 
+class Updates(unittest.TestCase):
+    """The media server's container waits for nobody to be watching (DASH-566), for any of the three."""
+
+    def data(self, server, svc):
+        return {"services": [{**svc, "id": "ms1"}, {**JF, "id": "j1"}], "extras": {"media_server": server}}
+
+    def test_it_counts_who_is_watching_only_for_the_media_server_in_use(self):
+        plex_table = {**PLEX_TABLE, "/status/sessions": {"MediaContainer": {"Metadata": [{"title": "Dune", "type": "movie", "User": {"title": "Sam"}, "Player": {}}]}},
+                      "/": {"MediaContainer": {"friendlyName": "Den", "version": "1.41"}}, "/library/recentlyAdded": {"MediaContainer": {}}}
+        with mock.patch.object(services, "_fetch", side_effect=Fetch(plex_table)):
+            d = self.data("plex", PLEX)
+            self.assertEqual(mediaserver.watching(d, "ms1"), 1)
+            self.assertEqual(mediaserver.watching(d, "other"), 0, "another app")
+            self.assertEqual(mediaserver.watching(self.data("", PLEX), "ms1"), 0, "no media server in use")
+
+    def test_a_server_that_does_not_answer_does_not_block_an_update(self):
+        with mock.patch.object(services, "_fetch", side_effect=services.ServiceError("Cannot reach Emby")):
+            self.assertEqual(mediaserver.watching(self.data("emby", EMBY), "ms1"), 0)
+
+    def test_an_update_by_itself_or_in_a_batch_is_held_but_one_you_start_is_not(self):
+        from starboard import update_runs
+        app = mock.Mock(data_dir="/nowhere")
+        app.config.data = self.data("emby", EMBY)
+        with mock.patch.object(mediaserver, "watching", return_value=2), mock.patch.object(update_runs, "_busy", return_value=False), \
+                mock.patch.object(update_runs, "_starboard_running", return_value=False), mock.patch.object(update_runs, "_start_app", return_value={"id": "r1"}):
+            for kw in ({"by": "automatic"}, {"by": "you", "batch": "b1"}):
+                with mock.patch.object(update_runs, "_active", {"b1"}):
+                    with self.assertRaises(update_runs.Watching) as e:
+                        update_runs.start(app, "app:ms1", **kw)
+                self.assertIn("2 people are watching", str(e.exception))
+            self.assertEqual(update_runs.start(app, "app:ms1", by="you"), {"id": "r1"})
+
+
 if __name__ == "__main__":
     unittest.main()

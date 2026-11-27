@@ -190,10 +190,20 @@ def _state_of(r):
 
 def _one(app, run, item, by, sleep):
     """Runs one update of the batch to its end. Returns its run (or a stand-in with state and said)."""
-    try:
-        r = update_runs.start(app, item["target"], by=by, batch=run["id"])
-    except (update_runs.Busy, update_runs.Refused, LookupError, ValueError, OSError) as e:
-        return {"id": "", "state": "refused", "said": str(e)[:300]}
+    until = time.monotonic() + WATCH_WAIT
+    while True:
+        try:
+            r = update_runs.start(app, item["target"], by=by, batch=run["id"])
+            break
+        except update_runs.Watching as e:  # the media server's container: wait for nobody to be watching, as Jellyfin's restart does
+            if time.monotonic() >= until:
+                return {"id": "", "state": "refused", "said": f"Not updated: people were still watching after 3 hours. {item['name']} updates next time"}
+            words = f"Waiting to update {item['name']}: {e}. It updates when nobody is"
+            update_runs._step(app.data_dir, run, item["target"], "now", words)
+            _say(app, run, words)
+            sleep(WATCH_LOOK)
+        except (update_runs.Busy, update_runs.Refused, LookupError, ValueError, OSError) as e:
+            return {"id": "", "state": "refused", "said": str(e)[:300]}
     _link(app, run, item["target"], r["id"])
     return _wait(app, r["id"], sleep)
 

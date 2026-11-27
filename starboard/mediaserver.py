@@ -336,3 +336,17 @@ def _write(cfg, wanted, back):
         cfg.data["extras"]["media_server_back"] = back
         cfg.save()
     services.forget()  # the dashboard's panel and System ask the new one at once, not from a saved answer
+
+
+def watching(data, app_id):
+    """How many people are watching now on the media server whose app is `app_id`, or 0 when it is not the media server in use,
+    does not answer or nobody is. Asked only when an update of that app is about to start (DASH-566), so nothing runs at rest."""
+    one = active(data)
+    saved = (data or {}).get("services") or []
+    mine = next((x for x in saved if isinstance(x, dict) and x.get("id") == app_id and one and x.get("type") == one.service_type), None)
+    if not one or not mine:
+        return 0
+    try:
+        return len(one.playing(saved))
+    except (services.ServiceError, OSError, ValueError):
+        return 0

@@ -46,6 +46,9 @@ tab, a table lists every job for Jellyfin, Plex and Emby, and says why a job is 
 - **Play** needs the address you open the server with in your browser, in Manage apps under **Address to open in your
   browser**. Plex and Emby links need the server to answer, so Starboard asks it once an hour for its own name.
 - **Watched** is the owner's in Plex, because Starboard holds the owner's token. In Emby it is the first administrator's.
+- **Updates** to the container of the media server in use wait while anyone is watching. An update that Starboard makes by
+  itself is tried again at the next update hours; in Install all updates, Starboard looks every minute for up to 3 hours.
+  An update you start yourself with its own button goes ahead.
 - After you change media server, Library builds its list of films again, from the new server, the next time you open it.
   Play links come back when that finishes.
 - Starboard has only tried these calls against recorded answers from each server's documented interface, not against a

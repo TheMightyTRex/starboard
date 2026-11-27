@@ -15,7 +15,7 @@ class Emby(mediaserver.MediaBrowser):
     service_type = "emby"
     prefix = "/emby"
     page = mediaserver.PAGE
-    capabilities = ("play", "watched")  # DASH-566: Play links and Watched; the rest are Jellyfin's so far (limits)
+    capabilities = ("play", "watched", "updates")  # DASH-566: Play links and Watched; the rest are Jellyfin's so far (limits)
     limits = {
         "restart": "Emby's restart is in its own dashboard; Starboard restarts its container from Settings, Manage apps",
         "own_plugins": "Emby's own plug-ins are managed in Emby's dashboard, Plugins",
@@ -27,7 +27,6 @@ class Emby(mediaserver.MediaBrowser):
         "user_defaults": "Defaults for every user are Jellyfin's only",
         "metadata_folder": "Moving the metadata folder is Jellyfin's only",
         "detect": "Starboard finds Emby when you search for new apps",
-        "updates": "Starboard updates Emby's container through Ready to update; it checks Emby's own version only",
     }
 
     def public_version(self, service):

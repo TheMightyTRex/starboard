@@ -34,7 +34,7 @@ class Plex(mediaserver.MediaServer):
     name = "Plex"
     service_type = "plex"
     page = mediaserver.PAGE
-    capabilities = ("play", "watched")  # DASH-566: Play links and Watched; the rest are Jellyfin's so far (limits)
+    capabilities = ("play", "watched", "updates")  # DASH-566: Play links and Watched; the rest are Jellyfin's so far (limits)
     limits = {
         "restart": "Plex has no restart in its documented API; Starboard restarts its container from Settings, Manage apps",
         "own_plugins": "Plex retired its plug-ins in 2018, so there is nothing to list or update",
@@ -46,7 +46,6 @@ class Plex(mediaserver.MediaServer):
         "user_defaults": "Plex users and their rights are held by plex.tv, so Starboard cannot set defaults for them",
         "metadata_folder": "Plex's metadata folder is set when its container is made",
         "detect": "Starboard finds Plex when you search for new apps",
-        "updates": "Starboard updates Plex's container through Ready to update; it cannot read Plex's own update flag",
     }
 
     def _send(self, service, method, path):
