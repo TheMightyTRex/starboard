@@ -48,7 +48,7 @@ A security fix is the one exception, and it has its own rules in Security fixes.
   top, `<2.0`, means "made for version 1".
 - **Version 2.0 stops only what it must.** A plug-in that uses nothing removed keeps running. One that does is stopped.
 - **Optional parts are asked for by name, not by version number.** `requires` already names the system a plug-in needs
-  (Jellyfin, Plex or Emby, Reelix). Named capabilities for other optional parts are planned for plug-in API 1.21.
+  (Jellyfin, Plex or Emby, Reelix). Named capabilities for other optional parts are in plug-in API 1.22 (`capabilities`).
 - **Read your key file for each call.** Starboard makes a new key each time your plug-in starts or updates.
 
 ## What people are shown if your plug-in stops

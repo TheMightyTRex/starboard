@@ -16,6 +16,56 @@ from . import plugin_styles, plugins
 EM_DASH = "—"
 
 
+# The plug-in API version each manifest field first came in (from the API changelog): a plug-in that uses one needs at least this.
+FIELD_SINCE = {"setup_required": "1.4", "notices": "1.4", "events": "1.4", "jobs": "1.4", "changes": "1.10", "adopt": "1.13",
+               "logo": "1.14", "update": "1.14", "jellyfin_libraries": "1.15", "requires": "1.19", "first_sign_in": "1.20",
+               "starboard_tested": "1.22", "capabilities": "1.22", "needs_plugins": "1.21", "switch": "1.21"}
+
+
+def _version(text):
+    try:
+        return tuple(int(x) for x in str(text).split(".")[:2])
+    except ValueError:
+        return None
+
+
+def _api_checks(m):
+    """The plug-in's statement of the API it needs (DASH-603): a top end, a lower end that is high enough for what it uses, and what it
+    was tested with. Warnings only: Starboard never refuses a plug-in for these."""
+    out = []
+
+    def add(sev, what, fix):
+        out.append({"severity": sev, "where": "starboard_api", "what": what, "fix": fix, "area": "compatibility"})
+    spec = str(m.get("starboard_api") or "")
+    clauses = spec.split()
+    lows = [c.lstrip(">=") for c in clauses if c.startswith((">=", ">")) or c[:1].isdigit()]
+    highs = [c for c in clauses if c.startswith("<")]
+    if spec and not highs:
+        add("warning", "starboard_api has no top end, so it promises to work with every future version",
+            "End it at the next major version, such as >=1.14 <2.0")
+    elif any(_version(c.lstrip("<=")) and _version(c.lstrip("<=")) > (2, 0) for c in highs):
+        add("warning", "starboard_api reaches past the next major version, where parts of the API may be removed", "End it at <2.0")
+    low = _version(lows[0]) if lows else None
+    if low:
+        need = max(((_version(v), k) for k, v in FIELD_SINCE.items() if k in m), default=None)
+        if need and need[0] and need[0] > low:
+            add("warning", f"starboard_api starts at {'.'.join(map(str, low))}, but {need[1]} came in at {'.'.join(map(str, need[0]))}",
+                f"Start it at >={need[0][0]}.{need[0][1]}, so an older Starboard does not try to run it")
+    tested = _version(m.get("starboard_tested"))
+    if tested and isinstance(m.get("starboard_tested"), str):
+        from . import plugins
+        now = _version(plugins.API_VERSION)
+        if tested > now:
+            add("info", f"starboard_tested {m['starboard_tested']} is newer than this Starboard's API", "Test with this version too")
+    from . import plugin_capabilities
+    uses = (m.get("capabilities") or {}).get("uses") if isinstance(m.get("capabilities"), dict) else None
+    for n in plugin_capabilities.missing(uses):
+        add("info", f"It uses {n}, which this Starboard does not have", "Check GET /api/v1/ for capabilities and work without it")
+    if "starboard_tested" not in m and "starboard_api" in m:
+        add("info", "It does not say which API version it was tested with", "Add starboard_tested, such as 1.22")
+    return out
+
+
 def _text_checks(m):
     """Words people read: plain, short, labelled (accessibility for screen readers and everyone)."""
     out = []
@@ -182,6 +232,7 @@ def run(manifest, dev=False, builtin=False, logo_problem=""):
             issues.append({"severity": "info", "area": "security", "where": "permissions", "what": f"High risk: {w['words']}",
                            "fix": "People are warned before adding it; ask only for what you use"})
     order = {"error": 0, "warning": 1, "info": 2}
+    issues += _api_checks(manifest)
     issues.sort(key=lambda i: (order[i["severity"]], i["area"], i["where"]))
     return issues
 

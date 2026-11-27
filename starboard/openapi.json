@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Starboard API",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "description": "Make a key in Starboard: Settings, Security, API keys. Send it as Authorization: Bearer sb_read_... or sb_manage_... A read key reads; a manage key also does the everyday actions (each POST, marked x-right: manage). x-scope is the scope a key needs. Errors are RFC 9457 problem details. Lists use limit and cursor. Answers carry an ETag; send If-None-Match to get 304.",
   "license": {
    "name": "MIT",
@@ -4606,6 +4606,13 @@
        "type": "object",
        "additionalProperties": true
       }
+     },
+     "capabilities": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "description": "The names of the optional plug-in parts this Starboard has, such as first-sign-in and media-server-slot."
      }
     }
    },
