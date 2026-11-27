@@ -44,6 +44,12 @@ read** and a table of the accounts it found, with how many books each one has st
 
 Each choice saves straight away.
 
+### Scan Audiobookshelf for new books
+
+If you have just added books, Audiobookshelf has to scan them in before progress can be applied to them. Select **Scan Audiobookshelf now**.
+Starboard asks each library to scan its folders and says which it asked. Audiobookshelf says when it is done, in its own page.
+You do not need to open Audiobookshelf to start the scan.
+
 ### Apply the progress
 
 1. Select **Apply now**.
