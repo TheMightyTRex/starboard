@@ -550,7 +550,7 @@ def job_lines(data_dir, pid, m):
 # Plug-ins the set-up offers (DASH-399): the extras key the tick saves, and the plug-in it asks for. Ticking saves a
 # wish only. The plug-in is installed from the catalogue, where its permissions are shown and the password asked, as
 # for any other, and stays inactive until someone activates it.
-FROM_SETUP = {"audio_description": "audio-description"}
+FROM_SETUP = {"audio_description": "audio-description", "single_sign_on": "single-sign-on"}
 
 
 def _setup_words():

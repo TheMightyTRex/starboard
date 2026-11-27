@@ -12,6 +12,14 @@ Jellyfin and Audiobookshelf, and Starboard keeps the list.
 Starboard does not yet make, pause or remove an account inside an app. You make the account in the app, set the
 password Starboard made, and tell Starboard you did. A later version will do this for you.
 
+## Single sign-on
+
+Single sign-on gives each person their own sign-in, so you do not share one password. It is recommended when other people use your apps. On a server only you use, leave it off: nothing extra runs.
+
+- The set-up asks **Will other people use your apps?** in the browser and in the terminal, with the same words. **Yes** only notes that you want it, and you install the plug-in in **Settings**, then **Plug-ins**, then **Catalogue**.
+- Its address is your server's Tailscale name, found in Tailscale's admin page. You choose it once. Passkeys are tied to that name for ever, so if it changes later, every passkey stops working and has to be made again.
+- **Settings**, **Security**, **Sign-in methods** and this page both say the same.
+
 ## Before you begin
 
 - Add the apps people use in **Settings**, then **Manage apps**, such as Jellyfin, Audiobookshelf, Kavita or Navidrome.
