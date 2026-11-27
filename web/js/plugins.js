@@ -153,7 +153,21 @@ function testReport(r) {
 function pluginSettingsGroups(p, redraw) {
   const plain = p.settings.filter((s) => s.type !== "custom");
   if (!plain.length) return [];
-  const put = (settings) => api(`/api/plugins/${p.id}/settings`, { method: "PUT", body: { settings } });
+  // API 1.21 (DASH-589): switching off a plug-in that others need says which, and asks first. A "no" is a cancel, not a failure.
+  const put = async (settings) => {
+    try { return await api(`/api/plugins/${p.id}/settings`, { method: "PUT", body: { settings } }); }
+    catch (err) {
+      if (err.status !== 409 || !err.data?.dependents) throw err;
+      if (!await confirmDialog({ title: `Switch off ${p.name}?`, message: err.message, confirm: "Switch off and deactivate them", danger: true })) {
+        const cancelled = new Error("Cancelled");
+        cancelled.cancelled = true;
+        throw cancelled;
+      }
+      const done = await api(`/api/plugins/${p.id}/settings`, { method: "PUT", body: { settings, confirm_dependents: true } });
+      announce(`${done.deactivated.map((d) => d.name).join(", ")} deactivated`);
+      return done;
+    }
+  };
   const groups = new Map();
   for (const s of plain) {
     const g = s.group || "";
@@ -177,7 +191,7 @@ function pluginSettingsGroups(p, redraw) {
         const input = el("input", { type: "checkbox", role: "switch", id, checked: !!s.value, "aria-labelledby": `${id}-l` });
         input.addEventListener("change", async () => {
           try { await put({ [s.key]: input.checked }); showSaved(noteId); }
-          catch (err) { input.checked = !input.checked; problem(err.message, input); }
+          catch (err) { input.checked = !input.checked; if (!err.cancelled) problem(err.message, input); else input.focus(); }
         });
         rows.push(row(el("label", { class: "switch" }, input)));
       } else if (s.type === "folder") {  // API 1.3: a folder inside the media folders the plug-in mounts, applied at once
@@ -395,7 +409,13 @@ function stateButton(p, redraw, primary = false, ms = null) {
   b.addEventListener("click", async () => {
     b.disabled = true;
     try {
-      await api(`/api/plugins/${p.id}/${what}`, { method: "POST" });
+      try { await api(`/api/plugins/${p.id}/${what}`, { method: "POST" }); }
+      catch (err) {
+        // API 1.21 (DASH-589): other plug-ins need this one. Say which, and ask before they are deactivated too.
+        if (err.status !== 409 || !err.data?.dependents) throw err;
+        if (!await confirmDialog({ title: `Deactivate ${p.name}?`, message: err.message, confirm: "Deactivate them all", danger: true })) { b.disabled = false; return; }
+        await api(`/api/plugins/${p.id}/${what}`, { method: "POST", body: { confirm_dependents: true } });
+      }
       if (what === "disable") dropStyleOf(p);
       announce(`${p.name} ${what === "enable" ? "activated" : "deactivated"}`); redraw();
     }

@@ -3466,6 +3466,8 @@ class Handler(BaseHTTPRequestHandler):
                     return self.error(404, "No key with that id")
                 logs.event("info", "security", "API key revoked")
                 return self.json(200, {"keys": api_v1.list_keys(app.data_dir)})
+            if path == "/api/people" or path.startswith("/api/people/"):  # People (DASH-589, single sign-on stage 1)
+                return self.people_route(method, path)
             if path == "/api/sessions/end-all" and method == "POST":
                 # The password again (DASH-280), as changing it asks: a stolen session cannot lock everyone out.
                 self.check_password(self.body())
@@ -3912,7 +3914,18 @@ class Handler(BaseHTTPRequestHandler):
                 return self.error(409, f"{next(p['name'] for p in pa.basics(app.data_dir) if p['id'] == pid)} is your media server, so it stays on. "
                                        "Choose another one, or none, in Settings, Apps, the media server tab first")
         if what == "settings" and method == "PUT":
-            return self.json(200, {"settings": pa.save_settings(app.data_dir, pid, self.body().get("settings") or {})})
+            body = self.body()
+            deps = pa.dependents(app.data_dir, pid) if pa.switching_off(app.data_dir, pid, body.get("settings") or {}) else []
+            if deps and not body.get("confirm_dependents"):  # API 1.21 (DASH-589): ask first, naming them
+                name = next(p["name"] for p in pa.basics(app.data_dir) if p["id"] == pid)
+                return self.json(409, {"error": pa.dependents_words(name, deps, "switch it off"), "dependents": deps})
+            for d in deps:
+                pa.disable(app.data_dir, d["id"])
+                logs.event("info", "plug-ins", f"Deactivated {d['id']}: it needs {pid}, which was switched off")
+            if deps:
+                app.plugin_clock.ensure()
+                app.plugin_idle.ensure()
+            return self.json(200, {"settings": pa.save_settings(app.data_dir, pid, body.get("settings") or {}), "deactivated": deps})
         if method != "POST":
             return self.error(405, "Not allowed")
         if what == "remove":
@@ -3926,6 +3939,13 @@ class Handler(BaseHTTPRequestHandler):
         elif what == "enable":
             pa.enable(app.data_dir, pid, services=app.config.data["services"])
         else:
+            deps = pa.dependents(app.data_dir, pid)
+            if deps and not self.body().get("confirm_dependents"):  # API 1.21 (DASH-589): ask first, naming them
+                name = next(p["name"] for p in pa.basics(app.data_dir) if p["id"] == pid)
+                return self.json(409, {"error": pa.dependents_words(name, deps, "deactivate it"), "dependents": deps})
+            for d in deps:
+                pa.disable(app.data_dir, d["id"])
+                logs.event("info", "plug-ins", f"Deactivated {d['id']}: it needs {pid}, which was deactivated")
             pa.disable(app.data_dir, pid)
         app.plugin_clock.ensure()  # jobs start or stop with their plug-in
         app.plugin_idle.ensure()  # and idle stop with a when_needed one (DASH-357)
@@ -4321,6 +4341,79 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, signin.set_password_login(app, bool(data.get("allowed")), address))
         except signin.SigninError as e:
             return self.error(e.status, e.message)
+        return self.error(404, "Not found")
+
+    def people_route(self, method, path):
+        """Settings, People: the owner's list of people and their accounts in the apps. Signed-in owner only (a plug-in's key
+        never reaches /api/people). A password is shown only after the Starboard password is entered again, and never logged."""
+        from . import people
+        app = self.app
+        data_dir, services = app.data_dir, app.config.data["services"]
+        none = {"Cache-Control": "no-store"}
+
+        def full(**extra):
+            return self.json(200, {**people.listing(data_dir, services), **extra}, none)
+        try:
+            if path == "/api/people" and method == "GET":
+                return full()
+            if path == "/api/people" and method == "POST":
+                b = self.body()
+                p = people.add(data_dir, b.get("name"), b.get("email"), b.get("role"))
+                logs.event("info", "people", f"Person added: {p['name']} ({people.ROLES[p['role']][0]})")
+                return full(said=f"Added {p['name']}", person=p["id"])
+            m = re.match(r"^/api/people/(p-[0-9a-f]{8})$", path)
+            if m and method == "POST":
+                b = self.body()
+                p = people.update(data_dir, m.group(1), b.get("name"), b.get("email"), b.get("role"))
+                logs.event("info", "people", f"Person changed: {p['name']}")
+                return full(said=f"Saved {p['name']}", person=p["id"])
+            m = re.match(r"^/api/people/(p-[0-9a-f]{8})/(pause|resume|remove|restore)$", path)
+            if m and method == "POST":
+                p = people.set_state(data_dir, m.group(1), m.group(2))
+                words = {"pause": "Paused", "resume": "Resumed", "remove": "Removed", "restore": "Put back"}[m.group(2)]
+                logs.event("info", "people", f"{words}: {p['name']}")
+                return full(said=f"{words} {p['name']}", person=p["id"])
+            m = re.match(r"^/api/people/(p-[0-9a-f]{8})/forget$", path)
+            if m and method == "POST":
+                self.check_password(self.body())
+                p = people.forget(data_dir, m.group(1))
+                logs.event("info", "people", f"Person forgotten: {p['name']}")
+                return full(said=f"Forgot {p['name']}")
+            m = re.match(r"^/api/people/(p-[0-9a-f]{8})/accounts/([a-z0-9-]{1,41})(?:/(password|reveal|set|unset|remove))?$", path)
+            if m and method == "POST":
+                pid, app_id, what = m.groups()
+                b = self.body()
+                if what is None:
+                    p = people.save_account(data_dir, services, pid, app_id, b.get("username"))
+                    return full(said="Saved the account name", person=pid)
+                if what == "password":
+                    # A generated password, or one the owner typed (own_password). Replacing one, or changing it in the app
+                    # too (also_change, for the apps that allow it), needs the Starboard password. Never logged.
+                    replace, also, own = bool(b.get("replace")), bool(b.get("also_change")), b.get("own_password")
+                    if replace or also:
+                        self.check_password(b)
+                    push = None
+                    if also:
+                        from . import people_apps
+                        push = lambda user, pw: people_apps.change_password(services, app_id, user, pw)  # noqa: E731
+                    p = people.set_password(data_dir, services, pid, app_id, replace=replace, own=own if own is not None else None, push=push)
+                    how = ("chosen" if own is not None else "generated") + (", also changed in the app" if also else "")
+                    logs.event("info", "people", f"A password ({how}) was recorded for {p['name']} in {app_id}")  # never the password
+                    return full(said=("Changed it in the app and recorded it" if also else "Recorded the password"), person=pid)
+                if what == "reveal":
+                    self.check_password(b)
+                    got = people.reveal(data_dir, pid, app_id)
+                    logs.event("info", "people", f"A password was shown for {pid} in {app_id}")
+                    return self.json(200, {**got, "said": "Shown. Starboard asks for your password each time"}, none)
+                if what in ("set", "unset"):
+                    people.mark_set(data_dir, services, pid, app_id, what == "set")
+                    return full(said="Saved", person=pid)
+                if what == "remove":
+                    p = people.drop_account(data_dir, pid, app_id)
+                    logs.event("info", "people", f"An account and its password were taken out of Starboard's list for {p['name']} in {app_id}")
+                    return full(said="Took the account out of Starboard's list", person=pid)
+        except LookupError as e:
+            return self.error(404, str(e))
         return self.error(404, "Not found")
 
     def check_password(self, data):

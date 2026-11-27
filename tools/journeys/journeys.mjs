@@ -29,7 +29,7 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   // Radio's, Performance's and Security's level 2 pages (DASH-391)
   "settings-radio-link.html", "settings-radio-library.html", "settings-radio-logos.html", "settings-general-performance.html",
   "settings-security-password.html", "settings-security-signin.html", "settings-security-keys.html", "settings-security-sessions.html",
-  "settings-plugins.html", "settings-plugins-catalogue.html", "settings-plugin.html?id=direct-play", "settings-plugin.html?id=jellyfin"];  // with the set-up's Audio description offer (DASH-399)
+  "settings-people.html", "settings-plugins.html", "settings-plugins-catalogue.html", "settings-plugin.html?id=direct-play", "settings-plugin.html?id=jellyfin"];  // with the set-up's Audio description offer (DASH-399)
 const SECRET = "made-up-journey-key-7f3a9c1e5b";
 const XSS = `<img src=x onerror="window.__xss='name'">`;
 
@@ -3049,6 +3049,77 @@ await open("settings-plugin.html?id=notifications");
 await page.waitForFunction(() => document.querySelectorAll('nav[aria-label="Plug-ins"] a').length > 4, null, { timeout: 5000 }).catch(() => {});
 pti = await ptiTabs();
 check("PTI-08", "on a computer the same icons show, and the tab name shows for the current tab", pti.length > 4 && pti.slice(2).every((x) => x.icon && x.h >= 44) && pti.find((x) => x.current)?.shown, JSON.stringify(pti.filter((x) => x.current)));
+
+// People (DASH-589, single sign-on stage 1): add a person, make a password for one app, show it only after the Starboard
+// password, say it is set in the app, remove the person. The made-up passwords never appear in the page's markup.
+console.log("\n== PEOPLE People and their passwords");
+await open("settings-people.html");
+check("PEOPLE-01", "the owner is the first row, and Add a person is there", (await page.locator("#people-sections tbody tr").first().innerText()).startsWith("You") && await page.getByRole("button", { name: "Add a person" }).count() === 1);
+await page.getByRole("button", { name: "Add a person" }).click();
+await page.waitForTimeout(400);
+await page.fill("#person-name", "Journey Jo");
+await page.selectOption("#person-role", "guest");
+await page.locator("#person-form").evaluate((f) => f.requestSubmit());
+await page.waitForSelector("#side-panel", { state: "detached", timeout: 8000 }).catch(() => {});
+await page.waitForTimeout(400);
+check("PEOPLE-02", "the person is added, said in a saved note, and focus is on their Manage button", /Added Journey Jo/.test(await page.locator("#people-saved").innerText()) && await page.evaluate(() => /Manage Journey Jo/.test(document.activeElement?.textContent || "")));
+await page.getByRole("button", { name: "Manage Journey Jo" }).click();
+await page.waitForSelector("#acct-jellyfin-show", { timeout: 8000 });
+await page.locator("#acct-jellyfin-show").click();
+await page.waitForSelector("dialog[open] #acct-jellyfin-user", { timeout: 8000 });
+await page.fill("#acct-jellyfin-user", "jo");
+await page.locator("dialog[open] button[value=ok]").click();
+await page.waitForFunction(() => /Show password/.test(document.querySelector("#acct-jellyfin-show")?.textContent || ""), null, { timeout: 8000 }).catch(() => {});
+check("PEOPLE-03", "a password is made, the row says so and focus is on Show password", /Password made, not set/.test(await page.locator("#acct-jellyfin-more").innerText()) && await page.evaluate(() => document.activeElement?.id === "acct-jellyfin-show"));
+await page.locator("#acct-jellyfin-show").click();
+await page.waitForSelector("dialog[open] #acct-jellyfin-pw", { timeout: 8000 });
+const peBefore = problems.length;
+await page.fill("#acct-jellyfin-pw", "not the password");
+await page.locator("dialog[open] button[value=ok]").click();
+await page.waitForTimeout(800);
+check("PEOPLE-04", "a wrong Starboard password shows nothing", await page.locator("#acct-jellyfin-secret").count() === 0);
+problems.length = peBefore;  // the browser logs the deliberate 401 of PEOPLE-04
+await page.locator("#acct-jellyfin-show").click();
+await page.waitForSelector("dialog[open] #acct-jellyfin-pw", { timeout: 8000 });
+await page.fill("#acct-jellyfin-pw", password);
+await page.locator("dialog[open] button[value=ok]").click();
+await page.waitForSelector("#acct-jellyfin-secret", { timeout: 8000 });
+const pwShown = await page.evaluate(() => { const i = document.querySelector("#acct-jellyfin-secret"); return { type: i.type, length: i.value.length, inMarkup: document.documentElement.outerHTML.includes(i.value) }; });
+check("PEOPLE-05", "the right password shows a hidden 24 character value that is not in the page's markup", pwShown.type === "password" && pwShown.length === 24 && !pwShown.inMarkup, JSON.stringify(pwShown));
+await page.getByRole("button", { name: "It is set in the app" }).click();
+await page.waitForFunction(() => /Password set in the app/.test(document.querySelector("#acct-jellyfin-more")?.textContent || ""), null, { timeout: 8000 }).catch(() => {});
+check("PEOPLE-06", "saying it is set changes the row, and the password is hidden again", /Password set in the app/.test(await page.locator("#acct-jellyfin-more").innerText()) && await page.locator("#acct-jellyfin-secret").count() === 0);
+// Reset with a password of the owner's own: a short one keeps the dialog open, the Starboard password is asked for, and Show
+// password then gives back exactly what was typed.
+await page.locator("#acct-jellyfin-more .menu-wrap > button").click();
+await page.getByRole("menuitem", { name: "Reset the password" }).click();
+await page.waitForSelector("dialog[open] #acct-jellyfin-mode-own", { timeout: 8000 });
+check("PEOPLE-09", "Reset asks for the Starboard password at once, and offers Generate one as the default", await page.locator("#acct-jellyfin-mode-generate").isChecked() && await page.locator("#acct-jellyfin-starboard-pw").isVisible());
+await page.locator("#acct-jellyfin-mode-own").check();
+await page.fill("#acct-jellyfin-own", "tooshort");
+await page.fill("#acct-jellyfin-starboard-pw", password);
+await page.locator("dialog[open] button[value=ok]").click();
+await page.waitForTimeout(500);
+check("PEOPLE-10", "a password under 10 characters is refused and the dialog stays open", await page.locator("dialog[open]").count() === 1 && /10 characters/.test(await page.locator("dialog[open] #acct-jellyfin-own").evaluate((i) => i.validationMessage)));
+await page.fill("#acct-jellyfin-own", "my own journey password");
+await page.locator("dialog[open] button[value=ok]").click();
+await page.waitForFunction(() => !document.querySelector("dialog[open]"), null, { timeout: 8000 }).catch(() => {});
+await page.waitForTimeout(500);
+check("PEOPLE-11", "after a reset the account is made, not set in the app, and says it was chosen by you", /Password made, not set/.test(await page.locator("#acct-jellyfin-more").innerText()) && /Chosen by you/.test(await page.locator("#acct-jellyfin-reveal").evaluate((n) => n.parentElement.innerText)));
+await page.locator("#acct-jellyfin-show").click();
+await page.waitForSelector("dialog[open] #acct-jellyfin-pw", { timeout: 8000 });
+await page.fill("#acct-jellyfin-pw", password);
+await page.locator("dialog[open] button[value=ok]").click();
+await page.waitForSelector("#acct-jellyfin-secret", { timeout: 8000 });
+check("PEOPLE-12", "Show password gives back the password that was typed", await page.locator("#acct-jellyfin-secret").evaluate((i) => i.value) === "my own journey password");
+await page.locator("#person-remove").click();
+await page.waitForSelector("dialog[open]", { timeout: 8000 });
+check("PEOPLE-07", "Remove asks first and starts on Cancel", await page.evaluate(() => /Cancel/.test(document.activeElement?.textContent || "")));
+await page.locator("dialog[open] button[value=ok]").click();
+await page.waitForSelector("#side-panel", { state: "detached", timeout: 8000 }).catch(() => {});
+await page.waitForTimeout(500);
+await page.locator("#people-removed summary").click();
+check("PEOPLE-08", "the person moves to Removed people, which lists them with the 30 days before they can be forgotten", /Journey Jo/.test(await page.locator("#people-removed").innerText()) && /30 days/.test(await page.locator("#people-removed").innerText()));
 
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
