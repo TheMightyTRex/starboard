@@ -20,7 +20,7 @@ def _reelix(all_services):
 
 def listing(all_services, which, kind, page=1):
     if which not in WHICH or kind not in KINDS:
-        raise ValueError("Choose Not in library or Below the quality wanted, and films or episodes")
+        raise ValueError("Choose Wanted or Below quality, and films or episodes")
     r = _reelix(all_services)
     if kind in ("album", "ebook", "audiobook"):
         return _content(r, which, kind, page)
@@ -96,7 +96,7 @@ def _content(r, which, kind, page):
 def search(all_services, which, kind, ids=None):
     """Searches the ticked ones now, or every one on the list when ids is empty. Returns a sentence."""
     if which not in WHICH or kind not in KINDS:
-        raise ValueError("Choose Not in library or Below the quality wanted, and films or episodes")
+        raise ValueError("Choose Wanted or Below quality, and films or episodes")
     r = _reelix(all_services)
     ids = [int(i) for i in ids or [] if str(i).isdigit()][:500]
     if kind in ("album", "ebook", "audiobook"):  # Reelix's own book and album searches

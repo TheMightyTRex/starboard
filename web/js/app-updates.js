@@ -74,26 +74,17 @@ function selectionBar() {
 }
 
 function tableFor(rows, caption) {
-  return el("div", { class: "table-wrap", "data-stack": true },
-    el("table", { class: "table updates-table" },
-      el("caption", { class: "visually-hidden", text: caption }),
-      // The same column widths in every category's table, so the columns line up down the page.
-      el("colgroup", {}, ["app", "image", "installed", "latest", "status", "actions"].map((c) => el("col", { class: `updates-table__${c}` }))),
-      el("thead", {}, el("tr", {}, ["App", "Image", "Installed", "Latest", "Status"].map((h) => el("th", { scope: "col", text: h })),
-        el("th", { scope: "col" }, el("span", { class: "visually-hidden", text: "Actions" })))),
-      el("tbody", {}, rows.map((r) => {
-        const c = r.container;
-        return el("tr", {},
-          el("th", { scope: "row", "data-label": "App", id: `update-${r.id}`, tabindex: "-1" },
-            el("div", { class: "updates-app" }, chooseBox(r), appIcon(r, "app-icon updates-app__icon"),
-              el("div", {}, el("strong", { text: r.name }),
-                el("div", { class: "small muted", text: c ? `${c.name} · ${c.status || c.state}` : "Choose its container in Manage apps" })))),
-          el("td", { "data-label": "Image" }, c ? el("code", { text: c.image }) : "None"),
-          el("td", { "data-label": "Installed" }, c ? (c.version || (c.created ? `Built ${formatDate(c.created)}` : "Not known")) : ""),
-          el("td", { "data-label": "Latest" }, r.latest || (r.update ? "Newer build" : "")),
-          el("td", { "data-label": "Status" }, statusCell(r)),
-          el("td", { "data-label": "Actions" }, actionCell(r)));
-      }))));
+  // The same table every list of updates uses (update-table.js); Apps has an Image column as well.
+  return updateTable({ caption, nameLabel: "App", extra: [{ key: "image", label: "Image" }], rows: rows.map((r) => {
+    const c = r.container;
+    return { id: r.id, thId: `update-${r.id}`,
+      name: el("div", { class: "updates-app" }, chooseBox(r), appIcon(r, "app-icon updates-app__icon"),
+        el("div", {}, el("strong", { text: r.name }),
+          el("div", { class: "small muted", text: c ? `${c.name} · ${c.status || c.state}` : "Choose its container in Manage apps" }))),
+      extra: { image: c ? el("code", { text: c.image }) : "None" },
+      installed: c ? (c.version || (c.created ? `Built ${formatDate(c.created)}` : "Not known")) : "",
+      latest: r.latest || (r.update ? "Newer build" : ""), status: statusCell(r), actions: actionCell(r) };
+  }) });
 }
 
 function render() {
@@ -125,12 +116,10 @@ function render() {
   $("span", updateAll).textContent = busy() ? "Updating…" : all.length ? `Update all (${all.length})` : "Update all";
   $("#check-updates").disabled = busy();
   $("span", $("#check-updates")).textContent = "Check now"; // the same label before and after a first check (owner, 26 November 2026)
-  const checked = data.checked_at ? checkedWhen(data.checked_at, data.restored) : null;
   const missing = rows.filter((r) => !r.container).length;
   $("#updates-summary").textContent = busy() ? "Updating. Apps restart for a moment as they update."
-    : [checked ? `Last checked ${checked}` : "Not checked yet",
-      checked ? (available.length ? `${available.length} ${available.length === 1 ? "update" : "updates"} available` : "everything is up to date") : null,
-      missing ? `${missing} ${missing === 1 ? "app has" : "apps have"} no container found` : null].filter(Boolean).join(" · ");
+    : updateSummary({ checkedAt: data.checked_at || 0, restored: !!data.restored, count: available.length,
+      extra: missing ? [`${missing} ${missing === 1 ? "app has" : "apps have"} no container found`] : [] });
   $("#updates-log").hidden = !data.job?.finished || !data.job.log;
   $("#updates-log-text").textContent = data.job?.log || "";
 

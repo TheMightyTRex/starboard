@@ -1,0 +1,128 @@
+/* extras: a part of the shared components. Load it after components.css, on the pages that use it.
+ * Made by tools/parts.py from components.css in github.com/TheMightyTRex/design-system: change it there, not here. */
+@layer shared {
+  .split-btn > button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0 var(--space-3);
+    border: 0;
+    background: transparent;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-strong);
+  }
+  .split-btn > button + button {
+    width: var(--control-h);
+    justify-content: center;
+    padding: 0;
+    border-left: 1px solid var(--color-border);
+  }
+  .split-btn > button:hover {
+    background: var(--color-control-active);
+  }
+  .applied__item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: var(--control-h-compact);
+    padding: 0 0 0 var(--space-2);
+    border: 1px solid var(--color-divider);
+    background: var(--color-accent-soft);
+  }
+  .applied__item button {
+    display: inline-grid;
+    place-items: center;
+    width: var(--control-h-compact);
+    height: var(--control-h-compact);
+    border: 0;
+    background: transparent;
+  }
+  .help__text {
+    position: absolute;
+    left: 0;
+    top: calc(100% + var(--space-1));
+    z-index: var(--layer-menu);
+    width: min(320px, 80vw);
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-raised);
+    font-size: var(--text-sm);
+  }
+  .timeline__item {
+    position: relative;
+    display: grid;
+    gap: 2px;
+    padding: 0 0 var(--space-4) var(--space-6);
+  }
+  .timeline__item::before {
+    content: "";
+    position: absolute;
+    left: 5px;
+    top: 6px;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-round);
+    background: var(--color-surface-raised);
+  }
+  .timeline__item:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    left: 10px;
+    top: 20px;
+    bottom: 0;
+    width: 2px;
+    background: var(--color-divider);
+  }
+  .timeline__item[data-tone="success"]::before {
+    border-color: var(--status-success-fg);
+    background: var(--status-success-fg);
+  }
+  .timeline__item[data-tone="warning"]::before {
+    border-color: var(--status-warning-fg);
+    border-radius: 0;
+    transform: rotate(45deg) scale(0.85);
+  }
+  .timeline__item[data-tone="danger"]::before {
+    border-color: var(--status-danger-fg);
+    background: var(--status-danger-fg);
+    border-radius: 0;
+  }
+  .timeline__title {
+    font-weight: var(--weight-strong);
+  }
+  .timeline__meta {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+  .shelf__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-4);
+  }
+  .shelf__caption {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+  .shelf__end {
+    display: flex;
+    gap: var(--space-2);
+    margin-left: auto;
+  }
+  .shelf__track {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: var(--cover-w, 148px);
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0 0 var(--space-2);
+    list-style: none;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+  }
+  .shelf__track > * {
+    scroll-snap-align: start;
+  }
+}

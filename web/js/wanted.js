@@ -1,7 +1,7 @@
-// Wanted (DASH-207): Missing, and Below the quality wanted, for films and episodes, from Reelix. Tick some and act
+// Wanted (DASH-207): Wanted, and Below quality, for films and episodes, from Reelix. Tick some and act
 // on them in the selection bar (DASH-524), or search for everything on the list. A page at a time, with Show more. A film or episode row opens its details in a slide-out (DASH-309, R1: a row that opens).
 
-// 12 November 2026: one page per media type (the level 2 menu), with Missing and Below the quality wanted as tabs.
+// 12 November 2026: one page per media type (the level 2 menu), with Wanted and Below quality as tabs.
 let WHICH = new URLSearchParams(location.search).get("list") === "cutoff" ? "cutoff" : "missing";
 const W_KIND = document.querySelector("[data-wanted-kind]")?.dataset.wantedKind;
 const wantedState = { kind: W_KIND || "movie", page: 1, total: 0, items: [], paused: false,
@@ -12,7 +12,7 @@ const W_NOUN = { movie: ["film", "films"], episode: ["episode", "episodes"], alb
   audiobook: ["audiobook", "audiobooks"] };
 
 function wantedTabs() {
-  const tabs = [["missing", "Not in library"], ["cutoff", "Below the quality wanted"]];
+  const tabs = [["missing", "Wanted"], ["cutoff", "Below quality"]];
   const list = el("div", { role: "tablist", "aria-label": "Which list" }, tabs.map(([v, t]) => {
     const b = el("button", { type: "button", role: "tab", class: "topic-tabs__tab", "aria-selected": String(v === WHICH), "aria-controls": "wanted-list", text: t });
     b.addEventListener("click", () => {
@@ -42,7 +42,7 @@ function wantedRow(w) {
   const when = w.date ? new Date(w.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
   const meta = [w.detail, when, WHICH === "cutoff" && w.quality ? `Has ${w.quality}, wants ${w.cutoff || "better"}` : ""].filter(Boolean).join(" · ");
   const search = el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => wantedSearch([w.id], e.currentTarget) },
-    icon("search"), "Search", el("span", { class: "visually-hidden", text: ` for ${name}` }));
+    icon("search"), "Find", el("span", { class: "visually-hidden", text: ` ${name}` }));
   // DASH-171: while download hours pause downloads, Download now gets this one straight away.
   const now = wantedState.paused && ["movie", "episode"].includes(wantedState.kind) ? el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => downloadNow(w, name, e.currentTarget) },
     icon("zap"), "Download now", el("span", { class: "visually-hidden", text: ` ${name}` })) : null;
@@ -60,7 +60,7 @@ function wantedRow(w) {
 // DASH-305: a wanted film or episode in full, in a slide-out: picture, story, length, genres, the quality wanted, what
 // Reelix last did for it, and See what Reelix can find (every site's releases, best first, with Get this one).
 async function wantedDetail(w, name, opener) {
-  const body = el("div", { class: "stack-4" }, el("p", { class: "muted", text: "Loading…" }));
+  const body = el("div", { class: "stack-4" }, SharedComponents.wait("Loading what Reelix knows"));
   sidePanel({ title: name, body: [body], opener, wide: true });
   let d;
   try { d = await api(`/api/wanted/detail?kind=${wantedState.kind}&id=${w.id}${w.series_id ? `&series=${w.series_id}` : ""}`); }
@@ -76,7 +76,7 @@ async function wantedDetail(w, name, opener) {
     try {
       const r = await api(`/api/library/releases?${p}`);
       results.replaceChildren(r.releases.length ? el("ul", { class: "rows" }, r.releases.map((x) => {
-        const take = el("button", { type: "button", class: x.accepted ? "btn btn--compact" : "btn btn--quiet btn--compact" }, x.accepted ? "Get this one" : "Get it anyway",
+        const take = el("button", { type: "button", class: x.accepted ? "btn btn--compact" : "btn btn--quiet btn--compact" }, x.accepted ? "Use this one" : "Use it anyway",
           el("span", { class: "visually-hidden", text: ` ${x.title}` }));
         take.addEventListener("click", async () => {
           take.disabled = true;
@@ -117,23 +117,22 @@ async function wantedLoad(more = false) {
     if (!more) list.replaceChildren();
     const added = r.items.map(wantedRow);
     list.append(...added);
-    if (!wantedState.items.length) list.replaceChildren(el("li", { class: "empty", id: "wanted-empty", tabindex: "-1", text: WHICH === "missing" ? "Nothing is missing." : "Everything is at the quality wanted." }));
+    if (!wantedState.items.length) list.replaceChildren(el("li", { class: "empty", id: "wanted-empty", tabindex: "-1", text: WHICH === "missing" ? "Nothing is wanted." : "Everything is at the quality wanted." }));
     const noun = W_NOUN[wantedState.kind] || ["item", "items"];
-    $("#wanted-summary").textContent = `${r.total.toLocaleString("en-GB")} ${r.total === 1 ? noun[0] : noun[1]}${WHICH === "missing" ? " not in library" : " below the quality wanted"}`;
+    $("#wanted-summary").textContent = `${r.total.toLocaleString("en-GB")} ${r.total === 1 ? noun[0] : noun[1]}${WHICH === "missing" ? " wanted" : " below quality"}`;
     if (!more) announce($("#wanted-summary").textContent);  // Show more says its own (SharedComponents.loadMore)
     $("#wanted-more").hidden = wantedState.items.length >= r.total;
     $("#wanted-all").disabled = !r.total;
   } catch (e) {
     wantedState.items = [];
-    list.replaceChildren(el("li", {}, el("div", { class: "notice", "data-tone": e.status === 400 ? null : "danger", role: "status" }, icon("info"),
-      el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "Reelix could not be asked" }), el("p", { text: e.message })))));
+    list.replaceChildren(el("li", {}, notice(e.status === 400 ? "info" : "danger", "Reelix could not be asked", e.message)));
   }
   wantedSelection();
 }
 
 async function wantedSearch(ids, button) {
   if (!ids.length) {
-    const ok = await confirmDialog({ title: "Search for everything on this list?", confirm: "Search all",
+    const ok = await confirmDialog({ title: "Find everything on this list?", confirm: "Find all below quality",
       message: `Reelix searches for all ${wantedState.total.toLocaleString("en-GB")} a few at a time, so the sites are not overloaded. It can take a while for a long list.` });
     if (!ok) return;
   }
@@ -201,7 +200,7 @@ function wantedSelection() {
     return b;
   };
   $("#selection-actions").replaceChildren(...[
-    button("search", "Search", wantedBulkSearch, "btn btn--primary"),
+    button("search", "Find", wantedBulkSearch, "btn btn--primary"),
     st.paused && ["movie", "episode"].includes(st.kind) ? button("zap", "Download now", wantedBulkNow) : null,
     button("eye-off", "Stop following", wantedBulkStop),
     button("x", "Clear selection", () => { wantedClear(); announce("Selection cleared"); })].filter(Boolean));
@@ -281,7 +280,15 @@ startPage().then(async () => {
   try { wantedState.paused = (await api("/api/schedule")).mode === "pause"; } catch { wantedState.paused = false; }
   if (W_KIND) $(".page-head")?.after(wantedTabs());
   $("#select-all").addEventListener("change", wantedSelectAll);
-  $("#wanted-all").addEventListener("click", (e) => wantedSearch([], e.currentTarget));
+  // Find all wanted (26 November 2026): the Wanted list uses the same counted, limited search as the Library tabs; the
+  // Below quality list keeps its own whole-list search.
+  const TAB_OF = { movie: "films", episode: "tv", album: "music", ebook: "books", audiobook: "audiobooks" };
+  const all = $("#wanted-all");
+  const label = () => { all.lastChild.textContent = WHICH === "missing" ? "Find all wanted" : "Find all below quality"; };
+  label();
+  all.addEventListener("click", (e) => (WHICH === "missing" ? findAllWanted(TAB_OF[wantedState.kind], e.currentTarget) : wantedSearch([], e.currentTarget)));
+  $(".page-head")?.addEventListener("click", () => setTimeout(label, 0));
+  findResume(TAB_OF[wantedState.kind], all);
   // Show more, and more by itself near the end (DASH-277, UX-52): the button moves focus to the first new row.
   loadMore($("#wanted-more"), {
     items: () => $$("#wanted-list > li"),

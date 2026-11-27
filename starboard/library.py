@@ -43,17 +43,17 @@ NOUNS = {"films": ("film", "films"), "tv": ("series", "series"), "music": ("arti
 STATUS = {  # Storyarr's status words: label and tone
     "in_library": ("In library", "success"),
     "partly": ("Partly in library", "info"),
-    "wanted": ("Wanted", "warning"),
+    "wanted": ("Wanted", "neutral"),
     "not_released": ("Not released", "muted"),
-    "not_monitored": ("Not wanted", "muted"),
+    "not_monitored": ("Not followed", "muted"),
     "downloading": ("Downloading", "info"),
     "searching": ("Searching", "info"),
 }
 CHIPS = {  # filter chips for each tab: key, label
-    "films": [("released", "Released"), ("coming", "Not released"), ("missing", "Not in library")],
-    "tv": [("continuing", "Continuing"), ("ended", "Ended"), ("missing", "Episodes not in library")],
-    "music": [("complete", "Complete"), ("missing", "Tracks not in library")],
-    "radio": [("in_library", "Has episodes"), ("wanted", "Wanted"), ("podcast", "Podcasts"), ("radio_show", "Radio shows")],
+    "films": [("released", "Released"), ("coming", "Not released"), ("missing", "Wanted")],
+    "tv": [("continuing", "Continuing"), ("ended", "Ended"), ("missing", "Wanted")],
+    "music": [("complete", "In library"), ("missing", "Wanted")],
+    "radio": [("in_library", "In library"), ("wanted", "Wanted"), ("podcast", "Podcasts"), ("radio_show", "Radio shows")],
     "books": [("in_library", "In library"), ("wanted", "Wanted"), ("not_released", "Not released")],
     "audiobooks": [("in_library", "In library"), ("wanted", "Wanted"), ("not_released", "Not released")],
 }
@@ -874,7 +874,7 @@ def item(data_dir, reelix, tab, item_id, cfg=None):
                 rows = [_row(str(x.get("year") or ""), x.get("title"), "", "in_library" if x.get("has_file") else
                              "wanted" if x.get("movie_id") else "not_monitored",
                              href=f"/library-film.html?id={x['movie_id']}" if x.get("movie_id") else "",
-                             note="" if x.get("movie_id") else "Not in your library") for x in found.get("movies") or []]
+                             note="" if x.get("movie_id") else "Not added") for x in found.get("movies") or []]
                 lists.append({"key": "collection", "label": "Collection", "heading": found.get("title"), "rows": rows})
     elif tab == "tv":
         s = services._api(reelix, f"/series/{item_id}") or {}
@@ -1014,6 +1014,7 @@ def item(data_dir, reelix, tab, item_id, cfg=None):
 
 # Changing things from the Library (DASH-276, DASH-206) --------------------------------------------------------
 
+ARTIST_FIND_MAX = 100  # albums searched in one go from an artist's page
 ACTIONS = ("get", "follow", "unfollow", "delete", "keep")
 KEEP = (5, 10, 25, 50, 100)  # Keep (DASH-319): the newest this many episodes of a podcast
 
@@ -1148,9 +1149,16 @@ def act(reelix, tab, item_id, action, scope="item", season=None, episode=None, d
         if action == "get":
             albums = (services._api(reelix, "/albums", {"artist_id": item_id, "page_size": 0}) or {}).get("items") or []
             wanted = [a["id"] for a in albums if a.get("monitored") and int((a.get("statistics") or {}).get("track_file_count") or 0) == 0]
-            for a in wanted[:20]:
-                services._api(reelix, f"/albums/{a}/search", method="POST", body={})
-            return f"Reelix is searching for {len(wanted[:20])} {'album' if len(wanted[:20]) == 1 else 'albums'} now"
+            # One request for the lot, 100 at most, so Reelix paces them itself (the owner's limit, 26 November 2026).
+            # More than that says so, where it used to stop at 20 and say nothing.
+            sent = wanted[:ARTIST_FIND_MAX]
+            if sent:
+                services._api(reelix, "/music/search", method="POST", body={"kind": "item", "ids": sent})
+            word = "album" if len(sent) == 1 else "albums"
+            if len(wanted) > len(sent):
+                return (f"Reelix is searching for {len(sent)} of {len(wanted)} albums now. "
+                        f"It searches {ARTIST_FIND_MAX} at a time, so use the button again for the other {len(wanted) - len(sent)}")
+            return f"Reelix is searching for {len(sent)} {word} now"
         return "Reelix follows the artist" if on else "Reelix no longer follows the artist"
     if tab == "radio" and action == "keep":  # DASH-319: the newest N episodes, or all
         keep = None if scope in ("all", "", None) else int(scope)
@@ -1158,6 +1166,9 @@ def act(reelix, tab, item_id, action, scope="item", season=None, episode=None, d
             raise ValueError("Choose how many episodes to keep")
         services._api(reelix, f"/radio/shows/{item_id}", method="PUT", body={"keep_episodes": keep})
         return "Reelix keeps every episode" if keep is None else f"Reelix keeps the newest {keep} episodes and deletes older ones"
+    if tab == "radio" and action == "get":  # Find wanted episodes: Reelix searches this show's wanted episodes (job radio_episode_search)
+        services._api(reelix, f"/radio/shows/{item_id}/search", method="POST", body={})
+        return "Reelix is searching for this show's wanted episodes now"
     if tab == "radio" and action in ("follow", "unfollow"):
         # DASH-158: Every episode, New episodes from now on, or Not following.
         choice = scope if scope in ("all", "from_now_on", "none") else ("all" if action == "follow" else "none")

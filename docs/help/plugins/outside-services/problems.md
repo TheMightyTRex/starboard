@@ -8,7 +8,7 @@ title: Find your answer
 start: Outside services is not working as it should
 q: What does its tab say?
   Failed or Not answering -> 1
-  Not supported -> 2
+  Needs an update -> 2
   Active, but a card is wrong -> q2
 q2: What does the card say?
   Add addresses in the settings -> 3

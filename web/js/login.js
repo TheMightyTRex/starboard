@@ -4,7 +4,7 @@ function showFieldError(input, message) {
   const error = $(`#${input.id}-error`);
   const hint = $(`#${input.id}-hint`);
   if (!error) return false;
-  error.replaceChildren(icon("circle-alert"), el("span", { text: message }));
+  errorWords(error, message);
   error.hidden = false;
   input.setAttribute("aria-invalid", "true");
   input.setAttribute("aria-describedby", [hint?.id, error.id].filter(Boolean).join(" "));
@@ -23,7 +23,7 @@ function clearErrors(form) {
 
 function showFormError(message) {
   const box = $("#auth-error");
-  box.replaceChildren(icon("circle-alert"), el("span", { text: message }));
+  errorWords(box, message);
   box.hidden = false;
 }
 

@@ -8,7 +8,7 @@ title: Find your answer
 start: Download summary is not working as it should
 q: What does its tab say?
   Failed or Not answering -> 1
-  Not supported -> 2
+  Needs an update -> 2
   Active, but the card is wrong -> q2
 q2: What does the card say?
   0 bytes today -> 3
