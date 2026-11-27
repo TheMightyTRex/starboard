@@ -72,6 +72,7 @@ add features.
 
 
 ### Fixed
+- **The TV, Music and Radio pages no longer scroll sideways at large text.** A card now shrinks to its column and wraps its status and details, so a wide chip cannot push the page wider than the window.
 - **The hover outline of a topic tab meets the line under the tabs (issue #366):** the outline stopped 3px above the line under the menu of topics on a settings page. It now reaches it exactly, in Light, Dark and both High contrast styles. The tab keeps its size, the selected tab keeps its underline, and the focus ring is as it was. The same fix is in the design system's page topics.
 - **Field errors say "Error:" to a screen reader.** An error under a field, such as an empty password, now starts with the hidden word Error: , as the design system asks, so it is not read as a plain sentence. The nine places that drew one by hand share one function.
 - **An artist's Get it searches for every wanted album, up to 100.** It used to stop at 20 without saying so. Now it sends one request, and says how many are left when there are more than 100.

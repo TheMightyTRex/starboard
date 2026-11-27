@@ -8,7 +8,7 @@ WEB = pathlib.Path(__file__).resolve().parent.parent / "web"
 
 class FollowChoiceTest(unittest.TestCase):
     def rule(self, selector):
-        css = (WEB / "css" / "library.css").read_text()
+        css = (WEB / "css" / "components.css").read_text()  # the design system's component (PR 44), synced
         return "\n".join(re.findall(rf"{re.escape(selector)}\s*\{{([^}}]*)\}}", css))
 
     def test_frame_uses_the_control_height_token(self):
@@ -25,8 +25,8 @@ class FollowChoiceTest(unittest.TestCase):
         self.assertIn('el("label", { class: "series-head__follow" }', js)
 
     def test_it_wraps_on_a_phone(self):
-        css = (WEB / "css" / "library.css").read_text()
-        self.assertRegex(css, r"@media \(max-width: 560px\) \{ \.series-head__follow \{ flex: 1 1 100%")
+        css = (WEB / "css" / "components.css").read_text()
+        self.assertRegex(css, r"max-width: 560px\) \{\s*\.series-head__follow \{\s*flex: 1 1 100%")
 
 
 if __name__ == "__main__":
