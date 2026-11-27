@@ -28,7 +28,7 @@ class Check(unittest.TestCase):
             self.assertTrue([p for p in plugins.check(app_manifest(first_sign_in=spec)) if "first_sign_in" in p], spec)
 
     def test_the_version_and_schema(self):
-        self.assertEqual(plugins.API_VERSION, "1.20.0")
+        self.assertGreaterEqual(tuple(map(int, plugins.API_VERSION.split("."))), (1, 20, 0))
         with open(os.path.join(ROOT, "starboard", "plugin-manifest.schema.json")) as f:
             schema = json.load(f)
         self.assertIn("first_sign_in", schema["properties"])

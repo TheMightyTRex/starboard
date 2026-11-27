@@ -262,7 +262,7 @@ async function startPeople() {
       const generate = radio("generate", "Generate one", "A long random password with no characters that can be mistaken for each other. This is the best choice.", true);
       const own = radio("own", "Use my own", "Enter one you will remember, or one from your password manager.", false);
       const ownBox = el("input", { class: "input", type: "password", id: `${rowId}-own`, autocomplete: "new-password", spellcheck: "false", maxlength: 128 });
-      const ownField = field("Your password", ownBox, { hint: `${data.own_rules} ${rule.note}`.trim() });
+      const ownField = field("The password you want to use", ownBox, { hint: `${data.own_rules} ${rule.note}`.trim() });
       ownField.hidden = true;
       const mode = el("fieldset", { class: "form-stack" }, el("legend", { class: "field__label", text: "Password" }), generate.node, own.node);
       const also = info?.can_change ? el("input", { type: "checkbox", id: `${rowId}-also` }) : null;

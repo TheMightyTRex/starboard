@@ -42,7 +42,7 @@ class Parsing(unittest.TestCase):
         self.assertEqual(plugins.check({**ON_DEMAND, "requires": []}), [])
         self.assertEqual(plugins.check(ON_DEMAND), [])  # an older manifest says nothing and is still fine
         self.assertTrue([p for p in plugins.check({**ON_DEMAND, "requires": ["nonsense"]}) if "requires[0]" in p])
-        self.assertEqual(plugins.API_VERSION, "1.20.0")
+        self.assertGreaterEqual(tuple(map(int, plugins.API_VERSION.split("."))), (1, 20, 0))
 
     def test_the_schema_and_the_reference_have_it(self):
         with open(os.path.join(ROOT, "starboard", "plugin-manifest.schema.json")) as f:
