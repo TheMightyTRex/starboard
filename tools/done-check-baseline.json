@@ -1,0 +1,60 @@
+{
+ "about": "Failures already on main (27 November 2026). Each step lists what fails there, by name, with the most it may fail; only new or larger failures fail the gate. Remove an item when it is fixed. Never add an item to hide a failure a change caused.",
+ "steps": {
+  "unit": {
+   "known": {
+    "tests.test_design_system_copies.CopiesMatchTest.test_every_copy_matches_the_library": 1
+   }
+  },
+  "checks": {
+   "known": {
+    "Banned words (pages, scripts and help)|docs/help/accessibility/menus-with-icons.md": 2,
+    "Banned words (pages, scripts and help)|docs/help/topics/add-a-plugin.md": 1,
+    "Banned words (pages, scripts and help)|docs/help/topics/get-what-is-missing.md": 3,
+    "Banned words (pages, scripts and help)|docs/help/topics/update-starboard.md": 1,
+    "Banned words (pages, scripts and help)|web/js/library-search.js": 1,
+    "Banned words (pages, scripts and help)|web/js/wanted.js": 3,
+    "Ruff (Python)|starboard/json_cards.py": 1,
+    "Ruff (Python)|starboard/settings_zip.py": 1,
+    "Ruff (Python)|starboard/update_runs.py": 1,
+    "Ruff (Python)|tests/test_general_pages.py": 1,
+    "Ruff (Python)|tests/test_menu_icons.py": 1,
+    "Ruff (Python)|tests/test_shadows.py": 1,
+    "Ruff (Python)|tests/test_signin.py": 2,
+    "Ruff (Python)|tools/api_compat.py": 4,
+    "Ruff (Python)|tools/verbose-check.py": 3,
+    "Vale (writing rules)|docs/help/plugins/checkrr/problems.md": 1,
+    "typos (spelling)|starboard/containers.py": 3,
+    "typos (spelling)|starboard/totp.py": 1,
+    "typos (spelling)|tools/screenshots/help_shots.d/test-hardware-video-conversion.json": 2
+   }
+  },
+  "words": {
+   "known": {
+    "docs/help/accessibility/menus-with-icons.md": 2,
+    "docs/help/topics/add-a-plugin.md": 1,
+    "docs/help/topics/get-what-is-missing.md": 3,
+    "docs/help/topics/update-starboard.md": 1,
+    "web/js/library-search.js": 1,
+    "web/js/wanted.js": 3
+   }
+  },
+  "help": {
+   "known": {
+    "topics/read-kavita-books-on-your-phone.md: no download rights footer, or an old one (run tools/help_footer.py)": 1,
+    "topics/read-kavita-books-on-your-phone.md: the link to ../images/read-kavita-books-on-your-phone-1-manage.png goes nowhere": 1,
+    "topics/read-kavita-books-on-your-phone.md: the link to ../images/read-kavita-books-on-your-phone-2-apps.png goes nowhere": 1,
+    "topics/read-kavita-books-on-your-phone.md: the link to ../images/read-kavita-books-on-your-phone-3-ios.png goes nowhere": 1
+   },
+   "owed_at_release": [
+    "^topics have fewer than 3 screenshots"
+   ]
+  },
+  "ds": {
+   "known": {
+    "a copy of a design system file differs from the library": 1,
+    "tests.test_design_system_copies.CopiesMatchTest.test_every_copy_matches_the_library": 1
+   }
+  }
+ }
+}
