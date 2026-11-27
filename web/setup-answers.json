@@ -93,6 +93,18 @@
   "waiting": "Waiting for Reelix to finish setting up",
   "hold": "Hold the sites to search: only your old apps search until Starboard runs your apps"
  },
+ "single_sign_on": {
+  "plugin": "single-sign-on",
+  "label": "Set up single sign-on",
+  "ask": "Set up single sign-on?",
+  "hint": "Recommended when other people use your apps: each person gets their own sign-in, and you keep the list in Settings, People. Leave it unticked on a server only you use, so nothing extra runs. It adds a plug-in, which you install in Settings, Plug-ins and which stays inactive until you activate it. Its address is your server's Tailscale name, found in Tailscale's admin page. You choose the name once: passkeys are tied to it for ever, so changing it later makes every passkey stop working.",
+  "chosen": "Install Single sign-on in Settings, Plug-ins, Catalogue: check what it may do, then enter your password. Then choose its Tailscale name once.",
+  "summary": "single sign-on (to install in Settings, Plug-ins)",
+  "notice_title": "Single sign-on, chosen in the set-up",
+  "notice_text": "Install it here: check what it may do, then enter your password. It stays inactive until you activate it. Choose its Tailscale name once: passkeys are tied to it for ever.",
+  "coming": "It is not in the plug-ins collection yet. Starboard offers it here once it is.",
+  "later_done": "Not now. Install single sign-on later in Settings, Plug-ins, Catalogue."
+ },
  "audio_description": {
   "plugin": "audio-description",
   "label": "Audio description",

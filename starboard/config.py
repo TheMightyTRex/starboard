@@ -112,7 +112,9 @@ DEFAULTS = {
     "extras": {"livetv": False, "livetv_address": "", "livetv_jellyfin_folder": "", "import_keep": False, "defaults": False,
                "listening_keep": False, "jellyfin_user": "",
                # The set-up's Audio description tick (DASH-399): a wish to install the plug-in, unticked until chosen.
-               "audio_description": False},
+               "audio_description": False,
+               # The set-up's Single sign-on tick (DASH-589): a wish to install the plug-in, unticked until chosen.
+               "single_sign_on": False},
     # How much Starboard does in the background and how often (Settings, General, Performance).
     "performance": {"preset": "balanced", "history": True, "history_every": 300, "schedule_every": 60,
                     "downloads_refresh": 15, "monitor_refresh": 2, "card_numbers": True,
@@ -741,7 +743,7 @@ def clean_extras(incoming, current):
     if not isinstance(incoming, dict):
         raise ConfigError("Send the Jellyfin job settings as an object")
     out = dict(current)
-    for key in ("livetv", "import_keep", "defaults", "listening_keep", "audio_description"):
+    for key in ("livetv", "import_keep", "defaults", "listening_keep", "audio_description", "single_sign_on"):
         if key in incoming:
             out[key] = bool(incoming[key])
     if "jellyfin_user" in incoming:  # whose watched status the Library shows (DASH-276); "" is Jellyfin's first admin
