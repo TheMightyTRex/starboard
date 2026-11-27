@@ -1619,6 +1619,99 @@ if (chk) {
   check("T-PLU", "Escape closes it and focus returns to Update all", backP.id === "plu-update-all", `${backP.id} ${backP.text}`);
 }
 
+// T-SPEED Speed limits by keyboard alone (DASH-578): Tab reaches Download limit with its label, a figure typed and left is
+// saved with "Saved" said beside it and focus stays, a wrong figure is refused in words tied to the box with the old figure
+// back, the alternative limits switch has a name and Space turns it on, and Enter on nothing is needed (no save button).
+await page.goto(`${base}/settings-downloads-speed.html`);
+await settle();
+const dl = await tabTo((f) => f.tag === "INPUT" && /^dl-speed-qbittorrent-down$/.test(f.id), 60);
+check("T-SPEED", "Tab reaches qBittorrent's Download limit", !!dl, dl ? dl.id : "not reached");
+if (dl) {
+  const named = await page.evaluate(() => { const i = document.activeElement; const l = document.querySelector(`label[for="${i.id}"]`); return { label: l && l.textContent.trim(), type: i.type, hint: !!i.getAttribute("aria-describedby") }; });
+  check("T-SPEED", "it has its label and a hint tied to it", named.label === "Download limit" && named.hint && named.type === "number", JSON.stringify(named));
+  await page.keyboard.press("Control+a");
+  await page.keyboard.type("1500");
+  await page.keyboard.press("Tab");
+  await page.waitForTimeout(700);
+  check("T-SPEED", "leaving the box says Saved", /Saved/.test(await said()), await said());
+  const upF = await focus();
+  check("T-SPEED", "focus moves on to Upload limit and is not lost", upF.id === "dl-speed-qbittorrent-up", `${upF.id} ${upF.text}`);
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Control+a");
+  await page.keyboard.type("-5");
+  await page.keyboard.press("Tab");
+  await page.waitForTimeout(500);
+  const bad = await page.evaluate(() => { const i = document.getElementById("dl-speed-qbittorrent-down"); const e = document.getElementById(`${i.id}-error`); return { invalid: i.getAttribute("aria-invalid"), text: e && !e.hidden ? e.textContent : "", back: i.value, tied: (i.getAttribute("aria-describedby") || "").includes(`${i.id}-error`) }; });
+  check("T-SPEED", "a wrong figure is refused in words tied to the box, with the old figure back", bad.invalid === "true" && /whole number/.test(bad.text) && bad.back === "1500" && bad.tied, JSON.stringify(bad));
+  const alt = await tabTo((f) => /^dl-speed-qbittorrent-alt$/.test(f.id), 8);
+  const altName = await page.evaluate(() => { const i = document.getElementById("dl-speed-qbittorrent-alt"); return `${i.getAttribute("role")} ${i.closest("label")?.textContent.trim()}`; });
+  check("T-SPEED", "Tab reaches the alternative limits switch, a switch with its name", !!alt && /^switch /.test(altName) && /alternative speed limits/i.test(altName), altName);
+  if (alt) {
+    await page.keyboard.press("Space");
+    await page.waitForTimeout(700);
+    const on = await page.evaluate(() => document.getElementById("dl-speed-qbittorrent-alt").checked);
+    check("T-SPEED", "Space turns it on and says Saved", on && /Saved/.test(await said()), await said());
+  }
+}
+// T-SYSBACKUP System, Backups (DASH-588): the panel is reached in the Tab order and its one link, named for what it does,
+// opens the backup page at Full without media with Enter.
+await page.goto(`${base}/system.html`);
+await settle();
+await page.locator("#backups-panel:not([hidden])").waitFor({ timeout: 10000 }).catch(() => {});
+if (await page.locator("#backups-panel:not([hidden])").count()) {
+  check("T-SYSBACKUP", "the panel has a heading and says whether the newest full backup was read back", /Backups/.test(await page.locator("#backups-title").innerText()) && /full backup|Full backups/i.test(await page.locator("#backups-sum").innerText()));
+  const lk = await tabTo((f) => f.tag === "A" && /Check and restore backups/.test(f.text), 120);
+  check("T-SYSBACKUP", "Tab reaches Check and restore backups", !!lk, lk ? lk.text : "not reached");
+  if (lk) {
+    await page.keyboard.press("Enter");
+    await page.waitForURL(/settings-general-backup\.html/, { timeout: 8000 }).catch(() => {});
+    check("T-SYSBACKUP", "Enter opens Backup/Logs at Full without media", /settings-general-backup\.html#bk-full-h/.test(page.url()), page.url());
+  }
+} else check("T-SYSBACKUP", "the example server shows the Backups panel", false, "hidden");
+// T-PLACERULE How often a place gets a copy (DASH-588) by keyboard alone: Tab from a place's switch reaches its Copy select,
+// named for the place; the arrow key changes it, which applies at once and is said politely; the choice survives a reload.
+await page.goto(`${base}/settings-general-backup.html`);
+await settle();
+await page.locator("#place-on-main").waitFor({ timeout: 10000 }).catch(() => {});
+await page.locator("#place-on-main").focus();
+const sel16 = await tabTo((f) => f.tag === "SELECT" && f.id === "place-every-main", 4);
+check("T-PLACERULE", "Tab reaches the Copy select, named for its place", !!sel16 && /How often .* gets a copy/.test(sel16.text), sel16 ? sel16.text : "not reached");
+if (sel16) {
+  await page.keyboard.press("ArrowDown");
+  await page.waitForTimeout(600);
+  check("T-PLACERULE", "the arrow key changes it and the change is said", (await page.locator("#place-every-main").inputValue()) === "weekly" && /Saved: .* at most once a week/.test(await page.locator("#announcer").innerText()), await page.locator("#announcer").innerText());
+  await page.reload(); await settle();
+  await page.locator("#place-every-main").waitFor({ timeout: 10000 }).catch(() => {});
+  check("T-PLACERULE", "the choice is still there after a reload", (await page.locator("#place-every-main").inputValue()) === "weekly");
+}
+// T-KEYSETUP First-run set-up of full backups (DASH-588) by keyboard alone: Set up full backups (or Keep the backup password)
+// is reached with Tab and opens the dialog; Suggest a password by Enter fills both fields and is said politely; Keep it
+// stays waiting until the box that says it was stored is ticked; Escape closes with focus back on the opener.
+await page.goto(`${base}/settings-general-backup.html`);
+await settle();
+await page.locator("#schedule-body").waitFor({ timeout: 10000 }).catch(() => {});
+if (await page.locator("#keep-key").count()) {
+  await page.locator("#keep-key").focus();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(500);
+  const k1 = await focus();
+  check("T-KEYSETUP", "Enter opens the dialog and focus moves into it", k1.inPanel, `${k1.tag} ${k1.id}`);
+  await page.locator("#key-suggest").focus();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  check("T-KEYSETUP", "Suggest a password fills both fields, shows it once and says so", (await page.locator("#key-pw-1").inputValue()) === (await page.locator("#key-pw-2").inputValue())
+    && (await page.locator("#key-pw-1").inputValue()).length === 27 && /suggested/.test(await page.locator("#announcer").innerText()));
+  await page.locator("#key-mine").fill("made-up password");
+  await page.locator("#key-form button[type=submit], button[form=key-form]").first().focus();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  check("T-KEYSETUP", "Keep it waits until the stored box is ticked, with the reason beside the field", /Store the suggested password/.test(await page.locator("#key-pw-1-error").innerText()));
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(400);
+  const k2 = await focus();
+  check("T-KEYSETUP", "Escape closes it with focus back on the button that opened it", k2.id === "keep-key", `${k2.id} ${k2.text}`);
+} else check("T-KEYSETUP", "the example server shows the set-up button", false, "no #keep-key");
+
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

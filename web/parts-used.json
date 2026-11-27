@@ -1,0 +1,11 @@
+{
+ "note": "The design system parts this app loads (tools/sync.py in the design system writes only these). Add a name here, then sync, when a page needs another part.",
+ "use": [
+  "charts",
+  "error-summary",
+  "log-view",
+  "secret-field",
+  "tabs",
+  "tag-input"
+ ]
+}

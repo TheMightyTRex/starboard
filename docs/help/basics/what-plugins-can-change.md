@@ -25,6 +25,10 @@ shows each permission in plain words with a risk level (low, medium or high) bef
   clean-up. They go to a holding folder inside your media folder, `media/.holding`, keeping their folders, and you can put
   each one back with **Put back**. The plug-in gets your whole media folder, so its risk is high. Add only a plug-in
   you trust.
+- **Ask Starboard to hold its heavy jobs,** only when it asks for this and you agree, such as UPS and power while the
+  computer runs on battery. While it holds, Starboard does not start its background jobs, scheduled backups or
+  downloads by itself. The hold ends by itself after at most 30 minutes unless the plug-in asks again, and everything
+  that was waiting then starts. A job you start yourself still runs. The risk is low.
 - **Show settings and buttons** in its own section of **Settings**, then **Plug-ins**, drawn by Starboard.
 - **Add cards to the dashboard** that show a number, a short list or a status. You choose to add them with
   **Edit dashboard**. Starboard asks the plug-in at most once a minute and shows its answer as plain text. Read

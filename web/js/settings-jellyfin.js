@@ -382,6 +382,15 @@ async function startListening() {
       const wait = setInterval(async () => { const now = await api("/api/listening").catch(() => null); if (now && now.job.state !== "running") { clearInterval(wait); redraw(); } }, 3000);
     } catch (err) { problem(err.message); }
   } }, icon("play"), "Apply now") : null;
+  // DASH-578: Audiobookshelf's own scan, from here, so nobody has to open its pages to find new books.
+  const scanSaid = el("p", { class: "small muted", role: "status" });
+  const scanNow = d.abs ? el("button", { type: "button", class: "btn", onclick: async (e) => {
+    const b = e.currentTarget;
+    b.disabled = true;
+    try { scanSaid.textContent = (await api("/api/listening/scan", { method: "POST" })).said; }
+    catch (err) { scanSaid.textContent = ""; problem(err.message, b); }
+    finally { b.disabled = false; }
+  } }, icon("refresh-cw"), "Scan Audiobookshelf now") : null;
   const rules = el("p", { class: "help-links" }, helpButton("How Starboard copies progress", { body: [
       el("p", { text: "Each book is matched by its ASIN, then its ISBN, then its title and author, then its folder. A book in several files becomes one position: the earlier files plus the place in the current one. If the two copies differ in length, the position is scaled to fit." }),
       el("p", { text: "Progress a person already has in Audiobookshelf is never changed, and each book is copied once." }),
@@ -404,7 +413,7 @@ async function startListening() {
     top,
     section("ls-copy", "Copy listening progress", "Where everyone is in each audiobook, and what they finished, into Audiobookshelf. Copy it once Audiobookshelf has scanned in your books.",
       readForm, readResult, imported, mapping, matchSame ? el("div", { class: "actions" }, matchSame) : null, applyRows,
-      el("div", { class: "actions" }, jobRun(d.job), applyNow), rules),
+      el("div", { class: "actions" }, jobRun(d.job), applyNow), scanNow ? el("div", { class: "actions" }, scanNow) : null, scanSaid, rules),
     missing,
   ].filter(Boolean));
 }

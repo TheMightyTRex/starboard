@@ -23,7 +23,7 @@ import threading
 import time
 from datetime import datetime, timedelta
 
-from . import backup, full_backup, logs
+from . import backup, full_backup, logs, power_hold
 
 MODES = ("off", "manual", "monthly", "weekly", "nightly")  # least to most often, as the page lists them
 KEEP = {"monthly": 6, "weekly": 4, "nightly": 7}
@@ -126,6 +126,8 @@ class Scheduler:
                 return
             now = datetime.now()
             if missed:
+                if not power_hold.wait_released(self.wake):
+                    continue  # still missed: it is made once the hold ends
                 missed = False
                 self.run()
                 continue
@@ -135,6 +137,8 @@ class Scheduler:
                 self.wake.wait(min(wait, 6 * 3600))
                 if self.wake.is_set() or datetime.now() < due:
                     continue  # the setting changed, or a 6-hour check: work it out again
+            if not power_hold.wait_released(self.wake):  # DASH-572: on battery, a run that is due waits, then is made
+                continue  # the setting changed meanwhile: work it out again
             self.run()
             time.sleep(1)
 

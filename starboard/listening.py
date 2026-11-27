@@ -50,6 +50,20 @@ def abs_users(service):
     return [u for u in (_abs(service, "/users") or {}).get("users") or [] if u.get("isActive", True)]
 
 
+def abs_scan(service):
+    """Asks Audiobookshelf to scan each of its libraries for new and changed books (DASH-578): its own call, POST
+    /api/libraries/<id>/scan, which only looks at the folders and starts at once. Returns the names in the order asked.
+    A scan can run for a long time; Audiobookshelf says when it is done in its own page, and the next Apply here finds the books."""
+    libraries = (_abs(service, "/libraries") or {}).get("libraries") or []
+    names = []
+    for lib in libraries:
+        if not isinstance(lib, dict) or not str(lib.get("id", "")).replace("-", "").replace("_", "").isalnum():
+            continue
+        _abs(service, f"/libraries/{urllib.parse.quote(str(lib['id']), safe='')}/scan", "POST", timeout=30)
+        names.append(str(lib.get("name") or "A library"))
+    return names
+
+
 def abs_books(service):
     """Every book in every book library, a page of 200 at a time."""
     out = []

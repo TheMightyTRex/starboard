@@ -10,7 +10,10 @@ const PLACE_KINDS = [
   ["nfs", "Network share (NFS)", "Such as 192.168.1.20:/export/backups."],
 ];
 const KIND_ICON = { disk: "hard-drive", smb: "network", nfs: "server", rclone: "cloud" };
-const BRAND_LOGOS = ["drive", "onedrive", "dropbox", "b2", "s3", "webdav"];
+// Google Drive and OneDrive have no logo here (27 November 2026): Google allows only its own unchanged logo and Microsoft
+// allows its logos only with a licence, so each shows the plain cloud icon and its full name. Add the official, unchanged
+// mark here only when the owner has it from the company (docs/LOGOS.md).
+const BRAND_LOGOS = ["dropbox", "b2", "s3", "webdav"];
 
 // The logo of a service (the plain name always sits beside it, so it is decorative for a screen reader) or, for a place
 // on this network, a plain icon. The brand logos load from one small file, only on this page.
@@ -238,6 +241,19 @@ async function loadCopies(focusId) {
       await reload("places-add");
       announce(`Removed ${p.title}`);
     });
+    // How often this place gets a copy: a select that applies at once, with the saved note beside it.
+    const everySel = el("select", { class: "select select--compact", id: `place-every-${p.id}`, "aria-label": `How often ${p.title} gets a copy` },
+      [["each", "Every backup"], ["weekly", "At most once a week"], ["monthly", "At most once a month"]].map(([v, t]) => el("option", { value: v, selected: p.every === v, text: t })));
+    const everyNote = el("span", { class: "saved-note", id: `place-every-note-${p.id}`, hidden: true });
+    everySel.addEventListener("change", async () => {
+      const was = p.every;
+      try {
+        await api("/api/backup/copies/every", { method: "POST", body: { id: p.id, every: everySel.value } });
+        p.every = everySel.value;
+        window.SharedComponents.savedNote(everyNote);
+        announce(`Saved: ${p.title} gets copies: ${everySel.selectedOptions[0].text.toLowerCase()}`);
+      } catch (err) { everySel.value = was; announce(`Not changed: ${err.message}`); }
+    });
     const busy = p.status?.state === "running";
     test.disabled = busy;
     return el("li", { class: "place", id: `place-${p.id}` },
@@ -246,6 +262,7 @@ async function loadCopies(focusId) {
           el("p", { class: "small muted", text: `${p.service_name && p.service_name !== p.title ? `${p.service_name}, ` : ""}${p.kind === "rclone" ? p.where_words : `${p.kind_words}: ${p.where}`}${p.account ? `, signed in as ${p.account}` : ""}. Keeps the newest ${p.keep} full ${p.keep === 1 ? "backup" : "backups"}.` })),
         el("label", { class: "switch place__switch" }, sw, el("span", { class: "visually-hidden", text: `Copy backups to ${p.title}` }))),
       placeState(p),
+      el("div", { class: "field" }, el("label", { for: everySel.id, text: "Copy" }), everySel, everyNote),
       el("div", { id: `place-tested-${p.id}` }, testedLine(p.tested)),
       el("div", { class: "actions" }, test, needsSignin ? (() => {
         const again = el("button", { type: "button", class: "btn", id: `place-signin-${p.id}` }, "Sign in again", el("span", { class: "visually-hidden", text: ` to ${p.title}` }));
