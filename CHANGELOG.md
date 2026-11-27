@@ -80,6 +80,7 @@ add features.
 - **A full backup that was not made is now reported.** A scheduled backup with no saved backup password used to say it had run. It now says "No full backup was made", raises an alert and shows a warning in Settings.
 
 ### Security
+- **A downloaded settings file no longer holds a plug-in's keys or secrets.** Plug-in settings that are secrets, and a plug-in's own key, are left out of the file. A restore on the same server keeps the ones the plug-in has.
 - **Requests with a Transfer-Encoding are refused.** Starboard now answers 400 and closes the connection, so a proxy in front of it cannot hide a second request inside a body.
 - **One guarded way to fetch a plug-in's manifest, catalogue and logo.** Starboard now checks every redirect and the address it connects to, so an address that redirects, or changes its answer, cannot reach your home network's private services or a cloud metadata address.
 - **A plug-in Starboard cannot run is stopped, and says why.** When Starboard starts, a plug-in whose API range leaves out this Starboard, or that uses something that is gone, is stopped (not removed) and shows **Needs an update** with the reason. Its settings and data are kept. Before, it showed Not supported but kept running.
