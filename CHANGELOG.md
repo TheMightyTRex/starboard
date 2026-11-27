@@ -74,7 +74,7 @@ add features.
 - **One look for a notice.** A message in the page (an error, a warning, a note) is drawn by one function, so an error notice in Downloads, Search, Search the sites and On demand history now has the same circle-with-exclamation icon as everywhere else.
 - **Lighter pages again.** Styles for parts of the design system that no page uses (cover cards, the logo editor, the decision tree and more) are no longer sent with every page, so each page's style sheet is about 14 KB smaller.
 - **Plug-in catalogues are read every 6 hours.** Starboard reads them again with its look at GitHub, only while a page is open and only when you have added a plug-in, instead of once a day.
-- **A notice with buttons reads properly on a phone.** On Settings, Plug-ins the offer to install a plug-in chosen in the set-up no longer squeezes its title to one letter a line, because its buttons now sit on their own row.
+- **A notice with buttons reads properly on a phone.** Any notice with buttons or a link keeps its words readable at 375 pixels wide: what follows the words goes on its own row under them. The fault was in the design system, so the fix is there now and no longer a patch in this app.
 - **Each plug-in's tab has its own icon.** Settings, Plug-ins now draws a different line icon on each plug-in's tab, and where the tabs show icons only, such as on a phone, the tab you are on and the tab with focus also show their name.
 - **Starboard no longer reads Plex's token.** Search for new apps does not look inside the Plex container for the token any more.
 - **Display opens as a slide-out on Sign in and Set up too.** The sign-in page had its own copy of Display as a dialog; it now uses the same template as every other page.
