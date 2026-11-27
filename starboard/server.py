@@ -2888,6 +2888,9 @@ class Handler(BaseHTTPRequestHandler):
                     return self.error(400, str(e))
             if path == "/api/media-server/migrate" and method in ("GET", "POST"):  # DASH-587: does what the wizard planned, after the person confirmed
                 return self.media_migrate(method)
+            if path == "/api/media-server/comparison" and method == "GET":  # DASH-580: figures measured once, from a small file
+                from . import mediaserver
+                return self.json(200, mediaserver.comparison())
             if path.startswith("/api/media-server/admin") and method in ("GET", "POST"):  # DASH-568: the media server's own admin jobs
                 return self.media_admin(method, path)
             if path in ("/api/media-server/choose", "/api/media-server/back") and method == "POST":

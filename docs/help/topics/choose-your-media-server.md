@@ -35,6 +35,14 @@ answers, choose another server or none, and go back in one step for 24 hours. St
 
    ![Choose a media server, with the choices and Use this media server (step 2) outlined, with example data](../images/choose-your-media-server-5-choose.png)
 
+### Compare Jellyfin, Plex and Emby
+
+Under **Settings**, then **Plug-ins**, then **Catalogue**, then the **Media servers** tab, **How much each uses** shows four charts:
+memory at rest, processor at rest, time to start and size of the image. Each chart has a table of the same figures behind
+**Show as a table**. The figures were measured once, on 27 November 2026, with the three servers started together, each with an empty settings
+folder, by the same method as Starboard's other comparison tests. Starboard measures nothing when you open the page: it reads
+the figures from a small file. They are idle figures. With a large library or people watching, each server uses more.
+
 ### Use Emby or Plex
 
 Emby and Plex are built into Starboard like Jellyfin. Each is a kind of app in Manage apps with its own form, check

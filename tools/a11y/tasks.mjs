@@ -799,6 +799,24 @@ if (sw1) {
   check("T-WIZARD", "Escape closes the wizard and focus goes back to Switch with help", /^Switch with help/.test(out.text), JSON.stringify(out));
 }
 
+// T-COMPARE (DASH-580) The comparison on the Plug-ins catalogue: each chart has a heading, bars that Tab reaches with their words, and a
+// table of the same figures behind Show as a table.
+await page.goto(`${base}/settings-plugins-catalogue.html`);
+await settle();
+const cmp = await page.evaluate(() => {
+  const part = document.querySelector("[data-part=ms-compare]");
+  const cards = [...(part?.querySelectorAll(".chart") || [])];
+  return { has: !!part, cards: cards.length, heads: cards.filter((c) => c.querySelector("h3")).length, tables: cards.filter((c) => c.querySelector("details table")).length,
+    bars: [...(part?.querySelectorAll(".bars li") || [])].filter((li) => /[0-9]/.test(li.textContent)).length, h2s: part?.querySelectorAll("h2").length || 0 };
+});
+if (cmp.has) {
+  check("T-COMPARE", "four charts, each with a level 3 heading and a table", cmp.cards === 4 && cmp.heads === 4 && cmp.tables === 4 && cmp.h2s === 0, JSON.stringify(cmp));
+  check("T-COMPARE", "every bar says its figure in words", cmp.bars === 12, JSON.stringify(cmp));
+  await page.evaluate(() => { const h = document.getElementById("ms-compare-h"); h.tabIndex = -1; h.focus(); });  // start at the part: the page has many stops before it
+  const bar = await tabTo((f) => f.tag === "LI" && /Jellyfin/.test(f.text), 12);
+  check("T-COMPARE", "Tab reaches a bar", !!bar, bar ? bar.text : "not reached");
+} else check("T-COMPARE", "the comparison is on the catalogue", false, JSON.stringify(cmp));
+
 // T-ADMIN (DASH-568) Administering the media server by keyboard alone, with made-up answers: each part is read only when its button is
 // pressed (nothing is asked before), Tab reaches Read the libraries, Enter reads them, the list's own buttons are named for the library,
 // a scan says what it asked in a polite status region and keeps focus on its button, a full refresh asks first and Escape cancels,
@@ -819,7 +837,8 @@ await page.evaluate(async () => {
 await settle();
 const asked0 = await page.evaluate(() => window.__adminAsked.filter((x) => /admin\/(libraries|tasks|activity|logs)/.test(x)).length);
 check("T-ADMIN", "nothing is read from the server before a button is pressed", asked0 === 0, String(asked0));
-const readLib = await tabTo((f) => f.tag === "BUTTON" && /^Read the libraries/.test(f.text), 60);
+await page.evaluate(() => { const h = document.getElementById("ma-libraries-h"); h.tabIndex = -1; h.focus(); });  // start at the part: the page has many stops before it
+const readLib = await tabTo((f) => f.tag === "BUTTON" && /^Read the libraries/.test(f.text), 4);
 check("T-ADMIN", "Tab reaches Read the libraries", !!readLib, readLib ? readLib.text : "not reached");
 if (readLib) {
   await page.keyboard.press("Enter");
