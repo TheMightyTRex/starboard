@@ -66,9 +66,14 @@ class Shared:
         for call in mediaserver.REQUIRED:
             self.assertTrue(callable(getattr(self.one, call)), call)
         self.assertEqual(set(self.one.capabilities) - set(mediaserver.CAPABILITIES), set())
-        self.assertEqual(self.one.capabilities, ())  # read only for now
+        self.assertEqual(self.one.capabilities, ("admin_libraries", "admin_tasks", "admin_activity", "admin_logs", "play", "watched", "updates") if self.one.id == "emby" else ("admin_libraries", "admin_tasks", "admin_activity", "play", "watched", "updates"))  # DASH-566: the rest are Jellyfin's, each with its reason
         d = self.one.describe()
-        self.assertEqual((d["id"], d["kind"], d["capabilities"]), (self.one.id, "media-server", []))
+        self.assertEqual((d["id"], d["kind"], d["capabilities"]), (self.one.id, "media-server", list(self.one.capabilities)))
+        rows = {r["id"]: r for r in d["capability_rows"]}
+        self.assertEqual(set(rows), set(mediaserver.CAPABILITIES))
+        self.assertTrue(rows["play"]["can"] and rows["play"]["why"] == "")
+        self.assertFalse(rows["live_tv"]["can"])
+        self.assertTrue(all(r["why"] for r in d["capability_rows"] if not r["can"]), "every No says why")
 
     def test_not_set_up_is_said_in_words(self):
         for services_list in ([], [{**self.svc, "api_key": ""}], [{**self.svc, "enabled": False}], [{**self.svc, "type": "link"}], [JF]):

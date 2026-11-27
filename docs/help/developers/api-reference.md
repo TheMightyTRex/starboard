@@ -2556,6 +2556,7 @@ The named objects the answers use.
 | `links` | an object (its fields vary) | yes |
 | `deprecations` | a list of an object (its fields vary) | no |
 | `capabilities` | a list of text | no |
+| `media_server` | an object | no |
 
 ### UpdateRun
 

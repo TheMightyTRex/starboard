@@ -2888,6 +2888,11 @@ class Handler(BaseHTTPRequestHandler):
                     return self.error(400, str(e))
             if path == "/api/media-server/migrate" and method in ("GET", "POST"):  # DASH-587: does what the wizard planned, after the person confirmed
                 return self.media_migrate(method)
+            if path == "/api/media-server/comparison" and method == "GET":  # DASH-580: figures measured once, from a small file
+                from . import mediaserver
+                return self.json(200, mediaserver.comparison())
+            if path.startswith("/api/media-server/admin") and method in ("GET", "POST"):  # DASH-568: the media server's own admin jobs
+                return self.media_admin(method, path)
             if path in ("/api/media-server/choose", "/api/media-server/back") and method == "POST":
                 from . import mediaserver
                 try:
@@ -3577,6 +3582,35 @@ class Handler(BaseHTTPRequestHandler):
         from . import mediaserver
         one = mediaserver.active(self.app.config.data)
         return one.name if one else ""
+
+    def media_admin(self, method, path):
+        """The Administration part of the media server tab (DASH-568). GET /api/media-server/admin says what is offered, from the
+        settings alone; GET .../admin/<part> reads one part from the server now; POST .../admin/scan and .../admin/run do one thing
+        a person asked for, and are written to the audit log. Nothing here runs unless a person opens it."""
+        from . import mediaserver, jellyfin_play, services as svc
+        app, cfg = self.app, self.app.config
+        try:
+            if method == "GET" and path == "/api/media-server/admin":
+                return self.json(200, {**mediaserver.admin_overview(cfg.data), "address": jellyfin_play.address_for(cfg.data)})
+            if method == "GET" and path.startswith("/api/media-server/admin/"):
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                return self.json(200, mediaserver.admin_read(cfg.data, path.rsplit("/", 1)[1], q.get("name", [""])[0][:120]))
+            if method == "POST" and path in ("/api/media-server/admin/scan", "/api/media-server/admin/run"):
+                body = self.body()
+                what = "scan" if path.endswith("/scan") else "run"
+                got = mediaserver.admin_do(cfg.data, what, str(body.get("id") or "")[:64], str(body.get("how") or "new"))
+                from .api_v1 import audit
+                audit(app.data_dir, f"media_server_{what}", session=self.session_label(), target=str(body.get("id") or "all")[:64])
+                logs.event("info", "media server", got["said"])
+                svc.forget("jellyfin")
+                return self.json(200, got)
+        except LookupError as e:
+            return self.error(404, str(e))
+        except ValueError as e:
+            return self.error(400, str(e))
+        except svc.ServiceError as e:
+            return self.error(502, str(e))
+        return self.error(404, "No such page")
 
     def media_migrate(self, method):
         """GET: how the move is going, or how the last one went. POST: start one in the background, only after the wizard's last

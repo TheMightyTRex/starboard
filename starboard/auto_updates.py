@@ -145,7 +145,7 @@ def _run(app, target, address="", wait=RUN_WAIT, sleep=time.sleep):
     from . import update_runs
     try:
         run = update_runs.start(app, target, by="automatic", address=address)
-    except update_runs.Busy as e:
+    except update_runs.Busy as e:  # includes Watching: waits, never counted as a failure, so no version is skipped for it
         return {"target": target, "name": target, "state": "waiting", "said": str(e), "from": "", "to": ""}
     except (update_runs.Refused, LookupError, ValueError, OSError) as e:
         return {"target": target, "name": target, "state": "refused", "said": str(e)[:300], "from": "", "to": ""}
@@ -221,7 +221,9 @@ def apps(app, now=None, force=False):
         out = _run(app, target)
         out["name"] = r["name"] if out["name"] == target else out["name"]
         runs.append(out)
-    return _finish(app, "apps", runs, now)
+    # A media server held back because people are watching is not a failure: it is tried again at the next update hours.
+    held = [r for r in runs if r["state"] == "waiting" and "watching" in r["said"]]
+    return _finish(app, "apps", [r for r in runs if r not in held], now, "; ".join(f"{r['name']} waits: {r['said']}, so it is tried again tomorrow" for r in held))
 
 
 def _plugin_candidates(app):

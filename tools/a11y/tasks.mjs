@@ -799,6 +799,97 @@ if (sw1) {
   check("T-WIZARD", "Escape closes the wizard and focus goes back to Switch with help", /^Switch with help/.test(out.text), JSON.stringify(out));
 }
 
+// T-COMPARE (DASH-580) The comparison on the Plug-ins catalogue: each chart has a heading, bars that Tab reaches with their words, and a
+// table of the same figures behind Show as a table.
+await page.goto(`${base}/settings-plugins-catalogue.html`);
+await settle();
+const cmp = await page.evaluate(() => {
+  const part = document.querySelector("[data-part=ms-compare]");
+  const cards = [...(part?.querySelectorAll(".chart") || [])];
+  return { has: !!part, cards: cards.length, heads: cards.filter((c) => c.querySelector("h3")).length, tables: cards.filter((c) => c.querySelector("details table")).length,
+    bars: [...(part?.querySelectorAll(".bars li") || [])].filter((li) => /[0-9]/.test(li.textContent)).length, h2s: part?.querySelectorAll("h2").length || 0 };
+});
+if (cmp.has) {
+  check("T-COMPARE", "four charts, each with a level 3 heading and a table", cmp.cards === 4 && cmp.heads === 4 && cmp.tables === 4 && cmp.h2s === 0, JSON.stringify(cmp));
+  check("T-COMPARE", "every bar says its figure in words", cmp.bars === 12, JSON.stringify(cmp));
+  await page.evaluate(() => { const h = document.getElementById("ms-compare-h"); h.tabIndex = -1; h.focus(); });  // start at the part: the page has many stops before it
+  const bar = await tabTo((f) => f.tag === "LI" && /Jellyfin/.test(f.text), 12);
+  check("T-COMPARE", "Tab reaches a bar", !!bar, bar ? bar.text : "not reached");
+} else check("T-COMPARE", "the comparison is on the catalogue", false, JSON.stringify(cmp));
+
+// T-ADMIN (DASH-568) Administering the media server by keyboard alone, with made-up answers: each part is read only when its button is
+// pressed (nothing is asked before), Tab reaches Read the libraries, Enter reads them, the list's own buttons are named for the library,
+// a scan says what it asked in a polite status region and keeps focus on its button, a full refresh asks first and Escape cancels,
+// and the last table says where each job is done, with a chip in words.
+await page.goto(`${base}/settings-jellyfin.html`);
+await settle();
+await page.evaluate(async () => {
+  const real = window.api;
+  window.__adminAsked = [];
+  window.api = async (p, o) => {
+    if (p.startsWith("/api/media-server/admin")) window.__adminAsked.push(`${o?.method || "GET"} ${p}`);
+    if (p === "/api/media-server/admin/libraries") return { rows: [{ id: "lib1", name: "Films", type: "movies", folders: ["/data/media/movies"], count: null }] };
+    if (p === "/api/media-server/admin/scan") return { said: "Jellyfin was asked to scan that library" };
+    return real(p, o);
+  };
+  await startMediaAdmin();
+});
+await settle();
+const asked0 = await page.evaluate(() => window.__adminAsked.filter((x) => /admin\/(libraries|tasks|activity|logs)/.test(x)).length);
+check("T-ADMIN", "nothing is read from the server before a button is pressed", asked0 === 0, String(asked0));
+await page.evaluate(() => { const h = document.getElementById("ma-libraries-h"); h.tabIndex = -1; h.focus(); });  // start at the part: the page has many stops before it
+const readLib = await tabTo((f) => f.tag === "BUTTON" && /^Read the libraries/.test(f.text), 4);
+check("T-ADMIN", "Tab reaches Read the libraries", !!readLib, readLib ? readLib.text : "not reached");
+if (readLib) {
+  await page.keyboard.press("Enter");
+  await page.waitForSelector("[data-part=ma-libraries] .row", { timeout: 6000 }).catch(() => {});
+  const after = await focus();
+  check("T-ADMIN", "focus stays on the button that read them", /^Read the libraries/.test(after.text), JSON.stringify(after));
+  const scan = await tabTo((f) => f.tag === "BUTTON" && /^Scan Films/.test(f.text), 8);
+  check("T-ADMIN", "the scan button is named for its library", !!scan, scan ? scan.text : "not reached");
+  if (scan) {
+    await page.keyboard.press("Enter");
+    await page.waitForFunction(() => /asked to scan/.test(document.getElementById("ma-said")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
+    const live = await page.evaluate(() => { const l = document.getElementById("ma-said"); return { role: l?.getAttribute("role"), live: l?.getAttribute("aria-live"), text: l?.textContent || "" }; });
+    check("T-ADMIN", "the scan is said in a polite status region", live.role === "status" && live.live === "polite" && /asked to scan/.test(live.text), JSON.stringify(live));
+    const stay = await focus();
+    check("T-ADMIN", "focus stays on Scan", /^Scan Films/.test(stay.text), JSON.stringify(stay));
+    const full = await tabTo((f) => f.tag === "BUTTON" && /^Refresh everything/.test(f.text), 4);
+    if (full) {
+      await page.keyboard.press("Enter");
+      await settle();
+      const dlg = await page.evaluate(() => !!document.querySelector("dialog[open], [role=dialog]"));
+      check("T-ADMIN", "a full refresh asks first", dlg, String(dlg));
+      await page.keyboard.press("Escape");
+      await settle();
+      const back = await focus();
+      check("T-ADMIN", "Escape returns focus to Refresh everything", /^Refresh everything/.test(back.text), JSON.stringify(back));
+      const scanned = await page.evaluate(() => window.__adminAsked.filter((x) => x.startsWith("POST")).length);
+      check("T-ADMIN", "cancelling asks the server nothing", scanned === 1, String(scanned));
+    } else check("T-ADMIN", "Tab reaches Refresh everything", false, "not reached");
+  }
+}
+const cov = await page.evaluate(() => { const t = document.querySelector("[data-part=ma-coverage] table"); return { caption: t?.querySelector("caption")?.textContent || "", rows: t?.querySelectorAll("tbody tr").length || 0, heads: t?.querySelectorAll("tbody th[scope=row]").length || 0, chips: [...(t?.querySelectorAll(".chip") || [])].filter((c) => !c.textContent.trim()).length }; });
+check("T-ADMIN", "the coverage table has a caption, a row header and words in every chip", /administration job is done/.test(cov.caption) && cov.rows > 10 && cov.heads === cov.rows && cov.chips === 0, JSON.stringify(cov));
+
+// T-CAN (DASH-566) What each can do: a table with a caption, a column for each media server, a row header for each job, and every No
+// says why in words (never a colour alone). Read in the page's own order, after Installed side by side.
+await page.goto(`${base}/settings-jellyfin.html`);
+await settle();
+const can = await page.evaluate(() => {
+  const h = document.getElementById("ms-can-h");
+  const t = h?.closest("[data-part]")?.querySelector("table");
+  const rows = [...(t?.querySelectorAll("tbody tr") || [])];
+  const side = document.getElementById("ms-side-h");
+  return { has: !!t, caption: t?.querySelector("caption")?.textContent || "", cols: [...(t?.querySelectorAll("thead th") || [])].map((x) => x.textContent),
+    rowHeads: rows.filter((r) => r.querySelector("th[scope=row]")).length, rows: rows.length,
+    noWithoutWhy: rows.flatMap((r) => [...r.querySelectorAll("td")]).filter((c) => /^No/.test(c.textContent) && c.textContent.trim() === "No").length,
+    after: !!(side && h && (side.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING)) };
+});
+check("T-CAN", "the table has a caption, the three servers (Jellyfin, Emby, Plex) and a row header for each job", can.has && /Jellyfin, Plex and Emby/.test(can.caption) && can.cols.join() === "Job,Jellyfin,Emby,Plex" && can.rows > 5 && can.rowHeads === can.rows, JSON.stringify(can));
+check("T-CAN", "every No says why", can.noWithoutWhy === 0, String(can.noWithoutWhy));
+check("T-CAN", "it follows Installed side by side", can.after, "order");
+
 // T-WIZARD3 (DASH-587) Carrying a media server move across by keyboard alone, with made-up answers for the servers: step 3 names
 // each part with a tick box that has its words, Tab reaches the ticks and the last button, Enter starts it, the progress is said
 // in a polite live region, focus lands on Close when it ends, and Escape returns focus to Switch with help.

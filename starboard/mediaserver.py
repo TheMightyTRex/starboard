@@ -11,7 +11,9 @@ DASH-566) fills the same slot.
 The active one is `extras.media_server`; when it is not set it is "jellyfin", so an existing install needs no
 migration, and an older Starboard ignores the key. Nothing is written until a person chooses another server."""
 
+import re
 import time
+import urllib.parse
 
 from . import services
 
@@ -19,8 +21,18 @@ DEFAULT = "jellyfin"
 PAGE = "/settings-jellyfin.html"  # Settings, Apps: the active media server's tab, whichever it is (its address is kept for older links)
 
 # What a media server may offer beyond the nine required calls; a page draws a part only when it is listed.
-CAPABILITIES = ("play", "watched", "restart", "own_plugins", "conversion_test", "live_tv", "libraries_add", "first_run",
+CAPABILITIES = ("admin_libraries", "admin_tasks", "admin_activity", "admin_logs", "play", "watched", "restart", "own_plugins", "conversion_test", "live_tv", "libraries_add", "first_run",
                 "history_import", "user_defaults", "metadata_folder", "detect", "updates")
+# What each capability means to a person, and why a server without it says so (the Media server tab lists every one for each
+# server, so nothing is hidden: "Yes", or "No" with the reason in words). A server's own reasons are in its `limits`.
+CAPABILITY_LABELS = {
+    "admin_libraries": "Libraries and scans", "admin_tasks": "Scheduled tasks", "admin_activity": "Activity", "admin_logs": "The server's logs",
+    "play": "Play from Library", "watched": "Watched and not watched", "restart": "Restart from Starboard",
+    "own_plugins": "The server's own plug-ins and their updates", "conversion_test": "Test of video conversion",
+    "live_tv": "Live TV channels", "libraries_add": "Libraries filled by plug-ins", "first_run": "First set-up by Starboard",
+    "history_import": "Watch history import", "user_defaults": "Defaults for every user",
+    "metadata_folder": "Pictures and details folder", "detect": "Finding it on this computer", "updates": "Checking and updating the server",
+}
 REQUIRED = ("describe", "status", "libraries", "playing", "recent", "refresh", "users", "sign_in_check", "keys_needed")
 
 
@@ -45,8 +57,84 @@ class MediaServer:
             raise services.ServiceError(f"{self.name} is not set up yet. Add it with its API key in Settings, Apps")
         return found
 
+    limits = {}  # capability id: the plain reason this server does not offer it (or offers it only in part)
+
+    def capability_rows(self):
+        """Every capability, each marked Yes or No for this server with a reason in words (never a colour alone)."""
+        return [{"id": c, "label": CAPABILITY_LABELS[c], "can": c in self.capabilities,
+                 "why": "" if c in self.capabilities else self.limits.get(c, f"{self.name} does not offer this through Starboard yet")}
+                for c in CAPABILITIES]
+
+    # Administration (DASH-568): the server's own admin jobs Starboard can do, each read or done only when a person asks. ----------
+    admin_coverage_rows = ()  # (job, who does it: "starboard", "server" or "no", words, page of the server's own admin, "" for none)
+
+    def admin_coverage(self):
+        """Every administration job of this server: where it is done, so a person never has to guess. `who` is "starboard" (done
+        on the media server tab), "server" (done in the server's own pages: the words say why and `page` says where) or "no"
+        (nobody can, through the server's interface)."""
+        return [{"job": j, "who": w, "says": t, "page": p} for j, w, t, p in self.admin_coverage_rows]
+
+    def _no(self, what):
+        raise services.ServiceError(f"{self.name} does not give Starboard {what}")
+
+    def admin_libraries(self, services_list):
+        """[{id, name, type, folders: [str], count: int or None}]."""
+        self._no("its libraries")
+
+    def admin_scan(self, services_list, library_id="", how="new"):
+        """Asks the server to scan one library, or all when library_id is "". how: "new" (new and changed files) or "all"
+        (every file and its details again)."""
+        self._no("a scan")
+
+    def admin_tasks(self, services_list):
+        """[{id, name, group, state ("idle", "running"), last: words, when: words about its times}]."""
+        self._no("its scheduled tasks")
+
+    def admin_run_task(self, services_list, task_id):
+        self._no("a way to run a task")
+
+    def admin_activity(self, services_list, limit=40):
+        """[{when, what, who, kind}], newest first."""
+        self._no("its activity")
+
+    def admin_logs(self, services_list):
+        """[{name, size, when}], newest first."""
+        self._no("its log files")
+
+    def admin_log(self, services_list, name, lines=300):
+        """The last `lines` lines of one log file, as text."""
+        self._no("its log files")
+
+    # Items in the server, for Play and Watched (optional: offered when "play" or "watched" is a capability) -------------
+    def play_info(self, services_list):
+        """What a Play link needs besides the item's id: {"server_id": ...} or {}."""
+        return {}
+
+    def play_link(self, base, item_id, server_id=""):
+        raise NotImplementedError
+
+    def film_ids(self, services_list):
+        """{("tmdb" or "imdb", id): the server's own id} for every film it has."""
+        raise NotImplementedError
+
+    def watched_user(self, services_list, wanted=""):
+        """(id, name) of the person whose watched state is shown, or None."""
+        raise NotImplementedError
+
+    def watched_film(self, services_list, who, tmdb):
+        """{"id", "watched"} for a film, or None when the server does not have it."""
+        raise NotImplementedError
+
+    def watched_series(self, services_list, who, tmdb):
+        """{"id", "episodes": {(season, episode): {"id", "watched"}}} for a series, or None."""
+        raise NotImplementedError
+
+    def mark(self, services_list, who, ids, watched):
+        raise NotImplementedError
+
     def describe(self):
-        return {"id": self.id, "name": self.name, "kind": "media-server", "page": self.page, "capabilities": list(self.capabilities)}
+        return {"id": self.id, "name": self.name, "kind": "media-server", "page": self.page, "capabilities": list(self.capabilities),
+                "capability_rows": self.capability_rows()}
 
     def status(self, services_list):
         raise NotImplementedError
@@ -75,6 +163,30 @@ class MediaServer:
     def legacy_status(self, services_list):
         """The answer the dashboard and System have always had from GET /api/jellyfin (its own words for each part)."""
         raise NotImplementedError
+
+
+def _trigger_words(triggers):
+    """A scheduled task's times in plain words, from the server's trigger list (ticks are tenths of a microsecond)."""
+    out = []
+    for t in triggers or []:
+        if not isinstance(t, dict):
+            continue
+        kind = t.get("Type")
+        if kind == "DailyTrigger":
+            out.append(f"every day at {_clock(t.get('TimeOfDayTicks'))}")
+        elif kind == "WeeklyTrigger":
+            out.append(f"every {t.get('DayOfWeek', 'week')} at {_clock(t.get('TimeOfDayTicks'))}")
+        elif kind == "IntervalTrigger":
+            mins = round((t.get("IntervalTicks") or 0) / 600_000_000)
+            out.append(f"every {mins // 60} hours" if mins >= 120 and mins % 60 == 0 else f"every {mins} minutes")
+        elif kind == "StartupTrigger":
+            out.append("when the server starts")
+    return ", ".join(out) or "only when you run it"
+
+
+def _clock(ticks):
+    mins = round((ticks or 0) / 600_000_000)
+    return f"{mins // 60:02d}:{mins % 60:02d}"
 
 
 class MediaBrowser(MediaServer):
@@ -128,6 +240,60 @@ class MediaBrowser(MediaServer):
         self._send(self._service(services_list), "POST", "/Library/Refresh")
         return {"asked": True}
 
+    # Administration, shared by Jellyfin and Emby (the same questions, under a prefix) ----------------------------------------
+    def admin_libraries(self, services_list):
+        rows = self._send(self._service(services_list), "GET", "/Library/VirtualFolders") or []
+        return [{"id": str(r.get("ItemId") or ""), "name": str(r.get("Name") or ""), "type": str(r.get("CollectionType") or "mixed"),
+                 "folders": [str(x) for x in r.get("Locations") or [] if isinstance(x, str)][:20], "count": None}
+                for r in rows if isinstance(r, dict) and r.get("ItemId")]
+
+    def admin_scan(self, services_list, library_id="", how="new"):
+        found = self._service(services_list)
+        if how not in ("new", "all"):
+            raise ValueError("Choose new and changed files, or everything")
+        if not library_id:
+            self._send(found, "POST", "/Library/Refresh")
+            return {"asked": True}
+        if not re.match(r"^[0-9A-Za-z-]{1,64}$", library_id):
+            raise ValueError("That is not a library")
+        mode = "Default" if how == "new" else "FullRefresh"
+        self._send(found, "POST", f"/Items/{library_id}/Refresh?Recursive=true&ImageRefreshMode={mode}&MetadataRefreshMode={mode}&ReplaceAllImages=false&ReplaceAllMetadata={'true' if how == 'all' else 'false'}")
+        return {"asked": True}
+
+    def admin_tasks(self, services_list):
+        out = []
+        for t in self._send(self._service(services_list), "GET", "/ScheduledTasks?isHidden=false") or []:
+            if not isinstance(t, dict) or not t.get("Id"):
+                continue
+            last = t.get("LastExecutionResult") or {}
+            out.append({"id": str(t["Id"]), "name": str(t.get("Name") or ""), "group": str(t.get("Category") or ""),
+                        "state": "running" if t.get("State") == "Running" else "idle",
+                        "last": f"{last.get('Status', '')} {str(last.get('EndTimeUtc') or '')[:16].replace('T', ' ')}".strip(),
+                        "when": _trigger_words(t.get("Triggers"))})
+        return out
+
+    def admin_run_task(self, services_list, task_id):
+        if not re.match(r"^[0-9A-Za-z-]{1,64}$", str(task_id)):
+            raise ValueError("That is not a task")
+        self._send(self._service(services_list), "POST", f"/ScheduledTasks/Running/{task_id}")
+        return {"asked": True}
+
+    def admin_activity(self, services_list, limit=40):
+        got = self._send(self._service(services_list), "GET", f"/System/ActivityLog/Entries?limit={max(1, min(int(limit), 100))}") or {}
+        return [{"when": str(e.get("Date") or "")[:16].replace("T", " "), "what": str(e.get("Name") or ""), "who": str(e.get("ShortOverview") or ""),
+                 "kind": str(e.get("Severity") or "Information")} for e in (got.get("Items") or []) if isinstance(e, dict)]
+
+    def admin_logs(self, services_list):
+        rows = self._send(self._service(services_list), "GET", "/System/Logs") or []
+        return sorted(({"name": str(r.get("Name") or ""), "size": int(r.get("Size") or 0), "when": str(r.get("DateModified") or "")[:16].replace("T", " ")}
+                       for r in rows if isinstance(r, dict) and r.get("Name")), key=lambda r: r["when"], reverse=True)[:60]
+
+    def admin_log(self, services_list, name, lines=300):
+        if not re.match(r"^[A-Za-z0-9._ -]{1,120}$", str(name)) or ".." in str(name):
+            raise ValueError("That is not a log file")
+        got = self._send(self._service(services_list), "GET", "/System/Logs/Log?name=" + urllib.parse.quote(str(name)))
+        return "\n".join(str(got).splitlines()[-max(1, min(int(lines), 1000)):])
+
     def users(self, services_list):
         rows = self._send(self._service(services_list), "GET", "/Users") or []
         return [{"id": str(r.get("Id") or ""), "name": str(r.get("Name") or ""),
@@ -146,8 +312,26 @@ class Jellyfin(MediaBrowser):
     name = "Jellyfin"
     service_type = "jellyfin"
     page = PAGE
-    capabilities = ("play", "watched", "restart", "own_plugins", "conversion_test", "live_tv", "libraries_add", "first_run",
+    capabilities = ("admin_libraries", "admin_tasks", "admin_activity", "admin_logs", "play", "watched", "restart", "own_plugins", "conversion_test", "live_tv", "libraries_add", "first_run",
                     "history_import", "user_defaults", "metadata_folder", "detect", "updates")
+    admin_coverage_rows = (
+        ("Libraries: list, scan new and changed files, refresh everything", "starboard", "On this tab, under Administration.", ""),
+        ("Libraries: add, rename or remove one, and change its folders and options", "later", "Not in Starboard yet. Use Jellyfin's Dashboard, Libraries.", "/web/#/dashboard/libraries"),
+        ("People: their passwords", "starboard", "Settings, People makes and changes a password for each person.", ""),
+        ("People: add or remove an account, their rights and the libraries they see", "later", "Not in Starboard yet. Use Jellyfin's Dashboard, Users.", "/web/#/dashboard/users"),
+        ("Scheduled tasks: read, and run now", "starboard", "On this tab, under Administration.", ""),
+        ("Scheduled tasks: change when they run", "later", "Not in Starboard yet. Use Jellyfin's Dashboard, Scheduled Tasks.", "/web/#/dashboard/tasks"),
+        ("Activity and server logs", "starboard", "On this tab, under Administration.", ""),
+        ("Video conversion: test which kind works", "starboard", "System, Overview has the test.", ""),
+        ("Video conversion: change the settings", "later", "Not in Starboard yet. Use Jellyfin's Dashboard, Playback.", "/web/#/dashboard/playback/transcoding"),
+        ("Remote access, ports and the network", "later", "Not in Starboard yet. Use Jellyfin's Dashboard, Networking.", "/web/#/dashboard/networking"),
+        ("Jellyfin's own plug-ins and their updates", "starboard", "Settings, Apps, Jellyfin, Recommended plug-ins, and Ready to update.", ""),
+        ("Devices, sessions and API keys", "later", "Not in Starboard yet. Use Jellyfin's Dashboard, Devices and API Keys.", "/web/#/dashboard/devices"),
+        ("Server name, language and branding", "later", "Not in Starboard yet. Use Jellyfin's Dashboard, General.", "/web/#/dashboard/settings"),
+        ("Update the server", "starboard", "Ready to update changes its container and waits while anyone is watching.", ""),
+        ("Restart", "starboard", "System, Restart where needed.", ""),
+        ("Backup of the server's own database", "no", "Jellyfin has no way to do it through its interface. Starboard's backups copy its settings folder.", ""),
+    )
 
     def _headers(self, service):
         return {"Authorization": f'MediaBrowser Token="{service.get("api_key", "")}"', "Accept": "application/json", "User-Agent": services.USER_AGENT}
@@ -206,7 +390,7 @@ def state(data, added=None, now=None):
             "capabilities": list(one.capabilities) if one else [], "page": one.page if one else "",
             # set_up: its address and key are saved; has_app: it is in Manage apps at all (with or without its key). A media
             # server that is set up and not the active one is "installed, not in use" (DASH-586).
-            "available": [{"id": c.id, "name": c.name, "page": c.page, "set_up": bool(c().find_service(saved)),
+            "available": [{"id": c.id, "name": c.name, "page": c.page, "capability_rows": c().capability_rows(), "set_up": bool(c().find_service(saved)),
                            "has_app": any(isinstance(x, dict) and x.get("type") == c.service_type and x.get("enabled", True) and x.get("url") for x in saved)}
                           for c in ADAPTERS.values()],
             "added": sorted(added if added is not None else ADAPTERS), "back": back_info(data, now)}
@@ -291,3 +475,75 @@ def _write(cfg, wanted, back):
         cfg.data["extras"]["media_server_back"] = back
         cfg.save()
     services.forget()  # the dashboard's panel and System ask the new one at once, not from a saved answer
+
+
+def watching(data, app_id):
+    """How many people are watching now on the media server whose app is `app_id`, or 0 when it is not the media server in use,
+    does not answer or nobody is. Asked only when an update of that app is about to start (DASH-566), so nothing runs at rest."""
+    one = active(data)
+    saved = (data or {}).get("services") or []
+    mine = next((x for x in saved if isinstance(x, dict) and x.get("id") == app_id and one and x.get("type") == one.service_type), None)
+    if not one or not mine:
+        return 0
+    try:
+        return len(one.playing(saved))
+    except (services.ServiceError, OSError, ValueError):
+        return 0
+
+
+ADMIN_PARTS = {"libraries": "admin_libraries", "tasks": "admin_tasks", "activity": "admin_activity", "logs": "admin_logs"}
+
+
+def admin_overview(data):
+    """What the Administration part of the media server tab draws, from the settings alone (nothing is asked of the server): the
+    server in use, which parts it offers, and for every job where it is done (admin_coverage)."""
+    one = active(data)
+    if one is None:
+        return {"active": "", "name": "", "parts": [], "coverage": []}
+    return {"active": one.id, "name": one.name, "parts": [p for p, c in ADMIN_PARTS.items() if c in one.capabilities], "coverage": one.admin_coverage()}
+
+
+def admin_read(data, part, name=""):
+    """One part of the administration, read from the media server in use only now, when a person asks. Raises LookupError (no
+    media server, or no such part), ValueError (a name that is not allowed) and services.ServiceError (it did not answer)."""
+    one = active(data)
+    if one is None:
+        raise LookupError("No media server is in use")
+    saved = (data or {}).get("services") or []
+    if part == "log":
+        if "admin_logs" not in one.capabilities:
+            raise LookupError(f"{one.name} does not give Starboard its logs")
+        return {"name": name, "text": one.admin_log(saved, name)}
+    if part not in ADMIN_PARTS or ADMIN_PARTS[part] not in one.capabilities:
+        raise LookupError(f"{one.name} does not give Starboard that")
+    return {"rows": getattr(one, "admin_" + part)(saved)}
+
+
+def admin_do(data, what, target="", how="new"):
+    """A change a person asked for: a scan of one library (or all, target ""), or running a scheduled task. Returns {said}."""
+    one = active(data)
+    if one is None:
+        raise LookupError("No media server is in use")
+    saved = (data or {}).get("services") or []
+    if what == "scan" and "admin_libraries" in one.capabilities:
+        one.admin_scan(saved, target, how)
+        return {"said": f"{one.name} was asked to scan {'that library' if target else 'every library'}" + (" and refresh all its details" if how == "all" else "")}
+    if what == "run" and "admin_tasks" in one.capabilities:
+        if not target:
+            raise ValueError("Choose a task")
+        one.admin_run_task(saved, target)
+        return {"said": f"{one.name} was asked to run the task"}
+    raise LookupError(f"{one.name} does not give Starboard that")
+
+
+def comparison():
+    """The measured comparison of Jellyfin, Plex and Emby (DASH-580), from the small file kept with Starboard (measured once, on
+    the date it says; tools/bench/bench.sh makes the figures). Read when asked and not kept: nothing is measured here."""
+    import json
+    import os
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "media_server_comparison.json"), encoding="utf-8") as f:
+            got = json.load(f)
+    except (OSError, ValueError):
+        return {"servers": [], "method": "", "caveat": ""}
+    return got if isinstance(got, dict) else {"servers": [], "method": "", "caveat": ""}

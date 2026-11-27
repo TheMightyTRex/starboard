@@ -35,12 +35,32 @@ answers, choose another server or none, and go back in one step for 24 hours. St
 
    ![Choose a media server, with the choices and Use this media server (step 2) outlined, with example data](../images/choose-your-media-server-5-choose.png)
 
+### Compare Jellyfin, Plex and Emby
+
+Under **Settings**, then **Plug-ins**, then **Catalogue**, then the **Media servers** tab, **How much each uses** shows four charts:
+memory at rest, processor at rest, time to start and size of the image. Each chart has a table of the same figures behind
+**Show as a table**. The figures were measured once, on 27 November 2026, with the three servers started together, each with an empty settings
+folder, by the same method as Starboard's other comparison tests. Starboard measures nothing when you open the page: it reads
+the figures from a small file. They are idle figures. With a large library or people watching, each server uses more.
+
 ### Use Emby or Plex
 
 Emby and Plex are built into Starboard like Jellyfin. Each is a kind of app in Manage apps with its own form, check
-and icon. They are read only for now. On the dashboard, in Activity and in System, Starboard shows their status,
-libraries, what is playing and what was added. Play in Jellyfin, Watched, Live TV and the other Jellyfin tools stay
-with Jellyfin.
+and icon. On the dashboard, in Activity and in System, Starboard shows their status, libraries, what is playing and what
+was added. In Library, **Play** opens a film or episode in the server's own web app, and **Watched** shows and sets what
+you have watched. Live TV and the other Jellyfin tools stay with Jellyfin. Under **What each can do** on the media server
+tab, a table lists every job for Jellyfin, Plex and Emby, and says why a job is not offered.
+
+- **Play** needs the address you open the server with in your browser, in Manage apps under **Address to open in your
+  browser**. Plex and Emby links need the server to answer, so Starboard asks it once an hour for its own name.
+- **Watched** is the owner's in Plex, because Starboard holds the owner's token. In Emby it is the first administrator's.
+- **Updates** to the container of the media server in use wait while anyone is watching. An update that Starboard makes by
+  itself is tried again at the next update hours; in Install all updates, Starboard checks every minute for up to 3 hours.
+  An update you start yourself with its own button goes ahead.
+- After you change media server, Library builds its list of films again, from the new server, the next time you open it.
+  Play links come back when that finishes.
+- Starboard has only tried these calls against recorded answers from each server's documented interface, not against a
+  real Plex or Emby. If a link does not open the right page, say so on the Starboard Discord support server.
 
 1. Starboard adds the plug-in for you once the app is in **Manage apps**, so you can skip this step. To add it first,
    go to **Settings**, then **Plug-ins**, then **Catalogue**, then the **Media servers** tab. Select **Install** beside
