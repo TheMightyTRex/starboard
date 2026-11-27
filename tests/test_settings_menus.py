@@ -41,7 +41,7 @@ def parts_of(page):
 class SettingsMenusTest(unittest.TestCase):
     WANT = {
         "General": ["General", "Appearance", "Lists", "Hours", "Alerts", "Performance", "Backup/Logs"],
-        "Downloads": ["VPN", "Usenet", "Download hours"],
+        "Downloads": ["VPN", "Usenet", "Download hours", "Speed limits"],
         "Radio": ["Sources", "Add a show from a link", "Your podcast library", "Station logos"],
         "Security": ["Who can open the dashboard", "Password", "Sign-in methods", "API keys", "Sign out everywhere"],
     }
