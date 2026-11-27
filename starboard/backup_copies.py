@@ -71,6 +71,10 @@ def _write(path, value, private=False):
 
 
 MAX_PLACES = 8
+# How often a place gets a copy (27 November 2026): every backup, or at most once a week or a month, so a slow or small
+# place such as a cloud account is not filled by the nightly ones. A week is 6 days and a month 27, so a schedule that
+# runs a little early still counts.
+EVERY = {"each": ("Every backup", 0), "weekly": ("At most once a week", 6 * 86400), "monthly": ("At most once a month", 27 * 86400)}
 KIND_WORDS = {"disk": "Folder on this server or the pool", "smb": "Network share (SMB)", "nfs": "Network share (NFS)", "rclone": "Cloud service"}
 ID_RE = re.compile(r"^[a-z0-9]{1,16}$")
 
@@ -86,7 +90,8 @@ def _clean(d):
         keep_settings = max(1, min(int(d.get("keep_settings") or 2), 50))
     except (TypeError, ValueError):
         keep_settings = 2
-    return {"id": str(d.get("id") or "main")[:16], "name": str(d.get("name") or "").strip()[:60], "enabled": d.get("enabled") is not False,
+    every = d.get("every") if d.get("every") in EVERY else "each"
+    return {"id": str(d.get("id") or "main")[:16], "every": every, "name": str(d.get("name") or "").strip()[:60], "enabled": d.get("enabled") is not False,
             "kind": kind, "folder": str(d.get("folder") or ""), "smb": str(d.get("smb") or ""), "smb_user": str(d.get("smb_user") or ""),
             "nfs": str(d.get("nfs") or ""), "remote": str(d.get("remote") or ""), "keep": keep, "keep_settings": keep_settings,
             # Connect a cloud service (DASH-452): which service the wizard connected ("" for a remote pasted by hand),
@@ -426,6 +431,26 @@ def set_enabled(data_dir, dest, on):
     return settings(data_dir, dest)
 
 
+def set_every(data_dir, dest, every):
+    """How often one place gets a copy: a select on the page that applies at once."""
+    s = _pick(data_dir, dest)
+    if not s:
+        raise ValueError("That place is not in the list any more")
+    if every not in EVERY:
+        raise ValueError("Choose every backup, at most once a week, or at most once a month")
+    save(data_dir, {**s, "every": every}, secrets(data_dir, dest))
+    return settings(data_dir, dest)
+
+
+def recent_enough(d, st, now=None):
+    """True when this place's own rule says the newest backup need not be copied there yet: its last copy was read back
+    less than its period ago. Every backup (the default) is never skipped."""
+    gap = EVERY.get(d.get("every"), EVERY["each"])[1]
+    if not gap or st.get("state") != "done" or not st.get("verified", True) or not st.get("finished"):
+        return False
+    return (now or time.time()) - st["finished"] < gap
+
+
 # Status -------------------------------------------------------------------------------------------------------------
 
 def status(data_dir, dest=None):
@@ -464,8 +489,10 @@ def safe(data_dir):
     for d in on:
         st = status(data_dir, d["id"])
         ok = bool(newest_file) and st.get("state") == "done" and st.get("file") == newest_file and st.get("verified", True)
+        later = not ok and recent_enough(d, st)  # its own rule: an earlier copy read back inside its period is enough
+        ok = ok or later
         rows.append({"id": d["id"], "title": title_of(d), "ok": ok,
-                     "words": "Copied and read back" if ok else "Copying" if st.get("state") == "running"
+                     "words": "Copied and read back" + (f" ({EVERY[d['every']][0].lower()}: its last copy is recent enough)" if later else "") if ok else "Copying" if st.get("state") == "running"
                      else "Failed: " + str(st.get("error") or "")[:160] if st.get("state") == "failed" else "Not copied yet"})
     if all(r["ok"] for r in rows):
         return {"safe": True, "words": f"Safe: the newest full backup was copied and read back at {len(rows)} {'place' if len(rows) == 1 else 'places'}", "places": rows}
@@ -718,6 +745,9 @@ def after_full(data_dir, file_path):
         return
     failed = []
     for d in places:
+        if recent_enough(d, status(data_dir, d["id"])):  # this place's own rule: not copied this time
+            logs.event("info", "backup", f"Copy to {title_of(d)}: left for later ({EVERY[d['every']][0].lower()})")
+            continue
         full_backup._say(data_dir, step=f"Copying it to {title_of(d)}")
         _copy(data_dir, file_path, d["id"])
         st = status(data_dir, d["id"])
