@@ -3,7 +3,6 @@ the book and music settings. Each field is one of Reelix's own settings (GET and
 a hint in plain words. Only the fields listed here are read and changed; everything else Reelix keeps is sent back as
 it was. Reelix keeps these behind its admin password (reelix_admin.py)."""
 
-LANGUAGE = r"^[a-z]{2}(-[A-Z]{2})?$"
 # Language of details and Region as lists with plain names (owner, 10 November 2026: easier than typing a code).
 # Reelix takes one of each. A value Reelix already holds that is not here stays as a choice (open_form).
 LANGUAGES = [("en-GB", "English (United Kingdom), en-GB"), ("en-US", "English (United States), en-US"), ("en-AU", "English (Australia), en-AU"),

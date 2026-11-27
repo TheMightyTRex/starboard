@@ -86,9 +86,15 @@ class MediaBrowser(MediaServer):
     def _headers(self, service):
         raise NotImplementedError
 
-    def _send(self, service, method, path):
+    def _send(self, service, method, path, body=None):
+        import json
         import urllib.request
-        req = urllib.request.Request(service["url"].rstrip("/") + self.prefix + path, method=method, headers=self._headers(service))
+        headers = self._headers(service)
+        data = None
+        if body is not None:  # a change (DASH-587): a library or a person added to the new server, as JSON
+            data = json.dumps(body).encode()
+            headers = {**headers, "Content-Type": "application/json"}
+        req = urllib.request.Request(service["url"].rstrip("/") + self.prefix + path, data=data, method=method, headers=headers)
         return services._fetch(service, req, services.TIMEOUT)
 
     def status(self, services_list):
@@ -198,7 +204,11 @@ def state(data, added=None, now=None):
     have = bool(one and one.find_service(saved))
     return {"active": one.id if one else "", "name": one.name if one else "", "configured": have,
             "capabilities": list(one.capabilities) if one else [], "page": one.page if one else "",
-            "available": [{"id": c.id, "name": c.name, "page": c.page} for c in ADAPTERS.values()],
+            # set_up: its address and key are saved; has_app: it is in Manage apps at all (with or without its key). A media
+            # server that is set up and not the active one is "installed, not in use" (DASH-586).
+            "available": [{"id": c.id, "name": c.name, "page": c.page, "set_up": bool(c().find_service(saved)),
+                           "has_app": any(isinstance(x, dict) and x.get("type") == c.service_type and x.get("enabled", True) and x.get("url") for x in saved)}
+                          for c in ADAPTERS.values()],
             "added": sorted(added if added is not None else ADAPTERS), "back": back_info(data, now)}
 
 

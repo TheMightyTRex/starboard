@@ -163,6 +163,7 @@ Each guide is a journey through several topics, in order.
 ### Jellyfin and Audiobookshelf
 
 - [Choose your media server](topics/choose-your-media-server.md)
+- [Move to another media server](topics/move-to-another-media-server.md)
 - [Set up free Live TV in Jellyfin](topics/set-up-live-tv.md)
 - [A Live TV channel will not play](topics/live-tv-channel-will-not-play.md)
 - [Import watch history into Jellyfin](topics/import-watch-history.md)
@@ -239,6 +240,7 @@ For people who make plug-ins, or write scripts and apps that read Starboard. AI 
 - [Plug-in API reference](developers/plugin-api-reference.md)
 - [Test and publish a plug-in](developers/test-and-publish-a-plugin.md)
 - [Write a plug-in that updates safely](developers/update-a-plugin-safely.md)
+- [Our promise to plug-in developers](developers/compatibility-promise.md)
 - [API quickstart](developers/api-quickstart.md)
 - [Authentication and keys](developers/api-authentication.md)
 - [What the API covers](developers/api-coverage.md)

@@ -11,7 +11,11 @@ add features.
 - **Find all wanted.** Every Library tab and every Wanted page has Find all wanted. It counts what is wanted, asks you to confirm how many and what Reelix will be asked, then searches 10 at a time with a minute between groups, up to 100 in a run, leaving out anything searched in the last day, with progress, Stop and a summary. It waits while Download hours pause downloads. Radio searches each show that has wanted episodes.
 - **Compatibility check for the API.** A new check fails a change that takes away or tightens a route, permission, manifest field, card, event or key scope without the deprecation steps, and runs 74 older plug-in manifests against this Starboard. Draft, for review.
 - **Plug-in updates found at once, in one list.** Check now reads every plug-in catalogue again, says when it last did and why one did not answer, and waits 30 seconds between presses. Settings, Plug-ins, Manage and the new Settings, Updates, Plug-ins page list each plug-in's old and new version, what is new and any new permissions, with Update all, Update chosen, Update by themselves, History and Roll back.
+- **The API says when a feature is going, and answers 410 when it is gone.** `GET /api/v1/` lists the features that are going (none yet), and a route that is going carries `Deprecation` and `Sunset` headers. Once removed, it answers 410 with what replaces it.
+- **A page that says what we promise plug-in developers.** It covers what never breaks inside version 1, how a feature is retired, how a plug-in says what it needs and what people are shown when one stops. The Update a plug-in help says what Needs an update means.
 
+- **Carry your libraries, people and watched state to another media server.** Switch with help now reads both servers first, lists each library and person it would carry across, and does nothing until you confirm. It works for Jellyfin, Plex and Emby, switches last, and keeps the old server for 24 hours. Find out more in [Move to another media server](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/move-to-another-media-server.md).
+- **Jellyfin, Plex and Emby side by side.** Plex or Emby from Install apps, or added in Manage apps, now shows as installed and not in use, ready to check and choose with no extra step in the catalogue. The media server tab has Installed side by side, with Check it now for each.
 - **Sign in to Plex with a link code.** Manage apps has Sign in with Plex, which shows a code to enter at plex.tv/link, or you can still paste the token.
 - **A first sign-in for app plug-ins.** A plug-in can now set its app's first password, and the plug-in's page shows it once after you enter your Starboard password. Calibre-Web uses this from version 1.2.0. Find out more in the [manifest reference](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/developers/plugin-manifest-reference.md#a-first-sign-in-shown-once-first_sign_in).
 - **A wizard for switching media server.** The media server tab in Settings, Apps has Switch with help, which says what moves, what cannot and what keeps working before anything changes. Find out more in [Choose your media server](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/choose-your-media-server.md).
@@ -27,6 +31,7 @@ add features.
 - **Emby and Plex as media servers.** Both are now built-in plug-ins that the dashboard can show, read only for now. They cannot play, mark watched, show Live TV or use the Jellyfin tools.
 
 ### Changed
+- **Starboard 0.40.0 is a clean break: update from 0.31.0 or later, and you cannot go back.** The update stops before it changes anything if you have a version before 0.31.0, and says to update to 0.31.0 first. Before any other change, the update saves a backup of your settings, checks that it reads back, and says in plain words that you cannot go back to an older Starboard afterwards. Your settings move to the new layout once, and Starboard keeps every setting and every app it does not understand. To go back to a version before 0.40.0, run `./update.sh --to` with that version and `--restore` with the name of the backup; settings you changed since are lost. Settings, Updates, Restore and the terminal settings say so. Find out more in [Update Starboard](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/update-starboard.md#update-to-0400-from-an-older-version).
 - **One verb for searching in the Library.** Get it, Get the missing episodes, Get the n missing and Search are now Find it, Find wanted episodes with a count, Find wanted albums and Find n wanted episodes, and a radio show has Find wanted episodes too. Choose a download keeps its name, and its buttons are Use this one and Use it anyway.
 - **One set of words for what you have and want in the Library.** Every tab now says In library, Partly in library, Wanted, Downloading, Below quality, Not followed, Not added or Not released, where it said Not in library, Episodes not in library, Tracks not in library, Not wanted, Not requested and more. Wanted is now a neutral chip, not a warning.
 - **General has seven tabs.** Discover rows are now sections of Lists, and Pictures is a section of Performance, each with a list of links at the top of the page. The old addresses still open the right section.
@@ -56,7 +61,9 @@ add features.
 - **Plain English pilot.** The README and the help topics Add an app and How lean Starboard is now use shorter sentences and the active voice.
 
 ### Removed
+- **Unused code.** Eight unused names and one unused option are gone from Starboard's code, and one condition that could never be true is gone from the tool that builds the AI-readable help. Nothing you see changes.
 - **Old release note files and two unused documents.** The notes files of 57 releases from 0.5.0 to 0.28.0, an unused picture of all the screenshots and the design record for building plug-ins in isolation are gone from the repository. `CHANGELOG.md` and the notes in Starboard still list every release, and the files stay in the history. The help and the app do not change.
+
 
 ### Fixed
 - **Field errors say "Error:" to a screen reader.** An error under a field, such as an empty password, now starts with the hidden word Error: , as the design system asks, so it is not read as a plain sentence. The nine places that drew one by hand share one function.
@@ -68,6 +75,8 @@ add features.
 ### Security
 - **Requests with a Transfer-Encoding are refused.** Starboard now answers 400 and closes the connection, so a proxy in front of it cannot hide a second request inside a body.
 - **One guarded way to fetch a plug-in's manifest, catalogue and logo.** Starboard now checks every redirect and the address it connects to, so an address that redirects, or changes its answer, cannot reach your home network's private services or a cloud metadata address.
+- **A plug-in Starboard cannot run is stopped, and says why.** When Starboard starts, a plug-in whose API range leaves out this Starboard, or that uses something that is gone, is stopped (not removed) and shows **Needs an update** with the reason. Its settings and data are kept. Before, it showed Not supported but kept running.
+- **A plug-in's own key changes each time it starts, and ends when it is not used.** The key is new at every start and update, ends 30 days after its last use, and works on the plug-in's socket only when the plug-in cannot reach Starboard's port anyway. A copied key stops working soon.
 
 
 ## [0.31.0] (25 November 2026)

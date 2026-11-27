@@ -11,9 +11,9 @@ answers, choose another server or none, and go back in one step for 24 hours. St
 ## Before you begin
 
 - You can sign in to Starboard.
-- To use Emby or Plex, add its plug-in from the **Media servers** tab of the catalogue. Then add the app itself in
-  **Manage apps** with its address and key, as set out under **Use Emby or Plex**. Read
-  [Add a plug-in](add-a-plugin.md).
+- To use Emby or Plex, add the app itself in **Manage apps** with its address and key, as set out under **Use Emby or
+  Plex**. Starboard then adds its plug-in for you, ready to choose. You can also add the plug-in first from the
+  **Media servers** tab of the catalogue. Read [Add a plug-in](add-a-plugin.md).
 
 ## Steps
 
@@ -42,7 +42,8 @@ and icon. They are read only for now. On the dashboard, in Activity and in Syste
 libraries, what is playing and what was added. Play in Jellyfin, Watched, Live TV and the other Jellyfin tools stay
 with Jellyfin.
 
-1. Go to **Settings**, then **Plug-ins**, then **Catalogue**, then the **Media servers** tab. Select **Install** beside
+1. Starboard adds the plug-in for you once the app is in **Manage apps**, so you can skip this step. To add it first,
+   go to **Settings**, then **Plug-ins**, then **Catalogue**, then the **Media servers** tab. Select **Install** beside
    **Emby** or **Plex**, read **What it may do**, enter your Starboard password and select **Install**.
 2. Go to **Settings**, then **Apps**, then **Manage apps** and select **Add an app**. In **Kind of app**, choose **Emby** or
    **Plex**. Starboard names it for you and shows the usual address. Enter the address Starboard uses to reach it and its
@@ -71,7 +72,8 @@ Starboard sends the key in a header, never in an address, so it does not reach a
 ### Install Plex or Emby with Starboard
 
 You can run all three media servers side by side to try them. Only one is your media server at a time, and the others are
-installed but not in use. Plex and Emby are not part of Basics or Full install; you add them here.
+installed but not in use. Plex and Emby are not part of Basics or Full install; you add them here. Each shows as **Installed, not in use** under
+**Installed side by side** on the media server tab, where **Check it now** asks it to answer.
 
 1. Go to **System**, then **Apps**, then **Install apps**.
 2. Under **You can add**, select **Add** beside **Plex** or **Emby**, then follow the set-up's steps to the end. Add the
@@ -99,9 +101,9 @@ back, set out under Go back, still lasts 24 hours.
 
 1. Under **Choose a media server**, select **Switch with help**. A panel opens.
 2. On **Step 1**, choose how to switch, then **Next**:
-   - **Import your own media** points the new media server at the same folders. Nothing is copied from the old one.
+   - **Import your own media** adds libraries for your Films, Series and Music folders to the new media server. Nothing is copied from the old one.
    - **Migrate from your old media server** brings libraries, users and what was watched across, as far as the new media
-     server can take them. Watch history can be copied into Jellyfin only so far, and the wizard says so.
+     server can take them.
    - **Start fresh** starts the new media server empty.
 
    ![The Switch media server panel, step 1, with the three ways to switch (step 2) outlined, with example data](../images/choose-your-media-server-10-wizard-start.png)
@@ -120,11 +122,13 @@ back, set out under Go back, still lasts 24 hours.
 5. Some parts keep their own link to the old media server, such as Reelix, Seerr, On demand and a forward for
    remote access. Starboard marks them **Needs pointing at the new media server**. Change them in those apps after
    the switch.
-6. Select **Switch to** and the name. If the new media server did not answer, the button is not available and nothing has changed.
+6. Select **Switch to** and the name, or **Carry across and switch to** when you ticked parts to carry across. If the new media server did not answer, the button is not available and nothing has changed.
 
    ![The Switch media server panel, step 3, with Switch to Plex (step 5) outlined, with example data](../images/choose-your-media-server-12-wizard-switch.png)
 
 A plug-in that waits is not stopped: it keeps its settings and carries on when its media server is back.
+
+To carry your libraries, people and what was watched across, read [Move to another media server](move-to-another-media-server.md).
 
 
 ### Go back

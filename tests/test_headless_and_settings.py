@@ -82,6 +82,13 @@ class TerminalSettingsTest(unittest.TestCase):
         self.assertEqual(tags, ["v0.17.0", "v0.16.2", "v0.16.1"])
         self.assertTrue((ROOT / "settings.sh").stat().st_mode & 0o111)
 
+    def test_going_back_before_0_40_0_needs_the_backup_the_update_saved(self):  # DASH-596
+        self.assertTrue(terminal_settings.before_the_break("v0.31.0"))
+        self.assertTrue(terminal_settings.before_the_break("v0.9.1"))
+        self.assertFalse(terminal_settings.before_the_break("v0.40.0"))
+        self.assertFalse(terminal_settings.before_the_break("v0.41.2"))
+        self.assertFalse(terminal_settings.before_the_break("main"))
+
 
 if __name__ == "__main__":
     unittest.main()

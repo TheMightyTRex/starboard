@@ -449,10 +449,6 @@ def _parse(path):
     return out
 
 
-def logo_key(ch):
-    return re.sub(r"[^A-Za-z0-9._-]", "_", ch["attrs"].get("tvg-id") or ch["name"])[:80]
-
-
 HIDDEN = "hidden-channels.json"  # in the plug-in's own data folder (DASH-313)
 ALL = ".starboard-channels.json"  # every channel found, hidden ones too, so one can be turned back on
 

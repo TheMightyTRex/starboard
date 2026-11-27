@@ -15,6 +15,10 @@ upgrade guide and the notes on GitHub, so they always say the same thing.
      `hours`, `alerts`, `preset` and `names`. Leave it empty when nothing needs choosing: the upgrade then
      finishes on its own and the notes wait under the version in the footer.
    - `settings`: what changes in people's settings, and the way back (`./update.sh --to v<previous>`).
+     From 0.40.0, say in plain words that nobody can go back to an older Starboard by running it on the new settings:
+     going back before 0.40.0 needs the backup the update saved (`./update.sh --to v<previous> --restore backups/<name>`),
+     and settings changed since are lost (DASH-596). The end-to-end update test (`tools/update_e2e.sh`) must start from
+     `FROM=v0.31.0` or later, because `update.sh` refuses an update to 0.40.0 or later from an older version.
 3. **Notes.** Run `python3 tools/release_notes.py`. It writes `docs/releases/vX.Y.Z.md`. Keep the notes of the last three
    releases and delete the older files (`git rm`): `CHANGELOG.md` and `starboard/releases.py` keep every release, and
    `python3 tools/release_notes.py X.Y.Z` writes any file again.

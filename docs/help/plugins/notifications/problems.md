@@ -8,7 +8,7 @@ title: Find your answer
 start: Notifications is not working as it should
 q: What does its tab say?
   Failed or Not answering -> 1
-  Not supported -> 2
+  Needs an update -> 2
   Active, but messages do not arrive -> q2
 q2: What does the card or test say?
   No channel active -> 3
