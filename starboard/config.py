@@ -10,7 +10,7 @@ import time
 
 from . import shadows
 
-SCHEMA = 4
+SCHEMA = 5
 BACKUP_SCHEDULES = ("off", "manual", "monthly", "weekly", "nightly")
 KEEP_VERSIONS = (5, 10, 20)
 
@@ -916,6 +916,10 @@ def migrate(data):
         data["shadows_off"] = False
         data["shadows_note"] = True
         data["schema"] = 4
+    if version < 5:  # DASH-596, the clean break (0.40.0): settings are marked as written by 0.40.0 or later. Nothing is
+        # changed or removed here: an unknown key or an app of an unknown kind stays as it is. There is no way back by
+        # running an older Starboard on these settings; update.sh says so and restores the backup it made (--restore).
+        data["schema"] = 5
     return data
 
 
