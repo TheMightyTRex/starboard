@@ -16,7 +16,7 @@ import threading
 import urllib.parse
 import urllib.request
 
-from . import api_v1, plugin_systems, plugins
+from . import api_v1, deprecations, plugin_systems, plugins
 
 STATES = ("installed", "enabled", "disabled", "failed")  # stored; plugin_life.status adds needs-setup and not-supported
 MAX_MANIFEST = 256 * 1024
@@ -539,7 +539,7 @@ def listing(data_dir):
                      for x in m.get("styles") or [] if isinstance(x, dict)]
             from . import plugin_life
             out.append({**summary(m, []), "logo": logo_info(data_dir, pid, m), "looks": looks, "builtin": bool(st.get("builtin")), "state": st.get("state", "installed"), "installed_at": st.get("installed_at"),
-                        "status": plugin_life.status(data_dir, pid, m, st), "whats_new": plugin_life.whats_new(data_dir, pid, m, st), "jobs": job_lines(data_dir, pid, m),
+                        "status": plugin_life.status(data_dir, pid, m, st), "retiring": [deprecations.warning_sentence(w) for w in deprecations.for_manifest(m)], "whats_new": plugin_life.whats_new(data_dir, pid, m, st), "jobs": job_lines(data_dir, pid, m),
                         "message": st.get("message", ""), "settings": public_settings(data_dir, pid, m),
                         "web": web_pages(data_dir, pid, m, st), "publishes": bool(plugins.published_lan(m)),
                         "adopt": adopt_info(m), "adopted": st.get("adopted"),
