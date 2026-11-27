@@ -218,6 +218,8 @@ class App:
         self.listening_busy = None  # reading listening progress, if it is running
         self.listening_read = None
         self.schedule = schedule.Schedule(self.config)
+        from . import power_hold  # DASH-572: a hold starting or ending wakes the download hours thread at once
+        power_hold.on_change(self.schedule.ensure)
         if os.environ.get("STARBOARD_SCHEDULE", "1") != "0":
             self.schedule.start()
         from .config import prune_saved

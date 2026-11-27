@@ -218,6 +218,15 @@ function pluginSettingsGroups(p, redraw) {
         rows.push(row(select));
       } else if (s.type === "schedule") {  // API 1.14 (DASH-432): every day, week or month at a time, applied at once
         rows.push(scheduleRow(s, id, noteId, put));
+      } else if (s.type === "time") {  // API 1.24 (DASH-572): one time of day, applied when you leave it
+        const input = el("input", { class: "input", id, type: "time", value: s.value ?? "", "aria-labelledby": `${id}-l` });
+        let was = input.value;
+        input.addEventListener("change", async () => {
+          if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(input.value)) { problem(`${s.label}: give a time such as 22:00`, input); input.value = was; return; }
+          try { await put({ [s.key]: input.value }); was = input.value; showSaved(noteId); }
+          catch (err) { input.value = was; problem(err.message, input); }
+        });
+        rows.push(row(input));
       } else if (s.type === "number" && !s.required) {  // pattern 2: a number applies when you leave it, unit beside it
         const input = el("input", { class: "input", id, type: "number", value: s.value ?? "", min: s.min, max: s.max, "aria-labelledby": `${id}-l` });
         let was = input.value;

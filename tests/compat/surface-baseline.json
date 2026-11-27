@@ -1,5 +1,5 @@
 {
- "api_version": "1.20.0",
+ "api_version": "1.24.0",
  "card_types": [
   "stat",
   "list",
@@ -59,6 +59,7 @@
   "actions",
   "adopt",
   "author",
+  "capabilities",
   "cards",
   "changes",
   "containers",
@@ -67,6 +68,7 @@
   "first_sign_in",
   "health",
   "homepage",
+  "icon",
   "id",
   "jellyfin_libraries",
   "jobs",
@@ -75,15 +77,19 @@
   "manifest_version",
   "name",
   "needs",
+  "needs_plugins",
   "notices",
   "permissions",
+  "replaces_or_adds",
   "requires",
   "resources",
   "settings",
   "setup_required",
   "starboard_api",
+  "starboard_tested",
   "styles",
   "support_url",
+  "switch",
   "update",
   "version"
  ],
@@ -149,6 +155,10 @@
    "risk": "medium",
    "scope": null
   },
+  "power:hold": {
+   "risk": "low",
+   "scope": null
+  },
   "reelix:key": {
    "risk": "high",
    "scope": null
@@ -170,6 +180,8 @@
   "GET /api/v1/": {
    "answer": [
     "api_version",
+    "capabilities",
+    "deprecations",
     "links",
     "starboard_version"
    ],
@@ -223,6 +235,7 @@
    "answer": [
     "destinations",
     "destinations.[].enabled",
+    "destinations.[].every",
     "destinations.[].id",
     "destinations.[].keep",
     "destinations.[].keep_settings",
@@ -285,6 +298,11 @@
     "enabled",
     "end",
     "errors",
+    "held",
+    "held.by",
+    "held.held",
+    "held.reason",
+    "held.until",
     "mode",
     "next_change",
     "now",
@@ -714,6 +732,11 @@
     "enabled",
     "end",
     "errors",
+    "held",
+    "held.by",
+    "held.held",
+    "held.reason",
+    "held.until",
     "mode",
     "next_change",
     "now",
@@ -830,6 +853,20 @@
    "right": "plugin",
    "scope": null
   },
+  "POST /api/v1/plugin/hold": {
+   "answer": [
+    "by",
+    "held",
+    "ok",
+    "reason",
+    "until"
+   ],
+   "required_in": [
+    "body.on"
+   ],
+   "right": "plugin",
+   "scope": null
+  },
   "POST /api/v1/requests/{id}/approve": {
    "answer": [
     "ok"
@@ -883,6 +920,7 @@
   "folder",
   "list",
   "custom",
-  "schedule"
+  "schedule",
+  "time"
  ]
 }
