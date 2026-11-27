@@ -61,7 +61,9 @@ class PluginTabIcons(unittest.TestCase):
         self.assertIn("SharedComponents?.fitHeader(nav.closest", read("web", "js", "common.js"))
 
     def test_a_notice_with_buttons_puts_them_on_their_own_row_on_a_phone(self):
-        self.assertRegex(read("web", "css", "app.css"), r"max-width: 600px\) \{\s*\.notice > \.actions \{ grid-column: 2 / -1; \}")
+        # the fix is in the design system's library (components.css), not in a copy of it for this app
+        self.assertRegex(read("web", "css", "components.css"), r"max-width: 600px\) \{\s*\.notice \{\s*grid-template-columns: auto minmax\(0, 1fr\);\s*\}\s*\.notice > :nth-child\(n\+3\) \{\s*grid-column: 2;")
+        self.assertNotIn(".notice > .actions", read("web", "css", "app.css"))
 
 
 if __name__ == "__main__":
