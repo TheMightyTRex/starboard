@@ -92,7 +92,7 @@ def feature_rows(target):
     return rows
 
 
-def plan(data, target, mode, listed=None):
+def plan(data, target, mode, listed=None, data_dir=None):
     """What the switch to `target` would do, in `mode`, as plain data for the wizard. Asks the new server to answer
     (mediaserver.check); never raises for a server that does not answer; changes nothing."""
     if mode not in MODES:
@@ -104,24 +104,38 @@ def plan(data, target, mode, listed=None):
            "from_name": mediaserver.ADAPTERS[before].name if before else "", "to_name": mediaserver.ADAPTERS[target].name if target else "None",
            "same": target == before, "check": None, "moves": [], "cannot_move": list(CANNOT_MOVE),
            "unaffected": list(UNAFFECTED), "plugins": plugin_rows(listed, data, target), "features": feature_rows(target) if target else [],
-           "import_history": False}
+           "import_history": False, "migration": None}
     if target and target != before:
         out["check"] = mediaserver.check(data, target)
+    if target and mode != "fresh" and (target != before or mode == "own"):
+        from . import media_migrate  # read from both servers (GET only) so the wizard can name each library and person
+        out["migration"] = media_migrate.preview(data, before, target, mode, data_dir)
+    got = out["migration"] or {}
+    problem = [f"Starboard could not read everything first: {got['problem']}"] if got.get("problem") else []
     if mode == "own":
-        out["moves"] = [f"{out['to_name'] or 'The new media server'} reads the same media folders: add them as libraries in {out['to_name']}",
-                        "Nothing is copied from the old media server"]
+        n = sum(1 for x in got.get("libraries", []) if x["action"] == "add")
+        out["moves"] = [(f"{n} {'library' if n == 1 else 'libraries'} added to {out['to_name']}, reading your media folders: " + ", ".join(x["name"] for x in got["libraries"] if x["action"] == "add"))
+                        if n else f"{out['to_name'] or 'The new media server'} reads the same media folders: add them as libraries in {out['to_name']}",
+                        "Nothing is copied from the old media server, and your files are not touched"]
     elif mode == "migrate":
-        got = out["check"] or {}
-        if got.get("libraries"):
-            out["moves"].append(f"Libraries to add in {out['to_name']}, from the same folders: " + ", ".join(got["libraries"][:8]))
-        out["moves"].append("Users: made again in the new media server (their names are read from the old one)")
-        if target == "jellyfin":
-            out["import_history"] = True
-            out["moves"].append("What was watched and where each person stopped: copied into Jellyfin by Import watch history, after the switch")
+        libs = [x for x in got.get("libraries", []) if x["action"] == "add"]
+        if libs:
+            out["moves"].append(f"Libraries added to {out['to_name']}, from the same folders: " + ", ".join(x["name"] for x in libs[:8]))
+        elif got.get("libraries"):
+            out["moves"].append(f"Libraries: {out['to_name']} has them all already")
+        people = [x for x in got.get("users", []) if x["action"] == "add"]
+        if target == "plex":
+            out["moves"].append("People: Plex accounts belong to plex.tv, so Starboard cannot make them. Invite each person from Plex")
         else:
-            out["moves"].append(f"What was watched cannot be copied into {out['to_name']} yet: Starboard can read it from Plex, Emby or Jellyfin and write it into Jellyfin only")
+            out["moves"].append(f"People made in {out['to_name']}: " + (", ".join(x["name"] for x in people[:8]) if people else "nobody (they are there already)")
+                                + ". Each has a password nobody knows, so you set one in its dashboard")
+        from .media_migrate import history_how
+        how = got.get("history") or history_how(before, target)
+        out["moves"].append("What was watched and where each person stopped: " + how["says"])
+        out["import_history"] = target == "jellyfin"
     else:
         out["moves"] = [f"{out['to_name'] or 'No media server'} starts empty: add its libraries yourself", "The old media server stays added with its own settings"]
+    out["moves"] = problem + out["moves"]
     if not target:
         out["moves"] = ["No media server is in use: the dashboard panel, Library's Play and Watched and Activity's now playing are not drawn"]
     return out
