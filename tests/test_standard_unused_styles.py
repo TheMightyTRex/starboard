@@ -1,41 +1,32 @@
-"""Styles no page uses stay out of the core (Starboard patterns audit, 26 November 2026).
+"""Design system parts no page loads are not in Starboard (DASH-596, 27 November 2026).
 
-The design system marks the styles of components that no page of Starboard uses as the parts extras, media-extras,
-logo-picker and wizard-review. They are in css/parts for the day a page needs one: the core style sheet has none of
-those rules, and no page loads them (a page that needs one loads it, and then this test is changed with it)."""
+web/parts-used.json names the parts this app loads. Every other part, and its styles, stays in the design system for the
+day a page needs one: then the name goes in the list, tools/sync.py writes the part, and the page loads it."""
+import json
 import pathlib
 import re
 import unittest
 
 WEB = pathlib.Path(__file__).resolve().parents[1] / "web"
-PARTS = ("extras", "media-extras", "logo-picker", "wizard-review")
+USED = json.loads((WEB / "parts-used.json").read_text())["use"]
 
 
-def rules(text):
-    text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
-    return {re.sub(r"\s+", " ", f"{sel.strip()} {{ {body.strip()} }}") for sel, body in re.findall(r"([^{}]+)\{([^{}]*)\}", text)}
+class OnlyTheUsedParts(unittest.TestCase):
+    def test_the_folders_hold_exactly_the_parts_in_the_list(self):
+        for kind in ("css", "js"):
+            have = {p.stem for p in (WEB / kind / "parts").glob("*")}
+            self.assertLessEqual(have, set(USED), f"{kind}/parts has a part that is not in parts-used.json")
 
+    def test_every_part_in_the_list_is_loaded_by_a_page(self):
+        text = "".join(p.read_text() for p in WEB.glob("*.html"))
+        for part in USED:
+            self.assertRegex(text, rf"/(css|js)/parts/{re.escape(part)}\.(css|js)", part)
 
-class UnusedStyles(unittest.TestCase):
-    def test_the_core_has_none_of_the_rules_in_a_part(self):
-        core = rules((WEB / "css/components.css").read_text())
-        for part in PARTS:
-            moved = rules((WEB / "css/parts" / f"{part}.css").read_text())
-            self.assertGreater(len(moved), 5, part)
-            self.assertEqual(core & moved, set(), f"{part}: rules in both the core and the part")
-
-    def test_each_part_is_well_formed(self):
-        for part in PARTS:
-            text = (WEB / "css/parts" / f"{part}.css").read_text()
+    def test_each_style_part_is_well_formed(self):
+        for path in (WEB / "css/parts").glob("*.css"):
+            text = path.read_text()
             self.assertIn("@layer shared {", text)
-            self.assertEqual(text.count("{"), text.count("}"), part)
-
-    def test_no_page_loads_one_and_none_has_a_script(self):
-        for page in WEB.glob("*.html"):
-            for part in PARTS:
-                self.assertNotIn(f"/css/parts/{part}.css", page.read_text(), page.name)
-        for part in PARTS:
-            self.assertFalse((WEB / "js/parts" / f"{part}.js").exists(), part)
+            self.assertEqual(text.count("{"), text.count("}"), path.name)
 
 
 if __name__ == "__main__":

@@ -38,6 +38,15 @@ class Busy(Exception):
     """Another update is running: 409."""
 
 
+class Watching(Busy):
+    """The media server's container would restart while someone is watching (DASH-566): an update by itself, or one of Install all
+    updates, waits for nobody to be watching. `people` says how many."""
+
+    def __init__(self, words, people=0):
+        super().__init__(words)
+        self.people = people
+
+
 class Refused(Exception):
     """Starboard cannot do it, in words for the page and the API: 409."""
 
@@ -252,6 +261,11 @@ def start(app, target, by="you", address="", note=None, batch=None):
         auto_updates.forget_skip(app.data_dir, target)
     if target == "starboard":
         return _start_starboard(app, by)
+    if target.startswith("app:") and (by == "automatic" or batch):  # by hand, your own click is the go-ahead
+        from . import mediaserver
+        n = mediaserver.watching(app.config.data, target.split(":", 1)[1])
+        if n:
+            raise Watching(f"{n} {'person is' if n == 1 else 'people are'} watching, so the media server is not restarted now", n)
     if target == "reelix" or target.startswith("app:"):
         return _start_app(app, target, by)
     return _start_plugin(app, target.split(":", 1)[1], by, address)

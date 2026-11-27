@@ -2070,6 +2070,17 @@
     display: grid;
     gap: var(--space-1);
   }
+  /* On a phone the third column (buttons, a link) would take the room and squeeze the words to a letter a line, so what comes
+     after the words goes on its own row under them (Starboard, DASH-602). */
+  @media (max-width: 600px) {
+    .notice {
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+    .notice > :nth-child(n+3) {
+      grid-column: 2;
+      justify-self: start;
+    }
+  }
   .notice__title {
     font-weight: var(--weight-heading);
   }

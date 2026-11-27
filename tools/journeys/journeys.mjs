@@ -25,7 +25,7 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "settings-general-appearance.html", "settings-general-lists.html", "settings-general-hours.html", "settings-general-backup.html",
   "discover-tv.html", "discover-books.html",  // Discover rows are sections of Lists, one per area (DASH-396)
   // Downloads' level 2 pages (DASH-390)
-  "settings-downloads.html", "settings-downloads-usenet.html", "settings-downloads-hours.html",
+  "settings-downloads.html", "settings-downloads-usenet.html", "settings-downloads-hours.html", "settings-downloads-speed.html",
   // Radio's, Performance's and Security's level 2 pages (DASH-391)
   "settings-radio-link.html", "settings-radio-library.html", "settings-radio-logos.html", "settings-general-performance.html",
   "settings-security-password.html", "settings-security-signin.html", "settings-security-keys.html", "settings-security-sessions.html",
@@ -384,6 +384,11 @@ check("LIB-08", "every tab has Find all wanted first in the row", (await page.lo
 await page.waitForTimeout(600);
 const findText = (await findAll.textContent()).trim();
 check("LIB-08", "the button carries the count", /^Find all wanted \(\d+\)$/.test(findText), findText);
+await open("library-radio.html");
+await page.locator("#lib-chips label").first().waitFor({ timeout: 8000 }).catch(() => {});
+await page.waitForTimeout(500);
+check("LIB-08", "Radio's button carries how many shows have wanted episodes", /^Find all wanted \(\d+ shows?\)$/.test(((await page.locator("#lib-actions [data-find-all]").textContent()) || "").trim()));
+await open("library-films.html");
 if (!(await findAll.isDisabled())) {
   await findAll.click();
   const dlg = page.locator("dialog.dialog[open]");
@@ -404,6 +409,18 @@ if (!(await findAll.isDisabled())) {
 }
 await open("wanted-films.html");
 check("LIB-08", "the Wanted page says Find all wanted", (await page.locator("#wanted-all").textContent()).trim() === "Find all wanted");
+// LIB-09: Select several on every tab (owner, 27 November 2026), with Delete everywhere but Radio.
+console.log("\n== LIB-09 Select several on every tab");
+for (const tab of ["films", "tv", "music", "radio", "books", "audiobooks"]) {
+  await open(`library-${tab}.html`);
+  await page.locator("#lib-select").waitFor({ timeout: 8000 }).catch(() => {});
+  check("LIB-09", `${tab}: has Select several`, (await page.locator("#lib-select").count()) === 1);
+  await page.locator("#lib-select").click().catch(() => {});
+  await page.locator("#lib-bulk").waitFor({ timeout: 4000 }).catch(() => {});
+  const names = (await page.locator("#lib-bulk button").allTextContents()).map((t) => t.trim());
+  check("LIB-09", `${tab}: Follow and Stop following${tab === "radio" ? ", no Delete" : " and Delete"}`,
+    names.includes("Follow") && names.includes("Stop following") && (names.includes("Delete") === (tab !== "radio")), names.join(" | "));
+}
 // DASH-261: narrator pages, and Narrated by on an audiobook's summary links to them.
 await open("library-audiobooks-narrators.html");
 check("LIB-02", "Narrators lists each narrator", await page.locator("#groups .collection-card__link").count() >= 3);
@@ -573,7 +590,7 @@ await page.locator("#side-panel button", { hasText: "Match" }).first().click();
 await page.locator("#side-panel .chip", { hasText: "Matched" }).waitFor({ timeout: 5000 }).catch(() => {});
 check("RAD-12", "Match by hand matches a file to the chosen episode", await page.locator("#side-panel .chip", { hasText: "Matched" }).count() === 1);
 await page.keyboard.press("Escape");
-await open("settings-radio.html#radio-link-h");
+await open("settings-radio-link.html");
 await page.locator("#radio-link").fill("https://www.bbc.co.uk/programmes/example");
 await page.locator("#radio-link").press("Enter");
 await page.locator("button", { hasText: "Follow this show" }).waitFor({ timeout: 5000 }).catch(() => {});
@@ -1043,14 +1060,6 @@ await page.locator("#side-panel #pref-underline").uncheck();
 await page.keyboard.press("Escape");
 await page.waitForTimeout(300);
 check("MENU2-02", "and a change in Display shows on the page", !(await page.locator("#ap-pref-underline").isChecked()));
-for (const [from, to] of [["settings-general.html#download-hours", "/settings-general-hours.html#download-hours"],
-  ["settings-general.html#gn-style-h", "/settings-general-appearance.html#gn-style-h"], ["settings-general.html#logs", "/settings-general-backup.html#logs"],
-  ["settings-general.html?discover=films#discover-rows-s", "/settings-general-lists.html#dr-films-h"]]) {
-  await open("index.html");
-  await open(from);
-  const at = await page.evaluate(() => location.pathname + location.search + location.hash);
-  check("MENU2-03", `the old address ${from} opens its new page`, at === to, at);
-}
 await open("settings-general-lists.html");
 check("MENU2-03", "Lists has Long lists", await page.locator("#gn-scroll-h").count() === 1);
 
@@ -1068,8 +1077,8 @@ await open("settings-general-hours.html");
 check("MENU2-04", "and General, Hours shows the same", (await page.locator("[aria-labelledby=dh-on-l]").isChecked()) === !hoursWas);
 await api("/api/config/general", { method: "PUT", body: { download_hours: { enabled: hoursWas } } });
 await open("index.html");
-await open("settings-downloads.html#dl-hours-h");
-check("MENU2-04", "the old address of Download hours on Downloads opens its page", await page.evaluate(() => location.pathname) === "/settings-downloads-hours.html");
+await open("settings-downloads-hours.html");
+check("MENU2-04", "Download hours on Downloads has its own page", await page.evaluate(() => location.pathname) === "/settings-downloads-hours.html");
 
 // DASH-391: Radio, Performance and Security have their parts as pages on the level 2 menu; old anchors go there;
 // a page made only of parts under Advanced settings shows them anyway.
@@ -1082,8 +1091,7 @@ await open("settings-general-performance.html#pf-pictures-h");
 check("MENU2-05", "Performance has the picture cache and its Clear", (await page.locator("#pf-pictures-h").isVisible()) && (await page.locator("#pf-danger-h").count()) === 1, await headings());
 check("MENU2-05", "Security has Who can open the dashboard, Password, Sign-in methods, API keys, Sign out everywhere",
   (await level2("settings-security.html")) === "Who can open the dashboard|Password|Sign-in methods|API keys|Sign out everywhere", await level2("settings-security.html"));
-for (const [from, to] of [["settings-radio.html#radio-logos-h", "/settings-radio-logos.html"], ["settings-general-pictures.html", "/settings-general-performance.html"], ["settings-general-discover.html", "/settings-general-lists.html"],
-  ["settings-security.html#sc-keys-h", "/settings-security-keys.html"], ["settings-security.html#sc-pw-h", "/settings-security-password.html"]]) {
+for (const [from, to] of [["settings-general-pictures.html", "/settings-general-performance.html"], ["settings-general-discover.html", "/settings-general-lists.html"]]) {
   await open("index.html");
   await open(from);
   check("MENU2-06", `the old address ${from} opens its new page`, await page.evaluate(() => location.pathname) === to);
@@ -1347,6 +1355,8 @@ const apSaid = await page.locator('section[aria-labelledby="pl-tdarr-adopt-h"] [
 check("AP-06", "with no such app, it says so plainly in a live region", /found no Tdarr|Docker/.test(apSaid), apSaid);
 await open("settings-plugins-catalogue.html");
 const apGroup = page.locator('section[aria-label="Apps you can add"]');
+check("NOTE-01", "every plug-in in the catalogue says what it replaces or adds to (plug-in API 1.23, DASH-585)",
+  (await page.locator("#plugins-catalogue li.row").count()) > 0 && (await page.locator("#plugins-catalogue li.row").evaluateAll((rows) => rows.filter((r) => !/^(Adds to|Replaces|Stands alone)/.test(r.querySelector(".row__meta strong")?.textContent || "")).length)) === 0);
 check("AP-08", "the catalogue groups the apps together, each with what it uses at rest",
   (await apGroup.count()) === 1 && /At rest: about \d+ MB of memory/.test(await apGroup.innerText()));
 await open("settings-plugin.html?id=tdarr");
@@ -1498,8 +1508,7 @@ await page.locator("#dr-radio-list").waitFor({ timeout: 10000 });
 check("DR-02", "choosing the Radio tab asks for Radio's rows then", asked.join(",") === "tv,radio", asked.join(","));
 page.off("request", askedFor);
 await page.evaluate(() => localStorage.setItem("starboard.topic-tabs", "off"));
-for (const [from, to] of [["settings-general-lists.html?discover=radio#discover-rows-s", "/settings-general-lists.html#dr-radio-h"],
-  ["settings-general-lists.html#discover-rows-s", "/settings-general-lists.html#dr-films-h"], ["settings-general-discover.html?discover=books", "/settings-general-lists.html#dr-books-h"]]) {
+for (const [from, to] of [["settings-general-discover.html?discover=books", "/settings-general-lists.html#dr-books-h"]]) {
   await open("index.html");
   await open(from);
   const at = await page.evaluate(() => location.pathname + location.search + location.hash);
@@ -3113,6 +3122,11 @@ await page.fill("#acct-jellyfin-pw", password);
 await page.locator("dialog[open] button[value=ok]").click();
 await page.waitForSelector("#acct-jellyfin-secret", { timeout: 8000 });
 check("PEOPLE-12", "Show password gives back the password that was typed", await page.locator("#acct-jellyfin-secret").evaluate((i) => i.value) === "my own journey password");
+// Stage 3: the account's More menu offers the app's own actions for Jellyfin, and Escape closes it with focus back on the button.
+await page.locator("#acct-jellyfin-more .menu-wrap > button").click();
+const peMenu = await page.locator("#acct-jellyfin-more .menu [role=menuitem]").allInnerTexts();
+check("PEOPLE-13", "More offers to make, check, pause, resume and delete the account in Jellyfin", ["Make the account in Jellyfin", "Check Jellyfin", "Pause in Jellyfin", "Resume in Jellyfin", "Delete in Jellyfin\u2026"].every((t) => peMenu.some((m) => m.trim() === t)), peMenu.join("|"));
+await page.keyboard.press("Escape");
 await page.locator("#person-remove").click();
 await page.waitForSelector("dialog[open]", { timeout: 8000 });
 check("PEOPLE-07", "Remove asks first and starts on Cancel", await page.evaluate(() => /Cancel/.test(document.activeElement?.textContent || "")));

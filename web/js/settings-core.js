@@ -103,41 +103,6 @@ function onlyParts(holder, nodes) {
   });
 }
 
-// Old addresses keep working (DASH-389 to 391): a link to a part that is now on its own page goes there, with its
-// query and anchor. Page: { part or old anchor: its page now }.
-const MOVED_PARTS = {
-  "/settings-general.html": Object.fromEntries([
-    ...["gn-up", "coming-up", "gn-scroll", "library-views", "library-views-s"].map((k) => [k, "settings-general-lists.html"]),
-    ...["discover-rows", "discover-rows-s"].map((k) => [k, "settings-general-lists.html"]),
-    ...["gn-dh", "download-hours"].map((k) => [k, "settings-general-hours.html"]),
-    ...["gn-logs", "logs", "gn-test", "testing", "feedback-list", "gn-logdel", "delete-logs"].map((k) => [k, "settings-general-backup.html"]),
-    ...["gn-style", "gn-design", "gn-access", "style", "appearance"].map((k) => [k, "settings-general-appearance.html"]),
-  ]),
-  // Owner, 26 November 2026: Discover rows are a part of Lists (a section per area, DASH-396), and the old part names open the first area.
-  "/settings-general-lists.html": { "discover-rows": "settings-general-lists.html", "discover-rows-s": "settings-general-lists.html" },
-  "/settings-downloads.html": { "dl-usenet": "settings-downloads-usenet.html", "dl-hours": "settings-downloads-hours.html" },
-  "/settings-radio.html": { "radio-link": "settings-radio-link.html", "radio-library": "settings-radio-library.html", "radio-logos": "settings-radio-logos.html" },
-  "/settings-security.html": { "sc-pw": "settings-security-password.html", "sc-keys": "settings-security-keys.html", "sc-mcp": "settings-security-keys.html",
-    "sc-ses": "settings-security-sessions.html", "sc-danger": "settings-security-sessions.html" },
-};
-
-function followMovedPart(path = location.pathname, hash = location.hash, search = location.search) {
-  const moved = MOVED_PARTS[path];
-  if (!moved) return null;
-  let to = moved[decodeURIComponent(hash.slice(1)).replace(/-h$/, "")];
-  const area = new URLSearchParams(search).get("discover");
-  if (!to && area && ["/settings-general.html", "/settings-general-lists.html"].includes(path)) to = "settings-general-lists.html";
-  // ?discover=tv#discover-rows-s, Discover's old link, opens that area's section on Lists (DASH-396).
-  if (to === "settings-general-lists.html" && (area || /^discover-rows/.test(decodeURIComponent(hash.slice(1))))) return `/${to}#dr-${/^[a-z]{2,12}$/.test(area || "") ? area : "films"}-h`;
-  return to ? `/${to}${search}${hash}` : null;
-}
-
-{
-  const go = () => { const to = followMovedPart(); if (to) location.replace(to); };
-  go();
-  addEventListener("hashchange", go);  // a link to a moved part from the page it used to be on
-}
-
 // Settings pattern 9, the danger zone: last on the page, its own section with a red edge; each button opens a
 // danger dialog that says what happens.
 function dangerSection(id, title, description, ...content) {
@@ -632,7 +597,7 @@ const settingsLoaded = new Promise((done) => {
   else done();
 });
 const SETTINGS_STARTS = [["#app-sections", "startManageApps"], ["#general-sections", "startGeneral"], ["#security-sections", "startSecurity"], ["#people-sections", "startPeople"], ["#signin-sections", "startSignin"],
-  ["#alerts-sections", "startAlerts"], ["#jellyfin-sections", "startJellyfin"], ["#media-server-sections", "startMediaServer"], ["#listening-sections", "startListening"],
+  ["#alerts-sections", "startAlerts"], ["#jellyfin-sections", "startJellyfin"], ["#media-server-sections", "startMediaServer"], ["#media-admin-sections", "startMediaAdmin"], ["#listening-sections", "startListening"],
   ["#radio-sections", "startRadioSettings"], ["#performance-sections", "startPerformance"], ["#reelix-sections", "startReelix"],
   ["#install-sections", "startYourInstall"], ["#downloads-sections", "startDownloadsSettings"], ["#guide", "startGuide"],
   ["#upgrade", "startUpgrade"], ["#install", "startInstall"], ["#bring-in", "startBringIn"], // DASH-455

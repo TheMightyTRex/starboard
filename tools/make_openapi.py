@@ -84,7 +84,9 @@ spec = {
                      "properties": {"api_version": {"type": "string"}, "starboard_version": {"type": "string"}, "links": {"type": "object"},
                                    "deprecations": {"type": "array", "description": "Features that are going: each has method, path, deprecated, sunset (dates), replacement and removed.",
                                                     "items": {"type": "object", "additionalProperties": True}},
-                                   "capabilities": {"type": "array", "items": {"type": "string"}, "description": "The names of the optional plug-in parts this Starboard has, such as first-sign-in and media-server-slot."}}},
+                                   "capabilities": {"type": "array", "items": {"type": "string"}, "description": "The names of the optional plug-in parts this Starboard has, such as first-sign-in and media-server-slot."},
+                                   "media_server": {"type": "object", "description": "The media server in use: id (jellyfin, plex, emby, or empty for none), name and capabilities, the jobs it offers through Starboard (play, watched, restart, live_tv and the rest). From the settings alone.",
+                                                    "properties": {"id": {"type": "string"}, "name": {"type": "string"}, "capabilities": {"type": "array", "items": {"type": "string"}}}}}},
             "Key": {"type": "object", "required": ["id", "name", "right", "scopes", "created_at", "prefix"],
                     "properties": {"id": {"type": "string"}, "name": {"type": "string"}, "right": {"type": "string", "enum": list(api_v1.RIGHTS)},
                                    "scopes": {"type": "array", "items": {"type": "string", "enum": list(api_v1.ALL_SCOPES)}},
@@ -137,7 +139,9 @@ ACCEPTED = {"type": "object", "required": ["accepted", "status"], "properties": 
 HOURS = {"type": "object", "required": ["enabled"], "properties": {"enabled": {"type": "boolean"}, "start": {"type": "integer"}, "end": {"type": "integer"},
                                                                    "mode": {"type": "string", "enum": ["run", "pause"]}, "reason": {"type": "string"},
                                                                    "next_change": {"type": "string"}, "clients": {"type": "array", "items": {"type": "string"}},
-                                                                   "now": {"type": "array", "items": ANY}, "errors": {"type": "array", "items": ANY}}}
+                                                                   "now": {"type": "array", "items": ANY}, "errors": {"type": "array", "items": ANY},
+                                                                   "held": {"type": "object", "required": ["held"], "description": "Added in 1.12.0: whether a plug-in holds heavy work now (such as the UPS and power plug-in on battery), which pauses downloads whatever the hours say",
+                                                                            "properties": {"held": {"type": "boolean"}, "reason": {"type": "string"}, "until": {"type": "integer"}, "by": {"type": "string"}}}}}
 CONTAINERS = {"type": "object", "required": ["available", "items"],
               "properties": {"available": {"type": "boolean"}, "checked_at": {"type": ["number", "null"]}, "restored": {"type": "boolean"},
                              "items": {"type": "array", "items": ANY}, "next_cursor": {"type": ["string", "null"]}}}
@@ -489,6 +493,29 @@ _alerts["requestBody"]["content"]["application/json"]["example"] = {
     "key": "check-router", "state": "raised", "title": "Router is not answering", "message": "Ping: no answer for 3 checks in a row.",
     "level": "problem"}
 
+# Added in 1.12.0 (plug-in API 1.24, DASH-572): a hold on heavy work from a plug-in, answered only to its own key.
+spec["paths"]["/api/v1/plugin/hold"] = {"post": write(
+    {"type": "object", "required": ["ok", "held"], "properties": {
+        "ok": {"type": "boolean"},
+        "held": {"type": "boolean", "description": "Whether anything is held now, by this plug-in or another"},
+        "reason": {"type": "string"}, "until": {"type": "integer", "description": "When the longest hold ends if it is not renewed, as epoch seconds"},
+        "by": {"type": "string", "description": "The plug-in whose hold lasts longest"}}},
+    "A plug-in holds Starboard's heavy automatic work while the computer runs on battery, or lets it go", "holdHeavyJobs", "Plug-ins",
+    body={"type": "object", "required": ["on"], "properties": {
+        "on": {"type": "boolean", "description": "true starts or renews the hold, false ends it"},
+        "reason": {"type": "string", "maxLength": 80, "description": "One line shown to people, such as On battery. Defaults to On battery."},
+        "minutes": {"type": "integer", "minimum": 1, "maximum": 30, "default": 10,
+                    "description": "How long the hold lasts if it is not renewed. Ask again before it ends to keep it."}}})
+    | {"description": "Only the plug-in's own key, while the plug-in is active and its approved permissions include power:hold: any other "
+                      "key gets 404 not_found. While a hold lasts, Starboard does not start by itself its background jobs (Live TV, "
+                      "watch history, listening progress, the automatic updates), its scheduled backups or other plug-ins' scheduled jobs, "
+                      "and it pauses downloads as Download hours does, even when Download hours is off. Anything a person starts with a "
+                      "click still runs. A hold ends by itself after minutes, so a plug-in that stops cannot hold for ever; what was due "
+                      "starts at the next check after it ends, and downloads Starboard paused start again."}}
+_hold = spec["paths"]["/api/v1/plugin/hold"]["post"]
+_hold["responses"].pop("403")  # a plug-in's key is never asked for manage
+_hold["requestBody"]["content"]["application/json"]["example"] = {"on": True, "reason": "On battery", "minutes": 10}
+
 
 SAMPLES = {"id": "123", "name": "livetv"}
 RUN_ID = "0123456789ab"  # an update run's id, for /api/v1/updates/runs/{id}
@@ -516,7 +543,7 @@ def with_scopes(spec):
                 scope = next((sc for p, sc in reads if re.match(p, sample(path))), None)
             else:
                 scope = next((sc for p, m, sc in writes if m == method.upper() and re.match(p, sample(path))), None)
-            if scope == api_v1.PLUGIN_ONLY:  # 1.8.0: a plug-in's own key, by its approved permission, not a scope
+            if scope in api_v1.PLUGIN_PERMISSION:  # 1.8.0: a plug-in's own key, by its approved permission, not a scope
                 scope, right = None, "plugin"
             elif path != mcp.PATH:
                 right = "manage"

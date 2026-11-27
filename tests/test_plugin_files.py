@@ -11,23 +11,6 @@ from unittest import mock
 from starboard import plugin_cards, plugin_tester, plugin_watch, plugins, plugins_admin as pa
 from tests.test_plugins import ON_DEMAND
 
-OLD_COMPOSE = '''services:
-  plugin-on-demand-main:
-    image: "x"
-    volumes:
-      - "/srv/data/plugins/on-demand/data/main:/data"
-      - "/srv/data/plugins/on-demand/settings.json:/run/starboard/settings.json:ro"
-      - "/srv/data/plugins/on-demand/key:/run/starboard/key:ro"
-      - "/srv/data/plugins/on-demand/jellyfin.json:/run/starboard/jellyfin.json:ro"
-    environment:
-      TZ: "Europe/London"
-  plugin-on-demand-engine:
-    volumes:
-      - "/srv/data/plugins/on-demand/settings.json:/run/starboard/settings.json:ro"
-      - "/srv/data/plugins/on-demand/key:/run/starboard/key:ro"
-'''
-
-
 def mode(path):
     return stat.S_IMODE(os.stat(path).st_mode)
 
@@ -81,26 +64,12 @@ class Files(Base):
         pa.share(where)
         self.assertFalse(os.path.exists(os.path.join(where, "run", "jellyfin.json")))
 
-    def test_old_compose_files_are_upgraded_once(self):
+    def test_the_start_up_pass_shares_the_files_and_restarts_nothing(self):
         where = self.add()
-        with open(os.path.join(where, "compose.yaml"), "w") as f:
-            f.write(OLD_COMPOSE)
-        self.assertTrue(pa.upgrade_mounts(where))
-        with open(os.path.join(where, "compose.yaml")) as f:
-            text = f.read()
-        self.assertEqual(text.count('"/srv/data/plugins/on-demand/run:/run/starboard:ro"'), 2)
-        self.assertNotIn("settings.json:/run", text)
-        self.assertIn('"/srv/data/plugins/on-demand/data/main:/data"', text)
-        self.assertIn('TZ: "Europe/London"', text)
-        self.assertFalse(pa.upgrade_mounts(where))
-
-    def test_upgrade_all_restarts_only_active_plugins_that_changed(self):
-        where = self.add()
-        with open(os.path.join(where, "compose.yaml"), "w") as f:
-            f.write(OLD_COMPOSE)
         pa.set_state(self.tmp.name, "on-demand", "enabled")
-        self.assertEqual(pa.upgrade_all(self.tmp.name, []), [ON_DEMAND["name"]])
-        self.assertEqual(pa.upgrade_all(self.tmp.name, []), [])
+        os.remove(os.path.join(where, "run", "settings.json"))
+        self.assertIsNone(pa.upgrade_all(self.tmp.name, []))
+        self.assertTrue(os.path.exists(os.path.join(where, "run", "settings.json")))
 
     def test_roll_back_shares_the_files_it_moved(self):
         from starboard import plugin_life

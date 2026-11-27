@@ -14,6 +14,7 @@
 #   ./bench.sh recyclarr   time one "recyclarr sync" run, sampled every second
 #   ./bench.sh live        read-only reading of every running container for 180 s
 #   ./bench.sh online      extra: Heimdall idle and one Recyclarr sync with internet (not the closed network)
+#   ./bench.sh startup     seconds from start to first answer for Jellyfin, Plex and Emby, three runs each (DASH-580)
 #   ./bench.sh clean       remove every bench- container and volume, and the bench network
 #
 # Every container, volume and the network are named bench-...; nothing else is touched. Results go to OUT
@@ -35,6 +36,9 @@ APPS=(
 "starboard|${STARBOARD_IMAGE:-ghcr.io/themightytrex/starboard}|/data||"
 "reelix-full|${REELIX_FULL_IMAGE:-ghcr.io/themightytrex/reelix:full}|/config||"
 "reelix-lite|${REELIX_LITE_IMAGE:-ghcr.io/themightytrex/reelix:lite}|/config||"
+"jellyfin|lscr.io/linuxserver/jellyfin@sha256:1c60c32d1de1529cc58ea6c7879dd47f89d0d88082b085a66214243de3150b5c|/config||"
+"plex|lscr.io/linuxserver/plex@sha256:31e4c2de666cd130bc389133b6c63af08912559d992370e52822f8f229185aef|/config||"
+"emby|lscr.io/linuxserver/emby@sha256:001590cc4dc98eb0052871523c40888206b54c0f497f52a3ea2c24421caaf91c|/config||"
 "radarr|lscr.io/linuxserver/radarr@sha256:51a9ac2a9eb47afc833541e5fd6c11b86eb9f810694c22fa2429e3078e9194b2|/config||"
 "sonarr|lscr.io/linuxserver/sonarr@sha256:673dc4609a5672bc8e46069c86ffcea283a86b48d34a6c93d8da8c24a1b87571|/config||"
 "lidarr|lscr.io/linuxserver/lidarr@sha256:a91ef0642c15c9bd7c4260fee98fa99972c61601e37c8a96411d6a9cf0e9ad40|/config||"
@@ -216,8 +220,33 @@ clean() {
   echo cleaned
 }
 
+# Seconds from `docker run` to the first answer of the server's public address (DASH-580), each media server alone on the closed
+# network, three runs each. The address is asked from this computer, through the container's address on the bench network.
+startup() {
+  net
+  local spec n port path
+  for spec in "jellyfin 8096 /System/Info/Public" "plex 32400 /identity" "emby 8096 /System/Info/Public"; do
+    read -r n port path <<< "$spec"
+    local entry; for entry in "${APPS[@]}"; do [[ "$entry" == "$n|"* ]] && break; done
+    IFS='|' read -r name img mnt extra cmd <<< "$entry"
+    local r; for r in 1 2 3; do
+      docker rm -f bench-$n >/dev/null 2>&1; docker volume rm -f bench-$n >/dev/null 2>&1
+      local t0; t0=$(date +%s.%N)
+      docker run -d --name bench-$n --network $NET -e PUID=1000 -e PGID=1000 -e TZ=Europe/London -v bench-$n:$mnt $img >/dev/null
+      local ip waited=0 ok=0
+      while [ $waited -lt 300 ]; do
+        ip=$(docker inspect -f "{{(index .NetworkSettings.Networks \"$NET\").IPAddress}}" bench-$n 2>/dev/null)
+        if [ -n "$ip" ] && [ "$(curl -s -o /dev/null -m 2 -w '%{http_code}' http://$ip:$port$path)" = 200 ]; then ok=1; break; fi
+        sleep 1; waited=$((waited+1))
+      done
+      echo "$n run $r $([ $ok = 1 ] && python3 -c "print(round($(date +%s.%N)-$t0,1))" || echo timeout)" >> $OUT/startup.txt
+      docker rm -f bench-$n >/dev/null; docker volume rm -f bench-$n >/dev/null
+    done
+  done
+}
+
 mkdir -p $OUT/logs
 case "${1:-run}" in
-  pull) pull ;; run) run ;; online) online ;; recyclarr) recyclarr ;; live) live ;; clean) clean ;;
-  *) echo "usage: $0 pull|run|recyclarr|live|online|clean"; exit 1 ;;
+  pull) pull ;; run) run ;; online) online ;; recyclarr) recyclarr ;; live) live ;; startup) startup ;; clean) clean ;;
+  *) echo "usage: $0 pull|run|recyclarr|live|online|startup|clean"; exit 1 ;;
 esac

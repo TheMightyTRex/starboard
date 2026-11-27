@@ -799,6 +799,97 @@ if (sw1) {
   check("T-WIZARD", "Escape closes the wizard and focus goes back to Switch with help", /^Switch with help/.test(out.text), JSON.stringify(out));
 }
 
+// T-COMPARE (DASH-580) The comparison on the Plug-ins catalogue: each chart has a heading, bars that Tab reaches with their words, and a
+// table of the same figures behind Show as a table.
+await page.goto(`${base}/settings-plugins-catalogue.html`);
+await settle();
+const cmp = await page.evaluate(() => {
+  const part = document.querySelector("[data-part=ms-compare]");
+  const cards = [...(part?.querySelectorAll(".chart") || [])];
+  return { has: !!part, cards: cards.length, heads: cards.filter((c) => c.querySelector("h3")).length, tables: cards.filter((c) => c.querySelector("details table")).length,
+    bars: [...(part?.querySelectorAll(".bars li") || [])].filter((li) => /[0-9]/.test(li.textContent)).length, h2s: part?.querySelectorAll("h2").length || 0 };
+});
+if (cmp.has) {
+  check("T-COMPARE", "four charts, each with a level 3 heading and a table", cmp.cards === 4 && cmp.heads === 4 && cmp.tables === 4 && cmp.h2s === 0, JSON.stringify(cmp));
+  check("T-COMPARE", "every bar says its figure in words", cmp.bars === 12, JSON.stringify(cmp));
+  await page.evaluate(() => { const h = document.getElementById("ms-compare-h"); h.tabIndex = -1; h.focus(); });  // start at the part: the page has many stops before it
+  const bar = await tabTo((f) => f.tag === "LI" && /Jellyfin/.test(f.text), 12);
+  check("T-COMPARE", "Tab reaches a bar", !!bar, bar ? bar.text : "not reached");
+} else check("T-COMPARE", "the comparison is on the catalogue", false, JSON.stringify(cmp));
+
+// T-ADMIN (DASH-568) Administering the media server by keyboard alone, with made-up answers: each part is read only when its button is
+// pressed (nothing is asked before), Tab reaches Read the libraries, Enter reads them, the list's own buttons are named for the library,
+// a scan says what it asked in a polite status region and keeps focus on its button, a full refresh asks first and Escape cancels,
+// and the last table says where each job is done, with a chip in words.
+await page.goto(`${base}/settings-jellyfin.html`);
+await settle();
+await page.evaluate(async () => {
+  const real = window.api;
+  window.__adminAsked = [];
+  window.api = async (p, o) => {
+    if (p.startsWith("/api/media-server/admin")) window.__adminAsked.push(`${o?.method || "GET"} ${p}`);
+    if (p === "/api/media-server/admin/libraries") return { rows: [{ id: "lib1", name: "Films", type: "movies", folders: ["/data/media/movies"], count: null }] };
+    if (p === "/api/media-server/admin/scan") return { said: "Jellyfin was asked to scan that library" };
+    return real(p, o);
+  };
+  await startMediaAdmin();
+});
+await settle();
+const asked0 = await page.evaluate(() => window.__adminAsked.filter((x) => /admin\/(libraries|tasks|activity|logs)/.test(x)).length);
+check("T-ADMIN", "nothing is read from the server before a button is pressed", asked0 === 0, String(asked0));
+await page.evaluate(() => { const h = document.getElementById("ma-libraries-h"); h.tabIndex = -1; h.focus(); });  // start at the part: the page has many stops before it
+const readLib = await tabTo((f) => f.tag === "BUTTON" && /^Read the libraries/.test(f.text), 4);
+check("T-ADMIN", "Tab reaches Read the libraries", !!readLib, readLib ? readLib.text : "not reached");
+if (readLib) {
+  await page.keyboard.press("Enter");
+  await page.waitForSelector("[data-part=ma-libraries] .row", { timeout: 6000 }).catch(() => {});
+  const after = await focus();
+  check("T-ADMIN", "focus stays on the button that read them", /^Read the libraries/.test(after.text), JSON.stringify(after));
+  const scan = await tabTo((f) => f.tag === "BUTTON" && /^Scan Films/.test(f.text), 8);
+  check("T-ADMIN", "the scan button is named for its library", !!scan, scan ? scan.text : "not reached");
+  if (scan) {
+    await page.keyboard.press("Enter");
+    await page.waitForFunction(() => /asked to scan/.test(document.getElementById("ma-said")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
+    const live = await page.evaluate(() => { const l = document.getElementById("ma-said"); return { role: l?.getAttribute("role"), live: l?.getAttribute("aria-live"), text: l?.textContent || "" }; });
+    check("T-ADMIN", "the scan is said in a polite status region", live.role === "status" && live.live === "polite" && /asked to scan/.test(live.text), JSON.stringify(live));
+    const stay = await focus();
+    check("T-ADMIN", "focus stays on Scan", /^Scan Films/.test(stay.text), JSON.stringify(stay));
+    const full = await tabTo((f) => f.tag === "BUTTON" && /^Refresh everything/.test(f.text), 4);
+    if (full) {
+      await page.keyboard.press("Enter");
+      await settle();
+      const dlg = await page.evaluate(() => !!document.querySelector("dialog[open], [role=dialog]"));
+      check("T-ADMIN", "a full refresh asks first", dlg, String(dlg));
+      await page.keyboard.press("Escape");
+      await settle();
+      const back = await focus();
+      check("T-ADMIN", "Escape returns focus to Refresh everything", /^Refresh everything/.test(back.text), JSON.stringify(back));
+      const scanned = await page.evaluate(() => window.__adminAsked.filter((x) => x.startsWith("POST")).length);
+      check("T-ADMIN", "cancelling asks the server nothing", scanned === 1, String(scanned));
+    } else check("T-ADMIN", "Tab reaches Refresh everything", false, "not reached");
+  }
+}
+const cov = await page.evaluate(() => { const t = document.querySelector("[data-part=ma-coverage] table"); return { caption: t?.querySelector("caption")?.textContent || "", rows: t?.querySelectorAll("tbody tr").length || 0, heads: t?.querySelectorAll("tbody th[scope=row]").length || 0, chips: [...(t?.querySelectorAll(".chip") || [])].filter((c) => !c.textContent.trim()).length }; });
+check("T-ADMIN", "the coverage table has a caption, a row header and words in every chip", /administration job is done/.test(cov.caption) && cov.rows > 10 && cov.heads === cov.rows && cov.chips === 0, JSON.stringify(cov));
+
+// T-CAN (DASH-566) What each can do: a table with a caption, a column for each media server, a row header for each job, and every No
+// says why in words (never a colour alone). Read in the page's own order, after Installed side by side.
+await page.goto(`${base}/settings-jellyfin.html`);
+await settle();
+const can = await page.evaluate(() => {
+  const h = document.getElementById("ms-can-h");
+  const t = h?.closest("[data-part]")?.querySelector("table");
+  const rows = [...(t?.querySelectorAll("tbody tr") || [])];
+  const side = document.getElementById("ms-side-h");
+  return { has: !!t, caption: t?.querySelector("caption")?.textContent || "", cols: [...(t?.querySelectorAll("thead th") || [])].map((x) => x.textContent),
+    rowHeads: rows.filter((r) => r.querySelector("th[scope=row]")).length, rows: rows.length,
+    noWithoutWhy: rows.flatMap((r) => [...r.querySelectorAll("td")]).filter((c) => /^No/.test(c.textContent) && c.textContent.trim() === "No").length,
+    after: !!(side && h && (side.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING)) };
+});
+check("T-CAN", "the table has a caption, the three servers (Jellyfin, Emby, Plex) and a row header for each job", can.has && /Jellyfin, Plex and Emby/.test(can.caption) && can.cols.join() === "Job,Jellyfin,Emby,Plex" && can.rows > 5 && can.rowHeads === can.rows, JSON.stringify(can));
+check("T-CAN", "every No says why", can.noWithoutWhy === 0, String(can.noWithoutWhy));
+check("T-CAN", "it follows Installed side by side", can.after, "order");
+
 // T-WIZARD3 (DASH-587) Carrying a media server move across by keyboard alone, with made-up answers for the servers: step 3 names
 // each part with a tick box that has its words, Tab reaches the ticks and the last button, Enter starts it, the progress is said
 // in a polite live region, focus lands on Close when it ends, and Escape returns focus to Switch with help.
@@ -1397,6 +1488,39 @@ if (mk) {
   check("T-PEOPLE-PW", "Escape gives focus back to Make a password", /^Make a password for Alex/.test(d3.text), d3.text);
 }
 
+// T-PEOPLE-APP (DASH-589, stage 3) the account's More menu by keyboard: Enter opens it, the arrow keys reach Delete in Jellyfin, Enter
+// opens a danger dialog that starts on Cancel (and holds the "I am sure" tick and the Starboard password), Escape closes it, and focus
+// is back on More.
+await page.goto(`${base}/settings-people.html`);
+await settle();
+await page.locator('[data-person]', { hasText: "Alex" }).first().focus();
+await page.keyboard.press("Enter");
+await page.waitForTimeout(700);
+const peMore = await tabTo((f) => f.tag === "BUTTON" && /^More for Alex in Jellyfin/.test(f.text), 40);
+check("T-PEOPLE-APP", "More for the Jellyfin account can be reached with Tab", !!peMore, peMore?.text);
+if (peMore) {
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  let reached = null;
+  for (let i = 0; i < 9 && !reached; i++) {
+    await page.keyboard.press("ArrowDown");
+    const f = await focus();
+    if (/^Delete in Jellyfin/.test(f.text)) reached = f;
+  }
+  check("T-PEOPLE-APP", "the arrow keys reach Delete in Jellyfin", !!reached);
+  if (reached) {
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(500);
+    const d1 = await focus();
+    check("T-PEOPLE-APP", "the dialog starts on Cancel, so Enter never deletes by mistake", /^Cancel/.test(d1.text), d1.text);
+    check("T-PEOPLE-APP", "it asks for a plain yes and the Starboard password", await page.evaluate(() => !!document.querySelector("dialog[open] input[type=checkbox]") && !!document.querySelector("dialog[open] input[type=password]")));
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(500);
+    const d2 = await focus();
+    check("T-PEOPLE-APP", "Escape closes it and focus returns to the menu button", /^More for Alex in Jellyfin/.test(d2.text) || d2.inPanel, d2.text);
+  }
+}
+
 // T-TRANSCODE (DASH-515) Test hardware video conversion by keyboard alone: Test now is reached with Tab, nothing runs
 // until it is pressed, the wait is said, and focus ends on the result's summary, which is read out.
 await page.goto(`${base}/system.html`);
@@ -1586,6 +1710,40 @@ if (chk) {
   check("T-PLU", "Escape closes it and focus returns to Update all", backP.id === "plu-update-all", `${backP.id} ${backP.text}`);
 }
 
+// T-SPEED Speed limits by keyboard alone (DASH-578): Tab reaches Download limit with its label, a figure typed and left is
+// saved with "Saved" said beside it and focus stays, a wrong figure is refused in words tied to the box with the old figure
+// back, the alternative limits switch has a name and Space turns it on, and Enter on nothing is needed (no save button).
+await page.goto(`${base}/settings-downloads-speed.html`);
+await settle();
+const dl = await tabTo((f) => f.tag === "INPUT" && /^dl-speed-qbittorrent-down$/.test(f.id), 60);
+check("T-SPEED", "Tab reaches qBittorrent's Download limit", !!dl, dl ? dl.id : "not reached");
+if (dl) {
+  const named = await page.evaluate(() => { const i = document.activeElement; const l = document.querySelector(`label[for="${i.id}"]`); return { label: l && l.textContent.trim(), type: i.type, hint: !!i.getAttribute("aria-describedby") }; });
+  check("T-SPEED", "it has its label and a hint tied to it", named.label === "Download limit" && named.hint && named.type === "number", JSON.stringify(named));
+  await page.keyboard.press("Control+a");
+  await page.keyboard.type("1500");
+  await page.keyboard.press("Tab");
+  await page.waitForTimeout(700);
+  check("T-SPEED", "leaving the box says Saved", /Saved/.test(await said()), await said());
+  const upF = await focus();
+  check("T-SPEED", "focus moves on to Upload limit and is not lost", upF.id === "dl-speed-qbittorrent-up", `${upF.id} ${upF.text}`);
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Control+a");
+  await page.keyboard.type("-5");
+  await page.keyboard.press("Tab");
+  await page.waitForTimeout(500);
+  const bad = await page.evaluate(() => { const i = document.getElementById("dl-speed-qbittorrent-down"); const e = document.getElementById(`${i.id}-error`); return { invalid: i.getAttribute("aria-invalid"), text: e && !e.hidden ? e.textContent : "", back: i.value, tied: (i.getAttribute("aria-describedby") || "").includes(`${i.id}-error`) }; });
+  check("T-SPEED", "a wrong figure is refused in words tied to the box, with the old figure back", bad.invalid === "true" && /whole number/.test(bad.text) && bad.back === "1500" && bad.tied, JSON.stringify(bad));
+  const alt = await tabTo((f) => /^dl-speed-qbittorrent-alt$/.test(f.id), 8);
+  const altName = await page.evaluate(() => { const i = document.getElementById("dl-speed-qbittorrent-alt"); return `${i.getAttribute("role")} ${i.closest("label")?.textContent.trim()}`; });
+  check("T-SPEED", "Tab reaches the alternative limits switch, a switch with its name", !!alt && /^switch /.test(altName) && /alternative speed limits/i.test(altName), altName);
+  if (alt) {
+    await page.keyboard.press("Space");
+    await page.waitForTimeout(700);
+    const on = await page.evaluate(() => document.getElementById("dl-speed-qbittorrent-alt").checked);
+    check("T-SPEED", "Space turns it on and says Saved", on && /Saved/.test(await said()), await said());
+  }
+}
 // T-SYSBACKUP System, Backups (DASH-588): the panel is reached in the Tab order and its one link, named for what it does,
 // opens the backup page at Full without media with Enter.
 await page.goto(`${base}/system.html`);

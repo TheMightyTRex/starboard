@@ -1,7 +1,7 @@
 // Settings, People (DASH-589, single sign-on stage 1): the people who use your apps, and a long, unique password for each one
-// in each app. Starboard keeps the list and the passwords. It does not yet make, pause or remove an account inside an app
-// (stage 3), so the page says so, and asks the owner to say when a password has been set in the app. Nothing is read
-// from an app and nothing runs between visits: the list is read when the page opens and after each change.
+// in each app. Starboard keeps the list and the passwords, and (stage 3) can make, pause, resume and delete the account in
+// Jellyfin and Audiobookshelf; for other apps it only records, and the owner says when a password has been set. An app is
+// read only when the owner chooses an action, and nothing runs between visits.
 
 const PEOPLE_STATE = { active: ["Active", "success"], paused: ["Paused", "warning", "pause"], removed: ["Removed", "muted"] };
 const ACCOUNT_STATE = { none: ["No account", "muted"], made: ["Password made, not set", "warning"], "in-use": ["Password set in the app", "success"] };
@@ -76,7 +76,9 @@ async function startPeople() {
     if (limit) add.disabled = true;
     box.replaceChildren(
       section("people", "People", null,
-        notice("info", "Starboard keeps the list and the passwords for now", "It does not yet make, pause or remove an account inside an app. You make the account in the app, set the password Starboard made, and say so here. When you pause or remove someone, stop their account working in each app yourself."),
+        notice("info", "Single sign-on is recommended when other people use your apps", "It gives each person their own sign-in. Leave it off on a server only you use, so nothing extra runs. It is a plug-in: add it in Settings, Plug-ins, Catalogue. Its address is your server's Tailscale name, which you choose once, because changing it later makes every passkey stop working.",
+          el("a", { class: "btn", href: "/settings-plugins-catalogue.html" }, "Open the plug-in catalogue")),
+        notice("info", "What Starboard does in your apps", "In Jellyfin and Audiobookshelf, Starboard can make an account, pause it, resume it and delete it, and give a child limits. Open More beside an account. In other apps, such as Emby and Kavita, it only records the account and the password: make and change them in the app, then choose It is set in the app."),
         el("div", { class: "actions" }, add, savedNote("people-saved"), limit ? el("span", { class: "small muted", text: `Starboard keeps up to ${data.limit} people.` }) : null),
         peopleTable("People, with their role, state and accounts", ["Name", "Role", "State", "Accounts", "Manage"], rows),
         none, removed));
@@ -186,6 +188,14 @@ async function startPeople() {
     return out;
   }
 
+  // Stage 3: the apps whose accounts Starboard can make, pause and delete, and which of this person's accounts are in them.
+  const inApps = (p) => p.accounts.filter((a) => data.apps.find((x) => x.id === a.app)?.can_accounts);
+  const appResults = (r) => (r.apps || []).filter((x) => !x.ok).map((x) => x.said);
+  const tick = (id, label, hint, checked) => {
+    const input = el("input", { type: "checkbox", id, checked });
+    return { input, node: el("label", { class: "check", for: id }, input, el("span", { class: "check__text" }, el("strong", { text: label }), el("span", { class: "check__hint", text: hint }))) };
+  };
+
   function stateSection(p) {
     const list = el("ul", { class: "action-list", "aria-label": `Pause or remove ${p.name}` });
     const item = (label, hint, id, run, danger = false) => {
@@ -194,29 +204,50 @@ async function startPeople() {
       list.append(el("li", { class: "action-list__item" }, b, el("span", { class: "action-list__hint", id: `${id}-hint`, text: hint })));
     };
     const word = { pause: "Paused", resume: "Resumed", remove: "Removed", restore: "Put back" };
+    // Pause, resume and put back may also turn the person's accounts in the apps off or on (a tick, on by default).
     const act = (what, after) => async () => {
-      try { const r = await call(`/api/people/${p.id}/${what}`); drawPage(); redraw(after, r.said); }
-      catch (err) { problem(err.message); }
+      const mine = inApps(p);
+      let also = false;
+      if (mine.length) {
+        const off = what === "pause";
+        const t = tick(`person-${what}-apps`, off ? "Also pause their accounts in the apps" : "Also resume their accounts in the apps",
+          `${mine.map((a) => a.app_name || a.app).join(" and ")}: ${off ? "the accounts stay, switched off" : "the accounts are switched on again"}. Nothing is deleted.`, true);
+        if (!await confirmDialog({ title: `${off ? "Pause" : "Resume"} ${p.name}?`, confirm: off ? "Pause" : "Resume", message: "Choose what happens in your apps.", fields: [t.node] })) return;
+        also = t.input.checked;
+      }
+      try {
+        const r = await call(`/api/people/${p.id}/${what}`, { also_apps: also });
+        drawPage(); redraw(after, r.said);
+        const bad = appResults(r);
+        if (bad.length) problem(`Some apps did not change: ${bad.join("; ")}`);
+      } catch (err) { problem(err.message); }
     };
     if (p.state === "active") item("Pause", "Marks them paused here. Their accounts in the apps stay as they are until you stop them working there.", "person-pause", act("pause", "#person-resume"));
     if (p.state === "paused") item("Resume", "Marks them active again.", "person-resume", act("resume", "#person-pause"));
     if (p.state !== "removed") {
       item("Remove", `Moves ${p.name} to Removed people for ${data.forget_after_days} days. Starboard deletes nothing in your apps.`, "person-remove", async () => {
-        if (!await confirmDialog({ title: `Remove ${p.name}?`, danger: true, confirm: "Remove",
-          message: `Starboard moves ${p.name} to Removed people and keeps the record and passwords for ${data.forget_after_days} days. It does not change anything in your apps, so stop their accounts working there. You can put them back.` })) return;
-        try { const r = await call(`/api/people/${p.id}/remove`); panel.close(); drawPage(); saved(r.said); }
-        catch (err) { problem(err.message); }
+        const mine = inApps(p);
+        const t = mine.length ? tick("person-remove-apps", "Also pause their accounts in the apps", `${mine.map((a) => a.app_name || a.app).join(" and ")}: switched off, not deleted.`, true) : null;
+        if (!await confirmDialog({ title: `Remove ${p.name}?`, danger: true, confirm: "Remove", fields: t ? [t.node] : [],
+          message: `Starboard moves ${p.name} to Removed people and keeps the record and passwords for ${data.forget_after_days} days. Nothing is deleted in your apps. ${t ? "Tick the box to switch their accounts off there too." : "Stop their accounts working there yourself."} You can put them back.` })) return;
+        try {
+          const r = await call(`/api/people/${p.id}/remove`, { also_apps: !!t?.input.checked });
+          panel.close(); drawPage(); saved(r.said);
+          const bad = appResults(r);
+          if (bad.length) problem(`Some apps did not change: ${bad.join("; ")}`);
+        } catch (err) { problem(err.message); }
       }, true);
     } else {
-      item("Put back", "Makes them active again, with their accounts and passwords as they were.", "person-restore", async () => {
-        try { const r = await call(`/api/people/${p.id}/restore`); drawPage(); redraw("#person-pause", r.said); }
-        catch (err) { problem(err.message); }
-      });
+      item("Put back", "Makes them active again, with their accounts and passwords as they were.", "person-restore", act("restore", "#person-pause"));
       item("Forget for good", p.can_forget ? "Deletes the record and every password Starboard kept for this person. Asks for your Starboard password." : `Possible in ${plural(p.forget_in_days, "day")}.`, "person-forget", async () => {
         const pw = passwordInput("person-forget-pw");
+        const mine = inApps(p);
+        const t = mine.length ? tick("person-forget-apps", "Also delete their accounts in the apps", `${mine.map((a) => a.app_name || a.app).join(" and ")}: the accounts and what they hold (watch history, reading progress) are deleted there. This cannot be undone.`, false) : null;
         if (!await confirmDialog({ title: `Forget ${p.name} for good?`, danger: true, confirm: "Forget for good",
-          message: `Starboard deletes ${p.name}'s record and every password it kept for them. It cannot be undone. Starboard deletes nothing in your apps.`, fields: [passwordField(pw)] })) return;
-        try { const r = await call(`/api/people/${p.id}/forget`, { password: pw.value }); panel.close(); drawPage(); saved(r.said); }
+          message: `Starboard deletes ${p.name}'s record and every password it kept for them. It cannot be undone. ${t ? "Nothing is deleted in your apps unless you tick the box." : "Starboard deletes nothing in your apps."}`, fields: [...(t ? [t.node] : []), passwordField(pw)] })) return;
+        if (t?.input.checked && !await confirmDialog({ title: "Delete their accounts in the apps?", danger: true, confirm: "Delete the accounts",
+          message: `This deletes ${p.name}'s accounts in ${mine.map((a) => a.app_name || a.app).join(" and ")} for good, with everything they hold. Choose Cancel to keep them.` })) return;
+        try { const r = await call(`/api/people/${p.id}/forget`, { password: pw.value, delete_in_apps: !!t?.input.checked }); panel.close(); drawPage(); saved(r.said); }
         catch (err) { problem(err.message); }
       }, true);
       if (!p.can_forget) $("#person-forget", list)?.setAttribute("aria-disabled", "true");
@@ -241,6 +272,7 @@ async function startPeople() {
         : state === "made" ? `Account name: ${acct.username}. ${acct.own ? "Chosen by you" : "Made"} on ${peopleDate(acct.made_at)}. Set it in ${name}, then say so.`
           : `Account name: ${acct.username}. Set in the app on ${peopleDate(acct.set_at)}.`;
     const base = `/api/people/${p.id}/accounts/${app}`;
+    const info = data.apps.find((a) => a.id === app);
     const rowId = `acct-${app}`;
     const buttons = [];
     const button = (label, run, extra = {}) => {
@@ -338,6 +370,67 @@ async function startPeople() {
     if (acct && state !== "none") buttons.push(button("Show password", show, { id: `${rowId}-show`, icon: "eye" }));
     if (state === "made") buttons.push(button("It is set in the app", setIt(true), { icon: "check" }));
     const more = [];
+    // Stage 3: the account inside the app, for the apps Starboard can reach (Jellyfin, Audiobookshelf).
+    const inApp = async (action, extra = {}) => (await call(`${base}/in-app`, { action, ...extra }));
+    const checkApp = async () => {
+      try {
+        const r = await api(`${base}/in-app`, { method: "POST", body: { action: "check" } });
+        announce(r.exists ? `${name} has an account called ${r.account}${r.paused ? ", and it is paused" : ""}` : `${name} has no account called ${r.account}`);
+        toast(r.exists ? `${name}: the account is there${r.paused ? " and paused" : ""}` : `${name}: no account called ${r.account}`);
+      } catch (err) { problem(err.message); }
+    };
+    const makeInApp = async () => {
+      const child = p.role === "child";
+      let limits = { rating: "", libraries: [] };
+      const fields = [];
+      let ratingBox = null;
+      const libBoxes = [];
+      if (child) {
+        try {
+          const c = await api(`/api/people/apps/${app}/limits`);
+          if (c.ratings.length) {
+            ratingBox = el("select", { class: "select", id: `${rowId}-rating` }, c.ratings.map((x) => el("option", { value: x.name, text: x.name, selected: x.name === c.default_rating })));
+            fields.push(field("Highest age rating", ratingBox, { hint: "Nothing rated higher can be watched." }));
+          }
+          if (c.libraries.length) {
+            const list = c.libraries.map((l) => ({ l, ...tick(`${rowId}-lib-${l.id}`, l.name, "", false) }));
+            libBoxes.push(...list);
+            fields.push(el("fieldset", { class: "form-stack" }, el("legend", { class: "field__label", text: "Libraries they may open" }),
+              el("span", { class: "hint", text: "Leave all empty to give them every library." }), list.map((x) => x.node)));
+          }
+        } catch (err) { problem(err.message); return; }
+      }
+      const pw = passwordInput(`${rowId}-make-pw`);
+      fields.push(passwordField(pw, { hint: "Starboard sends the recorded password to the app." }));
+      if (!await confirmDialog({ title: `Make ${p.name}'s account in ${name}?`, confirm: "Make the account",
+        message: `Starboard makes an account called ${acct?.username || p.name} in ${name} with the password it recorded${child ? ", and a child's limits" : ""}. If it is there already, nothing is made twice.`, fields })) return;
+      limits = { rating: ratingBox?.value || "", libraries: libBoxes.filter((x) => x.input.checked).map((x) => x.l.id) };
+      try {
+        const r = await call(`${base}/in-app`, { action: "make", password: pw.value, ...limits });
+        redraw(`#${rowId}-show`, r.said); drawPage();
+      } catch (err) { problem(err.message); }
+    };
+    const pauseApp = (pause) => async () => {
+      try { const r = await inApp(pause ? "pause" : "resume"); redraw(`#${rowId}-more .menu-wrap > button`, r.said); drawPage(); }
+      catch (err) { problem(err.message); }
+    };
+    const deleteInApp = async () => {
+      const pw = passwordInput(`${rowId}-del-pw`);
+      const sure = tick(`${rowId}-del-sure`, `Yes, delete the account in ${name}`, "It cannot be undone. What the account holds, such as watch history, goes with it.", false);
+      if (!await confirmDialog({ title: `Delete ${p.name}'s account in ${name}?`, danger: true, confirm: "Delete the account",
+        message: `This deletes the account called ${acct?.username || p.name} in ${name} for good. Starboard keeps its own record of the person.`, fields: [sure.node, passwordField(pw)] })) return;
+      try { const r = await call(`${base}/in-app`, { action: "remove", password: pw.value, confirm: sure.input.checked }); redraw(`#${rowId}-more .menu-wrap > button`, r.said); drawPage(); }
+      catch (err) { problem(err.message); }
+    };
+    if (info?.can_accounts && acct) {
+      if (state !== "none") more.push({ label: `Make the account in ${name}`, icon: "user-plus", onSelect: makeInApp });
+      more.push({ label: `Check ${name}`, icon: "circle-help", onSelect: checkApp });
+      more.push({ label: `Pause in ${name}`, icon: "pause", onSelect: pauseApp(true) });
+      more.push({ label: `Resume in ${name}`, icon: "play", onSelect: pauseApp(false) });
+      more.push({ label: `Delete in ${name}…`, icon: "trash-2", danger: true, onSelect: deleteInApp });
+    } else if (acct) {
+      more.push({ label: `Starboard only records ${name} accounts`, icon: "info", onSelect: () => announce(`Starboard only records ${name} accounts. Make, pause and remove them in ${name}.`) });
+    }
     if (acct) more.push({ label: "Change the account name", icon: "pencil", onSelect: rename });
     if (state === "in-use") more.push({ label: "Not set in the app any more", icon: "undo-2", onSelect: setIt(false) });
     if (state !== "none") more.push({ label: "Reset the password", icon: "refresh-cw", onSelect: () => makeIt(true) });

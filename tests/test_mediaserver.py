@@ -128,7 +128,9 @@ class Slot(unittest.TestCase):
             got = mediaserver.state({"services": [JF], "extras": {}})
             self.assertEqual((got["active"], got["name"], got["configured"], got["page"]), ("jellyfin", "Jellyfin", True, "/settings-jellyfin.html"))
             self.assertEqual([a["id"] for a in got["available"]], ["jellyfin", "emby", "plex"])
-            self.assertEqual(got["available"][0], {"id": "jellyfin", "name": "Jellyfin", "page": "/settings-jellyfin.html", "set_up": True, "has_app": True})
+            self.assertEqual({k: v for k, v in got["available"][0].items() if k != "capability_rows"},
+                             {"id": "jellyfin", "name": "Jellyfin", "page": "/settings-jellyfin.html", "set_up": True, "has_app": True})
+            self.assertEqual(len(got["available"][0]["capability_rows"]), len(mediaserver.CAPABILITIES))
             self.assertEqual([(a["id"], a["set_up"], a["has_app"]) for a in got["available"][1:]], [("emby", False, False), ("plex", False, False)])
             self.assertIn("restart", got["capabilities"])
             self.assertFalse(mediaserver.state({"services": [], "extras": {}})["configured"])

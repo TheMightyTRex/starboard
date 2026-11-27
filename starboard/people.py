@@ -107,9 +107,9 @@ def apps_from(services):
             continue
         slug = re.sub(r"[^a-z0-9]+", "-", str(s.get("name", "")).lower()).strip("-")
         if s.get("type") in PEOPLE_APPS or slug in PEOPLE_APPS or any(slug.startswith(p + "-") for p in PEOPLE_APPS):
-            from . import people_apps
+            from . import people_accounts, people_apps
             out.append({"id": str(s["id"]), "name": str(s.get("name") or s["id"]), "address": str(s.get("link") or s.get("url") or ""),
-                        "can_change": people_apps.supports(s), "rule": rule_for(s)})
+                        "can_change": people_apps.supports(s), "can_accounts": people_accounts.supports(s), "rule": rule_for(s)})
     return out
 
 
@@ -395,6 +395,14 @@ def drop_account(data_dir, person_id, app_id):
         del p["accounts"][app_id]
         _write(data_dir, data)
         return p
+
+
+def raw(data_dir, person_id):
+    """{id, name, role, accounts: [(app_id, account_name)]} for the code that talks to the apps. No password."""
+    with _lock:
+        p = _find(_read(data_dir), person_id)
+        return {"id": p["id"], "name": p["name"], "role": p["role"],
+                "accounts": [(a, (acct or {}).get("username") or p["name"]) for a, acct in sorted((p.get("accounts") or {}).items())]}
 
 
 def person_public(data_dir, services, person_id):

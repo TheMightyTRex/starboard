@@ -82,7 +82,7 @@ const episodeName = (r, heading) => `${r.title} (${[heading, r.number ? `episode
 function rowList(rows, heading = "") {
   const play = current?.play;
   // An episode with its file that Jellyfin has not added yet says so, in words, where Play would be (DASH-480).
-  const notYet = (r) => (play && jellyfinBase(play) && r.has_file && !r.jf ? "Not in Jellyfin yet" : "");
+  const notYet = (r) => (play && jellyfinBase(play) && r.has_file && !r.jf ? `Not in ${play.name || "Jellyfin"} yet` : "");
   return el("ul", { class: "rows lib-order" }, ...rows.map((r) => el("li", { class: `row${r.number ? "" : " row--no-lead"}` },
     r.number ? el("span", { class: "lib-order__number", text: r.number }) : null,
     el("div", {},
@@ -333,7 +333,7 @@ function playNote(item) {
   const has = item.jf || item.lists.some((l) => l.rows.some((r) => r.jf));
   if (has) return playAddressNote(item.play);
   if (ITEM_TAB === "films" && item.can?.has_file && jellyfinBase(item.play)) {
-    return el("p", { class: "small muted", text: "Not in Jellyfin yet, so there is nothing to play there. Jellyfin adds it when it next scans its library." });
+    return el("p", { class: "small muted", text: `Not in ${item.play.name || "Jellyfin"} yet, so there is nothing to play there. ${item.play.name || "Jellyfin"} adds it when it next scans its library.` });
   }
   return null;
 }

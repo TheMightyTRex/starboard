@@ -72,6 +72,28 @@ class QualityFolderAndBulk(unittest.TestCase):
         with self.assertRaises(ValueError):
             library.bulk({}, "films", [], "follow")
 
+    def test_several_artists_books_and_shows_are_done_one_by_one(self):
+        calls, fake = recording()
+        with mock.patch("starboard.services._api", side_effect=fake):
+            said = library.bulk({}, "radio", [3, 1], "unfollow")
+            self.assertEqual([(m, p) for m, p, b, _ in calls], [("PUT", "/radio/shows/1"), ("PUT", "/radio/shows/3")])
+            self.assertEqual(said, "Reelix no longer follows 2 shows")
+            said = library.bulk({}, "books", [9], "follow")
+        self.assertEqual(said, "Reelix follows 1 book")
+        with self.assertRaises(ValueError):
+            library.bulk({}, "radio", [1], "delete")
+
+    def test_one_that_fails_is_counted_and_the_rest_go_on(self):
+        calls, fake = recording()
+
+        def flaky(reelix, path, params=None, method="GET", body=None, **k):
+            if path.endswith("/2"):
+                raise library.services.ServiceError("no")
+            return fake(reelix, path, params, method, body, **k)
+        with mock.patch("starboard.services._api", side_effect=flaky):
+            said = library.bulk({}, "radio", [1, 2, 3], "follow")
+        self.assertEqual(said, "Reelix follows 2 shows. 1 could not be changed")
+
 
 class Extras(unittest.TestCase):
     def test_refresh_and_rescan(self):

@@ -218,6 +218,8 @@ class App:
         self.listening_busy = None  # reading listening progress, if it is running
         self.listening_read = None
         self.schedule = schedule.Schedule(self.config)
+        from . import power_hold  # DASH-572: a hold starting or ending wakes the download hours thread at once
+        power_hold.on_change(self.schedule.ensure)
         if os.environ.get("STARBOARD_SCHEDULE", "1") != "0":
             self.schedule.start()
         from .config import prune_saved
@@ -235,6 +237,7 @@ class App:
         self.trust_proxy = os.environ.get("STARBOARD_TRUST_PROXY", "") == "1"
         self.machine_name = socket.gethostname().split(".", 1)[0].lower()
         self.allowed_hosts = {h.strip().lower() for h in os.environ.get("STARBOARD_ALLOWED_HOSTS", "").split(",") if h.strip()}
+        self._told_proxy = set()
         self.proxy_addresses = {"127.0.0.1", "::1", *[a.strip() for a in os.environ.get("STARBOARD_PROXY_ADDRESSES", "").split(",") if a.strip()]}
         self.port = int(os.environ.get("STARBOARD_PORT", "8095"))
         self.forced_host = os.environ.get("STARBOARD_HOST", "")  # when set, Settings cannot change the address
@@ -293,6 +296,15 @@ class App:
     def feedback_key_valid(self, key):
         token = self._feedback_keys.get(key) if key else None
         return bool(token) and self.sessions.valid(token, self.session_version)
+
+    def warn_unlisted_proxy(self, address):
+        """One line in the log, once for each address, when a request says it was forwarded but the sender is not a proxy Starboard
+        trusts (DASH-603). Starboard then counts every visitor behind it as that one address, so a few wrong passwords lock them all out."""
+        if address in self._told_proxy or len(self._told_proxy) > 20:
+            return
+        self._told_proxy.add(address)
+        logs.event("warning", "security", f"A request from {address} says it was forwarded, but {address} is not a proxy Starboard trusts, so everyone "
+                   "behind it counts as one visitor. If it is your reverse proxy, set STARBOARD_TRUST_PROXY=1 and add its address to STARBOARD_PROXY_ADDRESSES.")
 
     def host_allowed(self, name):
         # host.docker.internal: the name plug-ins on the home network use for this computer. It exists only inside
@@ -830,7 +842,7 @@ def _move_livetv(app):
             # Built-in plug-ins follow Starboard's update: their files are written again and active ones restarted.
             from . import plugin_life, plugins_admin
             again = plugins_admin.refresh_builtins(app.data_dir, media_dir, app.config.data["services"])
-            again += [n for n in plugins_admin.upgrade_all(app.data_dir, app.config.data["services"]) if n not in again]
+            plugins_admin.upgrade_all(app.data_dir, app.config.data["services"])
             if again:
                 logs.event("info", "plug-ins", f"Started again with this version of Starboard: {', '.join(again)}")
             stopped = plugin_life.stop_unfit(app.data_dir)  # a plug-in this Starboard cannot run is stopped, with its reason (DASH-603)
@@ -942,6 +954,10 @@ class Handler(BaseHTTPRequestHandler):
             forwarded = self.headers.get("X-Forwarded-For", "")
             if forwarded:
                 return forwarded.split(",")[0].strip()
+        elif self.headers.get("X-Forwarded-For") and not is_loopback(self.client_address[0]):
+            warn = getattr(self.app, "warn_unlisted_proxy", None)
+            if warn:
+                warn(self.client_address[0])  # DASH-603: said once, so a proxy that is not listed is found
         return self.client_address[0]
 
     def is_https(self):
@@ -2040,6 +2056,17 @@ class Handler(BaseHTTPRequestHandler):
                                            reading=bool(app.listening_busy), read_result=app.listening_read))
             if path == "/api/listening/read" and method == "POST":
                 return self.start_listening(self.body())
+            if path == "/api/listening/scan" and method == "POST":  # DASH-578: scan Audiobookshelf's libraries from here
+                abs_service = listening.abs_app(cfg.data["services"])
+                if not abs_service:
+                    return self.error(400, "Give Audiobookshelf an admin API key in Manage apps first")
+                try:
+                    names = listening.abs_scan(abs_service)
+                except services.ServiceError as e:
+                    return self.error(502, str(e))
+                logs.event("info", "audiobookshelf", f"Asked Audiobookshelf to scan {len(names)} {'library' if len(names) == 1 else 'libraries'}")
+                return self.json(200, {"libraries": names, "said": (f"Audiobookshelf is scanning {', '.join(names)}. It says when it is done, in its own page." if names
+                                                                      else "Audiobookshelf has no libraries to scan")})
             if path == "/api/listening/mapping" and method == "PUT":
                 listening.set_mapping(cfg.data_dir, self.body().get("mapping") or {})
                 return self.json(200, {"ok": True})
@@ -2789,6 +2816,29 @@ class Handler(BaseHTTPRequestHandler):
                 services.forget("transfer")
                 logs.event("info", "downloads", f"{s['name']}: unpacking and folder scanning resumed")
                 return self.json(200, {"said": f"{s['name']} is unpacking again"})
+            if path == "/api/speed-limits" and method == "GET":  # DASH-578: asked only while the page is open
+                from . import speed_limits
+                items, errors = [], []
+                for c in speed_limits.clients(cfg.data["services"]):
+                    try:
+                        items.append(speed_limits.read(c))
+                    except services.ServiceError as e:
+                        errors.append({"id": c["id"], "name": c["name"], "message": str(e)})
+                return self.json(200, {"items": items, "errors": errors})
+            m = re.match(r"^/api/speed-limits/([A-Za-z0-9_-]{1,64})$", path)
+            if m and method == "POST":
+                from . import speed_limits
+                s = cfg.service(m.group(1))
+                if not s or s["type"] not in speed_limits.KINDS:
+                    return self.error(404, "No qBittorrent or NZBGet with that id")
+                try:
+                    row = speed_limits.apply(s, self.body())
+                except ValueError as e:
+                    return self.error(400, str(e))
+                except services.ServiceError as e:
+                    return self.error(502, str(e))
+                logs.event("info", "downloads", f"{s['name']}: speed limits now {speed_limits.words(row)}")
+                return self.json(200, row)
             if path == "/api/transfer" and method == "GET":
                 return self.json(200, services.cached("transfer", 5, lambda: transfer_with_vpn(app.data_dir, cfg.data["services"]), fresh))
             if path == "/api/numbers" and method == "GET":
@@ -2838,6 +2888,11 @@ class Handler(BaseHTTPRequestHandler):
                     return self.error(400, str(e))
             if path == "/api/media-server/migrate" and method in ("GET", "POST"):  # DASH-587: does what the wizard planned, after the person confirmed
                 return self.media_migrate(method)
+            if path == "/api/media-server/comparison" and method == "GET":  # DASH-580: figures measured once, from a small file
+                from . import mediaserver
+                return self.json(200, mediaserver.comparison())
+            if path.startswith("/api/media-server/admin") and method in ("GET", "POST"):  # DASH-568: the media server's own admin jobs
+                return self.media_admin(method, path)
             if path in ("/api/media-server/choose", "/api/media-server/back") and method == "POST":
                 from . import mediaserver
                 try:
@@ -3528,6 +3583,35 @@ class Handler(BaseHTTPRequestHandler):
         one = mediaserver.active(self.app.config.data)
         return one.name if one else ""
 
+    def media_admin(self, method, path):
+        """The Administration part of the media server tab (DASH-568). GET /api/media-server/admin says what is offered, from the
+        settings alone; GET .../admin/<part> reads one part from the server now; POST .../admin/scan and .../admin/run do one thing
+        a person asked for, and are written to the audit log. Nothing here runs unless a person opens it."""
+        from . import mediaserver, jellyfin_play, services as svc
+        app, cfg = self.app, self.app.config
+        try:
+            if method == "GET" and path == "/api/media-server/admin":
+                return self.json(200, {**mediaserver.admin_overview(cfg.data), "address": jellyfin_play.address_for(cfg.data)})
+            if method == "GET" and path.startswith("/api/media-server/admin/"):
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                return self.json(200, mediaserver.admin_read(cfg.data, path.rsplit("/", 1)[1], q.get("name", [""])[0][:120]))
+            if method == "POST" and path in ("/api/media-server/admin/scan", "/api/media-server/admin/run"):
+                body = self.body()
+                what = "scan" if path.endswith("/scan") else "run"
+                got = mediaserver.admin_do(cfg.data, what, str(body.get("id") or "")[:64], str(body.get("how") or "new"))
+                from .api_v1 import audit
+                audit(app.data_dir, f"media_server_{what}", session=self.session_label(), target=str(body.get("id") or "all")[:64])
+                logs.event("info", "media server", got["said"])
+                svc.forget("jellyfin")
+                return self.json(200, got)
+        except LookupError as e:
+            return self.error(404, str(e))
+        except ValueError as e:
+            return self.error(400, str(e))
+        except svc.ServiceError as e:
+            return self.error(502, str(e))
+        return self.error(404, "No such page")
+
     def media_migrate(self, method):
         """GET: how the move is going, or how the last one went. POST: start one in the background, only after the wizard's last
         step; one at a time. The wizard planned it first (it changes nothing); this is the one place that does (DASH-587)."""
@@ -3660,6 +3744,15 @@ class Handler(BaseHTTPRequestHandler):
             # public lists and installs nothing). At most one read every 30 seconds, however often it is pressed.
             got = pa.refresh(app.config)
             return self.json(200, {**got, "updates": len(plugin_life.updates_known(app.data_dir))})
+        if path == "/api/plugins/retiring" and method == "GET":  # the compatibility report (DASH-603): what is going and who still uses it
+            from . import deprecations
+            mine = []
+            for p in plugins_admin.basics(app.data_dir):
+                m = plugins_admin._read_kept(os.path.join(plugins_admin.folder(app.data_dir, p["id"]), "manifest.json"), {})
+                found = [deprecations.warning_sentence(w) for w in deprecations.for_manifest(m)]
+                if found:
+                    mine.append({"id": p["id"], "name": p["name"], "uses": found})
+            return self.json(200, {"going": deprecations.public(), "routes_in_use": deprecations.routes_in_use(app.data_dir), "plugins": mine})
         if path == "/api/plugins/catalogue" and method == "GET":
             # The Catalogue page (DASH-318): the Starboard plug-ins collection, each marked when already added.
             have = {p["id"] for p in pa.added(app.data_dir)}
@@ -4349,6 +4442,15 @@ class Handler(BaseHTTPRequestHandler):
             return self.error(e.status, e.message)
         return self.error(404, "Not found")
 
+    def in_app(self, app_id, run, who, what):
+        """One app's answer for a person, as {app, ok, said}: a refusal or an app that did not answer is said in words and never stops
+        the rest. Nothing secret is in it."""
+        try:
+            return {"app": app_id, "ok": True, "said": run()}
+        except (services.ServiceError, ValueError, LookupError) as e:
+            logs.event("info", "people", f"Not {what} in {app_id} ({who}): {e}")
+            return {"app": app_id, "ok": False, "said": str(e)}
+
     def people_route(self, method, path):
         """Settings, People: the owner's list of people and their accounts in the apps. Signed-in owner only (a plug-in's key
         never reaches /api/people). A password is shown only after the Starboard password is entered again, and never logged."""
@@ -4362,6 +4464,14 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if path == "/api/people" and method == "GET":
                 return full()
+            ml = re.match(r"^/api/people/apps/([a-z0-9-]{1,41})/limits$", path)
+            if ml and method == "GET":  # what a Child can be limited to in this app: ratings and libraries, read from the app now
+                from . import people_accounts
+                try:
+                    return self.json(200, {"ratings": people_accounts.ratings(services, ml.group(1)), "libraries": people_accounts.libraries(services, ml.group(1)),
+                                           "default_rating": people_accounts.CHILD_RATING}, none)
+                except (services.ServiceError, ValueError) as e:
+                    return self.error(502, str(e))
             if path == "/api/people" and method == "POST":
                 b = self.body()
                 p = people.add(data_dir, b.get("name"), b.get("email"), b.get("role"))
@@ -4375,17 +4485,31 @@ class Handler(BaseHTTPRequestHandler):
                 return full(said=f"Saved {p['name']}", person=p["id"])
             m = re.match(r"^/api/people/(p-[0-9a-f]{8})/(pause|resume|remove|restore)$", path)
             if m and method == "POST":
+                from . import people_accounts
+                b = self.body()
                 p = people.set_state(data_dir, m.group(1), m.group(2))
                 words = {"pause": "Paused", "resume": "Resumed", "remove": "Removed", "restore": "Put back"}[m.group(2)]
                 logs.event("info", "people", f"{words}: {p['name']}")
-                return full(said=f"{words} {p['name']}", person=p["id"])
+                results = []
+                if b.get("also_apps"):  # stage 3: turn the person's accounts off (or on) in the apps too; a removal only turns them off
+                    off = m.group(2) in ("pause", "remove")
+                    for app_id, user in people.raw(data_dir, m.group(1))["accounts"]:
+                        results.append(self.in_app(app_id, lambda a=app_id, u=user: people_accounts.set_paused(services, a, u, off), p["name"], "paused" if off else "resumed"))
+                return full(said=f"{words} {p['name']}", person=p["id"], apps=results)
             m = re.match(r"^/api/people/(p-[0-9a-f]{8})/forget$", path)
             if m and method == "POST":
-                self.check_password(self.body())
+                from . import people_accounts
+                b = self.body()
+                self.check_password(b)
+                if b.get("delete_in_apps"):  # stage 3: delete their accounts in the apps first; one that fails stops everything
+                    results = [self.in_app(a, lambda a=a, u=u: people_accounts.remove(services, a, u), m.group(1), "removed")
+                               for a, u in people.raw(data_dir, m.group(1))["accounts"]]
+                    if any(not r["ok"] for r in results):
+                        return self.json(502, {"error": "Not forgotten: " + "; ".join(r["said"] for r in results if not r["ok"]) + ". Nothing was changed for this person here", "apps": results})
                 p = people.forget(data_dir, m.group(1))
-                logs.event("info", "people", f"Person forgotten: {p['name']}")
+                logs.event("info", "people", f"Person forgotten: {p['name']}" + (", with their accounts in the apps" if b.get("delete_in_apps") else ""))
                 return full(said=f"Forgot {p['name']}")
-            m = re.match(r"^/api/people/(p-[0-9a-f]{8})/accounts/([a-z0-9-]{1,41})(?:/(password|reveal|set|unset|remove))?$", path)
+            m = re.match(r"^/api/people/(p-[0-9a-f]{8})/accounts/([a-z0-9-]{1,41})(?:/(password|reveal|set|unset|remove|in-app))?$", path)
             if m and method == "POST":
                 pid, app_id, what = m.groups()
                 b = self.body()
@@ -4406,6 +4530,37 @@ class Handler(BaseHTTPRequestHandler):
                     how = ("chosen" if own is not None else "generated") + (", also changed in the app" if also else "")
                     logs.event("info", "people", f"A password ({how}) was recorded for {p['name']} in {app_id}")  # never the password
                     return full(said=("Changed it in the app and recorded it" if also else "Recorded the password"), person=pid)
+                if what == "in-app":  # stage 3: the account inside the app (Jellyfin, Audiobookshelf)
+                    from . import people_accounts
+                    pr = people.raw(data_dir, pid)
+                    user = dict(pr["accounts"]).get(app_id)
+                    if user is None:
+                        return self.error(404, "Record an account name for that app first")
+                    act = b.get("action")
+                    if act == "check":
+                        return self.json(200, {**people_accounts.check(services, app_id, user), "account": user}, none)
+                    if act == "make":
+                        self.check_password(b)  # it sends the recorded password to the app
+                        pw = people.reveal(data_dir, pid, app_id)["password"]
+                        limits = {"rating": b.get("rating") or "", "libraries": [str(x)[:100] for x in (b.get("libraries") or [])][:50]}
+                        said = people_accounts.ensure(services, app_id, user, pw, child=pr["role"] == "child", limits=limits)
+                        people.mark_set(data_dir, services, pid, app_id, True)
+                        logs.event("info", "people", f"{said} ({pr['name']})")  # never the password
+                        return full(said=said, person=pid)
+                    if act in ("pause", "resume"):
+                        said = people_accounts.set_paused(services, app_id, user, act == "pause")
+                        logs.event("info", "people", f"{said} ({pr['name']})")
+                        return full(said=said, person=pid)
+                    if act == "remove":
+                        self.check_password(b)
+                        if not b.get("confirm"):
+                            return self.error(400, "Confirm that the account should be deleted in the app")
+                        said = people_accounts.remove(services, app_id, user)
+                        if said.startswith("Removed"):
+                            people.mark_set(data_dir, services, pid, app_id, False)
+                        logs.event("info", "people", f"{said} ({pr['name']})")
+                        return full(said=said, person=pid)
+                    return self.error(400, "Choose check, make, pause, resume or remove")
                 if what == "reveal":
                     self.check_password(b)
                     got = people.reveal(data_dir, pid, app_id)

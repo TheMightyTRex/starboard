@@ -111,6 +111,7 @@ Each guide is a journey through several topics, in order.
 - [Check what was added, failed and upgraded across your apps](topics/check-what-happened-across-your-apps.md)
 - [Copy download issues for an AI helper](topics/copy-download-issues.md)
 - [Download only at certain hours](topics/set-download-hours.md)
+- [Limit how fast your downloads go](topics/set-speed-limits.md)
 - [Download without a VPN](topics/download-without-a-vpn.md)
 - [Approve or decline requests](topics/approve-requests.md)
 - [Find out what is coming up](topics/coming-up.md)
@@ -166,6 +167,7 @@ Each guide is a journey through several topics, in order.
 
 - [Choose your media server](topics/choose-your-media-server.md)
 - [Move to another media server](topics/move-to-another-media-server.md)
+- [Run your media server from Starboard](topics/run-your-media-server-from-starboard.md)
 - [Set up free Live TV in Jellyfin](topics/set-up-live-tv.md)
 - [A Live TV channel will not play](topics/live-tv-channel-will-not-play.md)
 - [Import watch history into Jellyfin](topics/import-watch-history.md)
