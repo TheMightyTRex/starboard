@@ -33,8 +33,8 @@ HELP.update({
                "Settings, Updates. Install Reelix updates automatically: "
                "in the quiet hours, once a day at most, Starboard installs a new Reelix. It saves the settings first and goes back to the "
                "version before if the new one is not healthy. Update Starboard with ./update.sh in the Starboard "
-               "folder; ./update.sh --to and a version goes back to that version. Starboard 0.40.0 and later cannot go back to an "
-               "older version on their own settings: add --restore and the name of the backup the update to 0.40.0 saved.",
+               "folder; ./update.sh --to and a version goes back to that version. Going back to a version before 0.40.0 is "
+               "safest with --restore and the name of the backup the update to 0.40.0 saved; without it, Starboard warns you and goes on.",
     "settings-password": "The password you chose for Starboard, the one you sign in with from a browser. Forgotten "
                          "it? Stop with q and run ./reset-password.sh in the Starboard folder.",
 })
@@ -55,7 +55,7 @@ def releases(folder=".", run=None):
 
 
 def before_the_break(tag):
-    """A version before 0.40.0 (DASH-596): going back to it needs the backup the update to 0.40.0 saved."""
+    """A version before 0.40.0 (DASH-596): going back to it is safest with the backup the update to 0.40.0 saved."""
     parts = re.match(r"^v?(\d+)\.(\d+)\.(\d+)$", str(tag))
     return bool(parts) and tuple(int(x) for x in parts.groups()) < (0, 40, 0)
 
@@ -120,8 +120,8 @@ def automatic_updates(api, term, version, folder="."):
                      for i, t in enumerate(tags)]
             term.card("In the Starboard folder", rows)
             term.note("Each one saves Starboard's settings first and restarts Starboard, so this window signs out. "
-                      "If the new version does not start, it goes back to the one you had. You cannot go back to a "
-                      "version before 0.40.0 without the backup that the update to 0.40.0 saved: add --restore and its "
+                      "If the new version does not start, it goes back to the one you had. Going back to a "
+                      "version before 0.40.0 is safest with the backup that the update to 0.40.0 saved: add --restore and its "
                       "name in the backups folder.")
         term.text("Press Enter to carry on", help_key="updates")
 
