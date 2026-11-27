@@ -1,0 +1,52 @@
+name: a11y
+# Accessibility on the pages a pull request changes: axe-core WCAG 2.2 AA (light, dark and high contrast) and reading and
+# Tab order (ORDER=1), run by tools/a11y.sh in the Playwright image against the example server (made-up data, nothing
+# real). It is the light check. The full journeys, the API and plug-in checks, the keyboard tasks and the layout check are
+# heavy (a browser, Docker and about 20 minutes), so they stay on the owner's computer in tools/done-check.sh, run once
+# on the final tip through the two shared heavy-run slots and pasted into the pull request. GitHub minutes are spent
+# only here. Findings already on main are in tools/done-check-baseline.json and do not fail it.
+# The check is named "a11y (changed pages)" and always reports, even when no page changed, so it can be made required
+# in the repository's settings later (this file does not change them).
+on:
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: a11y-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  a11y:
+    name: a11y (changed pages)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Find the changed pages
+        id: pages
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # A shared script or style file gives the small fixed sample of pages, not all of them (tools/changed-pages.py).
+          pages="$(python tools/changed-pages.py --base "origin/$BASE_REF" --sample)"
+          echo "pages=$pages" >> "$GITHUB_OUTPUT"
+          echo "Pages to check: ${pages:-none}"
+      - name: axe-core, WCAG 2.2 AA, in light, dark and high contrast
+        if: steps.pages.outputs.pages != ''
+        env:
+          PAGES: ${{ steps.pages.outputs.pages }}
+        run: bash tools/a11y.sh
+      - name: Reading order and Tab order
+        if: steps.pages.outputs.pages != ''
+        env:
+          PAGES: ${{ steps.pages.outputs.pages }}
+          ORDER: "1"
+        run: bash tools/a11y.sh
+      - name: Findings that are new in this pull request
+        if: steps.pages.outputs.pages != ''
+        run: python tools/a11y_ci.py
