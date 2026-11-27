@@ -29,7 +29,6 @@ from datetime import datetime, timezone
 from .services import ServiceError, USER_AGENT, _fetch
 
 DEFAULT_PREFS = {"landing-livetv": "guide"}  # Live TV opens on the Guide tab
-DEFAULT_WORDS = {"landing-livetv": "Live TV opens on the Guide"}
 
 
 def folder(data_dir):

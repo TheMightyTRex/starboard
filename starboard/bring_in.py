@@ -37,8 +37,6 @@ from . import folders
 
 KINDS = ("films", "series", "music", "books", "audiobooks")
 WORDS = {"films": "Films", "series": "Series", "music": "Music", "books": "Books", "audiobooks": "Audiobooks"}
-ONE = {"films": "film", "series": "series", "music": "album", "books": "book", "audiobooks": "audiobook"}
-MANY = {"films": "films", "series": "series", "music": "albums", "books": "books", "audiobooks": "audiobooks"}
 # Where each kind goes, inside the media folder (stack.DATA_FOLDERS), and how Reelix sees it.
 TARGET = {"films": "media/movies", "series": "media/tv", "music": "media/music", "books": "media/books",
           "audiobooks": "media/audiobooks"}

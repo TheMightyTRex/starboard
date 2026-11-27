@@ -24,7 +24,6 @@ DATA_MAX = 24 * 1024  # a catalogue's data address, base64 included
 FILE = r"^(?:[a-z0-9][a-z0-9_-]{0,29}/)?[A-Za-z0-9][A-Za-z0-9._-]{0,60}\.(svg|png)$"
 ALT_MIN, ALT_MAX = 3, 80
 SVG_NS = "http://www.w3.org/2000/svg"
-XLINK = "http://www.w3.org/1999/xlink"
 ELEMENTS = {"svg", "g", "path", "rect", "circle", "ellipse", "line", "polyline", "polygon", "title", "desc", "defs",
             "linearGradient", "radialGradient", "stop", "clipPath", "mask", "use", "symbol", "text", "tspan"}
 REFUSED = {"script", "foreignObject", "image", "style", "animate", "animateTransform", "animateMotion", "set",
