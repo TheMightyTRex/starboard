@@ -67,6 +67,7 @@ Each guide is a journey through several topics, in order.
 
 - [Add an app](topics/add-an-app.md)
 - [Read your Calibre-Web books on your phone](topics/read-calibre-web-books-on-your-phone.md)
+- [Read your Kavita books and comics on your phone](topics/read-kavita-books-on-your-phone.md)
 - [Choose a Usenet provider and add it](topics/choose-a-usenet-provider.md)
 - [Find an app's API key](topics/find-an-api-key.md)
 - [Search for apps already on your server](topics/search-for-new-apps.md)
