@@ -12,6 +12,10 @@ const chipOf = (p) => {
   if (stateOf(p) === "enabled" && p.resting?.length) return ["Resting", "muted"];
   return STATE[stateOf(p)] || ["Unknown", "muted"];
 };
+// A plug-in that uses a part of the API that is going (DASH-603): one plain sentence each, with the day it stops.
+const retiringNote = (p) => (p.retiring?.length ? el("div", { class: "notice", "data-tone": "warning", role: "note" }, icon("triangle-alert"),
+  el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "Uses a feature that is going" }),
+    ...p.retiring.map((t) => el("p", { text: t })))) : null);
 const healthNote = (p) => {
   if (stateOf(p) !== "enabled") return null;
   if (p.health && p.health !== "ok") return el("div", { class: "notice", "data-tone": "warning", role: "note" }, icon("triangle-alert"),
@@ -742,7 +746,7 @@ function pluginPage(p, redraw, ms = null, read = null) {
   // State (issue #8): the chip at the right of the heading's line and the version under it, in the grey band; Activate
   // or Deactivate first in the white body under the band (owner, 19 November 2026).
   const stateSec = section(`pl-${p.id}-state`, "State", stateWords(p),
-    headChip(...chipOf(p)), p.media_server ? el("div", { class: "stack-2" }, el("p", {}, slotChip(p, ms)), inUse(p, ms) ? el("p", { class: "small", text: "It stays active while it is your media server." }) : null) : null, fix || healthNote(p) || (p.message ? el("p", { class: "small", text: p.message }) : null));
+    headChip(...chipOf(p)), p.media_server ? el("div", { class: "stack-2" }, el("p", {}, slotChip(p, ms)), inUse(p, ms) ? el("p", { class: "small", text: "It stays active while it is your media server." }) : null) : null, fix || healthNote(p) || (p.message ? el("p", { class: "small", text: p.message }) : null), retiringNote(p));
   if (!inUse(p, ms)) $(".settings-section__head", stateSec).after(el("div", { class: "actions" }, first));
   // What it needs (DASH-567): the system its tag names, in words, in the State card (General keeps its five cards); when
   // that system is not here it says the plug-in is waiting.

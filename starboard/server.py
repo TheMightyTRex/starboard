@@ -3654,6 +3654,15 @@ class Handler(BaseHTTPRequestHandler):
             # public lists and installs nothing). At most one read every 30 seconds, however often it is pressed.
             got = pa.refresh(app.config)
             return self.json(200, {**got, "updates": len(plugin_life.updates_known(app.data_dir))})
+        if path == "/api/plugins/retiring" and method == "GET":  # the compatibility report (DASH-603): what is going and who still uses it
+            from . import deprecations
+            mine = []
+            for p in plugins_admin.basics(app.data_dir):
+                m = plugins_admin._read_kept(os.path.join(plugins_admin.folder(app.data_dir, p["id"]), "manifest.json"), {})
+                found = [deprecations.warning_sentence(w) for w in deprecations.for_manifest(m)]
+                if found:
+                    mine.append({"id": p["id"], "name": p["name"], "uses": found})
+            return self.json(200, {"going": deprecations.public(), "routes_in_use": deprecations.routes_in_use(app.data_dir), "plugins": mine})
         if path == "/api/plugins/catalogue" and method == "GET":
             # The Catalogue page (DASH-318): the Starboard plug-ins collection, each marked when already added.
             have = {p["id"] for p in pa.added(app.data_dir)}
