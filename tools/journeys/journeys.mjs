@@ -3073,10 +3073,12 @@ await page.waitForFunction(() => /Show password/.test(document.querySelector("#a
 check("PEOPLE-03", "a password is made, the row says so and focus is on Show password", /Password made, not set/.test(await page.locator("#acct-jellyfin-more").innerText()) && await page.evaluate(() => document.activeElement?.id === "acct-jellyfin-show"));
 await page.locator("#acct-jellyfin-show").click();
 await page.waitForSelector("dialog[open] #acct-jellyfin-pw", { timeout: 8000 });
+const peBefore = problems.length;
 await page.fill("#acct-jellyfin-pw", "not the password");
 await page.locator("dialog[open] button[value=ok]").click();
 await page.waitForTimeout(800);
 check("PEOPLE-04", "a wrong Starboard password shows nothing", await page.locator("#acct-jellyfin-secret").count() === 0);
+problems.length = peBefore;  // the browser logs the deliberate 401 of PEOPLE-04
 await page.locator("#acct-jellyfin-show").click();
 await page.waitForSelector("dialog[open] #acct-jellyfin-pw", { timeout: 8000 });
 await page.fill("#acct-jellyfin-pw", password);
