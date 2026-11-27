@@ -7,9 +7,19 @@ add features.
 
 ## [Unreleased]
 
+- **Backups on System (DASH-588, DASH-381, DASH-387):** System, Overview has a Backups panel: the newest full backup and that it was read back, whether full backups by themselves are set up or late, and whether the other places hold the newest one. **Check and restore backups** opens Settings, General, Backup/Logs, where each full backup says Checked and has Restore. Starboard reads it once when the page opens.
+- **Each backup place has its own rule for how often it gets a copy (DASH-588):** beside each place under Where backups go, **Copy** is Every backup, At most once a week or At most once a month, and applies at once. A backup counts as safe at a place on a weekly or monthly rule while its last copy there was read back inside that time, and the page says so. Copy the newest full backup now ignores the rule. The number of backups kept at each place is still set with Change.
+- **Design system copies brought up to date (DASH-609):** the shared styles and scripts match the design system again. They add the progress bar builder and the Following choice style, and drop the cover card, cover actions and book row styles, which no page used. No page changes.
+
+- **Logos of services, used only as the companies allow (DASH-588):** Google Drive and OneDrive show the plain cloud icon and their full name, not a redrawn logo. Google allows only its own logo, unchanged, and Microsoft allows its logos only with a licence. The logos that stay are one-colour marks of Dropbox, Backblaze, Amazon S3 and Nextcloud, each beside its name to say which service it is. `docs/LOGOS.md` lists each one with the company's rules.
+- **Set up full backups by themselves, step by step (DASH-588):** a server that never kept the backup password made no full backup on its own, and nothing said so unless a schedule was chosen. Settings, General, Backup/Logs now says **Full backups by themselves are not set up** in three steps, with **Set up full backups**. The dialog can **Suggest a password**: a long one made in your browser, shown once, with Copy it and Save it as a file, and Keep it waits until you tick that you stored it. Starboard keeps only a key made from the password, never the password, and never in a backup or a log.
+
 - **Phone apps for Kavita (DASH-583):** Manage apps and the Kavita plug-in's page now name KOReader and Kover for Android, and Sutra and Komic for iPhone and iPad, with what each needs: your Kavita address and Auth key, iOS 17 for Sutra, and https away from home for Komic. New help topic: Read your Kavita books and comics on your phone.
 ### Added
+- **Starboard tells you when a proxy is not listed.** If a request says it was forwarded but comes from an address in neither `STARBOARD_PROXY_ADDRESSES` nor this computer, Starboard writes one warning in its log for that address, because every visitor behind it would count as one.
+- **Checks that catch a break to the public API, and a weekly compatibility run.** A check with oasdiff fails a change that would break an outside tool, with the last release as the baseline. A weekly run tries the frozen older plug-in manifests and the collection's plug-ins against main.
 - **A line on every plug-in saying what it replaces or adds to, and an icon for its tab (DASH-585, DASH-604; plug-in API 1.23).** Each plug-in in the shipped catalogue now has a line such as "Adds to Jellyfin: stops it converting files as they play", shown on the Catalogue card, in the warning before install, on the plug-in's page and in Manage. A manifest may also name one icon from Starboard's set for its tab in Settings, Plug-ins; a name that is not in the set falls back to the puzzle piece.
+
 - **People.** Settings, People lists the people who use your apps, and Starboard makes a long, unique password for each person in each app, shown only after you enter your Starboard password. You can enter your own password of at least 10 characters instead, and reset one later. For Jellyfin and Audiobookshelf, Starboard can also change the password in the app. For other apps it records the password. It does not yet make or remove accounts inside the apps. Find out more in [Add the people who use your apps](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/add-the-people-who-use-your-apps.md).
 - **Starboard 0.40.0 is a clean break: update from 0.31.0 or later, and you cannot go back by the usual way.** The update stops before it changes anything if you have a version before 0.31.0, and says to update to 0.31.0 first. Before any other change it saves a backup of your settings, checks that it reads back, and says in plain words that you cannot go back to an older Starboard afterwards. Your settings move to the new layout once, and Starboard keeps every setting and every app it does not understand. To go back to a version before 0.40.0, run `./update.sh --to` with that version and `--restore` with the name of the backup: this is the safe way, and settings you changed since are lost. Without `--restore`, the updater warns you that your settings may not match, saves a fresh backup and goes on. Settings, Updates, Restore and the terminal settings say so. Find out more in [Update Starboard](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/update-starboard.md#update-to-0400-from-an-older-version).
 - **Find all wanted.** Every Library tab and every Wanted page has Find all wanted. It counts what is wanted, asks you to confirm how many and what Reelix will be asked, then searches 10 at a time with a minute between groups, up to 100 in a run, leaving out anything searched in the last day, with progress, Stop and a summary. It waits while Download hours pause downloads. Radio searches each show that has wanted episodes.
@@ -70,8 +80,6 @@ add features.
 - **Old release note files and two unused documents.** The notes files of 57 releases from 0.5.0 to 0.28.0, an unused picture of all the screenshots and the design record for building plug-ins in isolation are gone from the repository. `CHANGELOG.md` and the notes in Starboard still list every release, and the files stay in the history. The help and the app do not change.
 - **Four hand-run test scripts.** The scripts that tried Bring in on shares, copies off this computer, connecting a cloud service and a full restore by hand, on made-up data, are gone from the tools folder. The tests that run with every change stay, and the scripts stay in the history. The help and the app do not change.
 
-
-
 ### Fixed
 - **The hover outline of a topic tab meets the line under the tabs (issue #366):** the outline stopped 3px above the line under the menu of topics on a settings page. It now reaches it exactly, in Light, Dark and both High contrast styles. The tab keeps its size, the selected tab keeps its underline, and the focus ring is as it was. The same fix is in the design system's page topics.
 - **Field errors say "Error:" to a screen reader.** An error under a field, such as an empty password, now starts with the hidden word Error: , as the design system asks, so it is not read as a plain sentence. The nine places that drew one by hand share one function.
@@ -81,11 +89,13 @@ add features.
 - **A full backup that was not made is now reported.** A scheduled backup with no saved backup password used to say it had run. It now says "No full backup was made", raises an alert and shows a warning in Settings.
 
 ### Security
+- **A running plug-in that needs a part Starboard lacks is stopped.** A plug-in whose `capabilities.needs` names something this Starboard does not have now shows Needs an update with the reason, like one whose API range does not fit.
+- **A downloaded settings file no longer holds a plug-in's keys or secrets.** Plug-in settings that are secrets, and a plug-in's own key, are left out of the file. A restore on the same server keeps the ones the plug-in has.
+
 - **Requests with a Transfer-Encoding are refused.** Starboard now answers 400 and closes the connection, so a proxy in front of it cannot hide a second request inside a body.
 - **One guarded way to fetch a plug-in's manifest, catalogue and logo.** Starboard now checks every redirect and the address it connects to, so an address that redirects, or changes its answer, cannot reach your home network's private services or a cloud metadata address.
 - **A plug-in Starboard cannot run is stopped, and says why.** When Starboard starts, a plug-in whose API range leaves out this Starboard, or that uses something that is gone, is stopped (not removed) and shows **Needs an update** with the reason. Its settings and data are kept. Before, it showed Not supported but kept running.
 - **A plug-in's own key changes each time it starts, and ends when it is not used.** The key is new at every start and update, ends 30 days after its last use, and works on the plug-in's socket only when the plug-in cannot reach Starboard's port anyway. A copied key stops working soon.
-
 
 ## [0.31.0] (25 November 2026)
 
@@ -943,7 +953,6 @@ Reelix in place of the separate media apps, set up for you; Basics, Full install
 - **The set-up file is checked before it starts.** The Run first window and ./install.sh --start-apps check the set-up file with Starboard's own rules before starting anything: only the apps Starboard offers, no privileged containers, and folders inside your settings and media folders.
 - **One change at a time, and smaller reads.** Writing, starting and changing the install take turns; Docker answers over 64 MB are refused; old copies of the set-up are capped at ten; qBittorrent's temporary password is removed once used; NZBGet's sign-in goes only to the NZBGet Starboard set up.
 - **Scans.** The six security scanners ran on this release; two warnings from the signed-in web scan were checked and found to be false alarms.
-
 
 ## [0.9.2] (5 November 2026)
 
