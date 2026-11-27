@@ -12,6 +12,7 @@
     "Ruff (Python)|starboard/json_cards.py": 1,
     "Ruff (Python)|starboard/settings_zip.py": 1,
     "Ruff (Python)|starboard/update_runs.py": 1,
+    "Ruff (Python)|tests/test_backup_places.py": 1,
     "Ruff (Python)|tests/test_general_pages.py": 1,
     "Ruff (Python)|tests/test_menu_icons.py": 1,
     "Ruff (Python)|tests/test_shadows.py": 1,

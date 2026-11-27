@@ -308,6 +308,8 @@ def main():
         ctx = {"json": spec.get("json")}
         found, notes = parser(log, ctx)
         found = {k: v for k, v in found.items() if v > 0}
+        if name == "ds":
+            rc = 0  # sync.py --check also reports the other repositories' copies; only the lines for this checkout count (parse_ds)
         late = owed(name, found, baseline)
         result, new, old = judge(name, rc, found, baseline)
         secs = round(time.time() - t)

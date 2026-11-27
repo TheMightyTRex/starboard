@@ -855,6 +855,7 @@ await reelixStep.getByRole("button", { name: "Move them into Reelix" }).click();
 check("MOVE-01", "the earlier error goes as soon as the next try starts", await reelixStep.locator(".field-error:not([hidden])").count() === 0);
 const dlg = page.locator("dialog.task-dialog[open]");
 await dlg.waitFor({ timeout: 10000 });
+await dlg.locator(".task-list__item").nth(3).waitFor({ timeout: 8000 }).catch(() => {});  // the list is drawn a moment after the dialog opens (gate run, 27 November 2026)
 check("MOVE-01", "a dialog opens with a task list", await dlg.locator(".task-list__item").count() >= 4);
 check("MOVE-01", "focus is in the dialog", await page.evaluate(() => !!document.activeElement.closest("dialog[open]")));
 check("MOVE-01", "it has a working bar and a Close that says the work carries on",
