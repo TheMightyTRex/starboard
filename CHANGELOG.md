@@ -7,6 +7,8 @@ add features.
 
 ## [Unreleased]
 
+- **Logos of services, used only as the companies allow (DASH-588):** Google Drive and OneDrive show the plain cloud icon and their full name, not a redrawn logo. Google allows only its own logo, unchanged, and Microsoft allows its logos only with a licence. The logos that stay are one-colour marks of Dropbox, Backblaze, Amazon S3 and Nextcloud, each beside its name to say which service it is. `docs/LOGOS.md` lists each one with the company's rules.
+
 - **Phone apps for Kavita (DASH-583):** Manage apps and the Kavita plug-in's page now name KOReader and Kover for Android, and Sutra and Komic for iPhone and iPad, with what each needs: your Kavita address and Auth key, iOS 17 for Sutra, and https away from home for Komic. New help topic: Read your Kavita books and comics on your phone.
 ### Added
 - **People.** Settings, People lists the people who use your apps, and Starboard makes a long, unique password for each person in each app, shown only after you enter your Starboard password. You can enter your own password of at least 10 characters instead, and reset one later. For Jellyfin and Audiobookshelf, Starboard can also change the password in the app. For other apps it records the password. It does not yet make or remove accounts inside the apps. Find out more in [Add the people who use your apps](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/add-the-people-who-use-your-apps.md).
