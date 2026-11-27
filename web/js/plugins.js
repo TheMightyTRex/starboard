@@ -1492,8 +1492,8 @@ async function mediaServerComparison() {
     el("p", { class: "small muted", text: d.method }),
     chart("Memory at rest", "memory_mib", "MiB", 0, "Median of 36 readings, lower is lighter"),
     chart("Processor at rest", "cpu_pct", "%", 2, "Median of 36 readings of one processor core"),
-    chart("Time to start", "startup_s", "seconds", 0, "From start to its first answer, median of 3"),
-    chart("Size of the image", "image_mb", "MB", 0, "Downloaded and unpacked"),
+    chart("Time to start", "startup_s", "seconds", 0, "From start to its first answer, each alone, median of 3"),
+    chart("Size of the image", "image_mb", "MB", 0, "As Docker reports the image"),
     el("p", { class: "small muted", text: d.caveat }));
   return holder;
 }

@@ -1,0 +1,41 @@
+{
+ "measured": "2026-11-27",
+ "servers": [
+  {
+   "id": "jellyfin",
+   "name": "Jellyfin",
+   "memory_mib": 306,
+   "memory_peak_mib": 308,
+   "cpu_pct": 0.01,
+   "cpu_peak_pct": 0.88,
+   "threads": "27",
+   "startup_s": 6,
+   "image_mb": 351
+  },
+  {
+   "id": "plex",
+   "name": "Plex",
+   "memory_mib": 290,
+   "memory_peak_mib": 291,
+   "cpu_pct": 0.51,
+   "cpu_peak_pct": 0.82,
+   "threads": "117",
+   "startup_s": 6,
+   "image_mb": 187
+  },
+  {
+   "id": "emby",
+   "name": "Emby",
+   "memory_mib": 257,
+   "memory_peak_mib": 257,
+   "cpu_pct": 0.01,
+   "cpu_peak_pct": 0.24,
+   "threads": "22",
+   "startup_s": 4,
+   "image_mb": 435
+  }
+ ],
+ "method": "The three servers were started together on a closed Docker network with no limits, each with an empty settings folder. After 120 seconds to settle, Docker's own figures were read every 5 seconds for 180 seconds, 36 readings. Starboard did not measure anything for this page: the figures are kept in a small file.",
+ "caveat": "These are idle figures with no library, no viewers and no one watching. Memory and processor with people watching, and with a large library, are higher and were not measured. The servers were the latest linuxserver.io images on the day, and each shows only its first-run screen.",
+ "startup_note": "Start-up was timed with each server alone, three runs each."
+}

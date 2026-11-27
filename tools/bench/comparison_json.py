@@ -40,7 +40,7 @@ def main():
                         "cpu_pct": s["cpu_pct"], "cpu_peak_pct": s["cpu_peak_pct"], "threads": s["threads"],
                         "startup_s": round(statistics.median(start[key])) if start.get(key) else None, "image_mb": size.get(key)})
     out = {"measured": os.environ.get("MEASURED", ""), "servers": servers,
-           "method": "Each server was started on its own, with an empty settings folder, on a closed Docker network with no limits. After 120 seconds to settle, Docker's own figures were read every 5 seconds for 180 seconds, 36 readings. Starboard did not measure anything for this page: the figures are kept in a small file.",
+           "method": "The three servers were started together on a closed Docker network with no limits, each with an empty settings folder. After 120 seconds to settle, Docker's own figures were read every 5 seconds for 180 seconds, 36 readings. Starboard did not measure anything for this page: the figures are kept in a small file.",
            "caveat": "These are idle figures with no library, no viewers and no one watching. Memory and processor with people watching, and with a large library, are higher and were not measured. The servers were the latest linuxserver.io images on the day, and each shows only its first-run screen."}
     print(json.dumps(out, indent=1))
 
