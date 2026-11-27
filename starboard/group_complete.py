@@ -1,12 +1,12 @@
 """Complete collections and series (owner, 12 November 2026: "Audiobook series needs completing, like the collections;
-an Add missing button when you open the collection").
+an Add the rest button when you open the collection").
 
 - Films, Collections: Reelix's own collections (GET /collections) list every film in each TMDB collection, with the
-  ones in the library. A banner counts them all; the missing ones show as outlines; Add missing adds them to Reelix
+  ones in the library. A banner counts them all; the missing ones show as outlines; Add the rest adds them to Reelix
   with the collection's own quality and folder.
 - Audiobooks, Series: Reelix's books carry no series, so the series come from Audiobookshelf (its series and the
   books in each, with their numbers). The books you do not have come from Audible's public catalogue (searched by
-  the series' name, only books whose series is exactly that name), kept a week. Add missing looks each one up in
+  the series' name, only books whose series is exactly that name), kept a week. Add the rest looks each one up in
   Reelix (Open Library) by title and author and adds it as an audiobook.
 
 Every answer is kept (an hour for your own apps, a week for Audible), so a page view costs nothing extra."""

@@ -1,5 +1,5 @@
 """Complete collections and series (12 November 2026): films from Reelix's collections, audiobook series from
-Audiobookshelf with Audible's missing books, and Add missing."""
+Audiobookshelf with Audible's missing books, and Add the rest."""
 import unittest
 from unittest import mock
 

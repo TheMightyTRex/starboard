@@ -235,6 +235,7 @@ class App:
         self.trust_proxy = os.environ.get("STARBOARD_TRUST_PROXY", "") == "1"
         self.machine_name = socket.gethostname().split(".", 1)[0].lower()
         self.allowed_hosts = {h.strip().lower() for h in os.environ.get("STARBOARD_ALLOWED_HOSTS", "").split(",") if h.strip()}
+        self._told_proxy = set()
         self.proxy_addresses = {"127.0.0.1", "::1", *[a.strip() for a in os.environ.get("STARBOARD_PROXY_ADDRESSES", "").split(",") if a.strip()]}
         self.port = int(os.environ.get("STARBOARD_PORT", "8095"))
         self.forced_host = os.environ.get("STARBOARD_HOST", "")  # when set, Settings cannot change the address
@@ -293,6 +294,15 @@ class App:
     def feedback_key_valid(self, key):
         token = self._feedback_keys.get(key) if key else None
         return bool(token) and self.sessions.valid(token, self.session_version)
+
+    def warn_unlisted_proxy(self, address):
+        """One line in the log, once for each address, when a request says it was forwarded but the sender is not a proxy Starboard
+        trusts (DASH-603). Starboard then counts every visitor behind it as that one address, so a few wrong passwords lock them all out."""
+        if address in self._told_proxy or len(self._told_proxy) > 20:
+            return
+        self._told_proxy.add(address)
+        logs.event("warning", "security", f"A request from {address} says it was forwarded, but {address} is not a proxy Starboard trusts, so everyone "
+                   "behind it counts as one visitor. If it is your reverse proxy, set STARBOARD_TRUST_PROXY=1 and add its address to STARBOARD_PROXY_ADDRESSES.")
 
     def host_allowed(self, name):
         # host.docker.internal: the name plug-ins on the home network use for this computer. It exists only inside
@@ -942,6 +952,10 @@ class Handler(BaseHTTPRequestHandler):
             forwarded = self.headers.get("X-Forwarded-For", "")
             if forwarded:
                 return forwarded.split(",")[0].strip()
+        elif self.headers.get("X-Forwarded-For") and not is_loopback(self.client_address[0]):
+            warn = getattr(self.app, "warn_unlisted_proxy", None)
+            if warn:
+                warn(self.client_address[0])  # DASH-603: said once, so a proxy that is not listed is found
         return self.client_address[0]
 
     def is_https(self):
@@ -3139,6 +3153,12 @@ class Handler(BaseHTTPRequestHandler):
                         got = backup_copies.set_enabled(app.data_dir, str(data.get("id") or ""), bool(data.get("on")))
                         logs.event("info", "backup", f"Backup place {backup_copies.title_of(got)} switched {'on' if data.get('on') else 'off'}")
                         return self.json(200, backup_copies.public(app.data_dir))
+                    if path == "/api/backup/copies/every" and method == "POST":
+                        # How often one place gets a copy (27 November 2026): every backup, at most weekly or at most monthly.
+                        data = self.body()
+                        got = backup_copies.set_every(app.data_dir, str(data.get("id") or ""), str(data.get("every") or ""))
+                        logs.event("info", "backup", f"Backup place {backup_copies.title_of(got)} gets copies: {backup_copies.EVERY[got['every']][0].lower()}")
+                        return self.json(200, backup_copies.public(app.data_dir))
                     if path == "/api/backup/copies/now" and method == "POST":
                         backup_copies.copy_now(app.data_dir, str(self.body().get("id") or "") or None)
                         logs.event("info", "backup", "Copy off this computer started by hand")
@@ -3665,6 +3685,15 @@ class Handler(BaseHTTPRequestHandler):
             # public lists and installs nothing). At most one read every 30 seconds, however often it is pressed.
             got = pa.refresh(app.config)
             return self.json(200, {**got, "updates": len(plugin_life.updates_known(app.data_dir))})
+        if path == "/api/plugins/retiring" and method == "GET":  # the compatibility report (DASH-603): what is going and who still uses it
+            from . import deprecations
+            mine = []
+            for p in plugins_admin.basics(app.data_dir):
+                m = plugins_admin._read_kept(os.path.join(plugins_admin.folder(app.data_dir, p["id"]), "manifest.json"), {})
+                found = [deprecations.warning_sentence(w) for w in deprecations.for_manifest(m)]
+                if found:
+                    mine.append({"id": p["id"], "name": p["name"], "uses": found})
+            return self.json(200, {"going": deprecations.public(), "routes_in_use": deprecations.routes_in_use(app.data_dir), "plugins": mine})
         if path == "/api/plugins/catalogue" and method == "GET":
             # The Catalogue page (DASH-318): the Starboard plug-ins collection, each marked when already added.
             have = {p["id"] for p in pa.added(app.data_dir)}
