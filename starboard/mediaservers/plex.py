@@ -34,8 +34,9 @@ class Plex(mediaserver.MediaServer):
     name = "Plex"
     service_type = "plex"
     page = mediaserver.PAGE
-    capabilities = ("play", "watched", "updates")  # DASH-566: Play links and Watched; the rest are Jellyfin's so far (limits)
+    capabilities = ("admin_libraries", "admin_tasks", "admin_activity", "play", "watched", "updates")  # DASH-566: Play links and Watched; the rest are Jellyfin's so far (limits)
     limits = {
+        "admin_logs": "Plex gives its logs as a zip file made in its own settings page, so Starboard cannot read them. System, Logs has the container's own log",
         "restart": "Plex has no restart in its documented API; Starboard restarts its container from Settings, Manage apps",
         "own_plugins": "Plex retired its plug-ins in 2018, so there is nothing to list or update",
         "conversion_test": "Starboard's test of video conversion runs against Jellyfin's ffmpeg only",
@@ -47,6 +48,24 @@ class Plex(mediaserver.MediaServer):
         "metadata_folder": "Plex's metadata folder is set when its container is made",
         "detect": "Starboard finds Plex when you search for new apps",
     }
+
+    admin_coverage_rows = (
+        ("Libraries: list, scan new and changed files, refresh everything", "starboard", "On this tab, under Administration.", ""),
+        ("Libraries: add, rename or remove one, and change its folders and options", "later", "Not in Starboard yet. Use Plex's settings, Manage, Libraries.", "/web/index.html#!/settings/manage-libraries"),
+        ("People: accounts, sharing and their rights", "no", "Plex keeps these at plex.tv, not in the server, so Starboard cannot do them. Use your Plex account's Users and sharing page.", "https://app.plex.tv/desktop/#!/settings/users"),
+        ("Scheduled tasks (maintenance): read, and run now", "starboard", "On this tab, under Administration.", ""),
+        ("Scheduled tasks: change when they run", "later", "Not in Starboard yet. Use Plex's settings, Scheduled Tasks.", "/web/index.html#!/settings/scheduled-tasks"),
+        ("Activity: what was watched", "starboard", "On this tab, under Administration.", ""),
+        ("Server logs", "server", "Plex makes its logs as a zip file in its own settings page. System, Logs has the container's log.", "/web/index.html#!/settings/console"),
+        ("Video conversion", "server", "Hardware conversion needs Plex Pass and is set in Plex's settings, Transcoder.", "/web/index.html#!/settings/transcoder"),
+        ("Remote access", "no", "Plex's remote access is held by plex.tv, which a person signs in to. Use Plex's settings, Remote Access.", "/web/index.html#!/settings/remote-access"),
+        ("Ports, network and server name", "later", "Not in Starboard yet. Use Plex's settings, Network and General.", "/web/index.html#!/settings/network"),
+        ("Plex's own plug-ins", "no", "Plex retired its plug-ins in 2018, so there is nothing to manage.", ""),
+        ("Devices, sessions and API keys", "no", "Plex has one token for each account at plex.tv and no list of keys in the server. Devices are listed in your Plex account.", "https://app.plex.tv/desktop/#!/settings/devices"),
+        ("Update the server", "starboard", "Ready to update changes its container and waits while anyone is watching.", ""),
+        ("Live TV and recording", "server", "Needs Plex Pass and is set up in Plex's settings, Live TV and DVR.", "/web/index.html#!/settings/dvr"),
+        ("Backup of the server's own database", "later", "Plex's own Back up database task can be run under Scheduled tasks. Starboard's backups also copy its settings folder.", ""),
+    )
 
     def _send(self, service, method, path):
         req = urllib.request.Request(service["url"].rstrip("/") + path, method=method, headers={
@@ -225,3 +244,56 @@ class Plex(mediaserver.MediaServer):
             self._send(found, "GET", f"/:/{'scrobble' if watched else 'unscrobble'}?" + urllib.parse.urlencode({"key": i, "identifier": "com.plexapp.plugins.library"}))
         services.forget(f"plex-index-movie-{found.get('id', '')}")
         return len(ids)
+
+    # Administration (DASH-568). Plex's local interface covers libraries, its butler (scheduled tasks) and its history; the rest is
+    # plex.tv's (admin_coverage_rows). Written from Plex's documented interface and tried only against recorded answers.
+    def admin_libraries(self, services_list):
+        found = self._service(services_list)
+        out = []
+        for d in _list(self._send(found, "GET", "/library/sections"), "Directory"):
+            key = str(d.get("key") or "")
+            if not KEY_RE.match(key):
+                continue
+            count = None
+            try:
+                got = self._send(found, "GET", f"/library/sections/{key}/all?X-Plex-Container-Start=0&X-Plex-Container-Size=0")
+                total = ((got or {}).get("MediaContainer") or {}).get("totalSize") if isinstance(got, dict) else None
+                count = int(total) if total is not None else None
+            except (services.ServiceError, ValueError, TypeError):
+                pass
+            out.append({"id": key, "name": str(d.get("title") or ""), "type": SECTIONS.get(d.get("type"), "mixed"),
+                        "folders": [str(x.get("path")) for x in d.get("Location") or [] if isinstance(x, dict) and x.get("path")][:20], "count": count})
+        return out
+
+    def admin_scan(self, services_list, library_id="", how="new"):
+        found = self._service(services_list)
+        if how not in ("new", "all"):
+            raise ValueError("Choose new and changed files, or everything")
+        if library_id and not KEY_RE.match(library_id):
+            raise ValueError("That is not a library")
+        self._send(found, "GET", f"/library/sections/{library_id or 'all'}/refresh" + ("?force=1" if how == "all" else ""))
+        return {"asked": True}
+
+    def admin_tasks(self, services_list):
+        got = self._send(self._service(services_list), "GET", "/butler")
+        box = got if isinstance(got, dict) else {}
+        rows = ((box.get("ButlerTasks") or (box.get("MediaContainer") or {}).get("ButlerTasks") or {}).get("ButlerTask")) or []
+        return [{"id": str(t.get("name") or ""), "name": str(t.get("title") or t.get("name") or ""), "group": "Maintenance", "state": "idle", "last": "",
+                 "when": "every day, in the maintenance hours" if t.get("enabled") else "switched off"}
+                for t in rows if isinstance(t, dict) and re.match(r"^[A-Za-z]{1,60}$", str(t.get("name") or ""))]
+
+    def admin_run_task(self, services_list, task_id):
+        if not re.match(r"^[A-Za-z]{1,60}$", str(task_id)):
+            raise ValueError("That is not a task")
+        self._send(self._service(services_list), "POST", f"/butler/{task_id}")
+        return {"asked": True}
+
+    def admin_activity(self, services_list, limit=40):
+        found = self._service(services_list)
+        names = {str(a.get("id")): str(a.get("name") or "") for a in _list(self._send(found, "GET", "/accounts"), "Account")}
+        q = urllib.parse.urlencode({"sort": "viewedAt:desc", "X-Plex-Container-Start": 0, "X-Plex-Container-Size": max(1, min(int(limit), 100))})
+        out = []
+        for h in _list(self._send(found, "GET", f"/status/sessions/history/all?{q}"), "Metadata"):
+            title = str(h.get("grandparentTitle") + ": " + str(h.get("title") or "") if h.get("grandparentTitle") else h.get("title") or "")
+            out.append({"when": _when(h.get("viewedAt")).replace("T", " ")[:16], "what": f"Watched {title}", "who": names.get(str(h.get("accountID")), ""), "kind": "Information"})
+        return out

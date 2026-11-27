@@ -66,9 +66,9 @@ class Shared:
         for call in mediaserver.REQUIRED:
             self.assertTrue(callable(getattr(self.one, call)), call)
         self.assertEqual(set(self.one.capabilities) - set(mediaserver.CAPABILITIES), set())
-        self.assertEqual(self.one.capabilities, ("play", "watched", "updates"))  # DASH-566: the rest are Jellyfin's, each with its reason
+        self.assertEqual(self.one.capabilities, ("admin_libraries", "admin_tasks", "admin_activity", "admin_logs", "play", "watched", "updates") if self.one.id == "emby" else ("admin_libraries", "admin_tasks", "admin_activity", "play", "watched", "updates"))  # DASH-566: the rest are Jellyfin's, each with its reason
         d = self.one.describe()
-        self.assertEqual((d["id"], d["kind"], d["capabilities"]), (self.one.id, "media-server", ["play", "watched", "updates"]))
+        self.assertEqual((d["id"], d["kind"], d["capabilities"]), (self.one.id, "media-server", list(self.one.capabilities)))
         rows = {r["id"]: r for r in d["capability_rows"]}
         self.assertEqual(set(rows), set(mediaserver.CAPABILITIES))
         self.assertTrue(rows["play"]["can"] and rows["play"]["why"] == "")

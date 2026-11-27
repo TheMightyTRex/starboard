@@ -166,6 +166,7 @@ Each guide is a journey through several topics, in order.
 
 - [Choose your media server](topics/choose-your-media-server.md)
 - [Move to another media server](topics/move-to-another-media-server.md)
+- [Run your media server from Starboard](topics/run-your-media-server-from-starboard.md)
 - [Set up free Live TV in Jellyfin](topics/set-up-live-tv.md)
 - [A Live TV channel will not play](topics/live-tv-channel-will-not-play.md)
 - [Import watch history into Jellyfin](topics/import-watch-history.md)
