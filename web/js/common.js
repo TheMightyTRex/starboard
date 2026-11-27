@@ -842,7 +842,8 @@ function confirmDialog({ title, message, confirm = "Continue", cancel = "Cancel"
     dialog.showModal();
     // Focus starts on the first field it asks for; otherwise on Cancel for a danger choice, so Enter never does
     // the harm by mistake; otherwise on the main button (screen reader check, 12 November 2026).
-    const start = $("input, select, textarea", form) || (danger || careful || alert ? $('.dialog__foot button[value="cancel"]', form) : $('.dialog__foot button[value="ok"]', form));
+    // A danger choice with a tick to agree to (Remove, Delete the account) starts on Cancel too: the tick is the person's yes.
+    const start = (danger && $('input[type="checkbox"]', form) ? $('.dialog__foot button[value="cancel"]', form) : null) || $("input, select, textarea", form) || (danger || careful || alert ? $('.dialog__foot button[value="cancel"]', form) : $('.dialog__foot button[value="ok"]', form));
     start?.focus();
   });
 }
@@ -962,6 +963,8 @@ function menuButton(label, items, { iconName = "ellipsis", text = "" } = {}) {
   const menu = el("div", { class: "menu", role: "menu", id, "aria-label": label },
     items.map((item) => el("button", { type: "button", role: "menuitem", class: item.danger ? "is-danger" : null, onclick: () => item.onSelect() },
       item.icon ? icon(item.icon) : null, el("span", { text: item.label }))));
+  // Escape closes the menu only: it must not reach the slide-out or dialog around it, which would close too.
+  menu.addEventListener("keydown", (e) => { if (e.key === "Escape") e.stopPropagation(); });
   const wrap = el("div", { class: "menu-wrap" }, button, menu);
   queueMicrotask(() => SharedComponents.setup(wrap));
   return wrap;

@@ -15,7 +15,6 @@ import datetime as dt
 import glob
 import json
 import os
-import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -82,7 +81,7 @@ def compare(old, new):
             breaks.append((f"{label}:{x}", f"{label} {x} was taken away"))
         for x in sorted(set(b) - set(a)):
             adds.append(f"{label} {x} was added")
-    for name, order in (("manifest_fields", 0), ("container_fields", 0), ("card_types", 0), ("setting_types", 0), ("key_scopes", 0),
+    for name, _order in (("manifest_fields", 0), ("container_fields", 0), ("card_types", 0), ("setting_types", 0), ("key_scopes", 0),
                         ("change_types", 0)):
         sets(name, old[name], new[name])
     sets("event", old["events"], new["events"])
@@ -171,7 +170,7 @@ def uses(m, item):
 
 def rehearse(item, newest_only=True):
     """Which manifests use `item`. Plain words for how each would appear to the owner."""
-    seen, out = set(), []
+    out = []
     files = sorted(glob.glob(os.path.join(FROZEN, "*.json")))
     for f in files:
         m = json.load(open(f, encoding="utf-8"))
@@ -211,7 +210,7 @@ def main(argv):
     if argv[0] == "--rehearse" and len(argv) == 2:
         hit, total = rehearse(argv[1])
         print(f"If {argv[1]} were removed, {len(hit)} of {total} plug-ins (newest frozen version of each) would stop:")
-        for pid, ver, name in hit:
+        for _pid, ver, name in hit:
             print(f"  {name} {ver}: Needs an update. It uses {argv[1].split(':', 1)[1]}, which this Starboard no longer has. "
                   "It stays installed and stopped; its settings and data are kept.")
         return 0

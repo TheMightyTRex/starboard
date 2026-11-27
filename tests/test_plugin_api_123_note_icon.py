@@ -5,7 +5,6 @@ import os
 import re
 import tempfile
 import unittest
-from unittest import mock
 
 from starboard import plugins, plugins_admin as pa
 from tests.test_plugins import ON_DEMAND

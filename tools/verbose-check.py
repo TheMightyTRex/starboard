@@ -279,7 +279,7 @@ def py_units(text):
 
 
 TEXT_KEYS = {"description", "hint", "label", "help", "note", "notes", "summary", "text", "message", "title", "body", "intro",
-             "empty", "placeholder", "summary", "does", "for", "needs", "shows", "pitch", "unclear", "tagline", "about", "why", "detail", "details", "caption"}
+             "empty", "placeholder", "does", "for", "needs", "shows", "pitch", "unclear", "tagline", "about", "why", "detail", "details", "caption"}
 
 
 def json_units(text, minwords=3):
@@ -585,7 +585,7 @@ def audit_repo(name, root):
         for n in set(r.sentence_norms):
             where[n].add(r.rel)
     cross = collections.Counter()
-    for n, files in where.items():
+    for _n, files in where.items():
         if len(files) > 1:
             for f in files:
                 cross[f] += 1
@@ -671,7 +671,7 @@ def cmd_files(args):
     for r in allr:
         for n, l, s in r.long_sent:
             print(f"  long ({n} words) {r.rel}:{l}: {s[:160]}")
-        for n, l, t in r.long_para:
+        for n, l, _t in r.long_para:
             print(f"  long paragraph ({n} sentences) {r.rel}:{l}: {t[:100]}")
         for l, h in r.heading_restate:
             print(f"  heading restates the title {r.rel}:{l}: {h}")

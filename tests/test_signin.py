@@ -3,11 +3,9 @@
 The two-step code is checked against RFC 6238's own values. Single sign-on is checked end to end against a throwaway
 provider (tests/oidc_stand_in.py) that can misbehave in one way at a time: nothing here touches a real provider.
 """
-import hashlib
 import http.client
 import json
 import os
-import re
 import tempfile
 import threading
 import time
