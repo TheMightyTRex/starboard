@@ -29,10 +29,15 @@ sign_in() { api -o /dev/null -X POST "http://127.0.0.1:$PORT/api/login" -d '{"pa
 printf '\n######## A. Starboard %s, installed with its own installer\n' "$FROM"
 # The releases' origin sits inside the Starboard folder (untracked), so Update now's helper, which sees only that
 # folder, can fetch from it as it would from GitHub.
-as "git clone -q /e2e/origin.git $H && cp -r /e2e/origin.git $H/.e2e-origin.git && cd $H && git remote set-url origin $H/.e2e-origin.git && git -c advice.detachedHead=false checkout -q $FROM"
+# A release from 0.31.0 on installs the newest release it can see (DASH-416), so the first install sees an origin
+# without the made-up releases, and the full one is put back as soon as it has answered.
+cp -r /e2e/origin.git /e2e/origin-old.git && chown -R tester /e2e/origin-old.git
+for t in $(git -C /e2e/origin-old.git tag -l 'v0.40.9*'); do git -C /e2e/origin-old.git tag -d "$t" >/dev/null; done
+as "git clone -q /e2e/origin-old.git $H && cp -r /e2e/origin-old.git $H/.e2e-origin.git && cd $H && git remote set-url origin $H/.e2e-origin.git && git -c advice.detachedHead=false checkout -q $FROM"
 started=$SECONDS
 as "cd $H && ./install.sh --yes --port $PORT --docker --no-starter --local-only" > /e2e/install.log 2>&1
 if answers 90; then pass "$FROM installed and answers ($((SECONDS - started)) s)"; else fail "$FROM did not start"; tail -40 /e2e/install.log; exit 1; fi
+rm -rf $H/.e2e-origin.git && cp -r /e2e/origin.git $H/.e2e-origin.git && chown -R tester $H/.e2e-origin.git && as "cd $H && git fetch -q --tags origin"
 token="$(cat $H/data/setup-token)"
 api -o /dev/null -X POST "http://127.0.0.1:$PORT/api/setup" -d "{\"token\":\"$token\",\"password\":\"e2e correct horse battery\"}"
 api -o /dev/null -X PUT "http://127.0.0.1:$PORT/api/config/general" -d '{"server_name":"E2E kept","setup_guide_done":true}'
