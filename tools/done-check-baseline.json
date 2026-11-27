@@ -55,6 +55,16 @@
     "a copy of a design system file differs from the library": 1,
     "tests.test_design_system_copies.CopiesMatchTest.test_every_copy_matches_the_library": 1
    }
+  },
+  "api": {
+   "known": {
+    "smoke disk-forecast forecast": 1,
+    "smoke library-cleanup /jobs/move": 1,
+    "smoke library-cleanup media": 1,
+    "smoke library-cleanup held": 2,
+    "smoke library-cleanup libraries": 1,
+    "smoke library-cleanup preview": 1
+   }
   }
  }
 }
