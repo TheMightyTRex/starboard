@@ -85,7 +85,7 @@ async function startMediaServer() {
     } else if (!a.set_up) {
       acts.append(el("a", { class: "btn", href: `/settings.html?edit=${encodeURIComponent((config?.services || []).find((s) => s.type === a.id)?.id || "")}` }, icon("pencil"), `Edit ${a.name}`));
     }
-    row.append(acts);
+    row.append(el("div", { class: "row__side" }, acts));
     return row;
   });
   const side = part("ms-side", "Installed side by side", "You can run Jellyfin, Plex and Emby together to try them. Only one is in use at a time.", el("ul", { class: "rows" }, sideRows));
