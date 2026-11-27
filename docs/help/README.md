@@ -188,6 +188,7 @@ How Starboard works for everyone, how to change it for you, and how it is checke
 - [Choose light, dark or high contrast](accessibility/light-dark-and-high-contrast.md)
 - [Reduce motion](accessibility/reduce-motion.md)
 - [Underline links](accessibility/underline-links.md)
+- [Use menus that show icons only](accessibility/menus-with-icons.md)
 
 ### Ways to use it
 

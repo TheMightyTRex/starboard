@@ -101,13 +101,13 @@ async function putBack(item, button, index) {
 
 // The danger dialog: what goes, how much, that it cannot be undone, and the password (DESIGN-SYSTEM.md section 9).
 async function deleteForGood(items, button, index) {
-  const password = el("input", { type: "password", class: "input", autocomplete: "current-password", id: `delete-password-${Date.now()}`, required: true });
+  const password = passwordInput(`delete-password-${Date.now()}`);
   const size = formatBytes(items.reduce((t, i) => t + i.size, 0));
   const ok = await confirmDialog({
     title: items.length === 1 ? "Delete this for good?" : `Delete all ${items.length} for good?`,
     message: [el("p", { text: items.length === 1 ? `${items[0].what}, ${size}.` : `Everything in the holding folder, ${size}.` }),
       el("p", {}, el("strong", { text: "This cannot be undone." }), " It is deleted from this computer, and neither you nor Starboard can bring it back.")],
-    fields: [el("div", { class: "field" }, el("label", { for: password.id, text: "Your Starboard password" }), password)],
+    fields: [passwordField(password)],
     confirm: "Delete for good", danger: true });
   if (!ok) return;
   button.disabled = true;

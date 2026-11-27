@@ -254,7 +254,7 @@ def fetch_manifest(address, opener=None, sha256=""):
         raise ValueError("Give the manifest's https address, such as a repository's raw starboard-plugin.json")
     outside.check_url(address)
     req = urllib.request.Request(address, headers={"User-Agent": "Starboard", "Accept": "application/json"})
-    with (opener or urllib.request.build_opener()).open(req, timeout=5) as r:  # checked above  # nosec B310
+    with (opener or outside.guarded_opener()).open(req, timeout=5) as r:  # checked above, on redirects and when it connects  # nosec B310
         raw = r.read(MAX_MANIFEST + 1)
     if len(raw) > MAX_MANIFEST:
         raise ValueError("That manifest is too large")
@@ -346,6 +346,23 @@ def _rest(r):
     return {"memory_mb": round(mem), "cpu_percent": round(cpu, 2)} if 0 < mem < 100000 and 0 <= cpu < 1000 else None
 
 
+def _why(e):
+    """Why an address did not answer, in words (no error codes or Python names)."""
+    import socket
+    import urllib.error
+    if isinstance(e, urllib.error.HTTPError):
+        return {404: "the page is not there (error 404)", 403: "it would not let Starboard read it (error 403)",
+                429: "it asked Starboard to wait (error 429)"}.get(e.code, f"it sent an error (error {e.code})")
+    reason = getattr(e, "reason", e)
+    if isinstance(reason, (socket.timeout, TimeoutError)) or "timed out" in str(reason):
+        return "it took more than 5 seconds to reply"
+    if isinstance(reason, socket.gaierror):
+        return "Starboard could not find that address. Check this server's internet connection"
+    if isinstance(reason, ConnectionRefusedError):
+        return "the server refused the connection"
+    return "Starboard could not reach it"
+
+
 def fetch_catalogue(address, opener=None):
     """One catalogue.json from an https address: {"name", "plugins": [...]}, checked like any outside address
     (5 seconds, 256 KB). ValueError says what is wrong in plain words."""
@@ -356,10 +373,10 @@ def fetch_catalogue(address, opener=None):
     outside.check_url(address)
     req = urllib.request.Request(address, headers={"User-Agent": "Starboard", "Accept": "application/json"})
     try:
-        with (opener or urllib.request.build_opener()).open(req, timeout=5) as r:  # checked above  # nosec B310
+        with (opener or outside.guarded_opener()).open(req, timeout=5) as r:  # checked above, on redirects and when it connects  # nosec B310
             raw = r.read(MAX_MANIFEST + 1)
     except OSError as e:
-        raise ValueError(f"That address did not answer: {e}") from None
+        raise ValueError(f"That address did not answer: {_why(e)}") from None
     if len(raw) > MAX_MANIFEST:
         raise ValueError("That catalogue is too large")
     try:
@@ -430,10 +447,17 @@ def remove_source(cfg, address):
     _catalogues.pop(address, None)
 
 
-def catalogue(cfg=None, opener=None, now=None):
-    """Every catalogue's plug-ins, each read at most once a day. Starboard's own collection falls back to the copy it
-    ships; another catalogue that does not answer keeps its last good list and says so.
-    Returns (catalogues [{url, name, own, count, error}], plug-ins [... with "catalogue" and "own"])."""
+CATALOGUE_KEEP = 6 * 3600  # how long a read is kept before the next page asks again (6 hours, as GitHub's tag look)
+MIN_GAP = 30  # seconds: Check for updates now cannot be pressed again sooner, however often it is pressed
+_forced = {"at": 0.0}
+_force_lock = threading.Lock()
+
+
+def catalogue(cfg=None, opener=None, now=None, force=False):
+    """Every catalogue's plug-ins, each read at most once every 6 hours (CATALOGUE_KEEP), or now when force is true.
+    Starboard's own collection falls back to the copy it ships; another catalogue that does not answer keeps its last
+    good list and says so, with when it last answered ("read_at", 0 for the shipped copy).
+    Returns (catalogues [{url, name, own, count, error, read_at}], plug-ins [... with "catalogue" and "own"])."""
     import time
     now = now or time.time()
     srcs = sources(cfg) if cfg is not None else [{"url": CATALOGUE_URL, "own": True}]
@@ -441,23 +465,57 @@ def catalogue(cfg=None, opener=None, now=None):
     for src in srcs:
         url = src["url"]
         hit = _catalogues.get(url)
-        if not hit or now - hit["at"] > 86400:
+        if force or not hit or now - hit["at"] > CATALOGUE_KEEP:
             try:
                 got = fetch_catalogue(url, opener)
-                hit = {"at": now, "name": got["name"], "items": got["items"], "error": ""}
+                hit = {"at": now, "read_at": now, "name": got["name"], "items": got["items"], "error": ""}
             except Exception as e:  # noqa: BLE001 - offline, moved or broken: say so, keep what we had
                 if src["own"] and not (hit and hit["items"]):
                     shipped = _read(CATALOGUE_FILE, {}) or {}
-                    hit = {"at": now, "name": shipped.get("name") or "Starboard plug-ins",
-                           "items": [x for x in map(_clean_entry, shipped.get("plugins") or []) if x], "error": ""}
+                    # The list that came with this Starboard is shown, and the page says it did not answer.
+                    hit = {"at": now, "read_at": 0, "name": shipped.get("name") or "Starboard plug-ins",
+                           "items": [x for x in map(_clean_entry, shipped.get("plugins") or []) if x], "error": str(e)[:200]}
                 else:
-                    hit = {**(hit or {"name": url.split("/")[2], "items": []}), "at": now, "error": str(e)[:200]}
+                    hit = {**(hit or {"name": url.split("/")[2], "items": [], "read_at": 0}), "at": now, "error": str(e)[:200]}
             _catalogues[url] = hit
-        out_sources.append({"url": url, "name": hit["name"], "own": src["own"], "builtin": src.get("builtin", ""), "count": len(hit["items"]), "error": hit["error"]})
+        out_sources.append({"url": url, "name": hit["name"], "own": src["own"], "builtin": src.get("builtin", ""), "count": len(hit["items"]),
+                            "error": hit["error"], "read_at": hit.get("read_at", 0)})
         # Only Starboard's own collection may recommend: a catalogue added from a link cannot put itself first.
         out_items += [{**x, "catalogue": hit["name"], "own": src["own"], "recommended": bool(x.get("recommended")) and src["own"]}
                       for x in hit["items"]]
     return out_sources, out_items
+
+
+def refresh(cfg=None, opener=None, now=None):
+    """Check for updates now: reads every catalogue again, however recent the last read, but never twice within
+    MIN_GAP seconds (a second press gets what the first found, and says how long to wait). Returns
+    {checked_at, too_soon, wait, catalogues: [{url, name, own, count, error, read_at, ok}], failed, said}."""
+    import time
+    now = now or time.time()
+    with _force_lock:
+        too_soon = now - _forced["at"] < MIN_GAP
+        if not too_soon:
+            _forced["at"] = now
+    cats, _ = catalogue(cfg, opener, now, force=not too_soon)
+    cats = [{**c, "ok": not c["error"]} for c in cats]
+    failed = [c for c in cats if c["error"]]
+    wait = max(1, int(MIN_GAP - (now - _forced["at"]) + 0.999)) if too_soon else 0
+    n = len(cats)
+    said = f"Read {n} {'catalogue' if n == 1 else 'catalogues'}"
+    if failed:
+        said += f". {len(failed)} did not answer: " + "; ".join(f"{c['name']}: {c['error']}" for c in failed[:4])
+    if too_soon:
+        said = f"Catalogues were read {int(now - _forced['at'])} seconds ago. Try again in {wait} seconds"
+    return {"checked_at": now, "too_soon": too_soon, "wait": wait, "catalogues": cats, "failed": len(failed),
+            "said": said if too_soon else said + "."}
+
+
+def last_read(now=None):
+    """What Starboard knows of its catalogue reads, with nothing fetched: {read_at (the oldest answer among the
+    catalogues read, 0 when none), errors: how many did not answer on their last try}."""
+    hits = list(_catalogues.values())
+    answered = [h.get("read_at", 0) for h in hits if h.get("read_at")]
+    return {"read_at": min(answered) if answered else 0, "errors": sum(1 for h in hits if h.get("error")), "read": len(hits)}
 
 
 def listing(data_dir):
@@ -591,7 +649,7 @@ def install(data_dir, manifest, media_dir, dev=False, builtin=False, defaults=No
     _write(os.path.join(where, "settings.json"), values)
     item = {"id": None}
     if manifest.get("containers"):  # only something that runs gets an API key and a Compose file
-        key, item = api_v1.create_key(data_dir, f"Plug-in: {manifest['name']}"[:60], "read", plugins.key_scopes(manifest), None)
+        key, item = _make_key(data_dir, manifest)
         _write(os.path.join(where, "key"), key)
         hosted = (host or host_for_builtin()) if builtin else None
         _write(os.path.join(where, "compose.yaml"), plugins.compose(manifest, host_path(data_dir, pid), media_dir, hosted,
@@ -713,6 +771,63 @@ def _compose_run(data_dir, pid, command, helper=None):
     except containers.DockerError as e:
         return False, f"Starboard cannot reach Docker ({e})"
     return code == 0, text
+
+
+KEY_DAYS = 30
+
+
+def key_socket_only(manifest):
+    """True when no container of the plug-in can reach Starboard's port, so its key may work on its socket alone (DASH-603).
+    A plug-in on the home network (`lan`) may use either, so its key works on both."""
+    cs = [c for c in (manifest.get("containers") or []) if isinstance(c, dict)]
+    return bool(cs) and all(c.get("network") != "lan" for c in cs)
+
+
+def _make_key(data_dir, manifest):
+    """A plug-in's own key (DASH-603): read scopes as approved, 30 days, moved on while it is used, socket only where it can be."""
+    return api_v1.create_key(data_dir, f"Plug-in: {manifest['name']}"[:60], "read", plugins.key_scopes(manifest), KEY_DAYS,
+                             socket_only=key_socket_only(manifest), slide=True)
+
+
+def new_key(data_dir, pid):
+    """A new key for the plug-in each time it starts or updates (DASH-603): the old one is revoked, the new one is written
+    to the key file the plug-in reads. A plug-in that reads the file for each call (Starboard's helper does) never notices."""
+    where = folder(data_dir, pid)
+    m = _read_kept(os.path.join(where, "manifest.json"), {}) or {}
+    st = _read(os.path.join(where, "state.json"), {}) or {}
+    if not m.get("containers") or not st.get("key_id"):
+        return
+    key, item = _make_key(data_dir, m)
+    _write(os.path.join(where, "key"), key)
+    old = st["key_id"]
+    st["key_id"] = item["id"]
+    _write(os.path.join(where, "state.json"), st)
+    api_v1.revoke_key(data_dir, old)
+    api_v1.audit(data_dir, "plugin_key_renewed", plugin=pid)
+
+
+def renew_old_keys(data_dir):
+    """Once, at start-up: a plug-in key made before this had no end date. Give it 30 days from now that move on while it is used,
+    and make it socket only where its plug-in cannot use the port anyway. The key itself does not change, so nothing running breaks."""
+    keys = api_v1._load(data_dir)
+    if not any(str(k.get("name", "")).startswith("Plug-in: ") and not k.get("slide_days") for k in keys):
+        return 0
+    manifests = {}
+    for p in basics(data_dir):
+        st = _read(os.path.join(folder(data_dir, p["id"]), "state.json"), {}) or {}
+        if st.get("key_id"):
+            manifests[st["key_id"]] = _read_kept(os.path.join(folder(data_dir, p["id"]), "manifest.json"), {}) or {}
+    n = 0
+    for k in keys:
+        if k["id"] in manifests and not k.get("slide_days"):
+            k["expires_at"] = api_v1._iso(api_v1._now() + dt.timedelta(days=KEY_DAYS))
+            k["slide_days"] = KEY_DAYS
+            if key_socket_only(manifests[k["id"]]):
+                k["socket_only"] = True
+            n += 1
+    if n:
+        api_v1._save(data_dir, keys)
+    return n
 
 
 def set_state(data_dir, pid, state, message=""):
@@ -1061,6 +1176,7 @@ def enable(data_dir, pid, helper=None, services=None):
         set_state(data_dir, pid, "enabled")
         api_v1.audit(data_dir, "plugin_enabled", plugin=pid)
         return
+    new_key(data_dir, pid)  # a new key each time it starts or updates (DASH-603)
     write_jellyfin(data_dir, pid, services)
     write_reelix(data_dir, pid, services)
     write_usenet(data_dir, pid, services)

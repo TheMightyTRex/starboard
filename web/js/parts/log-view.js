@@ -2,7 +2,7 @@
  * Made by tools/parts.py from components.js in github.com/TheMightyTRex/design-system: change it there, not here. */
 (() => {
   const S = window.SharedComponents;
-  const { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus } = S.kit;
+  const { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus, notice } = S.kit;
 
   /* Log viewer: SharedComponents.logView(box, { lines, maxLines, show, fileName }) returns { add(lines), clear() }.
      Lines are strings ("12:01:03 ERROR Disk 3 did not answer") or { time, level, text }; levels are error, warning,

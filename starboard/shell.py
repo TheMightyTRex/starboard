@@ -87,14 +87,11 @@ MENU = [
         ("General", "sliders-horizontal", [("settings-general.html", "General", "tags"),
                                            ("settings-general-appearance.html", "Appearance", "sun"),
                                            ("settings-general-lists.html", "Lists", "list"),
-                                           # DASH-396: one section per Discover area, so its own page (topic tabs)
-                                           ("settings-general-discover.html", "Discover", "compass"),
                                            ("settings-general-hours.html", "Hours", "clock"),
                                            # Owner, 26 November 2026 (DASH-584): Alerts and Performance are part of General now.
                                            # Their old addresses move here (MOVED_PAGES in server.py).
                                            ("settings-general-alerts.html", "Alerts", "bell"),
                                            ("settings-general-performance.html", "Performance", "gauge"),
-                                           ("settings-general-pictures.html", "Pictures", "eye"),
                                            # Owner, 26 November 2026 (DASH-595): Backup and restore (it was System, Backup, then
                                            # General) and Logs and feedback are one tab. The names are short so every tab keeps its
                                            # name at 1280 pixels wide. The old addresses move here (MOVED_PAGES in server.py).
@@ -102,7 +99,7 @@ MENU = [
         ("Apps", "app-window", [("settings.html", "Manage apps", "app-window"), ("settings-install.html", "Your install", "layers"),
                                 ("settings-reelix.html", "Reelix", "film"),
                                 ("settings-jellyfin.html", "Jellyfin", "tv"), ("settings-audiobookshelf.html", "Audiobookshelf", "headphones"),
-                                ("settings-tdarr.html", "Tdarr", "film"), ("settings-dispatcharr.html", "Dispatcharr", "radio")]),
+                                ("settings-tdarr.html", "Tdarr", "cpu"), ("settings-dispatcharr.html", "Dispatcharr", "radio")]),
         # Level 2 (owner, 13 November 2026: "VPN, Usenet and Download hours should be on menu 2"; DASH-390).
         ("Downloads", "download", [("settings-downloads.html", "VPN", "lock"), ("settings-downloads-usenet.html", "Usenet", "server"),
                                    ("settings-downloads-hours.html", "Download hours", "clock")]),
@@ -117,7 +114,8 @@ MENU = [
         # Level 2: Manage, Catalogue, then one tab per added plug-in, which common.js adds from /api/session (DASH-318).
         ("Plug-ins", "puzzle", [("settings-plugins.html", "Manage", "list-checks"),
                                 ("settings-plugins-catalogue.html", "Catalogue", "layout-grid")]),
-        ("Updates", "circle-arrow-up", [("settings-updates.html", "Updates", "sliders-horizontal"),
+        ("Updates", "circle-arrow-up", [("settings-updates.html", "Updates", "circle-arrow-up"),
+                                         ("settings-updates-plugins.html", "Plug-ins", "puzzle"),
                                          ("settings-releases.html", "Releases", "scroll-text"),
                                          ("settings-restore.html", "Restore", "archive-restore")]),
     ]),
@@ -189,7 +187,6 @@ HELP = {
     "settings-general.html": ("topics/organise-categories.md", "organising apps into categories"),
     "settings-general-appearance.html": ("topics/display-and-accessibility.md", "the display, colours and accessibility"),
     "settings-general-lists.html": ("topics/coming-up.md", "what Coming up and the lists show"),
-    "settings-general-discover.html": ("topics/search-and-add.md", "Discover's rows and adding films, series, music, radio and books"),
     "settings-general-hours.html": ("topics/set-download-hours.md", "setting download hours"),
     "settings.html": ("topics/change-or-remove-an-app.md", "changing or removing an app"),
     "settings-install.html": ("topics/change-your-install.md", "changing your install"),
@@ -200,7 +197,6 @@ HELP = {
     "settings-dispatcharr.html": ("topics/set-up-live-tv.md", "setting up Live TV"),
     "settings-general-alerts.html": ("topics/activate-alerts.md", "activating alerts"),
     "settings-general-performance.html": ("topics/make-starboard-lighter.md", "making Starboard use less of your server"),
-    "settings-general-pictures.html": ("topics/make-starboard-lighter.md#what-each-item-costs", "pictures and what they cost"),
     "settings-security.html": ("topics/choose-who-can-open-starboard.md", "choosing who can open Starboard"),
     "settings-security-password.html": ("topics/change-your-password.md", "changing your password"),
     "settings-security-signin.html": ("topics/set-up-a-two-step-code.md", "setting up a two-step code"),
@@ -219,6 +215,7 @@ HELP = {
     "dashboard.html": ("topics/use-the-dashboard.md", "your dashboard"),
     "settings-updates.html": ("topics/update-starboard.md", "updating Starboard"),
     "settings-releases.html": ("topics/update-starboard.md", "updating Starboard"),
+    "settings-updates-plugins.html": ("topics/update-a-plugin.md", "updating plug-ins"),
     "settings-restore.html": ("topics/restore-a-saved-copy.md", "restoring a saved copy of your settings"),
     "setup-guide.html": ("guides/set-up-your-dashboard.md", "setting up your dashboard"),
     "upgrade.html": ("topics/update-starboard.md", "updating Starboard"),

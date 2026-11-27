@@ -25,9 +25,9 @@ function signinQr(qr, label) {
 
 // The password, asked for in a dialog, for every change here (as API keys are made).
 async function askPassword({ title, message, confirm, danger = false, extra = [] }) {
-  const pw = el("input", { class: "input", type: "password", id: "signin-password", autocomplete: "current-password", required: true });
+  const pw = passwordInput("signin-password");
   const ok = await confirmDialog({ title, message, confirm, danger,
-    fields: [...extra.map((f) => f.node), el("div", { class: "field" }, el("label", { for: pw.id, text: "Your Starboard password" }), pw)] });
+    fields: [...extra.map((f) => f.node), passwordField(pw)] });
   return ok ? { password: pw.value, extra: extra.map((f) => f.input.value) } : null;
 }
 

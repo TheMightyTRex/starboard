@@ -8,7 +8,7 @@ title: Find your answer
 start: Line speed is not working as it should
 q: What does its tab say?
   Failed or Not answering -> 1
-  Not supported -> 2
+  Needs an update -> 2
   Active -> q2
 q2: What does the card say?
   Not tested yet -> 3

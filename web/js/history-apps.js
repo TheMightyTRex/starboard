@@ -33,13 +33,11 @@ async function acrossLoad(more = false) {
     $("#across-summary").textContent = `${n} ${r.total === 1 ? "entry" : "entries"}, newest first. Starboard keeps the newest ${r.cap.toLocaleString("en-GB")}.`;
     if (!more) {
       $("#across-notes").hidden = !(r.notes || []).length;
-      $("#across-notes").replaceChildren(...(r.notes || []).map((text) => el("div", { class: "notice", role: "status" }, icon("info"),
-        el("div", { class: "notice__body" }, el("p", { text })))));
+      $("#across-notes").replaceChildren(...(r.notes || []).map((text) => notice("info", "", text)));
       setTimeout(() => announce($("#across-summary").textContent), 0);  // Show more says its own (UX-52)
     }
   } catch (e) {
-    list.replaceChildren(el("li", {}, el("div", { class: "notice", role: "status" }, icon("info"),
-      el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "The history could not be read" }), el("p", { text: e.message })))));
+    list.replaceChildren(el("li", {}, notice("info", "The history could not be read", e.message)));
   }
 }
 

@@ -142,6 +142,7 @@ Each one starts its own example server with made-up data, and prints one line fo
 
 ## Find out more
 
+- [Use menus that show icons only](menus-with-icons.md): the tab rows that condense, with how they are tested
 - [Latest test results](latest-test-results.md)
 - [Limits and known gaps](limits-and-known-gaps.md)
 - [Accessibility in Starboard](overview.md)

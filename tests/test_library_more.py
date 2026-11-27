@@ -34,8 +34,19 @@ class BooksAndMusic(unittest.TestCase):
         calls, fake = recording({"/albums": albums})
         with mock.patch("starboard.services._api", side_effect=fake):
             said = library.act({}, "music", 4, "get")
-        self.assertEqual([p for m, p, b, _ in calls if p.endswith("/search")], ["/albums/1/search"])
+        self.assertEqual([(p, b) for m, p, b2, _ in calls for b in [b2] if p.endswith("/search")], [("/music/search", {"kind": "item", "ids": [1]})])
         self.assertIn("1 album", said)
+
+    def test_get_an_artist_with_many_wanted_albums_says_how_many_it_left(self):
+        albums = {"items": [{"id": n, "monitored": True, "statistics": {"track_file_count": 0}} for n in range(1, 141)]}
+        calls, fake = recording({"/albums": albums})
+        with mock.patch("starboard.services._api", side_effect=fake):
+            said = library.act({}, "music", 4, "get")
+        sent = [b for m, p, b, _ in calls if p == "/music/search"]
+        self.assertEqual(len(sent), 1)  # one request, not one for each album
+        self.assertEqual(sent[0]["ids"], list(range(1, 101)))
+        self.assertIn("100 of 140 albums", said)
+        self.assertIn("other 40", said)
 
 
 class QualityFolderAndBulk(unittest.TestCase):
