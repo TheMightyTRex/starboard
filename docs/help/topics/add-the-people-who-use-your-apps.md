@@ -9,8 +9,7 @@ makes a long password that no one else has. Nobody has to share your password or
 Starboard stays yours alone. People cannot sign in to Starboard or open it. They use your apps, such as
 Jellyfin and Audiobookshelf, and Starboard keeps the list.
 
-Starboard does not yet make, pause or remove an account inside an app. You make the account in the app, set the
-password Starboard made, and tell Starboard you did. A later version will do this for you.
+In Jellyfin and Audiobookshelf, Starboard can make an account, pause it, resume it and delete it, and give a child limits. In other apps, such as Emby and Kavita, it only records the account and the password: you make and change them in the app, then tell Starboard you did.
 
 ## Single sign-on
 
@@ -66,6 +65,19 @@ Single sign-on gives each person their own sign-in, so you do not share one pass
 4. Select **Reset the password**. Starboard forgets the old password. If you did not tick **Also change it in the app**, the old password stays right in the app until you set the new one there, so set it and then select **It is set in the app**.
 
 For other apps, such as Emby and Kavita, Starboard only records the password, and the page says so. Change it in the app, then select **It is set in the app**. Starboard only records it.
+
+## Make, pause and delete accounts in your apps
+
+For Jellyfin and Audiobookshelf, select **More** beside the account on the person's page:
+
+- **Make the account in the app** asks for your Starboard password and sends the recorded password to the app. If the account is there already, nothing is made twice. For a child, it first asks for a highest age rating (Jellyfin) and the libraries they may open (Jellyfin and Audiobookshelf), and it switches off deleting and downloading. Starboard cannot limit a child in an app that has no such limit, and the page says so.
+- **Check** reads whether the account is there and paused. It changes nothing.
+- **Pause in the app** and **Resume in the app** switch the account off and on. Nothing it holds is lost.
+- **Delete in the app** asks for a plain yes and your Starboard password, and deletes the account for good, with what it holds. Starboard never does this on its own.
+
+When you pause, resume, remove or put back a person, tick **Also pause their accounts in the apps** to do the same in the apps. **Remove** only switches the accounts off, and the record is kept for 30 days. **Forget for good** can also delete the accounts in the apps, after a second plain yes. If one app does not answer, the page says which, and forgetting stops until it works. Each step can be repeated safely. Starboard writes what it did in **System**, **Logs**, never a password.
+
+Emby accounts are only recorded for now. Starboard has not yet been tried on a real Emby, and Reelix people sign in through Jellyfin, Plex or OpenID Connect, so Starboard makes no separate Reelix account.
 
 ## Pause, remove or put back
 

@@ -3121,6 +3121,11 @@ await page.fill("#acct-jellyfin-pw", password);
 await page.locator("dialog[open] button[value=ok]").click();
 await page.waitForSelector("#acct-jellyfin-secret", { timeout: 8000 });
 check("PEOPLE-12", "Show password gives back the password that was typed", await page.locator("#acct-jellyfin-secret").evaluate((i) => i.value) === "my own journey password");
+// Stage 3: the account's More menu offers the app's own actions for Jellyfin, and Escape closes it with focus back on the button.
+await page.locator("#acct-jellyfin-more .menu-wrap > button").click();
+const peMenu = await page.locator("#acct-jellyfin-more .menu [role=menuitem]").allInnerTexts();
+check("PEOPLE-13", "More offers to make, check, pause, resume and delete the account in Jellyfin", ["Make the account in Jellyfin", "Check Jellyfin", "Pause in Jellyfin", "Resume in Jellyfin", "Delete in Jellyfin\u2026"].every((t) => peMenu.some((m) => m.trim() === t)), peMenu.join("|"));
+await page.keyboard.press("Escape");
 await page.locator("#person-remove").click();
 await page.waitForSelector("dialog[open]", { timeout: 8000 });
 check("PEOPLE-07", "Remove asks first and starts on Cancel", await page.evaluate(() => /Cancel/.test(document.activeElement?.textContent || "")));

@@ -4442,6 +4442,15 @@ class Handler(BaseHTTPRequestHandler):
             return self.error(e.status, e.message)
         return self.error(404, "Not found")
 
+    def in_app(self, app_id, run, who, what):
+        """One app's answer for a person, as {app, ok, said}: a refusal or an app that did not answer is said in words and never stops
+        the rest. Nothing secret is in it."""
+        try:
+            return {"app": app_id, "ok": True, "said": run()}
+        except (services.ServiceError, ValueError, LookupError) as e:
+            logs.event("info", "people", f"Not {what} in {app_id} ({who}): {e}")
+            return {"app": app_id, "ok": False, "said": str(e)}
+
     def people_route(self, method, path):
         """Settings, People: the owner's list of people and their accounts in the apps. Signed-in owner only (a plug-in's key
         never reaches /api/people). A password is shown only after the Starboard password is entered again, and never logged."""
@@ -4455,6 +4464,14 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if path == "/api/people" and method == "GET":
                 return full()
+            ml = re.match(r"^/api/people/apps/([a-z0-9-]{1,41})/limits$", path)
+            if ml and method == "GET":  # what a Child can be limited to in this app: ratings and libraries, read from the app now
+                from . import people_accounts
+                try:
+                    return self.json(200, {"ratings": people_accounts.ratings(services, ml.group(1)), "libraries": people_accounts.libraries(services, ml.group(1)),
+                                           "default_rating": people_accounts.CHILD_RATING}, none)
+                except (services.ServiceError, ValueError) as e:
+                    return self.error(502, str(e))
             if path == "/api/people" and method == "POST":
                 b = self.body()
                 p = people.add(data_dir, b.get("name"), b.get("email"), b.get("role"))
@@ -4468,17 +4485,31 @@ class Handler(BaseHTTPRequestHandler):
                 return full(said=f"Saved {p['name']}", person=p["id"])
             m = re.match(r"^/api/people/(p-[0-9a-f]{8})/(pause|resume|remove|restore)$", path)
             if m and method == "POST":
+                from . import people_accounts
+                b = self.body()
                 p = people.set_state(data_dir, m.group(1), m.group(2))
                 words = {"pause": "Paused", "resume": "Resumed", "remove": "Removed", "restore": "Put back"}[m.group(2)]
                 logs.event("info", "people", f"{words}: {p['name']}")
-                return full(said=f"{words} {p['name']}", person=p["id"])
+                results = []
+                if b.get("also_apps"):  # stage 3: turn the person's accounts off (or on) in the apps too; a removal only turns them off
+                    off = m.group(2) in ("pause", "remove")
+                    for app_id, user in people.raw(data_dir, m.group(1))["accounts"]:
+                        results.append(self.in_app(app_id, lambda a=app_id, u=user: people_accounts.set_paused(services, a, u, off), p["name"], "paused" if off else "resumed"))
+                return full(said=f"{words} {p['name']}", person=p["id"], apps=results)
             m = re.match(r"^/api/people/(p-[0-9a-f]{8})/forget$", path)
             if m and method == "POST":
-                self.check_password(self.body())
+                from . import people_accounts
+                b = self.body()
+                self.check_password(b)
+                if b.get("delete_in_apps"):  # stage 3: delete their accounts in the apps first; one that fails stops everything
+                    results = [self.in_app(a, lambda a=a, u=u: people_accounts.remove(services, a, u), m.group(1), "removed")
+                               for a, u in people.raw(data_dir, m.group(1))["accounts"]]
+                    if any(not r["ok"] for r in results):
+                        return self.json(502, {"error": "Not forgotten: " + "; ".join(r["said"] for r in results if not r["ok"]) + ". Nothing was changed for this person here", "apps": results})
                 p = people.forget(data_dir, m.group(1))
-                logs.event("info", "people", f"Person forgotten: {p['name']}")
+                logs.event("info", "people", f"Person forgotten: {p['name']}" + (", with their accounts in the apps" if b.get("delete_in_apps") else ""))
                 return full(said=f"Forgot {p['name']}")
-            m = re.match(r"^/api/people/(p-[0-9a-f]{8})/accounts/([a-z0-9-]{1,41})(?:/(password|reveal|set|unset|remove))?$", path)
+            m = re.match(r"^/api/people/(p-[0-9a-f]{8})/accounts/([a-z0-9-]{1,41})(?:/(password|reveal|set|unset|remove|in-app))?$", path)
             if m and method == "POST":
                 pid, app_id, what = m.groups()
                 b = self.body()
@@ -4499,6 +4530,37 @@ class Handler(BaseHTTPRequestHandler):
                     how = ("chosen" if own is not None else "generated") + (", also changed in the app" if also else "")
                     logs.event("info", "people", f"A password ({how}) was recorded for {p['name']} in {app_id}")  # never the password
                     return full(said=("Changed it in the app and recorded it" if also else "Recorded the password"), person=pid)
+                if what == "in-app":  # stage 3: the account inside the app (Jellyfin, Audiobookshelf)
+                    from . import people_accounts
+                    pr = people.raw(data_dir, pid)
+                    user = dict(pr["accounts"]).get(app_id)
+                    if user is None:
+                        return self.error(404, "Record an account name for that app first")
+                    act = b.get("action")
+                    if act == "check":
+                        return self.json(200, {**people_accounts.check(services, app_id, user), "account": user}, none)
+                    if act == "make":
+                        self.check_password(b)  # it sends the recorded password to the app
+                        pw = people.reveal(data_dir, pid, app_id)["password"]
+                        limits = {"rating": b.get("rating") or "", "libraries": [str(x)[:100] for x in (b.get("libraries") or [])][:50]}
+                        said = people_accounts.ensure(services, app_id, user, pw, child=pr["role"] == "child", limits=limits)
+                        people.mark_set(data_dir, services, pid, app_id, True)
+                        logs.event("info", "people", f"{said} ({pr['name']})")  # never the password
+                        return full(said=said, person=pid)
+                    if act in ("pause", "resume"):
+                        said = people_accounts.set_paused(services, app_id, user, act == "pause")
+                        logs.event("info", "people", f"{said} ({pr['name']})")
+                        return full(said=said, person=pid)
+                    if act == "remove":
+                        self.check_password(b)
+                        if not b.get("confirm"):
+                            return self.error(400, "Confirm that the account should be deleted in the app")
+                        said = people_accounts.remove(services, app_id, user)
+                        if said.startswith("Removed"):
+                            people.mark_set(data_dir, services, pid, app_id, False)
+                        logs.event("info", "people", f"{said} ({pr['name']})")
+                        return full(said=said, person=pid)
+                    return self.error(400, "Choose check, make, pause, resume or remove")
                 if what == "reveal":
                     self.check_password(b)
                     got = people.reveal(data_dir, pid, app_id)
