@@ -1712,7 +1712,7 @@ def handle(h, method, path):
         except services.ServiceError as e:
             return h.error(502, f"Reelix did not answer: {e}")
         return h.json(200, got or {"name": q.get("group", ""), "total": 0, "have": 0, "missing": 0, "items": []})
-    if path == "/api/library/group-missing" and method == "POST":  # Add missing
+    if path == "/api/library/group-missing" and method == "POST":  # Add the rest
         from . import group_complete
         body = h.body()
         try:

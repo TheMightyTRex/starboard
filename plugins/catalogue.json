@@ -6,6 +6,7 @@
    "id": "audio-description",
    "name": "Audio description",
    "description": "Finds films and series in Jellyfin with a described sound track for blind and partially sighted people, and prefers releases with one in Reelix.",
+   "replaces_or_adds": "Adds to Jellyfin and Reelix: finds described sound tracks, and prefers releases that have one.",
    "kind": "Accessibility",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -21,6 +22,7 @@
    "id": "calibre-web",
    "name": "Calibre-Web",
    "description": "Calibre-Web, a browser page for a Calibre library: read, search and send books to an e-reader. It reads your books folder and never changes it.",
+   "replaces_or_adds": "Stands alone: a separate book reader app. It reads your books folder and never changes it.",
    "kind": "Apps you can add",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -40,6 +42,7 @@
    "id": "direct-play",
    "name": "Direct play",
    "description": "Makes your films and series play directly on the devices you choose, so Jellyfin does not convert them as they play: one file at a time, in the hours you choose.",
+   "replaces_or_adds": "Adds to Jellyfin: stops it converting files as they play, one file at a time.",
    "kind": "Jellyfin",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -57,6 +60,7 @@
    "id": "disk-forecast",
    "name": "Disk forecast",
    "description": "When each disk fills at the rate it has been filling over the last month.",
+   "replaces_or_adds": "Adds to Starboard: a dashboard card that says when each disk will fill. Replaces nothing.",
    "kind": "System",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -71,6 +75,7 @@
    "id": "dns-blocking",
    "name": "Ad blocking",
    "description": "How many adverts and trackers Pi-hole or AdGuard Home blocked today.",
+   "replaces_or_adds": "Adds to Starboard: a dashboard card from Pi-hole or AdGuard Home. Replaces nothing.",
    "kind": "Network",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -84,6 +89,7 @@
    "id": "download-summary",
    "name": "Download summary",
    "description": "How much has downloaded today and this week, from what Starboard sees in the queue.",
+   "replaces_or_adds": "Adds to Starboard: a dashboard card with what you downloaded, from the queue it already sees.",
    "kind": "Downloads",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -97,6 +103,7 @@
    "id": "home-assistant",
    "name": "Home Assistant",
    "description": "Your house in one sentence on the dashboard: the things you choose from Home Assistant.",
+   "replaces_or_adds": "Adds to Starboard: a dashboard sentence from the Home Assistant things you choose.",
    "kind": "Home",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -110,6 +117,7 @@
    "id": "jellystat",
    "name": "Jellystat",
    "description": "Jellystat, the full watch statistics app for Jellyfin, with its own PostgreSQL database, kept apart from the main install. Opens on its own web page.",
+   "replaces_or_adds": "Adds to Jellyfin: a separate watch statistics app with its own database. Replaces nothing.",
    "kind": "Apps you can add",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -130,6 +138,7 @@
    "id": "kavita",
    "name": "Kavita",
    "description": "Kavita, a reader for comics, manga and books in the browser and in e-reader apps (OPDS). It reads your books and comics folders and never changes them.",
+   "replaces_or_adds": "Stands alone: a separate reader for comics, manga and books. It never changes your folders.",
    "kind": "Apps you can add",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -149,6 +158,7 @@
    "id": "library-health",
    "name": "Library health",
    "description": "Films and series in Jellyfin with no poster, no description or no year, so you can fix them.",
+   "replaces_or_adds": "Adds to Jellyfin: lists films and series with no poster, description or year.",
    "kind": "Jellyfin",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -163,6 +173,7 @@
    "id": "line-speed",
    "name": "Line speed",
    "description": "Tests your internet download speed once a night, outside download hours, and keeps a week of results.",
+   "replaces_or_adds": "Adds to Starboard: a nightly internet speed test, outside download hours.",
    "kind": "Network",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -176,6 +187,7 @@
    "id": "maintainerr",
    "name": "Maintainerr",
    "description": "Maintainerr, clean-up rules for Jellyfin, such as films everyone has watched. It changes nothing until you give it keys and a rule that removes.",
+   "replaces_or_adds": "Adds to Jellyfin: a separate app with clean-up rules. It changes nothing until you give it a rule.",
    "kind": "Apps you can add",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -195,6 +207,7 @@
    "id": "most-watched",
    "name": "Most watched",
    "description": "The films and series most people watched in Jellyfin in the last week.",
+   "replaces_or_adds": "Adds to Jellyfin: a dashboard card with what most people watched this week.",
    "kind": "Jellyfin",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -209,6 +222,7 @@
    "id": "navidrome",
    "name": "Navidrome",
    "description": "Navidrome, a music server for Subsonic apps on phones and in the car. It reads your music folder and never changes it.",
+   "replaces_or_adds": "Stands alone: a separate music server for Subsonic apps. It never changes your music folder.",
    "kind": "Apps you can add",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -228,6 +242,7 @@
    "id": "outside-services",
    "name": "Outside services",
    "description": "Up or down for things that are not on this server: your router, a NAS, a website.",
+   "replaces_or_adds": "Adds to Starboard: checks things outside this server. Starboard's own app checks stay.",
    "kind": "Network",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -241,6 +256,7 @@
    "id": "seerr",
    "name": "Seerr",
    "description": "Seerr, a requests page for Jellyfin users. Reelix already has requests in Starboard, so most people do not need it.",
+   "replaces_or_adds": "Adds to Jellyfin: a requests page. Reelix already has requests, so most people do not need it.",
    "kind": "Apps you can add",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -260,6 +276,7 @@
    "id": "styles",
    "name": "Styles",
    "description": "Twenty-one accessible styles for Display: six reskin the whole look (cards, buttons, tabs, menus), checked for contrast.",
+   "replaces_or_adds": "Adds to Starboard: more styles in Display. The styles that come with Starboard stay.",
    "kind": "Look",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -273,6 +290,7 @@
    "id": "tdarr",
    "name": "Tdarr",
    "description": "Tdarr converts films and series to save space, in Starboard's quiet hours. It can copy the Tdarr you already have, with its libraries and history.",
+   "replaces_or_adds": "Adds to your library: a separate app that converts files to save space in quiet hours.",
    "kind": "Apps you can add",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -292,6 +310,7 @@
    "id": "uptime-kuma",
    "name": "Uptime Kuma",
    "description": "Uptime Kuma, status checks for websites and services, with alerts and status pages. Starboard already watches your apps; this is for more.",
+   "replaces_or_adds": "Adds to Starboard: a separate app for more status checks. Starboard's own checks stay.",
    "kind": "Apps you can add",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -311,6 +330,7 @@
    "id": "vpn-check",
    "name": "VPN check",
    "description": "Shows the address and country your downloads use through the VPN, and warns if it is your home address.",
+   "replaces_or_adds": "Adds to Starboard: shows the address and country your VPN gives. Replaces nothing.",
    "kind": "Downloads",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -324,6 +344,7 @@
    "id": "watching-now",
    "name": "Watching now",
    "description": "Who is watching what in Jellyfin right now, with how far through they are.",
+   "replaces_or_adds": "Adds to Jellyfin: a dashboard card of who is watching now.",
    "kind": "Jellyfin",
    "author": "TheMightyTRexUK",
    "permissions": [
@@ -338,6 +359,7 @@
    "id": "wizarr",
    "name": "Wizarr",
    "description": "Wizarr, invitation links for Jellyfin: send someone a link and they make their own Jellyfin account, with the libraries you choose.",
+   "replaces_or_adds": "Adds to Jellyfin: a separate app that makes invitation links for new Jellyfin users.",
    "kind": "Apps you can add",
    "author": "TheMightyTRexUK",
    "permissions": [

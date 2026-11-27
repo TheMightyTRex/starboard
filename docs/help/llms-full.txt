@@ -3070,6 +3070,15 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added].
 
+## Plug-in API 1.23.0 (not released yet), 27 November 2026
+
+- **Added:** `replaces_or_adds`, one line (up to 140 characters) on what a plug-in replaces or adds to, in the manifest and in a
+  catalogue entry, and `icon`, the name of one icon in Starboard's set for the plug-in's tab in Settings, Plug-ins. Read
+  [What it replaces or adds to] and
+  [The tab icon].
+- **Changed:** nothing a plug-in relies on. A plug-in that does not use the new fields works as before. `GET /api/session` lists
+  each added plug-in with `icon` (empty when it names none or names one Starboard does not have).
+
 ## Plug-in API 1.21.0 (not released yet), 27 November 2026
 
 - **Added:** `needs_plugins`, the plug-ins a plug-in needs, and `switch`, the setting that is a plug-in's main switch. Deactivating a
@@ -3086,6 +3095,8 @@ the next major version.
   offered. Read [Capabilities].
 - **Changed:** the plug-in tester warns when `starboard_api` has no top end or reaches past the next major version, or starts
   lower than the version a field you use came in at. The tester also says when `starboard_tested` is missing.
+- **Added:** a plug-in that uses a manifest part that is going shows a warning on its page and in the plug-in tester, with the day it stops
+  (an error once it has been removed). Starboard counts, on this computer, which key still calls a route that is going.
 - Nothing was taken away. Name `>=1.22` in `starboard_api` to use either field.
 
 ## Starboard API 1.10.0 (not released yet), 26 November 2026
@@ -3095,6 +3106,8 @@ the next major version.
 - **Added:** every answer from a route that is going carries `Deprecation: @<Unix time>` ([RFC 9745](https://www.rfc-editor.org/rfc/rfc9745)),
   `Sunset: <date>` ([RFC 8594](https://www.rfc-editor.org/rfc/rfc8594)) and a `Link` with `rel="deprecation"` to the page about the change.
   Once it is removed it answers [`410 gone`], never a bare not found.
+- **Added:** an entry in `deprecations` may name a part of a plug-in's manifest, in `manifest` (such as `permission:jellyfin:key`), instead of
+  `method` and `path`.
 - Nothing was taken away: every 1.9.0 address answers as before.
 
 ## Plug-in API 1.20.0 (not released yet), 26 November 2026
@@ -3754,7 +3767,7 @@ Source: docs/help/developers/plugin-manifest-reference.md
 # Plug-in manifest reference
 
 Every field of `starboard-plugin.json`, version 1, with the check Starboard runs on it and why. Starboard refuses
-any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.22.0
+any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.23.0
 (`API_VERSION` in `starboard/plugins.py`).
 
 The same rules are in a JSON Schema, `starboard/plugin-manifest.schema.json`, for editors and other tools. The
@@ -3775,6 +3788,8 @@ runs it too. For a first plug-in, read [Make your first plug-in].
 | `homepage` | yes | Its page | An `https` address |
 | `support_url` | yes | Where people report problems | An `https` address |
 | `starboard_api` | yes | The plug-in API versions it works with | A range such as `>=1.0 <2.0`, using `>=`, `>`, `<=`, `<` and `=`; this Starboard's API must be inside it |
+| `replaces_or_adds` | no | One line on what it replaces or adds to (API 1.23) | Plain text on one line, up to 140 characters, with no `<`, `>` or back quotes. Read [What it replaces or adds to] |
+| `icon` | no | The icon for its tab in Settings, Plug-ins (API 1.23) | The name of one icon in Starboard's set, such as `bell` or `tv`. Read [The tab icon] |
 | `starboard_tested` | no | The newest plug-in API version you tested with (API 1.22) | Text such as `1.22`. Starboard never refuses a plug-in for it; the plug-in tester says when it is missing or newer than this Starboard |
 | `capabilities` | no | Optional parts it needs or uses, by name (API 1.22) | An object with `needs` and `uses`, each up to 12 names from [Capabilities]. A plug-in that needs a name this Starboard does not have is not added, and a catalogue version that needs one is not offered |
 | `permissions` | yes | What it may do | A list from [Permissions]; may be empty |
@@ -4543,6 +4558,28 @@ it is missing, because What is new then cannot say what changed. Say when settin
 ]
 ```
 
+## What it replaces or adds to (replaces_or_adds)
+
+From API 1.23, a plug-in may say in one line what it replaces or adds to. Starboard shows it on the plug-in's card in the
+Catalogue, in the warning before you install it, on the plug-in's page and in Manage. Start with what it does to what is
+already there:
+
+- `"Adds to Jellyfin: stops it converting files as they play."`
+- `"Replaces Jellyfin when you choose it."`
+- `"Stands alone: a separate music server. It never changes your music folder."`
+
+Write it for someone who has not read the plug-in's page, and keep it true: say what it does, not what you hope. A
+catalogue entry may carry the same field, so a plug-in shows its line in the Catalogue before its manifest is fetched. A
+plug-in without the field works as before and shows no line. Name `>=1.23` in `starboard_api` to use it.
+
+## The tab icon (icon)
+
+From API 1.23, a plug-in may name one icon from Starboard's own set, such as `"icon": "bell"`. Settings, Plug-ins draws it on
+the plug-in's tab, in the same line style as the other menu icons, so a person on a phone can tell the tabs apart. Starboard
+checks the name against the set: a name that is not in it is refused by the plug-in tester and, if it ever reaches Starboard,
+is ignored, and the tab shows the puzzle piece. A plug-in that names no icon gets the one Starboard knows for it, or the
+puzzle piece. Name `>=1.23` in `starboard_api` to use it.
+
 ## Capabilities (API 1.22)
 
 A version number says this Starboard has the whole API up to there. An optional part is better asked for by name.
@@ -4591,6 +4628,7 @@ A catalogue version may carry `capabilities_needed`, a list of the same names, n
 | 1.13 | 13 November 2026 | App plug-ins: `network:port` and `publish` on `lan` with `host_port`, `{secret:...}` and `{jellyfin:...}` in `env`, `tmpfs`, `data:<path>` and `media/<one folder>:ro`, `pids`, and `adopt` |
 | 1.14 | 14 November 2026 | A card's own refresh time, `refresh_seconds`, in the manifest and in its answer, 10 seconds at the quickest; `recommended` on a catalogue entry; `logo` (and `logo`, `logo_alt` on a catalogue entry); every card drawn with a grey band holding the logo, the name, a status chip and when it last updated (`status`, `status_label` and `updated` in its answer); a `schedule` setting and a job's `schedule`; the `jellyfin:metadata` permission with the `jellyfin-metadata` volume; `update` (a `before` and an `after` step, `health_wait_seconds` and settings `migrations`), with the health wait and an automatic Roll back after every update, and **What is new** shown before an update too |
 | 1.20 | 26 November 2026 | `first_sign_in`: a password Starboard makes for an app plug-in, set by the app before it first starts and shown once on the plug-in's page |
+| 1.23 | 27 November 2026 | `replaces_or_adds`: one line on what a plug-in replaces or adds to, shown on the Catalogue card, before install, on its page and in Manage; `icon`: one icon from Starboard's set for its tab in Settings, Plug-ins |
 | 1.22 | 27 November 2026 | `starboard_tested` and `capabilities`: named optional parts a plug-in needs or uses, listed by `GET /api/v1/`; the plug-in tester checks the range a plug-in names |
 | 1.21 | 27 November 2026 | `needs_plugins` and `switch`: a plug-in may list the plug-ins it needs and name its own main switch; deactivating a plug-in or saving its switch as inactive a plug-in that others need asks first and deactivates them too |
 | 1.19 | 25 November 2026 | `requires`: the system a plug-in needs, shown as a tag (Jellyfin only, Plex or Emby, Needs Reelix), worked out from the permissions of older manifests; 1.18 is DASH-572's |
@@ -5619,9 +5657,9 @@ anything the reference pages do not describe. A feature marked as a preview may 
 ## How a feature goes
 
 1. **We announce it.** The [API changelog] gets a Deprecated entry that names what replaces the feature.
-   The plug-in tester will warn when your manifest uses it (planned).
+   The plug-in tester warns when your manifest uses it, with the day it stops.
 2. **It keeps working, and warns.** The public API adds a `Deprecation` header and a `Sunset` date to each answer, and
-   `GET /api/v1/` lists the feature under `deprecations`. A plug-in that uses a retiring feature will show a warning on its page (planned).
+   `GET /api/v1/` lists the feature under `deprecations`. A plug-in that uses a retiring feature shows a warning on its page, with the day it stops. Starboard also counts, on this computer only, which key still calls a retiring route, so the owner removes a feature only when nobody uses it.
 3. **We wait.** At least 12 months and two Starboard releases for the plug-in API. At least 6 months for the public API. We
    may wait longer. We never wait less.
 4. **We remove it only in version 2.0.** A removed address answers `410 gone` and names what replaces it. We do not plan a
@@ -5635,7 +5673,7 @@ A security fix is the one exception, and it has its own rules in Security fixes.
   top, `<2.0`, means "made for version 1".
 - **Version 2.0 stops only what it must.** A plug-in that uses nothing removed keeps running. One that does is stopped.
 - **Optional parts are asked for by name, not by version number.** `requires` already names the system a plug-in needs
-  (Jellyfin, Plex or Emby, Reelix). Named capabilities for other optional parts are in plug-in API 1.22 (`capabilities`).
+  (Jellyfin, Plex or Emby, Reelix). Named capabilities for other optional parts are in plug-in API 1.22 (`capabilities`). A plug-in that needs one this Starboard lacks is stopped and shown as Needs an update.
 - **Read your key file for each call.** Starboard makes a new key each time your plug-in starts or updates.
 
 ## What people are shown if your plug-in stops
@@ -5664,7 +5702,8 @@ version, and give the reason. A plug-in the fix stops is shown as **Needs an upd
 
 Run the plug-in tester on your manifest ([Test and publish a plug-in]). Starboard's own tests
 also run 74 older manifests from the plug-in collection against each new Starboard, and fail a change that removes
-anything from the API without these steps.
+anything from the API without these steps. A check with oasdiff fails a change that would break an outside tool, using the last
+release as the baseline, and a weekly run tries the collection's plug-ins against the newest Starboard.
 
 ## Find out more
 
