@@ -23,6 +23,15 @@ the next major version.
   [Plug-ins that need another plug-in](plugin-manifest-reference.md#plug-ins-that-need-another-plug-in-needs_plugins-and-switch).
 - **Changed:** nothing a plug-in relies on. `POST /api/plugins/<id>/disable` and `PUT /api/plugins/<id>/settings` may now answer `409`
   for a plug-in that others list in `needs_plugins`; none does today. A plug-in that does not use the new fields is drawn as before.
+## Plug-in API 1.22.0 and Starboard API 1.11.0 (not released yet), 27 November 2026
+
+- **Added:** `starboard_tested`, the newest plug-in API version a plug-in was tested with, and `capabilities`, the optional
+  parts it needs or uses by name. `GET /api/v1/` answers `capabilities`, the names this Starboard has. A plug-in that needs a
+  name that is not there is not added, and a catalogue version with `capabilities_needed` that this Starboard lacks is not
+  offered. Read [Capabilities](plugin-manifest-reference.md#capabilities-api-122).
+- **Changed:** the plug-in tester warns when `starboard_api` has no top end or reaches past the next major version, or starts
+  lower than the version a field you use came in at. The tester also says when `starboard_tested` is missing.
+- Nothing was taken away. Name `>=1.22` in `starboard_api` to use either field.
 
 ## Starboard API 1.10.0 (not released yet), 26 November 2026
 
