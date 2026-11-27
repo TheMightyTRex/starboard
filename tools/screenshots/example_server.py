@@ -2304,6 +2304,24 @@ def main():
                     more.update(url=os.environ["EXAMPLE_JELLYFIN_URL"], api_key=os.environ.get("EXAMPLE_JELLYFIN_KEY", ""))
             call("POST", "/api/services", {"name": name, "type": kind, "group": group, "url": f"http://127.0.0.1:{FAKE_PORT}/{path}",
                                            "api_key": key, "icon": icon, **more}, cookie)
+        # Settings, People (DASH-589): made-up people with accounts in the two apps people use, so the page and its slide-out show
+        # every state (no account, a password made, a password set in the app) and a removed person.
+        def person(name, role, email=""):
+            return json.loads(call("POST", "/api/people", {"name": name, "role": role, "email": email}, cookie)[1])["person"]
+
+        def account(pid, app, username, state):
+            base = f"/api/people/{pid}/accounts/{app}"
+            call("POST", base, {"username": username}, cookie)
+            if state in ("made", "in-use"):
+                call("POST", base + "/password", {}, cookie)
+            if state == "in-use":
+                call("POST", base + "/set", {}, cookie)
+        sam, alex, robin = person("Sam", "household", "sam@example.org"), person("Alex", "child"), person("Robin", "guest")
+        account(sam, "jellyfin", "sam", "in-use")
+        account(sam, "audiobookshelf", "sam", "made")
+        account(alex, "jellyfin", "alex", "made")
+        call("POST", f"/api/people/{robin}/pause", {}, cookie)
+        call("POST", f"/api/people/{person('Pat', 'guest')}/remove", {}, cookie)
         # A custom card for a made-up service's JSON (DASH-555): in Other services, not on the dashboard until a shot adds it.
         call("POST", "/api/json-cards", {"name": "Download client", "url": f"http://127.0.0.1:{FAKE_PORT}/json/status", "key": "example-json-key",
                                          "key_style": "x-api-key", "refresh": 60, "fields": [

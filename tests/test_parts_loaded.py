@@ -8,7 +8,7 @@ WEB = pathlib.Path(__file__).resolve().parents[1] / "web"
 # page script -> the parts it needs on the page (what it draws or calls from the design system)
 NEEDS = {"app-logs.js": ["log-view"], "library-item.js": ["tabs"], "system.js": ["charts"],
          "settings-apps.js": ["error-summary"], "dispatcharr-settings.js": ["error-summary"],
-         "settings-security.js": ["error-summary", "secret-field"], "reelix-settings.js": ["tag-input"]}
+         "settings-security.js": ["error-summary", "secret-field"], "settings-people.js": ["secret-field"], "reelix-settings.js": ["tag-input"]}
 NEEDS_PART = {"secret-field": ["error-summary"], "alerts": ["popover"], "command-palette": ["combobox"]}
 
 

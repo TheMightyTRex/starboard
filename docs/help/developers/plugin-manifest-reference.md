@@ -4,7 +4,7 @@
 # Plug-in manifest reference
 
 Every field of `starboard-plugin.json`, version 1, with the check Starboard runs on it and why. Starboard refuses
-any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.20.0
+any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.21.0
 (`API_VERSION` in `starboard/plugins.py`).
 
 The same rules are in a JSON Schema, `starboard/plugin-manifest.schema.json`, for editors and other tools. The
@@ -35,6 +35,8 @@ runs it too. For a first plug-in, read [Make your first plug-in](make-a-plugin.m
 | `health` | no | A path that answers 200 while it works | A path such as `/health` |
 | `needs` | no | Apps it needs, shown before install | A list of app names such as `jellyfin`: 2 to 30 lower case letters, numbers and hyphens |
 | `requires` | no | The system it works with, shown as a tag | A list of up to four needs. Read [What it needs](#what-it-needs-requires). API 1.19 |
+| `needs_plugins` | no | The plug-ins it needs | A list of up to 10 plug-in ids. Read [Plug-ins that need another plug-in](#plug-ins-that-need-another-plug-in-needs_plugins-and-switch). API 1.21 |
+| `switch` | no | The setting that is the plug-in's main switch | The `key` of one of its own `switch` settings. Read [Plug-ins that need another plug-in](#plug-ins-that-need-another-plug-in-needs_plugins-and-switch). API 1.21 |
 | `first_sign_in` | no | A password Starboard makes for the app and shows once on its page | Read [A first sign-in shown once](#a-first-sign-in-shown-once-first_sign_in). API 1.20 |
 | `styles` | no | Styles for **Display** | Read [Styles](#styles) |
 | `notices` | no | Things people must know before install | Read [Notices](#notices). API 1.4 |
@@ -78,6 +80,21 @@ system is not on this Starboard.
   the system is there. Installing is still possible, because a person may add the system next.
 - A system is there when Starboard has an active app of that type with an address (Reelix by its icon), or, from
   the media server plug-ins of DASH-565, an active media server plug-in.
+
+## Plug-ins that need another plug-in (needs_plugins and switch)
+
+Some plug-ins only make sense while another is on, such as an app that signs in through a sign-in provider. From API 1.21:
+
+- **`needs_plugins`** lists the ids of the plug-ins this one needs, up to 10. It cannot list itself.
+- **`switch`** names one of the plug-in's own `switch` settings as its main switch, such as `enabled`.
+
+Starboard checks both when someone **deactivates** a plug-in or saves its switch as off. If other plug-ins that are active list it in
+`needs_plugins`, Starboard stops, names them in plain English and asks for a yes. Nothing changes until the answer is yes. On yes it
+deactivates those plug-ins first, then the one asked about. Nothing is deleted, and each can be activated again. The route answers
+`409` with `error` (the words to show) and `dependents` (`id` and `name` of each), and the same request with `"confirm_dependents": true`
+does it. Activating the switch, saving other settings and deactivating a plug-in that nothing needs never ask. Starboard does not
+activate a needed plug-in for you, and a plug-in that needs another still starts when that one is off: it should say so on its card.
+A plug-in that does not use these fields works as before. Name `>=1.21` in `starboard_api` to use them.
 
 ## A first sign-in shown once (first_sign_in)
 
@@ -794,6 +811,7 @@ it is missing, because What is new then cannot say what changed. Say when settin
 | 1.13 | 13 November 2026 | App plug-ins: `network:port` and `publish` on `lan` with `host_port`, `{secret:...}` and `{jellyfin:...}` in `env`, `tmpfs`, `data:<path>` and `media/<one folder>:ro`, `pids`, and `adopt` |
 | 1.14 | 14 November 2026 | A card's own refresh time, `refresh_seconds`, in the manifest and in its answer, 10 seconds at the quickest; `recommended` on a catalogue entry; `logo` (and `logo`, `logo_alt` on a catalogue entry); every card drawn with a grey band holding the logo, the name, a status chip and when it last updated (`status`, `status_label` and `updated` in its answer); a `schedule` setting and a job's `schedule`; the `jellyfin:metadata` permission with the `jellyfin-metadata` volume; `update` (a `before` and an `after` step, `health_wait_seconds` and settings `migrations`), with the health wait and an automatic Roll back after every update, and **What is new** shown before an update too |
 | 1.20 | 26 November 2026 | `first_sign_in`: a password Starboard makes for an app plug-in, set by the app before it first starts and shown once on the plug-in's page |
+| 1.21 | 27 November 2026 | `needs_plugins` and `switch`: a plug-in may list the plug-ins it needs and name its own main switch; deactivating a plug-in or saving its switch as inactive a plug-in that others need asks first and deactivates them too |
 | 1.19 | 25 November 2026 | `requires`: the system a plug-in needs, shown as a tag (Jellyfin only, Plex or Emby, Needs Reelix), worked out from the permissions of older manifests; 1.18 is DASH-572's |
 | 1.17 | 20 November 2026 | The `sparkline` card: a small line for each series, with the latest, lowest and highest value in words; the `alerts:send` permission, with `POST /api/v1/plugin/alerts` to raise and clear alerts through Starboard's own |
 | 1.16 | 19 November 2026 | The `disk.changed` event; a plug-in is activated when installed; a custom setting's `add` box and an item's `attach` form take plain text; `STARBOARD_HOME_ADDRESS` for a container with `publish` on the `lan` network |

@@ -202,6 +202,16 @@
     "type": "string"
    }
   },
+  "needs_plugins": {
+   "type": "array",
+   "maxItems": 10,
+   "items": {
+    "type": "string"
+   }
+  },
+  "switch": {
+   "type": "string"
+  },
   "requires": {
    "type": "array",
    "maxItems": 4,

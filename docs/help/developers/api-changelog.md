@@ -15,6 +15,15 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Plug-in API 1.21.0 (not released yet), 27 November 2026
+
+- **Added:** `needs_plugins`, the plug-ins a plug-in needs, and `switch`, the setting that is a plug-in's main switch. Deactivating a
+  plug-in, or saving its switch as inactive, asks first when other active plug-ins need it: the route answers `409` with the words to
+  show and the plug-ins' names, and the same request with `confirm_dependents` set to `true` deactivates them too. Read
+  [Plug-ins that need another plug-in](plugin-manifest-reference.md#plug-ins-that-need-another-plug-in-needs_plugins-and-switch).
+- **Changed:** nothing a plug-in relies on. `POST /api/plugins/<id>/disable` and `PUT /api/plugins/<id>/settings` may now answer `409`
+  for a plug-in that others list in `needs_plugins`; none does today. A plug-in that does not use the new fields is drawn as before.
+
 ## Starboard API 1.10.0 (not released yet), 26 November 2026
 
 - **Added:** `deprecations` in `GET /api/v1/`: the features that are going, each with `method`, `path`, `deprecated` and `sunset`
