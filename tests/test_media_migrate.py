@@ -304,7 +304,6 @@ class Run(unittest.TestCase):
     def test_a_library_that_cannot_be_added_stops_the_switch_and_nothing_is_removed(self):
         with tempfile.TemporaryDirectory() as d:
             bad = {"Name": "Odd", "CollectionType": "movies", "Locations": ["/elsewhere/odd"]}
-            jf = Server([FILMS, bad], ["Sam"], ITEMS)
             emby = Server([], [], [], prefix="/emby")
             cfg = Config([JF, EMBY])
             state = self.run_it(cfg, "jellyfin", "emby", "migrate", ["libraries"], World(jf=Server([bad], ["Sam"], ITEMS), emby=emby), data_dir=d)
