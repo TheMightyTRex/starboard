@@ -6,7 +6,7 @@
 #   --main           Follow the main branch instead of releases (for testing). An install made with
 #                    ./install.sh --main follows it without this (STARBOARD_CHANNEL in .env, DASH-416)
 #   --restore FILE   With --to: put back the settings backup FILE (from ./backups) when going back to a version before
-#                    0.40.0, which cannot read the settings 0.40.0 and later write (DASH-596)
+#                    0.40.0, the safe way, as older versions may not understand the settings 0.40.0 writes (DASH-596)
 #
 # Before updating it backs up ./data to ./backups, except each plug-in's own data folder, which belongs to the
 # plug-in's user and stays where it is. If the new version does not start, it goes back to the version you had and
@@ -128,10 +128,7 @@ fi
 if [ -n "$RESTORE_FILE" ] && [ "$GOING_BACK_PAST" != 1 ]; then
   fail "--restore is only for going back to a version before $ONE_WAY_FROM, with --to"
 fi
-if [ "$GOING_BACK_PAST" = 1 ] && [ "$CHECK" != 1 ]; then
-  if [ -z "$RESTORE_FILE" ]; then
-    fail "Starboard $CURRENT_VERSION changed how your settings are stored, and $WANT_NAME cannot read them, so it cannot go back by itself. Going back needs the backup of your settings that the update to $ONE_WAY_FROM saved in the backups folder, and settings you changed since are lost. To go back, run: ./update.sh --to $WANT_NAME --restore backups/NAME, with the name of that backup (list them with: ls -t backups)"
-  fi
+if [ -n "$RESTORE_FILE" ]; then  # the safe way back (DASH-596): the backup must read back before anything changes
   { [ -f "$RESTORE_FILE" ] && tar -tzf "$RESTORE_FILE" >/dev/null 2>&1; } || fail "the backup $RESTORE_FILE could not be read, so nothing was changed"
 fi
 
@@ -321,6 +318,17 @@ if [ "$GOING_ONE_WAY" = 1 ]; then
   say "This update cannot be undone"
   echo "Starboard $WANT_VERSION changes how your settings are stored. You cannot go back to an older Starboard after this update."
   echo "Starboard saves a backup of your settings first. To go back, you restore that backup. Settings you change after the update are lost when you do."
+fi
+
+if [ "$GOING_BACK_PAST" = 1 ]; then
+  say "Going back past $ONE_WAY_FROM"
+  if [ -n "$RESTORE_FILE" ]; then
+    echo "Starboard puts back the settings in $RESTORE_FILE, so they match $WANT_NAME. Settings you changed since that backup was made are lost. The settings you have now are saved first and stay in the backups folder."
+  else
+    echo "Warning: Starboard $CURRENT_VERSION changed how your settings are stored, so your settings may not match $WANT_NAME. Some may be ignored or wrong."
+    echo "The safe way back is to put back the backup that the update to $ONE_WAY_FROM saved: ./update.sh --to $WANT_NAME --restore backups/NAME (list them with: ls -t backups)."
+    echo "Going on without it. Starboard saves a fresh backup of your settings first."
+  fi
 fi
 
 say "Backing up your settings"

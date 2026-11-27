@@ -1,6 +1,6 @@
 """The update guard for the clean break (DASH-596, owner, 26 November 2026): Starboard 0.40.0 and later can be
 installed only from 0.31.0 or later; the update saves a backup first and says plainly that there is no way back; and
-going back past 0.40.0 needs the backup put back.
+going back past 0.40.0 warns, saves a fresh backup first and offers --restore as the safe way.
 
 Each test makes a scratch "origin" with releases whose VERSION files say what they are, and a clone of it, then runs the
 real update.sh in the clone. Stand-ins for systemctl and python3 stop it from restarting anything or waiting for an
@@ -146,16 +146,19 @@ class UpdateGuard(unittest.TestCase):
         self.assertNotIn("cannot be undone", done.stdout)
         self.assertNotIn("your way back", done.stdout)
 
-    def test_going_back_past_the_break_needs_the_backup_and_says_so(self):
+    def test_going_back_past_the_break_warns_saves_a_fresh_backup_and_goes_on(self):
         clone = self.releases("0.40.0", "0.31.0")
-        self.with_settings(clone)
+        self.with_settings(clone, "settings from 0.40.0")
         done = self.run_update(clone, "--to", "v0.31.0")
-        self.assertEqual(done.returncode, 1)
-        self.assertIn("cannot go back by itself", done.stderr)
-        self.assertIn("--restore backups/NAME", done.stderr)
-        self.assertIn("settings you changed since are lost", done.stderr)
-        self.assertEqual(self.version(clone), "0.40.0")
-        self.assertFalse((clone / "backups").exists())
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        self.assertIn("== Going back past 0.40.0", done.stdout)
+        self.assertIn("your settings may not match v0.31.0", done.stdout)
+        self.assertIn("--restore backups/NAME", done.stdout)
+        self.assertLess(done.stdout.index("Going back past"), done.stdout.index("Backing up your settings"))
+        self.assertEqual(self.version(clone), "0.31.0")
+        saved = list((clone / "backups").glob("starboard-data-*.tar.gz"))
+        self.assertEqual(len(saved), 1)  # a fresh backup of the settings it left
+        self.assertEqual((clone / "data" / "config.json").read_text(), "settings from 0.40.0")  # not replaced
 
     def test_going_back_with_the_backup_puts_the_old_settings_back(self):
         clone = self.releases("0.31.0", "0.40.0")
