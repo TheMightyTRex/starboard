@@ -15,7 +15,9 @@ upgrade guide and the notes on GitHub, so they always say the same thing.
      `hours`, `alerts`, `preset` and `names`. Leave it empty when nothing needs choosing: the upgrade then
      finishes on its own and the notes wait under the version in the footer.
    - `settings`: what changes in people's settings, and the way back (`./update.sh --to v<previous>`).
-3. **Notes.** Run `python3 tools/release_notes.py`. It writes `docs/releases/vX.Y.Z.md`.
+3. **Notes.** Run `python3 tools/release_notes.py`. It writes `docs/releases/vX.Y.Z.md`. Keep the notes of the last three
+   releases and delete the older files (`git rm`): `CHANGELOG.md` and `starboard/releases.py` keep every release, and
+   `python3 tools/release_notes.py X.Y.Z` writes any file again.
 4. **Changelog.** `CHANGELOG.md` follows the design system's changelog rules (`docs/CHANGELOGS.md` in the
    design system). Each change goes under `## [Unreleased]` as it is made, under Added, Changed, Deprecated,
    Removed, Fixed or Security, in that order, with every security fix under Security. **Each entry is one plain

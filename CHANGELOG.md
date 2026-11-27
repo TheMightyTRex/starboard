@@ -55,6 +55,9 @@ add features.
 - **Two small savings.** The dashboard now asks for the settings once instead of twice. The Bring in progress page stops asking for its status while its tab is hidden.
 - **Plain English pilot.** The README and the help topics Add an app and How lean Starboard is now use shorter sentences and the active voice.
 
+### Removed
+- **Old release note files and two unused documents.** The notes files of 57 releases from 0.5.0 to 0.28.0, an unused picture of all the screenshots and the design record for building plug-ins in isolation are gone from the repository. `CHANGELOG.md` and the notes in Starboard still list every release, and the files stay in the history. The help and the app do not change.
+
 ### Fixed
 - **Field errors say "Error:" to a screen reader.** An error under a field, such as an empty password, now starts with the hidden word Error: , as the design system asks, so it is not read as a plain sentence. The nine places that drew one by hand share one function.
 - **An artist's Get it searches for every wanted album, up to 100.** It used to stop at 20 without saying so. Now it sends one request, and says how many are left when there are more than 100.
