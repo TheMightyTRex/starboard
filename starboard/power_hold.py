@@ -7,7 +7,7 @@ What a hold stops, while it lasts:
   plug-ins;
 - downloads, which are paused the way Download hours pauses them, even when Download hours is off.
 
-What it never stops: anything a person starts with a click, and the jobs of a plug-in that may hold itself.
+What it never stops: anything a person starts themselves, and the jobs of a plug-in that may hold itself.
 
 Every hold ends by itself after the minutes it was given (10 by default, 30 at most) unless the plug-in asks again, so
 a plug-in that stops, crashes or loses its network cannot hold Starboard for ever. When a hold ends, whatever was due

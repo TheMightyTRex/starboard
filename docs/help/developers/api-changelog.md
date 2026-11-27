@@ -21,7 +21,7 @@ the next major version.
   its heavy automatic work while the computer runs on battery. While a hold lasts, Starboard does not start by itself its
   background jobs (Live TV, watch history, listening progress and the automatic updates), its scheduled backups or other plug-ins'
   scheduled jobs, and it pauses downloads as Download hours does. A hold ends by itself after 10 minutes unless the plug-in asks
-  again (30 at most), and what was due starts at the next check. Anything a person starts with a click still runs. Read
+  again (30 at most), and what was due starts at the next check. Anything a person starts themselves still runs. Read
   [Holding heavy jobs](plugin-api-reference.md#holding-heavy-jobs-api-124).
 - **Added:** the setting type `time`, one time of day such as `22:00`, drawn as a time box that saves when you leave it.
 - **Added:** `held` in the answers of `/api/v1/download-hours`: whether a plug-in holds heavy work now, why, until when and by whom.

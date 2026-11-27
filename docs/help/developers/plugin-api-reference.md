@@ -498,7 +498,7 @@ When the router answers again, send `{"key": "check-router", "state": "cleared",
 ## Holding heavy jobs (API 1.24)
 
 A plug-in with the `power:hold` permission may ask Starboard to hold its heavy automatic work, for example while the UPS and
-power plug-in sees the computer run on battery. It sends `POST /api/v1/plugin/hold` (Starboard API 1.12.0) with its own key,
+power plug-in notices that the computer runs on battery. It sends `POST /api/v1/plugin/hold` (Starboard API 1.12.0) with its own key,
 through `STARBOARD_API_SOCKET`, or over HTTP for a plug-in on the `lan` network.
 
 ```json
@@ -517,7 +517,7 @@ The answer is `{"ok": true, "held": true, "reason": "On battery", "until": 17953
 - **What is held.** Starboard's own background jobs (Live TV, watch history, listening progress and the automatic updates of
   Starboard, Reelix, apps and plug-ins), its scheduled backups, the scheduled jobs of other plug-ins, and downloads, which pause as
   Download hours pauses them, even when Download hours is off and even after a person chose Resume now.
-- **What is not held.** Anything a person starts with a click, the two light jobs (Jellyfin user defaults and VPN port
+- **What is not held.** Anything a person starts themselves, the two light jobs (Jellyfin user defaults and VPN port
   forwarding), and your own plug-in's jobs.
 - **It ends by itself.** Ask again before `minutes` pass to keep it. A plug-in that stops, crashes or loses its network
   cannot hold Starboard for ever. A good rhythm is to ask every minute with `minutes` of 5 while on battery, and to send
@@ -525,7 +525,7 @@ The answer is `{"ok": true, "held": true, "reason": "On battery", "until": 17953
 - **Held work resumes.** What was due while the hold lasted starts at the next check after it ends, within a minute.
   Downloads that Starboard paused start again at once; downloads a person had stopped stay stopped.
 - **Starboard restarts.** A hold is kept in memory only, so ask again after Starboard starts. Your next call does that.
-- **People see it.** The Downloads page says why downloads are paused, and Starboard's log says when a hold starts and ends.
+- **People are told.** The Downloads page says why downloads are paused, and Starboard's log says when a hold starts and ends.
 - **Errors.** A body that does not follow the rules gets `400 bad_request` saying what to change. Any key but the plug-in's
   own, a plug-in without `power:hold`, or one that is not active, gets `404 not_found`.
 - Every call is written to the audit log, as every change through the API is.
