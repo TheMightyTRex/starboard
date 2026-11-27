@@ -2119,7 +2119,7 @@ RELEASES = [
             ["Starboard no longer reads Plex's token", "Search for new apps does not look inside the Plex container for the token any more."],
             ["Display opens as a slide-out on Sign in and Set up too", "The sign-in page had its own copy of Display as a dialog; it now uses the same template as every other page."],
             ["Error lines under fields use the shared `field-error` class", "Three messages (app details, Reelix system and plug-ins) had a class name with no style."],
-            ["The shared styles now define the names Starboard already used", "--radius-sm, --radius-md, --font-mono, --color-success-text, --color-danger-text, stack-3, stack-5, input--narrow, select--compact, field__error and btn--secondary had no style, so a few boxes in Bring in, Backup and restore and the dashboard editor gained their intended spacing and width."],
+            ["The shared styles now define the names Starboard already used", "A few boxes, buttons and fields had no style because their names were missing from the shared styles; they are defined now, so they look as intended."],
             ["One name for asking again: Check now", "Every Check again button and line of help now says Check now, as plug-ins do, and the Updates button says Check now before and after the first check (owner, 26 November 2026)."],
             ["One Backup/Logs tab", "Settings, General has Backup/Logs, which holds backups, restoring, logs and Send feedback, and the old addresses still open it."],
             ["Shorter names in General", "The first tab is now General, and the others are Appearance, Lists, Discover, Hours, Alerts, Performance, Pictures and Backup/Logs, so every name fits at 1280 pixels wide."],
