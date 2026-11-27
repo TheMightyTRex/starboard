@@ -25,7 +25,6 @@ import urllib.parse
 from . import logs
 
 NAME = "api.sock"  # in run/, so /run/starboard/api.sock inside the plug-in's containers
-IN_CONTAINER = "/run/starboard/" + NAME
 MAX_PATH = 107  # a Unix socket's address holds at most 107 bytes on Linux; a longer path goes through /proc
 SLOTS = threading.BoundedSemaphore(16)  # requests from every plug-in at once; more wait their turn
 

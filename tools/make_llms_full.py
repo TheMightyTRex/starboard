@@ -36,7 +36,6 @@ def body(path):
     text = "\n".join(lines)
     # a relative link keeps its words; the page it names is in this file or in the index
     text = re.sub(r"\]\((?!https?:)[^)]*\)", "]", text)
-    text = re.sub(r"!\[[^\]]*\]\][^\n]*", "", text) if False else text
     return re.sub(r"\n{3,}", "\n\n", text).strip() + "\n"
 
 
