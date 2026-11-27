@@ -5,7 +5,7 @@ const ITEM_TAB = document.querySelector("[data-library-item]")?.dataset.libraryI
 const WALL = { films: ["library-films.html", "Films"], tv: ["library-tv.html", "TV"], music: ["library-music.html", "Music"],
   radio: ["library-radio.html", "Radio"], books: ["library-books.html", "Books"], audiobooks: ["library-audiobooks.html", "Audiobooks"] };
 
-// DASH-276, DASH-206: Get it, Follow, Stop following and Delete, through Starboard (Reelix's own routes). The page
+// DASH-276, DASH-206: Find it, Follow, Stop following and Delete, through Starboard (Reelix's own routes). The page
 // draws itself again with Reelix's answer, and says what was done.
 let current = null;
 async function act(action, extra = {}, button = null) {
@@ -31,8 +31,8 @@ async function markWatched(ids, watched, button) {
   } catch (e) { problem(e.message, button); button.disabled = false; }
 }
 
-// Choose a download (DASH-159): what Reelix finds on its sites, best first, with Get this one. One Reelix would
-// turn down says why, and can still be taken with Get it anyway. A list to choose from, so a slide-out, not a dialog
+// Choose a download (DASH-159): what Reelix finds on its sites, best first, with Use this one. One Reelix would
+// turn down says why, and can still be taken with Use it anyway. A list to choose from, so a slide-out, not a dialog
 // with Close and Cancel (DASH-309, R6); the page stays in view and Escape or the close button give focus back.
 async function chooseDownload(extra, what, opener = document.activeElement) {
   const box = el("div", { class: "stack-2", "aria-live": "polite" }, el("p", { class: "muted", text: "Asking every site. This can take a minute…" }));
@@ -45,7 +45,7 @@ async function chooseDownload(extra, what, opener = document.activeElement) {
       const meta = [x.quality, x.size ? formatBytes(x.size) : "", x.seeders != null ? `${x.seeders} seeders` : "", x.site,
         x.age_minutes != null ? (x.age_minutes < 1440 ? "today" : Math.round(x.age_minutes / 1440) === 1 ? "1 day old" : `${Math.round(x.age_minutes / 1440)} days old`) : "", x.languages.join(", ")].filter(Boolean).join(" · ");
       const take = el("button", { type: "button", class: x.accepted ? "btn btn--compact" : "btn btn--quiet btn--compact" },
-        x.accepted ? "Get this one" : "Get it anyway", el("span", { class: "visually-hidden", text: ` ${x.title}` }));
+        x.accepted ? "Use this one" : "Use it anyway", el("span", { class: "visually-hidden", text: ` ${x.title}` }));
       take.addEventListener("click", async () => {
         take.disabled = true;
         try { const g = await api(`/api/library/grab?tab=${ITEM_TAB}`, { method: "POST", body: { guid: x.guid, indexer_id: x.indexer_id, force: !x.accepted, title: x.title } });
@@ -88,14 +88,14 @@ function rowList(rows, heading = "") {
     el("div", {},
       el("h3", { class: "row__title" }, r.href ? el("a", { href: r.href, text: r.title }) : r.title),
       el("div", { class: "row__meta", text: [r.date, r.note, notYet(r)].filter(Boolean).join(" · ") })),
-    // Fixed columns, so they line up down the list: the name, the status, Watched, then Play (or Get it).
+    // Fixed columns, so they line up down the list: the name, the status, Watched, then Play (or Find it).
     el("div", { class: "row__side lib-order__side" },
       el("div", { class: "lib-order__status" }, r.status ? chip(r.status, r.tone) : null),
       el("div", { class: "lib-order__watched" }, r.jf ? watchedButton({ watched: r.watched, ids: [r.jf] }, `${r.number} ${r.title}`, true, true) : null),
       el("div", { class: "lib-order__play" },
         r.jf ? playLink(play, r.jf, episodeName(r, heading)) : null,
         r.can_get && r.id ? el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => act("get", { scope: "episode", episode: r.id }, e.currentTarget) },
-          "Get it", el("span", { class: "visually-hidden", text: ` ${r.number} ${r.title}` })) : null)))));
+          "Find it", el("span", { class: "visually-hidden", text: ` ${r.number} ${r.title}` })) : null)))));
 }
 
 // A long list in groups (a series' seasons): one disclosure each, the newest open. One group stays a plain list.
@@ -106,7 +106,7 @@ function groupList(list) {
     el("div", { class: "disclosure__body stack-2" },
       g.missing || g.watched ? el("div", { class: "actions" },
         g.missing ? el("button", { type: "button", class: "btn btn--compact", onclick: (e) => act("get", { scope: "season", season: g.season }, e.currentTarget) },
-          `Get the ${g.missing} missing`, el("span", { class: "visually-hidden", text: ` in ${g.heading}` })) : null,
+          `Find ${g.missing} wanted ${g.missing === 1 ? "episode" : "episodes"}`, el("span", { class: "visually-hidden", text: ` in ${g.heading}` })) : null,
         g.missing ? el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: () => chooseDownload({ scope: "season", season: g.season }, g.heading) },
           "Choose a download", el("span", { class: "visually-hidden", text: ` for ${g.heading}` })) : null,
         watchedButton(g.watched, g.heading)) : null,
@@ -338,10 +338,22 @@ function playNote(item) {
   return null;
 }
 
+// How many things on this page are wanted, for the Find button (one word for the state: Wanted).
+function wantedCount(item) {
+  return item.lists.flatMap((l) => l.rows).filter((r) => r.status === "Wanted").length;
+}
+
+// One verb for searching, with the count: Find it, Find wanted episodes (7), Find wanted albums (3).
+function findLabel(item, wanted) {
+  const [one, many] = { tv: ["wanted episode", "wanted episodes"], music: ["wanted album", "wanted albums"], radio: ["wanted episode", "wanted episodes"] }[ITEM_TAB] || [];
+  return many && wanted ? `Find ${wanted === 1 ? one : many} (${wanted})` : many ? `Find ${many}` : "Find it";
+}
+
 function head(item) {
   const fan = item.poster ? el("div", { class: "cover-fan lib-fan", "aria-hidden": "true" },
     el("img", { src: item.poster, alt: "", decoding: "async", onerror: (e) => e.target.closest(".cover-fan")?.remove() })) : null;
   const can = item.can || {};
+  const wanted = wantedCount(item);
   // DASH-158: how Reelix follows a radio show, changed here.
   const follow = ITEM_TAB === "radio" && item.following ? (() => {
     const pick = el("select", { class: "select", id: "radio-follow", "aria-label": "Following" },
@@ -369,16 +381,16 @@ function head(item) {
   const play = ITEM_TAB === "films" ? playLink(item.play, item.jf, item.title, { primary: !can.get }) : null;
   const actions = [
     play,
-    can.get ? el("button", { type: "button", class: "btn btn--primary", onclick: (e) => act("get", {}, e.currentTarget) },
-      icon("download"), ITEM_TAB === "tv" ? "Get the missing episodes" : "Get it") : null,
+    can.get || (ITEM_TAB === "radio" && wanted) ? el("button", { type: "button", class: "btn btn--primary", onclick: (e) => act("get", {}, e.currentTarget) },
+      icon("search"), findLabel(item, wanted)) : null,
     item.listen ? newTabLink(item.listen.href, item.listen.label, { className: can.get ? "btn" : "btn btn--primary" }) : null,  // one primary (DASH-309, R9)
     follow,
     keep,
     item.can ? el("button", { type: "button", class: "btn", "aria-pressed": String(!!can.follow),
       onclick: (e) => act(can.follow ? "unfollow" : "follow", {}, e.currentTarget) }, can.follow ? "Stop following" : "Follow") : null,
+    watchedButton(item.watched, item.title, false),
     ITEM_TAB === "films" && !can.has_file ? el("button", { type: "button", class: "btn", onclick: () => chooseDownload({ scope: "item" }, item.title) },
       icon("list"), "Choose a download") : null,
-    watchedButton(item.watched, item.title, false),
     can.change ? el("button", { type: "button", class: "btn btn--quiet", onclick: (e) => qualityAndFolder(item, e.currentTarget) },
       icon("sliders-horizontal"), "Quality and folder") : null,
     item.open ? newTabLink(item.open.href, item.open.label, { className: "btn btn--quiet" }) : null,

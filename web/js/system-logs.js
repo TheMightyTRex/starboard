@@ -91,10 +91,6 @@ function renderHead() {
     : []));
 }
 
-function notice(tone, title, text) {
-  return el("div", { class: "notice", "data-tone": tone, role: "status" }, icon(tone === "info" ? "info" : "triangle-alert"),
-    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text })));
-}
 
 // A saved setting says so beside its control (DASH-309, R5): the select is drawn again, keeps focus, and has the note.
 async function setDetail(mode) {
@@ -119,7 +115,7 @@ function renderReport() {
   copy.addEventListener("click", async () => {
     try {
       const text = await (await fetch("/api/logs/report", { credentials: "same-origin" })).text();
-      await navigator.clipboard.writeText(text);
+      if (!await copyText(text)) throw new Error("not copied");
       // Beside the button, not a toast (R5).
       const note = copy.parentElement.querySelector(".saved-note") || el("span", { class: "saved-note", hidden: true });
       copy.parentElement.append(note);

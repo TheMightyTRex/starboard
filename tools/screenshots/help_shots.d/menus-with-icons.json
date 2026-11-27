@@ -1,0 +1,64 @@
+{
+  "shots": [
+    {
+      "topic": "menus-with-icons",
+      "file": "menus-with-icons-1-computer.png",
+      "page": "settings-general-hours.html",
+      "height": 520,
+      "run": "await new Promise(r => setTimeout(r, 900));",
+      "marks": [
+        {
+          "t": "$nav[aria-label='General'] a[aria-current]",
+          "step": 1,
+          "side": "bottom",
+          "tail": 90
+        }
+      ],
+      "steps": [
+        1
+      ],
+      "alt": "Settings, General, on a computer: every tab shows its icon and its name, and the Hours tab is outlined (step 1)"
+    },
+    {
+      "topic": "menus-with-icons",
+      "file": "menus-with-icons-2-phone.png",
+      "page": "settings-general-hours.html",
+      "height": 640,
+      "run": "await new Promise(r => setTimeout(r, 900));",
+      "marks": [
+        {
+          "t": "$nav[aria-label='General'] a[aria-current]",
+          "step": 2,
+          "side": "bottom",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        2
+      ],
+      "alt": "Settings, General, on a phone: icons only, with the Hours tab showing its name (step 2)",
+      "width": 390
+    },
+    {
+      "topic": "menus-with-icons",
+      "file": "menus-with-icons-3-focus-dark.png",
+      "page": "settings-general-hours.html",
+      "height": 640,
+      "run": "await new Promise(r => setTimeout(r, 900));const t = document.querySelector('nav[aria-label=\"General\"] a[href*=\"alerts\"]'); t.focus(); t.dataset.shot = 'focus'; await new Promise(r => setTimeout(r, 400));",
+      "marks": [
+        {
+          "t": "$a[data-shot=focus]",
+          "step": 3,
+          "side": "bottom",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        3
+      ],
+      "alt": "The same phone tabs in the Dark theme: the Alerts tab has focus and shows its name (step 3)",
+      "width": 390,
+      "scheme": "dark"
+    }
+  ]
+}

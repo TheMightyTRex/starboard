@@ -98,9 +98,17 @@ const measure = () => page.evaluate(() => {
     for (const nav of document.querySelectorAll(".site-header .menu-tabs")) {
       if (!shown(nav)) { hidden = true; continue; }
       const n = nav.getBoundingClientRect();
+      // A 2nd level row that scrolls sideways (26 November 2026) may have tabs past its edge, with a fade; what must hold is that
+      // each tab is 44px wide and the current tab is fully in view.
+      const scrolls = !!nav.closest(".site-header__tabs") && nav.scrollWidth > nav.clientWidth + 1;
       for (const a of nav.querySelectorAll("a")) {
         const r = a.getBoundingClientRect();
         if (r.width < 1) continue;
+        if (scrolls) {
+          if (r.width < 43.9) out.push(["H2", `${nav.getAttribute("aria-label")} menu: ${name(a)} is under 44px wide (${Math.round(r.width)}px)`]);
+          if (a.getAttribute("aria-current") === "page" && (r.left < n.left - 1 || r.right > n.right + 1)) out.push(["H2", `${nav.getAttribute("aria-label")} menu: the current tab ${name(a)} is not in view`]);
+          continue;
+        }
         if (r.left < n.left - 1 || r.right > n.right + 1) out.push(["H2", `${nav.getAttribute("aria-label")} menu: ${name(a)} is cut off (${Math.round(Math.max(0, Math.min(r.right, n.right) - Math.max(r.left, n.left)))} of ${Math.round(r.width)}px show)`]);
       }
     }

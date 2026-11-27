@@ -78,6 +78,7 @@ for screen readers only, so each makes sense on its own. Cards update quietly in
 
 ## Find out more
 
+- [Use menus that show icons only](menus-with-icons.md)
 - [Accessibility in Starboard](overview.md)
 - [Use only a keyboard](use-only-a-keyboard.md)
 - [How Starboard is tested](how-starboard-is-tested.md)

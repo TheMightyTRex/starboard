@@ -7,11 +7,6 @@ const KINDS = { Series: ["Series", "tv"], Film: ["Films", "film"], Artist: ["Mus
 
 const resultKey = (r) => `${r.service}|${r.key}`;
 
-function notice(tone, title, text, extra = null) {
-  const iconName = { success: "circle-check", warning: "triangle-alert", danger: "circle-x" }[tone] || "info";
-  return el("div", { class: "notice", "data-tone": tone, role: "status" }, icon(iconName),
-    el("div", { class: "notice__body" }, title ? el("span", { class: "notice__title", text: title }) : null, text ? el("p", { text }) : null), extra);
-}
 
 async function getConfig() {
   if (!config) config = await api("/api/config");
@@ -141,7 +136,7 @@ function fillSelect(select, items, value, label) {
 function lead(r) {
   return el("div", { class: "side-panel__lead" }, cover(r, "cover"),
     el("div", { class: "media-panel-lead__text" },
-      titleChip(el("h3", { text: titleWithYear(r) }), r.in_library ? chip(`In ${r.service_name}`, "success") : chip("Not in library", "muted")),
+      titleChip(el("h3", { text: titleWithYear(r) }), r.in_library ? chip(`In ${r.service_name}`, "success") : chip("Not added", "muted")),
       el("span", { class: "small muted", text: metaLine(r) })));
 }
 

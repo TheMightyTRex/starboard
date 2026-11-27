@@ -5,9 +5,11 @@ addresses (169.254.x.x, fe80::), which include the cloud metadata services, mult
 and the metadata services' names. Redirects are checked the same way (services._KeepKeysHome), and an app's request
 that carries its key is never followed to another server.
 """
+import http.client
 import ipaddress
 import socket
 import urllib.parse
+import urllib.request
 
 METADATA_NAMES = {"metadata", "metadata.google.internal", "metadata.goog", "instance-data", "instance-data.ec2.internal"}
 TIMEOUT = 2
@@ -52,3 +54,56 @@ def check_url(url, resolve=None):
         why = bad_address(ip)
         if why:
             raise ValueError(f"Starboard does not call {host}: {why}")
+
+
+# One guarded opener for what Starboard fetches from an address someone typed or a catalogue listed: a plug-in's manifest, a
+# catalogue and a logo (DASH-603, security audit F4). check_url looks at the name before the request, but a redirect, or a name
+# whose answer changes between the check and the connection (DNS rebinding), would get past it. This opener checks again at
+# both points: every redirect must be https and pass check_url, and the connection goes to an address that was just checked.
+
+def checked_connect(address, timeout=None, source_address=None):
+    """Resolves the name once, refuses an address check_url would refuse, and connects to that very address."""
+    host, port = address[0], address[1]
+    infos = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
+    last = None
+    for info in infos:
+        ip = info[4][0]
+        why = bad_address(ip)
+        if why:
+            raise ValueError(f"Starboard does not call {host}: {why}")
+        try:
+            return socket.create_connection((ip, port), timeout, source_address)
+        except OSError as e:
+            last = e
+    raise last or OSError(f"{host} did not answer")
+
+
+class _CheckedHTTPS(http.client.HTTPSConnection):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._create_connection = checked_connect  # the name stays the TLS name; only the address connected to is pinned
+
+
+class _GuardedHTTPS(urllib.request.HTTPSHandler):
+    def https_open(self, req):
+        return self.do_open(_CheckedHTTPS, req, context=self._context)
+
+
+class _GuardedRedirect(urllib.request.HTTPRedirectHandler):
+    max_redirections = 3
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not str(newurl).lower().startswith("https://"):
+            return None  # never from https to http
+        try:
+            check_url(newurl)
+        except ValueError:
+            return None
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def guarded_opener():
+    """An opener for https addresses only: redirects checked (3 at most, https only), connections made to checked addresses."""
+    opener = urllib.request.build_opener(_GuardedRedirect, _GuardedHTTPS)
+    opener.handlers = [h for h in opener.handlers if not isinstance(h, urllib.request.HTTPHandler)]  # no plain http at all
+    return opener

@@ -695,7 +695,7 @@ function topicOf(node) {
 // A plug-in's own page, Settings, Plug-ins, <its name> (DASH-318), laid out like every Settings page (DASH-307):
 // General first (its state and its one button, versions, jobs, what it may do and Remove, a card each), then its web
 // page, styles, settings by group, its screens and its own buttons (Actions).
-function pluginPage(p, redraw, ms = null) {
+function pluginPage(p, redraw, ms = null, read = null) {
   const said = el("p", { class: "small", role: "status" });  // what a button did, said here rather than in a toast
   const buttons = (p.actions || []).map((a) => {
     const b = el("button", { type: "button", class: "btn", disabled: p.state !== "enabled" }, a.label);
@@ -737,6 +737,7 @@ function pluginPage(p, redraw, ms = null) {
       (p.update && st.action !== "update") || (st.can_roll_back && st.action !== "rollback")
         ? el("div", { class: "actions" }, p.update && st.action !== "update" ? updateButton(p, redraw) : null,
           st.can_roll_back && st.action !== "rollback" ? rollbackButton(p, redraw) : null) : null,
+      catalogueCheck({ read, onDone: redraw, id: `pl-${p.id}-check-now` }),
       p.from_zip ? updateFromZip(p, redraw) : updateFromAddress(p, redraw)) : null;
   const jobs = p.jobs?.length ? section(`pl-${p.id}-jobs`, "Jobs", "Starboard runs these for it, and lists them in System with when each last ran.",
     el("ul", {}, p.jobs.map((j) => el("li", { text: j }))), el("a", { class: "btn btn--quiet", href: "/system.html#jobs-panel" }, "Open System, Jobs")) : null;
@@ -1710,6 +1711,7 @@ async function startCatalogue() {
     try { [r, c] = await Promise.all([api("/api/plugins"), api("/api/plugins/catalogue")]); }
     catch (e) { holder.replaceChildren(notice("danger", "Could not load the catalogue", e.message)); return; }
     holder.removeAttribute("aria-busy");
+    $("#catalogue-check")?.replaceChildren(catalogueCheck({ read: c.read, onDone: draw, id: "pl-check-now" }));
     const ORDER = ["Appearance", "Look", "Accessibility", "Jellyfin", "Downloads", "Network", "Home", "System", "Apps you can add"];
     const rank = (k) => (ORDER.includes(k) ? ORDER.indexOf(k) : ORDER.length);
     const byKind = (list) => {
@@ -1771,7 +1773,7 @@ async function startCatalogue() {
           cat.own ? "Made by TheMightyTRexUK and tested with each Starboard release."
             : cat.builtin ? `From ${cat.url.split("/")[2]}, chosen by you. Check each plug-in's warning before you install it.`
             : `From ${cat.url.split("/")[2]}, added by you. Starboard did not make these: check each one's warning before you install it.`,
-          cat.error ? notice("warning", "This catalogue did not answer", `${cat.error}. Showing the list from the last time it did.`) : null,
+          cat.error ? notice("warning", "This catalogue did not answer", `${cat.error.replace(/^That address did not answer: /, "")}. ${cat.read_at ? `Showing the list from ${timeAgo(cat.read_at * 1000)}.` : "Showing the list that comes with Starboard."}`) : null,
           ...recommended(rows),
           rows.length ? byKind(rows.filter((e) => !e.recommended)) : el("p", { class: "small muted", text: "It lists no plug-ins." }));
       }),
@@ -1837,7 +1839,7 @@ function sourcesSection(cats, redraw, choices = []) {
         el("div", { class: "row__meta row__meta--wrap", text: [`${cat.count} plug-in${cat.count === 1 ? "" : "s"}`, cat.url, cat.error && STATUS.notResponding[0]].filter(Boolean).join(" · ") })),
       el("div", { class: "row__side" }, side));
   });
-  return section("pl-sources", "Catalogue sources", "Where this page finds plug-ins. Add another catalogue by its link; each is read at most once a day.",
+  return section("pl-sources", "Catalogue sources", "Where this page finds plug-ins. Add another catalogue by its link. Each is read again every 6 hours, or when you press Check now.",
     ticks.length ? el("ul", { class: "settings-rows", "aria-label": "Built-in catalogues" }, ticks) : null,
     el("ul", { class: "rows" }, rows), form);
 }
@@ -1867,13 +1869,14 @@ async function startPluginPage() {
     else title.parentElement.firstElementChild.replaceWith(pluginLogo(p, { alt: true }));
     $("#plugin-summary").textContent = p.description || "";
     document.title = document.title.replace(/^[^·]*·/, `${p.name} ·`);
-    holder.replaceChildren(...pluginPage(p, draw, r.media_server));
+    holder.replaceChildren(...pluginPage(p, draw, r.media_server, r.catalogue_read));
   };
   draw();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   if ($("#plugins-sections")) startPlugins();
+  if ($("#plugin-updates")) pluginUpdatesArea({ mount: $("#plugin-updates") });
   if ($("#plugins-catalogue")) startCatalogue();
   if ($("#plugin-page")) startPluginPage();
 });

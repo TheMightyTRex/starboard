@@ -44,15 +44,21 @@ class PluginTabIcons(unittest.TestCase):
         self.assertIn('a.querySelector(".menu-tabs__label").textContent = p.name', js)
         self.assertIn('svg.setAttribute("aria-hidden", "true")', js)  # icon() is decorative beside the name
 
-    def test_icons_only_tabs_are_44px_wide_and_name_the_current_and_focused_tab(self):
+    def test_every_second_level_row_condenses_the_same_way(self):
+        """Design system menu rows (owner, 26 November 2026): the rule the Plug-ins row had is the rule of every 2nd level row."""
         css = read("web", "css", "components.css")
-        tab = re.search(r"\.menu-tabs--scroll\.is-compact a \{(.*?)\}", css, re.S).group(1)
+        tab = re.search(r"\.site-header__tabs \.menu-tabs\.is-compact a \{(.*?)\}", css, re.S).group(1)
         self.assertIn("min-width: var(--control-h)", tab)
         self.assertIn("flex: none", tab)
-        self.assertIn('.menu-tabs--scroll.is-compact a[aria-current="page"] .menu-tabs__label', css)
-        self.assertIn(".menu-tabs--scroll.is-compact a:focus-visible .menu-tabs__label", css)
-        self.assertIn('nav.classList.add("menu-tabs--scroll")', read("web", "js", "common.js"))
-        self.assertIn("a.title = name", read("web", "js", "components.js"))
+        self.assertIn('.site-header__tabs .menu-tabs.is-compact a[aria-current="page"] .menu-tabs__label', css)
+        self.assertIn(".site-header__tabs .menu-tabs.is-compact a:focus-visible .menu-tabs__label", css)
+        self.assertNotIn("menu-tabs--scroll", css + read("web", "js", "common.js"))
+        js = read("web", "js", "components.js")
+        self.assertIn("a.dataset.tooltip = a.textContent.trim()", js)
+        self.assertIn("ArrowRight", js)
+
+    def test_plug_in_tabs_added_after_the_header_was_measured_are_measured_again(self):
+        self.assertIn("SharedComponents?.fitHeader(nav.closest", read("web", "js", "common.js"))
 
     def test_a_notice_with_buttons_puts_them_on_their_own_row_on_a_phone(self):
         self.assertRegex(read("web", "css", "app.css"), r"max-width: 600px\) \{\s*\.notice > \.actions \{ grid-column: 2 / -1; \}")

@@ -60,7 +60,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     finally { show.disabled = false; }
   };
   show.addEventListener("click", load);
-  copy.addEventListener("click", async () => { try { await navigator.clipboard.writeText(got.lines.join("\n")); toast("Log lines copied"); } catch { /* the lines can be selected by hand */ } });
+  copy.addEventListener("click", async () => { if (await copyText(got.lines.join("\n"))) toast("Log lines copied"); else problem("Could not copy the log lines. Select them by hand"); });
   $("#applogs-body").replaceChildren(
     el("div", { class: "form-stack" }, label("App", pick), label("How many", lines)),
     el("div", { class: "actions" }, show), said, viewer);

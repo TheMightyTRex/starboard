@@ -21,7 +21,7 @@ albums or reading order.
    **My library** shows them all as covers, A to Z.
 3. Optional: to find one title, type part of its name in **Search your films** (or series, books and so on).
    The wall shows only what matches as you enter it.
-4. Optional: to show only some, select a filter, such as **Not in library** or **Not released**. Each filter says how many it
+4. Optional: to show only some, select a filter, such as **Wanted** or **Not released**. Each filter says how many it
    holds. Select it again to show everything.
 ![The Films wall with example data at the letter M, with steps 5 and 6 outlined](../images/browse-your-library-2-letters.png)
 
@@ -45,10 +45,11 @@ albums or reading order.
 
 A title's page has buttons for what Reelix can do with it. Each one shows only when it applies.
 
-- **Get it**, or **Get the missing episodes** for a series: Reelix searches for it now. A season you do not
-  have all of has **Get the** number **missing**.
+- **Find it**, or **Find wanted episodes** with a number for a series, **Find wanted albums** for an artist and
+  **Find wanted episodes** for a radio show: Reelix searches for it now. A season you do not have all of has
+  **Find** a number **wanted episodes**. An artist's button searches for up to 100 albums at a time.
 - **Choose a download**, for a film you do not have or a season: Reelix lists what its sites have, best first.
-  Select **Get this one**. A copy Reelix turned down says why, and has **Get it anyway**.
+  Select **Use this one**. A copy Reelix turned down says why, and has **Use it anyway**.
 - **Follow** or **Stop following**: whether Reelix keeps searching for new episodes, releases or books.
 - **Watched** or **Not watched**: from Jellyfin. Select it to change it, for a title, a season or an episode.
   It shows only when Jellyfin has the title.

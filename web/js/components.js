@@ -966,6 +966,48 @@
      A level 2 menu (.site-header__tabs) shows icons only when its names do not fit. It measures again whenever
      anything in the header changes size: the window, the text size or spacing chosen in Display, a name arriving
      after the page loads, the font loading. One ResizeObserver, no timers. */
+  /* A menu row that shows icons only (DASH-437, 26 November 2026): each icon-only tab gets the tooltip (data-tooltip, on hover and
+     keyboard focus) except the current one, which shows its name; the current tab is brought into view when the row changes
+     size; a fade shows which edge has more; the arrow keys, Home and End move between the tabs (Tab still reaches each one).
+     The row's own listeners are added once. */
+  function tabsEdges(nav) {
+    const compact = nav.classList.contains("is-compact");
+    for (const a of nav.querySelectorAll("a")) {
+      if (compact && a.getAttribute("aria-current") !== "page" && a !== document.activeElement) a.dataset.tooltip = a.textContent.trim();
+      else delete a.dataset.tooltip;
+    }
+    if (!nav.dataset.tabsReady) {
+      nav.dataset.tabsReady = "1";
+      nav.addEventListener("keydown", (e) => {
+        const links = [...nav.querySelectorAll("a")], at = links.indexOf(document.activeElement);
+        const to = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: links.length - 1 }[e.key];
+        if (at < 0 || e.altKey || e.ctrlKey || e.metaKey || !links[to]) return;
+        e.preventDefault();
+        links[to].focus();
+      });
+      nav.addEventListener("focusin", (e) => {
+        delete e.target.dataset.tooltip;
+        requestAnimationFrame(() => {  // keep the tab with focus clear of the fade
+          const r = document.activeElement.getBoundingClientRect(), b = nav.getBoundingClientRect(), pad = nav.matches(".can-scroll-start, .can-scroll-end") ? 28 : 0;
+          if (r.left < b.left + pad) nav.scrollLeft += r.left - b.left - pad;
+          else if (r.right > b.right - pad) nav.scrollLeft += r.right - b.right + pad;
+        });
+      });
+      nav.addEventListener("focusout", () => tabsEdges(nav));
+      nav.addEventListener("scroll", () => tabsFade(nav), { passive: true });
+    }
+    const cur = nav.querySelector('a[aria-current="page"]');
+    if (compact && cur && !nav.contains(document.activeElement)) {  // the current tab comes into view
+      const r = cur.getBoundingClientRect(), b = nav.getBoundingClientRect();
+      if (r.left < b.left || r.right > b.right) nav.scrollLeft += r.left - b.left - (b.width - r.width) / 2;
+    }
+    tabsFade(nav);
+  }
+  function tabsFade(nav) {
+    const max = nav.scrollWidth - nav.clientWidth;
+    nav.classList.toggle("can-scroll-start", max > 1 && nav.scrollLeft > 1);
+    nav.classList.toggle("can-scroll-end", max > 1 && nav.scrollLeft < max - 1);
+  }
   const HEADER_STEPS = ["is-search-folded", "is-actions-compact", "is-crowded"];
   function fitHeader(header) {
     if (!header || header.classList.contains("is-search-open")) return;
@@ -980,12 +1022,7 @@
     header.querySelectorAll(".menu-tabs").forEach((nav) => nav.classList.remove("is-compact"));
     header.querySelectorAll(".site-header__tabs .menu-tabs").forEach((nav) => {
       nav.classList.toggle("is-compact", overflows(nav));
-      // Icons only: each tab's name is its tooltip (a title this code added is taken away again when the names fit).
-      nav.querySelectorAll("a").forEach((a) => {
-        const name = a.querySelector(".menu-tabs__label")?.textContent.trim();
-        if (nav.classList.contains("is-compact") && name && !a.title) { a.title = name; a.dataset.autoTitle = ""; }
-        else if (!nav.classList.contains("is-compact") && "autoTitle" in a.dataset) { a.removeAttribute("title"); delete a.dataset.autoTitle; }
-      });
+      tabsEdges(nav);
     });
     const steps = [() => main?.classList.add("is-compact"), ...HEADER_STEPS.map((step) => () => header.classList.add(step))];
     for (const step of steps) {
@@ -1025,6 +1062,14 @@
   const num = (n) => Number(n).toLocaleString("en-GB");
   const fold = (s) => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const andList = (list) => (list.length < 2 ? list.join("") : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`);
+  /* Counts and clock times in words. plural(3, "disk") is "3 disks"; plural(1, "series", "series") is "1 series"; the
+     words may be one array, plural(n, ["film", "films"]). The number has its thousands separator (1,250 files).
+     clock(date) is the time of day as 14:05, the same everywhere; with no date it is now. */
+  const plural = (n, one, many) => {
+    const [single, several] = Array.isArray(one) ? one : [one, many || `${one}s`];
+    return `${num(n)} ${Number(n) === 1 ? single : several}`;
+  };
+  const clock = (when = new Date()) => new Date(when).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   /* Say something through the shared polite region (or the alert region when urgent). Never put a secret in it. */
   function say(text, urgent = false) {
     const region = announcer(urgent ? "toast-alert" : "toast-status", urgent ? "alert" : "status");
@@ -1082,6 +1127,48 @@
       banner.hidden = true;
       banner.replaceChildren();
     };
+  }
+
+  /* Waiting mark builder: wait(words, options) returns the .wait line (the ring, then the words) for a short wait, so a
+     page never writes a plain "Loading…". Say what is loading ("Loading the releases"). options: status (true puts
+     role="status" on the words, for words that change), id. A busy button needs no builder: aria-busy="true". */
+  function wait(words, options = {}) {
+    const box = document.createElement("span");
+    box.className = "wait";
+    if (options.id) box.id = options.id;
+    const mark = document.createElement("span");
+    mark.className = "wait__mark";
+    mark.setAttribute("aria-hidden", "true");
+    const text = document.createElement("span");
+    text.textContent = words;
+    if (options.status) text.setAttribute("role", "status");
+    box.append(mark, text);
+    return box;
+  }
+
+  /* Notice builder: notice(tone, title, text, options) returns a .notice, so every page draws one in the same way.
+     tone: success, info (no data-tone), warning, danger or muted; one icon each. text is words or nodes, and may be
+     left out. options: actions (a button or link, or an array, in the third column), after (nodes under the text),
+     icon (another icon name), alert (role="alert", for an error that blocks; the default is role="status"), id,
+     tabindex, heading ("h3": the title is a heading). */
+  const NOTICE_ICONS = { success: "circle-check", info: "info", warning: "triangle-alert", danger: "circle-alert", muted: "info" };
+  function notice(tone, title, text, options = {}) {
+    const box = document.createElement("div");
+    box.className = "notice";
+    if (tone && tone !== "info") box.dataset.tone = tone;
+    box.setAttribute("role", options.alert ? "alert" : "status");
+    if (options.id) box.id = options.id;
+    if (options.tabindex != null) box.tabIndex = options.tabindex;
+    box.innerHTML = `${sprite(options.icon || NOTICE_ICONS[tone] || "info")}<div class="notice__body"></div>`;
+    const body = box.lastChild;
+    if (title) body.append(Object.assign(document.createElement(options.heading || "span"), { className: "notice__title", textContent: title }));
+    if (text) {
+      const p = body.appendChild(document.createElement("p"));
+      p.append(...[].concat(text).map((x) => (x instanceof Node ? x : String(x))));
+    }
+    body.append(...[].concat(options.after || []).filter(Boolean));
+    box.append(...[].concat(options.actions || []).filter(Boolean));
+    return box;
   }
 
   /* Tooltip: data-tooltip="Connected" on anything that shows only an icon (an icon button, a .status-icon with
@@ -1209,7 +1296,10 @@
   window.SharedComponents = { setup, applyTheme, creepProgress, setupHeaderFit, fitHeader, motionStill,
     setupSideTrees, setupSolvers, setupSearch, setupSearchIcons, setupSortables, openLayer, toast, savedNote,
     copyText, azLetter, azJump, azGo, loadMore, pageBanner, setupTooltips, say, addSetup, 
-    kit: { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus } };
+    kit: { focusable, announcer, toast, copyText, sprite, escapeHtml, num, fold, andList, say, ownStatus, notice } };
+  Object.assign(window.SharedComponents, { wait }); // the waiting mark builder
+  Object.assign(window.SharedComponents, { notice }); // the notice builder
+  Object.assign(window.SharedComponents, { plural, clock, num }); // counts and clock times in words
   // An app that wires its own behaviour (Starboard's page scripts) loads this file with data-manual, or
   // sets window.SharedComponentsManual = true first, and calls setup() or openLayer() itself.
   const manual = window.SharedComponentsManual || document.currentScript?.hasAttribute("data-manual");

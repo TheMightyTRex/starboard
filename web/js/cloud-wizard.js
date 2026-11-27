@@ -104,10 +104,10 @@ async function cloudWizard({ opener = document.activeElement, startAt = "service
     const id = `${input.id}-error`;
     let node = document.getElementById(id);
     if (!node) {
-      node = el("span", { class: "field-error", id }, icon("circle-alert"), el("span"));
+      node = el("span", { class: "field-error", id });
       input.after(node);
     }
-    node.lastChild.textContent = text || "";
+    if (text) errorWords(node, text); else node.replaceChildren();
     node.hidden = !text;
     input.setAttribute("aria-invalid", text ? "true" : "false");
     const describedBy = new Set((input.getAttribute("aria-describedby") || "").split(" ").filter(Boolean));
@@ -123,7 +123,7 @@ async function cloudWizard({ opener = document.activeElement, startAt = "service
       services.map((s) => el("label", { class: "option-card" },
         el("input", { type: "radio", name: "cloud-service", value: s.id, checked: s.id === svc()?.id }),
         el("strong", { text: s.name }), el("small", { text: s.line }))));
-    const err = el("p", { class: "field-error", id: "cloud-service-error", hidden: true }, icon("circle-alert"), el("span", { text: "Choose a service" }));
+    const err = errorWords(el("p", { class: "field-error", id: "cloud-service-error", hidden: true }), "Choose a service");
     const go = el("button", { type: "button", class: "btn btn--primary", text: "Continue" });
     go.addEventListener("click", () => {
       const v = cards.querySelector("input:checked")?.value;
@@ -452,7 +452,7 @@ async function cloudWizard({ opener = document.activeElement, startAt = "service
       fieldError(keep, ""); fieldError(mine, "");
       const n = Number(keep.value);
       if (!Number.isInteger(n) || n < 1 || n > 50) { fieldError(keep, "Give a number from 1 to 50"); return; }
-      if (!mine.value) { fieldError(mine, "Enter your Starboard password"); return; }
+      if (!mine.value) { fieldError(mine, NEED_PASSWORD); return; }
       go.disabled = true;
       try {
         await api("/api/backup/cloud/save", { method: "POST", body: { id: st.sess.id, keep: n, password: mine.value } });
