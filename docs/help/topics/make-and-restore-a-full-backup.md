@@ -57,6 +57,12 @@ how things were before.
 
 ![Full backups in the folder with example data, with the Restored the full backup message (after step 5) outlined](../images/make-and-restore-a-full-backup-4-done.png)
 
+## Check your backups from System
+
+System, Overview has a **Backups** panel. It says when the newest full backup was made and that it was read back, whether
+full backups by themselves are set up or late, and whether the other places hold the newest one. Select **Check and
+restore backups** to open the backup page, where each full backup says **Checked** and has **Restore** beside it.
+
 ## Things to note
 
 - Nothing changes until both passwords are right and the whole backup file has been read. A damaged or cut-off

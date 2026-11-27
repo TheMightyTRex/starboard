@@ -7,6 +7,8 @@ add features.
 
 ## [Unreleased]
 
+- **Backups on System (DASH-588, DASH-381, DASH-387):** System, Overview has a Backups panel: the newest full backup and that it was read back, whether full backups by themselves are set up or late, and whether the other places hold the newest one. **Check and restore backups** opens Settings, General, Backup/Logs, where each full backup says Checked and has Restore. Starboard reads it once when the page opens.
+
 - **Phone apps for Kavita (DASH-583):** Manage apps and the Kavita plug-in's page now name KOReader and Kover for Android, and Sutra and Komic for iPhone and iPad, with what each needs: your Kavita address and Auth key, iOS 17 for Sutra, and https away from home for Komic. New help topic: Read your Kavita books and comics on your phone.
 ### Added
 - **People.** Settings, People lists the people who use your apps, and Starboard makes a long, unique password for each person in each app, shown only after you enter your Starboard password. You can enter your own password of at least 10 characters instead, and reset one later. For Jellyfin and Audiobookshelf, Starboard can also change the password in the app. For other apps it records the password. It does not yet make or remove accounts inside the apps. Find out more in [Add the people who use your apps](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/add-the-people-who-use-your-apps.md).
