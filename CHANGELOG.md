@@ -16,6 +16,7 @@ add features.
 
 - **Phone apps for Kavita (DASH-583):** Manage apps and the Kavita plug-in's page now name KOReader and Kover for Android, and Sutra and Komic for iPhone and iPad, with what each needs: your Kavita address and Auth key, iOS 17 for Sutra, and https away from home for Komic. New help topic: Read your Kavita books and comics on your phone.
 ### Added
+- **A plug-in that uses a feature that is going says so, and Starboard counts who still calls a retiring route.** The plug-in's page and the plug-in tester show one plain sentence with the day it stops. A call count for each key is kept on this computer. `python3 tools/api_compat.py --usage` lists both. Nothing is going yet.
 - **Starboard tells you when a proxy is not listed.** If a request says it was forwarded but comes from an address in neither `STARBOARD_PROXY_ADDRESSES` nor this computer, Starboard writes one warning in its log for that address, because every visitor behind it would count as one.
 - **Checks that catch a break to the public API, and a weekly compatibility run.** A check with oasdiff fails a change that would break an outside tool, with the last release as the baseline. A weekly run tries the frozen older plug-in manifests and the collection's plug-ins against main.
 - **A line on every plug-in saying what it replaces or adds to, and an icon for its tab (DASH-585, DASH-604; plug-in API 1.23).** Each plug-in in the shipped catalogue now has a line such as "Adds to Jellyfin: stops it converting files as they play", shown on the Catalogue card, in the warning before install, on the plug-in's page and in Manage. A manifest may also name one icon from Starboard's set for its tab in Settings, Plug-ins; a name that is not in the set falls back to the puzzle piece.
@@ -47,6 +48,9 @@ add features.
 - **Emby and Plex as media servers.** Both are now built-in plug-ins that the dashboard can show, read only for now. They cannot play, mark watched, show Live TV or use the Jellyfin tools.
 
 ### Changed
+- **Add the rest on a collection or series.** The button that adds what a collection, book series or audiobook series lists and Reelix does not have is now Add the rest (n), and its question says Add n films to Reelix.
+- **Radio's Find all wanted says how many shows have wanted episodes.** The button on the Radio tab now carries a count, such as Find all wanted (3 shows), and is inactive when nothing is wanted.
+
 - **One verb for searching in the Library.** Get it, Get the missing episodes, Get the n missing and Search are now Find it, Find wanted episodes with a count, Find wanted albums and Find n wanted episodes, and a radio show has Find wanted episodes too. Choose a download keeps its name, and its buttons are Use this one and Use it anyway.
 - **One set of words for what you have and want in the Library.** Every tab now says In library, Partly in library, Wanted, Downloading, Below quality, Not followed, Not added or Not released, where it said Not in library, Episodes not in library, Tracks not in library, Not wanted, Not requested and more. Wanted is now a neutral chip, not a warning.
 - **General has seven tabs.** Discover rows are now sections of Lists, and Pictures is a section of Performance, each with a list of links at the top of the page. The old addresses still open the right section.
@@ -76,12 +80,15 @@ add features.
 - **Plain English pilot.** The README and the help topics Add an app and How lean Starboard is now use shorter sentences and the active voice.
 
 ### Removed
+- **Old settings anchors.** A saved link such as `settings-general.html#gn-logs` now opens the page at the top, not at the part that moved to another page. The pages themselves and their addresses still answer, and every old page address still redirects.
 - **Settings steps for versions before 0.31.0.** The update to 0.40.0 refuses to start from a version before 0.31.0, so the old steps that brought a settings file from before 0.31.0 up to date are gone. A backup from before 0.31.0 now says to restore it on Starboard 0.31.0 first. Settings you already have, an unknown setting and an app of a kind Starboard does not know are never changed or removed.
+
 - **Unused code.** Eight unused names and one unused option are gone from Starboard's code, and one condition that could never be true is gone from the tool that builds the AI-readable help. Nothing you see changes.
 - **Old release note files and two unused documents.** The notes files of 57 releases from 0.5.0 to 0.28.0, an unused picture of all the screenshots and the design record for building plug-ins in isolation are gone from the repository. `CHANGELOG.md` and the notes in Starboard still list every release, and the files stay in the history. The help and the app do not change.
 - **Four hand-run test scripts.** The scripts that tried Bring in on shares, copies off this computer, connecting a cloud service and a full restore by hand, on made-up data, are gone from the tools folder. The tests that run with every change stay, and the scripts stay in the history. The help and the app do not change.
 
 ### Fixed
+- **The TV, Music and Radio pages no longer scroll sideways at large text.** A card now shrinks to its column and wraps its status and details, so a wide chip cannot push the page wider than the window.
 - **The hover outline of a topic tab meets the line under the tabs (issue #366):** the outline stopped 3px above the line under the menu of topics on a settings page. It now reaches it exactly, in Light, Dark and both High contrast styles. The tab keeps its size, the selected tab keeps its underline, and the focus ring is as it was. The same fix is in the design system's page topics.
 - **Field errors say "Error:" to a screen reader.** An error under a field, such as an empty password, now starts with the hidden word Error: , as the design system asks, so it is not read as a plain sentence. The nine places that drew one by hand share one function.
 - **An artist's Get it searches for every wanted album, up to 100.** It used to stop at 20 without saying so. Now it sends one request, and says how many are left when there are more than 100.
