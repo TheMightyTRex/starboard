@@ -1070,6 +1070,13 @@ function renderSchedule(s) {
   if (box.hidden) return;
   const hours = `${hourText(s.start)} to ${hourText(s.end)}`;
   const settings = el("a", { href: "/settings-downloads-hours.html", text: "Settings, Downloads, Download hours" });
+  if (s.held?.held) {  // DASH-572: a plug-in holds heavy work, such as the UPS and power plug-in on battery
+    box.dataset.tone = "warning";
+    $("#schedule-chip").replaceChildren(chip("Paused", "warning"));
+    $("#schedule-text").replaceChildren(`Downloads are paused: ${s.held.reason.toLowerCase()} (${s.held.by}). They start again by themselves when that ends.`);
+    $("#schedule-actions").replaceChildren();
+    return;
+  }
   box.dataset.tone = !s.enabled ? "neutral" : s.mode === "run" ? "success" : "warning";
   if (!s.enabled) {
     $("#schedule-chip").replaceChildren(chip(...STATUS.inactive));

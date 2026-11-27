@@ -73,27 +73,6 @@ def share(where):
         os.replace(tmp, dst)
 
 
-_ONE = r'(\s*- )"([^"\n]*)/(?:settings\.json|key|jellyfin\.json):/run/starboard/(?:settings\.json|key|jellyfin\.json):ro"\n'
-OLD_MOUNTS = re.compile(rf"^{_ONE}(?:\s*- \"[^\"\n]*/(?:settings\.json|key|jellyfin\.json):/run/starboard/[a-z.]+:ro\"\n)*", re.M)
-
-
-def upgrade_mounts(where):
-    """A Compose file from before DASH-357 mounts settings.json, key and jellyfin.json one by one, so a running
-    plug-in kept the file it started with. Rewrites each container's lines as the one run/ folder. True if changed."""
-    path = os.path.join(where, "compose.yaml")
-    try:
-        with open(path, encoding="utf-8") as f:
-            text = f.read()
-    except OSError:
-        return False
-    new = OLD_MOUNTS.sub(lambda m: f'{m.group(1)}"{m.group(2)}/run:/run/starboard:ro"\n', text)
-    if new == text:
-        return False
-    share(where)
-    _write(path, new, 0o644)
-    return True
-
-
 def _read(path, default=None):
     try:
         with open(path, encoding="utf-8") as f:
@@ -1224,7 +1203,6 @@ def enable(data_dir, pid, helper=None, services=None):
         except (ValueError, OSError) as e:
             set_state(data_dir, pid, "failed", str(e))
             raise ValueError(f"It did not start: {e}") from None
-    upgrade_mounts(where)
     share(where)  # also after Roll back, which moves files rather than writing them
     from . import plugin_socket
     plugin_socket.serve(data_dir, pid)  # DASH-482: its API socket, there before its containers start
@@ -1397,27 +1375,18 @@ def refresh_builtins(data_dir, media_dir, services, helper=None, host=None):
 
 
 def upgrade_all(data_dir, services, helper=None):
-    """At each start, for plug-ins added before DASH-357: run/ is filled and the Compose file mounts it; an active
-    one is started again once so it reads the folder. Returns the names started again."""
-    done = []
+    """At each start: every plug-in's files are written again as they are now (Reelix's key and the news servers, API 1.6)
+    and shared into run/, where its containers read them. The rewriting of Compose files from before DASH-357 is gone
+    (DASH-596): any version since 0.17.0 has done it at every start."""
     for p in basics(data_dir):
         where = folder(data_dir, p["id"])
         try:
-            if p["state"] == "enabled":  # Reelix's key and the news servers as they are now (API 1.6)
+            if p["state"] == "enabled":
                 write_reelix(data_dir, p["id"], services)
                 write_usenet(data_dir, p["id"], services)
             share(where)
-            changed = upgrade_mounts(where)
         except OSError as e:
             set_state(data_dir, p["id"], p["state"], f"Its files could not be shared: {e}")
-            continue
-        if changed and p["state"] == "enabled":
-            try:
-                enable(data_dir, p["id"], helper=helper, services=services)
-                done.append(p["name"])
-            except ValueError:
-                pass
-    return done
 
 
 def stop_all(data_dir, helper=None, keep=()):
@@ -1443,6 +1412,8 @@ def public_settings(data_dir, pid, manifest=None):
         shown = v
         if v is None and s.get("type") == "schedule" and not plugins.schedule_problem(s.get("default")):
             shown = s["default"]  # the schedule the job really uses until one is saved (plugin_life.schedule_of), not a guess in the page
+        if v is None and s.get("type") == "time" and isinstance(s.get("default"), str) and re.match(plugins.TIME, s["default"]):
+            shown = s["default"]  # API 1.24: the time the plug-in uses until one is saved
         out.append({**{k: s[k] for k in ("key", "label", "type", "hint", "min", "max", "unit", "required", "group") if k in s},
                     **({"choices": [{"value": v, "label": w} for v, w in plugins.choices(s)]} if s["type"] == "choice"
                        else {"choices": s["choices"]} if "choices" in s else {}),
@@ -1485,6 +1456,9 @@ def save_settings(data_dir, pid, incoming):
                 v = v.rstrip("/") or "/"
                 if ".." in v.split("/") or not any(v == top or v.startswith(top + "/") for top in inside):
                     raise ValueError(f"{s['label']}: choose a folder inside {', '.join(inside) or 'the media folder'}")
+        elif t == "time":  # API 1.24 (DASH-572): one time of day, such as 22:00
+            if not isinstance(v, str) or not re.match(plugins.TIME, v):
+                raise ValueError(f"{s['label']}: give a time such as 22:00")
         elif t == "schedule":  # API 1.14 (DASH-432): every day, week or month at a time, checked before it is kept
             problem = plugins.schedule_problem(v)
             if problem:

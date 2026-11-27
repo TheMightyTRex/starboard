@@ -56,6 +56,12 @@ A title's page has buttons for what Reelix can do with it. Each one shows only w
 - **Delete**: Reelix stops following the title and takes it out of your library. Tick **Delete its files too**
   to remove the files as well.
 
+
+To change several titles at once, select **Select several** at the top of any tab. A tick appears on each cover.
+Tick some, then select **Follow** or **Stop following**. Films, series, artists, books and audiobooks also have
+**Delete**. A radio show cannot be deleted here. Starboard changes up to 100 at a time. Select **Done** when you have
+finished.
+
 ## Keep your favourite view
 
 When you change the order, the layout, the cover size or a filter, **Save this view as default** appears. Select
