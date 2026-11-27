@@ -165,8 +165,13 @@ html.panel-only body:not(.show-advanced) .panel-keep[data-advanced] { display: g
 .topic-tabs { margin-block: 0 var(--space-6, 1.5rem); border-bottom: 1px solid var(--color-divider); }
 .topic-tabs [role=tablist] { display: flex; flex-wrap: wrap; gap: var(--space-1, 0.25rem); }
 .topic-tabs__tab { border-radius: var(--radius) var(--radius) 0 0; padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem); min-height: var(--control-h, 40px); border: 0;
-  border-bottom: 3px solid transparent; background: none; color: var(--color-text-muted); font: inherit; font-weight: var(--weight-strong); cursor: pointer; }
-.topic-tabs__tab:hover { color: var(--color-text); background: var(--color-hover); box-shadow: inset 0 0 0 1px var(--color-hover-edge); }
+  border-bottom: var(--topic-tab-line) solid transparent; background: none; color: var(--color-text-muted); font: inherit; font-weight: var(--weight-strong); cursor: pointer;
+  --topic-tab-line: 3px; position: relative; }
+.topic-tabs__tab:hover { color: var(--color-text); background: var(--color-hover); }
+/* The hover outline is drawn over the whole tab, bottom border included, so its lower edge sits on the rule under the
+   tabs; an inset box-shadow stopped 3px short (issue #366). Same rules as the library's page-topics part. */
+.topic-tabs__tab:hover::after { content: ""; position: absolute; inset: 0 0 calc(-1 * var(--topic-tab-line)); border: 1px solid var(--color-hover-edge); border-radius: inherit; pointer-events: none; }
+.topic-tabs__tab[aria-selected=true]:hover::after { border-bottom-width: 0; }
 .topic-tabs__tab[aria-selected=true] { background: var(--color-control-active); }
 .topic-tabs__tab[aria-selected=true] { color: var(--color-text); border-bottom-color: var(--color-accent); }
 .topic-off { display: none !important; }
