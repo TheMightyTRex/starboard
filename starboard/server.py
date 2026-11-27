@@ -211,6 +211,7 @@ class App:
             # DASH-253: titles a move into Reelix could not match; asleep while there are none.
             reelix_waiting.start(self.data_dir, lambda: library.reelix_of(self.config.data["services"]))
         self.importing = None  # the watch history import that is running, if any
+        self.ms_migration = None  # the media server move that is running or last ran (DASH-587): {state, steps, said, ...}
         self.import_result = None
         self.import_lock = threading.Lock()
         self.download_links = {}  # one-time links for server backup downloads: token: (file name, until)
@@ -827,11 +828,15 @@ def _move_livetv(app):
             app.jobs.ensure()
         elif containers.available():
             # Built-in plug-ins follow Starboard's update: their files are written again and active ones restarted.
-            from . import plugins_admin
+            from . import plugin_life, plugins_admin
             again = plugins_admin.refresh_builtins(app.data_dir, media_dir, app.config.data["services"])
             again += [n for n in plugins_admin.upgrade_all(app.data_dir, app.config.data["services"]) if n not in again]
             if again:
                 logs.event("info", "plug-ins", f"Started again with this version of Starboard: {', '.join(again)}")
+            stopped = plugin_life.stop_unfit(app.data_dir)  # a plug-in this Starboard cannot run is stopped, with its reason (DASH-603)
+            if stopped:
+                logs.event("warning", "plug-ins", f"Stopped because they need an update: {', '.join(stopped)}")
+            plugins_admin.renew_old_keys(app.data_dir)  # keys made before 30 day keys: given an end date once (DASH-603)
     except Exception as e:  # Live TV carries on inside Starboard
         logs.error("live tv", f"Live TV stays in Starboard for now: {e}", e)
 
@@ -2826,11 +2831,13 @@ class Handler(BaseHTTPRequestHandler):
                 from . import mediaserver_switch, plugins_admin as pa
                 body = self.body()
                 try:
-                    return self.json(200, mediaserver_switch.plan(cfg.data, str(body.get("id") or ""), str(body.get("mode") or ""), pa.listing(app.data_dir)))
+                    return self.json(200, mediaserver_switch.plan(cfg.data, str(body.get("id") or ""), str(body.get("mode") or ""), pa.listing(app.data_dir), app.data_dir))
                 except LookupError as e:
                     return self.error(404, str(e))
                 except ValueError as e:
                     return self.error(400, str(e))
+            if path == "/api/media-server/migrate" and method in ("GET", "POST"):  # DASH-587: does what the wizard planned, after the person confirmed
+                return self.media_migrate(method)
             if path in ("/api/media-server/choose", "/api/media-server/back") and method == "POST":
                 from . import mediaserver
                 try:
@@ -3515,10 +3522,44 @@ class Handler(BaseHTTPRequestHandler):
         one = mediaserver.active(self.app.config.data)
         return one.name if one else ""
 
+    def media_migrate(self, method):
+        """GET: how the move is going, or how the last one went. POST: start one in the background, only after the wizard's last
+        step; one at a time. The wizard planned it first (it changes nothing); this is the one place that does (DASH-587)."""
+        app, cfg = self.app, self.app.config
+        if method == "GET":
+            return self.json(200, app.ms_migration or {"state": "none"})
+        from . import media_migrate, mediaserver
+        body = self.body()
+        target, mode = str(body.get("id") or ""), str(body.get("mode") or "")
+        parts = [str(p) for p in body.get("parts") or [] if isinstance(p, str)] if isinstance(body.get("parts"), list) else []
+        if target not in mediaserver.ADAPTERS or mode not in ("own", "migrate", "fresh"):
+            return self.error(400, "Choose a media server and how to switch")
+        source = mediaserver.active_id(cfg.data)
+        added = self.media_servers_added()
+        if target not in added:
+            return self.error(409, f"{mediaserver.ADAPTERS[target].name} is not added as a plug-in yet")
+        with app.import_lock:
+            if app.ms_migration and app.ms_migration.get("state") == "running":
+                return self.error(409, "A move to another media server is already running")
+            state = {"state": "running", "steps": [], "said": "Starting", "to": target, "from": source, "mode": mode}
+            app.ms_migration = state
+
+        def work():
+            try:
+                media_migrate.run(cfg, app.data_dir, source, target, mode, parts, added, state, switch=bool(body.get("switch", True)))
+                logs.event("info", "media server", state.get("said") or "Media server move finished")
+            except Exception as e:  # shown on the page, never lost
+                state.update(state="failed", said=f"The move stopped: {str(e)[:200]}")
+                logs.event("error", "media server", state["said"])
+
+        threading.Thread(target=work, name="media-move", daemon=True).start()
+        return self.json(200, state)
+
     def media_servers_added(self):
         """The ids of the media server plug-ins that are added and active (DASH-565): a media server can be chosen only then."""
         from . import mediaserver, plugins_admin as pa
         pa.ensure_default_once(self.app.data_dir, self.app.config.data["services"])
+        pa.ensure_installed(self.app.data_dir, self.app.config.data["services"])  # Plex or Emby from Install apps: installed, not in use (DASH-586)
         ids = set(mediaserver.ADAPTERS)
         return sorted(p["id"] for p in pa.basics(self.app.data_dir) if p["id"] in ids and p["state"] == "enabled")
 

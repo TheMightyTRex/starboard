@@ -8,7 +8,7 @@ title: Find your answer
 start: Tdarr is not working as it should
 q: What does its tab say?
   Did not start -> 1
-  Not supported -> 2
+  Needs an update -> 2
   Active, but something is wrong -> q2
   Not active, and bringing in Tdarr failed -> 6
 q2: What is wrong?

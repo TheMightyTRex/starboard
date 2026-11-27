@@ -802,7 +802,7 @@ def plain(said, sess=None, signin=None):
     return (lines[-1][-200:] if lines else "The test did not finish. Select Try again")
 
 
-def save(data_dir, sid, keep, way_remembered=None):
+def save(data_dir, sid, keep):
     """Save: the remote and its config go to Copies off this computer, which then copies each new full backup there."""
     sess = _mine(sid)
     if not sess.get("config") or not sess.get("folder"):

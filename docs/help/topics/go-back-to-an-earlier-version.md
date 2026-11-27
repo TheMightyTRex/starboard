@@ -76,6 +76,37 @@ backed up first, and you can update again when you are ready.
    docker compose -f compose.image.yaml up -d
    ```
 
+## Go back to a version before 0.40.0
+
+Starboard 0.40.0 changed how your settings are stored on purpose, and older versions may not understand them. You can
+still go back to a version before 0.40.0, such as `v0.31.0`, with the usual steps. Some settings may then not match or
+may be ignored. The safe way is to put back the backup of your settings that the update to 0.40.0 saved. Settings you
+changed after that update are lost when you do.
+
+1. List the backups in the Starboard folder. The update to 0.40.0 saved the one made before it. Its name ends with
+   the short code of the version you had then:
+
+   ```bash
+   ls -t backups
+   ```
+
+2. Go back and put that backup in place, with one command. This is the safe way. Put the version you want in place of `v0.31.0` and the name
+   of the backup in place of the example:
+
+   ```bash
+   ./update.sh --to v0.31.0 --restore backups/starboard-data-2026-11-30-093000-a1b2c3d.tar.gz
+   ```
+
+   With `--restore`, the updater first saves the settings you have now, so nothing is lost, then installs that
+   version and puts the backup back. The settings you had when you went back stay in the folder `data.failed-update`.
+   Without `--restore`, the updater warns you in plain words that your settings may not match, saves a fresh backup of
+   them and goes on to install that version.
+
+3. Reload Starboard in your browser.
+
+Starboard 0.31.0 is the oldest version that can update to 0.40.0. If you have an older one, update to 0.31.0 first.
+Read [Update Starboard](update-starboard.md#update-to-0400-from-an-older-version).
+
 ## Go forward again
 
 - **With the installer:** run `./update.sh` on its own. It installs the newest release.
@@ -101,7 +132,8 @@ backed up first, and you can update again when you are ready.
   solved.
 - A newer version can change how settings are stored. When it does, Starboard keeps a copy of the old settings in
   `data/backups` first. If something is wrong on the older version, put back the backup from before the update. Read
-  [If it does not work](#if-it-does-not-work).
+  [If it does not work](#if-it-does-not-work). From 0.40.0, going back past it is safest with that backup. Read
+  [Go back to a version before 0.40.0](#go-back-to-a-version-before-0400).
 - Tell the people who make Starboard what went wrong, so it can be fixed. Read
   [Read the log and report a problem](read-the-log.md).
 

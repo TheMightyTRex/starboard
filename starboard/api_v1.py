@@ -44,7 +44,9 @@ import time
 import urllib.parse
 import uuid
 
-API_VERSION = "1.9.0"  # 1.9.0 (26 November 2026): several backup places in /backup/copies (destinations, safe, settings_zip), the test for each, and POST /backup/settings-copy. 1.8.0 (20 November 2026, plug-in API 1.17): POST /plugin/alerts, alerts from a plug-in with alerts:send, answered only to its own key. 1.7.0 (19 November 2026, DASH-464): /mcp, read-only tools for AI assistants, off until activated. 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
+from . import deprecations
+
+API_VERSION = "1.10.0"  # 1.10.0 (26 November 2026, DASH-603): deprecations in GET /, Deprecation and Sunset headers on a route that is going, 410 gone once removed. 1.9.0 (26 November 2026): several backup places in /backup/copies (destinations, safe, settings_zip), the test for each, and POST /backup/settings-copy. 1.8.0 (20 November 2026, plug-in API 1.17): POST /plugin/alerts, alerts from a plug-in with alerts:send, answered only to its own key. 1.7.0 (19 November 2026, DASH-464): /mcp, read-only tools for AI assistants, off until activated. 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
 KEYS_FILE = "api-keys.json"
 RIGHTS = ("read", "manage")  # manage: read, and the everyday actions (DASH-274). "admin" stays with the pages
 SCOPES = ("apps", "downloads", "media", "system", "library", "requests")
@@ -128,7 +130,7 @@ def list_keys(data_dir):
     return [public(k) for k in _load(data_dir)]
 
 
-def create_key(data_dir, name, right="read", scopes=None, expires_days=90):
+def create_key(data_dir, name, right="read", scopes=None, expires_days=90, socket_only=False, slide=False):
     """Makes a key; returns (the key, shown this once, and its public details)."""
     name = re.sub(r"\s+", " ", str(name or "")).strip()[:60]
     if not name:
@@ -154,6 +156,10 @@ def create_key(data_dir, name, right="read", scopes=None, expires_days=90):
         expires = _iso(now + dt.timedelta(days=days))
     item = {"id": kid, "name": name, "right": right, "scopes": scopes, "hash": _digest(key),
             "created_at": _iso(now), "expires_at": expires, "last_used_at": None}
+    if socket_only:  # a plug-in's key that works only on that plug-in's Unix socket (DASH-603)
+        item["socket_only"] = True
+    if slide and expires:  # a plug-in's key: the end date moves on while it is used, so a running plug-in never expires
+        item["slide_days"] = int(expires_days)
     keys.append(item)
     _save(data_dir, keys)
     audit(data_dir, "key_created", key_id=kid, name=name, right=right)
@@ -195,6 +201,10 @@ def note_use(data_dir, k):
     for item in keys:
         if item["id"] == k["id"]:
             item["last_used_at"] = _iso(_now())
+            if item.get("slide_days") and item.get("expires_at"):
+                moved = _iso(_now() + dt.timedelta(days=int(item["slide_days"])))
+                if moved > item["expires_at"]:
+                    item["expires_at"] = moved
     _save(data_dir, keys)
 
 
@@ -417,7 +427,8 @@ def routes():
 
     def root(h, m, q):
         return {"api_version": API_VERSION, "starboard_version": h.app.version,
-                "links": {"openapi": "/api/v1/openapi.json", "me": "/api/v1/me", "apps": "/api/v1/apps", "events": "/api/v1/events", "mcp": "/api/v1/mcp"}}
+                "links": {"openapi": "/api/v1/openapi.json", "me": "/api/v1/me", "apps": "/api/v1/apps", "events": "/api/v1/events", "mcp": "/api/v1/mcp"},
+                "deprecations": deprecations.public()}
 
     def me(h, m, q):
         return public(h.api_key)
@@ -957,6 +968,11 @@ def handle(h, method, path):
         body = {"type": PROBLEM + code, "title": title, "status": status, "detail": detail or title, "instance": rid, "code": code}
         h.send(status, json.dumps(body).encode(), "application/problem+json", {**base, **(extra or {})})
 
+    going = deprecations.entry(method, path)  # DASH-603: a feature that is going says so on every answer, and one that is gone says 410
+    if going:
+        base.update(deprecations.headers(going))
+        if going["removed"]:
+            return problem(410, "gone", "This address has been removed", going["replacement"] or "It was removed after its notice period")
     if path == "/api/v1/openapi.json" and method == "GET":
         raw = json.dumps(spec()).encode()
         return h.send(200, raw, "application/json", {**base, "Cache-Control": "public, max-age=3600", "ETag": etag(raw)})
@@ -969,6 +985,8 @@ def handle(h, method, path):
         return problem(405, "method_not_allowed", f"This address takes {allow} only", extra={"Allow": allow})
     address = h.client_address_text()
     k = find_key(h.app.data_dir, h.headers.get("Authorization"))
+    if k and k.get("socket_only") and not getattr(h, "via_socket", False):
+        k = None  # a plug-in's key made for its socket is refused on the port, and counted like any refused key (DASH-603)
     if not k:
         if not h.app.limits.attempt(address):
             return problem(429, "too_many_attempts", "Too many refused keys from this address. Wait 15 minutes", extra={"Retry-After": "900"})

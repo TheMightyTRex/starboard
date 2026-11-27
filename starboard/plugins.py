@@ -166,7 +166,6 @@ JELLYFIN_METADATA = ("jellyfin-metadata", "jellyfin-metadata:ro")
 # folder must stay inside one mount to be a rename (a move between two mounts is a copy, then a delete), so the
 # holding folder is inside the media folder: media/.holding/<plug-in id>/, keeping the folders each item was in.
 MEDIA_HOLDING = "media:holding"
-HOLDING_FOLDER = ".holding"
 ACTION = {"id", "label", "path", "confirm"}
 # API 1.10 (DASH-393): the plug-in's changelog in the manifest, in Keep a Changelog's types, so Starboard can say what
 # is new after an update without fetching anything. Kept short: 20 versions, 20 lines a type, 300 characters a line.

@@ -18,6 +18,7 @@ PAGES = [
     "developers/api-reference.md", "../api/errors.md", "developers/api-changelog.md",
     "developers/make-a-plugin.md", "developers/plugin-manifest-reference.md", "developers/plugin-api-reference.md",
     "developers/test-and-publish-a-plugin.md", "developers/update-a-plugin-safely.md",
+    "developers/compatibility-promise.md",
 ]
 HEAD = """# Starboard: the developer pages in one file
 
@@ -35,7 +36,6 @@ def body(path):
     text = "\n".join(lines)
     # a relative link keeps its words; the page it names is in this file or in the index
     text = re.sub(r"\]\((?!https?:)[^)]*\)", "]", text)
-    text = re.sub(r"!\[[^\]]*\]\][^\n]*", "", text) if False else text
     return re.sub(r"\n{3,}", "\n\n", text).strip() + "\n"
 
 

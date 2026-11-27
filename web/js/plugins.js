@@ -4,7 +4,7 @@
 
 const RISK = { low: ["Low", "success"], medium: ["Medium", "warning"], high: ["High", "danger"] };
 const STATE = { installed: ["Added, not active", "muted"], enabled: STATUS.active, disabled: STATUS.inactive, failed: ["Did not start", "danger"],
-  "needs-setup": ["Needs setting up", "warning"], "not-supported": ["Not supported", "danger"] };  // DASH-330
+  "needs-setup": ["Needs setting up", "warning"], "not-supported": ["Needs an update", "warning"] };  // DASH-330, DASH-603: fixable, so a warning
 const stateOf = (p) => p.status?.state || p.state;
 // An active plug-in that is not answering its health path, or resting after idle stop (DASH-357).
 const chipOf = (p) => {
@@ -771,7 +771,7 @@ function pluginPage(p, redraw, ms = null, read = null) {
   return [
     groupSection(`pl-${p.id}-general`, "General", stateSec, slot, versions, jobs, may, remove),
     webSection(p),
-    p.id === "calibre-web" ? section("pl-calibre-web-phone", "Read on your phone", "Apps for Android and iOS that open your Calibre-Web library.", phoneApps()) : null,
+    p.id === "calibre-web" || p.id === "kavita" ? section(`pl-${p.id}-phone`, "Read on your phone", `Apps for Android and iOS that open your ${p.name} library.`, phoneApps("h3", p.id)) : null,
     adoptSection(p, redraw),
     firstSignInSection(p),
     p.looks?.length ? section(`pl-${p.id}-styles`, "Styles", "Colours for Starboard from this plug-in. Choose one for this browser, as in Display.", styleGallery(p)) : null,

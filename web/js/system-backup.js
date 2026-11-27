@@ -625,7 +625,9 @@ async function showGoBack() {
   try {
     const r = await api("/api/releases");
     const before = r.all.find((rel) => isNewer(r.current, rel.version));
-    if (before) box.querySelector("code").textContent = `./update.sh --to v${before.version}`;
+    // Before 0.40.0 (DASH-596) is safest with the backup the update to 0.40.0 saved: older versions may not understand the
+    // settings that 0.40.0 and later write, so the command shown includes --restore.
+    if (before) box.querySelector("code").textContent = `./update.sh --to v${before.version}${isNewer("0.40.0", before.version) ? " --restore backups/NAME" : ""}`;
   } catch { /* keeps the example version */ }
   box.append(copyButton(box.querySelector("code").textContent, "the command to go back"));
 }
