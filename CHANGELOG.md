@@ -7,6 +7,11 @@ add features.
 
 ## [Unreleased]
 
+## [0.31.1] (27 November 2026)
+
+### Changed
+- **The next version cannot be undone, so the updates stop at it.** Starboard 0.40.0 is a clean break. The automatic update and Install all updates now hold it back and wait for you. Update now says in plain words that you cannot go back to an older Starboard after it, saves a backup of your settings first, shows the backup's name in the update log and needs your yes. An update from a script or an AI assistant is refused with the same words. Nothing else changes.
+
 ## [0.31.0] (25 November 2026)
 
 ### Added
@@ -1655,7 +1660,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused. Help: [Pause, resume and remove downloads](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/manage-downloads.md).
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.31.0...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.31.1...HEAD
+[0.31.1]: https://github.com/TheMightyTRex/starboard/compare/v0.31.0...v0.31.1
 [0.31.0]: https://github.com/TheMightyTRex/starboard/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/TheMightyTRex/starboard/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/TheMightyTRex/starboard/compare/v0.28.0...v0.29.0

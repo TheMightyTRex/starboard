@@ -78,6 +78,13 @@ rm -f "$tmp" "$next"
 exit "$code"
 """
 
+# DASH-596, the clean break: Starboard 0.40.0 and later cannot be undone. This version (0.31.1) holds the automatic update
+# and Install all updates at 0.40.0, and Update now says so in plain words and needs the owner's yes first.
+ONE_WAY_FROM = (0, 40, 0)
+ONE_WAY_WORDS = ("This update cannot be undone. You cannot go back to an older Starboard after it. Starboard saves a backup "
+                 "of your settings first, and the update log shows its name. To go back, you restore that backup, and settings "
+                 "you change after the update are lost.")
+
 _lock = threading.Lock()
 
 
@@ -182,6 +189,12 @@ def newer(tag, version):
     return bool(a and b and a > b)
 
 
+def crosses_break(current, to):
+    """True when installing `to` over `current` crosses the clean break (DASH-596): from before 0.40.0 to 0.40.0 or later."""
+    a, b = version_key(current), version_key(to)
+    return bool(a and b and a < ONE_WAY_FROM <= b)
+
+
 def update_hours(cfg_data):
     """The hours automatic updates run in (DASH-422, Settings, Updates, When): (start, end) in whole hours. "download"
     (the default): Starboard's download hours when they are set, otherwise 01:00 to 06:00, the same quiet hours as
@@ -229,6 +242,8 @@ def automatic_decision(cfg_data, now, latest, current, record):
         return "wait", f"{latest} did not install last time, so it waits for Update now in Settings, Updates"
     if running(record, now.timestamp()):
         return "wait", "An update is already running"
+    if crosses_break(current, latest):
+        return "wait", f"{latest} cannot be undone, so it waits for you: choose Update now in Settings, Updates"
     return "update", latest
 
 
@@ -325,13 +340,15 @@ def launch(p, to):
 
 # Starting, finishing, and the page ---------------------------------------------------------------------------------
 
-def start(app, to, by="you"):
+def start(app, to, by="you", one_way_ok=False):
     """Starts an update to the release `to` (vX.Y.Z, newer than this version). by is "you", "automatic" or "api"
     (an API key with the updates scope, DASH-424)."""
     if not RELEASE.match(str(to or "")):
         raise Refused("Only a release, such as v0.18.0, can be installed from here")
     if not newer(to, app.version):
         raise Refused(f"{to} is not newer than the version you have, {app.version}. To go back, run ./update.sh --to on the server")
+    if crosses_break(app.version, to) and not one_way_ok:
+        raise Refused(f"{ONE_WAY_WORDS} Choose Update now in Settings, Updates, and say yes there")
     with _lock:
         record = load(app.data_dir)
         if running(record, data_dir=app.data_dir):
@@ -345,6 +362,8 @@ def start(app, to, by="you"):
         save(app.data_dir, record)
         with open(os.open(_path(app.data_dir, LOG), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
             f.write("== Preparing the update\n")
+            if crosses_break(app.version, to):  # the plain words are in the log from its first line
+                f.write(f"== This update cannot be undone\n{ONE_WAY_WORDS}\n")
     logs.event("info", "updates", f"Starboard update to {to} started ({ {'automatic': 'automatic', 'api': 'from the API'}.get(by, 'Update now')})")
     try:
         launch(p, to)
@@ -455,7 +474,8 @@ def status(app):
         can, why = False, f"Starboard could not check its folder: {e}"
     out = {"current": app.version, "latest": latest, "newer": bool(latest and newer(latest, app.version)),
            "can": can, "why": why, "automatic": bool(app.config.data.get("starboard_auto_update")),
-           "skip": record.get("skip"), "running": running(record, data_dir=app.data_dir)}
+           "skip": record.get("skip"), "running": running(record, data_dir=app.data_dir),
+           "one_way": crosses_break(app.version, latest), "one_way_words": ONE_WAY_WORDS}
     if record.get("state"):
         out["update"] = {k: record.get(k) for k in ("state", "by", "from", "to", "started", "finished", "outcome", "back_to")}
         out["update"]["steps"] = parsed["steps"]

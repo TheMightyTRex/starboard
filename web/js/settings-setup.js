@@ -1318,6 +1318,7 @@ async function startSelfUpdate() {
     const err = el("span", { class: "field-error", id: "su-password-error", hidden: true });
     const what = el("div", { class: "stack-2" },
       el("p", { text: `Starboard installs version ${latest}. You have ${s.current}.` }),
+      ...(s.one_way ? [el("p", { class: "field-error", role: "note", text: s.one_way_words })] : []),
       el("ul", {}, el("li", { text: "Your settings are backed up first." }),
         el("li", { text: "Starboard restarts, and is away for about a minute." }),
         el("li", { text: `If the new version does not start, Starboard goes back to ${s.current} by itself, with your settings as they were.` })),
@@ -1326,7 +1327,7 @@ async function startSelfUpdate() {
       const asked = confirmDialog({ title: `Update Starboard to ${latest}`, message: what, confirm: "Update now",
         fields: [el("div", { class: "field" }, el("label", { for: input.id, text: "Your Starboard password" }), input, err)] });
       if (!(await asked)) return;
-      try { await api("/api/self-update/start", { method: "POST", body: { password: input.value, to: s.latest } }); break; }
+      try { await api("/api/self-update/start", { method: "POST", body: { password: input.value, to: s.latest, one_way: s.one_way === true } }); break; }
       catch (e) {
         if (e.status === 401 || e.status === 429) {
           err.textContent = e.status === 401 ? "That password is not right. Check Caps Lock and try again." : e.message;
@@ -1351,6 +1352,7 @@ async function startSelfUpdate() {
     if (s.newer) {
       const latest = s.latest.replace(/^v/, "");
       if (!s.can) nodes.push(notice("info", `Version ${latest} can be installed on the server`, s.why));
+      else if (s.one_way) nodes.push(notice("warning", `${latest} cannot be undone`, `${s.one_way_words} It does not update by itself: choose Update now.`));
       else if (s.skip === s.latest) nodes.push(notice("warning", `${latest} did not install last time`, "It does not update by itself to this version again. Update now tries again."));
     }
     // The last update's result, for a day after it ended (an update in the night is still there in the morning).

@@ -55,6 +55,21 @@ This works if you used the installer and Starboard has Docker access, or if you 
 Closing the dialog does not stop the update. If **Update now** is not there, the page says why, such as a Starboard
 from the ready-made image, which you update on the server.
 
+## The update to 0.40.0 cannot be undone
+
+Starboard 0.40.0 is a clean break. You cannot go back to an older Starboard after it. So Starboard never installs it
+by itself: the automatic update and **Install all updates** stop at it and wait for you, and an update from a script
+or an AI assistant is refused.
+
+1. Go to **Settings**, then **Updates**. A notice says the version cannot be undone, and **Update now** is beside
+   **Starboard**.
+2. Select **Update now**. The dialog says again that you cannot go back, that your settings are backed up first and
+   that the update log shows the name of the backup. Enter **Your Starboard password** and select **Update now**.
+3. To go back later, you restore that backup. Settings you change after the update are lost. Read
+   [Go back to an earlier version](go-back-to-an-earlier-version.md).
+
+You can update to 0.40.0 only from 0.31.0 or later.
+
 ## Install all updates at once
 
 When one or more updates are waiting, for Starboard, Reelix, your other apps or plug-ins, you can install them all

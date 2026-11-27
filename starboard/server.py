@@ -2920,7 +2920,7 @@ class Handler(BaseHTTPRequestHandler):
                     if update_runs._busy():  # another update, or Install all updates, which updates Starboard last (DASH-454)
                         return self.error(409, "An update is already running. Wait for it to finish")
                     try:
-                        return self.json(200, self_update.start(app, latest, by="you"))
+                        return self.json(200, self_update.start(app, latest, by="you", one_way_ok=data.get("one_way") is True))
                     except self_update.Refused as e:
                         return self.error(409, str(e))
                 return self.error(404, "Not found")

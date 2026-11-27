@@ -2044,6 +2044,14 @@ RELEASES = [
         ],
         "review": [],
         "settings": "Your settings stay as they are. Every host alert is deactivated until you activate it. To go back, run ./update.sh --to v0.30.0."
+    },
+    {
+        "version": "0.31.1", "date": "27 November 2026",
+        "changed": [
+            ["The next version cannot be undone", "Starboard 0.40.0 is a clean break. The automatic update and Install all updates now stop at it and wait for you. Update now says in plain words that you cannot go back to an older Starboard after it, saves a backup of your settings first and needs your yes. Nothing else changes."]
+        ],
+        "review": [],
+        "settings": "Your settings stay as they are. To go back, run ./update.sh --to v0.31.0."
     }
 ]
 

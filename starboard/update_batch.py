@@ -86,7 +86,7 @@ def plan(app):
     """What Install all updates would do now: {items: [...in order], held: [...], count}. Each item: target, kind,
     name, from, to, order; a held one has why. count is the number that will install (Jellyfin's plug-ins, whose
     new versions only Jellyfin knows, are not counted)."""
-    from . import auto_updates, plugin_life
+    from . import auto_updates, plugin_life, self_update
     items, held = [], []
     known = None
     for t in update_runs.targets(app):
@@ -99,6 +99,8 @@ def plan(app):
             continue  # Starboard's own container updates as Starboard
         if not t.get("can_update"):
             why = t.get("why") or "Starboard cannot update it from here"
+        elif t["kind"] == "starboard" and self_update.crosses_break(t.get("current"), t.get("latest")):
+            why = "It cannot be undone, so it waits for you: choose Update now on its own and read the warning"  # DASH-596
         elif t["kind"] == "plugin":
             if known is None:
                 known = plugin_life.updates_known(app.data_dir)
