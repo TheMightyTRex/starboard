@@ -65,6 +65,7 @@ add features.
 - **Plain English pilot.** The README and the help topics Add an app and How lean Starboard is now use shorter sentences and the active voice.
 
 ### Removed
+- **Compose rewrite for plug-ins from before 0.17.0.** Starboard no longer rewrites a plug-in's Compose file that mounts its settings, key and Jellyfin files one by one. Every version since 0.17.0 has already done it at each start, so every install that can update to 0.40.0 is done. Each plug-in's files are still shared at every start.
 - **Unused code.** Eight unused names and one unused option are gone from Starboard's code, and one condition that could never be true is gone from the tool that builds the AI-readable help. Nothing you see changes.
 - **Old release note files and two unused documents.** The notes files of 57 releases from 0.5.0 to 0.28.0, an unused picture of all the screenshots and the design record for building plug-ins in isolation are gone from the repository. `CHANGELOG.md` and the notes in Starboard still list every release, and the files stay in the history. The help and the app do not change.
 - **Four hand-run test scripts.** The scripts that tried Bring in on shares, copies off this computer, connecting a cloud service and a full restore by hand, on made-up data, are gone from the tools folder. The tests that run with every change stay, and the scripts stay in the history. The help and the app do not change.
