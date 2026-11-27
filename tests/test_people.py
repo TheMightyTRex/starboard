@@ -188,8 +188,15 @@ class Model(unittest.TestCase):
             self.assertIn("at least 30", str(e.exception))
             people.set_password(self.dir, SERVICES, p["id"], "jellyfin")
             self.assertGreaterEqual(len(people.reveal(self.dir, p["id"], "jellyfin")["password"]), 30)
-        self.assertEqual(people.rule_for(SERVICES[0])["min"], 10)  # no rule known: ten, and the app may refuse it
-        self.assertIn("may refuse", people.rule_for(SERVICES[0])["note"])
+        self.assertEqual(people.rule_for(SERVICES[0])["min"], 10)  # Jellyfin has no minimum of its own: ten stays
+        self.assertTrue(people.rule_for(SERVICES[0])["known"])
+        self.assertIn("no minimum of its own", people.rule_for(SERVICES[0])["note"])
+        kavita = people.rule_for(SERVICES[4])  # a Kavita saved as "Other app": found by its name
+        self.assertEqual((kavita["min"], kavita["known"]), (10, True))
+        self.assertIn("at least 6", kavita["note"])
+        unknown = people.rule_for({"id": "emby", "name": "Emby", "type": "emby"})  # no rule could be checked
+        self.assertEqual((unknown["min"], unknown["known"]), (10, False))
+        self.assertIn("may refuse", unknown["note"])
         self.assertEqual(people.listing(self.dir, SERVICES)["own_min"], 10)
 
     def test_every_person_and_app_gets_its_own_password(self):

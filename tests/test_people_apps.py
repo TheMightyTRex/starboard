@@ -57,7 +57,7 @@ class Changing(unittest.TestCase):
         self.assertEqual(people_apps.change_password(s, "jellyfin", "sam", "a long new password"), "Changed it in Jellyfin")
         method, path, headers, body = app.seen[-1]
         self.assertEqual((method, path), ("POST", "/Users/Password?userId=u1"))
-        self.assertEqual(json.loads(body), {"NewPw": "a long new password"})
+        self.assertEqual(json.loads(body), {"NewPw": "a long new password", "ResetPassword": False})
         self.assertIn("admin-key", headers["Authorization"])
         self.assertEqual([x[0] for x in app.seen], ["GET", "POST"])  # the list, then one change
 
@@ -67,6 +67,7 @@ class Changing(unittest.TestCase):
         people_apps.change_password([service("emby", app.url)], "emby", "Sam", "a long new password")
         method, path, headers, body = app.seen[-1]
         self.assertEqual((method, path, headers["X-Emby-Token"]), ("POST", "/emby/Users/9/Password", "admin-key"))
+        self.assertEqual(json.loads(body), {"CurrentPw": "", "NewPw": "a long new password", "ResetPassword": False})
 
     def test_audiobookshelf_patches_the_user(self):
         app = App({"users": [{"id": "x1", "username": "sam", "isActive": True}]})

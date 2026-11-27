@@ -77,8 +77,8 @@ For other apps, such as Kavita, Starboard has no way to change a password, so th
   protected where they are not.
 - A generated password has 24 letters and numbers, with none that could be mistaken for another, such as the letter O and the number 0. Each
   person has a different password in each app.
-- A password you enter must have at least 10 characters. If an app has a rule of its own, Starboard follows it and says what it is. Starboard does not know the rules of every app, so an app may still refuse a password, and Starboard says so.
-- Starboard changes a password in an app with the app's own admin key. It was written from the apps' documentation and has not yet been tried against a real Jellyfin, Emby or Audiobookshelf, so check the account works after the first change.
+- A password you enter must have at least 10 characters. Jellyfin and Audiobookshelf set no minimum of their own, and Kavita needs at least 6, so 10 suits all three. For any other app, Starboard does not know the rule, so the app may still refuse a password, and Starboard says so.
+- Starboard changes a password in an app with the app's own admin key. It was written from the apps' documentation and has not yet been tried against a real Jellyfin, Emby or Audiobookshelf. Emby's own documentation does not say what its change needs, so after the first change in any app, check that the person can sign in.
 - Starboard keeps the passwords in a file only Starboard can read, in its data folder. They are never in a Settings
   backup, a log, an address or an error message. A full backup keeps them, as it keeps your apps' keys.
 - Starboard keeps up to 50 people.

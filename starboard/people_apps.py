@@ -4,10 +4,14 @@ Only where Starboard already holds an admin key for the app: Jellyfin and Emby (
 Audiobookshelf (an admin key). It finds the person's account by its account name and changes its password. It makes no account,
 removes none and changes nothing else (stage 3 does those). Any other app is changed by hand, and Starboard only records it.
 
-Written from the apps' API descriptions and tried only against stand-ins (tests/test_people_apps.py), not a real server:
-  Jellyfin  POST /Users/Password?userId=ID  {"NewPw": ...}
-  Emby      POST /emby/Users/ID/Password    {"NewPw": ...}
-  Audiobookshelf  PATCH /api/users/ID       {"password": ...}
+Read on 27 November 2026 from the apps' own source and documentation, and tried only against stand-ins (tests/test_people_apps.py):
+  Jellyfin  POST /Users/Password?userId=ID  {"NewPw", "ResetPassword": false}. Jellyfin.Api/Controllers/UserController.cs asks for
+            CurrentPw only when the caller is not an administrator, or is changing their own password. An administrator's API key
+            changing another person's password needs none. That the key counts as an administrator is not shown in that file.
+  Emby      POST /emby/Users/ID/Password    {"CurrentPw": "", "NewPw", "ResetPassword": false}. dev.emby.media lists the route but
+            not its body; the fields are from Emby forum posts, some of which report a key being accepted with no change made. So
+            check the account after the first change.
+  Audiobookshelf  PATCH /api/users/ID       {"password"}. server/controllers/UserController.js update(), which checks no length.
 A refusal or an unreachable app is said in words and changes nothing. The password never appears in a message, a log or an
 address (it travels in the body only; the log line keeps no query and no body).
 """
@@ -64,7 +68,7 @@ def change_password(services_list, service_id, username, password):
         raise PeopleError(f"{name} has no account called {username}. Make the account in {name} first")
     uid = urllib.parse.quote(str(user["id"]), safe="")
     if service["type"] == "jellyfin":
-        _send(adapter, service, "POST", f"/Users/Password?userId={uid}", {"NewPw": password})
+        _send(adapter, service, "POST", f"/Users/Password?userId={uid}", {"NewPw": password, "ResetPassword": False})
     else:
-        _send(adapter, service, "POST", f"/Users/{uid}/Password", {"NewPw": password})
+        _send(adapter, service, "POST", f"/Users/{uid}/Password", {"CurrentPw": "", "NewPw": password, "ResetPassword": False})
     return f"Changed it in {name}"

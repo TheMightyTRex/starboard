@@ -41,10 +41,18 @@ MIN_OWN = 10  # the shortest password a person may choose (owner, 27 November 20
 MAX_OWN = 128
 OWN_RULES = (f"Use at least {MIN_OWN} characters. A few random words in a row is a good password. "
              "Starboard does not ask for capitals, numbers or symbols.")
-# An app that enforces a rule of its own, by app type: {"min": the shortest it accepts, "note": the rule in plain English}.
-# Only a rule that can be checked in the app's documentation or code goes here. None has been checked yet, so every app
-# uses the minimum above and the page says the app may refuse the password (owner, 27 November 2026).
-APP_RULES = {}
+# What each app itself requires of a password, by app type or name, read on 27 November 2026 from the apps' own source:
+#   Jellyfin:  Jellyfin.Api/Controllers/UserController.cs (UpdateUserPassword) checks no length or kind of character.
+#   Audiobookshelf: server/controllers/UserController.js update() hashes the password with no check beyond it being given.
+#   Kavita:    Kavita.Server/Extensions/IdentityServiceExtensions.cs sets Password.RequiredLength = 6; Kavita 0.8.3 and later accept
+#              up to 256 characters (issue #2877), and earlier ones cut a password at 32, so generated passwords stay at 24.
+# "min" is the shortest the app accepts; Starboard's own minimum (10) wins when it is longer. An app that is not here has no rule
+# that could be checked, so the page says it may refuse the password.
+APP_RULES = {
+    "jellyfin": {"min": 0, "note": "Jellyfin has no minimum of its own."},
+    "audiobookshelf": {"min": 0, "note": "Audiobookshelf has no minimum of its own."},
+    "kavita": {"min": 6, "note": "Kavita needs at least 6 characters, so 10 is enough."},
+}
 PEOPLE_APPS = ("jellyfin", "plex", "emby", "audiobookshelf", "kavita", "komga", "calibre-web", "navidrome", "immich",
                "seerr", "jellyseerr", "overseerr", "ombi")
 
@@ -291,8 +299,10 @@ def save_account(data_dir, services, person_id, app_id, username):
 
 def rule_for(service):
     """The password rule for one app: {"min", "known", "note"}. The longer of Starboard's minimum and the app's own."""
-    known = APP_RULES.get((service or {}).get("type")) if isinstance(service, dict) else None
-    name = (service or {}).get("name") or "The app"
+    service = service if isinstance(service, dict) else {}
+    slug = re.sub(r"[^a-z0-9]+", "-", str(service.get("name", "")).lower()).strip("-")
+    known = APP_RULES.get(service.get("type")) or APP_RULES.get(slug)
+    name = service.get("name") or "The app"
     if known:
         return {"min": max(MIN_OWN, int(known["min"])), "known": True, "note": known["note"]}
     return {"min": MIN_OWN, "known": False, "note": f"{name} may refuse it if it has a rule of its own. Starboard says so if it does."}
