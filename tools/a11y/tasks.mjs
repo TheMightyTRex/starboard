@@ -1601,6 +1601,33 @@ if (await page.locator("#backups-panel:not([hidden])").count()) {
     check("T-SYSBACKUP", "Enter opens Backup/Logs at Full without media", /settings-general-backup\.html#bk-full-h/.test(page.url()), page.url());
   }
 } else check("T-SYSBACKUP", "the example server shows the Backups panel", false, "hidden");
+// T-KEYSETUP First-run set-up of full backups (DASH-588) by keyboard alone: Set up full backups (or Keep the backup password)
+// is reached with Tab and opens the dialog; Suggest a password by Enter fills both fields and is said politely; Keep it
+// stays waiting until the box that says it was stored is ticked; Escape closes with focus back on the opener.
+await page.goto(`${base}/settings-general-backup.html`);
+await settle();
+await page.locator("#schedule-body").waitFor({ timeout: 10000 }).catch(() => {});
+if (await page.locator("#keep-key").count()) {
+  await page.locator("#keep-key").focus();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(500);
+  const k1 = await focus();
+  check("T-KEYSETUP", "Enter opens the dialog and focus moves into it", k1.inPanel, `${k1.tag} ${k1.id}`);
+  await page.locator("#key-suggest").focus();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  check("T-KEYSETUP", "Suggest a password fills both fields, shows it once and says so", (await page.locator("#key-pw-1").inputValue()) === (await page.locator("#key-pw-2").inputValue())
+    && (await page.locator("#key-pw-1").inputValue()).length === 27 && /suggested/.test(await page.locator("#announcer").innerText()));
+  await page.locator("#key-mine").fill("made-up password");
+  await page.locator("#key-form button[type=submit], button[form=key-form]").first().focus();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  check("T-KEYSETUP", "Keep it waits until the stored box is ticked, with the reason beside the field", /Store the suggested password/.test(await page.locator("#key-pw-1-error").innerText()));
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(400);
+  const k2 = await focus();
+  check("T-KEYSETUP", "Escape closes it with focus back on the button that opened it", k2.id === "keep-key", `${k2.id} ${k2.text}`);
+} else check("T-KEYSETUP", "the example server shows the set-up button", false, "no #keep-key");
 
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);

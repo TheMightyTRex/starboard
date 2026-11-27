@@ -8,6 +8,9 @@ add features.
 ## [Unreleased]
 
 - **Backups on System (DASH-588, DASH-381, DASH-387):** System, Overview has a Backups panel: the newest full backup and that it was read back, whether full backups by themselves are set up or late, and whether the other places hold the newest one. **Check and restore backups** opens Settings, General, Backup/Logs, where each full backup says Checked and has Restore. Starboard reads it once when the page opens.
+- **Logos of services, used only as the companies allow (DASH-588):** Google Drive and OneDrive show the plain cloud icon and their full name, not a redrawn logo. Google allows only its own logo, unchanged, and Microsoft allows its logos only with a licence. The logos that stay are one-colour marks of Dropbox, Backblaze, Amazon S3 and Nextcloud, each beside its name to say which service it is. `docs/LOGOS.md` lists each one with the company's rules.
+- **Set up full backups by themselves, step by step (DASH-588):** a server that never kept the backup password made no full backup on its own, and nothing said so unless a schedule was chosen. Settings, General, Backup/Logs now says **Full backups by themselves are not set up** in three steps, with **Set up full backups**. The dialog can **Suggest a password**: a long one made in your browser, shown once, with Copy it and Save it as a file, and Keep it waits until you tick that you stored it. Starboard keeps only a key made from the password, never the password, and never in a backup or a log.
+
 
 - **Phone apps for Kavita (DASH-583):** Manage apps and the Kavita plug-in's page now name KOReader and Kover for Android, and Sutra and Komic for iPhone and iPad, with what each needs: your Kavita address and Auth key, iOS 17 for Sutra, and https away from home for Komic. New help topic: Read your Kavita books and comics on your phone.
 ### Added

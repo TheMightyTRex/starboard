@@ -76,6 +76,12 @@ restore backups** to open the backup page, where each full backup says **Checked
   next scheduled one, keeps the newest few again.
 - A schedule makes a full backup only when Starboard keeps the backup password. Without it, Starboard says **No full
   backup was made**, raises an alert and shows **Full backups are not being made**. Select **Keep the backup password**.
+- **Set up full backups by themselves, once:** on Settings, General, Backup/Logs, under **When backups are made**, a notice
+  says **Full backups by themselves are not set up** until a key is kept. Select **Set up full backups**. Choose a backup
+  password, or select **Suggest a password**: Starboard makes a long one in your browser and shows it once, with **Copy it**
+  and **Save it as a file**. Tick that you have stored it, enter your Starboard password and select **Keep it**. Starboard
+  keeps a key made from the password, never the password. Starboard cannot show the password again: store it in a
+  password manager. Then choose Monthly, Weekly or Nightly.
 - A backup that does not read back is not kept, and Starboard says **The full backup did not finish**. Older
   backups stay. Make it again; if it happens again, check the disk the folder is on.
 - **Checked** is said for backups made from this version on. An older backup without it is not wrong: it was made
