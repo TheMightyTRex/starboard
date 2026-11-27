@@ -235,6 +235,7 @@ class App:
         self.trust_proxy = os.environ.get("STARBOARD_TRUST_PROXY", "") == "1"
         self.machine_name = socket.gethostname().split(".", 1)[0].lower()
         self.allowed_hosts = {h.strip().lower() for h in os.environ.get("STARBOARD_ALLOWED_HOSTS", "").split(",") if h.strip()}
+        self._told_proxy = set()
         self.proxy_addresses = {"127.0.0.1", "::1", *[a.strip() for a in os.environ.get("STARBOARD_PROXY_ADDRESSES", "").split(",") if a.strip()]}
         self.port = int(os.environ.get("STARBOARD_PORT", "8095"))
         self.forced_host = os.environ.get("STARBOARD_HOST", "")  # when set, Settings cannot change the address
@@ -293,6 +294,15 @@ class App:
     def feedback_key_valid(self, key):
         token = self._feedback_keys.get(key) if key else None
         return bool(token) and self.sessions.valid(token, self.session_version)
+
+    def warn_unlisted_proxy(self, address):
+        """One line in the log, once for each address, when a request says it was forwarded but the sender is not a proxy Starboard
+        trusts (DASH-603). Starboard then counts every visitor behind it as that one address, so a few wrong passwords lock them all out."""
+        if address in self._told_proxy or len(self._told_proxy) > 20:
+            return
+        self._told_proxy.add(address)
+        logs.event("warning", "security", f"A request from {address} says it was forwarded, but {address} is not a proxy Starboard trusts, so everyone "
+                   "behind it counts as one visitor. If it is your reverse proxy, set STARBOARD_TRUST_PROXY=1 and add its address to STARBOARD_PROXY_ADDRESSES.")
 
     def host_allowed(self, name):
         # host.docker.internal: the name plug-ins on the home network use for this computer. It exists only inside
@@ -942,6 +952,10 @@ class Handler(BaseHTTPRequestHandler):
             forwarded = self.headers.get("X-Forwarded-For", "")
             if forwarded:
                 return forwarded.split(",")[0].strip()
+        elif self.headers.get("X-Forwarded-For") and not is_loopback(self.client_address[0]):
+            warn = getattr(self.app, "warn_unlisted_proxy", None)
+            if warn:
+                warn(self.client_address[0])  # DASH-603: said once, so a proxy that is not listed is found
         return self.client_address[0]
 
     def is_https(self):
