@@ -19,7 +19,9 @@ upgrade guide and the notes on GitHub, so they always say the same thing.
      going back before 0.40.0 needs the backup the update saved (`./update.sh --to v<previous> --restore backups/<name>`),
      and settings changed since are lost (DASH-596). The end-to-end update test (`tools/update_e2e.sh`) must start from
      `FROM=v0.31.0` or later, because `update.sh` refuses an update to 0.40.0 or later from an older version.
-3. **Notes.** Run `python3 tools/release_notes.py`. It writes `docs/releases/vX.Y.Z.md`.
+3. **Notes.** Run `python3 tools/release_notes.py`. It writes `docs/releases/vX.Y.Z.md`. Keep the notes of the last three
+   releases and delete the older files (`git rm`): `CHANGELOG.md` and `starboard/releases.py` keep every release, and
+   `python3 tools/release_notes.py X.Y.Z` writes any file again.
 4. **Changelog.** `CHANGELOG.md` follows the design system's changelog rules (`docs/CHANGELOGS.md` in the
    design system). Each change goes under `## [Unreleased]` as it is made, under Added, Changed, Deprecated,
    Removed, Fixed or Security, in that order, with every security fix under Security. **Each entry is one plain
