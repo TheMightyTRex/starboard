@@ -52,7 +52,15 @@ export async function start() {
   // Asserts: every stop shows a focus ring, the order never jumps back up the page, forward and back are the same list in
   // reverse, nothing is a trap (a non-modal scope is left at the end; a modal one wraps).
   const tabOrder = async (id, what, scope, { modal = false, start = null, most = 80 } = {}) => {
-    await page.evaluate(([sc, st]) => { const s = st ? document.querySelector(st) : null; if (s) s.focus(); else document.activeElement?.blur(); }, [scope, start]);
+    await page.evaluate(([sc, st, md]) => {
+      const s = st ? document.querySelector(st) : null;
+      if (s) { s.focus(); return; }
+      document.activeElement?.blur();
+      if (!md) return;
+      // A modal scope: start on its last Tab stop, so the first Tab wraps to its first. (After blur the browser would carry on from where focus was.)
+      const tabbable = [...document.querySelector(sc).querySelectorAll("a[href], button, input, select, textarea, [tabindex]")].filter((e) => e.tabIndex >= 0 && !e.disabled && e.type !== "hidden" && e.getClientRects().length);
+      tabbable[tabbable.length - 1]?.focus();
+    }, [scope, start, modal]);
     const stop = () => page.evaluate((sc) => {
       const e = document.activeElement;
       if (!e || e === document.body) return null;
@@ -105,7 +113,8 @@ export async function start() {
   const scan = async (id, what) => {
     await page.addScriptTag({ content: AXE });
     const v = await page.evaluate(async () => {
-      const res = await window.axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] }, resultTypes: ["violations"] });
+      // An open slide-out or dialog is scanned on its own: the page behind it belongs to the page's own scan.
+      const res = await window.axe.run(document.querySelector("#side-panel, dialog[open]") || document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] }, resultTypes: ["violations"] });
       return res.violations.map((x) => `${x.id} (${x.nodes.length}): ${x.nodes.slice(0, 2).map((n) => n.target.join(" ")).join(" | ")}`);
     });
     check(id, `${what}: axe finds nothing`, v.length === 0, v.join("; "));
