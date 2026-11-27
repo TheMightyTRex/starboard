@@ -39,6 +39,12 @@ class ParserTest(unittest.TestCase):
         found, _ = gate.parse_help(log, {})
         self.assertEqual(found, {"topics/a.md: the link to ../images/x.png goes nowhere": 1, "topics have fewer than 3 screenshots": 25})
 
+    def test_smoke_test_failures_by_plug_in_and_check(self):
+        log = "== Example plug-ins smoke test\n  disk-forecast forecast: FAILED <urlopen error>\n  library-cleanup /jobs/move: FAILED x\nFAILED 2\n"
+        found, notes = gate.parse_api(log, {})
+        self.assertEqual(found, {"smoke disk-forecast forecast": 1, "smoke library-cleanup /jobs/move": 1})
+        self.assertEqual(notes, ["plug-in smoke test ran"])
+
     def test_named_lines_for_journeys_and_tasks(self):
         found, notes = gate.parse_named_lines("PASS T1 ok\nFAIL T2 Escape returns focus: BODY\n\n== 40 passed, 1 failed\n", {})
         self.assertEqual(found, {"T2 Escape returns focus": 1})

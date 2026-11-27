@@ -1,11 +1,6 @@
 {
- "about": "Failures already on main (27 November 2026). Each step lists what fails there, by name, with the most it may fail; only new or larger failures fail the gate. Remove an item when it is fixed. Never add an item to hide a failure a change caused.",
+ "about": "Failures already on main (27 November 2026, after the design system sync of DASH-609). Each step lists what fails there, by name, with the most it may fail; only new or larger failures fail the gate. Remove an item when it is fixed. Never add an item to hide a failure a change caused.",
  "steps": {
-  "unit": {
-   "known": {
-    "tests.test_design_system_copies.CopiesMatchTest.test_every_copy_matches_the_library": 1
-   }
-  },
   "checks": {
    "known": {
     "Banned words (pages, scripts and help)|docs/help/accessibility/menus-with-icons.md": 2,
@@ -50,10 +45,14 @@
     "^topics have fewer than 3 screenshots"
    ]
   },
-  "ds": {
+  "api": {
    "known": {
-    "a copy of a design system file differs from the library": 1,
-    "tests.test_design_system_copies.CopiesMatchTest.test_every_copy_matches_the_library": 1
+    "smoke disk-forecast forecast": 1,
+    "smoke library-cleanup /jobs/move": 1,
+    "smoke library-cleanup media": 1,
+    "smoke library-cleanup held": 2,
+    "smoke library-cleanup libraries": 1,
+    "smoke library-cleanup preview": 1
    }
   }
  }

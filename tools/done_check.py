@@ -146,12 +146,15 @@ def findings_from_json(path, key):
 
 
 def parse_api(log, ctx):
+    found = {}
+    for plugin, check in re.findall(r"^  (\S+) (\S+(?: \S+)?): FAILED", log, re.M):  # the example plug-ins' smoke test
+        found[f"smoke {plugin} {check}"] = found.get(f"smoke {plugin} {check}", 0) + 1
     notes = []
     if re.search(r"^Not run: ", log, re.M):
         notes.append("plug-in smoke test not run (needs Docker and starboard-plugins)")
     elif "Example plug-ins smoke test" in log:
         notes.append("plug-in smoke test ran")
-    return {}, notes
+    return found, notes
 
 
 def parse_none(log, ctx):
