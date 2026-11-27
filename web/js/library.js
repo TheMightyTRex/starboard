@@ -96,6 +96,7 @@ function query(extra = {}) {
 
 // One at a time (DASH-309, R4): a segmented control with All first, not filter chips that undo each other.
 function renderChips(chips) {
+  if (TAB === "radio" && typeof findRadioCount === "function") findRadioCount(chips.find((c) => c.key === "wanted")?.count || 0);
   const box = $("#lib-chips");
   box.hidden = !chips.length;
   box.removeAttribute("role");

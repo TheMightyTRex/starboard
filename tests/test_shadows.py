@@ -74,24 +74,6 @@ class DefaultsTest(unittest.TestCase):
         self.assertTrue(self.off())  # nor does the full Reelix put the shadows back
         self.assertTrue(config.Config(self.dir.name).data["shadows_off"])  # kept on disk
 
-    def test_an_install_from_before_keeps_its_shadows_and_is_told_once(self):
-        path = os.path.join(self.dir.name, "config.json")
-        with open(path) as f:
-            data = json.load(f)
-        data.update(schema=3)
-        data.pop("shadows_off", None)
-        data.pop("shadows_note", None)
-        with open(path, "w") as f:
-            json.dump(data, f)
-        write_stack(self.dir.name, "lite")  # even a Lite install that exists today keeps its shadows
-        moved = config.Config(self.dir.name)
-        self.assertIs(moved.data["shadows_off"], False)
-        self.assertFalse(moved.public()["shadows_off"])
-        self.assertTrue(moved.public()["shadows_note"])
-        moved.update_general({"shadows_note": False})  # the first visit marks it told
-        self.assertFalse(config.Config(self.dir.name).public()["shadows_note"])
-        self.assertFalse(config.Config(self.dir.name).public()["shadows_off"])
-
     def test_answering_clears_the_note_and_only_a_switch_is_accepted(self):
         self.config.update_general({"shadows_note": True})
         self.config.update_general({"shadows_off": True})

@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Starboard API",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "description": "Make a key in Starboard: Settings, Security, API keys. Send it as Authorization: Bearer sb_read_... or sb_manage_... A read key reads; a manage key also does the everyday actions (each POST, marked x-right: manage). x-scope is the scope a key needs. Errors are RFC 9457 problem details. Lists use limit and cursor. Answers carry an ETag; send If-None-Match to get 304.",
   "license": {
    "name": "MIT",
@@ -1107,6 +1107,27 @@
             "type": "object",
             "additionalProperties": true
            }
+          },
+          "held": {
+           "type": "object",
+           "required": [
+            "held"
+           ],
+           "description": "Added in 1.12.0: whether a plug-in holds heavy work now (such as the UPS and power plug-in on battery), which pauses downloads whatever the hours say",
+           "properties": {
+            "held": {
+             "type": "boolean"
+            },
+            "reason": {
+             "type": "string"
+            },
+            "until": {
+             "type": "integer"
+            },
+            "by": {
+             "type": "string"
+            }
+           }
           }
          }
         }
@@ -1216,6 +1237,27 @@
            "items": {
             "type": "object",
             "additionalProperties": true
+           }
+          },
+          "held": {
+           "type": "object",
+           "required": [
+            "held"
+           ],
+           "description": "Added in 1.12.0: whether a plug-in holds heavy work now (such as the UPS and power plug-in on battery), which pauses downloads whatever the hours say",
+           "properties": {
+            "held": {
+             "type": "boolean"
+            },
+            "reason": {
+             "type": "string"
+            },
+            "until": {
+             "type": "integer"
+            },
+            "by": {
+             "type": "string"
+            }
            }
           }
          }
@@ -4517,6 +4559,115 @@
      }
     },
     "description": "Only the plug-in's own key, while the plug-in is active and its approved permissions include alerts:send: any other key gets 404 not_found. The one write a plug-in's read-only key may do. An alert goes out once until it is cleared, to where Starboard sends its own (ntfy, Gotify or a webhook), as the alert.raised and alert.cleared events and in the log, and only while alerts are on. Up to 30 new alerts an hour for each plug-in (429 rate_limited with Retry-After); raising one that is already raised does not count."
+   }
+  },
+  "/api/v1/plugin/hold": {
+   "post": {
+    "operationId": "holdHeavyJobs",
+    "summary": "A plug-in holds Starboard's heavy automatic work while the computer runs on battery, or lets it go",
+    "tags": [
+     "Plug-ins"
+    ],
+    "x-scope": null,
+    "x-right": "plugin",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/idempotency"
+     }
+    ],
+    "requestBody": {
+     "required": false,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "on"
+        ],
+        "properties": {
+         "on": {
+          "type": "boolean",
+          "description": "true starts or renews the hold, false ends it"
+         },
+         "reason": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "One line shown to people, such as On battery. Defaults to On battery."
+         },
+         "minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 30,
+          "default": 10,
+          "description": "How long the hold lasts if it is not renewed. Ask again before it ends to keep it."
+         }
+        }
+       },
+       "example": {
+        "on": true,
+        "reason": "On battery",
+        "minutes": 10
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "ok",
+          "held"
+         ],
+         "properties": {
+          "ok": {
+           "type": "boolean"
+          },
+          "held": {
+           "type": "boolean",
+           "description": "Whether anything is held now, by this plug-in or another"
+          },
+          "reason": {
+           "type": "string"
+          },
+          "until": {
+           "type": "integer",
+           "description": "When the longest hold ends if it is not renewed, as epoch seconds"
+          },
+          "by": {
+           "type": "string",
+           "description": "The plug-in whose hold lasts longest"
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "404": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "413": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    },
+    "description": "Only the plug-in's own key, while the plug-in is active and its approved permissions include power:hold: any other key gets 404 not_found. While a hold lasts, Starboard does not start by itself its background jobs (Live TV, watch history, listening progress, the automatic updates), its scheduled backups or other plug-ins' scheduled jobs, and it pauses downloads as Download hours does, even when Download hours is off. Anything a person starts with a click still runs. A hold ends by itself after minutes, so a plug-in that stops cannot hold for ever; what was due starts at the next check after it ends, and downloads Starboard paused start again."
    }
   }
  },
