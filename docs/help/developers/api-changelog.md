@@ -40,6 +40,8 @@ the next major version.
   offered. Read [Capabilities](plugin-manifest-reference.md#capabilities-api-122).
 - **Changed:** the plug-in tester warns when `starboard_api` has no top end or reaches past the next major version, or starts
   lower than the version a field you use came in at. The tester also says when `starboard_tested` is missing.
+- **Added:** a plug-in that uses a manifest part that is going shows a warning on its page and in the plug-in tester, with the day it stops
+  (an error once it has been removed). Starboard counts, on this computer, which key still calls a route that is going.
 - Nothing was taken away. Name `>=1.22` in `starboard_api` to use either field.
 
 ## Starboard API 1.10.0 (not released yet), 26 November 2026
@@ -49,6 +51,8 @@ the next major version.
 - **Added:** every answer from a route that is going carries `Deprecation: @<Unix time>` ([RFC 9745](https://www.rfc-editor.org/rfc/rfc9745)),
   `Sunset: <date>` ([RFC 8594](https://www.rfc-editor.org/rfc/rfc8594)) and a `Link` with `rel="deprecation"` to the page about the change.
   Once it is removed it answers [`410 gone`](../../api/errors.md#gone), never a bare not found.
+- **Added:** an entry in `deprecations` may name a part of a plug-in's manifest, in `manifest` (such as `permission:jellyfin:key`), instead of
+  `method` and `path`.
 - Nothing was taken away: every 1.9.0 address answers as before.
 
 ## Plug-in API 1.20.0 (not released yet), 26 November 2026

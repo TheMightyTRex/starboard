@@ -999,6 +999,8 @@ def handle(h, method, path):
         return problem(429, "rate_limited", f"Up to {PER_MINUTE} requests a minute for each key", extra={**rate, "Retry-After": str(wait)})
     note_use(h.app.data_dir, k)
     h.api_key = k
+    if going and not going.get("removed"):
+        deprecations.note_use(h.app.data_dir, k["id"], going)  # DASH-603: who still calls a route that is going
     if mcp:
         from . import mcp as mcp_server
         return mcp_server.handle(h, k, base, rate, problem)

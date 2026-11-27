@@ -61,6 +61,9 @@ def _api_checks(m):
     uses = (m.get("capabilities") or {}).get("uses") if isinstance(m.get("capabilities"), dict) else None
     for n in plugin_capabilities.missing(uses):
         add("info", f"It uses {n}, which this Starboard does not have", "Check GET /api/v1/ for capabilities and work without it")
+    from . import deprecations
+    for w in deprecations.for_manifest(m):  # a part of the manifest that is going, with the day it stops
+        add("error" if w["removed"] else "warning", deprecations.warning_sentence(w), "Use what replaces it, and name the new version in starboard_api")
     if "starboard_tested" not in m and "starboard_api" in m:
         add("info", "It does not say which API version it was tested with", "Add starboard_tested, such as 1.22")
     return out
