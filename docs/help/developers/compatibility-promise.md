@@ -77,7 +77,8 @@ version, and give the reason. A plug-in the fix stops is shown as **Needs an upd
 
 Run the plug-in tester on your manifest ([Test and publish a plug-in](test-and-publish-a-plugin.md)). Starboard's own tests
 also run 74 older manifests from the plug-in collection against each new Starboard, and fail a change that removes
-anything from the API without these steps.
+anything from the API without these steps. A check with oasdiff fails a change that would break an outside tool, using the last
+release as the baseline, and a weekly run tries the collection's plug-ins against the newest Starboard.
 
 ## Find out more
 
