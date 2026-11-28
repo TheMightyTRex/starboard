@@ -9,7 +9,12 @@ WEB = pathlib.Path(__file__).resolve().parents[1] / "web"
 # page script -> the parts it needs on the page (what it draws or calls from the design system)
 NEEDS = {"app-logs.js": ["log-view"], "library-item.js": ["tabs"], "system.js": ["charts"],
          "settings-apps.js": ["error-summary"], "dispatcharr-settings.js": ["error-summary"],
-         "settings-security.js": ["error-summary", "secret-field"], "settings-people.js": ["secret-field"], "reelix-settings.js": ["tag-input"]}
+         "settings-security.js": ["error-summary", "secret-field"], "settings-people.js": ["secret-field"], "reelix-settings.js": ["tag-input"],
+         # the wizards show the error summary "There is a problem" on a step with errors (wizardProblem, 28 November 2026)
+         "install.js": ["error-summary"], "settings-setup.js": ["error-summary"], "bring-in.js": ["error-summary"]}
+# Loaded by plugin-pages.js only when a plug-in answers with them (plug-in API 1.26), never by a page's own tags
+LAZY = {"wizard-steps", "wizard-preview", "option-media", "sentence", "more-rows", "desktop-notice"}
+CSS_ONLY = {"desktop-notice"}
 NEEDS_PART = {"secret-field": ["error-summary"]}
 
 
@@ -38,7 +43,7 @@ class PartsLoaded(unittest.TestCase):
 
     def test_part_files_exist_and_the_core_has_none_of_them(self):
         for part in json.loads((WEB / "parts-used.json").read_text())["use"]:
-            self.assertTrue((WEB / "js/parts" / f"{part}.js").exists() and (WEB / "css/parts" / f"{part}.css").exists(), part)
+            self.assertTrue(((WEB / "js/parts" / f"{part}.js").exists() or part in CSS_ONLY) and (WEB / "css/parts" / f"{part}.css").exists(), part)
         core = (WEB / "js/components.js").read_text()
         self.assertNotIn("function logView", core)
         self.assertIn("addSetup", core)

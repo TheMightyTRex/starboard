@@ -19,7 +19,11 @@ class OnlyTheUsedParts(unittest.TestCase):
 
     def test_every_part_in_the_list_is_loaded_by_a_page(self):
         text = "".join(p.read_text() for p in WEB.glob("*.html"))
+        lazy = (WEB / "js/plugin-pages.js").read_text()  # the plug-in page parts load when a plug-in answers with them (API 1.26)
         for part in USED:
+            if part in lazy:
+                self.assertRegex(lazy, rf'"{re.escape(part)}"', part)
+                continue
             self.assertRegex(text, rf"/(css|js)/parts/{re.escape(part)}\.(css|js)", part)
 
     def test_each_style_part_is_well_formed(self):

@@ -754,7 +754,7 @@ function sidePanel({ title, body = [], foot = [], wide = false, opener = documen
   footNode.hidden = !foot.length;
   const layer = el("div", { class: "side-panel-layer", id: "side-panel" },
     el("div", { class: "side-panel-backdrop" }),
-    el("aside", { class: wide ? "side-panel side-panel--wide" : "side-panel", role: "dialog", "aria-modal": "true", "aria-labelledby": "side-panel-title" },
+    el("div", { class: wide ? "side-panel side-panel--wide" : "side-panel", role: "dialog", "aria-modal": "true", "aria-labelledby": "side-panel-title" },
       el("div", { class: "panel-header" }, chipNode ? titleChip(heading, chipNode) : heading, close), bodyNode, footNode));
   document.body.append(layer);
   const openedBy = opener instanceof HTMLElement ? FocusKeeper.describe(opener) : null;
