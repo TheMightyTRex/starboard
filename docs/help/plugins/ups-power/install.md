@@ -43,7 +43,7 @@ Like every plug-in, it runs read only, as a user that is not root, with no extra
 
 ![The foot of the install slide-out, with Your Starboard password filled in and Install UPS and power (step 4) outlined](../../images/plugins/ups-power/install-3-password.png)
 
-5. UPS and power's own tab opens under **Settings**, then **Plug-ins**. Choose how to read the UPS and enter its address, then save and select **Activate**. Read [Settings](../ups-power/settings.md).
+5. UPS and power's own tab opens under **Settings**, then **Plug-ins**. Choose how to read the UPS and enter its address, then save and select **Turn on**. Read [Settings](../ups-power/settings.md).
 
 ### Add it by its address
 

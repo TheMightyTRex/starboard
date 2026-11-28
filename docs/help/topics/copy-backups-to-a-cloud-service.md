@@ -47,30 +47,30 @@ you can use your own remote instead.
 7. **Check and save.** Enter how many backups to keep there in **Keep the newest** (5 unless you change it) and
    **Your Starboard password**. Select **Save and finish**.
 
-The slide-out closes and the service is in the list, activated. Each new full backup is copied to it, and the oldest
+The slide-out closes and the service is in the list, turned on. Each new full backup is copied to it, and the oldest
 there is removed once there are more than you keep. To add another service, select it under **Add a place** and go
 through the steps again.
 
 ## When a backup counts as safe
 
 At the top of **Where backups go**, Starboard says **Safe** or **Not yet safe**. A backup is safe only when every place
-that is activated has copied it and read it back. If a place fails, the others are still made, and an alert says
+that is on has copied it and read it back. If a place fails, the others are still made, and an alert says
 which place failed.
 
 ## Change a place
 
-- **Switch:** deactivate a place to leave it out of new backups. It keeps its settings.
+- **Switch:** turn off a place to leave it out of new backups. It keeps its settings.
 - **Copy:** each place has its own rule for how often it gets a copy: **Every backup**, **At most once a week** or **At most
   once a month**. It applies at once. Use it for a slow or small place, such as a cloud account, so a nightly schedule does
   not fill it. A backup still counts as safe at a place on a weekly or monthly rule while its last copy there was read back
-  inside that time, and the page says so. **Copy the newest full backup now** copies to every activated place whatever its
+  inside that time, and the page says so. **Copy the newest full backup now** copies to every turned on place whatever its
   rule. The rule applies to full backups; the server settings zips follow **Keep the newest server settings backups**.
 - **Test:** checks the place again. It writes a small file, reads it back, removes it and checks there is room for the
   newest backup. The result shows beside the place: **Connected** with when it was tested, or **Not connected** with
   what to do. Starboard keeps the last result.
 - **Change:** a cloud service opens its sign-in and folder steps again. A folder or a share opens its form.
 - **Remove:** Starboard forgets the place's password or sign-in. Copies already there stay.
-- **Copy the newest full backup now** copies to every place that is activated.
+- **Copy the newest full backup now** copies to every place that is on.
 
 ## Server settings backup, encrypted
 
@@ -162,7 +162,7 @@ part of your `rclone.conf` from `[name]` to the next `[`. The command `rclone co
 - Signing in, the folder list, the test and each copy run in a short-lived helper. It is removed when it finishes,
   and when you close the slide-out part way.
 - Closing the slide-out before **Save and finish** saves nothing.
-- To stop copying to a place, deactivate it, or select **Remove**. The copies already there stay.
+- To stop copying to a place, turn it off, or select **Remove**. The copies already there stay.
 - Each step of signing in goes to Starboard's log, on **System**, **Logs**: when it started, when the sign-in page was
   ready, when the address was pasted back, and why one did not finish. The sign-in's address, code and token are never
   written.
@@ -173,7 +173,7 @@ part of your `rclone.conf` from `[name]` to the next `[`. The command `rclone co
 each step to Starboard's log: each **Test connection**, each copy, and each step of connecting a cloud service, such
 as the reason Microsoft or Google gave for refusing a sign-in. Lines with a password, a key, a token or a sign-in code
 are left out, and the log takes out addresses and names as it does everywhere. It is off unless you choose it, and it
-saves as soon as you change it. Use it to find out why a connection does not work, then deactivate it.
+saves as soon as you change it. Use it to find out why a connection does not work, then turn it off.
 
 ## If it does not work
 
@@ -188,7 +188,7 @@ saves as soon as you change it. Use it to find out why a connection does not wor
 - **"The service did not accept those keys or that password":** check the keys at the service, then select **Try
   again**.
 - **"Starboard could not reach the service":** check the address, and that the server or NAS is on.
-- **The sign-in stops at a two-step check, or it is not clear why it did not work:** activate **Detailed log for
+- **The sign-in stops at a two-step check, or it is not clear why it did not work:** turn on **Detailed log for
   backup connections**, try again, then read the lines for **cloud sign-in** and **backup connection** on **System**,
   **Logs**. They say which step it reached and what the service said.
 

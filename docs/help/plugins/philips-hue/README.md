@@ -12,7 +12,7 @@ A Starboard plug-in by TheMightyTRexUK, MIT licence. Needs Starboard with plug-i
 1. Add it from **Settings**, **Plug-ins**, **Catalogue**, under **Home**.
 2. On its **Bridge** tab, give the bridge's address, such as `192.168.1.20`, and select **Pair with a bridge**. The
    address is in the Hue app: **Settings**, **My Hue system**, your bridge, **IP address**. A bridge found on your
-   network is listed too: select **Activate** beside it.
+   network is listed too: select **Turn on** beside it.
 3. Press the round link button on top of the bridge. The page waits 90 seconds and says when it is paired.
 
 ## Its tabs
@@ -20,8 +20,8 @@ A Starboard plug-in by TheMightyTRexUK, MIT licence. Needs Starboard with plug-i
 | Tab | What it does |
 |---|---|
 | Bridge | Pairs with the bridge, checks it answers (**Test**), or forgets it (**Remove**). |
-| Rooms, Zones, Device types | The same lights grouped three ways. Open one to activate or deactivate each light, choose its brightness, and choose its colour or white from a list of names. A switch activates or deactivates every light in it, and two lists set the brightness and colour of them all at once. |
-| Scenes | Each room's and zone's scenes. **Activate** shows a scene; **Deactivate** turns that room's lights off. |
+| Rooms, Zones, Device types | The same lights grouped three ways. Open one to turn on or off each light, choose its brightness, and choose its colour or white from a list of names. A switch turns on or turns off every light in it, and two lists set the brightness and colour of them all at once. |
+| Scenes | Each room's and zone's scenes. **Turn on** shows a scene; **Turn off** turns that room's lights off. |
 | Schedules | Timed actions written in words, kept on the bridge. |
 | When something plays | A scene to run when someone starts playing something in Jellyfin, after sunset if you like. |
 
@@ -39,8 +39,8 @@ Write when, at what time, then what. The list shows each schedule in the same wo
 - `Once on 24 December at 18:00, Hall on`, or `Tomorrow at 06:30, Porch on`
 
 Days can be every day, weekday or weekend, or days by name. Times are hours and minutes, or sunrise or sunset. The
-name after the comma is a room, a zone, a light or every light. Each schedule is activated and deactivated with
-**Activate** and **Deactivate**, and removed from the row's **More** menu.
+name after the comma is a room, a zone, a light or every light. Each schedule is on and turned off with
+**Turn on** and **Turn off**, and removed from the row's **More** menu.
 
 Schedules are kept on the bridge, so they run while Starboard or this plug-in rests. The bridge's newer API (CLIP v2) has no schedules. So these use its version 1 schedules, and rules on its daylight sensor for sunrise and sunset.
 Sunrise and sunset need your location set in the Hue app. A one-off schedule is removed by the bridge once it has
@@ -48,7 +48,7 @@ run. Schedules made in the Hue app or another app are listed under **Made in ano
 
 ## When something plays
 
-On the **When something plays** tab, activate one scene. When Starboard finds something has started playing in Jellyfin, the
+On the **When something plays** tab, turn one on scene. When Starboard finds something has started playing in Jellyfin, the
 plug-in runs that scene. Starboard checks what is playing every 5 minutes, so the lights can change up to 5 minutes
 after it starts. **Only after sunset** (on when added) runs it only when the bridge's daylight sensor says it is dark.
 **Only when playing in these apps** limits it to apps you name, such as Jellyfin Android TV.

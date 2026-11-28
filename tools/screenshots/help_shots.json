@@ -547,7 +547,7 @@
       "steps": [
         7
       ],
-      "alt": "How Reelix searches, with Search through the VPN activated (step 7) outlined"
+      "alt": "How Reelix searches, with Search through the VPN turned on (step 7) outlined"
     },
     {
       "topic": "choose-sites-to-search",
@@ -862,7 +862,7 @@
       "file": "add-a-plugin-2-active.png",
       "page": "settings-plugin.html?id=styles",
       "height": 900,
-      "run": "for (let i = 0; i < 40 && !document.querySelector('main [role=tab]'); i++) await new Promise(r => setTimeout(r, 250)); await new Promise(r => setTimeout(r, 600)); [...document.querySelectorAll('main button')].find((b) => b.textContent.trim().startsWith('Deactivate')).dataset.shot = 'off';",
+      "run": "for (let i = 0; i < 40 && !document.querySelector('main [role=tab]'); i++) await new Promise(r => setTimeout(r, 250)); await new Promise(r => setTimeout(r, 600)); [...document.querySelectorAll('main button')].find((b) => b.textContent.trim().startsWith('Turn off')).dataset.shot = 'off';",
       "marks": [
         {
           "t": "$button[data-shot=off]",
@@ -874,7 +874,7 @@
       "steps": [
         5
       ],
-      "alt": "The Styles plug-in's own tab, with its state Active and Deactivate (step 5) outlined"
+      "alt": "The Styles plug-in's own tab, with its state Active and Turn off (step 5) outlined"
     },
     {
       "topic": "add-a-plugin",
@@ -1124,7 +1124,7 @@
       "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\", \"contrast\": true})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
       "marks": [],
       "steps": [],
-      "alt": "The Apps page with High contrast activated in the Light theme: near-black text, black borders round every card and button, and no shadows"
+      "alt": "The Apps page with High contrast turned on in the Light theme: near-black text, black borders round every card and button, and no shadows"
     },
     {
       "topic": "accessibility",
@@ -1133,7 +1133,7 @@
       "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"dark\", \"contrast\": true})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
       "marks": [],
       "steps": [],
-      "alt": "The Apps page with High contrast activated in the Dark theme: white text and white borders on black"
+      "alt": "The Apps page with High contrast turned on in the Dark theme: white text and white borders on black"
     },
     {
       "topic": "accessibility",
@@ -1187,7 +1187,7 @@
       "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
       "marks": [],
       "steps": [],
-      "alt": "Settings, General, Lists with Wider text spacing deactivated"
+      "alt": "Settings, General, Lists with Wider text spacing turned off"
     },
     {
       "topic": "accessibility",
@@ -1197,7 +1197,7 @@
       "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\", \"spacing\": true})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
       "marks": [],
       "steps": [],
-      "alt": "The same page with Wider text spacing activated: more space between lines, letters and words, so the same text takes more room"
+      "alt": "The same page with Wider text spacing turned on: more space between lines, letters and words, so the same text takes more room"
     },
     {
       "topic": "accessibility",
@@ -1232,7 +1232,7 @@
         }
       ],
       "steps": [],
-      "alt": "Settings, General, Lists, with Long lists outlined: Load more as you scroll, which can be deactivated to always have Show 40 more"
+      "alt": "Settings, General, Lists, with Long lists outlined: Load more as you scroll, which can be turned off to always have Show 40 more"
     },
     {
       "topic": "accessibility",
@@ -1261,7 +1261,7 @@
       "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
       "marks": [],
       "steps": [],
-      "alt": "Settings, General, Appearance with Underline links deactivated: links are shown by their colour"
+      "alt": "Settings, General, Appearance with Underline links turned off: links are shown by their colour"
     },
     {
       "topic": "accessibility",
@@ -1271,7 +1271,7 @@
       "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\", \"underline\": true})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
       "marks": [],
       "steps": [],
-      "alt": "The same page with Underline links activated: every link on the page is underlined"
+      "alt": "The same page with Underline links turned on: every link on the page is underlined"
     },
     {
       "topic": "accessibility-checks",

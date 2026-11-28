@@ -25,9 +25,9 @@ These are on Checkrr's tab.
 ## Things to note
 
 - **It only reports.** It never deletes, moves, renames or replaces a file, and it cannot: your folders are read only to it, and it is given no Reelix, Radarr, Sonarr or Lidarr.
-- **Its settings file** is `data/plugins/checkrr/data/app/checkrr.yaml` in Starboard's data. Starboard writes it once, when Checkrr first starts, and never over a change you make. Change it only if you know Checkrr well, then deactivate and activate the plug-in.
+- **Its settings file** is `data/plugins/checkrr/data/app/checkrr.yaml` in Starboard's data. Starboard writes it once, when Checkrr first starts, and never over a change you make. Change it only if you know Checkrr well, then turn off and turn on the plug-in.
 - **Its own page** lists the same files and its figures. Anyone on your home network can open it and start a check or clear its list: clearing the list does not touch the files.
-- Its list and figures are kept when you update or deactivate it, and when you remove it they stay in its folder.
+- Its list and figures are kept when you update or turn it off, and when you remove it they stay in its folder.
 
 ## Find out more
 

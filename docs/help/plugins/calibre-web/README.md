@@ -13,7 +13,7 @@ People who keep their books in a Calibre library (a folder with metadata.db) and
 
 ## Set it up
 
-1. Activate it and choose **Open Calibre-Web**.
+1. Turn it on and choose **Open Calibre-Web**.
 2. Sign in with Calibre-Web's own first sign-in, `admin` and `admin123`, and **change the password at once** in Admin, Edit user: anyone on your home network can open the page.
 3. For **Location of Calibre database** give `/media/books` (the folder with `metadata.db`). It is read only, so uploading and editing books in Calibre-Web are not possible; add books with Calibre itself.
 

@@ -48,7 +48,7 @@ Tdarr's page is on your home network, at this computer's address and the port St
 1. Check Tdarr's tab says **Active**. Starboard gives it a port only once it is active.
 2. Under **Its web page**, read the address, then select **Open Tdarr**.
 3. Open it from a device on your home network. It does not open from away from home.
-4. If it still does not open, deactivate it, activate it again and wait a minute for Tdarr to start.
+4. If it still does not open, turn it off, turn it on again and wait a minute for Tdarr to start.
 
 ## Connect Tdarr
 
@@ -72,7 +72,7 @@ On its tab, under **Settings**:
 
 **Bring in the Tdarr you already have…** says why it stopped. Your Tdarr is not changed when the copy fails.
 
-- **Deactivate Tdarr first, so nothing writes to its folder while the copy is made**: select **Deactivate**, then try again.
+- **Turn off Tdarr first, so nothing writes to its folder while the copy is made**: select **Turn off**, then try again.
 - **Starboard found no Tdarr on this computer (no container called tdarr)**: the main install has no Tdarr to copy. Set the plug-in up as a new Tdarr instead. Read [Install](../tdarr/install.md#set-it-up).
 - **Tdarr keeps /app/server in a Docker volume, which Starboard cannot copy. Copy it by hand**: copy those folders into the plug-in's folder in Starboard's data, `data/plugins/tdarr`, yourself.
 - **Tdarr has none of the folders this plug-in copies**: there is nothing to bring in. Set it up as a new Tdarr.

@@ -48,7 +48,7 @@ The **Bridge** tab asks your network for Hue bridges. Inside Docker's own networ
 
 The page waits 90 seconds for the link button. If it was not pressed in time:
 
-1. Select **Activate** beside the bridge under **Not paired yet**.
+1. Select **Turn on** beside the bridge under **Not paired yet**.
 2. Within 90 seconds, press the round link button on top of the bridge once. The page pairs as soon as it is pressed.
 
 ## Check the bridge is on the network
@@ -94,8 +94,8 @@ A light says **Not reachable** when the bridge cannot reach it.
 
 ## Check When something plays
 
-1. Check one scene is activated on **When something plays**.
-2. **Only after sunset** is active: the scene runs only when the bridge's daylight sensor says it is dark. Deactivate it to run at any time.
+1. Check one scene is on on **When something plays**.
+2. **Only after sunset** is active: the scene runs only when the bridge's daylight sensor says it is dark. Turn it off to run at any time.
 3. **Only when playing in these apps** is not empty: the app must have one of those names. Leave it empty for any app.
 4. Starboard checks what is playing every 5 minutes, so the lights can change up to 5 minutes after something starts.
 5. The intro on **When something plays** says when it last ran, and for what.

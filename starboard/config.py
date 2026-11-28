@@ -77,7 +77,7 @@ DEFAULTS = {
     "session_days": 7,
     "update_check": True,
     "network_access": None,
-    # AI assistants over MCP (DASH-464): /api/v1/mcp answers only once the owner activates it in Settings, Security,
+    # AI assistants over MCP (DASH-464): /api/v1/mcp answers only once the owner turns it on in Settings, Security,
     # API keys, and then only with a Starboard API key, for what the key's scopes cover.
     "mcp_enabled": False,
     "show_home_address": True,
@@ -87,7 +87,7 @@ DEFAULTS = {
     "settings_advanced": False,  # Settings pages show only the basic settings until this is on (DASH-225)
     "reelix_auto_update": False,  # Starboard installs new Reelix images by itself, with a way back (DASH-263)
     "starboard_auto_update": False,  # Starboard installs its own new releases in quiet hours, with a way back (DASH-417)
-    # DASH-422: the other parts that may update by themselves, each deactivated until chosen (auto_updates.py), and
+    # DASH-422: the other parts that may update by themselves, each turned off until chosen (auto_updates.py), and
     # when: "download" (the download hours when set, otherwise 01:00 to 06:00) or "quiet" (always 01:00 to 06:00).
     "apps_auto_update": False,
     "plugins_auto_update": False,
@@ -683,7 +683,7 @@ def clean_logs(incoming, current):
         out["alerts_only"] = incoming["alerts_only"]
     if "detail" in incoming:
         if incoming["detail"] not in DETAIL_CHOICES:
-            raise ConfigError("Choose Off, For 24 hours or Until I deactivate it")
+            raise ConfigError("Choose Off, For 24 hours or Until I turn it off")
         out["detail"] = incoming["detail"]
         out["detail_until"] = int(time.time()) + 86400 if out["detail"] == "day" else 0
     return out

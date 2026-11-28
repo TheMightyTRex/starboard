@@ -12,7 +12,7 @@ The plug-in's `choices` path answers GET with:
    "menus": [{"id": text, "title": text, "detail": text, "group": text, "parent": text, "active": true|false}]
             (optional, plug-in API 1.7, DASH-361)}
 and POST with {"action": add|test|test_all|toggle|remove|up|down|choose|bulk, "id": text, "value": text}, answering the same shape
-with "said", a sentence. "bulk" activates (value "on") or deactivates (value "off") a whole set of items at once: Starboard
+with "said", a sentence. "bulk" turns on (value "on") or turns off (value "off") a whole set of items at once: Starboard
 draws one switch per set, grouped by its kind in the order given. A switch is active when all of its items are, or as
 "active" says (a whole source that can be stopped); "hint" replaces the words "3 of 5 active" under it.
 "menus" (plug-in API 1.7) splits a long list into sub menus: Starboard draws the menus without a parent as rows that open,
@@ -20,7 +20,7 @@ and each opened menu shows its own sub menus, the bulk switches and items whose 
 A parent comes before its sub menus, at most four levels deep; anything else is left out. Items and switches without a
 known "menu" stay on the first level, so a screen without menus is drawn as before.
 "readonly": true (plug-in API 1.11, DASH-402) with "layout": "folds" draws each section's table to be read only: no tick
-boxes, no State column, no Activate buttons and no Active or Inactive filter, for figures such as watch statistics.
+boxes, no State column, no Turn on buttons and no Active or Inactive filter, for figures such as watch statistics.
 An item's "restore" action (plug-in API 1.15, DASH-406) is drawn as a Put back button on its row, for something the
 plug-in moved aside, such as a film Library clean-up moved to the holding folder; it POSTs {"action": "restore", "id"}.
 Plug-in API 1.16 (19 November 2026, owner: "changes save without refreshing the whole page", "searches open up the

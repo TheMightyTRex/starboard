@@ -21,12 +21,12 @@ These are on Watch statistics's tab.
 
 ## Things to note
 
-- A setting you change is used the next time a card or table asks; you do not need to deactivate it first. A change to **Over the last** makes it read from Jellyfin again.
+- A setting you change is used the next time a card or table asks; you do not need to turn it off first. A change to **Over the last** makes it read from Jellyfin again.
 - The figures come from Playback Reporting, a plug-in for Jellyfin in its official catalogue. Without it, the tables say "Playback Reporting is not installed in Jellyfin" and show only each person's last play of each title, with no device or time watched.
 - Each answer from Jellyfin is kept for 15 minutes, and it reads 5,000 plays at most.
 - It only reads. The tables cannot change anything, in Starboard or in Jellyfin.
 - It rests after 5 minutes with nothing to do, and Starboard wakes it when a card or table asks.
-- Settings are kept when you update or deactivate it, and when you remove it they stay in its folder.
+- Settings are kept when you update or turn it off, and when you remove it they stay in its folder.
 
 ## Find out more
 

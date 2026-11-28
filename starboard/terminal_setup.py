@@ -217,7 +217,7 @@ HELP = {
     "auto-updates": "Starboard can install new versions of itself, Reelix, your other apps and the plug-ins. It does this in the update hours: "
                     "your download hours when they are set, otherwise 01:00 to 06:00. Before each one it saves the "
                     "settings. If the new version does not start, it goes back to the one before (Jellyfin's "
-                    "plug-ins cannot go back by themselves). Each is deactivated unless you choose it; change them "
+                    "plug-ins cannot go back by themselves). Each is off unless you choose it; change them "
                     "and the hours later in Settings, Updates.",
     "check": "This is everything that will change. Nothing has changed yet: type b to go back and change an answer, or "
              "q to stop. The apps' files are written to Starboard's data folder, then the apps are downloaded and started.",
@@ -3257,7 +3257,7 @@ def step_hours(api, term, state):
 
 def updates_summary(chosen):
     """The Updates answer in the set-up's summary, in the browser set-up's words (web/setup-answers.json): the parts
-    chosen, such as "Starboard, Reelix and plug-ins", or Deactivated. `chosen`: the setting keys that were activated."""
+    chosen, such as "Starboard, Reelix and plug-ins", or Off. `chosen`: the setting keys that were on."""
     from . import setup_answers
     w = setup_answers.WORDS["updates"]
     names = [p["short"] for p in w["parts"] if p["key"] in set(chosen or ())]
@@ -3276,7 +3276,7 @@ def update_parts(state):
 
 
 def step_updates(api, term, state):
-    """Updates (DASH-417, DASH-422): which parts may update by themselves, each deactivated unless chosen; the same
+    """Updates (DASH-417, DASH-422): which parts may update by themselves, each turned off unless chosen; the same
     question, words and order as the browser set-up (web/setup-answers.json)."""
     if state.get("start") == "restore":
         return False  # the backup brought its own choices

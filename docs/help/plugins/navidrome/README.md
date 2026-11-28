@@ -13,7 +13,7 @@ People who listen to their music on a phone, offline or in the car, with a Subso
 
 ## Set it up
 
-1. Activate it, choose **Open Navidrome** and make the first account, which is its admin.
+1. Turn it on, choose **Open Navidrome** and make the first account, which is its admin.
 2. It reads `media/music`, read only. In your Subsonic app, use the address Starboard shows, such as `http://192.168.1.20:4533`.
 
 ## What it may do

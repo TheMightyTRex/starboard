@@ -1,5 +1,5 @@
 """Plug-in API 1.21 (27 November 2026, DASH-589): needs_plugins, the plug-ins a plug-in needs, and switch, the setting that turns a
-plug-in on and off. Switching off or deactivating a plug-in that others need asks first, naming them, and deactivates them too."""
+plug-in on and off. Switching off or turning off a plug-in that others need asks first, naming them, and turns them off too."""
 import http.client
 import json
 import os
@@ -100,8 +100,8 @@ class Asking(unittest.TestCase):
     def test_deactivating_asks_first_in_plain_words_and_changes_nothing(self):
         status, out = self.api("POST", "/api/plugins/sign-in-provider/disable", {})
         self.assertEqual(status, 409)
-        self.assertEqual(out["error"], "Provider app A and Provider app B need Sign-in provider. If you deactivate it, they will be "
-                                       "deactivated too, and nothing is deleted. Continue?")
+        self.assertEqual(out["error"], "Provider app A and Provider app B need Sign-in provider. If you turn it off, they will be "
+                                       "turned off too, and nothing is deleted. Continue?")
         self.assertEqual([d["id"] for d in out["dependents"]], ["needs-provider-a", "needs-provider-b"])
         self.assertEqual(set(self.states().values()), {"enabled"})
 
@@ -118,7 +118,7 @@ class Asking(unittest.TestCase):
     def test_switching_the_switch_off_asks_the_same_and_yes_deactivates_them(self):
         status, out = self.api("PUT", "/api/plugins/sign-in-provider/settings", {"settings": {"enabled": False}})
         self.assertEqual(status, 409)
-        self.assertIn("If you switch it off, they will be deactivated too", out["error"])
+        self.assertIn("If you switch it off, they will be turned off too", out["error"])
         self.assertTrue(pa._read(os.path.join(pa.folder(self.tmp, "sign-in-provider"), "settings.json"))["enabled"])  # nothing saved
         status, out = self.api("PUT", "/api/plugins/sign-in-provider/settings", {"settings": {"enabled": False}, "confirm_dependents": True})
         self.assertEqual(status, 200)
@@ -134,8 +134,8 @@ class Asking(unittest.TestCase):
 
     def test_one_dependent_is_worded_in_the_singular(self):
         pa.set_state(self.tmp, "needs-provider-b", "disabled")
-        words = pa.dependents_words("Sign-in provider", pa.dependents(self.tmp, "sign-in-provider"), "deactivate it")
-        self.assertEqual(words, "Provider app A needs Sign-in provider. If you deactivate it, it will be deactivated too, and nothing is deleted. Continue?")
+        words = pa.dependents_words("Sign-in provider", pa.dependents(self.tmp, "sign-in-provider"), "turn it off")
+        self.assertEqual(words, "Provider app A needs Sign-in provider. If you turn it off, it will be turned off too, and nothing is deleted. Continue?")
 
     def test_the_switch_that_was_never_set_counts_as_its_default(self):
         pa.save_settings(self.tmp, "sign-in-provider", {"enabled": False})

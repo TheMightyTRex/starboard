@@ -13,7 +13,7 @@ People whose Jellyfin users already know Seerr's request page. Reelix already ha
 
 ## Set it up
 
-1. Activate it, choose **Open Seerr**, and sign in with your Jellyfin account; its set-up asks for Jellyfin's address (`http://host.docker.internal:8096`) and your libraries.
+1. Turn it on, choose **Open Seerr**, and sign in with your Jellyfin account; its set-up asks for Jellyfin's address (`http://host.docker.internal:8096`) and your libraries.
 2. If you also use Reelix's requests, choose one place for people to ask, so requests are not made twice.
 
 ## What it may do

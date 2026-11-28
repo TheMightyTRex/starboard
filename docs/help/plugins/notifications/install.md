@@ -41,11 +41,11 @@ Measured:
 2. Under **System**, find **Notifications** and select **Install…**.
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Notifications**. To stop, select **Cancel**: nothing is installed.
-5. Notifications' own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Activate**.
+5. Notifications' own tab opens under **Settings**, then **Plug-ins**, and Starboard turns it on: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Turn on**.
 6. On its tab, fill in the details for one way to send, such as **Email**, and select **Save**.
 7. Select that channel's test button, such as **Send a test email**, and check the test arrives.
-8. Activate **Send by** that channel, such as **Send by email**.
-9. Optional: under **What to send**, deactivate what you do not want, and give **Starboard's address, for links**.
+8. Turn on **Send by** that channel, such as **Send by email**.
+9. Optional: under **What to send**, turn off what you do not want, and give **Starboard's address, for links**.
 10. Optional: under **People**, give one line for each person who should hear when their request is ready.
 11. Add its cards to your dashboard. Read [Dashboard card](../notifications/dashboard-card.md).
 
@@ -72,7 +72,7 @@ Or run its installer, `install.py` in its folder, on any computer with Python, a
 
 Its containers stop and go, and its API key stops working. Nothing is deleted.
 
-To stop it for a while instead, select **Deactivate** on its tab: its settings and folder are kept.
+To stop it for a while instead, select **Turn off** on its tab: its settings and folder are kept.
 
 ## Find out more
 

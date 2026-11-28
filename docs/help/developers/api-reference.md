@@ -1534,7 +1534,7 @@ with urllib.request.urlopen(req, timeout=10) as r:
 
 ### POST /api/v1/backup/settings-copy
 
-Copy the server's settings zip to every place that is activated, encrypted with rclone crypt first, as the server's own backup job asks after writing it (1.9.0). Body: name, the zip's file name in the server backups folder (the newest when left out). Never sent without a key.
+Copy the server's settings zip to every place that is on, encrypted with rclone crypt first, as the server's own backup job asks after writing it (1.9.0). Body: name, the zip's file name in the server backups folder (the newest when left out). Never sent without a key.
 
 - **Key:** a key made with Read and manage whose scopes are empty or include `system` (processor, memory, disks and alerts). A key without it gets `404 not_found`.
 - **Needs:** `manage`. A read key gets `403 right_needed`. Send a JSON body; `Idempotency-Key` makes a retry safe.
@@ -2339,7 +2339,7 @@ with urllib.request.urlopen(req, timeout=10) as r:
 
 AI assistants: the Model Context Protocol, read-only tools about the media server.
 
-The MCP Streamable HTTP transport: send one JSON-RPC 2.0 message as JSON (no batches) and get one JSON answer, never a stream. It takes initialize, ping, tools/list and tools/call; notifications, with no id, get 202 and no body. Off until the owner activates AI assistants in Settings, Security, API keys (403 mcp_off). Only a Read only key (403 read_key_needed). tools/list gives the tools the key's scopes cover: search_library (library), recently_added, coming_up and now_playing (media), downloads_in_progress and download_problems (downloads), requests (requests), app_health (apps) and disk_space (system). Each reads the same as its /api/v1 route and changes nothing. Each tools/call is written to the audit log. An Origin header from another site is refused (403 origin_refused). MCP versions 2025-06-18 and 2025-03-26; send MCP-Protocol-Version after initialize.
+The MCP Streamable HTTP transport: send one JSON-RPC 2.0 message as JSON (no batches) and get one JSON answer, never a stream. It takes initialize, ping, tools/list and tools/call; notifications, with no id, get 202 and no body. Off until the owner turns on AI assistants in Settings, Security, API keys (403 mcp_off). Only a Read only key (403 read_key_needed). tools/list gives the tools the key's scopes cover: search_library (library), recently_added, coming_up and now_playing (media), downloads_in_progress and download_problems (downloads), requests (requests), app_health (apps) and disk_space (system). Each reads the same as its /api/v1 route and changes nothing. Each tools/call is written to the audit log. An Origin header from another site is refused (403 origin_refused). MCP versions 2025-06-18 and 2025-03-26; send MCP-Protocol-Version after initialize.
 
 - **Key:** a Read only key.
 - **Operation id:** `mcp`.

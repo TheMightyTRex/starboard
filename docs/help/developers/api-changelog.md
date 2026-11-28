@@ -39,9 +39,9 @@ the next major version.
 
 ## Plug-in API 1.21.0 (not released yet), 27 November 2026
 
-- **Added:** `needs_plugins`, the plug-ins a plug-in needs, and `switch`, the setting that is a plug-in's main switch. Deactivating a
+- **Added:** `needs_plugins`, the plug-ins a plug-in needs, and `switch`, the setting that is a plug-in's main switch. Turning off a
   plug-in, or saving its switch as inactive, asks first when other active plug-ins need it: the route answers `409` with the words to
-  show and the plug-ins' names, and the same request with `confirm_dependents` set to `true` deactivates them too. Read
+  show and the plug-ins' names, and the same request with `confirm_dependents` set to `true` turns them off too. Read
   [Plug-ins that need another plug-in](plugin-manifest-reference.md#plug-ins-that-need-another-plug-in-needs_plugins-and-switch).
 - **Changed:** nothing a plug-in relies on. `POST /api/plugins/<id>/disable` and `PUT /api/plugins/<id>/settings` may now answer `409`
   for a plug-in that others list in `needs_plugins`; none does today. A plug-in that does not use the new fields is drawn as before.
@@ -132,7 +132,7 @@ the next major version.
 
 - **Added:** `POST /mcp`, for AI assistants that speak the Model Context Protocol (MCP), over its Streamable HTTP
   transport: one JSON-RPC 2.0 message in, one JSON answer back, never a stream. It takes `initialize`, `ping`,
-  `tools/list` and `tools/call`; a notification gets `202`. Off until the owner activates **AI assistants** in
+  `tools/list` and `tools/call`; a notification gets `202`. Off until the owner turns on **AI assistants** in
   Settings, Security, API keys (`403 mcp_off`), and only with a **Read only** key (`403 read_key_needed`). Its tools
   only read, each through the same route and scope as the address it is named after, and each call is written to
   the audit log. Read [MCP tools](mcp-tools.md).
@@ -173,7 +173,7 @@ the next major version.
   home network, such as `http://192.168.1.20:8790`. Create your own TV channel gives it to Jellyfin's Live TV.
 - **Changed:** a custom page's `add` box and an item's `attach` form take plain text, not only a web address, so a
   plug-in can ask for a name or a number. Check what you are sent: the browser no longer checks it is an address.
-- **Changed:** Starboard activates a plug-in once it is installed, from a catalogue, an address or a zip file. One
+- **Changed:** Starboard turns on a plug-in once it is installed, from a catalogue, an address or a zip file. One
   with `setup_required` or required settings stays waiting until they are saved, as before. Plan for your first
   start to come straight after the install.
 - Nothing was taken away: every 1.15 plug-in works as before, and `STARBOARD_API` is as before.
@@ -274,7 +274,7 @@ the next major version.
   build runs with limits (2 GB of memory, 2 processor cores, 20 minutes, an image of up to 3 GB). Read
   [Built from a zip file](plugin-manifest-reference.md#built-from-a-zip-file).
 - **Added:** `jellyfin_libraries` and the permission `jellyfin:libraries` (medium risk, DASH-430): Jellyfin libraries
-  for folders the plug-in fills, which Starboard adds on each activation with real-time monitoring deactivated unless
+  for folders the plug-in fills, which Starboard adds each time the plug-in is turned on, with real-time monitoring turned off unless
   the plug-in sets `realtime_monitor`, and keeps that way. Read
   [Jellyfin libraries](plugin-manifest-reference.md#jellyfin-libraries).
 - **Changed:** a manifest with `build` from an address or a catalogue is refused, with words that point to the zip.
@@ -447,7 +447,7 @@ the next major version.
 ## Plug-in API 1.4.0, 12 November 2026
 
 - **Added:** settings may be `required`, and a plug-in may set `setup_required`. Until it is set up, it is in the
-  `needs-setup` state and cannot be activated.
+  `needs-setup` state and cannot be turned on.
 - **Added:** `notices`, `p2p` and `adult`, shown with the install warning.
 - **Added:** `events`: `item.added`, `download.finished`, `app.down`, `app.up` and `playback.started`, sent as a
   POST to `/events`. Each needs the read permission that covers what it tells.

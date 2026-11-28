@@ -13,7 +13,7 @@ People who want status checks beyond their apps: websites, a router, ports and c
 
 ## Set it up
 
-1. Activate it, choose **Open Uptime Kuma** and make its admin account.
+1. Turn it on, choose **Open Uptime Kuma** and make its admin account.
 2. Add the checks you want. Its status pages are on your home network only, unless you share them yourself.
 
 ## What it may do

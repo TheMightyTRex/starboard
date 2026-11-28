@@ -91,7 +91,7 @@ class Words(unittest.TestCase):
     def test_plain_words(self):
         text = json.dumps(WORDS, ensure_ascii=False)
         self.assertNotIn("—", text)
-        for bad in ("n't", "turn on", "turn off", "switch on", "switch off", "enable", "disable"):
+        for bad in ("n't", "activate", "deactivate", "switch on", "switch off", "enable", "disable"):
             self.assertNotIn(bad, text.lower())
 
 

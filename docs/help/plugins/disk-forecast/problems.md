@@ -41,7 +41,7 @@ Your Starboard's plug-in API is outside what this version of Disk forecast works
 
 "Measuring: a forecast after two days" means it has no readings yet. It takes its first reading a few seconds after it starts, then one every hour.
 
-- A forecast needs readings from two different days, so wait until the day after it was activated.
+- A forecast needs readings from two different days, so wait until the day after it was on.
 - If it still says **Measuring** after an hour, check its tab says **Active**.
 
 ## Check the disk is filling
@@ -66,8 +66,8 @@ The forecast compares with the oldest day it kept, up to 35 days back, so a big 
 When it could not measure at all, the card shows **Problem** and what went wrong, such as an error reaching Starboard.
 
 1. Go to **Settings**, then **Plug-ins**, then **Disk forecast**.
-2. Select **Deactivate**.
-3. Select **Activate**. It measures again a few seconds after it starts.
+2. Select **Turn off**.
+3. Select **Turn on**. It measures again a few seconds after it starts.
 4. If the error stays, go to **System**, then **Logs**, and find its name.
 
 Once it has readings, a later error is not shown on the card. If the time in the band is more than a few hours old, it has stopped measuring: start it again.

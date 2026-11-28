@@ -376,7 +376,7 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
             reelix_sites.set_vpn(admin, data_dir, True)
             done.append("Reelix searches through the VPN")
         except (ReelixError, OSError, ValueError) as e:
-            done.append(f"Reelix does not search through the VPN yet ({e}). Activate Search through the VPN in Settings, Reelix, Sites to search")
+            done.append(f"Reelix does not search through the VPN yet ({e}). Turn on Search through the VPN in Settings, Reelix, Sites to search")
 
     # 4d1. Reelix's own updates: it may check, but never installs itself; Starboard updates the Reelix image on
     # Apps, Updates (DASH-187). Reelix's default is already off; this keeps it so.

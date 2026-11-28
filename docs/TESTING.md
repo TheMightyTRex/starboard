@@ -72,8 +72,8 @@ runs `tools/journeys/journeys.mjs` in the Playwright image. It needs Docker. It 
 - an error shows beside what it belongs to (renaming a category to a name in use), and the next try clears it;
   an error with nothing on the page to belong to becomes an error toast;
 - the Updates button says Check until the first check;
-- Send feedback (Snaglist) appears when activated, and the content policy lets its styles in. A report saved
-  in Starboard is listed in Settings, General. Send feedback is gone when deactivated;
+- Send feedback (Snaglist) appears when turned on, and the content policy lets its styles in. A report saved
+  in Starboard is listed in Settings, General. Send feedback is gone when turned off;
 - after signing in, the `next` address cannot send you to another site;
 - names, categories, descriptions and saved reports that look like code are shown as text, and nothing runs;
 - the content security policy is on all 26 pages and blocks nothing;

@@ -19,7 +19,7 @@ of replacing a file (which deletes it first) never runs. Replacing a file is up 
 
 ## Set it up
 
-1. Activate it. It checks each Sunday at 03:30. To check now, select **Check now** on its tab.
+1. Turn it on. It checks each Sunday at 03:30. To check now, select **Check now** on its tab.
 2. Add its **Damaged files** card to your dashboard, or open **Files that failed the check** on its tab.
 
 ## What it may do

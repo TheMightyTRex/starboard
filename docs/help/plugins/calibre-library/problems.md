@@ -43,7 +43,7 @@ A restart or an update can cut a run short. The page says **It was interrupted**
 Calibre-Web sets its library only when it starts.
 
 1. Go to **Settings**, then **Plug-ins**, then **Calibre-Web**.
-2. Select **Deactivate**, then **Activate**.
+2. Select **Turn off**, then **Turn on**.
 3. Open Calibre-Web again. If it still shows nothing, read [Calibre-Web, your books](https://themightytrex.github.io/starboard-plugins/help/plugins/calibre-web/your-books.html).
 
 ## Report a problem

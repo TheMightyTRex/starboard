@@ -56,7 +56,7 @@ them on System, Overview, shows how each one went, and lets you start one with *
 ## Find out more
 
 - [Back up the whole server](back-up-the-server.md)
-- [Activate alerts](activate-alerts.md)
+- [Turn on alerts](activate-alerts.md)
 - [Read the log and report a problem](read-the-log.md)
 - [The terminal: entering commands](../basics/the-terminal.md)
 

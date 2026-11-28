@@ -41,7 +41,7 @@ HELP.update({
 HELP_PAGES.update({"updates": "topics/update-starboard.html", "settings": "topics/find-a-setting.html",
                    "settings-password": "topics/reset-a-forgotten-password.html"})
 
-ON, OFF = "Activated", "Deactivated"
+ON, OFF = "On", "Off"
 
 
 def releases(folder=".", run=None):
@@ -91,13 +91,13 @@ def automatic_updates(api, term, version, folder="."):
                           ("Your apps", "Updated from Apps, Updates, when you choose")])
         # Nothing to change is the recommended answer, first, so Enter never changes a setting by mistake.
         options = [("Done: back to the settings (recommended)", "Nothing changes."),
-                   ("Check for new Starboard versions: " + ("deactivate" if check else "activate"),
+                   ("Check for new Starboard versions: " + ("turn off" if check else "turn on"),
                     "Starboard says when a new version is out."),
-                   ("Install Starboard updates automatically: " + ("deactivate" if mine else "activate"),
+                   ("Install Starboard updates automatically: " + ("turn off" if mine else "turn on"),
                     "In the quiet hours, with its settings backed up first and a way back if it does not start."),
                    ("Update Starboard or go back to an earlier version", "The command to run, with the versions on this computer.")]
         if has_reelix:
-            options.insert(3, ("Install Reelix updates automatically: " + ("deactivate" if reelix else "activate"),
+            options.insert(3, ("Install Reelix updates automatically: " + ("turn off" if reelix else "turn on"),
                                "In the quiet hours, once a day at most, with its settings saved first and a way back."))
         term.can_back = True
         picked = term.choose("What do you want to change?", options, 1, help_key="updates")

@@ -288,7 +288,7 @@ def radio_search(reelix, q, from_stations=False, feeds_only=False):
     # every show is from a station.
     old_reelix = from_stations and isinstance(got, list) and got and not any(isinstance(x, dict) and "broadcaster" in x for x in got)
     if old_reelix:
-        return {"items": [], "note": "Your Reelix cannot tell which shows come from radio stations yet. Update Reelix, or deactivate From radio stations."}
+        return {"items": [], "note": "Your Reelix cannot tell which shows come from radio stations yet. Update Reelix, or turn off From radio stations."}
     if from_stations:
         out = [c for c in out if c["broadcaster"]]
     return {"items": [c for c in out if c["title"]][:40]}

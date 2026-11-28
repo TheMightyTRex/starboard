@@ -30,11 +30,11 @@ async function startSecurity() {
     if (!want) {
       access.checked = true;
       const ok = await confirmDialog({
-        title: "Deactivate access from your home network?",
+        title: "Turn off access from your home network?",
         message: network.you_are_on_this_computer
           ? el("p", { text: "Phones and other computers lose access straight away. Only this computer, the server, can open Starboard after this." })
           : notice("warning", "You are using another device", "This phone or computer loses access straight away. Only the server itself can open Starboard after this."),
-        confirm: "Deactivate network access", danger: true,
+        confirm: "Turn off network access", danger: true,
       });
       if (!ok) { access.focus(); return; }
       access.checked = false;
@@ -130,7 +130,7 @@ async function startSecurity() {
     section("sc-pw", "Password", "At least 10 characters; a short sentence of 4 or more words makes a strong password that you can remember. You stay signed in here and everyone else is signed out.", pwForm),
     section("sc-ses", "Sessions", "How long Remember me lasts, and signing out.", daysForm),
     wants(holder, "sc-keys") ? section("sc-keys", "API keys", "For other apps, scripts and AI assistants. Each key reads, or reads and manages, only what you choose, and is shown once.", apiKeys()) : null,
-    wants(holder, "sc-mcp") ? section("sc-mcp", "AI assistants", "Let an AI assistant that speaks MCP, the Model Context Protocol, answer questions about your server. Nothing is shared until you activate it.", mcpAssistants()) : null]));
+    wants(holder, "sc-mcp") ? section("sc-mcp", "AI assistants", "Let an AI assistant that speaks MCP, the Model Context Protocol, answer questions about your server. Nothing is shared until you turn it on.", mcpAssistants()) : null]));
   daysForm.append(
       el("ul", { class: "settings-rows" },
         el("li", { class: "setting" },
@@ -141,7 +141,7 @@ async function startSecurity() {
               el("div", { class: "input-group days-group" }, days, el("span", { class: "input-group__unit", text: "days" })),
               el("button", { type: "submit", class: "btn" }, "Save", el("span", { class: "visually-hidden", text: " how long" }))),
             daysError))),
-        settingRow("Only send the sign-in cookie over HTTPS", el("span", { id: "secure-h", text: "Activate when every address you use starts with https. This applies at once." }), el("label", { class: "switch" }, secure), "secure-l"),
+        settingRow("Only send the sign-in cookie over HTTPS", el("span", { id: "secure-h", text: "Turn on when every address you use starts with https. This applies at once." }), el("label", { class: "switch" }, secure), "secure-l"),
         settingRow("Sign out", "This browser only.", el("div", { class: "actions session-actions" }, signOut), "signout-l")));
   if (wants(holder, "sc-ses")) holder.append(dangerSection("sc-danger", "Sign out everywhere", "Every browser and phone signed in to Starboard, this one too. It asks for your password first.",
     el("div", { class: "actions" }, everywhere)));
@@ -252,7 +252,7 @@ function apiKeys() {
   return box;
 }
 
-// AI assistants over MCP (DASH-464): off until activated here. What it shares is said beside the switch; each
+// AI assistants over MCP (DASH-464): off until turned on here. What it shares is said beside the switch; each
 // assistant still needs a Read only key, and reads only what that key's scopes cover. Nothing polls.
 function mcpAssistants() {
   const address = `${location.origin}/api/v1/mcp`;

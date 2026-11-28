@@ -18,7 +18,7 @@ Read [HELP.md](https://github.com/TheMightyTRex/starboard-plugins/blob/main/libr
 | Series that ended, every episode watched | A series Jellyfin says has ended, every episode watched by everyone, the last more than the same days ago | the same |
 | Films and series nobody watches | Nobody has watched it for 12 months, and it was added longer ago than that | **Not watched for**, 1 to 120 months |
 
-Each rule is activated when you add it and can be deactivated. They check the film and series libraries activated in
+Each rule is on when you add it and can be turned off. They check the film and series libraries turned on in
 **Libraries** (all of them when you add it). "Everyone" is each Jellyfin user who can sign in, less those in
 **People to leave out**.
 
@@ -43,8 +43,8 @@ exactly what was followed. Jellyfin: told the path was deleted, or created on Pu
 - **Preview**, worked out in the background when opened, when a setting changes, after six hours, or with **Preview
   again**: what would move and the space it frees. Nothing moves from Preview.
 - **Move items to the holding folder**, a job once a day in Starboard's quiet hours, only when **Move items each
-  day** is activated. It is deactivated when you add it. **Run now** in **System**, **Jobs** runs it at once, also only
-  when activated. A run moves up to 200 items, within 50 minutes; the next carries on.
+  day** is on. It is off when you add it. **Run now** in **System**, **Jobs** runs it at once, also only
+  when turned on. A run moves up to 200 items, within 50 minutes; the next carries on.
 
 ## What it may do
 

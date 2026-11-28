@@ -61,8 +61,8 @@ Reelix is updated here like any other app. Its updates come from TheMightyTRex's
 that Starboard installed. Reelix never updates itself.
 
 - To have Starboard install new Reelix versions for you, go to **Settings**, then **Updates**, then **Update
-  settings**. Under **Reelix updates**, activate **Install Reelix updates automatically**. It is inactive until
-  you activate it, and needs Docker access.
+  settings**. Under **Reelix updates**, turn on **Install Reelix updates automatically**. It is inactive until
+  you turn it on, and needs Docker access.
 - Starboard then updates Reelix once a day at most. It saves Reelix's settings first, and goes back to the
   version before if the new one is not healthy.
 

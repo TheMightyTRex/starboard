@@ -6,7 +6,7 @@ Starboard draws everything Philips Hue shows, with the same parts as the rest of
 ## How it is built to be used
 
 - **Colour in words:** every light's colour is said by its name, such as "On at 80%, warm white", never by colour alone. Colours are chosen from a list of names, not a colour wheel.
-- **Every control is Starboard's own:** switches, lists and buttons have their names. A screen reader hears "Brightness: Ceiling" or "Deactivate Under cupboard", not a bare control.
+- **Every control is Starboard's own:** switches, lists and buttons have their names. A screen reader hears "Brightness: Ceiling" or "Turn off Under cupboard", not a bare control.
 - **Each change is spoken:** Starboard's live region says what happened, such as "Ceiling is at 40%" or "Every light in Kitchen is off". The focus stays on the control you used. After **Change** on a schedule, the focus goes to the page heading.
 - **Pairing waits for you:** the link button notice says the seconds left in words as well as a bar, and the page waits 90 seconds.
 - **Schedules in words:** a schedule is one sentence, such as "Every weekday at 07:00, Kitchen to 80%", read out as written, with no time pickers. A mistake is said in words with what to change.
@@ -22,7 +22,7 @@ Starboard draws everything Philips Hue shows, with the same parts as the rest of
   - A Tab walk of each tab.
   - The headings in reading order.
   - Where the focus goes after each change.
-- **What the check found** was in Starboard's own list parts, not in the plug-in, and goes to Starboard. The section tabs are smaller than 24 pixels for a touch. The heading **Activate or deactivate in bulk** comes two levels under the tab's heading. The list of schedules holds a part that is not a list item while **Change** is open.
+- **What the check found** was in Starboard's own list parts, not in the plug-in, and goes to Starboard. The section tabs are smaller than 24 pixels for a touch. The heading **Turn on or off in bulk** comes two levels under the tab's heading. The list of schedules holds a part that is not a list item while **Change** is open.
 
 ## Find out more
 

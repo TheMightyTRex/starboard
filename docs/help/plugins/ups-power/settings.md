@@ -20,7 +20,7 @@ The settings for UPS and power are on its own tab: go to **Settings**, then **Pl
 
 | Setting | What it does | Default |
 |---|---|---|
-| **Send alerts through Starboard** | Once when the mains power is lost, when the battery is low, when it needs replacing or when the UPS cannot be reached, and once when each is over, to where Starboard sends its own alerts. Activated or deactivated. | Activated |
+| **Send alerts through Starboard** | Once when the mains power is lost, when the battery is low, when it needs replacing or when the UPS cannot be reached, and once when each is over, to where Starboard sends its own alerts. Turned on or off. | Turned on |
 | **Low battery at** | On battery, a charge at or under this counts as low, from 0 to 99. 0 leaves it to the UPS's own low battery flag. | 30 % |
 | **Low battery under** | On battery, a time left at or under this counts as low, from 0 to 600 minutes. 0 leaves it to the UPS's own flag. | 5 minutes |
 

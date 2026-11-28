@@ -23,7 +23,7 @@ The grid is the plug-in's own page, built to the same rules as Starboard's, and 
 
 ## On the television
 
-- **Contrast on any picture.** Words on the television have a dark outline, and the backing plate, activated unless you change it, puts a dark box behind the on-screen logo, the clock and the labels. Coming up next cards darken their picture to a third of its brightness, so white words on them have at least 7 to 1 contrast whatever the picture.
+- **Contrast on any picture.** Words on the television have a dark outline, and the backing plate, turned on unless you change it, puts a dark box behind the on-screen logo, the clock and the labels. Coming up next cards darken their picture to a third of its brightness, so white words on them have at least 7 to 1 contrast whatever the picture.
 - **The font** is Atkinson Hyperlegible Next, made to be clear to people with low vision, as in Starboard.
 - **Inside the safe area** keeps the on-screen logo and the straps in the picture on every television.
 - **Broadcast packs:** words drawn on a pack's backgrounds have the same dark outline. Choose backgrounds that are dark where the words go, or set the text colour in `pack.json`; the placement guides show the title safe area. The example pack's words are white and amber on dark navy, at least 7 to 1.

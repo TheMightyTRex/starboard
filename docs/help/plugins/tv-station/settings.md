@@ -19,7 +19,7 @@ Its line-up is read from Jellyfin straight away. The programmes for today and to
 
 | Section | Setting | What it does |
 |---|---|---|
-| Channel | **On air** | Activate to put it in Jellyfin's Live TV. **Up** and **Down** move it in the list, which sets its number. **Remove** takes it off; its settings are kept in the plug-in's folder |
+| Channel | **On air** | Turn on to put it in Jellyfin's Live TV. **Up** and **Down** move it in the list, which sets its number. **Remove** takes it off; its settings are kept in the plug-in's folder |
 | Channel | **Name** | Select **Rename**. Shown in Jellyfin, in the guide and on the television |
 | Channel | **Number** | Select **Change number**. Leave it empty to number it by its place in the list |
 | Channel | **Colour** | On its Coming up next cards and its made logo |
@@ -74,7 +74,7 @@ Your own branding for every channel: the on-screen logo, the logo with its music
 | Row | What it does |
 |---|---|
 | **Station's pack** | Select **Upload a pack** and choose a zip of up to 60 MB made from the template. It is checked first; when it passes, every channel without a pack of its own uses it. **Remove** stops using it |
-| **Try the example pack** | Activate to use Example TV, a made-up channel drawn in code, for every channel without a pack of its own. The first time, it takes about 2 minutes to make, while no channel is playing. Deactivate to go back to your own pack, or none |
+| **Try the example pack** | Turn on to use Example TV, a made-up channel drawn in code, for every channel without a pack of its own. The first time, it takes about 2 minutes to make, while no channel is playing. Turn off to go back to your own pack, or none |
 | **The last pack checked** | What the check found: each problem with a pack that was not used, or notes on one that was, such as a picture scaled to fit |
 | **Downloads** | The template (folders, `pack.json`, its schema and a README), the placement guides for the Coming up next card, the promo and the on-screen logo, and the example pack as a zip |
 | **Promos kept** | Each promo, with its programme, its day and time and its channel |
@@ -104,10 +104,10 @@ Promos are made only for channels whose broadcast pack has a promo background.
 
 | Setting | What it does |
 |---|---|
-| **Make promos in quiet hours** | In Starboard's quiet hours, one at a time at the lowest priority, and never while anyone is watching: a few short clips of a programme coming up, a music bed from the pack, and its title, day and time and channel. Activated unless you change it |
+| **Make promos in quiet hours** | In Starboard's quiet hours, one at a time at the lowest priority, and never while anyone is watching: a few short clips of a programme coming up, a music bed from the pack, and its title, day and time and channel. Turned on unless you change it |
 | **Promos kept for each channel** | 3 unless you change it, up to 6 |
 | **Replace each promo after** | 2 days unless you change it. A promo is also replaced once its programme has started, so they never pile up |
-| **Show promos for your other channels** | Each channel's breaks show the promos of your other channels too. Activated unless you change it |
+| **Show promos for your other channels** | Each channel's breaks show the promos of your other channels too. Turned on unless you change it |
 
 ## On-screen logo
 
@@ -124,7 +124,7 @@ The station's choices, which every channel uses unless it has its own.
 | **Fades in after the opening** | Keeps a programme's opening titles clear |
 | **Clock** | The time beside the logo |
 | **Label** | New or Repeat, or Live, in words, for the first 2 minutes of each programme |
-| **Backing plate** | A dark, partly transparent box behind the logo, the clock and the label, so they are clear on any picture. Activated unless you change it |
+| **Backing plate** | A dark, partly transparent box behind the logo, the clock and the label, so they are clear on any picture. Turned on unless you change it |
 
 ## Straps and cards
 
@@ -133,7 +133,7 @@ The station's choices, which every channel uses unless it has its own.
 | **Programme name at the start** | For 8 seconds as each programme starts |
 | **Up next during the end credits** | The next programme and its time |
 | **Up next shows for** | 30 seconds unless you change it |
-| **Coming up next and Later cards** | In the breaks: the programme's picture, its title, the date and time it is shown and a short synopsis. Deactivated, a break with no clips shows the station's name |
+| **Coming up next and Later cards** | In the breaks: the programme's picture, its title, the date and time it is shown and a short synopsis. Off, a break with no clips shows the station's name |
 
 ## Actions
 

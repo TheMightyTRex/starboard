@@ -172,7 +172,7 @@ function zipPart(z, reload) {
   const rows = z.places.map((p) => el("li", { class: "row" }, placeLogo({ kind: "disk" }, null),
     el("div", { class: "row__text" }, el("div", { class: "row__title", text: p.title }),
       el("div", { class: "row__meta" }, el("span", { class: "place-state", "data-tone": p.state === "done" ? "success" : p.state === "failed" ? "danger" : "neutral" },
-        icon(p.shape, 18), el("strong", { text: p.enabled ? p.state_word : "Deactivated" }), p.error ? el("span", { class: "muted", text: `: ${p.error}` }) : null)))));
+        icon(p.shape, 18), el("strong", { text: p.enabled ? p.state_word : "Off" }), p.error ? el("span", { class: "muted", text: `: ${p.error}` }) : null)))));
   return el("div", { class: "stack-3", id: "zip-part" },
     el("h3", { id: "zip-h", text: "Server settings backup, encrypted" }),
     el("p", { class: "small muted", text: "The server's own backup job writes a zip of the apps' settings with API keys and passwords. Starboard sends it to the same places, but only after encrypting it with rclone crypt, and only after its key is made. The plain file is never uploaded." }),

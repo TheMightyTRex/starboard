@@ -13,14 +13,14 @@ Direct play's settings are on its own tab: go to **Settings**, then **Plug-ins**
 
 | Setting | What it does | Default |
 |---|---|---|
-| **Roku Express and older Rokus** | H.264 up to 1080p; Dolby Digital, AAC and MP3 sound. No HEVC, DTS or TrueHD. Activated or deactivated. | Activated |
-| **Roku 4K** | Roku Express 4K, Streaming Stick 4K and Ultra: H.264 and HEVC up to 4K. No DTS or TrueHD. Activated or deactivated. | Deactivated |
-| **Fire TV Sticks** | H.264 and HEVC up to 1080p, so the HD sticks play them too. No DTS or TrueHD. Activated or deactivated. | Deactivated |
-| **Chromecast** | H.264 up to 1080p; AAC, MP3, Opus and FLAC sound. No HEVC, Dolby Digital, DTS or TrueHD. Activated or deactivated. | Deactivated |
-| **Smart TV apps** | Jellyfin on Samsung and LG televisions: H.264 and HEVC up to 4K. No DTS or TrueHD. Activated or deactivated. | Deactivated |
-| **Web browsers** | H.264 up to 4K; AAC, MP3, Opus and FLAC sound. No HEVC or Dolby Digital, so files with only Dolby Digital get a stereo track. Activated or deactivated. | Deactivated |
-| **Apple TV** | H.264 and HEVC up to 4K; Dolby Digital, AAC and FLAC sound. No DTS or TrueHD. Activated or deactivated. | Deactivated |
-| **Nvidia Shield** | Nearly everything, DTS and TrueHD included, up to 4K. Activated or deactivated. | Deactivated |
+| **Roku Express and older Rokus** | H.264 up to 1080p; Dolby Digital, AAC and MP3 sound. No HEVC, DTS or TrueHD. Turned on or off. | Turned on |
+| **Roku 4K** | Roku Express 4K, Streaming Stick 4K and Ultra: H.264 and HEVC up to 4K. No DTS or TrueHD. Turned on or off. | Turned off |
+| **Fire TV Sticks** | H.264 and HEVC up to 1080p, so the HD sticks play them too. No DTS or TrueHD. Turned on or off. | Turned off |
+| **Chromecast** | H.264 up to 1080p; AAC, MP3, Opus and FLAC sound. No HEVC, Dolby Digital, DTS or TrueHD. Turned on or off. | Turned off |
+| **Smart TV apps** | Jellyfin on Samsung and LG televisions: H.264 and HEVC up to 4K. No DTS or TrueHD. Turned on or off. | Turned off |
+| **Web browsers** | H.264 up to 4K; AAC, MP3, Opus and FLAC sound. No HEVC or Dolby Digital, so files with only Dolby Digital get a stereo track. Turned on or off. | Turned off |
+| **Apple TV** | H.264 and HEVC up to 4K; Dolby Digital, AAC and FLAC sound. No DTS or TrueHD. Turned on or off. | Turned off |
+| **Nvidia Shield** | Nearly everything, DTS and TrueHD included, up to 4K. Turned on or off. | Turned off |
 
 ## When it works
 
@@ -32,7 +32,7 @@ Direct play's settings are on its own tab: go to **Settings**, then **Plug-ins**
 
 | Setting | What it does | Default |
 |---|---|---|
-| **Shrink very large H.264 files** | Converts again any H.264 file with a higher bitrate than its size's limit, at the same picture quality. A file is kept as it was when it would not get at least a tenth smaller. Activated or deactivated. | Activated |
+| **Shrink very large H.264 files** | Converts again any H.264 file with a higher bitrate than its size's limit, at the same picture quality. A file is kept as it was when it would not get at least a tenth smaller. Turned on or off. | Turned on |
 | **Shrink 1080p files over** | A number from 4 to 80 Mbps. | 15 Mbps |
 | **Shrink 720p files over** | A number from 2 to 40 Mbps. | 8 Mbps |
 | **Shrink smaller files over** | A number from 1 to 20 Mbps. | 5 Mbps |
@@ -41,8 +41,8 @@ Direct play's settings are on its own tab: go to **Settings**, then **Plug-ins**
 
 | Setting | What it does | Default |
 |---|---|---|
-| **Convert HEVC to H.264** | Only when none of your devices plays HEVC. H.264 files are larger, so this uses more space. Activated or deactivated. | Deactivated |
-| **Keep the originals** | Moves each original to a .direct-play-originals folder in movies or tv instead of replacing it, so you can delete them yourself. Saves no space until you do. Activated or deactivated. | Deactivated |
+| **Convert HEVC to H.264** | Only when none of your devices plays HEVC. H.264 files are larger, so this uses more space. Turned on or off. | Turned off |
+| **Keep the originals** | Moves each original to a .direct-play-originals folder in movies or tv instead of replacing it, so you can delete them yourself. Saves no space until you do. Turned on or off. | Turned off |
 | **Card updates every** | How often the Direct play card on the dashboard shows the progress while a file is converted. One of: 10 seconds, 30 seconds, 1 minute, 5 minutes. | 30 seconds |
 
 ## Buttons
@@ -55,12 +55,12 @@ These are on Direct play's tab.
 
 ## Things to note
 
-- Choose your devices before you activate it. **Roku Express and older Rokus** is activated when you add it. A file is fixed only when one of the devices you chose cannot play it.
-- A setting you change is used from the next file; you do not need to deactivate it first. The file being converted finishes with the settings it started with.
+- Choose your devices before you turn it on. **Roku Express and older Rokus** is on when you add it. A file is fixed only when one of the devices you chose cannot play it.
+- A setting you change is used from the next file; you do not need to turn it off first. The file being converted finishes with the settings it started with.
 - It only works in your movies and tv folders, and never downloads anything.
 - With **Keep the originals**, the `.direct-play-originals` folders stay when you remove it. Delete them yourself when you are happy with the new files.
 - A file that failed its check is not tried again until the file changes.
-- Settings are kept when you update or deactivate it, and when you remove it they stay in its folder.
+- Settings are kept when you update or turn it off, and when you remove it they stay in its folder.
 
 ## Find out more
 

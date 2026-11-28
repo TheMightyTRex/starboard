@@ -6,7 +6,7 @@ so Jellyfin's tuners and guides stay as they are.
 
 The move happens by itself, once, when Starboard starts: if Live TV was on (extras.livetv), Starboard can run
 containers and the installer gave a Live TV folder, it adds the plug-in with the same settings (the
-address Jellyfin uses, the folder as Jellyfin sees it), activates it, and switches its own job off. When any of that
+address Jellyfin uses, the folder as Jellyfin sees it), turns it on, and switches its own job off. When any of that
 is missing (no Docker access, Starboard not in Docker), Live TV keeps running inside Starboard as before, so nobody
 loses it; Settings, Plug-ins offers the plug-in when it can run.
 """
@@ -60,7 +60,7 @@ def settings_from(cfg, self_url):
 
 
 def add(cfg, data_dir, media_dir, self_url, helper=None):
-    """Adds and activates the built-in Live TV plug-in with today's settings. Returns its listing entry."""
+    """Adds and turns on the built-in Live TV plug-in with today's settings. Returns its listing entry."""
     from . import plugins_admin
     manifest = plugins_admin.builtins()[PID]
     if plugin_state(data_dir) is None:

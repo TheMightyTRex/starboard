@@ -58,7 +58,7 @@ there is no arm/v7 build for older Raspberry Pis.
 - **Addresses away from home**: each shared app's address and state, with Test.
 - **Tailscale**: Sign in with (an auth key or a sign-in link), the auth key, and the name on your tailnet.
 - **Cloudflare Tunnel**: the tunnel token.
-- **What to share**: Starboard, Jellyfin and Audiobookshelf, each activated by default.
+- **What to share**: Starboard, Jellyfin and Audiobookshelf, each turned on by default.
 - Buttons: **Test remote access** and **Start remote access again**.
 
 ## Add it

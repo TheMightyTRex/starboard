@@ -26,7 +26,7 @@ Added:
 
 Changed:
 
-- **Clearer words:** each channel's switch says what to enter before you activate it, the band says **Not sent**, and a message about an event it does not know says "Starboard has an alert. Open Starboard for the details."
+- **Clearer words:** each channel's switch says what to enter before you turn it on, the band says **Not sent**, and a message about an event it does not know says "Starboard has an alert. Open Starboard for the details."
 - **Logo description:** where its logo stands on its own, a screen reader says "Notifications logo", the plug-in's name, instead of a description of the symbol.
 
 ## What is new in 1.1.2

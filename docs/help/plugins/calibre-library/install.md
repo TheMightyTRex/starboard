@@ -63,7 +63,7 @@ https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/calibre-l
 
 ![Calibre library maker's Actions, with Make the library (step 2) outlined](../../images/plugins/calibre-library/make-2-button.png)
 
-4. When it says **Done**, deactivate Calibre-Web and activate it again.
+4. When it says **Done**, turn off Calibre-Web and turn it on again.
 
 Run it again when new books arrive. Select **Stop** to end a run after the books it is adding now; run it again to carry on.
 

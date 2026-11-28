@@ -9,7 +9,7 @@ health of your disks and how full your folders are. It goes to the same place as
 ## Before you begin
 
 - Alerts are set up, with somewhere for alerts to go and **Watch in the background** active. Read
-  [Activate alerts](activate-alerts.md).
+  [Turn on alerts](activate-alerts.md).
 
 ## Steps
 
@@ -17,11 +17,11 @@ health of your disks and how full your folders are. It goes to the same place as
 
    ![Settings, General, Alerts, with More settings (step 2) outlined, with example data](../images/weekly-summary-3-more.png)
 
-2. Activate **More settings**, if it is not active already.
+2. Turn on **More settings**, if it is not active already.
 
    ![Settings, General, Alerts, with the Weekly summary tab (step 3) outlined, with example data](../images/weekly-summary-1-tab.png)
 
-3. Under **Weekly summary**, activate **Weekly summary**. Starboard shows "Weekly summary activated".
+3. Under **Weekly summary**, turn on **Weekly summary**. Starboard shows "Weekly summary turned on".
 
    ![Settings, General, Alerts, Weekly summary, with the switch (step 3) outlined, with example data](../images/weekly-summary-2-switch.png)
 
@@ -43,7 +43,7 @@ The first summary comes on the next Monday, after 09:00 by the server's clock.
 - The summary uses the uptime history that watching keeps, so a new install has little to say in its first
   week.
 - It is sent once a week. It costs nothing noticeable.
-- The **Everything** preset in **Settings**, **General**, **Performance** also activates the weekly summary. Read
+- The **Everything** preset in **Settings**, **General**, **Performance** also turns on the weekly summary. Read
   [Make Starboard use less of your server](make-starboard-lighter.md#steps).
 
 ## If it does not work
@@ -55,7 +55,7 @@ The first summary comes on the next Monday, after 09:00 by the server's clock.
 
 ## Find out more
 
-- [Activate alerts](activate-alerts.md)
+- [Turn on alerts](activate-alerts.md)
 - [Get told when something goes wrong](../guides/get-told-when-something-goes-wrong.md)
 - [Check your disks' health](check-disk-health.md)
 

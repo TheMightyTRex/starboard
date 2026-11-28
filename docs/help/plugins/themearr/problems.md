@@ -90,7 +90,7 @@ Themearr's page is on your home network, at this computer's address and the port
 1. Check Themearr's tab says **Active**. Starboard gives it a port only once it is active.
 2. Under **Its web page**, read the address, then select **Open Themearr**.
 3. Open it from a device on your home network. It does not open from away from home.
-4. If it still does not open, deactivate it, activate it again and wait a minute for the app to start.
+4. If it still does not open, turn it off, turn it on again and wait a minute for the app to start.
 
 ## Report a problem
 

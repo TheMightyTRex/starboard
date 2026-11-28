@@ -34,7 +34,7 @@ These figures are the most it may use.
 2. Under **Network**, find **Outside services** and select **Install…**.
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Outside services**. To stop, select **Cancel**: nothing is installed.
-5. Outside services' own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Activate**.
+5. Outside services' own tab opens under **Settings**, then **Plug-ins**, and Starboard turns it on: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Turn on**.
 
 ### Add it by its address
 
@@ -52,7 +52,7 @@ Or run its installer, `install.py` in its folder, on any computer with Python, a
 2. In **Addresses to check**, enter each address to check, one each, with a name first if you like, such as `Router http://192.0.2.1`.
 3. Select **Save**.
 4. In **Check every**, enter how many minutes between checks, from 1 to 60. The default is 5.
-5. Select **Deactivate**, then **Activate**, if you changed **Check every**.
+5. Select **Turn off**, then **Turn on**, if you changed **Check every**.
 6. Add its cards to your dashboard. Read [Dashboard card](../outside-services/dashboard-card.md).
 
 ## Remove it
@@ -64,7 +64,7 @@ Or run its installer, `install.py` in its folder, on any computer with Python, a
 
 Its containers stop and go, and its API key stops working. Nothing is deleted.
 
-To stop it for a while instead, select **Deactivate** on its tab: its settings and folder are kept.
+To stop it for a while instead, select **Turn off** on its tab: its settings and folder are kept.
 
 ## Find out more
 

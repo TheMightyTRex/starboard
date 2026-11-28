@@ -39,7 +39,7 @@ Needs Starboard with plug-in API 1.14 or later. An older Starboard keeps version
    with Styles ready to add.
 2. Select **Install**, read what it may do (add styles to Display, nothing else), enter your Starboard password
    and select **Install Styles**.
-3. Select **Activate** on its tab, then open **Display** and choose a style.
+3. Select **Turn on** on its tab, then open **Display** and choose a style.
 
 Or find Styles in Settings, Plug-ins, Catalogue. No installer? There, choose this folder's `starboard-plugin.json` under **Or its manifest file**.
 

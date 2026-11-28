@@ -77,7 +77,7 @@ the right of the band, a status and when the card was updated show when the card
 - **Still to set up** stays first while anything is left to set up, and cannot be removed. It goes by itself
   when everything is done.
 - Cards update once a minute while the page is in view. A hidden tab asks for nothing.
-- A plug-in's card says **Its plug-in is not active.** when you deactivate the plug-in.
+- A plug-in's card says **Its plug-in is not active.** when you turn off the plug-in.
 
 ## Find out more
 

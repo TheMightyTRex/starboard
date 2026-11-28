@@ -1,4 +1,4 @@
-"""Automatic updates for everything (DASH-422): each part deactivated until chosen, only in the update hours and once
+"""Automatic updates for everything (DASH-422): each part turned off until chosen, only in the update hours and once
 a day, the copy first, the way back, What is new afterwards, and an alert when something failed or waits."""
 import datetime as dt
 import json
@@ -61,7 +61,7 @@ class Rules(unittest.TestCase):
 
     def test_a_part_looks_only_when_activated_in_the_hours_and_once_a_day(self):
         app = FakeApp()
-        self.assertEqual(au.due(app, "apps", NIGHT), (False, "Deactivated"))
+        self.assertEqual(au.due(app, "apps", NIGHT), (False, "Off"))
         app.config.data["apps_auto_update"] = True
         self.assertEqual(au.due(app, "apps", DAY), (False, "Waiting for the update hours"))
         self.assertEqual(au.due(app, "apps", NIGHT), (True, ""))

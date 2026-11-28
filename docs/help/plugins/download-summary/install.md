@@ -35,10 +35,10 @@ These figures are the most it may use.
 2. Under **Downloads**, find **Download summary** and select **Install…**.
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Download summary**. To stop, select **Cancel**: nothing is installed.
-5. Download summary's own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Activate**.
+5. Download summary's own tab opens under **Settings**, then **Plug-ins**, and Starboard turns it on: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Turn on**.
 6. Add its card to your dashboard. Read [Dashboard card](../download-summary/dashboard-card.md).
 
-There is nothing else to set up: it has no settings of its own. It starts counting about a minute after you activate it, from 0 for that day.
+There is nothing else to set up: it has no settings of its own. It starts counting about a minute after you turn it on, from 0 for that day.
 
 ### Add it by its address
 
@@ -59,7 +59,7 @@ Or run its installer, `install.py` in its folder, on any computer with Python, a
 
 Its containers stop and go, and its API key stops working. Nothing is deleted.
 
-To stop it for a while instead, select **Deactivate** on its tab: its settings and folder are kept.
+To stop it for a while instead, select **Turn off** on its tab: its settings and folder are kept.
 
 ## Find out more
 

@@ -13,7 +13,7 @@ People who want every figure Jellystat gives (libraries, people, devices and a l
 
 ## Set it up
 
-1. Activate it. Starboard gives Jellystat your Jellyfin's address and key, so you do not enter them.
+1. Turn it on. Starboard gives Jellystat your Jellyfin's address and key, so you do not enter them.
 2. Choose **Open Jellystat** and make Jellystat's own account (the first one is its admin).
 3. Optional: **Restore a Jellystat backup**. Put a PostgreSQL backup of Jellystat's database (made with `pg_dump -Fc`) in `data/plugins/jellystat/data/main/restore` in Starboard's data folder, enter its name in **Backup file to restore**, then choose **Restore the backup**. It is restored into a new database first; only when that worked is it swapped in, and the database before it is kept beside it, never deleted. Jellystat's own JSON backups are restored in Jellystat itself.
 

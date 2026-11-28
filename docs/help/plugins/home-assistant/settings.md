@@ -16,11 +16,11 @@ Home Assistant has no buttons. Select **Save** to keep the settings.
 
 ## Things to note
 
-- A setting you change is used the next time the card asks, within a minute; you do not need to deactivate it first.
+- A setting you change is used the next time the card asks, within a minute; you do not need to turn it off first.
 - **What to show** takes entity ids, exactly as Home Assistant shows them, such as `sensor.lounge_temperature`. The card shows the first 8.
 - **Warn when any is** does not mind capital letters: `Open` and `open` are the same.
 - It only reads states. It never changes anything in Home Assistant.
-- Settings are kept when you update or deactivate it, and when you remove it they stay in its folder.
+- Settings are kept when you update or turn it off, and when you remove it they stay in its folder.
 
 ## Find out more
 

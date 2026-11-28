@@ -31,7 +31,7 @@ Read [HELP.md](https://github.com/TheMightyTRex/starboard-plugins/blob/main/pict
 | Disc art | `disc.*` under `library` | At most 500 pixels wide |
 | Clear art | `clearart.*` under `library` | At most 800 pixels wide |
 
-Every type is shrunk when you add it (**Shrink all picture types**); deactivate that to choose types one by one.
+Every type is shrunk when you add it (**Shrink all picture types**); turn that off to choose types one by one.
 
 A picture already that small is only opened, never written.
 
@@ -81,7 +81,7 @@ nothing if Jellyfin does not answer.
   you add it. **System**, **Jobs** shows when it runs next.
 - **Shrink now** in its actions, or **Run now** in **System**, **Jobs**. **Stop shrinking** stops after the picture
   it is on.
-- **Shrink new pictures in quiet hours:** deactivated when you add it. When activated, each hour of Starboard's quiet
+- **Shrink new pictures in quiet hours:** turned off when you add it. When turned on, each hour of Starboard's quiet
   hours it shrinks the pictures Jellyfin saved since the last pass.
 - **No notifications:** a finished run changes only the figures on its card and **Space saved** page. It sends no
   event, so the Notifications plug-in hears nothing, and the card's status stays on when it runs next. A run that
@@ -101,7 +101,7 @@ A run stops itself after 115 minutes, and the next one carries on: pictures alre
 ## How much it uses
 
 Measured on 15 November 2026 against the Jellyfin version, one at a time, on a sample of 540 made-up pictures (300
-posters at 2,000 by 3,000 pixels and 240 photos at 1,365 by 2,048, 776.3 MB), with backup activated in both. This one
+posters at 2,000 by 3,000 pixels and 240 photos at 1,365 by 2,048, 776.3 MB), with backup turned on in both. This one
 ran as Starboard runs it (128 MB, half a processor); the Jellyfin version in a throwaway Jellyfin 10.11.11.
 
 | What | Jellyfin version | Starboard version (this plug-in) |

@@ -91,10 +91,10 @@ for the minimum and recommended computer for each.
 ## If it does not work
 
 - **The computer never shows the USB stick:** write the stick again, or try another USB port. On some computers,
-  the start-up menu only lists the stick after you activate **USB boot** in the computer's own settings, opened
+  the start-up menu only lists the stick after you turn on **USB boot** in the computer's own settings, opened
   with F2 or Delete at start-up.
 - **"Secure Boot violation" or a similar message:** Linux Mint, Debian and Ubuntu all work with Secure Boot. Write the
-  stick again from a freshly downloaded file. If it still happens, deactivate Secure Boot in the computer's own
+  stick again from a freshly downloaded file. If it still happens, turn off Secure Boot in the computer's own
   settings.
 - **The server is not online after installing:** follow
   [Connect to the internet, by cable or Wi-Fi](connect-to-the-internet.md).

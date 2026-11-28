@@ -44,11 +44,11 @@ PeaNUT only. In UPS and power's settings, enter the user name and password again
 
 ## Enter the address
 
-Open UPS and power's tab, choose how to read the UPS, enter its address and select **Save**, then **Activate**.
+Open UPS and power's tab, choose how to read the UPS, enter its address and select **Save**, then **Turn on**.
 
 ## Check the alerts
 
-1. Alerts are on by default: check **Send alerts through Starboard** is activated.
+1. Alerts are on by default: check **Send alerts through Starboard** is on.
 2. Check Starboard's own alerts are on in **Settings**, then **Alerts**. UPS and power uses the same place.
 3. It asks once a minute: a cut shorter than a minute may pass unseen.
 4. Starboard before 0.26.0 does not take alerts from plug-ins: the card then says so, and updating Starboard fixes it.

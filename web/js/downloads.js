@@ -1080,7 +1080,7 @@ function renderSchedule(s) {
   box.dataset.tone = !s.enabled ? "neutral" : s.mode === "run" ? "success" : "warning";
   if (!s.enabled) {
     $("#schedule-chip").replaceChildren(chip(...STATUS.inactive));
-    $("#schedule-text").replaceChildren(`Downloads run at any time. To download only at night, activate download hours in `, settings, ".");
+    $("#schedule-text").replaceChildren(`Downloads run at any time. To download only at night, turn on download hours in `, settings, ".");
     $("#schedule-actions").replaceChildren();
     return;
   }

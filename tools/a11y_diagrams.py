@@ -70,9 +70,9 @@ SETTINGS = [
     ("Theme", "Match device, Light, Dark", "The colours: dark text on light, or light text on dark. Match device follows your phone or computer."),
     ("Text size", "100%, 125%, 150%, 175%", "All of Starboard's text, with the layout reflowing to fit. Controls grow with it."),
     ("Reduce motion", "Match device, On, Off", "Slide-outs and menus appear without sliding, the loading line fades, long lists wait for Show more."),
-    ("High contrast", "Activated or deactivated", "Near-black or white text, solid borders and no shadows, and a bolder focus colour."),
-    ("Underline links", "Activated or deactivated", "Every link is underlined, so it is not shown by colour alone."),
-    ("Wider text spacing", "Activated or deactivated", "More space between lines (1.8), letters (0.12 em) and words (0.16 em)."),
+    ("High contrast", "On or off", "Near-black or white text, solid borders and no shadows, and a bolder focus colour."),
+    ("Underline links", "On or off", "Every link is underlined, so it is not shown by colour alone."),
+    ("Wider text spacing", "On or off", "More space between lines (1.8), letters (0.12 em) and words (0.16 em)."),
     ("Style", "Only with a style plug-in", "Colours and corners from a plug-in, checked for contrast. Your choices above always win."),
     ("Design", "Five designs, or the default", "How the Apps page is laid out in this browser."),
     ("Done and Reset", "Buttons at the end", "Done closes the panel. Reset puts every choice back to the defaults."),
@@ -153,10 +153,10 @@ def text_and_spacing():
     y += 30
     b.append(text(20, y, "Wider text spacing", 19, 700))
     y += 40
-    b.append(text(20, y, "Deactivated", 15, 700, "mut"))
+    b.append(text(20, y, "Off", 15, 700, "mut"))
     b.append(text(170, y, "Starboard checks your apps every minute", 16))
     b.append(text(170, y + 24, "and tells you when one stops answering.", 16))
-    b.append(text(600, y, "Activated", 15, 700, "mut"))
+    b.append(text(600, y, "On", 15, 700, "mut"))
     b.append(text(720, y, "Starboard checks your apps", 16, extra=' letter-spacing="1.9" word-spacing="2.6"'))
     b.append(text(720, y + 29, "every minute and tells you", 16, extra=' letter-spacing="1.9" word-spacing="2.6"'))
     b.append(text(720, y + 58, "when one stops answering.", 16, extra=' letter-spacing="1.9" word-spacing="2.6"'))

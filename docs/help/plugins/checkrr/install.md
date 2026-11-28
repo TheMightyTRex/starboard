@@ -50,7 +50,7 @@ A check reads every file and runs FFprobe on each film and episode, so it uses a
 2. Under **Apps you can add**, find **Checkrr** and select **Install…**.
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Checkrr**. To stop, select **Cancel**: nothing is installed.
-5. Checkrr's own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Activate**.
+5. Checkrr's own tab opens under **Settings**, then **Plug-ins**, and Starboard turns it on: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Turn on**.
 
 ### Add it by its address
 
@@ -78,7 +78,7 @@ There is nothing to set up. Checkrr checks your films and series each Sunday at 
 
 Its containers stop and go, and its API key stops working. Nothing is deleted, and your media folder is not touched.
 
-To stop it for a while instead, select **Deactivate** on its tab: its settings and folder are kept.
+To stop it for a while instead, select **Turn off** on its tab: its settings and folder are kept.
 
 ## Find out more
 

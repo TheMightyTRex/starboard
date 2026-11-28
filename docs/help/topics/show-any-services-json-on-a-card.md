@@ -55,7 +55,7 @@ need a plug-in.
   however many people have the dashboard open. It keeps only the fields you chose, never the whole answer. If a
   service fails, Starboard does not ask it again for 30 seconds.
 - **Home network only, by default.** Starboard asks this computer and your home network (addresses starting 10., 172.16
-  to 172.31, 192.168., and 100.64 to 100.127 as Tailscale uses). To ask a public address, activate **Allow addresses
+  to 172.31, 192.168., and 100.64 to 100.127 as Tailscale uses). To ask a public address, turn on **Allow addresses
   outside your home network** under **Custom cards**; the key is then sent over `https://` only. Cloud metadata and
   link-local addresses are never asked.
 - **Safe by design.** Starboard resolves the address once and connects to that very address. It never follows a

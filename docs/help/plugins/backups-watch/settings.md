@@ -11,7 +11,7 @@ Backups watch's settings are on its own tab: go to **Settings**, then **Plug-ins
 | **Its address** | Where the tool answers, such as http://192.0.2.10:9898 for Backrest, or https://192.0.2.10:51515 for the Kopia server. A web address. | Empty |
 | **User name** | Leave empty if the tool needs no sign-in. For Kopia, the server's user name. Words. | Empty |
 | **Password** | The tool's password. Kept secret by Starboard: it is never shown again. | Empty |
-| **Accept a self-signed certificate** | For a Kopia server that makes its own certificate. Only on your own network. Activated or deactivated. | Deactivated |
+| **Accept a self-signed certificate** | For a Kopia server that makes its own certificate. Only on your own network. Turned on or off. | Turned off |
 
 ![Backups watch's The backup tool settings, with Its address outlined](../../images/plugins/backups-watch/settings-1-backup-tool.png)
 
@@ -20,7 +20,7 @@ Backups watch's settings are on its own tab: go to **Settings**, then **Plug-ins
 | Setting | What it does | Default |
 |---|---|---|
 | **Overdue after** | How many hours without a good run count as overdue, from 1 to 1440. 36 suits a nightly backup. | 36 hours |
-| **Send alerts through Starboard** | Once when a backup is overdue or its last run failed, and once when it is fine again, to where Starboard sends its own alerts. Activated or deactivated. | Activated |
+| **Send alerts through Starboard** | Once when a backup is overdue or its last run failed, and once when it is fine again, to where Starboard sends its own alerts. Turned on or off. | Turned on |
 
 ![Backups watch's Alerts settings, with Overdue after outlined](../../images/plugins/backups-watch/settings-2-alerts.png)
 

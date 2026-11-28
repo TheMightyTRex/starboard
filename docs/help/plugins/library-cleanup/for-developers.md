@@ -41,7 +41,7 @@ Its image is pinned by digest in the manifest:
 
 ## Jobs
 
-- `move`: every 24 hours, only in quiet hours, 60 minutes at most. It moves nothing unless the `active` setting (**Move items each day**) is activated.
+- `move`: every 24 hours, only in quiet hours, 60 minutes at most. It moves nothing unless the `active` setting (**Move items each day**) is on.
 
 ## How it works
 

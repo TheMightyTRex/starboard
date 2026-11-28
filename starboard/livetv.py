@@ -470,7 +470,7 @@ def save_hidden(data_dir, ids):
 
 
 # Whole lists (DASH-359, owner 12 November 2026): an inactive list is not fetched, its playlist and guide are emptied,
-# so Jellyfin drops its channels, and it is built again as new when it is activated.
+# so Jellyfin drops its channels, and it is built again as new when it is on.
 LISTS = {"freetv": ("Free-TV", "channels.m3u", "guide.xml"), "samsung": ("Samsung TV Plus", "samsung.m3u", "guide-samsung.xml"),
          "pluto": ("Pluto TV", "pluto.m3u", "guide-pluto.xml")}
 LISTS_OFF = "lists-off.json"  # in the plug-in's own data folder
@@ -691,8 +691,8 @@ def run(self_url, force=False):
         return ok
 
     off = lists_off(os.environ.get("STARBOARD_DATA", "/data"))
-    for name in sorted(off):  # inactive lists: emptied once, then left alone until activated
-        state.pop(name, None)  # so it is built again as new when it is activated
+    for name in sorted(off):  # inactive lists: emptied once, then left alone until turned on
+        state.pop(name, None)  # so it is built again as new when it is on
         if any(c["file"] for c in (_parse(os.path.join(d, LISTS[name][1])) if os.path.exists(os.path.join(d, LISTS[name][1])) else [])):
             empty_list(d, name)
             done.append(f"{LISTS[name][0]}: inactive, emptied")

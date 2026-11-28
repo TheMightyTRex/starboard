@@ -82,7 +82,7 @@ class Places(Base):
         bc.set_enabled(self.d, b, False)
         got = {p["id"]: p for p in bc.public(self.d)["destinations"]}
         self.assertEqual((got[a]["state_word"], got[a]["shape"]), ("Not copied yet", "circle"))
-        self.assertEqual((got[b]["state_word"], got[b]["shape"]), ("Deactivated", "minus"))
+        self.assertEqual((got[b]["state_word"], got[b]["shape"]), ("Off", "minus"))
 
     def test_up_to_eight_places(self):
         for _ in range(bc.MAX_PLACES):

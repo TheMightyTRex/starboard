@@ -15,26 +15,26 @@ by hand. It takes about 20 minutes.
 
 ## The steps at a glance
 
-1. Activate alerts and send a test message.
-2. Activate disk health checks.
+1. Turn on alerts and send a test message.
+2. Turn on disk health checks.
 3. Get a weekly summary.
 4. Know where to go when an alert arrives.
 
 ```mermaid
 flowchart LR
-    A["1. Activate alerts"] --> B["2. Disk health"]
+    A["1. Turn on alerts"] --> B["2. Disk health"]
     B --> C["3. Weekly summary"]
     C --> D["4. When an alert arrives"]
 ```
 
-## Step 1: Activate alerts and send a test message
+## Step 1: Turn on alerts and send a test message
 
-Choose where alerts go and send a test. Then activate watching, under **More settings**. Follow
-[Activate alerts](../topics/activate-alerts.md).
+Choose where alerts go and send a test. Then turn on watching, under **More settings**. Follow
+[Turn on alerts](../topics/activate-alerts.md).
 
 **It worked when** the test message arrives on your phone.
 
-## Step 2: Activate disk health checks
+## Step 2: Turn on disk health checks
 
 Disk health reads each disk's own warnings, often weeks before a disk fails. It needs one installer
 question answered Yes. Follow [Check your disks' health](../topics/check-disk-health.md).

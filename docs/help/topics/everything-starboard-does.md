@@ -41,7 +41,7 @@ A short tour of what Starboard can do, by area. Each item links to the article t
 - **App updates,** with a backup first. Read [Update your apps](update-your-apps.md).
 - **Storage, disk health and disk pools.** Read [Check free space and what is using it](check-storage.md),
   [Check your disks' health](check-disk-health.md) and [Add a disk to the pool](add-a-drive-to-the-pool.md).
-- **Alerts** to ntfy, Gotify or a webhook. Read [Activate alerts](activate-alerts.md).
+- **Alerts** to ntfy, Gotify or a webhook. Read [Turn on alerts](activate-alerts.md).
 - **Backups.** Read [Back up and restore Starboard's settings](back-up-settings.md) and
   [Back up the whole server](back-up-the-server.md).
 - **Settings.** Read [What is in each Settings page](find-a-setting.md).

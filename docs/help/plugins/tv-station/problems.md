@@ -61,7 +61,7 @@ A channel with nothing in **What it shows**, or whose series and films Jellyfin 
 1. Select **Preview a frame** on the channel's page. If it says what went wrong, such as Jellyfin not answering, fix that first.
 2. A programme that will not play is replaced by a slate with the station's name for 20 seconds, then the channel goes on.
 3. Check **System**, then **Logs**, for Create your own TV channel.
-4. If the server is busy, choose **720p** in **Picture size**, or deactivate the on-screen logo and the straps for that channel, so it copies its programmes with no converting.
+4. If the server is busy, choose **720p** in **Picture size**, or turn off the on-screen logo and the straps for that channel, so it copies its programmes with no converting.
 
 ## Fix the pack and upload it again
 
@@ -75,7 +75,7 @@ The pack is checked before anything in it is used, and the pack in use stays whe
 ## Give promos what they need
 
 1. Check the channel's broadcast pack has a promo: **Broadcast pack**, **Each channel's pack**, then its summary under **Station's pack** says "a promo". The example pack has one.
-2. Check **Make promos in quiet hours** is activated, in the plug-in's settings under **Promos**.
+2. Check **Make promos in quiet hours** is on, in the plug-in's settings under **Promos**.
 3. Promos are made in Starboard's quiet hours while nobody is watching anything in Jellyfin. To make them now, select **Make promos now** on the plug-in's tab, with nothing playing.
 4. A channel needs programmes in the next 6 days that start at least 2 hours from now.
 

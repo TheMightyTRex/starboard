@@ -25,7 +25,7 @@ notes of every one of them together. You can also run one command on the server.
   updates** at the top of **Ready to update**. It asks Starboard, the apps, Reelix, the plug-ins and Jellyfin for new
   versions, and says what it found.
 
-For this to work, **Check GitHub for new releases** must be activated. It is on the **Updates** page, under **Update
+For this to work, **Check GitHub for new releases** must be turned on. It is on the **Updates** page, under **Update
 Starboard on the server instead**. What changed in every version is on **Settings**, then **Updates**, then
 **Releases**.
 
@@ -131,8 +131,8 @@ Starboard, Reelix, your other apps, Starboard plug-ins and Jellyfin's plug-ins c
 1. Go to **Settings**, then **Updates**, and select the **Update by themselves** tab.
 2. Under **When they update**, choose **In your download hours** or **In the quiet hours** (always 01:00 to 06:00).
    Without download hours, both mean 01:00 to 06:00. The line under the choices says which hours are used now.
-3. Activate the switch of each part you want, such as **Starboard: update by itself**. Each part is deactivated
-   until you activate it. Beside each one, **Copy first**, **Checked by** and **Way back** say what is copied before
+3. Turn on the switch of each part you want, such as **Starboard: update by itself**. Each part is off
+   until you turn it on. Beside each one, **Copy first**, **Checked by** and **Way back** say what is copied before
    the update, how the new version is checked and how it goes back if it does not work.
 
    ![Settings, Updates, Update by themselves, with When they update (step 2) and Starboard: update by itself (step 3) outlined](../images/update-starboard-3-by-themselves.png)

@@ -29,7 +29,7 @@ describes the transport, the rules and each tool. For setting it up as an owner,
 
 | Rule | What happens otherwise |
 |---|---|
-| The owner has activated **Let AI assistants connect** in Settings, Security, API keys. | `403` [`mcp_off`](../../api/errors.md#mcp_off) |
+| The owner has turned on **Let AI assistants connect** in Settings, Security, API keys. | `403` [`mcp_off`](../../api/errors.md#mcp_off) |
 | `Authorization: Bearer` and a key that works. Refused keys count towards the lockout for the address. | `401` [`key_needed`](../../api/errors.md#key_needed) |
 | The key is **Read only**. | `403` [`read_key_needed`](../../api/errors.md#read_key_needed) |
 | No `Origin` header, or one for the same address as `Host`. | `403` [`origin_refused`](../../api/errors.md#origin_refused) |

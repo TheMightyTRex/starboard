@@ -52,7 +52,7 @@ The card says "Starboard has no Jellyfin key to give yet: add Jellyfin in Settin
 The card says "Jellystat is not answering yet". Jellystat and its database take a while to start.
 
 1. Wait a few minutes. It asks again every 2 minutes.
-2. If it still says so, on Jellystat's tab select **Deactivate**, then **Activate**.
+2. If it still says so, on Jellystat's tab select **Turn off**, then **Turn on**.
 3. Still not answering: go to **System**, then **Logs**, and find its name.
 
 ## Check Jellyfin is running
@@ -68,9 +68,9 @@ The card says "Jellystat did not accept Jellyfin's address and key". Jellystat c
 2. "It is not a PostgreSQL backup made with pg_dump -Fc": use a backup made with `pg_dump -Fc`. Jellystat's own JSON backups are restored in Jellystat itself.
 3. "There is no" and the file's name: put the file in `data/plugins/jellystat/data/main/restore` and enter its name only in **Backup file to restore**.
 4. "The backup did not restore, so nothing was changed": your figures are as they were. The words after it say why.
-5. "Jellystat kept its database busy": select **Deactivate** on its tab, then **Activate**, and select **Restore the backup** again.
+5. "Jellystat kept its database busy": select **Turn off** on its tab, then **Turn on**, and select **Restore the backup** again.
 
-When a restore worked but Jellystat's pages still show the old figures, deactivate and activate Jellystat.
+When a restore worked but Jellystat's pages still show the old figures, turn off and turn on Jellystat.
 
 ## Report a problem
 

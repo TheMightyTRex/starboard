@@ -153,7 +153,7 @@ This needs the full version of Reelix. Read [Switch between the two versions of 
 
 - The page updates itself while it is open. Select **Pause updates** to stop that while you read, and select it
   again to carry on. **Check now** asks the apps straight away. To change how often it updates, go to
-  **Settings**, then **General**, then **Performance**, activate **More settings**, and change **Downloads page updates**.
+  **Settings**, then **General**, then **Performance**, turn on **More settings**, and change **Downloads page updates**.
 - **Open the queue in** and the app's name opens the app's own queue in a new tab, for anything Starboard
   cannot do.
 - The tiles show each download app's speed. With a VPN (Gluetun), a tile shows whether it is connected. Without
@@ -175,7 +175,7 @@ This needs the full version of Reelix. Read [Switch between the two versions of 
 - **Removed, but some files could not be deleted:** Starboard deletes what is left only when the folder is the
   download's own. Delete the rest in the download app, or in the folder yourself.
 - **Not done** and a message: the app refused the action. Check the app is running and try again.
-- **Download hours says Off, with no buttons:** activate download hours first. Read
+- **Download hours says Off, with no buttons:** turn on download hours first. Read
   [Download only at certain hours](set-download-hours.md#steps).
 - **The VPN tile says Not connected:** downloads may stop. Check Gluetun on the **Apps** page.
 - **This needs the full version of Reelix** on From a link: switch to the full version in **Settings**, then

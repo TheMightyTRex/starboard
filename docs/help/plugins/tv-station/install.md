@@ -38,7 +38,7 @@ Measured on 17 November 2026: 16.4 MiB of memory and no measurable processor (0.
 2. Under **Jellyfin**, find **Create your own TV channel** and select **Install…**.
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Create your own TV channel**. To stop, select **Cancel**: nothing is installed.
-5. Create your own TV channel's own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Activate**.
+5. Create your own TV channel's own tab opens under **Settings**, then **Plug-ins**, and Starboard turns it on: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Turn on**.
 6. Within a minute, Create your own TV channel adds its channel list and guide to Jellyfin's Live TV, at the address Starboard gives it on your home network (Starboard 0.23.0 and later). With an older Starboard, next to its web page's address, select **Open** once, so it learns that address.
 7. In **Station**, enter the **Station name**.
 8. Open **Channels** and add your first channel. Read [Settings](../tv-station/settings.md).
@@ -65,7 +65,7 @@ Or run its installer, `install.py` in its folder, on any computer with Python, a
 
 Its container stops and goes. Nothing is deleted: its channels, idents, clips and logos stay in its folder. In Jellyfin, go to **Dashboard**, then **Live TV**, and remove the tuner and the guide with the station's address, or its channels stay in the list with nothing to play.
 
-To stop it for a while instead, select **Deactivate** on its tab: its settings and folder are kept.
+To stop it for a while instead, select **Turn off** on its tab: its settings and folder are kept.
 
 ## Find out more
 

@@ -34,10 +34,10 @@ These figures are the most it may use.
 2. Under **System**, find **Disk forecast** and select **Install…**.
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Disk forecast**. To stop, select **Cancel**: nothing is installed.
-5. Disk forecast's own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Activate**.
+5. Disk forecast's own tab opens under **Settings**, then **Plug-ins**, and Starboard turns it on: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Turn on**.
 6. Add its card to your dashboard. Read [Dashboard card](../disk-forecast/dashboard-card.md).
 
-There is nothing else to set up: it has no settings of its own. Its card says **Measuring** at first, and the first forecast comes the day after you activate it.
+There is nothing else to set up: it has no settings of its own. Its card says **Measuring** at first, and the first forecast comes the day after you turn it on.
 
 Tip: Disk forecast is marked **Recommended** in the catalogue.
 
@@ -60,7 +60,7 @@ Or run its installer, `install.py` in its folder, on any computer with Python, a
 
 Its containers stop and go, and its API key stops working. Nothing is deleted.
 
-To stop it for a while instead, select **Deactivate** on its tab: its settings and folder are kept.
+To stop it for a while instead, select **Turn off** on its tab: its settings and folder are kept.
 
 ## Find out more
 

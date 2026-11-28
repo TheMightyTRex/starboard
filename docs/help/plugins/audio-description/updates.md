@@ -49,8 +49,8 @@ Fixed:
 Added:
 
 - **Find and tag:** each film and episode with a described sound track, and its series, gets the tag **Audio description** in Jellyfin at the nightly check, and the tag comes off when the track goes. Every Jellyfin app, televisions included, can filter by it.
-- **The Audio description collection:** activated by default, the films and series with a described track are in one Jellyfin collection. Deactivate **Add them to the Audio description collection** to leave it as it is.
-- **Play the described track:** for each person you activate on its page, inactive until chosen. When they start a title with a described track and another plays, Starboard asks their app to change to it. Not every Jellyfin app accepts this.
+- **The Audio description collection:** turned on by default, the films and series with a described track are in one Jellyfin collection. Turn off **Add them to the Audio description collection** to leave it as it is.
+- **Play the described track:** for each person you turn on on its page, inactive until chosen. When they start a title with a described track and another plays, Starboard asks their app to change to it. Not every Jellyfin app accepts this.
 - **Rules 1.0:** the same rules file as Jellyfin's own Audio description plug-in. When that plug-in is installed, this one leaves the tag, the collection and Play the described track to it, and its card says **Idle**.
 
 Changed:
@@ -99,7 +99,7 @@ Changed:
 
 Added:
 
-- **AudioVault search links:** for each film and series without audio description, a link to AudioVault's own search. Deactivated until you activate it in Sources; Starboard never downloads from AudioVault
+- **AudioVault search links:** for each film and series without audio description, a link to AudioVault's own search. Turned off until you turn it on in Sources; Starboard never downloads from AudioVault
 - **YouDescribe search links:** for each film and series, a link to YouDescribe's own search, where volunteers describe YouTube videos such as trailers
 - **MovieReading and Earcatch:** how to use these phone apps alongside Jellyfin, which play a description in step by listening, and where to get them
 

@@ -158,11 +158,11 @@ class LiveTvPluginTest(unittest.TestCase):
         with mock.patch.object(livetv, "folder", return_value=d), mock.patch.object(livetv_plugin, "DATA", d), \
                 mock.patch.object(livetv_plugin, "JELLYFIN", os.path.join(d, "none.json")):
             out = livetv_plugin.channels_act({"action": "toggle", "id": "B2"})
-            self.assertIn("Drop deactivated", out["said"])
+            self.assertIn("Drop turned off", out["said"])
             self.assertEqual([(r["title"], r["on"]) for r in out["items"]], [("101 Keep", True), ("102 Drop", False)])
             self.assertEqual([c["name"] for c in livetv._parse(os.path.join(d, "samsung.m3u"))], ["Keep"])
             out = livetv_plugin.channels_act({"action": "toggle", "id": "B2"})
-            self.assertIn("Drop activated", out["said"])
+            self.assertIn("Drop turned on", out["said"])
             self.assertEqual(livetv.hidden_ids(d), set())
             with self.assertRaises(ValueError):
                 livetv_plugin.channels_act({"action": "toggle", "id": "nope"})
@@ -196,14 +196,14 @@ class LiveTvPluginTest(unittest.TestCase):
             self.assertIn({"number": "101", "name": "BBC One", "list": "Free-TV", "region": "UK"}, [r["cells"] for r in screen["items"]])
 
             out = livetv_plugin.channels_act({"action": "bulk", "id": "sections:News", "value": "off"})
-            self.assertEqual(out["said"], "News: 2 channels deactivated; Jellyfin drops them at its guide refresh, starting now")
+            self.assertEqual(out["said"], "News: 2 channels turned off; Jellyfin drops them at its guide refresh, starting now")
             self.assertEqual(livetv.hidden_ids(d), {"S1", "S2"})
             self.assertEqual(livetv._parse(os.path.join(d, "samsung.m3u")), [])
             self.assertEqual(len(refreshed), 1)
             self.assertEqual({b["id"]: b["on"] for b in out["bulk"]}["lists:samsung"], 0)
 
             out = livetv_plugin.channels_act({"action": "bulk", "id": "regions:US", "value": "on"})
-            self.assertIn("US: 1 channel activated", out["said"])
+            self.assertIn("US: 1 channel turned on", out["said"])
             self.assertEqual(livetv.hidden_ids(d), {"S1"})
             self.assertTrue(livetv_plugin._force["now"])  # the lists are rebuilt with it
 
@@ -217,7 +217,7 @@ class LiveTvPluginTest(unittest.TestCase):
 
             # A whole list (owner, 12 November 2026: the original list off in full, a switch for each of the others)
             out = livetv_plugin.channels_act({"action": "bulk", "id": "lists:freetv", "value": "off"})
-            self.assertIn("Free-TV deactivated: not fetched, and its 1 channel leaves Jellyfin now", out["said"])
+            self.assertIn("Free-TV turned off: not fetched, and its 1 channel leaves Jellyfin now", out["said"])
             self.assertEqual(livetv.lists_off(d), {"freetv"})
             self.assertEqual(livetv._parse(os.path.join(d, "channels.m3u")), [])
             self.assertNotIn("F1", [c["id"] for c in livetv.all_channels(d)])
@@ -228,7 +228,7 @@ class LiveTvPluginTest(unittest.TestCase):
             self.assertIn("already inactive", livetv_plugin.channels_act({"action": "bulk", "id": "lists:freetv", "value": "off"})["said"])
             livetv_plugin._force["now"] = False
             out = livetv_plugin.channels_act({"action": "bulk", "id": "lists:freetv", "value": "on"})
-            self.assertIn("Free-TV activated", out["said"])
+            self.assertIn("Free-TV turned on", out["said"])
             self.assertEqual(livetv.lists_off(d), set())
             self.assertTrue(livetv_plugin._force["now"])
             with self.assertRaises(ValueError):
@@ -277,7 +277,7 @@ class LiveTvPluginTest(unittest.TestCase):
             self.assertIn("regions:US", top)
 
             out = livetv_plugin.channels_act({"action": "bulk_ids", "ids": ["S1", "S3", "nope"], "value": "off"})
-            self.assertEqual(out["said"], "2 channels deactivated; Jellyfin drops them at its guide refresh, starting now")
+            self.assertEqual(out["said"], "2 channels turned off; Jellyfin drops them at its guide refresh, starting now")
             self.assertEqual(livetv.hidden_ids(d), {"S1", "S3"})
             out = livetv_plugin.channels_act({"action": "bulk_ids", "ids": ["S1", "S3"], "value": "on"})
             self.assertEqual(livetv.hidden_ids(d), set())
@@ -286,14 +286,14 @@ class LiveTvPluginTest(unittest.TestCase):
                     livetv_plugin.channels_act({"action": "bulk_ids", **bad})
 
             out = livetv_plugin.channels_act({"action": "bulk", "id": "in:samsung|r=US|s=News", "value": "off"})
-            self.assertEqual(out["said"], "Samsung TV Plus, US, News: 1 channel deactivated; Jellyfin drops them at its guide refresh, starting now")
+            self.assertEqual(out["said"], "Samsung TV Plus, US, News: 1 channel turned off; Jellyfin drops them at its guide refresh, starting now")
             self.assertEqual(livetv.hidden_ids(d), {"S2"})
             out = livetv_plugin.channels_act({"action": "bulk", "id": "in:samsung", "value": "off"})
             self.assertEqual(livetv.hidden_ids(d), {"S1", "S2", "S3"})
             livetv_plugin.channels_act({"action": "bulk", "id": "in:own:abc123", "value": "off"})
             self.assertIn("O1", livetv.hidden_ids(d))
             out = livetv_plugin.channels_act({"action": "bulk", "id": "in:samsung|r=UK", "value": "on"})
-            self.assertIn("Samsung TV Plus, UK: 1 channel activated", out["said"])
+            self.assertIn("Samsung TV Plus, UK: 1 channel turned on", out["said"])
             for bad in ("in:nope", "in:samsung|r=FR", "in:samsung|x=1", "in:"):
                 with self.assertRaises(ValueError):
                     livetv_plugin.channels_act({"action": "bulk", "id": bad, "value": "on"})
@@ -302,13 +302,13 @@ class LiveTvPluginTest(unittest.TestCase):
             self.assertEqual((own_switch["label"], own_switch["kind"], own_switch["total"], own_switch["active"]), ("Town lists", "Lists", 1, True))
             with mock.patch("starboard.livetv_jellyfin.refresh_guide"):
                 out = livetv_plugin.channels_act({"action": "bulk", "id": "lists:own:abc123", "value": "off"})
-            self.assertIn("Town lists deactivated", out["said"])
+            self.assertIn("Town lists turned off", out["said"])
             self.assertIs(livetv_own.sources(d)[0]["on"], False)
             with mock.patch.object(livetv_plugin, "_quick"):
                 out = livetv_plugin.channels_act({"action": "bulk", "id": "lists:own:abc123", "value": "on"})
-            self.assertIn("Town lists activated", out["said"])
+            self.assertIn("Town lists turned on", out["said"])
             self.assertIn("Adding Town lists: reading the list", [n["title"] for n in out["notices"]])
-            # An inactive list keeps its switch at the top, so it can be activated again
+            # An inactive list keeps its switch at the top, so it can be turned on again
             livetv.save_lists_off(d, {"pluto"})
             lists = {b["id"]: b for b in livetv_plugin.channels_screen()["bulk"]}
             self.assertIs(lists["lists:pluto"]["active"], False)
@@ -388,4 +388,4 @@ class InactiveListTest(unittest.TestCase):
                 self.assertNotIn("inactive", livetv.run("http://starboard:8090", force=True))  # once only
                 livetv.save_lists_off(data, {"samsung", "pluto"})
                 livetv.run("http://starboard:8090")
-                self.assertEqual(fetched, ["guide", "freetv"])  # activated: built again as new
+                self.assertEqual(fetched, ["guide", "freetv"])  # turned on: built again as new

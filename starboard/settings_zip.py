@@ -2,7 +2,7 @@
 
 The server's own backup job (backup-settings.py on the owner's server) writes server-settings-DATE.zip. It holds API keys
 and passwords, so it never leaves the computer as it is. After the job has written the zip it asks Starboard (the
-settings-copy call of the public API, or Copy now on the page) to send it to every place that is activated. Starboard
+settings-copy call of the public API, or Copy now on the page) to send it to every place that is on. Starboard
 encrypts while it copies, with rclone's own "crypt" layer, then reads the copy back by its checksum before the place
 counts as safe.
 
@@ -181,7 +181,7 @@ def overview(data_dir):
 # Copying -------------------------------------------------------------------------------------------------------------
 
 def start(data_dir, name=None):
-    """Copies the zip (by name, in the server backups folder; the newest when none is given) to every place that is activated,
+    """Copies the zip (by name, in the server backups folder; the newest when none is given) to every place that is on,
     encrypted, in the background. Refused with no key, no place, or a copy running already."""
     key = _read_key(data_dir)
     if not key:
@@ -196,7 +196,7 @@ def start(data_dir, name=None):
         raise ZipError("That is not a server settings backup in the server backups folder. Only a plain file named server-settings-DATE.zip inside it is sent, never a link or another folder")
     places = [d for d in backup_copies.destinations(data_dir) if d["enabled"]]
     if not places:
-        raise ZipError("Activate a place for the copies first")
+        raise ZipError("Turn on a place for the copies first")
     host_folder = _host_of(folder)
     if not _lock.acquire(blocking=False):
         raise ZipError("A server settings copy is being made already")

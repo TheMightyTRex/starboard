@@ -7,20 +7,20 @@ Audio description's settings are on its own tab: go to **Settings**, then **Plug
 
 | Setting | What it does | Default |
 |---|---|---|
-| **Prefer releases with audio description** | Reelix chooses with its own Audio description format: set it to Prefer in **Settings**, **Reelix**, **Picture quality**. While this is activated, **Check the Reelix choice now** reminds you when Reelix does not prefer it. Activated or deactivated. | Activated |
+| **Prefer releases with audio description** | Reelix chooses with its own Audio description format: set it to Prefer in **Settings**, **Reelix**, **Picture quality**. While this is on, **Check the Reelix choice now** reminds you when Reelix does not prefer it. Turned on or off. | Turned on |
 
 ## People
 
 | Setting | What it does | Default |
 |---|---|---|
-| **Play the described track** | A page of its own that lists everyone in Jellyfin. Activate a person and, when they start a title with a described track while another plays, Starboard asks their app to change to the described track, within about half a minute. Not every Jellyfin app accepts this; the page says when one did not. | Nobody |
-| **People who want audio description** | A page of its own that lists everyone in Jellyfin. Activate a person and Jellyfin remembers the sound track they choose, so they choose the described track once for each film and series. Deactivate them and Jellyfin goes back to what they had. | Nobody |
+| **Play the described track** | A page of its own that lists everyone in Jellyfin. Turn on a person and, when they start a title with a described track while another plays, Starboard asks their app to change to the described track, within about half a minute. Not every Jellyfin app accepts this; the page says when one did not. | Nobody |
+| **People who want audio description** | A page of its own that lists everyone in Jellyfin. Turn on a person and Jellyfin remembers the sound track they choose, so they choose the described track once for each film and series. Turn them off and Jellyfin goes back to what they had. | Nobody |
 
 ## Your library
 
 | Setting | What it does | Default |
 |---|---|---|
-| **Add them to the Audio description collection** | The films and series with a described track go into one Jellyfin collection called Audio description, and the ones without are taken out. Every Jellyfin app shows it. Deactivated, the collection stays as it is. Activated or deactivated. | Activated |
+| **Add them to the Audio description collection** | The films and series with a described track go into one Jellyfin collection called Audio description, and the ones without are taken out. Every Jellyfin app shows it. Off, the collection stays as it is. Turned on or off. | Turned on |
 | **Titles with audio description** | A page of its own that lists every film and every episode with a described sound track, from the last check. Read [Titles with audio description](#titles-with-audio-description). | Not a setting |
 | **Films to list** | How many films **Titles with audio description** lists: **All**, or the **Last 10**, **Last 20**, **Last 50**, **Last 100** or **Last 500** added to Jellyfin, newest first. | Last 20 |
 | **Series to list** | How many series **Titles with audio description** lists, by their newest described episode: **All**, or the **Last 10**, **Last 20**, **Last 50**, **Last 100** or **Last 500**, newest first. Each series still lists all its described episodes. | Last 20 |
@@ -56,34 +56,34 @@ Films and series are listed newest first, by when they were added to Jellyfin; a
 
 | Setting | What it does | Default |
 |---|---|---|
-| **AudioVault search links** | A link to AudioVault's own search for each film and series without audio description. Starboard never downloads from AudioVault or reads its pages. Activated or deactivated. | Deactivated |
-| **YouDescribe search links** | A link to YouDescribe's own search for each film and series, for described trailers and clips on YouTube. Nothing is fetched from YouDescribe. Activated or deactivated. | Activated |
-| **MovieReading and Earcatch** | How to use these phone apps alongside Jellyfin, and where to get them. Neither publishes a list of titles, so Starboard cannot say which films they have. Activated or deactivated. | Activated |
+| **AudioVault search links** | A link to AudioVault's own search for each film and series without audio description. Starboard never downloads from AudioVault or reads its pages. Turned on or off. | Turned off |
+| **YouDescribe search links** | A link to YouDescribe's own search for each film and series, for described trailers and clips on YouTube. Nothing is fetched from YouDescribe. Turned on or off. | Turned on |
+| **MovieReading and Earcatch** | How to use these phone apps alongside Jellyfin, and where to get them. Neither publishes a list of titles, so Starboard cannot say which films they have. Turned on or off. | Turned on |
 
 ## AudioVault
 
 | Setting | What it does | Default |
 |---|---|---|
-| **Search AudioVault** | A page of its own, while **AudioVault search links** is activated, with a link to AudioVault's own search for each film and series without audio description. Films and series are listed apart, by first letter when there are more than 80. | Not a setting |
+| **Search AudioVault** | A page of its own, while **AudioVault search links** is on, with a link to AudioVault's own search for each film and series without audio description. Films and series are listed apart, by first letter when there are more than 80. | Not a setting |
 
 ## YouDescribe
 
 | Setting | What it does | Default |
 |---|---|---|
-| **Search YouDescribe** | A page of its own, while **YouDescribe search links** is activated, with a link to YouDescribe's own search for every film and series, each marked **Described here** or **No description here**. | Not a setting |
+| **Search YouDescribe** | A page of its own, while **YouDescribe search links** is on, with a link to YouDescribe's own search for every film and series, each marked **Described here** or **No description here**. | Not a setting |
 
 ## MovieReading and Earcatch
 
 | Setting | What it does | Default |
 |---|---|---|
-| **MovieReading and Earcatch** | A page of its own, while **MovieReading and Earcatch** under **Sources** is activated: what each app is, links to it in the App Store, on Google Play and on its website, and five steps to use one alongside Jellyfin. | Not a setting |
+| **MovieReading and Earcatch** | A page of its own, while **MovieReading and Earcatch** under **Sources** is on: what each app is, links to it in the App Store, on Google Play and on its website, and five steps to use one alongside Jellyfin. | Not a setting |
 
 ## Buttons
 
 These are on Audio description's tab.
 
 - **Check for described titles now** reads the sound tracks of every film and episode in Jellyfin straight away, in the background, instead of waiting for tonight's check. It says "Checking for described titles. The list updates in a minute or two".
-- **Check the Reelix choice now** reads how Reelix treats releases with audio description and says so, such as "Reelix prefers releases with audio description in 4 quality levels". Where no level prefers them and **Prefer releases with audio description** is activated, it says "To prefer releases with audio description, set Audio description to Prefer in Settings, Reelix, Picture quality". It never changes Reelix: only an admin key may, and Starboard never gives plug-ins one.
+- **Check the Reelix choice now** reads how Reelix treats releases with audio description and says so, such as "Reelix prefers releases with audio description in 4 quality levels". Where no level prefers them and **Prefer releases with audio description** is on, it says "To prefer releases with audio description, set Audio description to Prefer in Settings, Reelix, Picture quality". It never changes Reelix: only an admin key may, and Starboard never gives plug-ins one.
 
 ## Things to note
 
@@ -95,7 +95,7 @@ These are on Audio description's tab.
 - It checks the library once a night at 04:20, in quiet hours. The lists and cards change after each check.
 - It finds a described track by its name, such as "English (Audio Description)", "AD" or "Descriptive audio". Commentary tracks never count. Jellyfin does not read the flag that marks a described track inside a file.
 - It never downloads from, or reads the pages of, any website it links to, and never changes a media file.
-- Settings are kept when you update or deactivate it, and when you remove it they stay in its folder.
+- Settings are kept when you update or turn it off, and when you remove it they stay in its folder.
 
 ## Find out more
 

@@ -32,7 +32,7 @@ q2: What is wrong?
 3. If it stopped soon after an update, select **Roll back to** and the version you had. Read [Updates](../library-cleanup/updates.md).
 4. Still failing: go to **System**, then **Logs**, and find its name.
 
-It stops answering when it cannot read and change the media folder, or cannot write its own folder. Check that Jellyfin is added in **Settings**, then **Apps**, then deactivate and activate Library clean-up.
+It stops answering when it cannot read and change the media folder, or cannot write its own folder. Check that Jellyfin is added in **Settings**, then **Apps**, then turn off and turn on Library clean-up.
 
 ## Update it or update Starboard
 
@@ -43,7 +43,7 @@ Your Starboard's plug-in API is outside what this version of Library clean-up wo
 
 ## Check Move items each day
 
-- Nothing moves until **Move items each day** is activated in **Rules**. When it is deactivated, the card says **Deactivated** and what **Preview** would move.
+- Nothing moves until **Move items each day** is on in **Rules**. When it is off, the card says **Turned off** and what **Preview** would move.
 - It moves once a day, in Starboard's quiet hours. To move straight away, go to **System**, then **Jobs**, and select **Run now** beside **Move items to the holding folder**.
 - A run moves up to 200 items, within 50 minutes. The next run carries on.
 - A move that would have to copy the files is not made, and something with the same name already in the holding folder is never overwritten.
@@ -51,7 +51,7 @@ Your Starboard's plug-in API is outside what this version of Library clean-up wo
 ## Check the rules
 
 - **Films watched by everyone** finds nothing when one person never watches, such as a guest account. Add their Jellyfin user name to **People to leave out**.
-- Check that the rules you want are activated in **Rules**, and that the library is not deactivated in **Libraries**.
+- Check that the rules you want are on in **Rules**, and that the library is not off in **Libraries**.
 - Something in **Always keep** stays: favourites, anything someone is part way through, films in a collection and anything with the keep tag.
 - To keep something **Preview** lists, add the keep tag to it in Jellyfin, or change the rules. Then select **Preview again** and check the list again.
 - **Preview** is worked out in the background, which takes a few seconds on a large library. The page updates by itself.

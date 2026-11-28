@@ -19,27 +19,27 @@ A Starboard plug-in by TheMightyTRexUK, MIT licence. Starboard's first set-up of
 - **Reelix searches:** it checks how Reelix treats releases with audio description, using Reelix's own
   **Audio description** format, and says where to prefer them: **Settings**, **Reelix**, **Picture quality**. It never
   changes Reelix itself, as only an admin key may (issue #144).
-- **People:** for each person you activate, Jellyfin remembers the sound track they choose, so choosing the
+- **People:** for each person you turn on, Jellyfin remembers the sound track they choose, so choosing the
   described track once is enough for each film and series.
 - **Elsewhere:** a list of places with audio description in their own apps, such as BBC iPlayer and ITVX, each a link
   that opens in a new tab. It only links to them.
 
 ## Sources
 
-Each source is its own part, activated or deactivated under **Sources**, and each only links out. Nothing is fetched
+Each source is its own part, turned on or off under **Sources**, and each only links out. Nothing is fetched
 from any of them.
 
-- **AudioVault search links** (deactivated until you activate it): for each film and series in Jellyfin without audio
+- **AudioVault search links** (turned off until you turn it on): for each film and series in Jellyfin without audio
   description, a link to AudioVault's own search for it. AudioVault is a free community library of description tracks
   for blind and partially sighted people. It states no licence and no terms for automated use, has no API, and limits
   each account to 25 downloads a day, so Starboard never reads its pages or downloads from it: you open the link, sign
   in there and keep to its rules. To add a track you downloaded, use the
   [Audio description tracks](https://github.com/TheMightyTRex/starboard-plugins/blob/main/audio-description-tracks) plug-in, which checks it is the same length as your film.
-- **YouDescribe search links** (activated): for each film and series, a link to YouDescribe's own search. YouDescribe
+- **YouDescribe search links** (turned on): for each film and series, a link to YouDescribe's own search. YouDescribe
   is a free website where volunteers describe YouTube videos, such as trailers and clips; they play there, in your
   browser. Its programming interface serves its own website and is not offered to other apps, and its code is
   published without a licence, so Starboard only links to the search and never searches it for you.
-- **MovieReading and Earcatch** (activated): a short guide to these free phone apps, which play a description
+- **MovieReading and Earcatch** (turned on): a short guide to these free phone apps, which play a description
   through headphones in step with a film by listening to its sound, so they work alongside Jellyfin on your
   television; and links to them in the App Store, on Google Play and on their websites. Neither publishes a list of
   titles that other apps may read (MovieReading's website names only the films it has now; Earcatch's terms forbid
@@ -50,8 +50,8 @@ from any of them.
 
 - **Find and tag:** at each nightly check, every film and episode with a described track, and each series with one,
   gets the tag **Audio description** in Jellyfin; the tag comes off when the track goes. While **Add them to the Audio
-  description collection** is activated (the default), they are also in one collection called **Audio description**.
-- **Play the described track:** for each person activated on its page (nobody until you choose), when they start a
+  description collection** is on (the default), they are also in one collection called **Audio description**.
+- **Play the described track:** for each person turned on on its page (nobody until you choose), when they start a
   title with a described track while another plays, Starboard asks their app to change to it, with Jellyfin's own
   command. Not every Jellyfin app accepts this; the page says when one did not.
 - **The rules** (the words, the tag, the collection) are in `rules.json`, shared with Jellyfin's own Audio description
@@ -61,7 +61,7 @@ from any of them.
 ## What it may do
 
 - It uses Jellyfin's key, which Starboard keeps: to read sound tracks, to change one setting (remember my audio
-  track) for the people you activate, to tag titles and keep the collection, and to ask an app to change the sound track.
+  track) for the people you turn on, to tag titles and keep the collection, and to ask an app to change the sound track.
 - It hears when someone starts playing something (media:read), for Play the described track. It reads no files.
 - It uses Reelix's key, which Starboard keeps: to read Reelix's Audio description format and quality levels. It never changes them.
 - It reaches your home network, where Jellyfin and Reelix are.
@@ -89,7 +89,7 @@ track once per film or series. Both are listed in Starboard's accessibility rese
 
 - **Prefer releases with audio description**: reminds you to set Reelix's own Audio description format to Prefer in
   Settings, Reelix, Picture quality, when Reelix does not prefer it.
-- **People who want audio description**: activate each person.
+- **People who want audio description**: turn on each person.
 - **Titles with audio description**: every film and described episode, by films and series, each linking to its page
   in Jellyfin.
 - **Films to list** and **Series to list**: how many of each the page lists, All or the last 10, 20, 50, 100 or 500

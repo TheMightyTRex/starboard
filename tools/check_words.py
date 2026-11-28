@@ -22,7 +22,8 @@ BANNED = [
     (r"see|sees|seen|seeing", "2.6 no see or look"),
     (r"look|looks|looked|looking", "2.6 no see or look"),
     (r"click\w*|tap|taps|tapped|tapping", "2.5 select, not click"),
-    (r"enabl(e|es|ed|ing)|disabl(e|es|ed|ing)|toggl(e|es|ed|ing)|turn(s|ed|ing)? (on|off)", "2.9 activate and deactivate"),
+    (r"enabl(e|es|ed|ing)|disabl(e|es|ed|ing)|toggl(e|es|ed|ing)", "2.9 turn on and turn off"),
+    (r"(de)?activat(e|es|ed|ing|ion|ions)", "2.9 turn on and turn off, not activate"),
     (r"typed|typing|typ(e|es) (a|an|the|it|its|your|in|b|m|q|f|DELETE|\d+|one|them|that|this|something|here|ahead)"
      r"|typ(e|es)-to-\w+|as you type", "2.18 enter, not type"),
     (r"above|below", "2.7 no positional directions"),

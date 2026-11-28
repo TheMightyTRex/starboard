@@ -1,5 +1,5 @@
 """Automatic updates for everything (DASH-422): one design for Starboard, Reelix, your other apps, Starboard's
-plug-ins (from a catalogue or from an address) and Jellyfin's own plug-ins. Each part is deactivated until the owner
+plug-ins (from a catalogue or from an address) and Jellyfin's own plug-ins. Each part is off until the owner
 chooses it, in Settings, Updates or in either set-up, and runs only in the update hours (Settings, Updates, When:
 the download hours when set, otherwise 01:00 to 06:00; or always 01:00 to 06:00).
 
@@ -10,12 +10,12 @@ Every part keeps the same promises, through the update run it already has (updat
 - a health check: Starboard answers; Reelix answers healthy; the app runs and is not unhealthy; the plug-in answers
   its health path; each Jellyfin plug-in is active after Jellyfin's restart;
 - the way back, by itself: every part but Jellyfin's plug-ins (Jellyfin keeps no older version, so a plug-in that
-  does not start is deactivated by Jellyfin, said in an alert, and the copy is there to put back);
+  does not start is turned off by Jellyfin, said in an alert, and the copy is there to put back);
 - what is new afterwards: Recent updates on Settings, Updates, and one alert where alerts go;
 - an alert when an update failed (update_runs._end) or waits for the owner (a plug-in that asks for new
   permissions never updates by itself; a version that failed is not tried again until updated by hand).
 
-Lightweight (DASH-421): one job each, woken hourly by Starboard's jobs thread only while a part is activated; outside
+Lightweight (DASH-421): one job each, woken hourly by Starboard's jobs thread only while a part is on; outside
 the update hours a look costs nothing (no request); inside them, once a day: the registries for the apps (the same
 look as Check on Apps, Updates), the catalogues (read again for this look), each plug-in's own address, and
 Jellyfin's Update plugins task. Starboard (GitHub, at most every 6 hours) and Reelix keep their own jobs.
@@ -54,7 +54,7 @@ SAFETY = {
     "plugins": {"copy": "Its settings, kept for Roll back", "check": "It answers its health path",
                 "back": "By itself, with your settings as they were; Roll back later on its page"},
     "jellyfin_plugins": {"copy": "Jellyfin's plug-ins folder, as jellyfin-plugins-before-update.tgz", "check": "Each plug-in is active after Jellyfin restarts",
-                         "back": "Not by itself: Jellyfin keeps no older version. A plug-in that does not start is deactivated by Jellyfin, and the copy can be put back"},
+                         "back": "Not by itself: Jellyfin keeps no older version. A plug-in that does not start is turned off by Jellyfin, and the copy can be put back"},
 }
 
 
@@ -128,7 +128,7 @@ def due(app, part, now=None):
     """(True, "") when the part's automatic update should look now; otherwise (False, why)."""
     data = app.config.data
     if not data.get(KEYS[part]):
-        return False, "Deactivated"
+        return False, "Off"
     now = now or dt.datetime.now()
     if not in_hours(data, now):
         return False, "Waiting for the update hours"
@@ -327,7 +327,7 @@ def jellyfin_status(app):
 
 
 def take_over_schedule(app):
-    """While Starboard updates Jellyfin's plug-ins (activated), Jellyfin's own Update plugins task has no schedule,
+    """While Starboard updates Jellyfin's plug-ins (turned on), Jellyfin's own Update plugins task has no schedule,
     so they update only in the update hours, with a copy first. Done once; the owner can schedule it again in
     Jellyfin. Returns True when Jellyfin's schedule was cleared now."""
     jf = _jf(app.config.data["services"])
@@ -485,7 +485,7 @@ def jellyfin_plugins_restart(app, run, jf, news, sleep=time.sleep, restart_wait=
         if bad:
             step("health", "failed", ", ".join(bad))
             update_runs._end(app.data_dir, run, "failed",
-                             f"{', '.join(bad)} did not start after the update, so Jellyfin deactivated it. Jellyfin keeps no older version: "
+                             f"{', '.join(bad)} did not start after the update, so Jellyfin turned off it. Jellyfin keeps no older version: "
                              "the copy from before is jellyfin-plugins-before-update.tgz beside the set-up files", app)
             return run
         step("health", "done", "Each plug-in is active")
@@ -503,7 +503,7 @@ def jellyfin_plugins(app, now=None, force=False):
     """The automatic job: moves Jellyfin's own schedule aside once, then once a day in the update hours."""
     from . import update_runs
     if not app.config.data.get(KEYS["jellyfin_plugins"]):
-        return "Deactivated"
+        return "Off"
     take_over_schedule(app)
     ok, why = (True, "") if force else due(app, "jellyfin_plugins", now)
     if not ok:

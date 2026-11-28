@@ -49,8 +49,8 @@ These are refused whatever a plug-in asks for. Starboard does not offer them, so
 - **Read or change other apps' settings, keys or passwords,** or Starboard's own data and password.
 - **Change your install, your VPN, your downloads or your accounts.** The keys plug-ins get today only read.
 - **Download fonts, pictures or code from the internet** into Starboard's pages.
-- **Stay if you do not want it.** **Deactivate** stops it, **Remove** takes it away and stops its key, and
-  **Deactivate all plug-ins** stops every one at once. Read [Add a plug-in](../topics/add-a-plugin.md#things-to-note).
+- **Stay if you do not want it.** **Turn off** stops it, **Remove** takes it away and stops its key, and
+  **Turn off all plug-ins** stops every one at once. Read [Add a plug-in](../topics/add-a-plugin.md#things-to-note).
 
 ## How Starboard checks a plug-in
 

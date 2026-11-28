@@ -16,7 +16,7 @@ projects and free data sources are used too, with thanks.
 
 | Source | Used for |
 |---|---|
-| [dashboard-icons](https://github.com/homarr-labs/dashboard-icons) | App icons (can be deactivated in **Settings**, **About and updates**) |
+| [dashboard-icons](https://github.com/homarr-labs/dashboard-icons) | App icons (can be turned off in **Settings**, **About and updates**) |
 | [i.mjh.nz](https://github.com/matthuisman/i.mjh.nz) by Matt Huisman | Samsung TV Plus and Pluto TV channel lists and guides (Live TV) |
 | [epgshare01](https://epgshare01.online/) | TV guides for the channels in `guide-map.txt` (Live TV) |
 | [tv-logo/tv-logos](https://github.com/tv-logo/tv-logos) | Better logos for a few channels (Live TV) |

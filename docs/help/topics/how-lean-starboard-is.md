@@ -99,9 +99,9 @@ The 22 bytes between the two figures are 0.02% of the page. The figures leave ou
 
 - It uses Python's standard library and plain HTML, CSS and JavaScript. The only package it needs, Pillow, turns Live
   TV logos white, and only while that is active.
-- It does no work unless a page you have open, or a schedule you activated, needs it. Read
+- It does no work unless a page you have open, or a schedule you turned on, needs it. Read
   [Make Starboard use less of your server](make-starboard-lighter.md) for what each background job costs, and how to
-  deactivate it.
+  turn it off.
 - It asks your apps only for what a page shows, and only reaches what you allow.
 - A page loads a part of the design system only when it uses it.
 
