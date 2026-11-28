@@ -1036,6 +1036,40 @@ const f30c = await focus();
 check("T30", "Escape closes it part way and gives focus back to the button", f30c.id === "place-add-drive" && !(await page.locator("#side-panel").count()), `${f30c.tag} ${f30c.id}`);
 check("T30", "and says nothing was saved", /nothing was saved/.test(await page.locator("#announcer").innerText()));
 
+// T30 again, the link way (28 November 2026, without pasting): Dropbox signs in in this browser only. By keyboard alone: the
+// slide-out opens at the sign-in with focus on its heading; Tab reaches the sign-in page link, Paste from the clipboard (when
+// the browser can read it), the box and Continue, all inside the slide-out; the clipboard being refused or empty is said in a status and
+// puts focus in the box; Enter on an empty box says what to do beside the box and keeps focus there; Escape closes it.
+await page.goto(`${base}/settings-general-backup.html`);
+await settle();
+await page.evaluate(() => { const h = document.querySelector("#places-add"); h.focus(); });
+const dropbox30 = await tabTo((f) => f.id === "place-add-dropbox", 14);
+check("T30", "Tab reaches Dropbox in Add a place", !!dropbox30);
+await page.keyboard.press("Enter");
+await page.locator("#cloud-open-signin").waitFor({ timeout: 15000 }).catch(() => {});
+check("T30", "the link way opens with focus on its heading", (await focus()).id === "cloud-step-heading");
+const link30 = await tabTo((f) => f.id === "cloud-open-signin", 4);
+check("T30", "Tab reaches Open the sign-in page", !!link30 && link30.inPanel);
+const clip30 = await tabTo((f) => f.id === "cloud-answer-clipboard" || f.id === "cloud-answer", 3);
+const hasClip30 = clip30 && clip30.id === "cloud-answer-clipboard";
+check("T30", "Tab reaches Paste from the clipboard, then the box", !!clip30 && clip30.inPanel && (!hasClip30 || /^Paste from the clipboard$/.test(clip30.text)), clip30 ? clip30.text || clip30.id : "not reached");
+if (hasClip30) {
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(() => document.activeElement?.id === "cloud-answer", null, { timeout: 5000 }).catch(() => {});
+  const status30 = await page.evaluate(() => ({ role: document.querySelector("#cloud-paste-status")?.getAttribute("role"), text: document.querySelector("#cloud-paste-status")?.textContent || "" }));
+  check("T30", "an empty or refused clipboard is said in a status, and focus goes to the box", status30.role === "status" && status30.text.length > 10 && (await focus()).id === "cloud-answer", `${status30.role} ${status30.text}`);
+} else await tabTo((f) => f.id === "cloud-answer", 2);
+await page.keyboard.press("Enter");
+await page.waitForTimeout(300);
+const empty30 = await page.evaluate(() => ({ invalid: document.querySelector("#cloud-answer")?.getAttribute("aria-invalid"), words: document.querySelector("#cloud-answer-error")?.textContent || "", id: document.activeElement?.id }));
+check("T30", "Enter on an empty box says what to paste beside the box and keeps focus there", empty30.invalid === "true" && /Paste the address/.test(empty30.words) && empty30.id === "cloud-answer", JSON.stringify(empty30));
+const go30b = await tabTo((f) => f.id === "cloud-answer-go", 4);
+check("T30", "Tab reaches Continue inside the slide-out", !!go30b && go30b.inPanel);
+await page.keyboard.press("Escape");
+await page.waitForTimeout(600);
+const f30d = await focus();
+check("T30", "Escape closes it and gives focus back to Dropbox", f30d.id === "place-add-dropbox" && !(await page.locator("#side-panel").count()), `${f30d.tag} ${f30d.id}`);
+
 // T31 Bring in media by keyboard alone (DASH-455): the whole step, part by part. After each Continue, focus is on the
 // part's heading; the picker opens on its places with focus on the first place, opens a disk and a folder with Enter,
 // and Escape gives focus back to Add a source; Check names says its counts in a status; Move up says where the row is.

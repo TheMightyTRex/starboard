@@ -19,6 +19,53 @@ function focusStep(h) {
   if (body) body.scrollTop = 0;
 }
 
+// Pasting the address back (28 November 2026, owner: "can you pull the url automatically at all?"). The browser checks the
+// address the way check_answer in starboard/cloud_connect.py does, so one that is right goes on by itself, from the
+// Paste from the clipboard button or from a paste into the box. Anything else is left in the box to read and change,
+// and Continue sends it as before. The address is never written to the page's text, the console or a message: it goes
+// only to the server, and it is not kept in the box after it has been used.
+const SIGNIN_CODE = /^[A-Za-z0-9._~/+=!*()$,;:@-]{1,2048}$/;  // CODE_RE on the server
+
+function signinAnswer(text, link) {
+  const t = String(text || "").trim();
+  if (!t || t.length > 4096 || /[ \t\r\n<>"'`\\]/.test(t)) return false;
+  let u;
+  let state = "";
+  try { u = new URL(/^https?:\/\//.test(t) ? t : `http://${t}`); state = new URL(link).searchParams.get("state") || ""; } catch { return false; }
+  if (u.protocol !== "http:" || !["127.0.0.1", "localhost"].includes(u.hostname) || u.port !== "53682" || u.pathname !== "/" || u.username || u.hash) return false;
+  const keys = [...u.searchParams.keys()];
+  if (new Set(keys).size !== keys.length || u.searchParams.get("error")) return false;
+  return !!state && u.searchParams.get("state") === state && SIGNIN_CODE.test(u.searchParams.get("code") || "");
+}
+
+// The paste box's helpers: a right address pasted into the box goes on by itself; the returned button (null when this
+// browser cannot read the clipboard) does the same from the clipboard. send(text) submits; say(words) is the status line.
+function pasteSignin({ input, link, send, say }) {
+  input.addEventListener("paste", (e) => {
+    const text = e.clipboardData?.getData("text") || "";
+    if (!signinAnswer(text, link)) return;  // an ordinary paste: read it, change it, then Continue
+    e.preventDefault();
+    send(text);
+  });
+  if (!navigator.clipboard?.readText) return null;
+  const button = el("button", { type: "button", class: "btn", id: `${input.id}-clipboard`, text: "Paste from the clipboard" });
+  button.addEventListener("click", async () => {
+    let text = "";
+    try { text = await navigator.clipboard.readText(); } catch {
+      say("Your browser did not let Starboard read the clipboard. Select the box, then paste with Ctrl+V, or Command+V on a Mac.");
+      input.focus();
+      return;
+    }
+    if (signinAnswer(text, link)) { send(text); return; }
+    if (text.trim()) {
+      input.value = text.trim();  // for the person to read and change; Continue sends it
+      say("Pasted into the box. It is not the address this sign-in ends on, so check it, then select Continue.");
+    } else say("The clipboard is empty. Copy the address from the browser's address bar, then select Paste from the clipboard.");
+    input.focus();
+  });
+  return button;
+}
+
 function spelt(code) { return `Code: ${String(code).replace(/-/g, "").split("").join(", ")}`; }
 
 function qrSvg(qr, label) {
@@ -199,12 +246,12 @@ async function cloudWizard({ opener = document.activeElement, startAt = "service
     const h = frame(1, s.signin === "oauth" ? `Sign in to ${s.name}` : s.signin === "paste" ? "Paste your own rclone remote" : `Connect to ${s.name}`, parts, foot);
     if (sess.state === "failed" || sess.state === "expired") {
       $("#cloud-error")?.focus();
-    } else if (changed && sess.state !== "phone" && sess.state !== "checking") focusStep(h);
+    } else if (changed && sess.state !== "phone" && (sess.state !== "checking" || !panel.layer.contains(document.activeElement))) focusStep(h);
   }
 
   function wayCards() {
     const ways = [["phone", "Complete on the phone", "Scan a QR code and sign in on your phone. Starboard waits by itself."],
-      ["browser", "Complete in this browser", "Open the sign-in page here, then paste back the address it ends on."]];
+      ["browser", "Complete in this browser", "Open the sign-in page here. If Starboard cannot move on by itself, paste back the address it ends on."]];
     const box = el("fieldset", { class: "option-cards option-cards--row", id: "cloud-way" }, el("legend", { class: "field__label", text: "How do you want to sign in?" }),
       ways.map(([v, title, line]) => el("label", { class: "option-card" },
         el("input", { type: "radio", name: "cloud-way", value: v, checked: st.way === v }), el("strong", { text: title }), el("small", { text: line }))));
@@ -224,39 +271,61 @@ async function cloudWizard({ opener = document.activeElement, startAt = "service
 
   function linkCard(sess) {
     const s = svc();
-    const paste = el("input", { class: "input", id: "cloud-answer", spellcheck: "false", autocomplete: "off", inputmode: "url", "aria-describedby": "cloud-answer-hint" });
-    const card = el("div", { class: "signin-card" }, el("ol", { class: "signin-steps" },
-      el("li", {}, el("p", { text: `Open ${s.name}'s sign-in page, sign in and allow Starboard to use your files.` }),
-        el("p", {}, el("a", { class: "btn", id: "cloud-open-signin", href: sess.link, target: "_blank", rel: "noopener noreferrer" },
-          icon("external-link"), "Open the sign-in page", el("span", { class: "visually-hidden", text: ` for ${s.name} (opens in a new tab)` })))),
-      el("li", {}, el("p", { text: "Finish every check the service asks for, such as a code from your phone or approving the sign-in in an app. Your browser then shows a page that does not load, such as This site cannot be reached. That is expected: its address holds the answer. It starts like this:" }),
-        el("code", { class: "signin-example", text: "http://127.0.0.1:53682/?state=…&code=…" })),
-      el("li", {}, el("div", { class: "field" }, el("label", { for: "cloud-answer", text: "Paste that whole address" }),
-        el("span", { class: "hint", id: "cloud-answer-hint", text: "From the browser's address bar. It goes only to this sign-in, which then ends." }), paste))),
-    el("p", { class: "small muted", text: "Why: the sign-in answers an address on the computer that asked for it. Starboard runs in its own container, so you carry the answer across." }),
-    waitingLine(sess));
+    const auto = sess.capture === "auto";
+    const paste = el("input", { class: "input", id: "cloud-answer", spellcheck: "false", autocomplete: "off", inputmode: "url", "aria-describedby": "cloud-answer-hint cloud-paste-status" });
+    const status = el("p", { class: "small", id: "cloud-paste-status", role: "status" });
+    const say = (words) => { status.textContent = words; };
+    const open = el("li", {}, el("p", { text: `Open ${s.name}'s sign-in page, sign in and allow Starboard to use your files.` }),
+      el("p", {}, el("a", { class: "btn", id: "cloud-open-signin", href: sess.link, target: "_blank", rel: "noopener noreferrer" },
+        icon("external-link"), "Open the sign-in page", el("span", { class: "visually-hidden", text: ` for ${s.name} (opens in a new tab)` }))));
+    const finish = auto
+      ? el("li", {}, el("p", { text: "Finish every check the service asks for, such as a code from your phone or approving the sign-in in an app. Your browser then shows Go back to Starboard, and this page moves on by itself." }))
+      : el("li", {}, el("p", { text: "Finish every check the service asks for, such as a code from your phone or approving the sign-in in an app. Your browser then shows a page that does not load, such as This site cannot be reached. That is expected: its address holds the answer. It starts like this:" }),
+        el("code", { class: "signin-example", text: "http://127.0.0.1:53682/?state=…&code=…" }));
+    let clipboard = null;
+    const field = el("div", { class: "field" }, el("label", { for: "cloud-answer", text: "Paste that whole address" }),
+      el("span", { class: "hint", id: "cloud-answer-hint", text: "From the browser's address bar. It goes only to this sign-in, which then ends." }), paste, status);
+    const card = el("div", { class: "signin-card" }, el("ol", { class: "signin-steps" }, open, finish,
+      el("li", {}, auto ? el("p", { text: "Only if your browser shows a page that does not load, such as This site cannot be reached, copy its whole address. It starts http://127.0.0.1:53682/ or http://localhost:53682/." }) : null, field)),
+    sess.capture_note ? el("p", { class: "small", id: "cloud-capture-note", text: `${sess.capture_note}.` }) : null,
+    auto ? el("p", { class: "small muted", text: "Why this works by itself: this page is open on the same computer as Starboard, so the service can send its answer straight to Starboard's sign-in helper, which is open only for these minutes and only on this computer." })
+      : el("p", { class: "small muted", text: "Why: the sign-in answers an address on the computer that asked for it. Starboard runs in its own container, so you carry the answer across." }),
+    waitingLine(sess, auto));
     const go = el("button", { type: "button", class: "btn btn--primary", id: "cloud-answer-go", text: "Continue" });
-    const send = async () => {
+    let sending = false;
+    // text: the address, from the box (Continue) or from a right-looking paste (by itself).
+    const send = async (text = paste.value, byItself = false) => {
+      if (sending) return;
       fieldError(paste, "");
-      if (!paste.value.trim()) { fieldError(paste, "Paste the address from the browser's address bar"); return; }
+      say("");
+      if (!String(text).trim()) { fieldError(paste, "Paste the address from the browser's address bar"); return; }
+      sending = true;
       go.disabled = true;
+      if (clipboard) clipboard.disabled = true;
+      if (byItself) say("Address found. Sending it to the sign-in.");
       try {
-        st.sess = await api("/api/backup/cloud/answer", { method: "POST", body: { id: st.sess.id, address: paste.value } });
+        st.sess = await api("/api/backup/cloud/answer", { method: "POST", body: { id: st.sess.id, address: text } });
+        paste.value = "";  // used: it is not kept in the box
         announce(`Checking the sign-in with ${s.name}`);
         drawSignin(true);
         follow();
       } catch (e) {
+        sending = false;
         go.disabled = false;
-        if (e.data && "field" in e.data) fieldError(paste, e.message);  // the address itself: said beside the field
+        if (clipboard) clipboard.disabled = false;
+        if (e.data && "field" in e.data) { say(""); fieldError(paste, e.message); }  // the address itself: said beside the field
         else { st.sess = await api("/api/backup/cloud/session").catch(() => ({ state: "failed", error: e.message })); drawSignin(true); }
       }
     };
-    go.addEventListener("click", send);
+    go.addEventListener("click", () => send());
     paste.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); send(); } });
+    clipboard = pasteSignin({ input: paste, link: sess.link, send: (text) => send(text, true), say });
+    if (clipboard) field.insertBefore(el("p", {}, clipboard), status);
     return [card, go];
   }
-  function waitingLine(sess) {
-    return el("p", { class: "small muted" }, el("span", { id: "cloud-time-left", text: minutesLeft(sess.seconds_left) }), ". After that, select Try again for a new sign-in.");
+  function waitingLine(sess, auto = false) {
+    return el("p", { class: "small muted" }, auto ? el("span", { role: "status", id: "cloud-waiting-words", text: "Starboard is waiting for you to sign in. " }) : null,
+      el("span", { id: "cloud-time-left", text: minutesLeft(sess.seconds_left) }), ". After that, select Try again for a new sign-in.");
   }
 
   function phoneCard(sess) {

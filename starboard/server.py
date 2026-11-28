@@ -3235,7 +3235,8 @@ class Handler(BaseHTTPRequestHandler):
                         return self.json(200, cloud_connect.current())
                     if path == "/api/backup/cloud/start" and method == "POST":
                         return self.json(200, cloud_connect.start(app.data_dir, str(data.get("service") or ""), str(data.get("way") or "browser"),
-                                                                  dest=str(data.get("dest") or "") or None))
+                                                                  dest=str(data.get("dest") or "") or None,
+                                                                  local=cloud_connect.same_computer(self.headers.get("Host"))))
                     if path == "/api/backup/cloud/answer" and method == "POST":
                         return self.json(200, cloud_connect.answer(str(data.get("id") or ""), data.get("address")))
                     if path == "/api/backup/cloud/details" and method == "POST":
@@ -3435,7 +3436,8 @@ class Handler(BaseHTTPRequestHandler):
                         return self.json(200, cloud_connect.current())
                     body = self.body(limit=16 * 1024)
                     if path == "/api/bring-in/cloud/start" and method == "POST":
-                        return self.json(200, cloud_sources.start(app.data_dir, str(body.get("service") or ""), str(body.get("way") or "browser")))
+                        return self.json(200, cloud_sources.start(app.data_dir, str(body.get("service") or ""), str(body.get("way") or "browser"),
+                                                                 local=cloud_connect.same_computer(self.headers.get("Host"))))
                     if path == "/api/bring-in/cloud/answer" and method == "POST":
                         return self.json(200, cloud_connect.answer(str(body.get("id") or ""), str(body.get("address") or "")))
                     if path == "/api/bring-in/cloud/keep" and method == "POST":

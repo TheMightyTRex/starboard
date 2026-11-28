@@ -281,6 +281,153 @@ class BrowserSignIn(Base):
         self.assertIn("Start again", cc.current()["error"])
 
 
+class AutoCapture(Base):
+    """Complete in this browser, caught by itself (28 November 2026): when the page is on the same computer, the redirect
+    reaches the helper through a port published on 127.0.0.1 for the minutes of the sign-in. Real rclone, Docker and
+    Microsoft are not used here (the stand-ins are); the script's own shell syntax is checked with sh -n."""
+
+    def test_only_a_page_opened_as_localhost_counts_as_this_computer(self):
+        for host in ("localhost:8787", "127.0.0.1:8787", "127.0.0.1", "LOCALHOST", "[::1]:8787"):
+            self.assertTrue(cc.same_computer(host), host)
+        for host in ("", None, "192.168.1.20:8787", "t-rex-server:8787", "starboard.example", "localhost.evil.example", "127.0.0.1.evil.example:80", "0.0.0.0:8787"):
+            self.assertFalse(cc.same_computer(host), str(host))
+
+    def test_catching_by_itself_is_for_the_browser_way_on_this_computer_only(self):
+        self.assertEqual(cc.start(self.data, "onedrive", "browser", local=True)["capture"], "auto")
+        self.assertTrue(cc._session["publish"])
+        self.assertEqual(cc.start(self.data, "onedrive", "browser", local=False)["capture"], "paste")
+        self.assertFalse(cc._session["publish"])
+        self.assertEqual(cc.start(self.data, "onedrive", "browser")["capture"], "paste")  # the default is not to publish anything
+        self.assertNotIn("capture", cc.start(self.data, "b2", "browser", local=True))     # keys have no sign-in page
+        self.assertFalse(cc._session.get("publish"))
+
+    def test_the_script_is_valid_shell_with_the_forwarder_only_when_publishing(self):
+        import subprocess
+        for sid in ("drive", "onedrive", "dropbox"):
+            for publish in (True, False):
+                script = cc.authorize_script({"service": sid, "publish": publish})
+                self.assertEqual(subprocess.run(["sh", "-n", "-c", script], capture_output=True).returncode, 0, f"{sid} {publish}")
+                self.assertEqual(f"nc -lk -p {cc.FORWARD_PORT} -e nc 127.0.0.1 {cc.PORT}" in script, publish)
+                self.assertIn("--template /c/page.html", script)       # Starboard's own page, not rclone's
+                self.assertNotIn("0.0.0.0", script)
+        self.assertEqual((cc.PORT, cc.FORWARD_PORT), (53682, 53683))
+
+    def test_the_published_port_is_on_the_loopback_address_and_only_then(self):
+        r = cc.Runner()
+        with mock.patch.object(r, "_binds", return_value=["/x:/c"]):
+            on = r.body({"service": "onedrive", "work": "/x", "publish": True})
+            off = r.body({"service": "onedrive", "work": "/x"})
+        self.assertEqual(on["HostConfig"]["PortBindings"], {"53683/tcp": [{"HostIp": "127.0.0.1", "HostPort": "53682"}]})
+        self.assertEqual(on["ExposedPorts"], {"53683/tcp": {}})
+        self.assertNotIn("PublishAllPorts", on["HostConfig"])
+        self.assertEqual(on["HostConfig"]["NetworkMode"], "bridge")
+        self.assertNotIn("PortBindings", off["HostConfig"])
+        self.assertNotIn("ExposedPorts", off)
+        for body in (on, off):
+            self.assertEqual(body["HostConfig"]["CapDrop"], ["ALL"])
+            self.assertNotIn("0.0.0.0", json.dumps(body))
+
+    def test_a_port_that_something_else_uses_falls_back_to_pasting(self):
+        calls, removed = [], []
+
+        def docker(method, path, body=None, **kw):
+            calls.append((method, path.split("?")[0], bool(body and "PortBindings" in body["HostConfig"])))
+            if method == "POST" and path.endswith("/start") and sum(1 for c in calls if c[1].endswith("/start")) == 1:
+                raise cc_containers.DockerError("Docker answered 500: Bind for 127.0.0.1:53682 failed: port is already allocated")
+            return {"Id": f"cid{len(calls)}"}
+        from starboard import containers as cc_containers
+        r = cc.Runner()
+        sess = {"id": "abc", "service": "onedrive", "work": "/x", "data_dir": self.data, "publish": True, "capture": "auto"}
+        with mock.patch.object(cc_containers, "docker", docker), mock.patch.object(cc_containers, "available", lambda: True), \
+                mock.patch.object(backup_copies, "_pull"), mock.patch.object(r, "_binds", return_value=["/x:/c"]), \
+                mock.patch.object(r, "remove", lambda cid: removed.append(cid)):
+            r.authorize(sess)
+        creates = [c for c in calls if c[1].endswith("/containers/create")]
+        self.assertEqual([c[2] for c in creates], [True, False])      # the second helper has no published port
+        self.assertEqual(removed, ["cid1"])                           # the first one is gone
+        self.assertEqual(sess["cid"], "cid3")
+        self.assertEqual((sess["capture"], sess["publish"]), ("paste", False))
+        self.assertIn("something else on this computer is using port 53682", sess["capture_note"])
+
+    def test_another_docker_problem_is_not_hidden_by_the_fallback(self):
+        from starboard import containers as cc_containers
+
+        def docker(method, path, body=None, **kw):
+            if path.endswith("/start"):
+                raise cc_containers.DockerError("Docker answered 500: no space left on device")
+            return {"Id": "cid"}
+        r = cc.Runner()
+        sess = {"id": "abc", "service": "onedrive", "work": "/x", "data_dir": self.data, "publish": True}
+        with mock.patch.object(cc_containers, "docker", docker), mock.patch.object(cc_containers, "available", lambda: True), \
+                mock.patch.object(backup_copies, "_pull"), mock.patch.object(r, "_binds", return_value=["/x:/c"]), mock.patch.object(r, "remove"):
+            with self.assertRaises(cc_containers.DockerError):
+                r.authorize(sess)
+
+    def test_the_page_says_the_note_and_the_capture_to_the_wizard(self):
+        cc.start(self.data, "dropbox", "browser", local=True)
+        self.assertTrue(wait_for(lambda: cc.current()["state"] == "link"))
+        now = cc.current()
+        self.assertEqual(now["capture"], "auto")
+        self.assertNotIn("publish", now)
+        self.assertNotIn("capture_note", now)
+        cc._session["capture_note"] = cc.PORT_BUSY
+        self.assertEqual(cc.current()["capture_note"], cc.PORT_BUSY)
+
+    def test_the_answer_arriving_by_itself_signs_in_and_removes_the_helper(self):
+        lines = []
+        with mock.patch.object(cc.logs, "event", lambda level, area, message, **extra: lines.append(message)):
+            self.run.link = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=x&state=Abc123_state-XYZ"
+            s = cc.start(self.data, "onedrive", "browser", local=True)
+            sess = cc._session
+            self.assertTrue(wait_for(lambda: cc.current()["state"] == "link"))
+            work = sess["work"]
+            self.assertTrue(os.path.exists(os.path.join(work, "page.html")))
+            self.run.finish(sess, {"access_token": "at-secret", "token_type": "Bearer", "refresh_token": "rt", "expiry": "2026-11-16T12:00:00Z"})
+            with mock.patch.object(cc, "HTTP", lambda url, form=None, headers=None: (200, {"id": "b!drive1", "driveType": "personal"})):
+                self.assertTrue(wait_for(lambda: cc.current()["state"] == "signed-in"))
+        self.assertFalse(os.path.exists(work))
+        self.assertEqual(self.run.removed, ["fake-" + s["id"]])
+        said = " | ".join(lines)
+        self.assertIn("the answer reached the sign-in by itself", said)
+        for secret in ("at-secret", "Abc123_state-XYZ"):
+            self.assertNotIn(secret, said)
+
+    def test_the_helper_goes_when_the_sign_in_fails_runs_out_of_time_or_is_closed(self):
+        s = cc.start(self.data, "dropbox", "browser", local=True)
+        sess = cc._session
+        wait_for(lambda: cc.current()["state"] == "link")
+        self.run.finish(sess, None)                                   # rclone says no
+        self.assertTrue(wait_for(lambda: cc.current()["state"] == "failed"))
+        self.assertEqual(self.run.removed, ["fake-" + s["id"]])
+        with mock.patch.object(cc, "SIGNIN_LIMIT", 1):                # nobody comes
+            t = cc.start(self.data, "dropbox", "browser", local=True)
+            time.sleep(1.2)
+            self.assertEqual(cc.current()["state"], "expired")
+        self.assertIn("fake-" + t["id"], self.run.removed)
+        u = cc.start(self.data, "dropbox", "browser", local=True)     # the slide-out is closed
+        cc.cancel()
+        self.assertIn("fake-" + u["id"], self.run.removed)
+
+    def test_a_pasted_address_still_works_beside_it(self):
+        s = cc.start(self.data, "dropbox", "browser", local=True)
+        wait_for(lambda: cc.current()["state"] == "link")
+        cc.answer(s["id"], "http://localhost:53682/?code=dbx-code&state=Abc123_state-XYZ")
+        self.assertEqual(cc.current()["state"], "checking")
+
+    def test_the_page_after_the_redirect_shows_no_code_or_state(self):
+        d = tempfile.mkdtemp()
+        cc.write_page(d)
+        page = open(os.path.join(d, "page.html"), encoding="utf-8").read()
+        self.assertEqual(oct(os.stat(os.path.join(d, "page.html")).st_mode & 0o777), "0o600")
+        for field in (".Code", ".State", ".Description", ".Name", ".HelpURL"):
+            self.assertNotIn(field, page)
+        self.assertIn("{{ if .OK }}", page)
+        self.assertIn("Go back to Starboard", page)
+        self.assertIn("You can close this tab", page)
+        self.assertNotIn("<script", page)
+        self.assertNotIn("http", page.replace("<!doctype html>", ""))  # no address, no outside file
+
+
 class PhoneSignIn(Base):
     def setUp(self):
         super().setUp()

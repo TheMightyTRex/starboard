@@ -110,11 +110,23 @@ that, select **Try again** for a new one.
 1. Select **Open the sign-in page**. It opens in a new tab.
 2. Sign in and allow Starboard to use your files. Finish every check the service asks for, such as a code from your
    phone or approving the sign-in in Microsoft Authenticator, in that same tab.
-3. The tab then shows a page that does not load, such as "This site cannot be reached", with an address that starts
-   `http://127.0.0.1:53682/` or `http://localhost:53682/`. This is expected: the address holds the answer from Google
-   or Microsoft. It is not a failed sign-in.
-4. Copy the whole address from the address bar, go back to Starboard and paste it into **Paste that whole address**.
-5. Select **Continue**.
+3. What happens next depends on where you opened Starboard.
+   - **Opened as `localhost` or `127.0.0.1`, on the computer that runs Starboard:** the tab shows **Go back to
+     Starboard** and **You can close this tab**. Starboard moves on by itself. There is nothing to paste. Starboard
+     opens a way in for the answer only on this computer, only while you sign in, and closes it when the sign-in ends,
+     fails, runs out of time or you close the slide-out. If something else on this computer already uses port 53682,
+     Starboard says so and you paste the address instead.
+   - **Opened any other way, for example by the server's network address, or from another computer:** the tab shows a
+     page that does not load, such as "This site cannot be reached", with an address that starts
+     `http://127.0.0.1:53682/` or `http://localhost:53682/`. This is expected: the address holds the answer from Google
+     or Microsoft. It is not a failed sign-in. Copy the whole address from the address bar, go back to Starboard,
+     and select **Paste from the clipboard**. When the address is right, Starboard goes on by itself. Your browser may ask
+     you to allow it to read the clipboard, or not offer the button: then select the box, paste the address and select
+     **Continue**. Pasting a right address into the box also goes on by itself. If it is not right, it stays in
+     the box for you to change.
+
+Starboard never shows or keeps the address after it has used it, and it checks that the address belongs to this
+sign-in.
 
 For Google Drive, Starboard asks only for the files and folders it makes itself. It cannot read your other files,
 so the folder list shows only Starboard's own folders.

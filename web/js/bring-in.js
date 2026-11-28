@@ -167,7 +167,7 @@ function cloudSignIn(place, opener, then) {
     if (ways.length > 1) {
       const cards = el("fieldset", { class: "option-cards option-cards--row" }, el("legend", { class: "field__label", text: "How do you want to sign in?" }),
         [["phone", "Complete on the phone", "Scan a QR code and sign in on your phone. Starboard waits by itself."],
-          ["browser", "Complete in this browser", "Open the sign-in page here, then paste back the address it ends on."]].map(([v, title, line]) =>
+          ["browser", "Complete in this browser", "Open the sign-in page here. If Starboard cannot move on by itself, paste back the address it ends on."]].map(([v, title, line]) =>
           el("label", { class: "option-card" }, el("input", { type: "radio", name: "bring-cloud-way", value: v, checked: st.way === v }), el("strong", { text: title }), el("small", { text: line }))));
       cards.addEventListener("change", (e) => { st.way = e.target.value; begin(); });
       parts.push(cards);
@@ -176,22 +176,33 @@ function cloudSignIn(place, opener, then) {
     }
     if (s.state === "starting" || s.state === "checking") parts.push(waiting(s.state === "starting" ? "Getting the sign-in ready…" : `Checking the sign-in with ${place.name}…`));
     else if (s.state === "link") {
-      const paste = el("input", { class: "input", id: "bring-cloud-answer", spellcheck: "false", autocomplete: "off", inputmode: "url" });
+      const auto = s.capture === "auto";
+      const paste = el("input", { class: "input", id: "bring-cloud-answer", spellcheck: "false", autocomplete: "off", inputmode: "url", "aria-describedby": "bring-cloud-status" });
+      const status = el("p", { class: "small", id: "bring-cloud-status", role: "status" });
       const go = el("button", { type: "button", class: "btn btn--primary", text: "Continue" });
-      const send = async () => {
-        if (!paste.value.trim()) { problem("Paste the address from the browser's address bar", paste); return; }
-        try { st.sess = await api("/api/bring-in/cloud/answer", { method: "POST", body: { id: st.sess.id, address: paste.value } }); draw(); follow(); }
-        catch (e) { problem(e.message, paste); }
+      let sending = false;
+      // text: from the box (Continue), or a right-looking address pasted or read from the clipboard (by itself). Never shown or logged.
+      const send = async (text = paste.value, byItself = false) => {
+        if (sending) return;
+        if (!String(text).trim()) { problem("Paste the address from the browser's address bar", paste); return; }
+        sending = true;
+        status.textContent = byItself ? "Address found. Sending it to the sign-in." : "";
+        try { st.sess = await api("/api/bring-in/cloud/answer", { method: "POST", body: { id: st.sess.id, address: text } }); paste.value = ""; draw(); follow(); }
+        catch (e) { sending = false; problem(e.message, paste); }
       };
-      go.addEventListener("click", send);
+      go.addEventListener("click", () => send());
       paste.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); send(); } });
+      const clipboard = pasteSignin({ input: paste, link: s.link, send: (text) => send(text, true), say: (words) => { status.textContent = words; } });
       parts.push(el("div", { class: "signin-card" }, el("ol", { class: "signin-steps" },
         el("li", {}, el("p", { text: `Open ${place.name}'s sign-in page, sign in and allow Starboard to read your files.` }),
           el("p", {}, el("a", { class: "btn", href: s.link, target: "_blank", rel: "noopener noreferrer" }, icon("external-link"), "Open the sign-in page",
             el("span", { class: "visually-hidden", text: ` for ${place.name} (opens in a new tab)` })))),
-        el("li", {}, el("p", { text: "Your browser then shows a page that does not load. That is expected: its address holds the answer. It starts like this:" }),
-          el("code", { class: "signin-example", text: "http://127.0.0.1:53682/?state=…&code=…" })),
-        el("li", {}, el("div", { class: "field" }, el("label", { for: "bring-cloud-answer", text: "Paste that whole address" }), paste), el("div", { class: "actions" }, go)))));
+        auto ? el("li", {}, el("p", { text: "Your browser then shows Go back to Starboard, and this page moves on by itself. Only if it shows a page that does not load instead, copy that page's whole address. It starts http://127.0.0.1:53682/ or http://localhost:53682/." }))
+          : el("li", {}, el("p", { text: "Your browser then shows a page that does not load. That is expected: its address holds the answer. It starts like this:" }),
+            el("code", { class: "signin-example", text: "http://127.0.0.1:53682/?state=…&code=…" })),
+        el("li", {}, el("div", { class: "field" }, el("label", { for: "bring-cloud-answer", text: "Paste that whole address" }), clipboard ? el("p", {}, clipboard) : null, paste, status), el("div", { class: "actions" }, go))),
+        s.capture_note ? el("p", { class: "small", text: `${s.capture_note}.` }) : null,
+        auto ? el("p", { class: "small", role: "status", text: "Starboard is waiting for you to sign in." }) : null));
     } else if (s.state === "phone" && typeof qrSvg === "function") {
       const page = s.page.replace(/^https:\/\//, "");
       parts.push(el("div", { class: "signin-card" }, el("div", { class: "qr-card" }, el("figure", { class: "qr-card__code" }, qrSvg(s.qr, `QR code for ${page}`)),

@@ -552,10 +552,44 @@ def _example_cloud(data):
         return status, got
     cc.HTTP = http
 
+    catch = {"work": None, "state": None}  # the stand-in for rclone's listener when the page is on this computer (PORT + 3)
+
+    class Redirect(BaseHTTPRequestHandler):
+        """What the browser reaches after signing in: with this sign-in's state, the plain page and the token a second
+        later; with any other state, 400 and the sign-in ends (as rclone does)."""
+
+        def do_GET(self):
+            q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+            work, ok = catch["work"], (q.get("state") or [""])[0] == catch["state"] and (q.get("code") or [""])[0] != ""
+            head, rest = cc.PAGE.split("{{ if .OK }}")
+            good, rest = rest.split("{{ else }}")
+            bad, tail = rest.split("{{ end }}")
+            page = head + (good if ok else bad) + tail  # rclone's template, drawn by hand
+            self.send_response(200 if ok else 400)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(page.encode())
+            if work and os.path.isdir(work):
+                def finish():
+                    time.sleep(1)
+                    if ok:
+                        tok = {"access_token": "standin-example", "token_type": "Bearer", "refresh_token": "r", "expiry": "2026-11-16T12:00:00Z"}
+                        (pathlib.Path(work) / "out").write_text("Paste the following into your remote machine --->\n" + json.dumps(tok) + "\n<---End paste\n")
+                    (pathlib.Path(work) / "done").write_text("0" if ok else "1")
+                threading.Thread(target=finish, daemon=True).start()
+
+        def log_message(self, *a):
+            pass
+    try:
+        threading.Thread(target=ThreadingHTTPServer(("127.0.0.1", PORT + 3), Redirect).serve_forever, daemon=True).start()
+    except OSError:
+        pass
+
     class Runner:
         def authorize(self, sess):
             state = secrets.token_urlsafe(16)
             sess["cid"] = "example-signin"
+            catch.update(work=sess["work"], state=state)
             link = {"drive": f"https://accounts.google.com/o/oauth2/auth?access_type=offline&client_id=example&redirect_uri=http%3A%2F%2F127.0.0.1%3A53682%2F&response_type=code&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.file&state={state}",
                     "onedrive": f"https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=example&redirect_uri=http%3A%2F%2Flocalhost%3A53682%2F&response_type=code&state={state}",
                     "dropbox": f"https://www.dropbox.com/oauth2/authorize?client_id=example&redirect_uri=http%3A%2F%2Flocalhost%3A53682%2F&response_type=code&state={state}"}[sess["service"]]

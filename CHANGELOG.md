@@ -7,6 +7,11 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Signing in to OneDrive, Google Drive or Dropbox no longer needs the address pasted back when you open Starboard on its own computer.** Under Copies off this computer and Bring in media, Complete in this browser now moves on by itself when Starboard is opened as `localhost` or `127.0.0.1`. The sign-in helper opens a way in for the answer on this computer only (127.0.0.1, never a network address), only for the minutes of the sign-in, and closes it when the sign-in ends, fails, runs out of time or is cancelled. The tab then shows Starboard's own plain Go back to Starboard page. If something else on the computer uses port 53682, Starboard says so and you paste the address as before.
+- **Paste from the clipboard.** When you do have to paste, a button beside the box reads the address from the clipboard and signs in with one press when it is the right address for this sign-in. Pasting the right address into the box does the same. Anything else stays in the box to change, and Continue works as before. The address is not kept in the box after it is used and is never logged.
+- **Your own Google and Microsoft sign-in can now be passed to Starboard from `.env`.** `compose.yaml` and `example.env` carry `STARBOARD_GOOGLE_CLIENT_ID`, `STARBOARD_GOOGLE_CLIENT_SECRET` and `STARBOARD_MICROSOFT_CLIENT_ID`, which turn on Complete on the phone for Google Drive and OneDrive.
+
 ## [0.40.0] (28 November 2026)
 
 ### Added

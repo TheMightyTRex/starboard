@@ -61,11 +61,11 @@ def places(data_dir):
 
 # Signing in ----------------------------------------------------------------------------------------------------------
 
-def start(data_dir, service, way):
+def start(data_dir, service, way, local=False):
     from . import cloud_connect
     if service not in SID:
         raise CloudSourceError("Choose OneDrive or Google Drive")
-    return cloud_connect.start(data_dir, SID[service], way, read_only=True)
+    return cloud_connect.start(data_dir, SID[service], way, read_only=True, local=local)
 
 
 def keep(data_dir, service, session_id):
