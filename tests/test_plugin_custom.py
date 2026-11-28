@@ -79,7 +79,7 @@ class Api116(unittest.TestCase):
 
     def test_browse_and_pick_reach_the_plugin_and_are_cleaned(self):
         page = self.call({"action": "browse", "id": "c1:pick", "value": "sho", "filter": "series", "start": "40", "ids": ["dropped"]})
-        self.assertEqual(PickerPlugin.seen[-1], ("partial,picker,cards", {"action": "browse", "id": "c1:pick", "value": "sho", "filter": "series", "start": 40}))
+        self.assertEqual(PickerPlugin.seen[-1], ("partial,picker,cards,wizard,sentence,media,more,desktop", {"action": "browse", "id": "c1:pick", "value": "sho", "filter": "series", "start": 40}))
         self.assertEqual(page, {"type": "picker", "items": [{"id": "series:abc", "title": "Show", "detail": "Series, 2001", "on": True}],
                                 "total": 250, "start": 0, "more": True, "filter": "series"})
         out = self.call({"action": "pick", "id": "c1:pick", "ids": ["series:abc", "film:def", 7]})

@@ -4,7 +4,7 @@
 # Plug-in manifest reference
 
 Every field of `starboard-plugin.json`, version 1, with the check Starboard runs on it and why. Starboard refuses
-any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.24.0
+any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.25.0
 (`API_VERSION` in `starboard/plugins.py`).
 
 The same rules are in a JSON Schema, `starboard/plugin-manifest.schema.json`, for editors and other tools. The
@@ -867,6 +867,7 @@ A catalogue version may carry `capabilities_needed`, a list of the same names, n
 | 1.13 | 13 November 2026 | App plug-ins: `network:port` and `publish` on `lan` with `host_port`, `{secret:...}` and `{jellyfin:...}` in `env`, `tmpfs`, `data:<path>` and `media/<one folder>:ro`, `pids`, and `adopt` |
 | 1.14 | 14 November 2026 | A card's own refresh time, `refresh_seconds`, in the manifest and in its answer, 10 seconds at the quickest; `recommended` on a catalogue entry; `logo` (and `logo`, `logo_alt` on a catalogue entry); every card drawn with a grey band holding the logo, the name, a status chip and when it last updated (`status`, `status_label` and `updated` in its answer); a `schedule` setting and a job's `schedule`; the `jellyfin:metadata` permission with the `jellyfin-metadata` volume; `update` (a `before` and an `after` step, `health_wait_seconds` and settings `migrations`), with the health wait and an automatic Roll back after every update, and **What is new** shown before an update too |
 | 1.20 | 26 November 2026 | `first_sign_in`: a password Starboard makes for an app plug-in, set by the app before it first starts and shown once on the plug-in's page |
+| 1.25 | 28 November 2026 | Pages made of the shared parts: a custom page may answer with the one shared wizard (`type: wizard`), a sentence with selects (`type: sentence`), media cards with a preview played only when pressed (`layout: media`), rows behind **Show more settings** (`more_switch`, `more`), a preview pane (`preview`) and a desktop notice (`desktop_only`). Nothing in the manifest changes; name `>=1.25` in `starboard_api` to use them |
 | 1.24 | 27 November 2026 | The `power:hold` permission, with `POST /api/v1/plugin/hold`, so a plug-in holds Starboard's heavy automatic jobs and downloads on battery; the `time` setting type |
 | 1.23 | 27 November 2026 | `replaces_or_adds`: one line on what a plug-in replaces or adds to, shown on the Catalogue card, before install, on its page and in Manage; `icon`: one icon from Starboard's set for its tab in Settings, Plug-ins |
 | 1.22 | 27 November 2026 | `starboard_tested` and `capabilities`: named optional parts a plug-in needs or uses, listed by `GET /api/v1/`; the plug-in tester checks the range a plug-in names |

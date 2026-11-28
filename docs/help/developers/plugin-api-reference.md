@@ -289,6 +289,77 @@ A link on an item that goes to the plug-in's own published port, such as a page 
 address the person opened Starboard with, at that port, as **Its web page** does. The plug-in only knows the
 server's home network address (`STARBOARD_HOME_ADDRESS`), which a browser that reaches Starboard another way may not.
 
+## Pages made of the shared parts (API 1.25)
+
+Starboard sends `X-Starboard-Can: partial,picker,cards,wizard,sentence,media,more,desktop` with every call to a custom page. Use the parts the header
+names. They are the design system's one wizard and its parts, so your page is drawn and behaves as Starboard's own set-up, upgrade and restore.
+
+### The wizard
+
+Answer a GET with `{"type": "wizard"}`:
+
+```json
+{
+  "type": "wizard",
+  "title": "What plays between programmes",
+  "mode": "new",
+  "finish": "Start the breaks",
+  "preview": {"title": "What a break plays like"},
+  "steps": [
+    {"id": "style", "title": "Style", "question": "What should play between programmes?", "hint": "Pick the style that fits.",
+     "options": [
+       {"id": "quiet", "label": "Quiet", "hint": "A short title clip and straight on.",
+        "preview": {"lines": ["Next: Comedy hour"], "corner": "Example TV", "strip": [{"label": "Title clip", "seconds": 5, "kind": "title"}],
+                    "caption": "Quiet: a short title clip, then the next programme.", "total": "About 10 seconds"}},
+       {"id": "classic", "label": "Classic TV", "recommended": true, "checked": true}]},
+    {"id": "clips", "title": "Clips", "question": "Which clips should play?", "kind": "media", "optional": true,
+     "options": [{"id": "c1", "label": "Station title", "hint": "Short title clip", "media": {"kind": "audio", "length": "0:12", "preview": true, "thumb_path": true}}]}
+  ]
+}
+```
+
+| Field | Rules |
+|---|---|
+| `mode` | `new`, or `again` for a set-up run a second time. `mode_label`, up to 80 characters, says which ("Run again for the Comedy channel") |
+| `finish` | The words on the last button, up to 40 characters. Name the action ("Start the breaks"), never "Submit" |
+| `steps` | Up to 30. Each has an `id` (lower case letters, numbers, `-` and `_`), `title` (up to 40, the name in the step list and on Check your answers), `question` (up to 160, the heading), `hint` (up to 300) and `kind`: `choice` (one, the default), `multi` (several), `media` (several, as media cards), `select`, `text` or `number`. A step with no options (other than `text` and `number`) is left out |
+| `optional` | `true`: the heading says **(optional)** and the step has **Skip this step**. Without it the step has no Skip. Never ask with an asterisk |
+| `required` | `true`: an empty answer shows the error summary "There is a problem", with `error` (up to 160) as the words |
+| `options` | Up to 200, each `id` (up to 120), `label` (120), `hint` (200), and: `checked` (what is chosen), `current` (how it is now: a **Current** tag, and what Run again compares), `recommended` (a **Recommended** tag, chosen by **Use the recommended choices**), `preview` and, for a `media` step, `media` |
+| `preview` (top level) | `{"title"}`: shows the preview pane beside the step. Each option's `preview` fills it when the option is chosen |
+| `value`, `label`, `unit` | For `text`, `number` and `select`: the starting value, the label and the unit |
+
+**The preview** is a picture or a drawing made of styles, never video: up to 3 `lines` of text, a `corner` label, an `image` (`{"src", "alt"}`, a PNG or JPEG data
+address of up to 64 KB), a `strip` of up to 12 parts (`label`, `seconds`, `kind` of `title`, `clip`, `music` or `other`), a `caption` of up to 200 characters that
+screen readers hear once after a change, and a `total` in words.
+
+**A media card** has `kind` (`video` or `audio`), `length` ("0:12"), `thumb` (a small PNG or JPEG data address) or `thumb_path: true`, and `preview: true`.
+Starboard fetches a thumbnail, once and kept by the browser, with **GET** `<choices>/media?step=<step id>&id=<option id>&kind=thumb`, and a preview, only when
+the person presses **Play preview**, with `kind=preview`. Both carry your key in `X-Api-Key`. Answer with a picture, a short video or a sound (`image/png`,
+`image/jpeg`, `image/webp`, `video/mp4`, `video/webm`, `audio/mpeg`, `audio/mp4`, `audio/ogg` or `audio/wav`) of up to 8 MB; anything else is refused.
+Make each thumbnail once and keep it.
+
+**POST** `{"action": "wizard", "answers": {"style": "quiet", "clips": ["c1"], "name": "Comedy"}}`: a text for a single answer, a list of option ids for
+`multi` and `media`. Answer with any page, usually the wizard again, with `said`. Starboard shows `said` and **Run it again**.
+
+### A sentence
+
+`{"type": "sentence", "title", "intro", "parts": ["Between programmes, play ", {"id": "idents", "label": "Short title clips", "options": [["one", "a short title clip"], ["none", "no title clip"]], "value": "one"}, "."]}`.
+Words are text; a gap has an `id`, a `label` (what a screen reader names the select) and up to 12 `options`, each `[value, words]`. A change is sent as
+`{"action": "choose", "id": "idents", "value": "none"}` and you answer the sentence again with `said`. Starboard reads the whole sentence aloud, in plain
+words, after a change.
+
+### Media cards, rows behind Show more settings, a preview and the desktop notice, on a list
+
+| Field | Rules |
+|---|---|
+| `layout: "media"` | The items are media cards in option cards. An item has a `media` object, described in the section on the wizard, and `actions` of `toggle` (the **Use** tick) |
+| `more_switch` | `{"label", "hint"}`: the switch **Show more settings** (the default label), which shows the items marked `"more": true`. Starboard keeps the choice for the session |
+| `preview` | The same preview object as in the wizard, shown first on the page |
+| `desktop_only` | `true` on any answer: a plain notice, "This page is for a computer screen. It is not made for phones.", on narrow screens. Use it only for a page that cannot work on a phone |
+
+A page answered with none of these is drawn as before.
+
 ## Health
 
 Answer GET on the `health` path with status 200 while the plug-in works. Keep it cheap. Starboard asks it when

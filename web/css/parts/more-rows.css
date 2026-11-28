@@ -1,0 +1,20 @@
+/* more-rows: a part of the shared components. Load it after components.css, on the pages that use it.
+ * Made by tools/parts.py from components.css in github.com/TheMightyTRex/design-system: change it there, not here. */
+@layer shared {
+  /* More rows: a switch, Show more settings, that shows or hides the rows marked as more, so most people
+     meet only the few that matter. Without script every row shows. The choice is kept for the session. */
+  .more {
+    display: grid;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+  .more__switch {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-divider);
+    border-radius: var(--radius);
+    background: var(--color-surface-raised);
+  }
+  .more [data-more][hidden] {
+    display: none;
+  }
+}

@@ -1,5 +1,5 @@
 {
- "api_version": "1.24.0",
+ "api_version": "1.25.0",
  "card_types": [
   "stat",
   "list",
@@ -183,6 +183,10 @@
     "capabilities",
     "deprecations",
     "links",
+    "media_server",
+    "media_server.capabilities",
+    "media_server.id",
+    "media_server.name",
     "starboard_version"
    ],
    "required_in": [],

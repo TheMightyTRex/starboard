@@ -1,0 +1,14 @@
+/* desktop-notice: a part of the shared components. Load it after components.css, on the pages that use it.
+ * Made by tools/parts.py from components.css in github.com/TheMightyTRex/design-system: change it there, not here. */
+@layer shared {
+  /* Desktop notice: a plain line for a page that is made for a computer screen. It shows below 768px and is hidden on
+     a wider window. Use it only on a page that cannot work on a phone; every other page is made to. */
+  .desktop-notice {
+    display: none;
+  }
+  @media (max-width: 767px) {
+    .desktop-notice {
+      display: grid;
+    }
+  }
+}

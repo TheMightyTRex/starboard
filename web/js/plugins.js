@@ -1199,8 +1199,28 @@ function customScreen(p, s) {
           el("div", { class: "row__side" }, state ? chip(...state) : null, icon("chevron-right")));
       }))));
   };
+  // Plug-in API 1.25: the wizard, a sentence, media cards, rows behind Show more settings, a preview and the desktop notice
+  // come from web/js/plugin-pages.js and the design system's parts, loaded only when a plug-in answers with one.
+  const usesPages = (d) => d.type === "wizard" || d.type === "sentence" || d.desktop_only || d.preview || d.more_switch || d.layout === "media";
+  let partsReady = false;
+  const pageCtx = () => ({ p, s, level: level(), run, problem, post: (body) => api(path, { method: "POST", body }), reload: () => api(path).then(draw).catch((err) => problem(err.message)) });
+  const drawPage = (data) => {
+    const ctx = pageCtx();
+    const body = data.type === "wizard" ? PluginPages.wizard(ctx, data) : PluginPages.sentence(ctx, data);
+    const pane = data.type !== "wizard" && data.preview ? PluginPages.previewPane(data.preview.title || "Preview", ctx.level) : null;
+    box.replaceChildren(...[data.desktop_only ? PluginPages.desktopNotice() : null, ...noticesOf(data), data.intro ? el("p", { class: "small muted", text: data.intro }) : null,
+      pane ? el("div", { class: "wizard-layout", "data-preview-scope": "" }, el("div", { class: "wizard-main" }, body), pane) : body, said].filter(Boolean));
+    if (pane) PluginPages.showPreview(pane, data.preview);
+    PluginPages.settle(box);
+  };
   const draw = (data) => {
     last = data;
+    if (usesPages(data) && !partsReady) {
+      loadScript("/js/plugin-pages.js").then(() => PluginPages.ensure()).then(() => { partsReady = true; draw(data); })
+        .catch((err) => box.replaceChildren(notice("info", `${p.name} could not be drawn`, err.message)));
+      return;
+    }
+    if (data.type === "wizard" || data.type === "sentence") { drawPage(data); return; }
     if (data.layout === "folds") { drawFolds(data); return; }
     const menus = data.menus || [];
     const byId = new Map(menus.map((m) => [m.id, m]));
@@ -1212,7 +1232,8 @@ function customScreen(p, s) {
     }
     const pool = at ? under.get(at) : data.items;
     const kids = menus.filter((m) => m.parent === at && (show === "all" || (under.get(m.id) || []).some(keep)));
-    const shown = data.items.filter((it) => (it.menu || "") === at && keep(it));
+    const shown = data.items.filter((it) => (it.menu || "") === at && keep(it) && !(data.more_switch && it.more));
+    const moreShown = data.items.filter((it) => (it.menu || "") === at && keep(it) && data.more_switch && it.more);  // behind Show more settings (API 1.25)
     const sets = (data.bulk || []).filter((b) => (b.menu || "") === at);
     const here = byId.get(at);
     const add = !here && data.add ? (() => {
@@ -1253,12 +1274,21 @@ function customScreen(p, s) {
         here.detail ? el("p", { class: "small muted", text: here.detail }) : null];
     })() : [data.intro ? el("p", { class: "small muted", text: data.intro }) : null];
     const controls = [showFilter(data, pool), testAll, stay.size ? refreshButton() : null].filter(Boolean);
+    // Plug-in API 1.25: rows marked "more" wait behind Show more settings; media cards; a preview; the desktop notice.
+    const lv = level() + (here ? 1 : 0);
+    const ctx = usesPages(data) ? pageCtx() : null;
+    const listRows = [...(data.layout === "media" && ctx ? [PluginPages.mediaCards(ctx, shown, run)] : itemRows(data, shown, level() + (here ? 1 : 0))),
+      ...(moreShown.length && ctx ? [PluginPages.moreSwitch(ctx, data, itemRows(data, moreShown, lv))] : [])];
+    const pane = data.preview && ctx ? PluginPages.previewPane(data.preview.title || "Preview", lv) : null;
+    if (pane) PluginPages.showPreview(pane, data.preview);
     box.replaceChildren(...[
+      !here && data.desktop_only ? PluginPages.desktopNotice() : null, pane,
       ...(here ? [] : noticesOf(data)), ...top, bulkPanel(data, sets, level() + (here ? 1 : 0)),
       controls.length ? el("div", { class: "actions" }, ...controls) : null, said,
       pool.length && !shown.length && !kids.length ? emptyState(show === "on" ? "None active" : "None inactive", "Choose All to show every one.")
         : here && !pool.length && !kids.length ? emptyState(`No ${(data.title || "items").toLowerCase()} here`, null) : null,
-      ...menuRows(data, kids, under, level() + (here ? 1 : 0)), ...itemRows(data, shown, level() + (here ? 1 : 0)), add].filter(Boolean));  // replaceChildren writes null as text
+      ...menuRows(data, kids, under, level() + (here ? 1 : 0)), ...listRows, add].filter(Boolean));  // replaceChildren writes null as text
+    if (usesPages(data)) PluginPages.settle(box);
   };
   // Sections that fold, each with a table to sort and select from (plug-in API 1.8, DASH-359, owner 13 November
   // 2026: "Build option 1 with 2 in the accordions"). A section is one line until opened: its name, how many are

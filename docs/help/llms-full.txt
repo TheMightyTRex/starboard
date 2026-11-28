@@ -3122,6 +3122,20 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added].
 
+## Plug-in API 1.25.0 (not released yet), 28 November 2026
+
+- **Added:** a custom page may answer with the one shared wizard, `{"type": "wizard"}`: steps with one question each, a preview on each option,
+  **Current** and **Recommended** tags, `mode: "again"` for a set-up run a second time (the summary then lists only what changes, with the old
+  words), **Skip this step** and **(optional)** on a step marked `optional`, the error summary on a step marked `required`, and **Check your answers**
+  at the end. Starboard sends the answers as `{"action": "wizard", "answers": {...}}`.
+- **Added:** `{"type": "sentence"}`, a setting read as one sentence with a select in each gap, saved at once with `{"action": "choose", "id", "value"}`.
+- **Added:** on a list, `layout: "media"` with `media` on an item (a picture, its length and a short preview that plays only when pressed, fetched
+  from your `<choices>/media` path through Starboard), `more_switch` with `more` on items (**Show more settings**), `preview` (a picture or a drawing
+  made of styles, never video) and `desktop_only` (a plain notice on narrow screens).
+- Starboard names what it draws in `X-Starboard-Can`: `wizard`, `sentence`, `media`, `more` and `desktop`. An older plug-in sends none of these and
+  is drawn as before. Nothing was taken away. Name `>=1.25` in `starboard_api` to use any of them. Read
+  [Pages made of the shared parts].
+
 ## Plug-in API 1.24.0 and Starboard API 1.12.0 (not released yet), 27 November 2026
 
 - **Added:** the permission `power:hold` and `POST /api/v1/plugin/hold`, so a plug-in such as UPS and power asks Starboard to hold
@@ -3836,7 +3850,7 @@ Source: docs/help/developers/plugin-manifest-reference.md
 # Plug-in manifest reference
 
 Every field of `starboard-plugin.json`, version 1, with the check Starboard runs on it and why. Starboard refuses
-any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.24.0
+any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.25.0
 (`API_VERSION` in `starboard/plugins.py`).
 
 The same rules are in a JSON Schema, `starboard/plugin-manifest.schema.json`, for editors and other tools. The
@@ -4699,6 +4713,7 @@ A catalogue version may carry `capabilities_needed`, a list of the same names, n
 | 1.13 | 13 November 2026 | App plug-ins: `network:port` and `publish` on `lan` with `host_port`, `{secret:...}` and `{jellyfin:...}` in `env`, `tmpfs`, `data:<path>` and `media/<one folder>:ro`, `pids`, and `adopt` |
 | 1.14 | 14 November 2026 | A card's own refresh time, `refresh_seconds`, in the manifest and in its answer, 10 seconds at the quickest; `recommended` on a catalogue entry; `logo` (and `logo`, `logo_alt` on a catalogue entry); every card drawn with a grey band holding the logo, the name, a status chip and when it last updated (`status`, `status_label` and `updated` in its answer); a `schedule` setting and a job's `schedule`; the `jellyfin:metadata` permission with the `jellyfin-metadata` volume; `update` (a `before` and an `after` step, `health_wait_seconds` and settings `migrations`), with the health wait and an automatic Roll back after every update, and **What is new** shown before an update too |
 | 1.20 | 26 November 2026 | `first_sign_in`: a password Starboard makes for an app plug-in, set by the app before it first starts and shown once on the plug-in's page |
+| 1.25 | 28 November 2026 | Pages made of the shared parts: a custom page may answer with the one shared wizard (`type: wizard`), a sentence with selects (`type: sentence`), media cards with a preview played only when pressed (`layout: media`), rows behind **Show more settings** (`more_switch`, `more`), a preview pane (`preview`) and a desktop notice (`desktop_only`). Nothing in the manifest changes; name `>=1.25` in `starboard_api` to use them |
 | 1.24 | 27 November 2026 | The `power:hold` permission, with `POST /api/v1/plugin/hold`, so a plug-in holds Starboard's heavy automatic jobs and downloads on battery; the `time` setting type |
 | 1.23 | 27 November 2026 | `replaces_or_adds`: one line on what a plug-in replaces or adds to, shown on the Catalogue card, before install, on its page and in Manage; `icon`: one icon from Starboard's set for its tab in Settings, Plug-ins |
 | 1.22 | 27 November 2026 | `starboard_tested` and `capabilities`: named optional parts a plug-in needs or uses, listed by `GET /api/v1/`; the plug-in tester checks the range a plug-in names |
@@ -5011,6 +5026,77 @@ Use these only when the header names them; an older Starboard sends no header, a
 A link on an item that goes to the plug-in's own published port, such as a page on its own web server, opens at the
 address the person opened Starboard with, at that port, as **Its web page** does. The plug-in only knows the
 server's home network address (`STARBOARD_HOME_ADDRESS`), which a browser that reaches Starboard another way may not.
+
+## Pages made of the shared parts (API 1.25)
+
+Starboard sends `X-Starboard-Can: partial,picker,cards,wizard,sentence,media,more,desktop` with every call to a custom page. Use the parts the header
+names. They are the design system's one wizard and its parts, so your page is drawn and behaves as Starboard's own set-up, upgrade and restore.
+
+### The wizard
+
+Answer a GET with `{"type": "wizard"}`:
+
+```json
+{
+  "type": "wizard",
+  "title": "What plays between programmes",
+  "mode": "new",
+  "finish": "Start the breaks",
+  "preview": {"title": "What a break plays like"},
+  "steps": [
+    {"id": "style", "title": "Style", "question": "What should play between programmes?", "hint": "Pick the style that fits.",
+     "options": [
+       {"id": "quiet", "label": "Quiet", "hint": "A short title clip and straight on.",
+        "preview": {"lines": ["Next: Comedy hour"], "corner": "Example TV", "strip": [{"label": "Title clip", "seconds": 5, "kind": "title"}],
+                    "caption": "Quiet: a short title clip, then the next programme.", "total": "About 10 seconds"}},
+       {"id": "classic", "label": "Classic TV", "recommended": true, "checked": true}]},
+    {"id": "clips", "title": "Clips", "question": "Which clips should play?", "kind": "media", "optional": true,
+     "options": [{"id": "c1", "label": "Station title", "hint": "Short title clip", "media": {"kind": "audio", "length": "0:12", "preview": true, "thumb_path": true}}]}
+  ]
+}
+```
+
+| Field | Rules |
+|---|---|
+| `mode` | `new`, or `again` for a set-up run a second time. `mode_label`, up to 80 characters, says which ("Run again for the Comedy channel") |
+| `finish` | The words on the last button, up to 40 characters. Name the action ("Start the breaks"), never "Submit" |
+| `steps` | Up to 30. Each has an `id` (lower case letters, numbers, `-` and `_`), `title` (up to 40, the name in the step list and on Check your answers), `question` (up to 160, the heading), `hint` (up to 300) and `kind`: `choice` (one, the default), `multi` (several), `media` (several, as media cards), `select`, `text` or `number`. A step with no options (other than `text` and `number`) is left out |
+| `optional` | `true`: the heading says **(optional)** and the step has **Skip this step**. Without it the step has no Skip. Never ask with an asterisk |
+| `required` | `true`: an empty answer shows the error summary "There is a problem", with `error` (up to 160) as the words |
+| `options` | Up to 200, each `id` (up to 120), `label` (120), `hint` (200), and: `checked` (what is chosen), `current` (how it is now: a **Current** tag, and what Run again compares), `recommended` (a **Recommended** tag, chosen by **Use the recommended choices**), `preview` and, for a `media` step, `media` |
+| `preview` (top level) | `{"title"}`: shows the preview pane beside the step. Each option's `preview` fills it when the option is chosen |
+| `value`, `label`, `unit` | For `text`, `number` and `select`: the starting value, the label and the unit |
+
+**The preview** is a picture or a drawing made of styles, never video: up to 3 `lines` of text, a `corner` label, an `image` (`{"src", "alt"}`, a PNG or JPEG data
+address of up to 64 KB), a `strip` of up to 12 parts (`label`, `seconds`, `kind` of `title`, `clip`, `music` or `other`), a `caption` of up to 200 characters that
+screen readers hear once after a change, and a `total` in words.
+
+**A media card** has `kind` (`video` or `audio`), `length` ("0:12"), `thumb` (a small PNG or JPEG data address) or `thumb_path: true`, and `preview: true`.
+Starboard fetches a thumbnail, once and kept by the browser, with **GET** `<choices>/media?step=<step id>&id=<option id>&kind=thumb`, and a preview, only when
+the person presses **Play preview**, with `kind=preview`. Both carry your key in `X-Api-Key`. Answer with a picture, a short video or a sound (`image/png`,
+`image/jpeg`, `image/webp`, `video/mp4`, `video/webm`, `audio/mpeg`, `audio/mp4`, `audio/ogg` or `audio/wav`) of up to 8 MB; anything else is refused.
+Make each thumbnail once and keep it.
+
+**POST** `{"action": "wizard", "answers": {"style": "quiet", "clips": ["c1"], "name": "Comedy"}}`: a text for a single answer, a list of option ids for
+`multi` and `media`. Answer with any page, usually the wizard again, with `said`. Starboard shows `said` and **Run it again**.
+
+### A sentence
+
+`{"type": "sentence", "title", "intro", "parts": ["Between programmes, play ", {"id": "idents", "label": "Short title clips", "options": [["one", "a short title clip"], ["none", "no title clip"]], "value": "one"}, "."]}`.
+Words are text; a gap has an `id`, a `label` (what a screen reader names the select) and up to 12 `options`, each `[value, words]`. A change is sent as
+`{"action": "choose", "id": "idents", "value": "none"}` and you answer the sentence again with `said`. Starboard reads the whole sentence aloud, in plain
+words, after a change.
+
+### Media cards, rows behind Show more settings, a preview and the desktop notice, on a list
+
+| Field | Rules |
+|---|---|
+| `layout: "media"` | The items are media cards in option cards. An item has a `media` object, described in the section on the wizard, and `actions` of `toggle` (the **Use** tick) |
+| `more_switch` | `{"label", "hint"}`: the switch **Show more settings** (the default label), which shows the items marked `"more": true`. Starboard keeps the choice for the session |
+| `preview` | The same preview object as in the wizard, shown first on the page |
+| `desktop_only` | `true` on any answer: a plain notice, "This page is for a computer screen. It is not made for phones.", on narrow screens. Use it only for a page that cannot work on a phone |
+
+A page answered with none of these is drawn as before.
 
 ## Health
 

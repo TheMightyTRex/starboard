@@ -1,0 +1,37 @@
+/* sentence: a part of the shared components. Load it after components.css, on the pages that use it.
+ * Made by tools/parts.py from components.css in github.com/TheMightyTRex/design-system: change it there, not here. */
+@layer shared {
+  /* Sentence: a setting read as one sentence, with a select in each gap. The words after it say the same thing in
+     plain words, so a screen reader hears the whole sentence once, after a change. */
+  .sentence {
+    display: grid;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+  .sentence__text {
+    margin: 0;
+    font-size: var(--text-lg);
+    line-height: 2.4;
+  }
+  .sentence__select {
+    display: inline-block;
+    width: auto;
+    max-width: 100%;
+    min-height: var(--control-h-compact);
+    margin: 0 var(--space-1);
+    vertical-align: middle;
+    font-size: var(--text-md);
+  }
+  .sentence__readback {
+    margin: 0;
+    padding: var(--space-3);
+    border-left: var(--status-edge-w) solid var(--status-info-fg);
+    background: var(--status-info-bg);
+    color: var(--color-text);
+  }
+  @media (forced-colors: active) {
+    .sentence__readback {
+      border-left-color: Highlight;
+    }
+  }
+}

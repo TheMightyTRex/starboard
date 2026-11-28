@@ -2,10 +2,16 @@
  "note": "The design system parts this app loads (tools/sync.py in the design system writes only these). Add a name here, then sync, when a page needs another part.",
  "use": [
   "charts",
+  "desktop-notice",
   "error-summary",
   "log-view",
+  "more-rows",
+  "option-media",
   "secret-field",
+  "sentence",
   "tabs",
-  "tag-input"
+  "tag-input",
+  "wizard-preview",
+  "wizard-steps"
  ]
 }

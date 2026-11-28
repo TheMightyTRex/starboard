@@ -996,6 +996,36 @@ def _example_watch_stats(data_dir):
         {"said": "Test sent by Telegram. This is example data, so nothing was sent."} if pid == "notifications" else real_action(d, pid, aid, opener))
 
 
+def _example_page_parts(data_dir):
+    """Plug-in API 1.25: the example plug-in whose pages use the shared wizard and its parts (tools/screenshots/example_page_parts.py)."""
+    import example_page_parts
+    from starboard import plugin_custom, plugin_watch
+    if not any(p["id"] == "page-parts" for p in plugins_admin.listing(data_dir)):
+        plugins_admin.install(data_dir, {
+            "manifest_version": 1, "id": "page-parts", "name": "Page parts example", "version": "1.0.0",
+            "description": "An example of the shared wizard, a sentence with selects, media cards and a preview on a plug-in page.", "author": "TheMightyTRexUK",
+            "licence": "MIT", "homepage": "https://example.invalid/page-parts", "support_url": "https://example.invalid/page-parts/issues",
+            "starboard_api": ">=1.25 <2.0", "permissions": ["network:lan"], "health": "/health",
+            "containers": [{"name": "main", "image": "ghcr.io/example/page-parts@sha256:" + "d" * 64, "port": 8080, "network": "lan", "volumes": ["data"], "start": "when_needed"}],
+            "settings": [{"key": "setup", "label": "Set up the breaks", "type": "custom", "choices": "/screen/setup"},
+                         {"key": "sentence", "label": "In a sentence", "type": "custom", "choices": "/screen/sentence"},
+                         {"key": "library", "label": "Clips and music", "type": "custom", "choices": "/screen/library"}]}, "/nonexistent-media")
+        plugins_admin.set_state(data_dir, "page-parts", "enabled")
+    real_call, real_media, real_ask = plugin_custom.call, plugin_custom.media, plugin_watch._ask
+
+    def call(data_dir_, pid, key, body=None, opener=None):
+        if pid != "page-parts":
+            return real_call(data_dir_, pid, key, body, opener)
+        if key not in ("setup", "sentence", "library"):
+            raise LookupError("No such screen")
+        return plugin_custom.clean(example_page_parts.call(key, body))
+
+    def media(data_dir_, pid, key, query, opener=None):
+        return example_page_parts.media(query) if pid == "page-parts" else real_media(data_dir_, pid, key, query, opener)
+    plugin_custom.call, plugin_custom.media = call, media
+    plugin_watch._ask = lambda pid, main, path: "ok" if pid == "page-parts" else real_ask(pid, main, path)
+
+
 # Audio description sources (DASH-410, plug-in API 1.12): the Audio description plug-in's AudioVault and YouDescribe
 # links and its MovieReading and Earcatch guide, and the Audio description tracks plug-in's list, with rows in each
 # state, an upload that takes only a file, and links that open in a new tab. Answered here; nothing is fetched.
@@ -2261,6 +2291,7 @@ def main():
     _example_keys(str(DATA))
     _example_transcode()
     _example_watch_stats(str(DATA))
+    _example_page_parts(str(DATA))
     _example_app_plugins(str(DATA))
     _example_audio_description(str(DATA))
     _example_direct_play(str(DATA))

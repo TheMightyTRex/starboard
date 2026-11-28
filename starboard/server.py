@@ -3955,6 +3955,17 @@ class Handler(BaseHTTPRequestHandler):
             if out.get("said"):
                 logs.event("info", "plug-ins", f"{mf.group(1)}: {out['said']}")
             return self.json(200, out)
+        mm = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/custom/([a-z][a-z0-9_]{0,40})/media$", path)
+        if mm and method == "GET":  # a picture or short preview for a media card, through Starboard (API 1.25)
+            from . import plugin_custom
+            q = {k: v[0] for k, v in urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).items()}
+            try:
+                ctype, raw = plugin_custom.media(app.data_dir, mm.group(1), mm.group(2), q)
+            except LookupError as e:
+                return self.error(404, str(e))
+            except ValueError as e:
+                return self.error(400, str(e))
+            return self.send(200, raw, ctype, {"Cache-Control": "private, max-age=86400", "X-Content-Type-Options": "nosniff"})
         mx = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/custom/([a-z][a-z0-9_]{0,40})$", path)
         if mx and method in ("GET", "POST"):  # a plug-in's own screen, drawn by Starboard (11 November 2026)
             from . import plugin_custom

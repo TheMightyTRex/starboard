@@ -4220,6 +4220,15 @@
     display: block;
   }
 
+  /* Wizard variants and plug-in page parts (28 November 2026, owner, for plug-in settings such as Create your own TV
+     channel). There is one wizard (docs/WIZARD.md, Variants). Its new variants are parts: the steps themselves
+     (wizard-steps: Back link, history, Check your answers, Run again), the preview beside a step (wizard-preview) and a
+     media card inside an option card (option-media). Beside it: a sentence with selects (sentence), more rows
+     behind a switch (more-rows) and a plain notice for pages made for a computer screen (desktop-notice). All of
+     them work at phone width. */
+
+  
+
   /* Footer: on every page, under main. Left: the app's icon, name and version, then Help (when the
      app has a help centre), About and Updates. Right: the maker mark, the T-rex and TheMightyTRexUK,
      linking to the GitHub profile. On phones the maker mark goes under the app's links. */
