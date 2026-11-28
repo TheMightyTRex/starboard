@@ -20,7 +20,9 @@ function field(label, wrapper, { hint, span, short, required } = {}) {
   control.fieldError = error;
   control.fieldHint = hintNode;
   return el("div", { class: short ? "field field--short" : "field", "data-span": span ? "all" : null },
-    el("label", { for: control.id }, label, control.required ? requiredMark() : null), hintNode, wrapper, error);
+    // In a wizard (docs/WIZARD.md section 3, after GOV.UK) a field that may be left says "(optional)" and no field has an asterisk.
+    el("label", { for: control.id }, label, document.body.hasAttribute("data-wizard") ? (control.required ? null : el("span", { class: "muted", text: " (optional)" }))
+      : control.required ? requiredMark() : null), hintNode, wrapper, error);
 }
 
 function setError(control, message) {

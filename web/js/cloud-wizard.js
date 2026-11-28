@@ -298,10 +298,9 @@ async function cloudWizard({ opener = document.activeElement, startAt = "service
         }
         if (f.hint) input.setAttribute("aria-describedby", `${id}-hint`);
         inputs[f.id] = input;
-        form.append(el("div", { class: "field" }, el("label", { for: id }, f.label, f.required ? el("span", { class: "field__required", "aria-hidden": "true", text: "*" }) : null),
+        form.append(el("div", { class: "field" }, el("label", { for: id }, f.label, f.required ? null : el("span", { class: "muted", text: " (optional)" })),
           f.hint ? el("span", { class: "hint", id: `${id}-hint`, text: f.hint }) : null, input));
       }
-      form.append(el("p", { class: "required-key" }, el("span", { class: "field__required", text: "*" }), "= Required"));
     }
     const go = el("button", { type: "submit", class: "btn btn--primary", form: "cloud-details", id: "cloud-details-go", text: "Continue" });
     form.addEventListener("submit", async (e) => {

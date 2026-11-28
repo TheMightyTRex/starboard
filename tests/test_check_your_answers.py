@@ -71,9 +71,14 @@ class BrowserWizardFrame(unittest.TestCase):
         self.assertIn("wizardReturn.to", self.setup)
         self.assertIn('returning ? "Check your answers"', self.core)
 
-    def test_no_asterisks_in_the_wizards(self):
-        for text in (self.core, self.install):
-            self.assertNotIn("required-key", text.replace("field__required", ""))
+    def test_a_wizard_has_no_asterisks_and_says_optional_on_a_field_that_may_be_left(self):
+        self.assertIn('document.body.hasAttribute("data-wizard")', self.core)
+        self.assertIn('" (optional)"', self.core)
+        for page in ("install-apps", "setup-guide", "bring-in", "upgrade"):
+            self.assertIn("data-wizard", (ROOT / f"web/{page}.html").read_text(encoding="utf-8"), page)
+        cloud = (ROOT / "web/js/cloud-wizard.js").read_text(encoding="utf-8")
+        self.assertNotIn('text: "*"', cloud)
+        self.assertIn('" (optional)"', cloud)
 
     def test_the_error_summary_words_are_the_designs(self):
         components = (ROOT / "web/js/parts/error-summary.js").read_text(encoding="utf-8")
