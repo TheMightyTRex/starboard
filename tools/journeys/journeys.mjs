@@ -2572,8 +2572,8 @@ check("CLD-13", "the address pasted back (without http://, as a phone shows it) 
 await page.keyboard.press("Escape");
 await page.waitForTimeout(400);
 // Signing in without pasting (28 November 2026): on this computer the answer is caught by itself; the Paste from the clipboard
-// button and a paste into the box go on by themselves when the address is right. The stand-in for rclone's listener is on port + 3.
-const redirect = base.replace(/:(\d+)$/, (_, p) => `:${Number(p) + 3}`);
+// button and a paste into the box go on by themselves when the signinAddress is rightPaste. The stand-in for rclone's listener is on port + 3.
+const catchAt = base.replace(/:(\d+)$/, (_, p) => `:${Number(p) + 3}`);
 const startDropbox = async () => {
   await page.locator("#place-add-dropbox").click();
   await page.locator("#cloud-open-signin").waitFor();
@@ -2585,19 +2585,19 @@ const steps15 = await page.locator(".signin-steps").innerText();
 check("CLD-15", "on this computer the step says Starboard is waiting, in a live region, with the box still there as the fallback",
   (await page.locator("#cloud-waiting-words").getAttribute("role")) === "status" && /Starboard is waiting for you to sign in/.test(await page.locator("#cloud-waiting-words").innerText())
   && /this page moves on by itself/.test(steps15) && await page.locator("#cloud-answer").count() === 1 && await page.locator("#cloud-capture-note").count() === 0, steps15);
-const hit = await page.request.get(`${redirect}/?state=${state15}&code=M.made!Up*code`);
-const hitBody = await hit.text();
-check("CLD-15", "the page the browser is sent to is Starboard's own and plain: no code, no state, no rclone", hit.status() === 200 && /Go back to Starboard/.test(hitBody)
+const catchHit = await page.request.get(`${catchAt}/?state=${state15}&code=M.made!Up*code`);
+const hitBody = await catchHit.text();
+check("CLD-15", "the page the browser is sent to is Starboard's own and plain: no code, no state, no rclone", catchHit.status() === 200 && /Go back to Starboard/.test(hitBody)
   && /You can close this tab/.test(hitBody) && !/made|rclone|state/i.test(hitBody) && !/<script/.test(hitBody), hitBody.slice(0, 200));
 await page.locator("[data-step=folder]").waitFor({ timeout: 15000 });
 check("CLD-15", "this page moves on by itself, and says so", /Signed in to Dropbox/.test(await announced()), await announced());
 await closeWizard();
 state15 = await startDropbox();
-const bad = await page.request.get(`${redirect}/?state=SomeoneElse123&code=x`);
+const catchBad = await page.request.get(`${catchAt}/?state=SomeoneElse123&code=x`);
 await page.locator("#cloud-error").waitFor({ timeout: 15000 });
-check("CLD-16", "an answer with another sign-in's state is refused: 400, and the sign-in ends with Try again", bad.status() === 400 && await page.locator("#cloud-try-again").count() === 1);
+check("CLD-16", "an answer with another sign-in's state is refused: 400, and the sign-in ends with Try again", catchBad.status() === 400 && await page.locator("#cloud-try-again").count() === 1);
 await closeWizard();
-const address = (state) => `http://localhost:53682/?code=M.made!Up*code&state=${state}`;
+const signinAddress = (state) => `http://localhost:53682/?code=M.made!Up*code&state=${state}`;
 const pasteInto = (text) => page.evaluate((a) => {
   const i = document.querySelector("#cloud-answer");
   const dt = new DataTransfer();
@@ -2607,12 +2607,12 @@ const pasteInto = (text) => page.evaluate((a) => {
   return { prevented: e.defaultPrevented, value: i.value };
 }, text);
 state15 = await startDropbox();
-const other = await pasteInto("some words that are not an address");
-check("CLD-17", "a paste that is not the sign-in's address is left to paste as usual, nothing is sent", !other.prevented && (await api("/api/backup/cloud/session")).state === "link");
-const other2 = await pasteInto(address("SomeoneElse123"));
-check("CLD-17", "an address from another sign-in is not sent by itself either", !other2.prevented && (await api("/api/backup/cloud/session")).state === "link");
-const right = await pasteInto(address(state15));
-check("CLD-17", "the right address pasted into the box goes on by itself, and is not left in the box", right.prevented && right.value === "");
+const oddPaste = await pasteInto("some words that are not an address");
+check("CLD-17", "a paste that is not the sign-in's address is left to paste as usual, nothing is sent", !oddPaste.prevented && (await api("/api/backup/cloud/session")).state === "link");
+const oddPaste2 = await pasteInto(signinAddress("SomeoneElse123"));
+check("CLD-17", "an address from another sign-in is not sent by itself either", !oddPaste2.prevented && (await api("/api/backup/cloud/session")).state === "link");
+const rightPaste = await pasteInto(signinAddress(state15));
+check("CLD-17", "the right address pasted into the box goes on by itself, and is not left in the box", rightPaste.prevented && rightPaste.value === "");
 await page.locator("[data-step=folder]").waitFor({ timeout: 15000 });
 check("CLD-17", "and the sign-in finishes", /Signed in to Dropbox/.test(await announced()), await announced());
 await closeWizard();
@@ -2632,7 +2632,7 @@ await page.waitForTimeout(400);
 check("CLD-18", "Continue by hand still says what is wrong beside the box", (await page.locator("#cloud-answer").getAttribute("aria-invalid")) === "true"
   && /not the address the sign-in ends on/.test(await page.locator("#cloud-answer-error").innerText()));
 await page.evaluate(() => { delete navigator.clipboard.readText; });
-await page.evaluate((a) => navigator.clipboard.writeText(a), address(state15));
+await page.evaluate((a) => navigator.clipboard.writeText(a), signinAddress(state15));
 await page.locator("#cloud-answer-clipboard").click();
 await page.locator("[data-step=folder]").waitFor({ timeout: 15000 });
 check("CLD-18", "the right address on the clipboard signs in with one press", /Signed in to Dropbox/.test(await announced()), await announced());
@@ -2640,7 +2640,7 @@ await closeWizard();
 await page.evaluate(() => Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true }));
 state15 = await startDropbox();
 check("CLD-18", "a browser that cannot read the clipboard has no button, and the box works as before", await page.locator("#cloud-answer-clipboard").count() === 0 && await page.locator("#cloud-answer").count() === 1);
-await page.locator("#cloud-answer").fill(address(state15));
+await page.locator("#cloud-answer").fill(signinAddress(state15));
 await page.locator("#cloud-answer").press("Enter");
 await page.locator("[data-step=folder]").waitFor({ timeout: 15000 });
 check("CLD-18", "pasting by hand and pressing Enter still signs in", /Signed in to Dropbox/.test(await announced()), await announced());
