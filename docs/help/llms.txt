@@ -1,8 +1,8 @@
 # Starboard
 
-> Starboard is a lightweight home-server dashboard and installer, with a read-only API at /api/v1 and plug-ins that run in locked-down containers. These are its developer pages, for plug-in API 1.24 (the Starboard release after 0.24.0 and later).
+> Starboard is a lightweight home-server dashboard and installer, with a read-only API at /api/v1 and plug-ins that run in locked-down containers. These are its developer pages, for plug-in API 1.25 (the Starboard release after 0.24.0 and later).
 
-<!-- plugin-api: 1.24 -->
+<!-- plugin-api: 1.25 -->
 
 ## Plug-ins
 

@@ -55,6 +55,14 @@ function formErrors(form, errors) {
   errors.forEach(([c]) => { c.fieldError.hidden = false; });
 }
 
+// A step of a wizard that is wrong (docs/WIZARD.md, section 11, after GOV.UK): the error summary "There is a problem" at the top of the
+// step, focused, with a link to the field, as well as the field's own words. Clear it with setError(control, "") as before.
+function wizardProblem(control, message) {
+  const step = control.closest(".panel") || control.closest("main");
+  if (step && control.id && control.fieldError && window.SharedComponents?.showErrors) formErrors(step, [[control, message]]);
+  else setError(control, message);
+}
+
 function switchRow(label, hint, input) {
   input.setAttribute("role", "switch");
   return el("label", { class: "switch" },

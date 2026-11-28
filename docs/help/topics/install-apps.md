@@ -64,7 +64,8 @@ and other choices are in [Other installs and choices](#other-installs-and-choice
    Choose the **Language of releases**. Select **Continue**.
 10. Only on a computer that already runs media apps: the **Moving over** step asks what to bring across later.
     Tick what you want, then select **Continue**.
-11. On **Check**, read the table of your answers. Select **Change** beside anything you want to change. When it is
+11. On **Check your answers**, read each answer. Select **Change** beside anything you want to change: it takes you to that
+    step, and **Check your answers** on that step brings you straight back. When it is
     right, enter **Your Starboard password** and select **Write the files**.
 
     ![The Check step with example data, with the table of answers (step 11) outlined](../images/install-apps-3-check.png)
@@ -118,6 +119,8 @@ Read [Basics, Full install and Everything](install-types.md#at-a-glance) to comp
 
 ## Things to note
 
+- The browser's Back button goes back one step at a time, with your answers as you left them. A step you may leave out says
+  **(optional)** and has **Skip this step**.
 - Nothing is written until you select **Write the files**, and nothing starts until you select **Start the
   apps** or run the command.
 - Starboard writes two files into `data/stack`: `compose.yaml` lists the apps, and `.env` holds your settings

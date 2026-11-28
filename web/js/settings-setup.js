@@ -1303,7 +1303,7 @@ async function startYourInstall() {
   form.addEventListener("submit", async (ev) => {
     ev.preventDefault();
     setError(password, "");
-    if (!password.value) { setError(password, "Enter your password"); password.focus(); return; }
+    if (!password.value) { wizardProblem(password, "Enter your password"); password.focus(); return; }
     button.disabled = true;
     status.replaceChildren(el("p", { class: "muted", text: "Writing the new set-up…" }));
     let r;
@@ -1312,7 +1312,7 @@ async function startYourInstall() {
         usenet: want.usenet !== cur.usenet ? want.usenet : null, reelix_edition: want.reelix_edition !== cur.reelix_edition ? want.reelix_edition : null } });
     } catch (err) {
       button.disabled = false; status.replaceChildren();
-      if (err.status === 401 || err.status === 429) { setError(password, err.message); password.focus(); }
+      if (err.status === 401 || err.status === 429) { wizardProblem(password, err.message); password.focus(); }
       else status.replaceChildren(notice("danger", "Nothing was changed", err.message));
       return;
     }
@@ -1379,11 +1379,11 @@ function takeoverSection() {
   // Each step says what happens under its own buttons (owner, 8 November 2026). A new try clears what the last one
   // said, so an earlier wrong password never stays beside the right one (DASH-254).
   const failed = (input, err, title, out) => {
-    if (err.status === 401 || err.status === 429) { setError(input, err.message); input.focus(); }
+    if (err.status === 401 || err.status === 429) { wizardProblem(input, err.message); input.focus(); }
     else { out.replaceChildren(notice("danger", title, err.message)); out.scrollIntoView({ block: "nearest" }); }
   };
   const fresh = (...things) => things.forEach((t) => (t.matches?.("input") ? setError(t, "") : t.replaceChildren()));
-  const needPassword = (input) => { if (input.value) return true; setError(input, "Enter your password"); input.focus(); return false; };
+  const needPassword = (input) => { if (input.value) return true; wizardProblem(input, "Enter your password"); input.focus(); return false; };
 
   // The three jobs, each with its dialog. A job already running when the page opens shows its line and dialog too.
   const moveJob = () => taskJob({ title: "Moving your apps into Reelix", url: "/api/reelix/move/job", failedWord: "Not moved", returnTo: "tk-review-h",
@@ -1571,7 +1571,7 @@ function takeoverSection() {
         try { await api("/api/reelix/move/run", { method: "POST", body: body() }); }
         catch (err) {
           run.disabled = preview.disabled = false; said.replaceChildren();
-          if (err.data?.field === "qbittorrent") { setError(qbit, err.message); qbit.focus(); return; }
+          if (err.data?.field === "qbittorrent") { wizardProblem(qbit, err.message); qbit.focus(); return; }
           failed(p2, err, "Nothing was moved", said); return;
         }
         p2.value = ""; qbit.value = ""; keyInputs.forEach(({ input }) => { input.value = ""; });

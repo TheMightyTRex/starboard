@@ -191,7 +191,7 @@ function memoryText(mb) { return mb >= 1000 ? `${(mb / 1000).toFixed(1)} GB` : `
 
 // The first problem found: shown by its field, which gets focus. Returns false so a save can return it.
 function stop(control, message) {
-  if (control.fieldError) setError(control, message); else problem(message, control);
+  if (control.fieldError) wizardProblem(control, message); else problem(message, control);
   control.focus();
   return false;
 }
@@ -808,12 +808,12 @@ async function installStep(id, state, data, apps, go) {
     nodes.push(field("Your Starboard password", writePassword, { required: true, hint: "Needed to write the files: they decide which apps run on this computer." }));
     save = async () => {
       setError(writePassword, "");
-      if (!writePassword.value) { setError(writePassword, NEED_PASSWORD); writePassword.focus(); return false; }
+      if (!writePassword.value) { wizardProblem(writePassword, NEED_PASSWORD); writePassword.focus(); return false; }
       try {
         state.written = await api("/api/stack/write", { method: "POST", body: { ...body(state), password: writePassword.value } });
         state.heldPassword = writePassword.value;  // for Start the apps a minute later; kept in this page only, never stored
       } catch (e) {
-        if (e.status === 401 || e.status === 429) { setError(writePassword, e.message); writePassword.focus(); return false; }
+        if (e.status === 401 || e.status === 429) { wizardProblem(writePassword, e.message); writePassword.focus(); return false; }
         throw e;
       }
       toast("Files written");

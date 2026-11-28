@@ -138,7 +138,7 @@ function shareForm(opener, done) {
   foot: [go, cancel] });
   cancel.addEventListener("click", () => panel.close());
   go.addEventListener("click", () => {
-    if (!address.value.trim()) { setError(address, "Enter the share's address"); address.focus(); return; }
+    if (!address.value.trim()) { wizardProblem(address, "Enter the share's address"); address.focus(); return; }
     panel.close();
     done({ kind: kind.value, address: address.value.trim(), user: kind.value === "smb" ? user.value.trim() : "", password: kind.value === "smb" ? pass.value : "", path: "" });
   });

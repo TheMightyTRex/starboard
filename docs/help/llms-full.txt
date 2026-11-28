@@ -5094,7 +5094,7 @@ words, after a change.
 | `layout: "media"` | The items are media cards in option cards. An item has a `media` object, described in the section on the wizard, and `actions` of `toggle` (the **Use** tick) |
 | `more_switch` | `{"label", "hint"}`: the switch **Show more settings** (the default label), which shows the items marked `"more": true`. Starboard keeps the choice for the session |
 | `preview` | The same preview object as in the wizard, shown first on the page |
-| `desktop_only` | `true` on any answer: a plain notice, "This page is for a computer screen. It is not made for phones.", on narrow screens. Use it only for a page that cannot work on a phone |
+| `desktop_only` | `true` on any answer: a plain notice that the page is not made for phones, on windows narrower than 768 pixels. Use it only for a page that cannot work on a phone |
 
 A page answered with none of these is drawn as before.
 
