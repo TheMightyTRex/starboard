@@ -19,8 +19,10 @@ RULES = [
     (r"\b(can't|won't|don't|doesn't|isn't|aren't|didn't|wasn't|haven't|hasn't|shouldn't|wouldn't|couldn't|you're|you'll|"
      r"you've|we're|they're|it's|that's|there's|let's|I'm)\b", "a contraction"),
     (r"\b(click|clicking|clicked|tap|tapping)\b", "click or tap (use select)"),
-    (r"\b(enable|enables|enabled|disable|disables|disabled|toggle|toggles)\b", "enable, disable or toggle (use activate or deactivate)"),
-    (r"\b(turn|turns|turned|turning|switch|switches|switched) (it |them |this |that )?(on|off)\b|\bon or off\b", "turn on or off (use activate or deactivate)"),
+    (r"\b(enable|enables|enabled|disable|disables|disabled|toggle|toggles)\b", "enable, disable or toggle (use turn on or turn off)"),
+    (r"\b(activate|activates|activated|activating|activation|deactivate|deactivates|deactivated|deactivating|deactivation)\b",
+     "activate or deactivate (use turn on or turn off)"),  # owner decision, 28 November 2026
+    (r"\b(switch|switches|switched|switching) (it |them |this |that )?(on|off)\b", "switch on or off (use turn on or turn off)"),
     (r"(?<!home )(?<!no )(?<!a )(?<!on-)\bscreen\b(?! reader)(?! or keyboard)", "screen (use page)"),
     (r"\b(top right|top left|bottom right|bottom left|on the left|on the right|scroll down|scroll up)\b", "a position"),
     (r"(?<!\[)!(?!\[)", "an exclamation mark"),  # not GitHub's callouts, "> [!TIP]"

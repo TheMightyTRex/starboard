@@ -177,7 +177,7 @@ When you share the plug-in, push the image to a public registry instead and pin 
 2. Under **Add one from elsewhere**, choose your `starboard-plugin.json` in **Or its manifest file**.
 3. Select **What it does**. Read what it may do: for Hello card, it reaches only Starboard.
 4. Select **Install** and its name, and enter your Starboard password.
-5. In **Settings**, then **Plug-ins**, then **Manage**, select **Activate** next to Hello card.
+5. In **Settings**, then **Plug-ins**, then **Manage**, select **Turn on** next to Hello card.
 6. On the dashboard, select **Edit dashboard** and add the Hello card card.
 
 It worked when the card shows how long Hello card has been running. Starboard asks `/card` at most once a minute,

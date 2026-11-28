@@ -352,7 +352,7 @@ class JobFailureWords(unittest.TestCase):
 class WholeWords(unittest.TestCase):
     """DASH-474: a catalogue's What is new summary never stops mid-word."""
     CUT = ("Find and tag: each film gets the tag Audio description. Every Jellyfin app can filter by it. Play the described "
-           "track: for each person you activate on its page, inactive until chosen. When they start a title with a described track an")
+           "track: for each person you turn on on its page, inactive until chosen. When they start a title with a described track an")
 
     def test_text_cut_before_it_arrived_goes_back_to_its_last_sentence(self):
         got = plugin_life.whole_words(self.CUT)

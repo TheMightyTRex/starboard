@@ -130,7 +130,7 @@ Starboard lists the files in the backup folder that end in `.zip`, `.tar`, `.tar
    WantedBy=multi-user.target
    ```
 
-7. Activate the path unit:
+7. Turn on the path unit:
 
    ```bash
    sudo systemctl daemon-reload

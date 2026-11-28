@@ -178,8 +178,8 @@ For 24 hours after a change, **The way back** says which media server you had.
 
 ## What to expect
 
-- The media server in use stays active, so its plug-in has no **Deactivate** or **Remove** button until you choose another
-  one or none. **Deactivate all plug-ins** leaves it on.
+- The media server in use stays active, so its plug-in has no **Turn off** or **Remove** button until you choose another
+  one or none. **Turn off all plug-ins** leaves it on.
 - With **None**, the dashboard panel, Library's **Play** and **Watched** and Activity's now playing are not drawn.
   Nothing is removed.
 - If you added Plex or Emby earlier as an **Other app** with its icon, Starboard turns it into a Plex or Emby app

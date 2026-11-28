@@ -17,12 +17,12 @@ letters and words. Both are in **Display**, apply at once, and are kept in the b
 
 1. Select **Display**, the last button in the header. The **Display and accessibility** slide-out opens.
 2. Under **Text size**, choose **100%**, **125%**, **150%** or **175%**. The text changes behind the panel at once.
-3. To add space between lines, letters and words, activate **Wider text spacing**. Deactivate it to go back.
+3. To add space between lines, letters and words, turn on **Wider text spacing**. Turn it off to go back.
 4. Select **Done**, or press Escape.
 
 ![The Display and accessibility slide-out, with Text size (step 2) and Wider text spacing (step 3) outlined](../images/a11y-panel-text.png)
 
-To go back, choose **100%** and deactivate **Wider text spacing**, or select **Reset** to put every Display choice
+To go back, choose **100%** and turn off **Wider text spacing**, or select **Reset** to put every Display choice
 back to its default. The same choices are in **Settings**, then **General**, then **Appearance**, under
 **Accessibility**.
 
@@ -41,9 +41,9 @@ Wider text spacing sets the space between lines to 1.8 times the text size, betw
 size, and between words to 0.16 of the text size. These are at least the amounts in WCAG 2.2's text spacing check.
 Text takes more room, so pages are a little longer.
 
-![Settings, General, Lists with Wider text spacing deactivated](../images/a11y-spacing-before.png)
+![Settings, General, Lists with Wider text spacing turned off](../images/a11y-spacing-before.png)
 
-![The same page with Wider text spacing activated: more space between lines, letters and words, so the same text takes more room](../images/a11y-spacing-after.png)
+![The same page with Wider text spacing turned on: more space between lines, letters and words, so the same text takes more room](../images/a11y-spacing-after.png)
 
 ![The same line of text at 100%, 125%, 150% and 175%, and a sentence with and without wider text spacing](../images/a11y-text-and-spacing.svg)
 

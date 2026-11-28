@@ -94,7 +94,7 @@ app and read its own messages.
 - **"refused the API key":** the key is wrong or was changed in the app. Copy it again.
 - **"answered with error" and a number:** the app is running but had a problem. Open the app and read its
   own messages.
-- If none of this helps, activate detailed logging and report the problem. Read
+- If none of this helps, turn on detailed logging and report the problem. Read
   [Report a problem](read-the-log.md#report-a-problem).
 
 ## Find out more

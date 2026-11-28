@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Changed
+- **Turn on and turn off, not activate and deactivate (DASH-624).** Every page, button, message, terminal question, help article and alert now says turn on and turn off (**Turn on**, **Turn off all plug-ins**, **Save and turn on**), and a setting that is off is "off". The words check and the help check fail on the old words. Not changed: the addresses of the API and its field names, the help topic address `activate-alerts`, and the notes of earlier versions. Help pictures that show the old words are retaken at the release.
+
 ## [0.40.0] (28 November 2026)
 
 ### Added

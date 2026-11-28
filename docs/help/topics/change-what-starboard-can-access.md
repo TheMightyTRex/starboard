@@ -31,7 +31,7 @@ These apply at once:
 
 ![A row of the What Starboard can access tab with its switch, outlined, with example data](../images/change-what-starboard-can-access-3-switch.png)
 
-- **Your home network:** go to **Settings**, then **Security**, and activate or deactivate **Phones and other
+- **Your home network:** go to **Settings**, then **Security**, and turn on or off **Phones and other
   computers on your home network**. Read [Choose who can open Starboard](choose-who-can-open-starboard.md).
 - **Your apps:** add, change or remove apps and their API keys in **Settings**, **Apps**, **Manage apps**. The row's
   **Manage apps** button goes there. Read [Change or remove an app](change-or-remove-an-app.md).
@@ -81,7 +81,7 @@ The ready-made image has no installer. Instead, you change the Compose file.
    nano compose.image.yaml
    ```
 
-3. To activate an extra, remove the `#` and the space after it at the start of its line. To deactivate it, put the
+3. To turn on an extra, remove the `#` and the space after it at the start of its line. To turn it off, put the
    `#` back. Each extra has a comment that explains it.
 4. Save with **Ctrl** and **O**, then Enter. Leave nano with **Ctrl** and **X**.
 5. Start Starboard again with the new file:
@@ -107,9 +107,9 @@ helper runs the installer on the server for you, and the browser shows how it go
 
 - Every kind of access is optional. If you say no, only that part of Starboard is missing, and its page says what it
   needs.
-- Docker access gives Starboard full control of Docker, which is the same as full control of the computer. Activate it
+- Docker access gives Starboard full control of Docker, which is the same as full control of the computer. Turn it on
   only if you want Starboard to update your other apps.
-- If you deactivate Disk health, the job on the server stays installed. The installer prints the command that removes
+- If you turn off Disk health, the job on the server stays installed. The installer prints the command that removes
   it: `sudo deploy/install-smart.sh --remove`.
 - Folders and disks you set up by hand in `compose.override.yaml` are left alone by the installer.
 - A backup job on the server is set up by hand. The README in Starboard's folder explains how.

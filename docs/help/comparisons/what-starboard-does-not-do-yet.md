@@ -30,14 +30,14 @@ Some popular apps are not part of Starboard, because they are heavy, are not acc
 - For subtitles, use Bazarr, which every install includes.
 - For converting files, add the Tdarr plug-in. Read [Add a plug-in](../topics/add-a-plugin.md).
 - For notifications by email, Telegram, Discord, Signal or Pushover, add the Notifications plug-in, or
-  [activate Starboard's alerts](../topics/activate-alerts.md) for ntfy, Gotify or a webhook.
+  [turn on Starboard's alerts](../topics/activate-alerts.md) for ntfy, Gotify or a webhook.
 
 ## Find out more
 
 - [How Starboard compares with other media server stacks](how-starboard-compares.md)
 - [Memory and processor: Starboard against other stacks](memory-and-processor.md)
 - [Everything Starboard does](../topics/everything-starboard-does.md)
-- [Activate alerts](../topics/activate-alerts.md)
+- [Turn on alerts](../topics/activate-alerts.md)
 - [Add a plug-in](../topics/add-a-plugin.md)
 - [Use Starboard away from home safely](../guides/use-starboard-away-from-home.md)
 - [Back up the whole server](../topics/back-up-the-server.md)

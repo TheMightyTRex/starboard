@@ -63,7 +63,7 @@ To sort again later, select **Sort by type again**.
 - **Sorting by type is inactive:** **Work out what uses the space** is set to **Off** in **Settings**,
   **Performance**, under **More settings**.
 - **Nearly full:** free some space or add a disk before it fills. Downloads stop when there is no room. To be
-  told before this happens, read [Activate alerts](activate-alerts.md#choose-what-to-alert-on).
+  told before this happens, read [Turn on alerts](activate-alerts.md#choose-what-to-alert-on).
 
 ## Find out more
 

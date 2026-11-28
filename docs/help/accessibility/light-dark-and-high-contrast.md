@@ -20,7 +20,7 @@ browser you use.
 2. Under **Theme**, choose one:
    - **Light** (the default) and **Dark** stay as they are, whatever the device does.
    - **Match device** follows the light or dark setting of your phone or computer, and changes when it does.
-3. To make everything stronger, activate **High contrast**. Deactivate it to go back.
+3. To make everything stronger, turn on **High contrast**. Turn it off to go back.
 4. Select **Done**, or press Escape.
 
 ![The Display and accessibility slide-out, with Theme (step 2) and High contrast (step 3) outlined](../images/a11y-panel-theme.png)
@@ -45,9 +45,9 @@ and the focus outline. They are checked for every colour pair in the design syst
 - Charts change to stronger colours, and states keep their words and icons.
 - Styles from plug-ins are set aside while it is active. The accent colour stays, in a stronger shade.
 
-![The Apps page with High contrast activated in the Light theme: near-black text, black borders round every card and button, and no shadows](../images/a11y-contrast-light.png)
+![The Apps page with High contrast turned on in the Light theme: near-black text, black borders round every card and button, and no shadows](../images/a11y-contrast-light.png)
 
-![The Apps page with High contrast activated in the Dark theme: white text and white borders on black](../images/a11y-contrast-dark.png)
+![The Apps page with High contrast turned on in the Dark theme: white text and white borders on black](../images/a11y-contrast-dark.png)
 
 ## Styles and colours for everyone
 

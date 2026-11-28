@@ -417,11 +417,11 @@ spec["paths"]["/api/v1/backup/copies"] = {"get": {
                                                                     "where_words": {"type": "string"}, "service": {"type": "string"}, "keep": {"type": "integer"},
                                                                     "keep_settings": {"type": "integer"}, "every": {"type": "string", "description": "How often this place gets a copy: each, weekly or monthly"}, "status": ANY, "tested": TESTED,
                                                                     "state_word": {"type": "string"}, "shape": {"type": "string"}}}},
-        "safe": {**ANY, "description": "Added in 1.9.0: safe is true only when every place that is activated has copied the newest full backup and read it back; words says it, places says which."},
+        "safe": {**ANY, "description": "Added in 1.9.0: safe is true only when every place that is on has copied the newest full backup and read it back; words says it, places says which."},
         "settings_zip": {**ANY, "description": "Added in 1.9.0: the key for the server settings copies (set, never the key) and each place's last settings copy."}}})}}
 spec["paths"]["/api/v1/backup/settings-copy"] = {"post": write(
     {"type": "object", "required": ["accepted"], "properties": {"accepted": {"type": "boolean"}, "status": {"type": "string"}, "settings_zip": ANY}},
-    "Copy the server's settings zip to every place that is activated, encrypted with rclone crypt first, as the server's own backup job asks after writing it (1.9.0). Body: name, the zip's file name in the server backups folder (the newest when left out). Never sent without a key.",
+    "Copy the server's settings zip to every place that is on, encrypted with rclone crypt first, as the server's own backup job asks after writing it (1.9.0). Body: name, the zip's file name in the server backups folder (the newest when left out). Never sent without a key.",
     "copyServerSettings", "System", status="202", extra={"409": {"$ref": "#/components/responses/Problem"}})}
 spec["paths"]["/api/v1/backup/copies/test"] = {"post": write(
     {"type": "object", "required": ["ok", "tested"], "properties": {"ok": {"type": "boolean"}, "tested": TESTED}},
@@ -449,7 +449,7 @@ spec["paths"]["/api/v1/mcp"] = {"post": {
     "operationId": "mcp", "summary": "AI assistants: the Model Context Protocol, read-only tools about the media server", "tags": ["AI assistants"],
     "description": "The MCP Streamable HTTP transport: send one JSON-RPC 2.0 message as JSON (no batches) and get one JSON answer, "
                    "never a stream. It takes initialize, ping, tools/list and tools/call; notifications, with no id, get 202 and no body. "
-                   "Off until the owner activates AI assistants in Settings, Security, API keys (403 mcp_off). Only a Read only key "
+                   "Off until the owner turns on AI assistants in Settings, Security, API keys (403 mcp_off). Only a Read only key "
                    "(403 read_key_needed). tools/list gives the tools the key's scopes cover: search_library (library), recently_added, "
                    "coming_up and now_playing (media), downloads_in_progress and download_problems (downloads), requests (requests), "
                    "app_health (apps) and disk_space (system). Each reads the same as its /api/v1 route and changes nothing. "

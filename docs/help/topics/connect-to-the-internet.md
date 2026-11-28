@@ -163,7 +163,7 @@ Keep the cable plugged in until Wi-Fi works.
 - **`nmcli: command not found`:** this Linux does not use NetworkManager. Use the section for your Linux in this article.
 - **"No Wi-Fi device found" or no name starting with `wl`:** the server has no Wi-Fi, or its Wi-Fi needs extra files.
   Use a network cable.
-- **"Error: Connection activation failed: Secrets were required":** the password was not right. Run the connect
+- **`Error: Connection activation failed: Secrets were required`:** the password was not right. Run the connect
   command again and enter it carefully.
 
 ## Find out more

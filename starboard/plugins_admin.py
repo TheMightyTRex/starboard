@@ -549,7 +549,7 @@ def job_lines(data_dir, pid, m):
 
 # Plug-ins the set-up offers (DASH-399): the extras key the tick saves, and the plug-in it asks for. Ticking saves a
 # wish only. The plug-in is installed from the catalogue, where its permissions are shown and the password asked, as
-# for any other, and stays inactive until someone activates it.
+# for any other, and stays inactive until someone turns it on.
 FROM_SETUP = {"audio_description": "audio-description", "single_sign_on": "single-sign-on"}
 
 
@@ -1155,8 +1155,8 @@ def listing_state(data_dir, pid):
 
 
 def activate_after_install(data_dir, pid, services=None):
-    """Activates a plug-in just installed (owner, 19 November 2026: "When you install a plugin - it should automatically
-    activate. Keep the option in state."). One that needs setting up first, or does not suit this Starboard, stays as
+    """Turns on a plug-in just installed (owner, 19 November 2026: "When you install a plugin - it should automatically
+    turn on. Keep the option in state."). One that needs setting up first, or does not suit this Starboard, stays as
     it is and its page says why. Returns what happened, in words for the page: never raises, as the install is done."""
     from . import plugin_life
     try:
@@ -1173,14 +1173,14 @@ def activate_after_install(data_dir, pid, services=None):
         from . import containers
         try:
             containers.docker("GET", f"/containers/{a['app']}/json")
-            return (f"Not activated yet: {a['name']} is already on this computer. Bring in the {a['name']} you "
-                    f"already have first, then select Activate")
+            return (f"Not turned on yet: {a['name']} is already on this computer. Bring in the {a['name']} you "
+                    f"already have first, then select Turn on")
         except Exception:  # noqa: BLE001  no such app here, or Docker cannot say: a new app starts as usual
             pass
     try:
         enable(data_dir, pid, services=services)
-    except Exception as e:  # noqa: BLE001  installed either way: Activate on its page tries again
-        return f"It did not start: {str(e)[:200]}. Select Activate on its page to try again"
+    except Exception as e:  # noqa: BLE001  installed either way: Turn on on its page tries again
+        return f"It did not start: {str(e)[:200]}. Select Turn on on its page to try again"
     return ""
 
 
@@ -1261,7 +1261,7 @@ def dependents_words(name, deps, what):
     """The plain-English warning before something that other plug-ins need is turned off."""
     names = [d["name"] for d in deps]
     listed = ", ".join(names[:-1]) + (" and " if len(names) > 1 else "") + names[-1]
-    return (f"{listed} {'need' if len(names) > 1 else 'needs'} {name}. If you {what}, {'they' if len(names) > 1 else 'it'} will be deactivated too, "
+    return (f"{listed} {'need' if len(names) > 1 else 'needs'} {name}. If you {what}, {'they' if len(names) > 1 else 'it'} will be turned off too, "
             "and nothing is deleted. Continue?")
 
 
@@ -1533,7 +1533,7 @@ def adopt(data_dir, pid, helper=None):
     if not adopt_info(m):
         raise LookupError("This plug-in cannot take over an app")
     if st.get("state") == "enabled":
-        raise ValueError(f"Deactivate {m['name']} first, so nothing writes to its folder while the copy is made")
+        raise ValueError(f"Turn off {m['name']} first, so nothing writes to its folder while the copy is made")
     found, info = _adopt_sources(m)
     stopped = False
     if a.get("stop") and (info.get("State") or {}).get("Running"):
@@ -1570,5 +1570,5 @@ def adopt(data_dir, pid, helper=None):
     api_v1.audit(data_dir, "plugin_adopted", plugin=pid, app=a["app"])
     return (f"Copied {a['name']}'s {', '.join(t for _i, _s, t in found)} folders into {m['name']} (about {size} MB). "
             + (f"Your {a['name']} is stopped, not removed. " if stopped else f"Your {a['name']} was not changed. ")
-            + f"Activate {m['name']} and check it has your settings, then remove {a['name']} from the main install "
+            + f"Turn on {m['name']} and check it has your settings, then remove {a['name']} from the main install "
             f"in Settings, Install apps. Its own folders stay where they are until you move them.")

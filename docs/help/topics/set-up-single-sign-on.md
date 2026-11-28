@@ -5,7 +5,7 @@
 
 Single sign-on lets you sign in to Starboard with an identity provider that you already run or use, such as
 Authentik, Authelia, Keycloak or Google. It uses OpenID Connect. It is off until you set it up and test it. The password keeps
-working unless you deactivate it on purpose.
+working unless you turn it off on purpose.
 
 ## Before you begin
 
@@ -40,17 +40,17 @@ signature of the provider's ID token against the keys the provider publishes.
 
    ![Single sign-on, with Test sign-in (step 9) and Allow single sign-on (step 10) outlined, with example data](../images/set-up-single-sign-on-2-test.png)
 
-10. Activate **Allow single sign-on**, and enter your password. The sign-in page now shows a button for your
+10. Turn on **Allow single sign-on**, and enter your password. The sign-in page now shows a button for your
     provider beside the password.
 
 ## Turn the password off
 
-The **Password sign-in** tab lets you deactivate the password, but only when single sign-on is active and its test
+The **Password sign-in** tab lets you turn off the password, but only when single sign-on is active and its test
 worked.
 
 ![Password sign-in, with the switch (step 11) outlined, with example data](../images/set-up-single-sign-on-3-password.png)
 
-11. Deactivate **Allow signing in with the password** and enter your password.
+11. Turn off **Allow signing in with the password** and enter your password.
 
 Think before you do this. If the provider stops working, nobody can sign in until you run `./reset-sign-in.sh` on
 the server. Read [Get back in when sign-in is locked](get-back-in-when-sign-in-is-locked.md).
@@ -60,7 +60,7 @@ the server. Read [Get back in when sign-in is locked](get-back-in-when-sign-in-i
 - If you change the issuer, client, secret, redirect address or who may sign in, single sign-on goes off and the
   password comes back on until you test it again.
 - Single sign-on does not ask for Starboard's two-step code. Your provider decides whether you need a second step, so
-  activate its own checks there. Starboard asks for its code with the password only.
+  turn on its own checks there. Starboard asks for its code with the password only.
 - Matching by a verified email address or by the subject (`sub`) is the strongest choice. A username
   (`preferred_username`), a name or another claim is weaker, because some providers let people choose or change it
   themselves. Use the email, which Starboard accepts only when the provider says it has checked it.

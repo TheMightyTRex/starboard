@@ -12,7 +12,7 @@ as `http://192.168.1.20:8095`. At the end, Starboard opens in the device's brows
 
 - Starboard is installed and you have chosen a password. Read
   [Create your password and sign in](create-your-password.md).
-- Starboard lets your home network open it. This is active unless you deactivated it. Read
+- Starboard lets your home network open it. This is active unless you turned off it. Read
   [Choose who can open Starboard](choose-who-can-open-starboard.md).
 - The phone or computer is on the same home network as the server. For a phone, that means connected to your home
   Wi-Fi, not using mobile data.

@@ -59,7 +59,7 @@ warning shape and a reason in words, such as "It uses the permission jellyfin:ke
 ![The Versions panel of a plug-in, where a newer version is offered with Update to, with example data](../images/update-a-plugin-2-versions.png)
 
 The plug-in stays installed. Starboard keeps its settings, data and key, and never starts it again by itself. **Check for
-an update** finds the newest version that works with this Starboard, and **Activate** works again once one fits.
+an update** finds the newest version that works with this Starboard, and **Turn on** works again once one fits.
 
 ![A plug-in's State after an update, with What is new and Got it, with example data](../images/update-a-plugin-4-state.png)
 

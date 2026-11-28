@@ -29,11 +29,11 @@ is ready to use.
 
 4. To go ahead, enter your Starboard password and select **Install** and the plug-in's name. To stop, select
    **Cancel**: nothing is installed.
-5. The plug-in's own tab opens, under **Settings**, then **Plug-ins**, and Starboard activates it: its state is
-   **Active**. A plug-in that needs settings first says what to enter: save them, then select **Activate**. To
-   stop it later, select **Deactivate** in **General**, **State**.
+5. The plug-in's own tab opens, under **Settings**, then **Plug-ins**, and Starboard turns it on: its state is
+   **Active**. A plug-in that needs settings first says what to enter: save them, then select **Turn on**. To
+   stop it later, select **Turn off** in **General**, **State**.
 
-   ![The Styles plug-in's own tab, with its state and Deactivate (step 5) outlined](../images/add-a-plugin-2-active.png)
+   ![The Styles plug-in's own tab, with its state and Turn off (step 5) outlined](../images/add-a-plugin-2-active.png)
 
 6. For a plug-in with styles: select **Display** in the header of any page, then choose a style under **Style**.
    The page changes straight away. You can also select **Use this style** on the plug-in's own tab. Read
@@ -44,7 +44,7 @@ is ready to use.
 ### Manage your plug-ins
 
 **Settings**, then **Plug-ins**, then **Manage** lists every plug-in you added, with its state, **Settings**,
-**Activate** or **Deactivate**, and **Remove**. Each plug-in also has its own tab after **Catalogue**. Its first
+**Turn on** or **Turn off**, and **Remove**. Each plug-in also has its own tab after **Catalogue**. Its first
 tab, **General**, has a card each for **State**, **Versions**, **Jobs** (when it has any), **What it may do** and
 **Remove**. Its other tabs hold its settings, its own screens and its styles.
 
@@ -156,7 +156,7 @@ how to fix it. Accessibility is always tested: every style in light and dark, an
 - **High contrast**, text size, wider spacing, underlined links and reduced motion always win over a style.
 - **Remove** and the plug-in's name stops the plug-in and its containers, and stops its key working. Its folder
   is kept in `data/plugins/.removed`, so you decide when to delete it.
-- **Deactivate all plug-ins** deactivates every active plug-in at once, if something goes wrong.
+- **Turn off all plug-ins** turns off every active plug-in at once, if something goes wrong.
 
 ## If it does not work
 

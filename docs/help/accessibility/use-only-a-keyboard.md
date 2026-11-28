@@ -4,7 +4,7 @@
 # Use only a keyboard
 
 Everything in Starboard works with a keyboard alone, and with switch access or voice control that acts as a
-keyboard. You do not need to activate anything, because every page is built this way. This page lists the keys, and says how focus
+keyboard. You do not need to turn on anything, because every page is built this way. This page lists the keys, and says how focus
 moves through slide-outs and dialogs and after you do something.
 
 ## When would you use it
@@ -19,7 +19,7 @@ moves through slide-outs and dialogs and after you do something.
 |---|---|
 | Tab | Moves to the next link, button or field. Shift and Tab moves back. |
 | Enter | Follows a link, or selects a button. In a form, Enter saves or sends it. |
-| Space | Selects a button, ticks a box, or activates or deactivates a switch. |
+| Space | Selects a button, ticks a box, or turns on or turns off a switch. |
 | Arrow keys | Move between the choices in a group, such as **Light** and **Dark**, between tabs, between letters in the letter row, between items in a menu, and between the readings of a chart. |
 | Home and End | Go to the first or last tab, letter, menu item or reading of a chart. |
 | Escape | Closes a slide-out, a dialog, a menu, the search on a phone or a help text, and gives focus back to what opened it. |

@@ -17,7 +17,7 @@ default: Live TV opens on the Guide.
 
    ![Settings, Jellyfin, with the User defaults tab (step 1) outlined, with example data](../images/jellyfin-user-defaults-1-tab.png)
 
-2. In **User defaults**, activate **Give every Jellyfin user the defaults**.
+2. In **User defaults**, turn on **Give every Jellyfin user the defaults**.
 
    ![User defaults, with Give every Jellyfin user the defaults (step 2) outlined, with example data](../images/jellyfin-user-defaults-2-switch.png)
 
@@ -32,7 +32,7 @@ Starboard shows **Last run worked** and what it did.
 
 - Starboard checks every hour, so people you add to Jellyfin later get the defaults too.
 - A user who has chosen something else in Jellyfin keeps their own choice.
-- Deactivate the switch to stop. Choices already given stay as they are, and each person can change their own
+- Turn off the switch to stop. Choices already given stay as they are, and each person can change their own
   in Jellyfin.
 - The hourly check makes two small requests to Jellyfin for each user.
 

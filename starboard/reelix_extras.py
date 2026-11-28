@@ -130,7 +130,7 @@ def save_site_list(reelix, on, every):
     keep = {k: v for k, v in (s or {}).items() if k in ("source_url", "schema_version")}
     reelix.call("PUT", "/settings/definitions", {**keep, "enabled": bool(on), "auto_update_hours": every})
     words = EVERY_WORDS.get(every, f"every {every} hours").lower()
-    return {**site_list(reelix), "done": f"The site list updates {words}" if on else "Automatic updates of the site list deactivated"}
+    return {**site_list(reelix), "done": f"The site list updates {words}" if on else "Automatic updates of the site list turned off"}
 
 
 def sync_site_list(reelix):

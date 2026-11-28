@@ -263,7 +263,7 @@ class ApiV1Test(unittest.TestCase):
         self.assertEqual((r.status, body["code"]), (400, "bad_request"))
         r, body = self.send_json("POST", "/api/v1/download-hours", {"action": "pause"})
         self.assertEqual((r.status, body["code"]), (400, "bad_request"))  # download hours are not active here
-        self.assertIn("Activate download hours", body["title"])
+        self.assertIn("Turn on download hours", body["title"])
         r, body = self.send_json("POST", "/api/v1/containers/check")
         self.assertEqual((r.status, body["available"]), (200, False))  # no Docker in the tests
         with open(os.path.join(self.tmp.name, "logs", "audit.jsonl")) as f:

@@ -199,7 +199,7 @@ HELP = {
     "settings-audiobookshelf.html": ("README.md#jellyfin-and-audiobookshelf", "Jellyfin and Audiobookshelf"),
     "settings-tdarr.html": ("README.md#jellyfin-and-audiobookshelf", "Jellyfin and Audiobookshelf"),
     "settings-dispatcharr.html": ("topics/set-up-live-tv.md", "setting up Live TV"),
-    "settings-general-alerts.html": ("topics/activate-alerts.md", "activating alerts"),
+    "settings-general-alerts.html": ("topics/activate-alerts.md", "turning on alerts"),
     "settings-general-performance.html": ("topics/make-starboard-lighter.md", "making Starboard use less of your server"),
     "settings-security.html": ("topics/choose-who-can-open-starboard.md", "choosing who can open Starboard"),
     "settings-security-password.html": ("topics/change-your-password.md", "changing your password"),

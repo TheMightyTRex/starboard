@@ -123,13 +123,13 @@ The default install works with all of these as they are. Change them when you wa
   [Change text size, theme and other display settings](../topics/display-and-accessibility.md).
 - **How much Starboard does in the background,** such as the **Small server** preset for a Raspberry Pi:
   [Make Starboard use less of your server](../topics/make-starboard-lighter.md).
-- **Alerts on your phone:** [Activate alerts](../topics/activate-alerts.md).
+- **Alerts on your phone:** [Turn on alerts](../topics/activate-alerts.md).
 - **Download hours:** [Download only at certain hours](../topics/set-download-hours.md).
 - **API keys by hand,** for an app Starboard did not install: [Find an app's API key](../topics/find-an-api-key.md),
   then [Change or remove an app](../topics/change-or-remove-an-app.md#change-an-apps-details).
 - **Reelix's sites and settings:** [Choose the sites Reelix searches](../topics/choose-sites-to-search.md) and
   [Change Reelix's settings in Starboard](../topics/change-reelix-settings.md).
-- **The set-up guide again:** go to **Settings**, then **General**. Activate **More
+- **The set-up guide again:** go to **Settings**, then **General**. Turn on **More
   settings**, then select **Run the set-up guide again** under **Set-up guide**. Nothing changes until you select
   **Continue**.
 

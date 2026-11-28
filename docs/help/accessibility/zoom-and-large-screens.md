@@ -4,7 +4,7 @@
 # Zoom and large screens
 
 Starboard works with your browser zoomed in up to 400%, with its own **Text size** up to 175%, and with both
-together. It also fills large displays, such as a television. Nothing needs to be activated for zoom: every page
+together. It also fills large displays, such as a television. Nothing needs to be turned on for zoom: every page
 lays itself out again to fit.
 
 ## When would you use it

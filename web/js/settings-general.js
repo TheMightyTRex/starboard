@@ -230,9 +230,9 @@ function startGeneral() {
     styleForm && section("gn-style", "Style and colours", "A style from a plug-in is chosen in Display, for this browser only. Reset style goes back to Starboard's own style, in the colours chosen in this section, and keeps your other Display choices.", styleForm),
     section("gn-design", "Default design", "This design applies to everyone who has not chosen their own in Display.", designForm),
     wants(holder, "gn-access") ? section("gn-access", "Accessibility", "Theme, text size, motion, contrast, links and spacing for this browser, the same choices as in Display. They apply at once.", accessibilityForm()) : null,
-    el("div", { id: "testing" }, section("gn-test", "Send feedback", "Report a problem or suggest something from any page. On unless you deactivate it.",
+    el("div", { id: "testing" }, section("gn-test", "Send feedback", "Report a problem or suggest something from any page. On unless you turn it off.",
       el("ul", { class: "settings-rows" },
-        settingRow("Send feedback", "Feedback in the side menu, on every page, reports a problem, suggests something or checks a page for accessibility problems. Each report opens as an issue on Starboard's GitHub page, or is saved here. Deactivate it to remove Feedback from the menu.",
+        settingRow("Send feedback", "Feedback in the side menu, on every page, reports a problem, suggests something or checks a page for accessibility problems. Each report opens as an issue on Starboard's GitHub page, or is saved here. Turn it off to remove Feedback from the menu.",
           uxSwitch, "ux-notes-l")),
       el("div", { id: "feedback-list" }))),
     wants(holder, "gn-logdel") ? logsDangerSection() : null]));
@@ -309,7 +309,7 @@ function logsSection() {
       settingRow("No more than", withCost("All of Starboard's logs together. When they reach this, the oldest days are removed, whichever limit comes first.", "logSize"),
         logPick("lg-size-l", LOG_SIZES, config.logs.max_mb ?? 50, (v) => saveLimit("max_mb", v)), "lg-size-l"),
       settingRow("Detailed logging", withCost("For reporting a problem: adds every page request and every call to your apps, and the full detail of errors. Personal details are still removed.", "logDetail"),
-        logPick("lg-detail-l", [["off", "Off"], ["day", "For 24 hours"], ["on", "Until I deactivate it"]], config.logs.detail,
+        logPick("lg-detail-l", [["off", "Off"], ["day", "For 24 hours"], ["on", "Until I turn it off"]], config.logs.detail,
           (v) => saveGeneral({ logs: { detail: v } }, true)), "lg-detail-l")),
     el("div", { class: "stack-2" },
       el("h3", { text: "What the limits cover" }),
@@ -383,7 +383,7 @@ function generalScrollSection() {
   input.addEventListener("change", () => saveGeneral({ infinite_scroll: input.checked }, true).catch((e) => problem(e.message)));
   const box = section("gn-scroll", "Long lists", "The Library, Wanted and History.",
     el("ul", { class: "settings-rows" }, el("li", { class: "setting" }, switchRow("Load more as you scroll",
-      "Deactivated: a Show more button at the end instead. With Reduce motion on, the button is always used.", input))));
+      "Inactive: a Show more button at the end instead. With Reduce motion on, the button is always used.", input))));
   const sections = $("#general-sections");
   // General's parts are usually drawn by now (startGeneral runs first), so it goes in at once; else when they are.
   const place = () => { if (sections.childElementCount && !$("#gn-scroll-h")) { sections.append(box); return true; } return false; };

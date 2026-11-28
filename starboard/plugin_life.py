@@ -20,7 +20,7 @@ from . import plugins_admin as pa
 
 # Each state: one sentence and one button (the button's action, for the page).
 STATES = {
-    "needs-setup": ("Fill in its settings, then activate it.", "Set it up", "settings"),
+    "needs-setup": ("Fill in its settings, then turn it on.", "Set it up", "settings"),
     "not-supported": ("Starboard cannot run it as it is, so it is stopped. Its settings and data are kept. An update may fix it.",
                       "Check for an update", "update"),  # shown as "Needs an update" (DASH-603)
     "failed": ("It did not start, or stopped answering.", "Try again", "enable"),
@@ -57,7 +57,7 @@ def status(data_dir, pid, manifest=None, st=None):
         if state == "not-supported":
             sentence = f"{why} It is stopped. Its settings and data are kept. An update may fix it."
         if state == "needs-setup" and missing:
-            sentence = f"Fill in {', '.join(missing)}, then activate it."
+            sentence = f"Fill in {', '.join(missing)}, then turn it on."
         if state == "failed" and st.get("message"):
             sentence = f"{sentence} {st['message'][-160:]}"
         out.update(sentence=sentence, button=button, action=action)

@@ -25,7 +25,7 @@ Rules from starboard/DEVELOPER-BEST-PRACTICE-2026-11-09.md (A1 to A19, AS1 to AS
   line for every write; long work answers 202.
 - Events (A15): one Server-Sent Events stream, /api/v1/events, CloudEvents-shaped, with Last-Event-ID resume from a
   ring of the last 200; at most 8 streams at once, each closed after an hour.
-- AI assistants (DASH-464, API 1.7.0): POST /api/v1/mcp speaks MCP with a read key, off until the owner activates it
+- AI assistants (DASH-464, API 1.7.0): POST /api/v1/mcp speaks MCP with a read key, off until the owner turns it on
   in Settings, Security, API keys; its tools read through the routes here (starboard/mcp.py).
 - Described in starboard/openapi.json, served at /api/v1/openapi.json; a test fails when a route and the
   description differ (A4, AS17).
@@ -46,7 +46,7 @@ import uuid
 
 from . import deprecations, plugin_capabilities
 
-API_VERSION = "1.12.0"  # 1.12.0 (27 November 2026, DASH-572, plug-in API 1.24): POST /plugin/hold, a hold on heavy work from a plug-in with power:hold, answered only to its own key; /download-hours says what is held. 1.11.0 (26 November 2026, DASH-603): capabilities in GET /, the names of the optional plug-in parts this Starboard has. 1.10.0 (26 November 2026, DASH-603): deprecations in GET /, Deprecation and Sunset headers on a route that is going, 410 gone once removed. 1.9.0 (26 November 2026): several backup places in /backup/copies (destinations, safe, settings_zip), the test for each, and POST /backup/settings-copy. 1.8.0 (20 November 2026, plug-in API 1.17): POST /plugin/alerts, alerts from a plug-in with alerts:send, answered only to its own key. 1.7.0 (19 November 2026, DASH-464): /mcp, read-only tools for AI assistants, off until activated. 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
+API_VERSION = "1.12.0"  # 1.12.0 (27 November 2026, DASH-572, plug-in API 1.24): POST /plugin/hold, a hold on heavy work from a plug-in with power:hold, answered only to its own key; /download-hours says what is held. 1.11.0 (26 November 2026, DASH-603): capabilities in GET /, the names of the optional plug-in parts this Starboard has. 1.10.0 (26 November 2026, DASH-603): deprecations in GET /, Deprecation and Sunset headers on a route that is going, 410 gone once removed. 1.9.0 (26 November 2026): several backup places in /backup/copies (destinations, safe, settings_zip), the test for each, and POST /backup/settings-copy. 1.8.0 (20 November 2026, plug-in API 1.17): POST /plugin/alerts, alerts from a plug-in with alerts:send, answered only to its own key. 1.7.0 (19 November 2026, DASH-464): /mcp, read-only tools for AI assistants, off until turned on. 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
 KEYS_FILE = "api-keys.json"
 RIGHTS = ("read", "manage")  # manage: read, and the everyday actions (DASH-274). "admin" stays with the pages
 SCOPES = ("apps", "downloads", "media", "system", "library", "requests")
@@ -931,7 +931,7 @@ def actions():
                      "places": scrub([{"id": d["id"], "title": backup_copies.title_of(d), "tested": results[d["id"]]} for d in places])}
 
     def settings_copy(h, m, q, b):
-        """Copy the server's settings zip to every place that is activated, encrypted (API 1.9.0). The server's own backup job
+        """Copy the server's settings zip to every place that is on, encrypted (API 1.9.0). The server's own backup job
         calls this after it has written the zip; the file is named, never a path."""
         from . import settings_zip
         try:

@@ -1,4 +1,4 @@
-"""Plug-ins, 19 November 2026 (owner): "When you install a plugin - it should automatically activate. Keep the option in
+"""Plug-ins, 19 November 2026 (owner): "When you install a plugin - it should automatically turn on. Keep the option in
 state"; the Address Jellyfin uses to reach the TV channel "is this not populated automatically?"; a channel's name
 was refused as "must be a URL"; and "rename State to General" with a card each for State, Versions, Jobs, What it
 may do and Remove."""
@@ -43,7 +43,7 @@ class ActivateAfterInstall(unittest.TestCase):
         with mock.patch("starboard.plugin_life.can_enable"), mock.patch.object(pa, "enable", side_effect=RuntimeError("no image")):
             said = pa.activate_after_install("/d", "test-plugin")
         self.assertIn("did not start: no image", said)
-        self.assertIn("Select Activate on its page", said)
+        self.assertIn("Select Turn on on its page", said)
 
     def test_an_app_to_bring_in_waits_so_bring_in_can_copy_it(self):
         with mock.patch("starboard.plugin_life.can_enable"), mock.patch.object(pa, "enable") as on, \
@@ -51,7 +51,7 @@ class ActivateAfterInstall(unittest.TestCase):
                 mock.patch("starboard.containers.docker", return_value={"Id": "x"}):
             said = pa.activate_after_install("/d", "tdarr")
         on.assert_not_called()
-        self.assertIn("Bring in the Tdarr you already have first, then select Activate", said)
+        self.assertIn("Bring in the Tdarr you already have first, then select Turn on", said)
 
     def test_a_new_app_with_nothing_to_bring_in_starts(self):
         from starboard import containers

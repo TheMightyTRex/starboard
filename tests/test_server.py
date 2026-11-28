@@ -449,7 +449,7 @@ class ServerTest(unittest.TestCase):
         self.sign_in()
         self.request("PUT", "/api/config/general", {"ux_notes": False})  # on by default since 0.15.2: switched off here
         resp, _ = self.request("GET", "/api/ux-notes")
-        self.assertEqual(resp.status, 404)  # off when deactivated
+        self.assertEqual(resp.status, 404)  # off when turned off
         self.request("PUT", "/api/config/general", {"ux_notes": True})
         resp, data = self.request("GET", "/api/session")
         self.assertTrue(data["ux_notes"])

@@ -21,7 +21,7 @@ where a setting lives.
 
    ![Settings, Updates with example data, with the topic tabs under the heading (step 4) outlined](../images/find-a-setting-2-tabs.png)
 
-5. Each page opens on its basic settings. To show the rest, activate the small **More settings** switch at the
+5. Each page opens on its basic settings. To show the rest, turn on the small **More settings** switch at the
    right of the heading. More sections and tabs appear. Your choice is saved for every Settings page.
 
    ![Settings, General with only its basic settings, with More settings inactive (step 5) outlined](../images/find-a-setting-3-basic.png)
@@ -38,7 +38,7 @@ where a setting lives.
   Music, Radio, Books and Audiobooks). With **More settings**: Coming up. Read [Find out what is coming up](coming-up.md).
 - **Hours:** when downloads run. Read [Download only at certain hours](set-download-hours.md).
 - **Alerts:** where alerts go. With **More settings**: what to alert on, a weekly summary and watching. Read
-  [Activate alerts](activate-alerts.md) and [Get a weekly summary](weekly-summary.md).
+  [Turn on alerts](activate-alerts.md) and [Get a weekly summary](weekly-summary.md).
 - **Performance:** how much Starboard does, and the pictures it keeps, with a button to clear them. With **More settings**:
   each part of the background work, and how often pages update. Read [Make Starboard use less of your server](make-starboard-lighter.md).
 - **Backup/Logs:** full backups of Starboard and every app's settings, the backup schedule, copies off this

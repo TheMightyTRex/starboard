@@ -13,7 +13,7 @@ off and allows the password again. Your password, apps and settings stay as they
   [Connect to your server from another computer](connect-with-ssh.md).
 - You know how you installed Starboard: with the installer, or from the ready-made image.
 - You still know the password. If not, read [Reset a forgotten password](reset-a-forgotten-password.md), which also
-  deactivates the two-step code and single sign-on.
+  turns off the two-step code and single sign-on.
 
 ## Steps
 
@@ -25,14 +25,14 @@ off and allows the password again. Your password, apps and settings stay as they
    cd ~/starboard
    ```
 
-2. Run the script. It deactivates the two-step code and single sign-on, allows the password, signs everyone out and
+2. Run the script. It turns off the two-step code and single sign-on, allows the password, signs everyone out and
    restarts Starboard:
 
    ```bash
    ./reset-sign-in.sh
    ```
 
-   It ends with "The two-step code and single sign-on are deactivated, the password works again and everyone is
+   It ends with "The two-step code and single sign-on are off, the password works again and everyone is
    signed out".
 3. Open Starboard and sign in with your password.
 
@@ -59,13 +59,13 @@ The sign-in page tells you about it, and so does the **If you are locked out** t
 
 ![Settings, Security, Sign-in methods, with If you are locked out outlined, with example data](../images/get-back-in-when-sign-in-is-locked-1-command.png)
 
-![Two-step code activated, with Deactivate the two-step code outlined: the way back in from the browser, while you can still sign in, with example data](../images/get-back-in-when-sign-in-is-locked-2-turn-off.png)
+![Two-step code turned on, with Turn off the two-step code outlined: the way back in from the browser, while you can still sign in, with example data](../images/get-back-in-when-sign-in-is-locked-2-turn-off.png)
 
 ![Single sign-on, with Remove single sign-on outlined: it forgets the provider and allows the password again, with example data](../images/get-back-in-when-sign-in-is-locked-3-remove.png)
 
 ## Things to note
 
-- Your provider's details stay saved, but single sign-on stays off until you activate it again.
+- Your provider's details stay saved, but single sign-on stays off until you turn it on again.
 - The script does not change your password. Use it only on the server itself; nothing in the browser or the API
   can run it.
 - Turning single sign-on off in Settings also allows the password again, so you are never left with no way in.

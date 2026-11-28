@@ -59,7 +59,7 @@ read the disk.
 ## Find out more
 
 - [Check your disks' health](check-disk-health.md)
-- [Activate alerts](activate-alerts.md)
+- [Turn on alerts](activate-alerts.md)
 - [Use a disk as a backup disk](use-a-drive-as-a-backup-drive.md)
 
 <!-- footer: download rights -->

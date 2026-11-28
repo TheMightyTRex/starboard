@@ -39,7 +39,7 @@ async function settle() {
 // Change the Display settings as the Display slide-out does, then let the header refit.
 async function prefs(text, spacing, theme, contrast) {
   await page.evaluate(([text, spacing, theme, contrast]) => {
-    // Send feedback is activated in the example data on some pages only: show it everywhere, as its longest case.
+    // Send feedback is on in the example data on some pages only: show it everywhere, as its longest case.
     document.querySelectorAll(".rail__feedback").forEach((b) => { b.hidden = false; });
     applyPrefs({ ...readPrefs(), text, spacing, theme, contrast });
   }, [text, spacing, theme, contrast]);

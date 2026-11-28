@@ -109,7 +109,7 @@ if (sw && sw.role === "switch") {
   await page.waitForTimeout(1500);
   const f5 = await focus(), s5 = await said();
   check("T5", "focus stays on the switch after it saves", !f5.lost && f5.tag === "INPUT", f5.text);
-  check("T5", "the change is said (saved note)", /saved|activated|deactivated|on|off/i.test(s5), s5);
+  check("T5", "the change is said (saved note)", /saved|turned on|turned off|on|off/i.test(s5), s5);
   await page.keyboard.press("Space");
   await page.waitForTimeout(1200);
 } else check("T5", "a switch can be reached with Tab", false);
@@ -286,14 +286,14 @@ if (await chTab.count() && await page.locator('[data-menu="in:samsung"]').count(
   const sec = await tabTo((f) => f.text === "News" && f.tag === "BUTTON", 40);
   await page.keyboard.press("Enter");
   await page.waitForTimeout(300);
-  const toggle = await tabTo((f) => /^(Activate|Deactivate) /.test(f.text) && f.tag === "BUTTON", 40);
+  const toggle = await tabTo((f) => /^(Turn on|Turn off) /.test(f.text) && f.tag === "BUTTON", 40);
   check("T12", "a region and a section open by keyboard, down to the channels", !!(sub && sec && toggle), toggle ? toggle.text : "not reached");
   if (toggle) {
     await page.keyboard.press("Space");
     await settle();
     const t2 = await focus(), s12 = await said();
-    check("T12", "after Activate or Deactivate, focus is on the channel's button again", /^(Activate|Deactivate) /.test(t2.text) && t2.inMain, t2.text);
-    check("T12", "what it did is said", /activated|deactivated/i.test(s12), s12);
+    check("T12", "after Turn on or Turn off, focus is on the channel's button again", /^(Turn on|Turn off) /.test(t2.text) && t2.inMain, t2.text);
+    check("T12", "what it did is said", /turned on|turned off/i.test(s12), s12);
   }
   await page.locator(".back-link--button").first().focus();
   await page.keyboard.press("Enter");
@@ -380,7 +380,7 @@ if (test16) {
   check("T16", "the result is beside the place and said politely", /Connected/.test(await page.locator("#place-tested-main").innerText())
     && /^Connected: /.test(await page.locator("#announcer").innerText()), await page.locator("#announcer").innerText());
 }
-// T17 Recommended Jellyfin plug-ins (DASH-404): arrows choose Trakt's Install and activate without doing anything,
+// T17 Recommended Jellyfin plug-ins (DASH-404): arrows choose Trakt's Install and turn on without doing anything,
 // Tab to Apply this choice and Enter installs it; focus stays in Trakt's choice and the result is said.
 await page.goto(`${base}/settings-jellyfin.html#jf-plugins`);  // its topic tab
 await settle();
@@ -396,7 +396,7 @@ if (await trakt.count()) {
   await trakt.locator("input[value=none]").focus();
   const f15a = await focus();
   await page.keyboard.press("ArrowUp");
-  check("T15", "an arrow moves to Install and activate without installing", (await trakt.locator("input[value=on]").isChecked())
+  check("T15", "an arrow moves to Install and turn on without installing", (await trakt.locator("input[value=on]").isChecked())
     && !/Installed Trakt/.test(await page.locator("#jf-plugins-list").textContent()), `${f15a.tag} ${f15a.text}`);
   const apply = await tabTo((f) => f.tag === "BUTTON" && /^Apply this choice/.test(f.text), 5);
   check("T15", "Tab reaches Apply this choice", !!apply, apply ? apply.text : "not reached");
@@ -1388,10 +1388,10 @@ if (setUp) {
   await page.waitForTimeout(700);
   const d4 = await focus(), s4 = await said();
   check("T-SIGNIN", "after it closes focus is not lost to the top of the page", !d4.lost, d4.text);
-  check("T-SIGNIN", "the result is said", /Two-step code activated|recovery codes left/i.test(s4), s4);
+  check("T-SIGNIN", "the result is said", /Two-step code turned on|recovery codes left/i.test(s4), s4);
   // Put back: the dialog, then the password, by keyboard.
-  const off = await tabTo((f) => f.tag === "BUTTON" && /Deactivate the two-step code/.test(f.text), 80);
-  check("T-SIGNIN", "Deactivate the two-step code can be reached with Tab", !!off);
+  const off = await tabTo((f) => f.tag === "BUTTON" && /Turn off the two-step code/.test(f.text), 80);
+  check("T-SIGNIN", "Turn off the two-step code can be reached with Tab", !!off);
   if (off) {
     await page.keyboard.press("Enter");
     await page.waitForTimeout(500);
@@ -1401,7 +1401,7 @@ if (setUp) {
     await page.keyboard.press("Enter");
     await page.waitForTimeout(1000);
     const d6 = await focus();
-    check("T-SIGNIN", "after deactivating, focus is not lost to the top of the page", !d6.lost, d6.text);
+    check("T-SIGNIN", "after turning off, focus is not lost to the top of the page", !d6.lost, d6.text);
   }
 }
 

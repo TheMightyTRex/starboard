@@ -18,7 +18,7 @@ them behind its admin password, so each section asks for it before it opens.
 
 1. Go to **Settings**, then **Apps**, then **Reelix**. The page opens on **Version**. Each section has its own
    tab under the heading, such as **Basic settings** and **Sites to search**.
-2. For any other section, activate **More settings** at the right of the heading. More tabs appear. The
+2. For any other section, turn on **More settings** at the right of the heading. More tabs appear. The
    sections are in [Which settings are where](#which-settings-are-where).
 3. Select the section's tab, then its **Show** button, such as **Show sites to search**.
 

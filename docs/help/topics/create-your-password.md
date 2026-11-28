@@ -26,7 +26,7 @@ finished, Starboard shows only the set-up.
 4. In **Choose a password**, enter a password of at least 10 characters. A short sentence works well, such as "the
    kettle is always on".
 5. In **Enter it again**, enter the same password again.
-6. Choose whether to activate **Remember me on this device**. Leave it inactive on a shared computer. Read
+6. Choose whether to turn on **Remember me on this device**. Leave it inactive on a shared computer. Read
    [Things to note](#things-to-note).
 7. Select **Save password and continue**.
 
@@ -43,7 +43,7 @@ finished, Starboard shows only the set-up.
 Next time, Starboard shows **Sign in to Starboard**.
 
 1. In **Password**, enter your password.
-2. Choose whether to activate **Remember me on this device**.
+2. Choose whether to turn on **Remember me on this device**.
 3. Select **Sign in**.
 
 ## Things to note

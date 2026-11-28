@@ -351,7 +351,7 @@ class JellyfinLibraries(unittest.TestCase):
         w = plugins.install_warning(LIB_MANIFEST)
         line = next(c for c in w["change"] if c.startswith("Jellyfin:"))
         self.assertIn("On demand Films and On demand TV", line)
-        self.assertIn("Real-time monitoring is deactivated", line)
+        self.assertIn("Real-time monitoring is off", line)
         self.assertIn("stay in Jellyfin", line)
 
     def setUp(self):

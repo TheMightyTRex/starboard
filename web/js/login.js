@@ -68,7 +68,7 @@ startPage().then((session) => {
     }
     const why = { failed: "Single sign-on did not work. Try again, or sign in with your password.", nomatch: "That account is not the one allowed to sign in to this dashboard.",
       denied: "Single sign-on was cancelled or refused by the provider.", expired: "That sign-in ran out of time. Try again.", limited: "Too many attempts. Wait 15 minutes and try again.",
-      off: "Single sign-on is not activated." }[new URLSearchParams(location.search).get("sso")];
+      off: "Single sign-on is not on." }[new URLSearchParams(location.search).get("sso")];
     if (why) { showFormError(why); }
   }
   const codeForm = $("#code-form");

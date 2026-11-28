@@ -26,7 +26,7 @@ Letting an assistant act, asking you first each time, is not built yet. It needs
 
 An assistant that speaks MCP, the Model Context Protocol, needs no instructions about addresses. It connects to
 `/api/v1/mcp` and is given tools for the Library, downloads, requests, app health and disk space. It is off until
-you activate **Let AI assistants connect** in **Settings**, **Security**, **API keys**, and takes only a **Read only**
+you turn on **Let AI assistants connect** in **Settings**, **Security**, **API keys**, and takes only a **Read only**
 key. Read [Let an AI assistant answer questions about your server](../topics/connect-an-ai-assistant-with-mcp.md), and
 [MCP tools](mcp-tools.md) for what each tool gives back. The rest of this page is for assistants that call the API
 themselves.

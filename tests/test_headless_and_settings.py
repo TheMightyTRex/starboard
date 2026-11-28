@@ -68,12 +68,12 @@ class TerminalSettingsTest(unittest.TestCase):
     def test_deactivate_the_update_check_through_the_api(self):
         self.assertTrue(self.app.config.data["update_check"])
         out = io.StringIO()
-        # Automatic updates; 2 deactivates looking for new versions; Enter; Enter (Done, recommended); 2 closes.
+        # Automatic updates; 2 turns off looking for new versions; Enter; Enter (Done, recommended); 2 closes.
         term = terminal_settings.Terminal(out=out, ask=Answers(["", "2", "", "", "2"]), secret=Answers(["correct horse battery"]), fancy=False)
         self.assertEqual(terminal_settings.run(self.api, term, "0.0.0"), 0)
         self.assertFalse(self.app.config.data["update_check"])
         text = out.getvalue()
-        self.assertIn("Check for new versions is now deactivated.", text)
+        self.assertIn("Check for new versions is now off.", text)
         self.assertIn("Done: back to the settings (recommended)", text)
         self.assertNotIn("correct horse battery", text)
 

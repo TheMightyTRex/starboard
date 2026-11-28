@@ -27,10 +27,10 @@ q2: What do you want to do?
 
 ## It is on already
 
-**Send feedback** is active on every page unless you deactivate it. To hide it:
+**Send feedback** is active on every page unless you turn it off. To hide it:
 
 1. Go to **Settings**, then **General**, then **Backup/Logs**.
-2. Under **Send feedback**, deactivate **Send feedback**. Activate it again the same way.
+2. Under **Send feedback**, turn off **Send feedback**. Turn it on again the same way.
 
    ![Settings, General, Backup/Logs, with Send feedback (step 2) outlined, with example data](../images/send-feedback-1-logs-page.png)
 

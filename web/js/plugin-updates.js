@@ -166,7 +166,7 @@ function pluginUpdatesArea({ mount, full = false }) {
       el("div", { class: "settings-section__head" }, el("h2", { id: "plu-auto-h", text: "Update by themselves" }),
         el("p", { class: "small muted", text: `Plug-ins that ask for new permissions never update by themselves. They update in ${data.hours_words}, set in Settings, Updates.` })),
       el("ul", { class: "settings-rows" }, el("li", { class: "setting" },
-        switchRow("Plug-ins: update by themselves", `Deactivated: they wait for you, and you are told when an update is ready.${last}`, input),
+        switchRow("Plug-ins: update by themselves", `Inactive: they wait for you, and you are told when an update is ready.${last}`, input),
         el("dl", { class: "facts small" }, el("dt", { text: "Copy first" }), el("dd", { text: a.safety.copy }),
           el("dt", { text: "Checked by" }), el("dd", { text: a.safety.check }), el("dt", { text: "Way back" }), el("dd", { text: a.safety.back })))));
   };

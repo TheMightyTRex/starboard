@@ -312,7 +312,7 @@ const AppDetails = (() => {
     if (!u) return state.errors.uptime ? el("p", { class: "muted", text: `Could not load the history: ${state.errors.uptime}` }) : SharedComponents.wait("Loading the history");
     const row = u.items[s.id];
     if (!u.enabled && !row?.pct7 && row?.pct7 !== 0) {
-      return el("p", { class: "muted" }, "Starboard keeps uptime history only while it watches in the background. Activate it in ",
+      return el("p", { class: "muted" }, "Starboard keeps uptime history only while it watches in the background. Turn it on in ",
         el("a", { href: "/settings-general-alerts.html", text: "Settings, General, Alerts" }), ".");
     }
     if (!row || row.pct24 === null) return el("p", { class: "muted", text: "No history yet. It starts with the next check." });

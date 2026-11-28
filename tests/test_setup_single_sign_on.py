@@ -67,7 +67,7 @@ class Words(unittest.TestCase):
         self.assertIn("passkeys are tied to it for ever", hint)
         text = json.dumps(WORDS, ensure_ascii=False)
         self.assertNotIn("—", text)
-        for bad in ("n't", "turn on", "turn off", "switch on", "switch off", "enable", "disable"):
+        for bad in ("n't", "activate", "deactivate", "switch on", "switch off", "enable", "disable"):
             self.assertNotIn(bad, text.lower())
 
     def test_the_browser_reads_the_same_words(self):

@@ -786,7 +786,7 @@ def _example_livetv(data_dir):
                         "on": True, "said": "2 of 3 channels play", "state": "ok", "guide": "https://example.invalid/harbour-guide.xml.gz",
                         "guide_said": "2 of 2 channels have programmes",
                         "result": {"added": 1, "inactive": 1, "total": 3, "text": "1 is already in Live TV, so it came in inactive: "
-                                   "activate it in Channels when you want. 1 address answers Not found"}}], f)
+                                   "turn it on in Channels when you want. 1 address answers Not found"}}], f)
         nxt = {b: n for b, n in livetv.BLOCKS}
         chans = []
         for i, (name, section, lst, region) in enumerate(_LIVETV_CHANNELS):
@@ -971,7 +971,7 @@ def _example_watch_stats(data_dir):
             "jobs": [{"id": "weekly", "label": "Send New this week on the chosen day", "path": "/jobs/weekly", "daily": "09:00"}]},
             "/nonexistent-media")
         plugins_admin.save_settings(data_dir, "notifications", {"telegram_token": "tg-example-token-401", "telegram_chat": ["42"], "smtp_host": "smtp.example.com"})
-        # Deactivated, so the plug-in clock never sends it events or runs its job here: no container is asked for.
+        # Off, so the plug-in clock never sends it events or runs its job here: no container is asked for.
         plugins_admin.set_state(data_dir, "notifications", "disabled")
     real_call, real_ask, real_action = plugin_custom.call, plugin_watch._ask, plugin_cards.action
 
@@ -1325,7 +1325,7 @@ def _cleanup_screen(key, held):
         rows = [("A quiet harbour (2004)", "Films", "Watched by everyone", "3.9 GB"), ("North road (2011)", "Films", "Not watched for 12 months", "2.2 GB"),
                 ("Salt and stone (2016)", "Series", "Ended, all watched", "18.4 GB")]
         return {"type": "list", "title": "Preview", "layout": "folds", "readonly": True,
-                "intro": "3 items would move to the holding folder, freeing 24.5 GB. Nothing moves until you activate Move items each day.",
+                "intro": "3 items would move to the holding folder, freeing 24.5 GB. Nothing moves until you turn on Move items each day.",
                 "columns": [{"key": "title", "label": "Title"}, {"key": "library", "label": "Library"}, {"key": "rule", "label": "Why"},
                             {"key": "size", "label": "Space"}],
                 "items": [{"id": f"p{i}", "title": t, "group": lib, "actions": [], "cells": {"title": t, "library": lib, "rule": r, "size": z}}
@@ -1385,7 +1385,7 @@ def _example_library_cleanup(data_dir):
             "settings": [{"key": "preview", "label": "Preview", "type": "custom", "choices": "/preview", "group": "Preview"},
                          {"key": "held", "label": "Holding folder", "type": "custom", "choices": "/held", "group": "Holding folder"},
                          {"key": "active", "label": "Move items each day", "type": "switch", "default": False, "group": "Rules",
-                          "hint": "In quiet hours. Look at Preview first: nothing moves until you activate this."},
+                          "hint": "In quiet hours. Look at Preview first: nothing moves until you turn this on."},
                          {"key": "watched", "label": "Watched by everyone", "type": "switch", "default": True, "group": "Rules"},
                          {"key": "watched_days", "label": "Last watched more than", "type": "number", "unit": "days", "default": 90, "min": 7, "max": 3650, "group": "Rules"},
                          {"key": "keep_tag", "label": "Keep tag", "type": "text", "default": "keep", "group": "Always keep"}],

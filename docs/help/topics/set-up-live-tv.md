@@ -53,15 +53,15 @@ Live TV can also take your own channel lists and guides, by address or as a file
    (`.xml` or `.xml.gz`), then select **Add a list or guide**. To use a file from your computer instead, choose it
    under **Or choose a file** and select **Upload**.
 3. Starboard tests the channels and says what it added, such as "Harbour community: 1 of 3 channels added, 1
-   inactive". A channel already in Live TV comes in inactive: activate it in **Channels** when you want it.
-4. Each list has its own **Deactivate**, so an inactive list is not fetched. **Change guide** gives it a guide, and
+   inactive". A channel already in Live TV comes in inactive: turn it on in **Channels** when you want it.
+4. Each list has its own **Turn off**, so an inactive list is not fetched. **Change guide** gives it a guide, and
    **Test** tests it again. **Test all** tests every list.
 
    ![Live TV's Your lists and guides with a made-up list, with steps 2 and 4 outlined](../images/set-up-live-tv-3-your-lists.png)
 
 ### Choose the channels
 
-1. On Live TV's page, select the **Channels** tab. Under **Activate or deactivate in bulk**, each list, **Every
+1. On Live TV's page, select the **Channels** tab. Under **Turn on or off in bulk**, each list, **Every
    channel** and each region has its own switch. Each switch applies at once.
 2. Under the search and the **List** and **Region** chips, the channels are in folding sections, such as
    **Entertainment**, each with how many are active and its own switch. Select a section to open it and switch
@@ -69,7 +69,7 @@ Live TV can also take your own channel lists and guides, by address or as a file
 
    ![Live TV's Channels, with the folding sections, each with how many channels are active and its own switch (step 2), outlined](../images/set-up-live-tv-4-channels.png)
 
-A channel you deactivate stays inactive when the lists are rebuilt.
+A channel you turn off stays inactive when the lists are rebuilt.
 
 ### Add the channels and guides in Jellyfin
 

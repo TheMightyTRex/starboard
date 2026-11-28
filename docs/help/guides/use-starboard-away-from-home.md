@@ -49,7 +49,7 @@ flowchart LR
 
 ## Step 3: Open Starboard from your phone away from home
 
-Switch your phone to mobile data, with Wi-Fi deactivated, and open Starboard's address: the home address through
+Switch your phone to mobile data, with Wi-Fi turned off, and open Starboard's address: the home address through
 the VPN, or your own address through the proxy.
 
 **It worked when** Starboard asks you to sign in.
@@ -62,7 +62,7 @@ settings: [Change or remove an app](../topics/change-or-remove-an-app.md).
 ## What next
 
 - [Sign out everywhere](../topics/sign-out-everywhere.md) if you lose a phone.
-- [Activate alerts](../topics/activate-alerts.md), so you hear about problems wherever you are.
+- [Turn on alerts](../topics/activate-alerts.md), so you hear about problems wherever you are.
 
 <!-- footer: download rights -->
 

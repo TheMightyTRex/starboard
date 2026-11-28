@@ -1,4 +1,4 @@
-"""Update Starboard from its own page (DASH-417): Update now in Settings, Updates, and, when activated, automatic
+"""Update Starboard from its own page (DASH-417): Update now in Settings, Updates, and, when turned on, automatic
 Starboard updates in quiet hours. Both run the same update.sh as a person on the server would, so the backup, the
 health check and the way back are the same.
 
@@ -220,7 +220,7 @@ def running(record, now=None, data_dir=None):
 def automatic_decision(cfg_data, now, latest, current, record):
     """What the automatic update does now: ("update", tag) or ("wait", the reason in words)."""
     if not cfg_data.get("starboard_auto_update"):
-        return "wait", "Automatic Starboard updates are deactivated"
+        return "wait", "Automatic Starboard updates are off"
     if not in_quiet_hours(cfg_data, now):
         return "wait", "Waiting for the quiet hours"
     if not latest or not RELEASE.match(latest) or not newer(latest, current):

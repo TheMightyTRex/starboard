@@ -6,7 +6,7 @@ notifications such as notifications/initialized, which it accepts with 202. No s
 stands on its own, so a restart loses nothing.
 
 Rules:
-- Off until the owner activates it in Settings, Security, API keys (mcp_enabled, never by key). While off, the
+- Off until the owner turns it on in Settings, Security, API keys (mcp_enabled, never by key). While off, the
   address answers 403 mcp_off to a working key, so nothing is shared.
 - A Starboard API key with the read right, as Authorization: Bearer (api_v1.handle checks the key, counts refused
   keys towards the lockout, writes them to the audit log and takes a token from the key's bucket before this module
@@ -266,7 +266,7 @@ def answer(h, k, msg):
 def handle(h, k, base, rate, problem):
     """One POST to /api/v1/mcp from key k, after api_v1.handle has checked the key and its rate."""
     if not h.app.config.data.get("mcp_enabled"):
-        return problem(403, "mcp_off", "AI assistants cannot connect: activate them in Settings, Security, API keys")
+        return problem(403, "mcp_off", "AI assistants cannot connect: turn them on in Settings, Security, API keys")
     origin = h.headers.get("Origin")
     if origin:
         host = h.headers.get("X-Forwarded-Host") if h.app.trust_proxy and h.headers.get("X-Forwarded-Host") else h.headers.get("Host", "")
