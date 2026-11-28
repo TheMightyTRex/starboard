@@ -650,7 +650,7 @@ catalogues besides its own.
 | `name` | The catalogue's name, up to 60 characters. Its address's host name when left out |
 | `plugins` | Required. Up to 200 are read |
 | `id` | The plug-in's `id`. An entry with a wrong id is left out |
-| `name`, `description`, `kind`, `author` | Up to 40, 240, 30 and 60 characters. `kind` groups the plug-ins, `Other` when left out |
+| `name`, `description`, `kind`, `author` | Up to 40, 240, 30 and 60 characters. `kind` groups the plug-ins, `Other` when left out. The collection's own groups are Appearance, Accessibility, Jellyfin, Downloads, Network, Home, System, Books, Photos, AI assistants and Apps you can add; write one of these exactly when it fits, as plain text in sentence case. A group with no plug-in is not shown |
 | `permissions`, `notices` | Shown before anyone opens the plug-in. Unknown ones are left out |
 | `published` | `false` shows it as **Not published**, with no way to add it |
 | `versions` | Up to 50, in any order |
