@@ -14,6 +14,9 @@ const password = fs.readFileSync(process.env.PASSWORD_FILE, "utf8").trim();
 const AXE = fs.readFileSync(process.env.AXE || "/tmp/a/node_modules/axe-core/axe.min.js", "utf8");
 const pages = (process.env.PAGES || "").split(",").filter(Boolean);
 const findings = [];
+// What failed, with the locator Playwright was waiting for (its second line), so a finding says where to look.
+const why = (e) => e.message.split("\n").map((l) => l.trim()).filter((l) => l && !/^call log:?$/i.test(l)).slice(0, 2).join(" ");
+const SENDS_ON = new Set(["login.html", "setup.html"]);
 const add = (page, area, rule, detail, count = 1) => findings.push({ page, area, rule, detail: String(detail).slice(0, 300), count });
 
 const browser = await chromium.launch();
@@ -147,7 +150,12 @@ for (const name of ALL) {
   try {
     await page.goto(`${base}/${name}`);
     await settle();
-    if (new URL(page.url()).pathname !== `/${name.split("?")[0]}`) { add(name, "page", "redirects", page.url()); continue; }
+    if (new URL(page.url()).pathname !== `/${name.split("?")[0]}`) {
+      // Signed in and set up, the sign-in and set-up pages send the visitor on to the dashboard, as they should: they are
+      // named when a change touches them (tools/changed-pages.py), and their states have their own check below (DASH-636).
+      if (!SENDS_ON.has(name)) add(name, "page", "redirects", page.url());
+      continue;
+    }
     await axe(name, "light");
     await structure(name);
     await keyboard(name);
@@ -165,7 +173,7 @@ for (const name of ALL) {
     await page.waitForTimeout(150);
     await axe(name, "high contrast");
     console.log(`checked ${name}`);
-  } catch (e) { add(name, "page", "error", e.message.split("\n")[0]); }
+  } catch (e) { add(name, "page", "error", why(e)); }
 }
 
 // Why is this here? open on Other services (DASH-557), in Light, Dark and High contrast.
@@ -187,7 +195,7 @@ if (!pages.length || pages.some((p) => p.includes("apps-services"))) {
     await axe(name, "high contrast");
     await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
     console.log("checked Why is this here?");
-  } catch (e) { add("apps-services.html, Why is this here?", "page", "error", e.message.split("\n")[0]); }
+  } catch (e) { add("apps-services.html, Why is this here?", "page", "error", why(e)); }
 }
 
 // Catalogue sources with the Stallboard tick on, and the Stallboard tab it adds (DASH-563), in Light, Dark and High contrast.
@@ -217,7 +225,7 @@ if (!pages.length || pages.some((p) => p.includes("settings-plugins-catalogue"))
     await scan("settings-plugins-catalogue.html, the Stallboard tab");
     await page.evaluate(() => api("/api/plugins/catalogues", { method: "POST", body: { action: "builtin", id: "stallboard", on: false } }));
     console.log("checked the Stallboard catalogue");
-  } catch (e) { add("settings-plugins-catalogue.html, Stallboard", "page", "error", e.message.split("\n")[0]); }
+  } catch (e) { add("settings-plugins-catalogue.html, Stallboard", "page", "error", why(e)); }
 }
 
 // A custom card (DASH-555): its panel with the chosen fields and the fields to choose from, and the dashboard with the card
@@ -244,7 +252,7 @@ if (!pages.length || pages.some((p) => p.includes("apps-services"))) {
     await axe(name, "high contrast");
     await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
     console.log("checked the custom card panel");
-  } catch (e) { add("apps-services.html, custom card", "page", "error", e.message.split("\n")[0]); }
+  } catch (e) { add("apps-services.html, custom card", "page", "error", why(e)); }
 }
 if (!pages.length || pages.some((p) => p.includes("dashboard"))) {
   try {
@@ -269,7 +277,7 @@ if (!pages.length || pages.some((p) => p.includes("dashboard"))) {
     await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
     await page.evaluate(async () => { await api("/api/config/general", { method: "PUT", body: { dashboard: { layout: "glance", cards: null } } }); });
     console.log("checked the custom card on the dashboard");
-  } catch (e) { add("dashboard.html, custom card", "page", "error", e.message.split("\n")[0]); }
+  } catch (e) { add("dashboard.html, custom card", "page", "error", why(e)); }
 }
 
 // The media server plug-in (DASH-565): Jellyfin's own plug-in page, with its Media server card and the state chip with its
@@ -296,7 +304,7 @@ if (!pages.length || pages.some((p) => p.includes("settings-plugin"))) {
     await page.waitForTimeout(300);
     await scan("settings-plugins-catalogue.html, the Media servers tab");
     console.log("checked the media server plug-in");
-  } catch (e) { add("settings-plugin.html, Jellyfin as the media server", "page", "error", e.message.split("\n")[0]); }
+  } catch (e) { add("settings-plugin.html, Jellyfin as the media server", "page", "error", why(e)); }
 }
 
 // Alerts, The server itself (DASH-556): the host alerts' switches, limits and times, with More settings on, in Light, Dark and High contrast.
@@ -322,7 +330,7 @@ if (!pages.length || pages.includes("settings-general-alerts.html")) {
     await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
     await page.evaluate(() => api("/api/config/general", { method: "PUT", body: { settings_advanced: false } }));
     console.log("checked the host alerts");
-  } catch (e) { add(name, "page", "error", e.message.split("\n")[0]); }
+  } catch (e) { add(name, "page", "error", why(e)); }
 }
 
 // Search with its results and More filters open (DASH-301): the filters only show once something is searched for.
@@ -345,7 +353,7 @@ if (!pages.length || pages.includes("search.html")) {
     await axe(name, "high contrast");
     await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
     console.log(`checked ${name}`);
-  } catch (e) { add(name, "page", "error", e.message.split("\n")[0]); }
+  } catch (e) { add(name, "page", "error", why(e)); }
 }
 
 // A plug-in update (plug-in API 1.14, DASH-424): the warning with What is new and how it is kept safe, then the
@@ -381,7 +389,7 @@ if (!pages.length || pages.some((p) => p.includes("picture-shrinker"))) {
     await settle();
     await scan("settings-plugin.html?id=picture-shrinker, What is new after the update");
     console.log("checked the plug-in update");
-  } catch (e) { add("settings-plugin.html?id=picture-shrinker, Update", "page", "error", e.message.split("\n")[0]); }
+  } catch (e) { add("settings-plugin.html?id=picture-shrinker, Update", "page", "error", why(e)); }
 }
 
 // Check for updates and What is new (DASH-462): Ready to update after a check, and the What is new slide-out with
@@ -416,7 +424,7 @@ if (!pages.length || pages.some((p) => p.includes("settings-updates"))) {
     await page.waitForTimeout(300);
     await scan("settings-updates.html, About");
     console.log("checked Check for updates, What is new and About");
-  } catch (e) { add("settings-updates.html, What is new", "page", "error", e.message.split("\n")[0]); }
+  } catch (e) { add("settings-updates.html, What is new", "page", "error", why(e)); }
 }
 
 // A download that needs attention (DASH-496): its slide-out with what is wrong, the actions and the folder, and the
@@ -447,7 +455,7 @@ if (!pages.length || pages.some((p) => p.startsWith("downloads.html"))) {
     await page.keyboard.press("Escape");
     await page.keyboard.press("Escape");
     console.log("checked a download that needs attention");
-  } catch (e) { add("downloads.html, a download that needs attention", "page", "error", e.message.split("\n")[0]); }
+  } catch (e) { add("downloads.html, a download that needs attention", "page", "error", why(e)); }
 }
 
 // Restart where it is needed (DASH-470): Restart Jellyfin on System, Overview, Settings, Updates and Settings, Apps,
@@ -480,7 +488,7 @@ if (!pages.length || pages.some((p) => p.includes("settings-updates-plugins") ||
     await scanP("settings-plugins.html, What is new in a plug-in");
     await page.keyboard.press("Escape");
     console.log("checked the plug-in update list");
-  } catch (e) { add("settings-updates-plugins.html", "page", "error", e.message.split("\n")[0]); }
+  } catch (e) { add("settings-updates-plugins.html", "page", "error", why(e)); }
 }
 
 if (!pages.length || pages.some((p) => /^system\.html|settings-updates|settings-jellyfin/.test(p))) {
@@ -525,7 +533,7 @@ if (!pages.length || pages.some((p) => /^system\.html|settings-updates|settings-
     await settle();
     await scan("settings-jellyfin.html, Restart Jellyfin");
     console.log("checked Restart where it is needed");
-  } catch (e) { add("Restart where it is needed", "page", "error", e.message.split("\n")[0]); }
+  } catch (e) { add("Restart where it is needed", "page", "error", why(e)); }
   await page.unroute(/\/api\/jellyfin(\?fresh=1)?$/, overview);
   await page.unroute(/\/api\/updates\/jellyfin$/, updates);
   await page.unroute(/\/api\/jellyfin\/plugins$/, plugins);
@@ -569,7 +577,7 @@ if (!pages.length || pages.some((p) => p.includes("install-apps") || p.includes(
     await themes("settings-downloads.html, Remove the VPN warning");
     await page.keyboard.press("Escape");
     console.log("checked the no-VPN warning");
-  } catch (e) { add("install-apps.html / settings-downloads.html, no-VPN warning", "page", "error", e.message.split("\n")[0]); }
+  } catch (e) { add("install-apps.html / settings-downloads.html, no-VPN warning", "page", "error", why(e)); }
 }
 
 // Connect a cloud service (DASH-452): each step of the wizard, both ways to sign in, and Test connection's result,
@@ -630,7 +638,7 @@ if (!pages.length || pages.some((p) => p.includes("settings-general-backup"))) {
     await themes("Connect a cloud service, Nextcloud details");
     await page.keyboard.press("Escape");
     console.log("checked Where backups go and Connect a cloud service");
-  } catch (e) { add("settings-general-backup.html, Where backups go", "page", "error", e.message.split("\n")[0]); }
+  } catch (e) { add("settings-general-backup.html, Where backups go", "page", "error", why(e)); }
   // Full backups with Checked and Restore, the restore dialog (also with an error under a field), the restore while
   // it runs and when it ends (DASH-381, DASH-387); Reelix's backup settings and the folder choice (DASH-385, DASH-386).
   // The example server restores and moves nothing.
@@ -674,7 +682,7 @@ if (!pages.length || pages.some((p) => p.includes("settings-general-backup"))) {
       await api("/api/reelix/admin/system/backup-settings", { method: "POST", body: { password: "made-up", every: 7, keep: 5 } });
     });
     console.log("checked full backups and Reelix's backups");
-  } catch (e) { add("settings-general-backup.html, full backups and Reelix's backups", "page", "error", e.message.split("\n")[0]); }
+  } catch (e) { add("settings-general-backup.html, full backups and Reelix's backups", "page", "error", why(e)); }
 }
 
 // DASH-512: the sign-in page in each state it can be in: the two-step code after the password, a single sign-on button
@@ -728,7 +736,7 @@ try {
   await call("/api/security/oidc/enable", { password, enabled: false });  // also allows the password again
   await anon.context().close();
   console.log("checked the sign-in page's states");
-} catch (e) { add("login.html, its states", "page", "error", e.message.split("\n")[0]); }
+} catch (e) { add("login.html, its states", "page", "error", why(e)); }
 
 // Slide-out and dialog behaviour (once; every page uses the same code): Display, then a confirm dialog.
 await page.goto(`${base}/settings-general.html`);
@@ -791,7 +799,7 @@ if (!pages.length || pages.some((p) => p.includes("settings.html"))) {
     await page.waitForTimeout(150);
     await axe(name, "high contrast");
     await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
-  } catch (e) { add("settings.html, Sign in with Plex", "page", "error", e.message.split("\n")[0]); }
+  } catch (e) { add("settings.html, Sign in with Plex", "page", "error", why(e)); }
 }
 
 await browser.close();

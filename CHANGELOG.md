@@ -7,8 +7,11 @@ add features.
 
 ## [Unreleased]
 
-### Added
 - **A group for AI assistants in the Catalogue (DASH-626):** Plug-ins of this kind have their own heading before Apps you can add. They let you ask an assistant about your server, or let an AI tool manage Starboard, with your own model or key. No plug-in is in it yet, so the heading stays hidden until the first one is listed. The plug-in reference names the groups to choose from.
+
+### Fixed
+- **The pull request accessibility check no longer fails pull requests that did nothing wrong (DASH-636):** it named the sign-in and set-up pages as findings because the example server sends a signed-in visitor on to the dashboard, which is right; and it could not open the full backups panel because the check's computer did not have the library that encrypts backups, so any pull request that touched that page failed. The check now installs the library the image has, leaves the redirect out, and says what a failed page waited for. A new problem still fails it; findings already on main still do not.
+
 
 ## [0.40.0] (28 November 2026)
 
