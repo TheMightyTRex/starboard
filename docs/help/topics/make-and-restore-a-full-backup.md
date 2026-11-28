@@ -63,6 +63,8 @@ System, Overview has a **Backups** panel. It says when the newest full backup wa
 full backups by themselves are set up or late, and whether the other places hold the newest one. Select **Check and
 restore backups** to open the backup page, where each full backup says **Checked** and has **Restore** beside it.
 
+![System, Overview with the Backups panel outlined: the newest full backup, that it was read back, and the places that hold it](../images/make-and-restore-a-full-backup-7-system.png)
+
 ## Things to note
 
 - Nothing changes until both passwords are right and the whole backup file has been read. A damaged or cut-off
@@ -82,6 +84,10 @@ restore backups** to open the backup page, where each full backup says **Checked
   and **Save it as a file**. Tick that you have stored it, enter your Starboard password and select **Keep it**. Starboard
   keeps a key made from the password, never the password. Starboard cannot show the password again: store it in a
   password manager. Then choose Monthly, Weekly or Nightly.
+
+  ![Settings, General, Backup/Logs with the notice Full backups by themselves are not set up, and Set up full backups outlined](../images/make-and-restore-a-full-backup-5-not-set-up.png)
+
+  ![The dialog for the backup password, with a made-up suggested password shown once and Copy it beside it, outlined](../images/make-and-restore-a-full-backup-6-password.png)
 - A backup that does not read back is not kept, and Starboard says **The full backup did not finish**. Older
   backups stay. Make it again; if it happens again, check the disk the folder is on.
 - **Checked** is said for backups made from this version on. An older backup without it is not wrong: it was made
