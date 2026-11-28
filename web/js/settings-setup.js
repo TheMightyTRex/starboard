@@ -633,6 +633,11 @@ async function startGuide() {
   // when no key is missing), and counting on by one would skip the next step (VM test).
   const after = (id, at) => {
     const list = build();
+    if (wizardReturn.to && id !== wizardReturn.to) {  // Change on Check your answers: back to the answers, not on through the steps
+      const to = list.findIndex((x) => x.id === wizardReturn.to);
+      wizardReturn.to = "";
+      if (to >= 0) return go(to);
+    }
     const here = list.findIndex((x) => x.id === id);
     return go(here >= 0 ? here + 1 : at);
   };

@@ -290,10 +290,35 @@ function stepNamed(table, id) {
   return { title: x.title || id, question: x.question || "", help: x.help || "" };
 }
 
+// The shared wizard's rules (docs/WIZARD.md, 28 November 2026, after GOV.UK's question pages): the browser's Back button goes
+// step to step, in the state last seen (each step is a history entry); a question that can be skipped says "(optional)"; and
+// Change on Check your answers goes to that step and then back to the answers (wizardReturn.to is the step to come back to).
+// Back stays in the foot and the progress is always shown: owner decisions of 28 November 2026.
+const wizardReturn = { to: "" };
+const wizardTrail = { stack: [], pop: false, back: null, key: "", index: -1, bound: false };
+function wizardHistory(index, onBack) {
+  const key = location.pathname;
+  const t = wizardTrail;
+  t.back = onBack;
+  t.index = index;
+  try {
+    if (t.pop) { t.pop = false; history.replaceState({ wiz: key, i: index }, ""); }
+    else if (history.state?.wiz !== key) { t.stack = [index]; history.replaceState({ wiz: key, i: index }, ""); }
+    else if (history.state.i !== index) { t.stack.push(index); history.pushState({ wiz: key, i: index }, ""); }
+  } catch { /* no history here: the buttons in the page still work */ }
+  if (!t.bound) {
+    t.bound = true;
+    window.addEventListener("popstate", (e) => {
+      if (e.state?.wiz === location.pathname && e.state.i < t.index && t.back) { t.stack.pop(); t.pop = true; wizardReturn.to = ""; t.back(); }
+    });
+  }
+}
+
 // continuePlain: the step's own main action in its body is the one primary in view (DASH-309, R9), so the foot's
 // button is plain, as on Install apps' last step.
 function wizardFrame({ root, steps, index, onBack, onSkip, onContinue, continueText = "Continue", busy = false, continuePlain = false }) {
   const step = steps[index];
+  wizardHistory(index, onBack);
   const list = el("ol", { class: "steps steps--collapse", "aria-label": "Steps" }, steps.map((st, i) => el("li", {
     "data-done": i < index ? "" : null, "aria-current": i === index ? "step" : null }, st.title,
     i < index ? el("span", { class: "visually-hidden", text: ", done" }) : i === index ? el("span", { class: "visually-hidden", text: ", current step" }) : null)));
@@ -302,11 +327,20 @@ function wizardFrame({ root, steps, index, onBack, onSkip, onContinue, continueT
   const sub = step.group ? el("ol", { class: "steps steps--sub", "aria-label": `${step.groupTitle}, in ${step.parts.length} parts` }, step.parts.map((name, i) => el("li", {
     "data-done": i < step.part ? "" : null, "aria-current": i === step.part ? "step" : null }, name,
     i < step.part ? el("span", { class: "visually-hidden", text: ", done" }) : i === step.part ? el("span", { class: "visually-hidden", text: ", current part" }) : null))) : null;
-  const cont = el("button", { type: "button", class: continuePlain ? "btn" : "btn btn--primary", disabled: busy, onclick: onContinue }, continueText);
+  // Change on Check your answers came here: Continue goes back to the answers, and says so.
+  const returning = wizardReturn.to && step.id !== wizardReturn.to;
+  const cont = el("button", { type: "button", class: continuePlain ? "btn" : "btn btn--primary", disabled: busy, onclick: onContinue }, returning ? "Check your answers" : continueText);
+  const t = wizardTrail;
+  const goBack = () => {
+    wizardReturn.to = "";
+    // The step before is the history entry before this one: the browser's Back does it, so the history stays in step.
+    if (t.stack.length > 1 && t.stack[t.stack.length - 2] === index - 1 && history.state?.wiz === location.pathname) history.back();
+    else onBack();
+  };
   const foot = el("div", { class: "wizard__foot" }, cont,
-    index > 0 ? el("button", { type: "button", class: "btn", onclick: onBack }, "Back") : null,
-    step.skippable === false ? null : el("button", { type: "button", class: "btn btn--quiet", onclick: onSkip }, "Skip this step"));
-  const heading = el("h2", { id: "wiz-h", tabindex: "-1", text: step.question });
+    index > 0 ? el("button", { type: "button", class: "btn", onclick: goBack }, "Back") : null,
+    step.skippable === false || returning ? null : el("button", { type: "button", class: "btn btn--quiet", onclick: onSkip }, "Skip this step"));
+  const heading = el("h2", { id: "wiz-h", tabindex: "-1", text: step.question }, step.skippable === false ? null : el("span", { class: "muted", text: " (optional)" }));
   root.replaceChildren(list, short, ...(sub ? [sub] : []), el("section", { class: "panel", "aria-labelledby": "wiz-h" },
     el("div", { class: "stack-1" }, heading, step.intro ? el("p", { class: "muted", text: step.intro }) : null),
     ...step.nodes.filter((n) => !n?.classList?.contains("help-links")), stepHelp(step), foot));

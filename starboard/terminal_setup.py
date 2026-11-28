@@ -501,6 +501,15 @@ class Problem(Exception):
     """Starboard said no: the message is Starboard's own, for the person."""
 
 
+class Change(Exception):
+    """A number entered on Check your answers (docs/WIZARD.md section 10, TERMINAL.md section 4): ask that step again, then come
+    back to the answers, not on through every step in between."""
+
+    def __init__(self, step_function):
+        super().__init__(step_function.__name__)
+        self.step_function = step_function
+
+
 class GoTo(Exception):
     """Starboard refused an answer from an earlier step: ask that step again."""
 
@@ -1010,6 +1019,8 @@ class Terminal:
         """An answer the app refuses, said on the line under the question. Refused again with the same words, the
         last message and the question under it are taken back first, so the step never fills with the same two
         lines (TERMINAL.md, Questions)."""
+        if not text.startswith("There is a problem"):
+            text = f"There is a problem. {text}"  # the terminal's error summary: the same words as the browser's (WIZARD.md, section 11)
         if self.fancy and self.drawn and len(self.screen) >= 2 and self.screen[-2] == getattr(self, "refused", None):
             self._write("\033[1A\033[2K" * 2 + "\r")
             del self.screen[-2:]
@@ -3009,17 +3020,19 @@ def step_check(api, term, state, wait=2.0):
         choice.pop("vpn", None)
     head(term, state, "check")
     names = state.get("names") or choice["apps"]
-    rows = [("Install", ", ".join(names)), ("Media folder", choice["data_dir"]), ("Settings folder", choice["config_dir"])]
+    # Each answer with the step that asked it, so a number on Check your answers can change it (docs/WIZARD.md section 10)
+    asked = [("Install", ", ".join(names), step_apps), ("Media folder", choice["data_dir"], step_storage), ("Settings folder", choice["config_dir"], step_storage)]
     if "reelix" in choice["apps"] and choice.get("reelix_edition") == "full":
-        rows.append(("Reelix", "With YouTube and Spotify downloads"))
+        asked.append(("Reelix", "With YouTube and Spotify downloads", step_apps))
     if "reelix" in choice["apps"]:
         from . import reelix_sites
-        rows.append(("Sites to search", reelix_sites.describe(choice.get("sites") or {})))
+        asked.append(("Sites to search", reelix_sites.describe(choice.get("sites") or {}), step_sites))
     if choice.get("vpn"):
-        rows.append(("VPN", f"{ {v[0]: v[1] for v in VPNS}.get(choice['vpn']['provider'], choice['vpn']['provider'])}, "
-                            f"{'WireGuard' if choice['vpn']['type'] == 'wireguard' else 'OpenVPN'}"))
+        asked.append(("VPN", f"{ {v[0]: v[1] for v in VPNS}.get(choice['vpn']['provider'], choice['vpn']['provider'])}, "
+                             f"{'WireGuard' if choice['vpn']['type'] == 'wireguard' else 'OpenVPN'}", step_vpn))
     elif state.get("no_vpn"):
-        rows.append(("VPN", "None: downloads use your home internet address"))
+        asked.append(("VPN", "None: downloads use your home internet address", step_vpn))
+    rows = [(label, value) for label, value, _ in asked]
     if state.get("written"):
         term.stop_back()
         term.card("Written already", rows)
@@ -3031,15 +3044,21 @@ def step_check(api, term, state, wait=2.0):
         preview = api.call("POST", "/api/stack/preview", choice)
     except Problem as e:
         raise GoTo(STEP_FUNCTIONS.index(preview_step(str(e))), str(e)) from e
-    term.card("What will change", rows)
+    term.card("Check your answers", [(f"{n}. {label}", value) for n, (label, value) in enumerate(rows, 1)])
     for line in preview.get("moved", []):
         term.warn(line)
     term.say("")
-    term.note("Nothing has changed yet. Type b to go back and change an answer.")
+    term.note("Nothing has changed yet. Enter a number to change that answer, or type b to go back.")
     while True:
-        if not term.yes_no("Write the apps' files now?", True, help_key="check"):
+        said = term.text(f"Press Enter to write the apps' files, or enter a number from 1 to {len(rows)} to change that answer", help_key="check").strip().lower()
+        if said.isdigit() and 1 <= int(said) <= len(rows):
+            raise Change(asked[int(said) - 1][2])
+        if said in ("n", "no"):
             term.note("Nothing written.")
             return True
+        if said not in ("", "y", "yes"):
+            term.refuse(f"Enter a number from 1 to {len(rows)}, or press Enter to write the files.")
+            continue
         try:
             written = api.call("POST", "/api/stack/write", {**choice, "password": state.get("password", ""), "from": "terminal"})
             break
@@ -3929,9 +3948,21 @@ def run(api, term, data_dir, port, address=""):
                     shown.append(i)
                 if state.get("written") and not written:
                     floor = len(shown) - 1 if shown and shown[-1] == i else len(shown)
-                i += 1
+                back_to = state.get("return_to")
+                if back_to and i == back_to[0]:  # the changed answer is saved: back to Check your answers, not on through the steps
+                    state.pop("return_to")
+                    i = back_to[1]
+                else:
+                    i += 1
                 term.came_back = False
+            except Change as e:
+                at = STEP_FUNCTIONS.index(e.step_function)
+                state["return_to"] = (at, i)
+                while shown and shown[-1] >= at:
+                    shown.pop()
+                i = at
             except Back:
+                state.pop("return_to", None)
                 i = shown.pop() if shown else 0
                 term.came_back = True
             except GoTo as e:

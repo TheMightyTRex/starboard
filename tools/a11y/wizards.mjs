@@ -209,4 +209,62 @@ await page.keyboard.press("Enter");
 const err = await focusOn((e) => e?.id === "code");
 check("T-LOGIN2", "Enter with no code keeps focus on the code field", err.id === "code", JSON.stringify(err));
 
+// T-PAGEWIZ A plug-in's page made of the shared wizard (plug-in API 1.25, the example plug-in Page parts example): Continue, the
+// preview beside the step, Play preview (only when pressed), Skip, Check your answers, Change that comes back to the answers, the
+// browser's Back button, and the confirm button that names its action. All by keyboard.
+await open("settings-plugin.html?id=page-parts");
+await page.getByRole("tab", { name: /Set up the breaks/ }).focus();
+await page.keyboard.press("Enter");
+await page.waitForSelector(".wizard[data-wizard] .wizard__q", { timeout: 10000 }).catch(() => {});
+const wiz = ".wizard[data-wizard]";
+await page.evaluate((w) => document.querySelector(`${w} .wizard__step:not([hidden]) .wizard__q`)?.focus(), wiz);
+await tabOrder("T-PAGEWIZ", "Page parts wizard, first step", "[data-preview-scope]", { start: `${wiz} .wizard__step:not([hidden]) .wizard__q` });
+await scan("T-PAGEWIZ", "Page parts wizard, first step");
+const goOn = async (n = 1) => { for (let i = 0; i < n; i++) { await tabTo((f) => f.tag === "BUTTON" && /^(Continue|Check your answers)$/.test(f.text), 60); await page.keyboard.press("Enter"); await settle(); } };
+await goOn(2);
+check("T-PAGEWIZ", "Continue moves focus to the next question", (await focusOn((e) => !!e?.classList.contains("wizard__q"))).lost === false, "");
+check("T-PAGEWIZ", "nothing plays before Play preview is pressed", (await page.locator(`${wiz} audio, ${wiz} video`).count()) === 0, "");
+await page.evaluate((w) => document.querySelector(`${w} [data-preview-src]`)?.focus(), wiz);
+await page.keyboard.press("Space");
+await page.waitForSelector(`${wiz} audio`, { timeout: 4000 }).catch(() => {});
+check("T-PAGEWIZ", "Space on Play preview puts a player in the card", (await page.locator(`${wiz} audio`).count()) === 1, "");
+check("T-PAGEWIZ", "Play preview is named with the file", /Stop preview of Station title/.test(await page.locator(`${wiz} [data-preview-src]`).first().textContent()), "");
+await scan("T-PAGEWIZ", "Page parts wizard, clips");
+await tabTo((f) => f.tag === "BUTTON" && /^Skip this step$/.test(f.text), 60);
+await page.keyboard.press("Enter"); await settle();
+await goOn(1);
+check("T-PAGEWIZ", "Check your answers is reached", await page.locator(`${wiz} .wizard__check`).isVisible(), "");
+await scan("T-PAGEWIZ", "Page parts wizard, Check your answers");
+await tabTo((f) => f.tag === "A" && /^Change Style/.test(f.text), 60);
+await page.keyboard.press("Enter"); await settle();
+check("T-PAGEWIZ", "Change returns to that step", (await page.locator(`${wiz} .wizard__step:not([hidden])`).getAttribute("data-step")) === "style", "");
+await goOn(1);
+check("T-PAGEWIZ", "and then to Check your answers", await page.locator(`${wiz} .wizard__check`).isVisible(), "");
+await page.goBack(); await settle();
+check("T-PAGEWIZ", "the browser's Back button goes to the step before", !(await page.locator(`${wiz} .wizard__check`).isVisible()), "");
+
+// T-PAGESENT A sentence with selects: a change by keyboard is saved at once, said in plain words, and focus stays on the select.
+await open("settings-plugin.html?id=page-parts");
+await page.getByRole("tab", { name: /In a sentence/ }).focus();
+await page.keyboard.press("Enter");
+await page.waitForSelector(".sentence select", { timeout: 10000 }).catch(() => {});
+await scan("T-PAGESENT", "Page parts sentence");
+await page.locator(".sentence select[aria-label=Clips]").focus();
+await page.keyboard.press("ArrowDown");
+await page.waitForFunction(() => /clips/.test(document.querySelector("[data-readback]")?.textContent || ""), null, { timeout: 4000 }).catch(() => {});
+check("T-PAGESENT", "the sentence is read back in plain words", /clips/.test(await page.locator("[data-readback]").innerText()), "");
+check("T-PAGESENT", "focus stays on the select that changed", (await focus()).text === "Clips", "");
+
+// T-PAGEMORE Show more settings: the switch shows and hides the rows by keyboard, focus stays on it.
+await open("settings-plugin.html?id=page-parts");
+await page.getByRole("tab", { name: /Clips and music/ }).focus();
+await page.keyboard.press("Enter");
+await page.waitForSelector("[data-more-switch]", { timeout: 10000 }).catch(() => {});
+await scan("T-PAGEMORE", "Page parts, clips and music");
+await page.locator("[data-more-switch]").focus();
+check("T-PAGEMORE", "the extra rows are hidden at first", (await page.locator("[data-more]:visible").count()) === 0, "");
+await page.keyboard.press("Space");
+check("T-PAGEMORE", "Space on Show more settings shows them", (await page.locator("[data-more]:visible").count()) > 0, "");
+check("T-PAGEMORE", "focus stays on the switch", (await focus()).role === "switch", "");
+
 await finish();

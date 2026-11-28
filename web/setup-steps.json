@@ -135,8 +135,8 @@
   },
   {
    "id": "check",
-   "title": "Check",
-   "question": "Check everything before it is written",
+   "title": "Check your answers",
+   "question": "Check your answers",
    "help": "topics/install-apps.md"
   },
   {

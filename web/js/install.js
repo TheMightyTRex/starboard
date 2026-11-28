@@ -170,6 +170,7 @@ async function startInstall() {
         try {
           if (await save()) {
             if (step.id === "start") location.href = finishTo;
+            else if (wizardReturn.to && step.id !== wizardReturn.to) { const to = wizardReturn.to; wizardReturn.to = ""; go(to); }  // Change on Check your answers
             else { const next = build(); go(next[next.findIndex((s) => s.id === step.id) + 1].id); }
           }
         } catch (err) { problem(err.message); }
@@ -759,7 +760,7 @@ async function installStep(id, state, data, apps, go) {
     let p;
     try { p = await api("/api/stack/preview", { method: "POST", body: body(state) }); }
     catch (e) { return { nodes: [notice("danger", "Something needs changing", e.message)], save: async () => false }; }
-    const change = (step, what) => el("button", { type: "button", class: "btn btn--quiet", onclick: () => go(step) }, "Change",
+    const change = (step, what) => el("button", { type: "button", class: "btn btn--quiet", onclick: () => { wizardReturn.to = "review"; go(step); } }, "Change",
       el("span", { class: "visually-hidden", text: ` ${what}` }));
     // A row for each answer, with Change to go back to that step (DASH-309, R7: things with an action are rows,
     // not a table): what in the title, your answer under it, Change at the side.
