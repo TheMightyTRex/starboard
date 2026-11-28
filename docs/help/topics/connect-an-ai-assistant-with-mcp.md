@@ -3,6 +3,9 @@
 
 # Let an AI assistant answer questions about your server
 
+There is a quicker way: the wizard in Settings, Security, Connect an AI tool makes the key and gives you the steps to paste. Read
+[Connect an AI tool to Starboard](connect-an-ai-tool.md). These are the steps by hand.
+
 An AI assistant that speaks MCP, the Model Context Protocol, can ask Starboard about your media server for you: "Is
 the new series downloading?", "Which apps have a problem?", "How much space is left?". It reads only, with a key you
 make for it, and only once you activate **Let AI assistants connect**. It cannot change anything.

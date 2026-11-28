@@ -253,3 +253,48 @@ class AiToolsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AiToolsPageTest(unittest.TestCase):
+    """The page's files fit together: the page, its script, the parts it loads, the menu, the help and the words."""
+    ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    def read(self, *path):
+        with open(os.path.join(self.ROOT, *path), encoding="utf-8") as f:
+            return f.read()
+
+    def test_the_page_is_in_the_security_menu_and_has_its_help(self):
+        from starboard import shell
+        self.assertEqual(shell.PAGES["settings-security-ai.html"][0], shell.PAGES["settings-security-keys.html"][0])
+        self.assertIn("settings-security-ai.html", shell.HELP)
+        self.assertTrue(os.path.exists(os.path.join(self.ROOT, "docs", "help", shell.HELP["settings-security-ai.html"][0])))
+
+    def test_the_page_loads_what_it_uses(self):
+        html = self.read("web", "settings-security-ai.html")
+        parts = json.loads(self.read("web", "parts-used.json"))["use"]
+        for part in ("error-summary", "secret-field", "wizard-steps"):
+            self.assertIn(part, parts)
+            self.assertIn(f"/js/parts/{part}.js", html)
+            self.assertTrue(os.path.exists(os.path.join(self.ROOT, "web", "js", "parts", f"{part}.js")), part)
+        self.assertIn('id="ai-tools"', html)
+        self.assertIn('["#ai-tools", "startAiTools"]', self.read("web", "js", "settings-core.js"))
+
+    def test_the_wizard_is_the_shared_one_and_makes_no_wizard_of_its_own(self):
+        js = self.read("web", "js", "settings-ai.js")
+        self.assertIn('"data-wizard": "connect-ai-tool"', js)
+        self.assertNotIn("wizardFrame", js)
+        for act in ("next", "back", "skip", "finish"):
+            self.assertIn(f'"data-wizard-act": "{act}"', js)
+        self.assertEqual(js.count("wizard__check"), 1)
+
+    def test_nothing_polls_and_the_key_is_not_kept(self):
+        js = self.read("web", "js", "settings-ai.js")
+        for bad in ("setInterval", "localStorage", "sessionStorage", "document.cookie"):
+            self.assertNotIn(bad, js)
+        self.assertNotRegex(js, r"setTimeout\([^)]*\b(r\.key|key)\b")
+
+    def test_the_words_the_server_gives_follow_the_content_rules(self):
+        blob = json.dumps([ai_tools.SCOPE_WORDS, ai_tools.ALWAYS_CANNOT, ai_tools.ENDS, [{k: v for k, v in c.items() if k != "snippets"} for c in ai_tools.CLIENTS], ai_tools.TAILSCALE])  # code in a snippet is not prose
+        for bad in (r"\bsee\b", r"\blook", r"\bclick", r"\btap\b", r"\benable", r"\bdisable", r"activat", r"\babove\b", r"\bbelow\b", r"\bplease\b",
+                    r"\bjust\b", r"\beasy\b", r"\bsimple\b", r"—", r"\b(can't|won't|don't|doesn't|isn't|it's|you're|let's)\b"):
+            self.assertIsNone(re.search(bad, blob, re.I), bad)

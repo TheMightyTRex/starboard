@@ -10,3 +10,5 @@ docs/help/topics/prepare-a-raspberry-pi.md	\*\*Enable SSH\*\*	Raspberry Pi Image
 docs/help/topics/start-on-debian.md	please insert the disc labeled	Debian's own message, quoted exactly
 docs/help/topics/find-an-api-key.md	Emby \| \*\*Dashboard\*\*, then \*\*Advanced\*\*	Emby's own menu name, quoted as the label; not a difficulty word
 web/js/settings-apps.js	Dashboard, Advanced, API Keys	Emby's own menu name, quoted as the label; not a difficulty word
+web/js/settings-ai.js	[Tt]urn(ed)? o(n|ff)	Owner rule (28 November 2026, DASH-620/624): turn on and turn off, not activate. This checker still has the old rule; the wording change updates it
+docs/help/topics/connect-an-ai-tool.md	[Tt]urn o(n|ff)	Owner rule (28 November 2026, DASH-620/624): turn on and turn off, not activate. This checker still has the old rule; the wording change updates it
