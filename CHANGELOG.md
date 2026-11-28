@@ -10,6 +10,12 @@ add features.
 - **Plug-ins can fetch from named sites (DASH-620, plug-in API 1.25, Starboard API 1.13.0):** a plug-in with the new `fetch` permission lists up to 12 sites. It keeps a network with no way out and asks Starboard to fetch, with `POST /api/v1/plugin/fetch`. Starboard refuses other sites, addresses on your computer or home network, and redirects to other sites. It limits size to 25 MB and time to 30 seconds, and runs one fetch at a time.
 - **What a plug-in fetched (DASH-620):** the plug-in's page lists each fetch under **What it fetched**: when, site, what for and size. It never shows a key or an answer.
 - **Hand-off folders (DASH-620):** the permissions `handoff:send` and `handoff:receive` give two plug-ins one shared folder, such as for a TV channel pack. Nothing runs while no plug-in asks.
+- **A group for AI assistants in the Catalogue (DASH-626):** Plug-ins of this kind have their own heading before Apps you can add. They let you ask an assistant about your server, or let an AI tool manage Starboard, with your own model or key. No plug-in is in it yet, so the heading stays hidden until the first one is listed. The plug-in reference names the groups to choose from.
+
+### Fixed
+- **The pull request accessibility check no longer fails pull requests that did nothing wrong (DASH-636):** it named the sign-in and set-up pages as findings because the example server sends a signed-in visitor on to the dashboard, which is right; and it could not open the full backups panel because the check's computer did not have the library that encrypts backups, so any pull request that touched that page failed. The check now installs the library the image has, leaves the redirect out, and says what a failed page waited for. A new problem still fails it; findings already on main still do not.
+
+
 ## [0.40.0] (28 November 2026)
 
 ### Added
@@ -96,6 +102,8 @@ add features.
 - **Four hand-run test scripts.** The scripts that tried Bring in on shares, copies off this computer, connecting a cloud service and a full restore by hand, on made-up data, are gone from the tools folder. The tests that run with every change stay, and the scripts stay in the history. The help and the app do not change.
 
 ### Fixed
+- **The cards in Add a place are all the same size.** Under Where backups go, each kind of place now has the same height as the others, however long its words are.
+- **Signing in to OneDrive no longer says the address has no sign-in code.** The code Microsoft sends back contains the characters ! and *, which Starboard refused. It now accepts them, and still refuses spaces, quotes, angle brackets, backslashes and anything that could end the value early.
 - **The TV, Music and Radio pages no longer scroll sideways at large text.** A card now shrinks to its column and wraps its status and details, so a wide chip cannot push the page wider than the window.
 - **Creating your first password works again.** The first password page never wired its form from version 0.28.0, so Create did a plain page reload and saved nothing. It now checks the set-up code, the name and the password, and says what is wrong beside the field. The new keyboard task for the first password found it.
 - **Two labels now hold the words you see.** Voice control users say what they read. The API key fields in the set-up guide are now named with the app and then API key, as shown. Each Everything in it is choice in Bring in media now begins with those words.

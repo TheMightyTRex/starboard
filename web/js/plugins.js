@@ -1794,7 +1794,7 @@ async function startCatalogue() {
     catch (e) { holder.replaceChildren(notice("danger", "Could not load the catalogue", e.message)); return; }
     holder.removeAttribute("aria-busy");
     $("#catalogue-check")?.replaceChildren(catalogueCheck({ read: c.read, onDone: draw, id: "pl-check-now" }));
-    const ORDER = ["Appearance", "Look", "Accessibility", "Jellyfin", "Downloads", "Network", "Home", "System", "Apps you can add"];
+    const ORDER = ["Appearance", "Look", "Accessibility", "Jellyfin", "Downloads", "Network", "Home", "System", "AI assistants", "Apps you can add"];
     const rank = (k) => (ORDER.includes(k) ? ORDER.indexOf(k) : ORDER.length);
     const byKind = (list) => {
       const kinds = new Map();
