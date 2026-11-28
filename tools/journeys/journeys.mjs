@@ -2572,7 +2572,7 @@ check("CLD-13", "the address pasted back (without http://, as a phone shows it) 
 await page.keyboard.press("Escape");
 await page.waitForTimeout(400);
 // Signing in without pasting (28 November 2026): on this computer the answer is caught by itself; the Paste from the clipboard
-// button and a paste into the box go on by themselves when the signinAddress is rightPaste. The stand-in for rclone's listener is on port + 3.
+// button and a paste into the box go on by themselves when the address is right. The stand-in for rclone's listener is on port + 3.
 const catchAt = base.replace(/:(\d+)$/, (_, p) => `:${Number(p) + 3}`);
 const startDropbox = async () => {
   await page.locator("#place-add-dropbox").click();
