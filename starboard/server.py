@@ -1569,7 +1569,7 @@ class Handler(BaseHTTPRequestHandler):
                 general_right(incoming)
                 cfg.update_general(incoming)
                 logs.event("info", "settings", f"Changed: {', '.join(sorted(incoming)) or 'nothing'}")
-                if "mcp_enabled" in incoming and bool(incoming["mcp_enabled"]) != mcp_before:  # DASH-627: turning AI tools on or off is in the audit log
+                if "mcp_enabled" in incoming and bool(incoming["mcp_enabled"]) != mcp_before:  # DASH-655: turning AI tools on or off is in the audit log
                     from .api_v1 import audit
                     audit(app.data_dir, "mcp_turned_on" if incoming["mcp_enabled"] else "mcp_turned_off", session=self.session_label(), via="settings")
                 if "logs" in incoming:
@@ -3512,7 +3512,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, {"styles": plugins_admin.styles(app.data_dir)})
             if path.startswith("/api/plugins"):  # Settings, Plug-ins (DASH-149)
                 return self.plugins_route(method, path)
-            if path == "/api/ai-tools" or path.startswith("/api/ai-tools/"):  # Connect an AI tool (DASH-627)
+            if path == "/api/ai-tools" or path.startswith("/api/ai-tools/"):  # Connect an AI tool (DASH-655)
                 from . import ai_tools
                 return ai_tools.route(self, method, path)
             if path == "/api/keys" and method == "GET":  # API keys (DASH-274): never their secrets

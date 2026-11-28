@@ -1,4 +1,4 @@
-"""The core masker (DASH-627, release 1 of the AI assistant family): hides what is private in text before an AI tool
+"""The core masker (DASH-655, release 1 of the AI assistant family): hides what is private in text before an AI tool
 reads it.
 
 Every answer an AI tool gets from Starboard passes through here (starboard/mcp.py), so the rule is kept in one place and

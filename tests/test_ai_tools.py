@@ -1,4 +1,4 @@
-"""Connect an AI tool (DASH-627): the wizard's server side, named narrow keys and the new audit lines."""
+"""Connect an AI tool (DASH-655): the wizard's server side, named narrow keys and the new audit lines."""
 import http.client
 import json
 import os

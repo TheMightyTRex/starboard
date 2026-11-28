@@ -1,4 +1,4 @@
-"""The injection test pack (DASH-627, security.md section 9): fake logs, titles, app names and error text that hold
+"""The injection test pack (DASH-655, security.md section 9): fake logs, titles, app names and error text that hold
 instructions, canary keys, addresses, emails and folders. The tests prove that none of it can change a tool call, appear
 unmasked, or break the marked envelope. Nothing here uses a model: the gate must hold whatever the model does, so a
 "model that obeys" is simulated by sending, as its next call, whatever the planted text asked for."""
