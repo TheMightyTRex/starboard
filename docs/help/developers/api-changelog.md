@@ -18,10 +18,10 @@ the next major version.
 ## Plug-in API 1.25.0 and Starboard API 1.13.0 (not released yet), 28 November 2026
 
 - **Added:** the permission `fetch` and the manifest field `fetch`, up to 12 site names such as `api.openverse.org`. A plug-in on its own
-  network (no way out) asks Starboard to fetch an https address from one of its sites with `POST /api/v1/plugin/fetch`. Starboard
-  refuses other sites and non-public addresses. It follows at most 3 redirects to listed sites and stops at 25 MB and
-  30 seconds. It runs one fetch at a time. Read
+  network (no way out) asks Starboard to fetch an https address from one of its sites with `POST /api/v1/plugin/fetch`. Read
   [Fetching from named sites](plugin-api-reference.md#fetching-from-named-sites-api-125).
+- **Added:** limits Starboard enforces on a fetch. It refuses other sites and non-public addresses. It follows at most 3 redirects to
+  listed sites and stops at 25 MB and 30 seconds. It runs one fetch at a time.
 - **Added:** a record of every fetch, shown under **What it fetched** on the plug-in's page: time, site, what for, size and result.
   It keeps the last 200 and never a path, a key or an answer.
 - **Added:** the permissions `handoff:send` and `handoff:receive` and the volumes `handoff/<kind>:send` and `handoff/<kind>:receive`.
