@@ -91,8 +91,8 @@ To check what will be copied before you share it, select **Show what will be cop
 Starboard keeps its logs for 30 days and lets them take no more than 50 MB, unless you change it. Whichever
 limit comes first removes the oldest days.
 
-1. Go to **Settings**, then **General**, then **Backup/Logs**.
-2. In **Logs**, choose in **Keep logs for**: 7, 14, 30, 60, 90 or 180 days, or a year.
+1. Go to **Settings**, then **General**, then **Backup/Logs**, and select the **Logs** tab.
+2. Choose in **Keep logs for**: 7, 14, 30, 60, 90 or 180 days, or a year.
 3. Choose in **No more than**: 10, 25, 50, 100, 250 or 500 MB.
 
    ![Settings, General, Backup/Logs, with Keep logs for (step 2) and No more than (step 3) outlined, with example data](../images/read-the-log-3-limits.png)
@@ -111,7 +111,7 @@ each in their own set-up, so they stay small even without that setting.
 
 1. Go to **Settings**, then **General**, then **Backup/Logs**. Or go to
    **System**, then **Logs**.
-2. Select **Delete all logs**. It is in its own section at the end of the page, or at the top of System, Logs.
+2. Select the **Logs** tab, then select **Delete all logs**, in its own card at the end of the tab. On System, Logs, it is at the top of the page.
 3. Starboard asks **Delete all logs?** and says how much goes. Enter your Starboard password.
 4. Select **Delete all logs** to go ahead, or **Cancel** to keep them.
 
@@ -129,7 +129,7 @@ key, and when. This cannot be undone. The apps' own logs, which Docker keeps, ar
   **Copy the details** gives the same number of lines.
 - To suggest something or report a problem with one page, use **Feedback** in the side menu instead. Read
   [Send feedback about a page](send-feedback.md).
-- **Detailed logging** is also in **Settings**, **General**, **Backup/Logs**, in the **Logs** section.
+- **Detailed logging** is also in **Settings**, **General**, **Backup/Logs**, on the **Logs** tab.
 - A Starboard installed before version 0.20 keeps the days it was set to (60 by default then). Choose again in
   **Keep logs for** to keep fewer.
 - If Starboard installed Reelix, **System**, **Logs** also has **Reelix's log** and **Reelix's scheduled tasks**.

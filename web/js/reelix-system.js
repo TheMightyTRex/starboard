@@ -38,13 +38,14 @@ function rsWhen(iso) {
   return iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
 }
 
-function rsSection(id, title, about, open, label) {
+// tab: the section is a page topic (a tab of Backup/Logs) in the page's list of sections, not a block under the page.
+function rsSection(id, title, about, open, label, tab) {
   const body = el("div", { class: "stack-4" });
   const show = () => body.replaceChildren(el("p", { class: "small muted", text: "Reelix keeps these behind its admin password, so Starboard asks for it first." }),
     el("div", { class: "actions" }, el("button", { type: "button", class: "btn", onclick: () => open(body, show) }, icon("lock"), label)));
   show();
-  return el("section", { class: "stack-4 rs-section", "aria-labelledby": `${id}-h` },
-    el("div", {}, el("h2", { id: `${id}-h`, text: title }), el("p", { class: "small muted", text: about })), body);
+  return el("section", { class: tab ? "settings-section rs-section" : "stack-4 rs-section", "aria-labelledby": `${id}-h` },
+    el("div", { class: tab ? "settings-section__head" : null }, el("h2", { id: `${id}-h`, text: title }), el("p", { class: "small muted", text: about })), body);
 }
 
 function rsFailed(body, retry, e) {
@@ -202,10 +203,10 @@ startPage().then(() => {
   const page = $("main .page");
   if (!page) return;
   if (location.pathname.endsWith("/settings-general-backup.html")) {
-    // Before the logs on that page, with the other backups.
-    const mine = rsSection("rs-backups", "Reelix's backups", "Reelix backs up its own library and settings. Make one, change how often, or go back to one.", rsBackups, "Show Reelix's backups");
-    const logs = $("#general-sections");
-    if (logs) logs.before(mine); else page.append(mine);
+    const mine = rsSection("rs-backups", "Reelix's backups", "Reelix backs up its own library and settings. Make one, change how often, or go back to one.", rsBackups, "Show Reelix's backups", true);
+    // The fifth tab, after the Starboard backups and before Logs.
+    const tabs = $("#backup-sections");
+    if (tabs) tabs.append(mine); else page.append(mine);
   } else {
     page.append(rsSection("rs-log", "Reelix's log", "What Reelix did, newest last, to find out why something did not work.", rsLogs, "Read Reelix's log"),
       rsSection("rs-tasks", "Reelix's scheduled tasks", "What Reelix does on its own, such as refreshing the library, with Run now.", rsTasks, "Show Reelix's tasks"));

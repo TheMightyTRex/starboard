@@ -78,6 +78,28 @@ function section(id, title, description, ...content) {
     ...content.filter((n) => n !== chipNode));
 }
 
+// A topic made of several cards (the library's section group, Page topics): the group's h2 names the tab, each card
+// has an h3. An action that needs a confirmation (Delete all logs, Clear) is a danger card inside its topic, never a tab.
+function topicGroup(id, title, description, ...cards) {
+  const g = section(id, title, description, ...cards.filter(Boolean));
+  g.classList.add("settings-section--group");
+  return g;
+}
+
+function cardSection(id, title, description, ...content) {
+  const s = section(id, title, description, ...content);
+  const h2 = $("h2", s);
+  const h3 = el("h3", { id: h2.id, text: h2.textContent });
+  h2.replaceWith(h3);
+  return s;
+}
+
+function dangerCard(id, title, description, ...content) {
+  const s = cardSection(id, title, description, ...content);
+  s.classList.add("settings-section--danger");
+  return s;
+}
+
 // Menu 2 pages (DASH-389 to 391, owner, 13 November 2026: "The general sub menu should be on menu 2"): a Settings
 // group's sections are pages of their own on the level 2 menu. A page's list of sections names the parts it shows
 // (data-parts="gn-name gn-cat"); the start functions build only those where building one costs a request, and
@@ -502,6 +524,22 @@ function advancedSwitch() {
 // follow; Advanced settings adds its sections' tabs. Not inside a slide-out, which already shows one part.
 let topicCurrent = null;
 
+// A page that has page topics draws them once at the start. A script that fills a tab's panel waits for that
+// (topicsReady), then runs only when its tab is open (whenTopicOpen): a hidden panel makes no request and starts no
+// timer until it is opened (the lightweight rule, DASH-635).
+let topicsDone;
+const topicsReady = new Promise((done) => { topicsDone = done; });
+
+function whenTopicOpen(node, run) {
+  topicsReady.then(() => {
+    topicTabs();  // a section drawn a moment ago is hidden now, not on the next frame
+    const open = () => !node.closest(".topic-off");
+    if (open()) { run(); return; }
+    const on = () => { if (open()) { document.removeEventListener("topic-open", on); run(); } };
+    document.addEventListener("topic-open", on);
+  });
+}
+
 function topicTabs() {
   const main = $("main .page");
   // Every list of sections on the page (General has its own and Library views'), except where the sections are
@@ -523,9 +561,13 @@ function topicTabs() {
   }
   // Each new section gets an id no other element has: numbering by place gave a section shown by Advanced settings
   // the id of one already named, so two tabs were selected at once (found taking the 0.19 help pictures).
+  // The id is the tab's address (#gn-logs), so it is the section's own name where it has one (its heading's id without
+  // the -h), and the same on every visit; only a section with no name gets a number.
   let free = 0;
   topics.forEach((s) => {
     if (s.id) return;
+    const named = (s.getAttribute("aria-labelledby") || "").replace(/-h$/, "");
+    if (named && !document.getElementById(named)) { s.id = named; return; }
     while (document.getElementById(`topic-${free}`)) free++;
     s.id = `topic-${free}`;
   });
@@ -536,12 +578,18 @@ function topicTabs() {
     // Their height, for the space the page keeps clear above what has focus while they stay under the header (app.css).
     if (window.ResizeObserver) new ResizeObserver(() => document.documentElement.style.setProperty("--topic-tabs-h", `${nav.offsetHeight}px`)).observe(nav);
   }
+  // The address names a tab, anything inside one, or a wrapper round one (an old link such as #logs, which wrapped the
+  // Logs section): each opens the right tab.
   const want = decodeURIComponent(location.hash.slice(1));
-  const fromHash = want && topics.find((s) => s.id === want || $(`[id="${CSS.escape(want)}"]`, s));
+  const wanted = want ? document.getElementById(want) : null;
+  const fromHash = wanted && topics.find((s) => s === wanted || s.contains(wanted) || wanted.contains(s));
   if (fromHash && nav.dataset.hash !== want) { topicCurrent = fromHash.id; nav.dataset.hash = want; }
   if (!topics.some((s) => s.id === topicCurrent)) topicCurrent = topics[0].id;
-  const show = (id, focus) => {
+  const show = (id, focus, choose) => {
     topicCurrent = id;
+    // Choosing a tab puts its address in the page's, without a step in the history, so a copied link, a reload and a
+    // help link open the same tab. Nothing is remembered between visits: the first tab opens when there is no address.
+    if (choose) { try { history.replaceState(null, "", `#${id}`); nav.dataset.hash = id; } catch { /* no address */ } }
     topics.forEach((s) => s.classList.toggle("topic-off", s.id !== id));
     // Each section is also found by its id now, not only from when the tabs were made: a page drawn again since (a
     // plug-in's page after an update, DASH-424) has new sections, and the old ones are no longer on the page.
@@ -552,13 +600,15 @@ function topicTabs() {
       t.tabIndex = on ? 0 : -1;
       if (on && focus) t.focus();
     });
+    // A panel that was hidden starts its own jobs now (whenTopicOpen); one that is hidden again stops its polling.
+    document.dispatchEvent(new CustomEvent("topic-open", { detail: { id } }));
   };
   if (nav.dataset.key !== key) {
     nav.dataset.key = key;
     const list = $("[role=tablist]", nav);
     list.replaceChildren(...topics.map((s) => {
       const t = el("button", { type: "button", role: "tab", id: `${s.id}-tab`, "aria-controls": s.id, class: "topic-tabs__tab", text: $("h2", s).textContent });
-      t.addEventListener("click", () => show(s.id));
+      t.addEventListener("click", () => show(s.id, false, true));
       return t;
     }));
     list.onkeydown = (e) => {
@@ -569,7 +619,7 @@ function topicTabs() {
       if (to === undefined) return;
       e.preventDefault();
       const next = tabs[(to + tabs.length) % tabs.length];
-      show(next.getAttribute("aria-controls"), true);
+      show(next.getAttribute("aria-controls"), true, true);
     };
     topics.forEach((s) => { s.setAttribute("role", "tabpanel"); s.setAttribute("aria-labelledby", `${s.id}-tab`); });
   }
@@ -604,11 +654,12 @@ const SETTINGS_STARTS = [["#app-sections", "startManageApps"], ["#general-sectio
   ["#copy-sections", "startCopy"], ["#dispatcharr-sections", "startDispatcharr"], // DASH-228
   ["#version-notice", "startAbout"], ["#general-sections", "generalScrollSection"]];
 Promise.all([startPage(), settingsLoaded]).then(async ([session]) => {
-  if (!session) return;
-  if ($("#releases-list")) { globalThis.startReleases?.(session.repo); return; }
-  try { config = await api("/api/config"); } catch (e) { problem(e.message); return; }
+  if (!session) { topicsDone(); return; }
+  if ($("#releases-list")) { topicsDone(); globalThis.startReleases?.(session.repo); return; }
+  try { config = await api("/api/config"); } catch (e) { topicsDone(); problem(e.message); return; }
   advancedSwitch();
   watchTopics();
+  topicsDone();
   for (const [selector, start] of SETTINGS_STARTS) if ($(selector)) globalThis[start]?.();
   $("#download-rights")?.append(downloadRights());
 });

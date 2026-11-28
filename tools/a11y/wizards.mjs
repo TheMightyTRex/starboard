@@ -170,7 +170,7 @@ for (let step = 1; step <= 2; step++) {
   await page.waitForFunction((n) => new RegExp(`Step ${n} of 3`).test(document.getElementById("side-panel")?.innerText || ""), step + 1, { timeout: 8000 }).catch(() => {});
 }
 await page.keyboard.press("Escape");
-await open("settings-general-backup.html");
+await open("settings-general-backup.html#bk-copies-h");
 await page.evaluate(() => document.querySelector("#places-add").focus());
 const drive = await tabTo((f) => f.id === "place-add-drive", 10);
 if (drive) {

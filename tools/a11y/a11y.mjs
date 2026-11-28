@@ -599,7 +599,7 @@ if (!pages.length || pages.some((p) => p.includes("settings-general-backup"))) {
   try {
     // Where backups go (several places, 26 November 2026): the list, a form in a slide-out, the wizard opened from a
     // service in Add a place, each step, and Test beside a place.
-    await page.goto(`${base}/settings-general-backup.html`);
+    await page.goto(`${base}/settings-general-backup.html#bk-copies-h`);
     await settle();
     await page.locator("#place-on-main").waitFor();
     await themes("settings-general-backup.html, Where backups go");
@@ -643,7 +643,7 @@ if (!pages.length || pages.some((p) => p.includes("settings-general-backup"))) {
   // it runs and when it ends (DASH-381, DASH-387); Reelix's backup settings and the folder choice (DASH-385, DASH-386).
   // The example server restores and moves nothing.
   try {
-    await page.goto(`${base}/settings-general-backup.html`);
+    await page.goto(`${base}/settings-general-backup.html#bk-full-h`);
     await settle();
     await page.locator("#full-list li[data-key]").first().waitFor();
     await page.locator("#full-list").scrollIntoViewIfNeeded();

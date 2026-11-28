@@ -16,8 +16,8 @@ where a setting lives.
 
    ![Settings, General, Lists with example data, with Settings in the side menu (step 1) and Lists in the row of pages (step 3) outlined](../images/find-a-setting-1-menus.png)
 
-4. On a page with four sections or more, a tab for each section shows under the heading. Select a tab to show
-   that section.
+4. A page with more than one topic has a tab for each topic under the heading. Select a tab to show that topic.
+   The tab is in the page's address, so a link you copy opens the same tab. Arrow keys move between tabs.
 
    ![Settings, Updates with example data, with the topic tabs under the heading (step 4) outlined](../images/find-a-setting-2-tabs.png)
 

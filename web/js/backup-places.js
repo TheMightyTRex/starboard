@@ -326,7 +326,7 @@ async function loadCopies(focusId) {
     setTimeout(async () => {
       if (!document.body.contains(summary)) return;
       const was = body.contains(document.activeElement) ? document.activeElement.id : null;
-      await loadCopies(was);
+      whenOpen(body, () => loadCopies(was));
     }, 3000);
   }
 }

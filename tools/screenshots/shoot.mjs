@@ -64,7 +64,7 @@ const SHOTS = [
   // Copy listening progress is under Advanced settings, so the shot turns it on and puts it back (0.19 pictures).
   { file: "audiobookshelf.png", page: "settings-audiobookshelf.html", ...desk, before: 'api("/api/config/general", { method: "PUT", body: { settings_advanced: true } })',
     cleanup: 'api("/api/config/general", { method: "PUT", body: { settings_advanced: false } })' },
-  { file: "logs-settings.png", page: "settings-general-backup.html", width: 1280, height: 700, run: `(async () => { for (let i = 0; i < 40 && !document.querySelector("#logs h2"); i++) await new Promise((r) => setTimeout(r, 250)); ${top("#logs h2")} })()`, before: 'api("/api/config/general", { method: "PUT", body: { settings_advanced: true } })', cleanup: 'api("/api/config/general", { method: "PUT", body: { settings_advanced: false } })' },
+  { file: "logs-settings.png", page: "settings-general-backup.html#logs", width: 1280, height: 700, run: `(async () => { for (let i = 0; i < 40 && !document.querySelector("#logs h2"); i++) await new Promise((r) => setTimeout(r, 250)); ${top("#logs h2")} })()`, before: 'api("/api/config/general", { method: "PUT", body: { settings_advanced: true } })', cleanup: 'api("/api/config/general", { method: "PUT", body: { settings_advanced: false } })' },
   { file: "apps-phone.png", page: "index.html", ...phone },
   // The Library and Search from the made-up Reelix (DASH-163, DASH-162).
   { file: "library.png", page: "library-films.html", ...desk, run: '(async () => { for (let i = 0; i < 40 && !document.querySelector("#lib-wall .media-card img"); i++) await new Promise((r) => setTimeout(r, 250)); await new Promise((r) => setTimeout(r, 800)); })()' },
