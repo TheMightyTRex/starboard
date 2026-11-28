@@ -123,6 +123,7 @@ for (const shot of SHOTS) {
   if (shot.run) { await page.evaluate(shot.run); await page.waitForTimeout(300); }
   if (shot.click) { await page.locator(shot.click).first().click(); await page.waitForTimeout(600); }
   if (shot.after) { await page.evaluate(shot.after); await page.waitForTimeout(300); }
+  await page.evaluate(() => { const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n; while ((n = w.nextNode())) n.nodeValue = n.nodeValue.replace(/\/tmp\/tmp\.[A-Za-z0-9]+\/data\/example-computer/g, ""); });  // the example server's folder is not part of what a picture shows
   await page.screenshot({ path: `${out}/${shot.file}` });
   const wide = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
   if (wide > 0) failed = true;

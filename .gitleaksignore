@@ -26,3 +26,5 @@ d26b25b3b09322a733a032bc994e65d76188fe77:tests/test_api_v1.py:generic-api-key:31
 9363c9a7ec959e0ca342ee91eb5a688d95ca9f7f:docs/help/topics/use-starboards-api.md:curl-auth-header:32
 # RFC 6238's public test secret (the ASCII digits 1234567890 repeated, in base 32) in the two-step code tests, not a real key.
 20bfa7b0ed3534643055e3297f255eace37e6c56:tests/test_signin.py:generic-api-key:21
+# A made-up Plex token in the test that reads it from Preferences.xml (tests/test_media_server_types.py), not a real one.
+3f62527c693fe11f2184b4f38a336239b744b56e:tests/test_media_server_types.py:generic-api-key:126

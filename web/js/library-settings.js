@@ -36,9 +36,9 @@ const DISCOVER_AREAS = [["films", "Films"], ["tv", "TV"], ["music", "Music"], ["
 function drawDiscoverAreas() {
   const box = $("#discover-areas");
   if (!box) return;
-  // An old address (?discover=tv) opens that area's section.
+  // An old address (?discover=tv) opens that area's section (the move to Lists gives it the films heading in the hash).
   const want = new URLSearchParams(location.search).get("discover");
-  if (DISCOVER_AREAS.some(([t]) => t === want) && !location.hash) history.replaceState(null, "", `${location.pathname}#dr-${want}`);
+  if (DISCOVER_AREAS.some(([t]) => t === want)) history.replaceState(null, "", `${location.pathname}#dr-${want}-h`);
   box.replaceChildren(...onlyParts(box, DISCOVER_AREAS.map(([tab, name]) => discoverAreaSection(tab, name))));
 }
 

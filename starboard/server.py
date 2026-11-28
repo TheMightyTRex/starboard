@@ -3747,8 +3747,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/plugins/retiring" and method == "GET":  # the compatibility report (DASH-603): what is going and who still uses it
             from . import deprecations
             mine = []
-            for p in plugins_admin.basics(app.data_dir):
-                m = plugins_admin._read_kept(os.path.join(plugins_admin.folder(app.data_dir, p["id"]), "manifest.json"), {})
+            for p in pa.basics(app.data_dir):
+                m = pa._read_kept(os.path.join(pa.folder(app.data_dir, p["id"]), "manifest.json"), {})
                 found = [deprecations.warning_sentence(w) for w in deprecations.for_manifest(m)]
                 if found:
                     mine.append({"id": p["id"], "name": p["name"], "uses": found})

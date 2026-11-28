@@ -1066,7 +1066,7 @@ check("MENU2-03", "Lists has Long lists", await page.locator("#gn-scroll-h").cou
 // DASH-390: Downloads has VPN, Usenet and Download hours on the level 2 menu; Download hours is the same field as
 // General's, so a change in one shows in the other.
 console.log("\n== MENU2 Downloads on the level 2 menu");
-check("MENU2-04", "Downloads has VPN, Usenet and Download hours", (await level2("settings-downloads.html")) === "VPN|Usenet|Download hours");
+check("MENU2-04", "Downloads has VPN, Usenet, Download hours and Speed limits", (await level2("settings-downloads.html")) === "VPN|Usenet|Download hours|Speed limits");
 check("MENU2-04", "VPN shows only the VPN", (await headings()) === "VPN", await headings());
 await open("settings-downloads-hours.html");
 const hoursWas = await page.locator("[aria-labelledby=dh-on-l]").isChecked();
@@ -1356,7 +1356,7 @@ check("AP-06", "with no such app, it says so plainly in a live region", /found n
 await open("settings-plugins-catalogue.html");
 const apGroup = page.locator('section[aria-label="Apps you can add"]');
 check("NOTE-01", "every plug-in in the catalogue says what it replaces or adds to (plug-in API 1.23, DASH-585)",
-  (await page.locator("#plugins-catalogue li.row").count()) > 0 && (await page.locator("#plugins-catalogue li.row").evaluateAll((rows) => rows.filter((r) => !/^(Adds to|Replaces|Stands alone)/.test(r.querySelector(".row__meta strong")?.textContent || "")).length)) === 0);
+  (await page.locator("#plugins-catalogue li.row").count()) > 0 && (await page.locator("#plugins-catalogue li.row").evaluateAll((rows) => rows.filter((r) => !r.closest("[aria-labelledby=pl-sources-h]") && !/^(Adds to|Replaces|Stands alone)/.test(r.querySelector(".row__meta strong")?.textContent || "")).length)) === 0);
 check("AP-08", "the catalogue groups the apps together, each with what it uses at rest",
   (await apGroup.count()) === 1 && /At rest: about \d+ MB of memory/.test(await apGroup.innerText()));
 await open("settings-plugin.html?id=tdarr");

@@ -58,6 +58,7 @@ async function take(shot, page) {
   await page.goto(url, { waitUntil: "networkidle" });
   await page.waitForTimeout(1500); // settle (SCREENSHOTS.md section 3)
   if (shot.run) { await page.evaluate(`(async () => { ${shot.run} })()`); await page.waitForTimeout(1500); }
+  await page.evaluate(() => { const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n; while ((n = w.nextNode())) n.nodeValue = n.nodeValue.replace(/\/tmp\/tmp\.[A-Za-z0-9]+\/data\/example-computer/g, ""); });  // the example server's folder is not part of what a picture shows
   await page.evaluate(annotate);
   const result = await page.evaluate(({ marks, steps }) => {
     const target = (t) => {

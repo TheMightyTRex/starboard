@@ -2435,7 +2435,7 @@ with urllib.request.urlopen(req, timeout=10) as r:
 
 A plug-in holds Starboard's heavy automatic work while the computer runs on battery, or lets it go.
 
-Only the plug-in's own key, while the plug-in is active and its approved permissions include power:hold: any other key gets 404 not_found. While a hold lasts, Starboard does not start by itself its background jobs (Live TV, watch history, listening progress, the automatic updates), its scheduled backups or other plug-ins' scheduled jobs, and it pauses downloads as Download hours does, even when Download hours is off. Anything a person starts with a click still runs. A hold ends by itself after minutes, so a plug-in that stops cannot hold for ever; what was due starts at the next check after it ends, and downloads Starboard paused start again.
+Only the plug-in's own key, while the plug-in is active and its approved permissions include power:hold: any other key gets 404 not_found. While a hold lasts, Starboard does not start by itself its background jobs (Live TV, watch history, listening progress, the automatic updates), its scheduled backups or other plug-ins' scheduled jobs, and it pauses downloads as Download hours does, even when Download hours is off. Anything a person starts themselves still runs. A hold ends by itself after minutes, so a plug-in that stops cannot hold for ever; what was due starts at the next check after it ends, and downloads Starboard paused start again.
 
 - **Key:** only a plug-in's own key, while the plug-in is active and its approved permissions include `power:hold`. Any other key gets `404 not_found`.
 - **Operation id:** `holdHeavyJobs`.

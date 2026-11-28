@@ -7,7 +7,7 @@ Some pages have a row of tabs under the header, such as the tabs in **Settings**
 not fit, Starboard shows icons only, and the tab you are on keeps its name. Starboard measures the row, so a narrow
 phone, bigger text and wider spacing all give the right result.
 
-## What you see
+## What the row shows
 
 - **The names fit:** every tab shows its icon and its name.
 - **The names do not fit:** every tab shows its icon, and the tab you are on shows its name beside its icon. A bar under
@@ -19,7 +19,7 @@ Each tab is at least 44 pixels wide, the size of a fingertip. The side menu does
 
 ## Steps
 
-1. On a computer, look at the row under the header. Each tab shows its icon and its name.
+1. On a computer, check the row under the header. Each tab shows its icon and its name.
    ![Settings, General, on a computer: every tab shows its icon and its name, and the Hours tab is outlined (step 1)](../images/menus-with-icons-1-computer.png)
 2. On a phone, or with a bigger **Text size**, the same row shows icons only. The tab you are on, **Hours**, keeps its name.
    Scroll the row sideways to reach the tabs at the ends.

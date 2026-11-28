@@ -7,7 +7,7 @@ import unittest
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from starboard import config, listening
+from starboard import listening
 
 ADMIN = "admin-key"
 

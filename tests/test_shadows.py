@@ -10,7 +10,6 @@ import unittest
 
 from starboard import config, shadows, stack
 from starboard import terminal_setup as ts
-from tests.test_terminal_setup import Answers
 from tests.test_terminal_setup_rules import FakeApi, plain
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

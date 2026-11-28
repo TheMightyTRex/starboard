@@ -6,7 +6,7 @@
 # Everything runs inside one sealed Docker (docker:dind, privileged, capped at 3 GB and 4 processors), so nothing
 # on this computer is touched: no container, image or folder of the computer's own Docker. Inside it:
 #
-# A. Starboard from a release to the next: the release before (FROM, default v0.18.0) installed with its own
+# A. Starboard from a release to the next: the release before (FROM, default v0.31.1) installed with its own
 #    install.sh, with a password, a setting and a plug-in data folder that belongs to another user, then
 #    ./update.sh --to a made-up release of this build. It must answer, be the new version, and keep the setting and
 #    the plug-in's data (DASH-415, DASH-429).
@@ -28,7 +28,7 @@
 # every stage passed.
 set -euo pipefail
 here="$(cd "$(dirname "$0")/.." && pwd)"
-FROM="${FROM:-v0.18.0}"
+FROM="${FROM:-v0.31.1}"
 DIND="docker:27.5.1-dind"
 run_dir="$(mktemp -d /mnt/pool/build-cache/update-e2e-run.XXXXXX)"
 name="starboard-update-e2e-$$"
@@ -47,12 +47,12 @@ cd "$run_dir/make"
 git -c advice.detachedHead=false checkout -q "$(git -C "$here" rev-parse HEAD)"
 git rev-parse -q --verify "refs/tags/$FROM" >/dev/null || { echo "There is no release $FROM" >&2; exit 2; }
 G=(git -c user.name=TheMightyTRexUK -c user.email=nobody)
-echo "0.18.90" > VERSION; "${G[@]}" commit -qam "E2E: this build as a release"; git tag v0.18.90
-echo "0.18.91" > VERSION
+echo "0.40.90" > VERSION; "${G[@]}" commit -qam "E2E: this build as a release"; git tag v0.40.90
+echo "0.40.91" > VERSION
 printf 'raise SystemExit("E2E: this made-up release cannot start")\n' > starboard/__main__.py
-"${G[@]}" commit -qam "E2E: a broken release"; git tag v0.18.91
-git -c advice.detachedHead=false checkout -q v0.18.90
-echo "0.18.92" > VERSION; "${G[@]}" commit -qam "E2E: the next release, for Update now"; git tag v0.18.92
+"${G[@]}" commit -qam "E2E: a broken release"; git tag v0.40.91
+git -c advice.detachedHead=false checkout -q v0.40.90
+echo "0.40.92" > VERSION; "${G[@]}" commit -qam "E2E: the next release, for Update now"; git tag v0.40.92
 git clone -q --no-local --bare . "$run_dir/origin.git"
 cd "$here"
 

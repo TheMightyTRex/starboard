@@ -812,6 +812,8 @@ const cmp = await page.evaluate(() => {
 if (cmp.has) {
   check("T-COMPARE", "four charts, each with a level 3 heading and a table", cmp.cards === 4 && cmp.heads === 4 && cmp.tables === 4 && cmp.h2s === 0, JSON.stringify(cmp));
   check("T-COMPARE", "every bar says its figure in words", cmp.bars === 12, JSON.stringify(cmp));
+  await page.locator("#topic-tabs [role=tab]", { hasText: "Media servers" }).first().click();  // the part is in its own topic tab
+  await page.waitForTimeout(400);
   await page.evaluate(() => { const h = document.getElementById("ms-compare-h"); h.tabIndex = -1; h.focus(); });  // start at the part: the page has many stops before it
   const bar = await tabTo((f) => f.tag === "LI" && /Jellyfin/.test(f.text), 12);
   check("T-COMPARE", "Tab reaches a bar", !!bar, bar ? bar.text : "not reached");
@@ -837,6 +839,8 @@ await page.evaluate(async () => {
 await settle();
 const asked0 = await page.evaluate(() => window.__adminAsked.filter((x) => /admin\/(libraries|tasks|activity|logs)/.test(x)).length);
 check("T-ADMIN", "nothing is read from the server before a button is pressed", asked0 === 0, String(asked0));
+await page.locator("#topic-tabs [role=tab]", { hasText: "Administration" }).first().click();  // the part is in its own topic tab
+await page.waitForTimeout(400);
 await page.evaluate(() => { const h = document.getElementById("ma-libraries-h"); h.tabIndex = -1; h.focus(); });  // start at the part: the page has many stops before it
 const readLib = await tabTo((f) => f.tag === "BUTTON" && /^Read the libraries/.test(f.text), 4);
 check("T-ADMIN", "Tab reaches Read the libraries", !!readLib, readLib ? readLib.text : "not reached");

@@ -29,10 +29,15 @@ sign_in() { api -o /dev/null -X POST "http://127.0.0.1:$PORT/api/login" -d '{"pa
 printf '\n######## A. Starboard %s, installed with its own installer\n' "$FROM"
 # The releases' origin sits inside the Starboard folder (untracked), so Update now's helper, which sees only that
 # folder, can fetch from it as it would from GitHub.
-as "git clone -q /e2e/origin.git $H && cp -r /e2e/origin.git $H/.e2e-origin.git && cd $H && git remote set-url origin $H/.e2e-origin.git && git -c advice.detachedHead=false checkout -q $FROM"
+# A release from 0.31.0 on installs the newest release it can see (DASH-416), so the first install sees an origin
+# without the made-up releases, and the full one is put back as soon as it has answered.
+cp -r /e2e/origin.git /e2e/origin-old.git && chown -R tester /e2e/origin-old.git
+as "for t in \$(git -C /e2e/origin-old.git tag -l 'v0.40.9*'); do git -C /e2e/origin-old.git tag -d \$t >/dev/null; done"
+as "git clone -q /e2e/origin-old.git $H && cp -r /e2e/origin-old.git $H/.e2e-origin.git && cd $H && git remote set-url origin $H/.e2e-origin.git && git -c advice.detachedHead=false checkout -q $FROM"
 started=$SECONDS
 as "cd $H && ./install.sh --yes --port $PORT --docker --no-starter --local-only" > /e2e/install.log 2>&1
 if answers 90; then pass "$FROM installed and answers ($((SECONDS - started)) s)"; else fail "$FROM did not start"; tail -40 /e2e/install.log; exit 1; fi
+rm -rf $H/.e2e-origin.git && cp -r /e2e/origin.git $H/.e2e-origin.git && chown -R tester $H/.e2e-origin.git && as "cd $H && git fetch -q --tags origin"
 token="$(cat $H/data/setup-token)"
 api -o /dev/null -X POST "http://127.0.0.1:$PORT/api/setup" -d "{\"token\":\"$token\",\"password\":\"e2e correct horse battery\"}"
 api -o /dev/null -X PUT "http://127.0.0.1:$PORT/api/config/general" -d '{"server_name":"E2E kept","setup_guide_done":true}'
@@ -43,42 +48,44 @@ echo "the plug-in's own data" > $H/data/plugins/e2e-fake/data/kept
 chown tester $H/data/plugins && chown -R tester $H/data/plugins/e2e-fake && chown -R 4242:4242 $H/data/plugins/e2e-fake/data && chmod 700 $H/data/plugins/e2e-fake/data
 [ "$(version)" = "${FROM#v}" ] && pass "version ${FROM#v}" || fail "version is $(version), not ${FROM#v}"
 
-printf '\n######## A. ./update.sh --to v0.18.90 (this build)\n'
+printf '\n######## A. ./update.sh --to v0.40.90 (this build)\n'
 started=$SECONDS
-as "cd $H && ./update.sh --to v0.18.90" > /e2e/update-a.log 2>&1; code=$?
-grep -q '^== Using the update steps from v0.18.90' /e2e/update-a.log && pass "the new release's own update.sh took over (DASH-429)" || echo "note: no hand-over (the same update.sh)"
-if [ "$code" = 0 ] && grep -q '^== Updated to v0.18.90' /e2e/update-a.log; then pass "updated in $((SECONDS - started)) s"; else fail "update.sh ended with $code"; tail -30 /e2e/update-a.log; fi
+as "cd $H && ./update.sh --to v0.40.90" > /e2e/update-a.log 2>&1; code=$?
+grep -q '^== Using the update steps from v0.40.90' /e2e/update-a.log && pass "the new release's own update.sh took over (DASH-429)" || echo "note: no hand-over (the same update.sh)"
+if [ "$code" = 0 ] && grep -q '^== Updated to v0.40.90' /e2e/update-a.log; then pass "updated in $((SECONDS - started)) s"; else fail "update.sh ended with $code"; tail -30 /e2e/update-a.log; fi
+grep -q '^== This update cannot be undone' /e2e/update-a.log && pass "it said the update cannot be undone (DASH-596)" || fail "no 'cannot be undone' warning in the update log"
+grep -q '^== Backing up your settings' /e2e/update-a.log && pass "it backed up the settings first (DASH-596)" || fail "no settings backup step in the update log"
 sign_in
-[ "$(version)" = "0.18.90" ] && pass "it answers as 0.18.90" || fail "it answers as $(version)"
+[ "$(version)" = "0.40.90" ] && pass "it answers as 0.40.90" || fail "it answers as $(version)"
 [ "$(setting)" = "E2E kept" ] && pass "the setting is kept" || fail "the setting was lost: $(setting)"
 plugin_kept && pass "the plug-in's own data is kept, still its user's (DASH-415)" || fail "the plug-in's data was changed or lost"
 
-printf '\n######## B. The way back: ./update.sh --to v0.18.91 (cannot start)\n'
+printf '\n######## B. The way back: ./update.sh --to v0.40.91 (cannot start)\n'
 started=$SECONDS
-as "cd $H && ./update.sh --to v0.18.91" > /e2e/update-b.log 2>&1; code=$?
-if [ "$code" != 0 ] && grep -q '^Back on v0.18.90 with your settings restored' /e2e/update-b.log; then pass "it went back by itself in $((SECONDS - started)) s"; else fail "no way back (exit $code)"; tail -30 /e2e/update-b.log; fi
+as "cd $H && ./update.sh --to v0.40.91" > /e2e/update-b.log 2>&1; code=$?
+if [ "$code" != 0 ] && grep -q '^Back on v0.40.90 with your settings restored' /e2e/update-b.log; then pass "it went back by itself in $((SECONDS - started)) s"; else fail "no way back (exit $code)"; tail -30 /e2e/update-b.log; fi
 answers 30 && sign_in
-[ "$(version)" = "0.18.90" ] && pass "back on 0.18.90" || fail "it answers as $(version)"
+[ "$(version)" = "0.40.90" ] && pass "back on 0.40.90" || fail "it answers as $(version)"
 [ "$(setting)" = "E2E kept" ] && pass "the setting is as it was" || fail "the setting was lost: $(setting)"
 plugin_kept && pass "the plug-in's own data is as it was" || fail "the plug-in's data was changed or lost after going back"
 
-printf '\n######## C. Update now: the updater helper from inside Starboard, to v0.18.92\n'
+printf '\n######## C. Update now: the updater helper from inside Starboard, to v0.40.92\n'
 started=$SECONDS
 said="$(docker exec starboard python -c '
 from starboard import self_update
 p = self_update.plan("/data", "/app")
 print("plan", p["how"], p["folder"], p["uid"])
-self_update.save("/data", {"state": "running", "by": "you", "from": "0.18.90", "to": "v0.18.92"})
+self_update.save("/data", {"state": "running", "by": "you", "from": "0.40.90", "to": "v0.40.92"})
 open("/data/self-update.log", "w").write("== Preparing the update\n")
-self_update.launch(p, "v0.18.92")
+self_update.launch(p, "v0.40.92")
 print("launched")' 2>&1)"
 echo "$said"
 if echo "$said" | grep -q launched; then
   for _ in $(seq 1 120); do grep -q '^@@ finished' $H/data/self-update.log 2>/dev/null && break; sleep 3; done
-  if grep -q '^@@ finished 0' $H/data/self-update.log && grep -q '^== Updated to v0.18.92' $H/data/self-update.log; then pass "Update now's helper updated it in $((SECONDS - started)) s"
+  if grep -q '^@@ finished 0' $H/data/self-update.log && grep -q '^== Updated to v0.40.92' $H/data/self-update.log; then pass "Update now's helper updated it in $((SECONDS - started)) s"
   else fail "Update now's helper did not finish"; tail -30 $H/data/self-update.log; fi
   answers 60 && sign_in
-  [ "$(version)" = "0.18.92" ] && pass "it answers as 0.18.92" || fail "it answers as $(version)"
+  [ "$(version)" = "0.40.92" ] && pass "it answers as 0.40.92" || fail "it answers as $(version)"
   [ "$(setting)" = "E2E kept" ] && pass "the setting is kept" || fail "the setting was lost: $(setting)"
   plugin_kept && pass "the plug-in's own data is kept" || fail "the plug-in's data was changed or lost"
   docker ps -a --filter label=starboard.self-update --format '{{.Names}}' | grep -q . && fail "the helper container was left behind" || pass "the helper removed itself"

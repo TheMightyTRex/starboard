@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from starboard import config, services, tdarr
+from starboard import services, tdarr
 
 
 class TdarrTest(unittest.TestCase):

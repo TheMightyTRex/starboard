@@ -70,7 +70,7 @@ For other apps, such as Emby and Kavita, Starboard only records the password, an
 
 For Jellyfin and Audiobookshelf, select **More** beside the account on the person's page:
 
-- **Make the account in the app** asks for your Starboard password and sends the recorded password to the app. If the account is there already, nothing is made twice. For a child, it first asks for a highest age rating (Jellyfin) and the libraries they may open (Jellyfin and Audiobookshelf), and it switches off deleting and downloading. Starboard cannot limit a child in an app that has no such limit, and the page says so.
+- **Make the account in the app** asks for your Starboard password and sends the recorded password to the app. If the account is there already, nothing is made twice. For a child, it first asks for a highest age rating (Jellyfin) and the libraries they may open (Jellyfin and Audiobookshelf), and it deactivates deleting and downloading. Starboard cannot limit a child in an app that has no such limit, and the page says so.
 - **Check** reads whether the account is there and paused. It changes nothing.
 - **Pause in the app** and **Resume in the app** switch the account off and on. Nothing it holds is lost.
 - **Delete in the app** asks for a plain yes and your Starboard password, and deletes the account for good, with what it holds. Starboard never does this on its own.
