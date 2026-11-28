@@ -3178,8 +3178,8 @@ the next major version.
 
 - **Added:** the permission `fetch` and the manifest field `fetch`, up to 12 site names such as `api.openverse.org`. A plug-in on its own
   network (no way out) asks Starboard to fetch an https address from one of its sites with `POST /api/v1/plugin/fetch`. Starboard
-  refuses other sites and non-public addresses, follows at most 3 redirects to listed sites, stops at 25 MB and 30 seconds,
-  and runs one fetch at a time. Read
+  refuses other sites and non-public addresses. It follows at most 3 redirects to listed sites and stops at 25 MB and
+  30 seconds. It runs one fetch at a time. Read
   [Fetching from named sites].
 - **Added:** a record of every fetch, shown under **What it fetched** on the plug-in's page: time, site, what for, size and result.
   It keeps the last 200 and never a path, a key or an answer.
