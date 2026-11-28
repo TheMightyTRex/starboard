@@ -1,4 +1,4 @@
-"""DASH-625: the Catalogue page groups plug-ins by their `kind`, in a fixed order. AI assistants is in that order, and, like every
+"""DASH-626: the Catalogue page groups plug-ins by their `kind`, in a fixed order. AI assistants is in that order, and, like every
 group, it shows only when a listed plug-in uses it (the headings are made from the entries, so an empty group never appears)."""
 import json
 import pathlib
