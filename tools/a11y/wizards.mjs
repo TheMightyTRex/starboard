@@ -212,6 +212,9 @@ check("T-LOGIN2", "Enter with no code keeps focus on the code field", err.id ===
 // T-PAGEWIZ A plug-in's page made of the shared wizard (plug-in API 1.26, the example plug-in Page parts example): Continue, the
 // preview beside the step, Play preview (only when pressed), Skip, Check your answers, Change that comes back to the answers, the
 // browser's Back button, and the confirm button that names its action. All by keyboard.
+// The task before this one signed out and stubbed the sign-in answer: sign in again.
+await page.unroute("**/api/login").catch(() => {});
+await signIn();
 await open("settings-plugin.html?id=page-parts");
 await page.getByRole("tab", { name: /Set up the breaks/ }).focus();
 await page.keyboard.press("Enter");
