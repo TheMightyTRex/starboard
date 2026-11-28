@@ -2597,7 +2597,7 @@ const catchBad = await page.request.get(`${catchAt}/?state=SomeoneElse123&code=x
 await page.locator("#cloud-error").waitFor({ timeout: 15000 });
 check("CLD-16", "an answer with another sign-in's state is refused: 400, and the sign-in ends with Try again", catchBad.status() === 400 && await page.locator("#cloud-try-again").count() === 1);
 await closeWizard();
-const signinAddress = (state) => `http://localhost:53682/?code=M.made!Up*code&state=${state}`;
+const signinAddress = (state) => `http://localhost:53682/?code=M.made-up-code&state=${state}`;
 const pasteInto = (text) => page.evaluate((a) => {
   const i = document.querySelector("#cloud-answer");
   const dt = new DataTransfer();
