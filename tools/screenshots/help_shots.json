@@ -1223,10 +1223,10 @@
       "file": "a11y-long-lists.png",
       "page": "settings-general-lists.html",
       "height": 800,
-      "run": "const wait2 = (ms) => new Promise((r) => setTimeout(r, ms)); for (let i = 0; i < 40 && !document.querySelector('#topic-tabs [role=tab]'); i++) await wait2(250); const topic = [...document.querySelectorAll('#topic-tabs [role=tab]')].find((x) => x.textContent.trim() === 'Long lists'); if (topic) { topic.click(); await wait2(700); } localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('#gn-scroll-h'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('#gn-scroll-h').scrollIntoView({ block: 'center' });",
+      "run": "const wait2 = (ms) => new Promise((r) => setTimeout(r, ms)); for (let i = 0; i < 40 && !document.querySelector('#topic-tabs [role=tab]'); i++) await wait2(250); const topic = [...document.querySelectorAll('#topic-tabs [role=tab]')].find((x) => x.textContent.trim() === 'Long lists'); if (topic) { topic.click(); await wait2(700); } localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('#gn-scroll-h'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('#gn-scroll-h').scrollIntoView({ block: 'center' }); document.querySelector('#gn-scroll-h').closest('section').dataset.shot = 'll';",
       "marks": [
         {
-          "t": "$section[aria-labelledby=gn-scroll-h]",
+          "t": "$[data-shot=ll]",
           "side": "left",
           "tail": 60
         }
