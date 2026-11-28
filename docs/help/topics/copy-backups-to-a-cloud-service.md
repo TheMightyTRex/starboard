@@ -25,7 +25,7 @@ you can use your own remote instead.
 ## Steps
 
 1. Go to **Settings**, then **General**, then **Backup/Logs**.
-2. Find **Where backups go**. Each place has a switch, **Test**, **Change** and **Remove**. A new Starboard has no
+2. Select the **Where backups go** tab. Each place has a switch, **Test**, **Change** and **Remove**. A new Starboard has no
    places yet.
 
    ![Where backups go, with the switch for Google Drive (step 2) outlined, with example data](../images/copy-backups-to-a-cloud-service-1-places.png)

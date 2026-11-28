@@ -114,7 +114,9 @@ function picturesSection() {
   const draw = (s) => facts.replaceChildren(el("dt", { text: "Pictures kept" }), el("dd", { text: s.pictures.toLocaleString("en-GB") }),
     el("dt", { text: "Space they use" }), el("dd", { text: formatBytes(s.bytes) }),
     el("dt", { text: "Removed when not shown for" }), el("dd", { text: `${s.unused_days} days` }));
-  api("/api/pictures").then(draw).catch(() => facts.replaceChildren(el("p", { class: "small muted", text: "Could not count the pictures." })));
+  // Counted when the Pictures tab is open, not before.
+  const count = () => api("/api/pictures").then(draw).catch(() => facts.replaceChildren(el("p", { class: "small muted", text: "Could not count the pictures." })));
+  if (typeof whenTopicOpen === "function") whenTopicOpen(facts, count); else count();
   clear.addEventListener("click", async () => {
     if (!await confirmDialog({ title: "Clear the picture cache?", confirm: "Clear", danger: true,
       message: "Every poster, cover and logo is fetched again the next time a page shows it, so pages are slower to fill for a while. Nothing else changes." })) return;
@@ -123,6 +125,8 @@ function picturesSection() {
     catch (e) { problem(e.message, clear); }
     finally { clear.disabled = false; }
   });
-  return [section("pf-pictures", "Pictures", "Posters, covers and logos are fetched once and kept on this server, so your browser never calls image sites. Each is fetched again after a week when shown.", facts),
-    dangerSection("pf-danger", "Clear", "Each button asks before it does anything.", el("div", { class: "actions" }, clear))];
+  // One topic, one tab: the facts, and Clear as a danger card inside it (it needs a confirmation, so it is not a tab).
+  return [topicGroup("pf-pictures", "Pictures", "Posters, covers and logos are fetched once and kept on this server, so your browser never calls image sites. Each is fetched again after a week when shown.",
+    cardSection("pf-facts", "What is kept", "", facts),
+    dangerCard("pf-danger", "Clear", "Each button asks before it does anything.", el("div", { class: "actions" }, clear)))];
 }

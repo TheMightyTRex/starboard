@@ -224,7 +224,7 @@ function startGeneral() {
     section("gn-guide", "Set-up guide", "Finds your apps and walks through what Starboard can do. Running it again changes nothing until you press Continue.",
       el("div", { class: "actions" }, el("a", { class: "btn", href: "/setup-guide.html" }, icon("play"), config.setup_guide_done ? "Run the set-up guide again" : "Run the set-up guide"),
         el("a", { class: "btn", href: "/install-apps.html" }, icon("download"), "Install apps"))),
-    wants(holder, "gn-logs") ? el("div", { id: "logs" }, logsSection()) : null,
+    wants(holder, "gn-logs") ? el("div", { id: "logs" }, logsSection(wants(holder, "gn-logdel"))) : null,
     // Appearance (owner, 13 November 2026: "Change the word Style to Appearance and add the accessibility options
     // there as well"): the own style and its colours, the default design and accessibility, together.
     styleForm && section("gn-style", "Style and colours", "A style from a plug-in is chosen in Display, for this browser only. Reset style goes back to Starboard's own style, in the colours chosen in this section, and keeps your other Display choices.", styleForm),
@@ -234,12 +234,12 @@ function startGeneral() {
       el("ul", { class: "settings-rows" },
         settingRow("Send feedback", "Feedback in the side menu, on every page, reports a problem, suggests something or checks a page for accessibility problems. Each report opens as an issue on Starboard's GitHub page, or is saved here. Deactivate it to remove Feedback from the menu.",
           uxSwitch, "ux-notes-l")),
-      el("div", { id: "feedback-list" }))),
-    wants(holder, "gn-logdel") ? logsDangerSection() : null]));
+      el("div", { id: "feedback-list" })))]));
   if ($("#category-list")) renderCategories();
-  if (wants(holder, "gn-logs") || wants(holder, "gn-logdel")) loadLogLimits();
+  // The log figures are asked for when the Logs tab is open, not before (a hidden tab makes no request).
+  if ($("#logs-now")) whenTopicOpen($("#logs-now"), loadLogLimits);
   renderFeedback();
-  if (["#categories", "#coming-up", "#download-hours", "#logs", "#testing", "#delete-logs"].includes(location.hash)) $(location.hash)?.scrollIntoView();
+  if (["#categories", "#coming-up", "#download-hours"].includes(location.hash)) $(location.hash)?.scrollIntoView();
 }
 
 // Reports saved with Save in Starboard (and notes from the older Note an issue button), newest first.
@@ -297,12 +297,13 @@ const LOG_DAYS = [[7, "7 days"], [14, "14 days"], [30, "30 days"], [60, "60 days
 
 const LOG_SIZES = [[10, "10 MB"], [25, "25 MB"], [50, "50 MB"], [100, "100 MB"], [250, "250 MB"], [500, "500 MB"]];
 
-function logsSection() {
+function logsSection(withDelete) {
   const saveLimit = async (key, value) => {
     await saveGeneral({ logs: { [key]: Number(value) } }, true);
     await loadLogLimits();
   };
-  return section("gn-logs", "Logs", "What Starboard did and every problem it met, on System, Logs. Personal details (passwords, API keys, addresses, names) are removed before anything is written.",
+  return topicGroup("gn-logs", "Logs", "What Starboard did and every problem it met, on System, Logs. Personal details (passwords, API keys, addresses, names) are removed before anything is written.",
+    cardSection("gn-logs-limits", "How long and how much", "",
     el("ul", { class: "settings-rows" },
       settingRow("Keep logs for", withCost("Older days are removed when a new day starts, and at once when you change this.", "logKeep"),
         logPick("lg-keep-l", LOG_DAYS, config.logs.keep_days, (v) => saveLimit("keep_days", v)), "lg-keep-l"),
@@ -312,13 +313,14 @@ function logsSection() {
         logPick("lg-detail-l", [["off", "Off"], ["day", "For 24 hours"], ["on", "Until I deactivate it"]], config.logs.detail,
           (v) => saveGeneral({ logs: { detail: v } }, true)), "lg-detail-l")),
     el("div", { class: "stack-2" },
-      el("h3", { text: "What the limits cover" }),
+      el("h4", { text: "What the limits cover" }),
       el("p", { class: "small", text: "Starboard's own log, one file a day, with the lines from its jobs, updates and plug-ins. Also the API's audit log and the last Starboard update's log. Plug-ins keep no log files in Starboard." }),
       el("p", { class: "small", id: "logs-now", text: "Checking the logs…" })),
     el("div", { class: "stack-2" },
-      el("h3", { text: "The apps' own logs" }),
+      el("h4", { text: "The apps' own logs" }),
       el("p", { class: "small", id: "logs-apps", text: "Asking Docker…" })),
-    el("div", { class: "actions" }, el("a", { class: "btn", href: "/system-logs.html" }, icon("scroll-text"), "Open the logs")));
+    el("div", { class: "actions" }, el("a", { class: "btn", href: "/system-logs.html" }, icon("scroll-text"), "Open the logs"))),
+    withDelete ? logsDangerSection() : null);
 }
 
 function logsNowText(s) {
@@ -362,7 +364,8 @@ function logsDangerSection() {
     status.textContent = deletedLogsText(r);
     button.focus();
   });
-  return el("div", { id: "delete-logs" }, dangerSection("gn-logdel", "Delete all logs", "Removes Starboard's logs now, before the limits would. It asks for your password first.",
+  // An action inside the Logs tab, never a tab of its own: it needs a confirmation.
+  return el("div", { id: "delete-logs" }, dangerCard("gn-logdel", "Delete all logs", "Removes Starboard's logs now, before the limits would. It asks for your password first.",
     el("p", { class: "small", id: "logs-delete-size", text: "Checking the logs…" }),
     el("div", { class: "actions" }, button), status));
 }

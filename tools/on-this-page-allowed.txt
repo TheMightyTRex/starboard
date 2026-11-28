@@ -1,0 +1,3 @@
+# Files that may keep an "On this page" list, each with its reason. A path pattern, a tab, the reason.
+# Only one long single-topic document belongs here (the design system's docs/LIBRARY.md, Page topics: tabs, not a jump list).
+# Starboard has none: every page with more than one topic uses page topics (tabs).

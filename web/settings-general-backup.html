@@ -33,67 +33,60 @@
     <div class="page-head__text"><h1>Backup/Logs</h1><p class="page-head__summary" id="backup-summary">Backups come first: Settings only, a small file, and Full without media, which rebuilds the server on a new install. Logs and feedback follow.</p></div>
   </div>
 
-  <nav class="page-links" aria-label="On this page">
-    <p class="page-links__title" id="page-links-h">On this page</p>
-    <ul class="page-links__list" aria-labelledby="page-links-h">
-      <li><a href="#bk-when-h">When backups are made</a></li>
-      <li><a href="#bk-full-h">Full without media</a></li>
-      <li><a href="#bk-copies-h">Where backups go</a></li>
-      <li><a href="#bk-sb-h">Settings only</a></li>
-      <li><a href="#bk-server-h">The whole server</a></li>
-      <li><a href="#logs">Logs</a></li>
-      <li><a href="#testing">Send feedback</a></li>
-      <li><a href="#delete-logs">Delete all logs</a></li>
-    </ul>
-  </nav>
+  <div class="settings-sections" id="backup-sections">
+    <section class="settings-section" id="backup-when" aria-labelledby="bk-when-h">
+      <div class="settings-section__head">
+        <h2 id="bk-when-h">When backups are made</h2>
+        <p class="small muted">Starboard can make the backups by itself at 03:00, when the server is quiet, and keep only the newest few.</p>
+      </div>
+      <div class="stack-4" id="schedule-body" aria-busy="true"></div>
+    </section>
 
-  <section class="panel" id="backup-when" aria-labelledby="bk-when-h">
-    <div class="panel__head">
-      <h2 id="bk-when-h">When backups are made</h2>
-      <p class="small muted">Starboard can make the backups by itself at 03:00, when the server is quiet, and keep only the newest few.</p>
-    </div>
-    <div class="stack-4" id="schedule-body" aria-busy="true"></div>
-  </section>
+    <section class="settings-section" id="backup-where" aria-labelledby="bk-copies-h">
+      <div class="settings-section__head">
+        <h2 id="bk-copies-h">Where backups go</h2>
+        <p class="small muted">After each full backup, Starboard copies it to every place you activate and keeps the newest few in each. A failed disk, a theft or a fire then does not take every copy. A backup counts as safe only when each place has read it back. Nothing runs between copies.</p>
+      </div>
+      <div class="stack-4" id="copies-body" aria-busy="true"></div>
+    </section>
 
-  <section class="panel" aria-labelledby="bk-full-h">
-    <div class="panel__head">
-      <h2 id="bk-full-h">Full without media</h2>
-      <p class="small muted">Starboard, its plug-ins and every app's settings and database, encrypted with a password you choose. Restore it on this server to go back to an earlier day, or on a new install to get the same server back. Nothing that can be downloaded again goes in.</p>
-    </div>
-    <div class="stack-4" id="full-body" aria-busy="true"></div>
-  </section>
+    <section class="settings-section" id="backup-settings" aria-labelledby="bk-sb-h">
+      <div class="settings-section__head">
+        <h2 id="bk-sb-h">Settings only</h2>
+        <p class="small muted">Starboard's settings, your apps and their API keys, categories, plug-in settings and logo choices, in one small file. Not your password, and not the apps' own settings.</p>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn" id="download"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-download"/></svg>Download a backup</button>
+        <button type="button" class="btn btn--danger" id="restore-file"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-upload"/></svg>Restore from a file</button>
+        <input type="file" class="file-pick" id="restore-input" accept=".json,application/json" tabindex="-1" aria-hidden="true">
+      </div>
+      <div id="settings-message" role="alert"></div>
+      <h3>Copies Starboard saved</h3>
+      <p class="small muted">Made before every restore and before an update changes the settings.</p>
+      <ul class="rows" id="saved" aria-label="Saved copies, newest first"></ul>
+    </section>
 
-  <section class="panel" aria-labelledby="bk-copies-h">
-    <div class="panel__head">
-      <h2 id="bk-copies-h">Where backups go</h2>
-      <p class="small muted">After each full backup, Starboard copies it to every place you activate and keeps the newest few in each. A failed disk, a theft or a fire then does not take every copy. A backup counts as safe only when each place has read it back. Nothing runs between copies.</p>
-    </div>
-    <div class="stack-4" id="copies-body" aria-busy="true"></div>
-  </section>
-
-  <section class="panel" aria-labelledby="bk-sb-h">
-    <div class="panel__head">
-      <h2 id="bk-sb-h">Settings only</h2>
-      <p class="small muted">Starboard's settings, your apps and their API keys, categories, plug-in settings and logo choices, in one small file. Not your password, and not the apps' own settings.</p>
-    </div>
-    <div class="actions">
-      <button type="button" class="btn" id="download"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-download"/></svg>Download a backup</button>
-      <button type="button" class="btn btn--danger" id="restore-file"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-upload"/></svg>Restore from a file</button>
-      <input type="file" class="file-pick" id="restore-input" accept=".json,application/json" tabindex="-1" aria-hidden="true">
-    </div>
-    <div id="settings-message" role="alert"></div>
-    <h3>Copies Starboard saved</h3>
-    <p class="small muted">Made before every restore and before an update changes the settings.</p>
-    <ul class="rows" id="saved" aria-label="Saved copies, newest first"></ul>
-  </section>
-
-  <section class="panel" aria-labelledby="bk-server-h">
-    <div class="panel__head">
-      <h2 id="bk-server-h">The whole server, by its own job</h2>
-      <p class="small muted">Every app's settings and databases, system settings and the package list. Not your media.</p>
-    </div>
-    <div class="stack-4" id="server-body" aria-busy="true"></div>
-  </section>
+    <section class="settings-section settings-section--group" id="backup-server" aria-labelledby="bk-server-h">
+      <div class="settings-section__head">
+        <h2 id="bk-server-h">The whole server</h2>
+        <p class="small muted">Everything except your media, in two parts: a full backup that Starboard makes and restores, and the server's own backup job.</p>
+      </div>
+      <section class="settings-section" aria-labelledby="bk-full-h">
+        <div class="settings-section__head">
+          <h3 id="bk-full-h">Full without media</h3>
+          <p class="small muted">Starboard, its plug-ins and every app's settings and database, encrypted with a password you choose. Restore it on this server to go back to an earlier day, or on a new install to get the same server back. Nothing that can be downloaded again goes in.</p>
+        </div>
+        <div class="stack-4" id="full-body" aria-busy="true"></div>
+      </section>
+      <section class="settings-section" aria-labelledby="bk-job-h">
+        <div class="settings-section__head">
+          <h3 id="bk-job-h">By its own job</h3>
+          <p class="small muted">Every app's settings and databases, system settings and the package list. Not your media.</p>
+        </div>
+        <div class="stack-4" id="server-body" aria-busy="true"></div>
+      </section>
+    </section>
+  </div>
 
   <div class="settings-sections" id="general-sections" data-parts="gn-logs gn-test gn-logdel" aria-busy="true"></div>
 </div>

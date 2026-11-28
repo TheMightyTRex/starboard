@@ -7,6 +7,12 @@ let server = null;
 // Small helpers ------------------------------------------------------------
 
 
+// Runs fn when the tab holding node is open (at once when it is, or when the page has no tabs). A tab that is not open
+// makes no request and keeps no timer, so each load below, and each look again while a job runs, goes through this.
+function whenOpen(node, fn) {
+  if (typeof whenTopicOpen === "function") whenTopicOpen(node, fn); else fn();
+}
+
 function facts(pairs) {
   return el("dl", { class: "facts" }, pairs.filter(([, v]) => v !== null && v !== undefined && v !== "").flatMap(([k, v]) => [el("dt", { text: k }), el("dd", {}, v)]));
 }
@@ -175,7 +181,7 @@ async function loadServer() {
 
   // While a backup runs, look again every 5 seconds.
   clearTimeout(serverTimer);
-  if (busy) serverTimer = setTimeout(loadServer, 5000);
+  if (busy) serverTimer = setTimeout(() => whenOpen(box, loadServer), 5000);
 }
 
 function localPrompt() {
@@ -391,6 +397,7 @@ async function loadFull() {
   const poll = setInterval(async () => {
     if (!document.body.contains(state)) { clearInterval(poll); return; }
     if (!making && !restoring) return;
+    if (state.closest(".topic-off")) return;  // another tab is open: nothing is asked until this one is
     try {
       const now = await api("/api/backup/full");
       const wasRestoring = restoring;
@@ -684,8 +691,9 @@ startPage().then((session) => {
   });
   if ($("#back-command")) return;
   $("#download").addEventListener("click", download);
-  loadFull().then(() => loadSchedule());
-  loadCopies();
-  loadServer();
-  loadSaved();
+  // Each tab asks for its own figures when it is first opened, not before (a hidden tab makes no request).
+  whenOpen($("#full-body"), () => { loadFull(); loadServer(); });
+  whenOpen($("#schedule-body"), () => loadSchedule());
+  whenOpen($("#copies-body"), loadCopies);
+  whenOpen($("#saved"), loadSaved);
 });

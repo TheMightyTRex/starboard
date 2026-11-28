@@ -143,15 +143,25 @@ class BackupLogsTabTest(unittest.TestCase):
         self.assertEqual(html.count("<h1>"), 1)
         self.assertIn("<h1>Backup/Logs</h1>", html)
 
-    def test_every_in_page_link_has_a_place_to_go(self):
+    def test_the_topics_are_tabs_not_a_list_of_links(self):
+        """DASH-633 (owner, 28 November 2026): 'The on this page should be separate tabs as standard.' The page has no
+        On this page list; each topic is a section that the page topics script makes a tab, in the order people do
+        things, and the old anchors still name something inside the right tab."""
         html = read(WEB, self.PAGE)
-        links = re.findall(r'<a href="#([^"]+)"', html)
-        self.assertGreaterEqual(len(links), 8)
-        for target in links:
-            if target in ("logs", "testing", "delete-logs"):  # drawn by settings-general.js
-                self.assertRegex(SCRIPTS, rf'id: "{target}"')
-            else:
-                self.assertIn(f'id="{target}"', html)
+        self.assertNotIn("On this page", html)
+        self.assertNotIn("page-links", html)
+        headings = re.findall(r'<h2 id="(bk-[a-z]+-h)">([^<]+)</h2>', html)
+        self.assertEqual([h for _, h in headings], ["When backups are made", "Where backups go", "Settings only", "The whole server"])
+        # Full without media sits inside The whole server, so its old address (bk-full-h) opens that tab.
+        self.assertRegex(html, r'(?s)id="bk-server-h".*id="bk-full-h"')
+        # Logs and Send feedback come after them, drawn by settings-general.js; Delete all logs is a card inside Logs.
+        self.assertRegex(SCRIPTS, r'topicGroup\("gn-logs", "Logs"')
+        self.assertRegex(SCRIPTS, r'dangerCard\("gn-logdel", "Delete all logs"')
+        self.assertRegex(SCRIPTS, r'id: "logs"')
+        self.assertRegex(SCRIPTS, r'id: "testing"')
+        self.assertRegex(SCRIPTS, r'id: "delete-logs"')
+        for old in ("backup-when", "bk-when-h", "bk-copies-h", "bk-sb-h", "bk-server-h", "bk-full-h"):
+            self.assertIn(f'id="{old}"', html)
 
     def test_the_old_pages_are_gone_and_their_addresses_move(self):
         server = load_server()

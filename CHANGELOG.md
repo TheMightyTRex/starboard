@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Changed
+- **The "On this page" lists on Settings are tabs (DASH-633, owner, 28 November 2026: "The on this page should be separate tabs as standard"):** Settings, General, Backup/Logs has one tab for each topic, in the order people do things: When backups are made, Where backups go, Settings only, The whole server (Full without media and the server's own job), Reelix's backups, Logs and Send feedback. Delete all logs is a button inside Logs, as it needs a confirmation. Performance and pictures has Preset and Pictures tabs (Clear is inside Pictures), and Lists and Discover rows loses its list of links. A tab's address is now in the page's address (`#gn-logs`), set when you choose a tab and without a history step, so a link or a reload opens the same tab; the old anchors (`#logs`, `#testing`, `#delete-logs`, `#bk-full-h`) open the right tab. A tab that is not open asks for nothing and polls nothing until you open it. The help articles, the keyboard tasks, the journeys and the test plan are updated, and `tests/test_on_this_page.py` fails a page that has an "On this page" list (the design system's rule, DASH-631).
+
 ## [0.40.0] (28 November 2026)
 
 ### Added

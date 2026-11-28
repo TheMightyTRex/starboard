@@ -162,7 +162,7 @@ await page.locator("snag-list button", { hasText: /^Save in Starboard$/ }).click
 await page.locator("snag-list", { hasText: "Saved in Starboard" }).first().waitFor({ timeout: 5000 }).catch(() => {});
 const saved = ((await api("/api/ux-notes")).notes || []).filter((n) => n.source === "snaglist" && n.markdown.includes("A made-up journey report"));
 check("FB-01", "the report is saved in Starboard", saved.length === 1);
-await open("settings-general-backup.html");
+await open("settings-general-backup.html#testing");
 check("FB-01", "Settings, General, Backup/Logs lists it", await page.locator("#feedback-list .row").count() >= 1);
 for (const n of saved) await api("/api/ux-notes/remove", { method: "POST", body: { id: n.id } });
 await api("/api/config/general", { method: "PUT", body: { ux_notes: false } });
@@ -196,9 +196,9 @@ await api("/api/config/general", { method: "PUT", body: { groups: [...before.gro
 const added = await api("/api/services", { method: "POST", body: { type: "link", name: XSS, url: "http://journey-xss:8080",
   description: `<script>window.__xss='description'</script>`, group: `"><svg onload="window.__xss='group'">` } });
 await api("/api/ux-notes", { method: "POST", body: { what: `<img src=x onerror="window.__xss='note'">`, page: "/index.html", part: XSS } });
-for (const p of ["index.html", "apps-services.html", "settings.html", "settings-general-backup.html"]) {
+for (const p of ["index.html", "apps-services.html", "settings.html", "settings-general-backup.html#testing"]) {
   await open(p);
-  if (p === "settings-general-backup.html") {
+  if (p === "settings-general-backup.html#testing") {
     await page.locator("#feedback-list .row").first().waitFor({ timeout: 5000 }).catch(() => {});
     check("SEC-07", "a saved report is shown as text", await page.locator("#feedback-list").getByText(`<img src=x onerror="window.__xss='note'">`).count() > 0);
   }
@@ -1182,25 +1182,37 @@ await page.waitForTimeout(5000);
 check("PLEX-05", "nothing is asked of plex.tv once the panel is closed", plexAsked === closedAt, `${plexAsked} asked, ${closedAt} when it closed`);
 if (plexApp) await api(`/api/services/${plexApp.id}`, { method: "DELETE" });
 
-// DASH-595: Backup and restore and Logs and feedback are one tab, Settings, General, Backup/Logs. Every section is on the
-// one page, with links to each; the old addresses answer 301 and open it; the General tab names fit at 1280 pixels wide.
+// DASH-595, then DASH-633: Backup and restore and Logs and feedback are one tab, Settings, General, Backup/Logs, and its topics
+// are page topics (tabs), not a list of links. Each topic is a tab in the order people do things; Delete all logs is an
+// action inside Logs; the old addresses answer 301 and open it, and the old anchors open the right tab; the General tab names fit.
 console.log("\n== BKL Settings, General, Backup/Logs");
 await page.setViewportSize({ width: 1280, height: 800 });
 await open("settings-general-backup.html");
-const genHeads = await page.locator("main h2").evaluateAll((hs) => hs.map((h) => h.textContent.trim()));
-for (const want of ["When backups are made", "Full without media", "Where backups go", "Settings only", "The whole server, by its own job", "Logs", "Send feedback", "Delete all logs"])
+await page.locator("#topic-tabs [role=tab]").nth(5).waitFor({ timeout: 10000 }).catch(() => {});
+const genHeads = await page.locator("main h2, main h3").evaluateAll((hs) => hs.map((h) => h.textContent.trim()));
+for (const want of ["When backups are made", "Where backups go", "Settings only", "The whole server", "Full without media", "By its own job", "Logs", "Send feedback", "Delete all logs"])
   check("BKL-01", `Backup/Logs has the section ${want}`, genHeads.includes(want), genHeads.join("|"));
+const tabsNow = (await page.locator("#topic-tabs [role=tab]").allTextContents()).filter((n) => !/^Reelix/.test(n));
+check("BKL-01", "the topics are tabs in the order people do things, and Delete all logs is not one",
+  tabsNow.join("|") === "When backups are made|Where backups go|Settings only|The whole server|Logs|Send feedback", tabsNow.join("|"));
+check("BKL-01", "there is no On this page list", await page.locator("nav[aria-label='On this page'], .page-links").count() === 0);
 check("BKL-01", "the page has one heading, Backup/Logs", (await page.locator("main h1").allTextContents()).join("|") === "Backup/Logs");
 check("BKL-01", "the Backup/Logs tab is the current one", (await page.locator(".site-header__tabs [aria-current=page]").textContent()).trim() === "Backup/Logs");
 check("BKL-02", "the tab names are shown, not icons only, at 1280 pixels",
   !(await page.locator(".site-header__tabs .menu-tabs").evaluate((n) => n.classList.contains("is-compact"))));
 check("BKL-02", "and every tab name is visible", await page.locator(".site-header__tabs .menu-tabs__label").evaluateAll((ls) => ls.every((l) => l.getBoundingClientRect().width > 8)));
-await page.locator(".page-links a", { hasText: "Where backups go" }).click();
+check("BKL-03", "the first tab opens by default and the others are hidden", await page.locator("#backup-when").isVisible() && await page.locator("#backup-where").isHidden() && await page.locator("#logs section").first().isHidden());
+await page.getByRole("tab", { name: "Where backups go" }).click();
 await page.waitForTimeout(300);
-check("BKL-03", "an in-page link goes to its section", await page.evaluate(() => location.hash) === "#bk-copies-h");
-await page.locator(".page-links a", { hasText: "Delete all logs" }).click();
+check("BKL-03", "a tab opens its section and puts its address in the page's", await page.evaluate(() => location.hash) === "#backup-where" && await page.locator("#backup-where").isVisible() && await page.locator("#backup-when").isHidden());
+await page.getByRole("tab", { name: "Logs" }).click();
 await page.waitForTimeout(300);
-check("BKL-03", "the link to Delete all logs goes to it", await page.locator("#delete-logs").isVisible());
+check("BKL-03", "Delete all logs is a button inside the Logs tab", await page.locator("#logs-delete").isVisible());
+for (const [old, want] of [["logs", "Logs"], ["delete-logs", "Logs"], ["testing", "Send feedback"], ["bk-full-h", "The whole server"], ["bk-copies-h", "Where backups go"], ["backup-when", "When backups are made"]]) {
+  await open(`settings-general-backup.html#${old}`);
+  await page.locator("#topic-tabs [role=tab]").nth(5).waitFor({ timeout: 10000 }).catch(() => {});
+  check("BKL-03", `the old anchor #${old} opens the ${want} tab`, (await page.locator("#topic-tabs [role=tab][aria-selected=true]").textContent()).trim() === want);
+}
 for (const [from, to] of [["system-backup.html", "/settings-general-backup.html"], ["settings-general-logs.html#logs", "/settings-general-backup.html"],
   ["settings-general-logs.html?x=1", "/settings-general-backup.html"], ["wanted.html", "/wanted-films.html"], ["wanted-quality.html", "/wanted-films.html?list=cutoff"],
   ["discover-trending.html", "/discover-films.html"], ["settings-alerts.html", "/settings-general-alerts.html"], ["settings-performance.html", "/settings-general-performance.html"],
@@ -1545,7 +1557,7 @@ check("DR-06", "Books has Trending and Reelix's nine subjects, all standard rows
 check("DR-06", "Music has no genre rows (Reelix has no music genres)", (await api("/api/library/discover-layout?tab=music")).rows.every((r) => !r.genre));
 
 console.log("\n== Full without media: which disk (DASH-260)");
-await open("settings-general-backup.html");
+await open("settings-general-backup.html#bk-full-h");
 await page.locator("#full-disk p").first().waitFor({ timeout: 10000 }).catch(() => {});
 const fullFolder = await page.locator("#full-folder").inputValue().catch(() => "");
 check("BK-01", "the copies go to the media folder's disk, not the system disk", fullFolder === "/srv/media/backups/starboard", fullFolder);
@@ -1622,11 +1634,11 @@ for (const k of (await api("/api/keys")).keys.filter((k) => k.name === "Journey 
 // a made-up USB disk, Google Drive and OneDrive, with a stand-in helper. Test answers beside the place and focus stays on
 // it; a wrong share is said in an alert that takes focus; a place can be deactivated and the page says if the backup is safe.
 console.log("\n== CP Where backups go");
-await open("settings-general-backup.html");
+await open("settings-general-backup.html#bk-copies-h");
 const cp = page.locator("#copies-body");
 await cp.locator("#places-h").waitFor({ timeout: 10000 }).catch(() => {});
-check("CP-01", "the section is there, after Full without media, with its heading",
-  await page.evaluate(() => { const h = [...document.querySelectorAll("main h2")].map((x) => x.textContent); return h.indexOf("Where backups go") === h.indexOf("Full without media") + 1; }));
+check("CP-01", "the section is there, as the second tab after When backups are made, with its heading",
+  await page.evaluate(() => { const h = [...document.querySelectorAll("main h2")].map((x) => x.textContent); return h.indexOf("Where backups go") === h.indexOf("When backups are made") + 1; }));
 check("CP-01", "three places are listed, each with its name, its logo or icon (decorative) and its last copy in words",
   (await page.locator(".place__title").allTextContents()).join() === "USB disk,Google Drive,OneDrive"
   && await page.locator(".places .place-logo[aria-hidden=true]").count() === 3 && await page.locator(".places .place-state", { hasText: "Copied and read back" }).count() === 3);
@@ -2438,7 +2450,7 @@ await page.getByText("VPN added").waitFor({ timeout: 10000 });
 check("VPN-04", "the VPN is added back, with Gluetun", (await api("/api/downloads/vpn-state")).on === true);
 
 console.log("\n== LOG-01 Log limits and Delete all logs, by keyboard (DASH-451)");
-await open("settings-general-backup.html");
+await open("settings-general-backup.html#logs");
 await page.locator("#logs-now").filter({ hasText: /^Now: |no logs/ }).waitFor({ timeout: 10000 });
 const sizeSelect = page.locator('select[aria-labelledby="lg-size-l"]');
 check("LOG-01", "No more than shows 50 MB, the default", (await sizeSelect.inputValue()) === "50");
@@ -2479,7 +2491,7 @@ const standin = base.replace(/:(\d+)$/, (_, p) => `:${Number(p) + 2}`);
 const placesBefore = (await api("/api/backup/copies")).destinations.map((d) => d.id);
 const announced = () => page.evaluate(() => document.querySelector("#announcer")?.textContent || "");
 const activeId = () => page.evaluate(() => document.activeElement?.id || document.activeElement?.className || "");
-await open("settings-general-backup.html");
+await open("settings-general-backup.html#bk-copies-h");
 const addDrive = page.locator("#place-add-drive");
 check("CLD-01", "Add a place offers each service with its logo, name and how many are connected, the services in the agreed order",
   (await page.locator(".place-adds button strong").allTextContents()).slice(3).join() === "Google Drive,OneDrive,Dropbox,Backblaze B2,An S3-compatible service,Nextcloud or another WebDAV server,An SFTP server,Your own rclone remote"
@@ -2543,7 +2555,7 @@ check("CLD-11", "Test shows Connected with when, and focus stays on the button",
   && /Tested/.test(await page.locator(`#place-tested-${newId}`).innerText()) && await activeId() === `place-test-${newId}`);
 await page.waitForFunction(() => /^Connected: /.test(document.querySelector("#announcer")?.textContent || ""), null, { timeout: 3000 }).catch(() => {});
 check("CLD-11", "and says it in the live region", /^Connected: Google Drive/.test(await announced()), await announced());
-await open("settings-general-backup.html");
+await open("settings-general-backup.html#bk-copies-h");
 check("CLD-11", "the result is still there when the page is opened again", /Connected/.test(await page.locator(`#place-tested-${newId}`).innerText()));
 // Closing part way: Dropbox, the link only, then Escape.
 await page.locator("#place-add-dropbox").click();
@@ -2713,7 +2725,7 @@ const rxStatus = (route) => route.fulfill({ contentType: "application/json", bod
 await page.route(/\/api\/reelix\/admin\/system\/backups$/, rxBackups);
 await page.route(/\/api\/services\/[a-z0-9-]+\/restart$/, rxRestart);
 await page.route(/\/api\/status\?id=/, rxStatus);
-await open("settings-general-backup.html");
+await open("settings-general-backup.html#rs-backups-h");
 await page.getByRole("button", { name: "Show Reelix's backups" }).click();
 await page.waitForTimeout(300);
 if (await page.locator("#rs-password").count()) { await page.fill("#rs-password", "made-up"); await page.keyboard.press("Enter"); }
@@ -2737,7 +2749,7 @@ await page.unroute(/\/api\/status\?id=/, rxStatus);
 // Full backups: Checked in the list (DASH-381) and Restore on this server (DASH-387). The example server restores
 // nothing: its made-up backup password is "made-up backup", and the steps pass in a few seconds.
 console.log("\n== Full backups: Checked, and Restore on this server (DASH-381, DASH-387)");
-await open("settings-general-backup.html");
+await open("settings-general-backup.html#bk-full-h");
 await page.locator("#full-list li[data-key]").first().waitFor({ timeout: 10000 }).catch(() => {});
 const fullRows = page.locator("#full-list li[data-key]");
 check("BKC-01", "the newest full backup says Checked, the one made before the check does not",
@@ -2802,7 +2814,7 @@ const rxPlace = async (route) => {
 await page.route(/\/api\/reelix\/admin\/system\/(backups|backup-place|backup-settings)$/, rxPlace);
 await page.route(/\/api\/services\/[a-z0-9-]+\/restart$/, (route) => { rxMoved = true; return route.fulfill({ contentType: "application/json", body: JSON.stringify({ said: "Reelix restarted" }) }); });
 await page.route(/\/api\/status\?id=/, rxStatus);
-await open("settings-general-backup.html");
+await open("settings-general-backup.html#rs-backups-h");
 await page.getByRole("button", { name: "Show Reelix's backups" }).click();
 await page.waitForTimeout(300);
 if (await page.locator("#rs-password").count()) { await page.fill("#rs-password", "made-up"); await page.keyboard.press("Enter"); }
