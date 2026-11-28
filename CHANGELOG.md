@@ -8,7 +8,16 @@ add features.
 ## [Unreleased]
 
 ### Added
-- **Plug-in API 1.26: pages made of the shared parts (28 November 2026).** A plug-in's own page may now use the design system's one wizard (steps, Current and Recommended tags, Run again that lists only what changes, Check your answers with a Change link for each answer, a button that names its action), a sentence with a select in each gap, media cards in option cards whose short preview plays only when pressed (the picture and the preview come through Starboard from the plug-in's own `media` path, up to 8 MB, only as a picture, a short video or a sound), rows behind **Show more settings**, a preview pane (a picture or a drawing made of styles, never video) and a plain notice, "This page is for a computer screen. It is not made for phones.", for a page that cannot work on a phone. Starboard sends `wizard,sentence,media,more,desktop` in `X-Starboard-Can`; a plug-in that does not use them is drawn as before. The parts load only when a plug-in answers with one, so no other page is heavier. The example server has a Page parts example plug-in for them. Nothing was taken away; read the plug-in API reference, Pages made of the shared parts.
+- **Plug-in API 1.26: pages made of the shared parts (28 November 2026).** A plug-in's own page may now use these parts:
+  - The design system's one wizard. It has steps with Current and Recommended tags.
+  - A Run again that lists only what changes.
+  - Check your answers, with a Change link for each answer and a button that names its action.
+  - A sentence with a select in each gap.
+  - Media cards in option cards. A short preview plays only when pressed. The picture and the preview come through Starboard from the plug-in's own `media` path, as a picture, a short video or a sound of up to 8 MB.
+  - Rows behind **Show more settings**.
+  - A preview pane, which shows a picture or a drawing made of styles and never video.
+  - A plain notice for a page that cannot work on a phone.
+  Starboard sends `wizard,sentence,media,more,desktop` in `X-Starboard-Can`. A plug-in that does not use them is drawn as before. The parts load only when a plug-in answers with one, so no other page is heavier. The example server has a Page parts example plug-in. Nothing was taken away. Read the plug-in API reference, Pages made of the shared parts.
 
 ## [0.40.0] (28 November 2026)
 

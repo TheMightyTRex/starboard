@@ -329,15 +329,22 @@ Answer a GET with `{"type": "wizard"}`:
 | `preview` (top level) | `{"title"}`: shows the preview pane beside the step. Each option's `preview` fills it when the option is chosen |
 | `value`, `label`, `unit` | For `text`, `number` and `select`: the starting value, the label and the unit |
 
-**The preview** is a picture or a drawing made of styles, never video: up to 3 `lines` of text, a `corner` label, an `image` (`{"src", "alt"}`, a PNG or JPEG data
-address of up to 64 KB), a `strip` of up to 12 parts (`label`, `seconds`, `kind` of `title`, `clip`, `music` or `other`), a `caption` of up to 200 characters that
-screen readers hear once after a change, and a `total` in words.
+**The preview** is a picture or a drawing made of styles, never video. It has these parts:
+
+- `lines`: up to 3 lines of text.
+- `corner`: a label for the corner.
+- `image`: `{"src", "alt"}`, a PNG or JPEG data address of up to 64 KB.
+- `strip`: up to 12 parts, each with a `label`, `seconds` and a `kind` of `title`, `clip`, `music` or `other`.
+- `caption`: up to 200 characters. Screen readers hear it once after a change.
+- `total`: the length in words.
 
 **A media card** has `kind` (`video` or `audio`), `length` ("0:12"), `thumb` (a small PNG or JPEG data address) or `thumb_path: true`, and `preview: true`.
-Starboard fetches a thumbnail, once and kept by the browser, with **GET** `<choices>/media?step=<step id>&id=<option id>&kind=thumb`, and a preview, only when
-the person presses **Play preview**, with `kind=preview`. Both carry your key in `X-Api-Key`. Answer with a picture, a short video or a sound (`image/png`,
-`image/jpeg`, `image/webp`, `video/mp4`, `video/webm`, `audio/mpeg`, `audio/mp4`, `audio/ogg` or `audio/wav`) of up to 8 MB; anything else is refused.
-Make each thumbnail once and keep it.
+
+Starboard asks for a thumbnail with **GET** `<choices>/media?step=<step id>&id=<option id>&kind=thumb`. The browser keeps it. Starboard asks for a preview
+with `kind=preview`, and only when the person presses **Play preview**. Both calls carry your key in `X-Api-Key`.
+
+Answer with a picture, a short video or a sound. The types are `image/png`, `image/jpeg`, `image/webp`, `video/mp4`, `video/webm`, `audio/mpeg`,
+`audio/mp4`, `audio/ogg` and `audio/wav`, up to 8 MB. Starboard refuses anything else. Make each thumbnail once and keep it.
 
 **POST** `{"action": "wizard", "answers": {"style": "quiet", "clips": ["c1"], "name": "Comedy"}}`: a text for a single answer, a list of option ids for
 `multi` and `media`. Answer with any page, usually the wizard again, with `said`. Starboard shows `said` and **Run it again**.
@@ -345,9 +352,10 @@ Make each thumbnail once and keep it.
 ### A sentence
 
 `{"type": "sentence", "title", "intro", "parts": ["Between programmes, play ", {"id": "idents", "label": "Short title clips", "options": [["one", "a short title clip"], ["none", "no title clip"]], "value": "one"}, "."]}`.
-Words are text; a gap has an `id`, a `label` (what a screen reader names the select) and up to 12 `options`, each `[value, words]`. A change is sent as
-`{"action": "choose", "id": "idents", "value": "none"}` and you answer the sentence again with `said`. Starboard reads the whole sentence aloud, in plain
-words, after a change.
+Words are text. A gap has an `id`, a `label` (what a screen reader names the select) and up to 12 `options`, each `[value, words]`.
+
+Starboard sends a change as `{"action": "choose", "id": "idents", "value": "none"}`. You answer with the sentence again and `said`.
+Starboard reads the whole sentence aloud, in plain words, after a change.
 
 ### Media cards, rows behind Show more settings, a preview and the desktop notice, on a list
 
@@ -358,7 +366,7 @@ words, after a change.
 | `preview` | The same preview object as in the wizard, shown first on the page |
 | `desktop_only` | `true` on any answer: a plain notice that the page is not made for phones, on windows narrower than 768 pixels. Use it only for a page that cannot work on a phone |
 
-A page answered with none of these is drawn as before.
+Starboard draws a page that uses none of these as before.
 
 ## Health
 

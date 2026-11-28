@@ -17,16 +17,21 @@ the next major version.
 
 ## Plug-in API 1.26.0 (not released yet), 28 November 2026
 
-- **Added:** a custom page may answer with the one shared wizard, `{"type": "wizard"}`: steps with one question each, a preview on each option,
-  **Current** and **Recommended** tags, `mode: "again"` for a set-up run a second time (the summary then lists only what changes, with the old
-  words), **Skip this step** and **(optional)** on a step marked `optional`, the error summary on a step marked `required`, and **Check your answers**
-  at the end. Starboard sends the answers as `{"action": "wizard", "answers": {...}}`.
-- **Added:** `{"type": "sentence"}`, a setting read as one sentence with a select in each gap, saved at once with `{"action": "choose", "id", "value"}`.
-- **Added:** on a list, `layout: "media"` with `media` on an item (a picture, its length and a short preview that plays only when pressed, fetched
-  from your `<choices>/media` path through Starboard), `more_switch` with `more` on items (**Show more settings**), `preview` (a picture or a drawing
-  made of styles, never video) and `desktop_only` (a plain notice on narrow screens).
-- Starboard names what it draws in `X-Starboard-Can`: `wizard`, `sentence`, `media`, `more` and `desktop`. An older plug-in sends none of these and
-  is drawn as before. Nothing was taken away. Name `>=1.26` in `starboard_api` to use any of them. Read
+- **Added:** a custom page may answer with the one shared wizard, `{"type": "wizard"}`.
+  - It has steps with one question each and a preview on each option.
+  - It has **Current** and **Recommended** tags, and `mode: "again"` for a set-up run a second time. The summary then lists only what changes.
+  - A step marked `optional` says **(optional)** and has **Skip this step**. A step marked `required` shows the error summary.
+  - The end is **Check your answers**. Starboard sends the answers as `{"action": "wizard", "answers": {...}}`.
+- **Added:** `{"type": "sentence"}`, a setting read as one sentence with a select in each gap. Starboard saves a change at once with
+  `{"action": "choose", "id", "value"}`.
+- **Added:** on a list, `layout: "media"` with `media` on an item draws media cards. A card has a picture, its length and a short preview.
+  Starboard fetches both from your `<choices>/media` path, and plays the preview only when pressed.
+- **Added:** on a list, `more_switch` with `more` on items adds **Show more settings**.
+- **Added:** on a list, `preview` shows a picture or a drawing made of styles, never video.
+- **Added:** on a list, `desktop_only` shows a plain notice on narrow screens.
+- Starboard names what it draws in `X-Starboard-Can`: `wizard`, `sentence`, `media`, `more` and `desktop`. An older plug-in sends none of these,
+  and Starboard draws its page as before.
+- Nothing was taken away. Name `>=1.26` in `starboard_api` to use any of them. Read
   [Pages made of the shared parts](plugin-api-reference.md#pages-made-of-the-shared-parts-api-126).
 
 ## Plug-in API 1.24.0 and Starboard API 1.12.0 (not released yet), 27 November 2026

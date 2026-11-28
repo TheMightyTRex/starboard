@@ -173,10 +173,13 @@ The pages:
 ### A plug-in that converts files
 
 For a plug-in that changes files in the media folder or Jellyfin's pictures, one at a time, such as Direct play or
-Picture shrinker. Paste in [Plug-in manifest reference](plugin-manifest-reference.md) (in particular
-[Adding files to the media folder](plugin-manifest-reference.md#adding-files-to-the-media-folder),
-[Jellyfin's metadata folder](plugin-manifest-reference.md#jellyfins-metadata-folder) and [Updates](plugin-manifest-reference.md#updates)),
-[Plug-in API reference](plugin-api-reference.md) and [Write a plug-in that updates safely](update-a-plugin-safely.md).
+Picture shrinker. Paste in these pages:
+
+- [Plug-in manifest reference](plugin-manifest-reference.md), in particular
+  [Adding files to the media folder](plugin-manifest-reference.md#adding-files-to-the-media-folder),
+  [Jellyfin's metadata folder](plugin-manifest-reference.md#jellyfins-metadata-folder) and [Updates](plugin-manifest-reference.md#updates).
+- [Plug-in API reference](plugin-api-reference.md).
+- [Write a plug-in that updates safely](update-a-plugin-safely.md).
 
 ```text
 Write a Starboard plug-in for plug-in API 1.26 that [say what it converts, and why], one file at a time.
