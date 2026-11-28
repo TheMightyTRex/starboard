@@ -93,6 +93,7 @@ add features.
 - **Four hand-run test scripts.** The scripts that tried Bring in on shares, copies off this computer, connecting a cloud service and a full restore by hand, on made-up data, are gone from the tools folder. The tests that run with every change stay, and the scripts stay in the history. The help and the app do not change.
 
 ### Fixed
+- **The cards in Add a place are all the same size.** Under Where backups go, each kind of place now has the same height as the others, however long its words are.
 - **Signing in to OneDrive no longer says the address has no sign-in code.** The code Microsoft sends back contains the characters ! and *, which Starboard refused. It now accepts them, and still refuses spaces, quotes, angle brackets, backslashes and anything that could end the value early.
 - **The TV, Music and Radio pages no longer scroll sideways at large text.** A card now shrinks to its column and wraps its status and details, so a wide chip cannot push the page wider than the window.
 - **Creating your first password works again.** The first password page never wired its form from version 0.28.0, so Create did a plain page reload and saved nothing. It now checks the set-up code, the name and the password, and says what is wrong beside the field. The new keyboard task for the first password found it.
