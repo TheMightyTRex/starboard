@@ -9,6 +9,8 @@ add features.
 
 ### Changed
 - **The "On this page" lists on Settings are tabs (DASH-635, owner, 28 November 2026: "The on this page should be separate tabs as standard"):** Settings, General, Backup/Logs has one tab for each topic, in the order people do things: When backups are made, Where backups go, Settings only, The whole server (Full without media and the server's own job), Reelix's backups, Logs and Send feedback. Delete all logs is a button inside Logs, as it needs a confirmation. Performance and pictures has Preset and Pictures tabs (Clear is inside Pictures), and Lists and Discover rows loses its list of links. A tab's address is now in the page's address (`#gn-logs`), set when you choose a tab and without a history step, so a link or a reload opens the same tab; the old anchors (`#logs`, `#testing`, `#delete-logs`, `#bk-full-h`) open the right tab. A tab that is not open asks for nothing and polls nothing until you open it. The help articles, the keyboard tasks, the journeys and the test plan are updated, and `tests/test_on_this_page.py` fails a page that has an "On this page" list (the design system's rule, DASH-633).
+### Fixed
+- **The pull request accessibility check no longer fails pull requests that did nothing wrong (DASH-636):** it named the sign-in and set-up pages as findings because the example server sends a signed-in visitor on to the dashboard, which is right; and it could not open the full backups panel because the check's computer did not have the library that encrypts backups, so any pull request that touched that page failed. The check now installs the library the image has, leaves the redirect out, and says what a failed page waited for. A new problem still fails it; findings already on main still do not.
 
 ## [0.40.0] (28 November 2026)
 
@@ -96,6 +98,8 @@ add features.
 - **Four hand-run test scripts.** The scripts that tried Bring in on shares, copies off this computer, connecting a cloud service and a full restore by hand, on made-up data, are gone from the tools folder. The tests that run with every change stay, and the scripts stay in the history. The help and the app do not change.
 
 ### Fixed
+- **The cards in Add a place are all the same size.** Under Where backups go, each kind of place now has the same height as the others, however long its words are.
+- **Signing in to OneDrive no longer says the address has no sign-in code.** The code Microsoft sends back contains the characters ! and *, which Starboard refused. It now accepts them, and still refuses spaces, quotes, angle brackets, backslashes and anything that could end the value early.
 - **The TV, Music and Radio pages no longer scroll sideways at large text.** A card now shrinks to its column and wraps its status and details, so a wide chip cannot push the page wider than the window.
 - **Creating your first password works again.** The first password page never wired its form from version 0.28.0, so Create did a plain page reload and saved nothing. It now checks the set-up code, the name and the password, and says what is wrong beside the field. The new keyboard task for the first password found it.
 - **Two labels now hold the words you see.** Voice control users say what they read. The API key fields in the set-up guide are now named with the app and then API key, as shown. Each Everything in it is choice in Bring in media now begins with those words.
