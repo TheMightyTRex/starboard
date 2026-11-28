@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **A group for AI assistants in Settings, Plug-ins, Catalogue (DASH-622):** plug-ins whose kind is AI assistants (ask an assistant about your server, or let an AI tool manage Starboard, with your own model or key) are listed under their own heading, before Apps you can add. No plug-in is in it yet, so, like every empty group, it does not show until the first one is listed. The plug-in reference names the groups to choose from.
+
 ## [0.40.0] (28 November 2026)
 
 ### Added
