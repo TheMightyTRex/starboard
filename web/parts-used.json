@@ -6,6 +6,7 @@
   "log-view",
   "secret-field",
   "tabs",
-  "tag-input"
+  "tag-input",
+  "wizard-steps"
  ]
 }

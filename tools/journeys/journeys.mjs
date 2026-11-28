@@ -28,7 +28,7 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "settings-downloads.html", "settings-downloads-usenet.html", "settings-downloads-hours.html", "settings-downloads-speed.html",
   // Radio's, Performance's and Security's level 2 pages (DASH-391)
   "settings-radio-link.html", "settings-radio-library.html", "settings-radio-logos.html", "settings-general-performance.html",
-  "settings-security-password.html", "settings-security-signin.html", "settings-security-keys.html", "settings-security-sessions.html",
+  "settings-security-password.html", "settings-security-signin.html", "settings-security-keys.html", "settings-security-ai.html", "settings-security-sessions.html",
   "settings-people.html", "settings-plugins.html", "settings-plugins-catalogue.html", "settings-plugin.html?id=direct-play", "settings-plugin.html?id=jellyfin"];  // with the set-up's Audio description offer (DASH-399)
 const SECRET = "made-up-journey-key-7f3a9c1e5b";
 const XSS = `<img src=x onerror="window.__xss='name'">`;
@@ -1599,6 +1599,10 @@ check("MCP-01", "the switch has its name and says what it shares", (await page.g
   && /cannot change anything/.test(await page.locator("#mcp-h").textContent()));
 check("MCP-01", "the result is a live region", (await page.locator("#mcp-result").getAttribute("role")) === "status");
 const mcpKey = (await api("/api/keys", { method: "POST", body: { name: "Journey assistant", right: "read", scopes: [], expires_days: "90", password } })).key;
+const mcpCall2 = async (key, msg) => {
+  const r = await fetch(`${base}/api/v1/mcp`, { method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" }, body: JSON.stringify(msg) });
+  return { status: r.status, body: await r.json().catch(() => null) };
+};
 const mcpCall = async (msg) => {
   const r = await fetch(`${base}/api/v1/mcp`, { method: "POST", headers: { Authorization: `Bearer ${mcpKey}`, "Content-Type": "application/json" }, body: JSON.stringify(msg) });
   return { status: r.status, body: await r.json().catch(() => null) };
@@ -1612,12 +1616,54 @@ check("MCP-03", "Space activates it, focus stays on the switch and the address s
   await mcpOn.isChecked() && await page.evaluate(() => document.activeElement?.id === "mcp-on")
   && /\/api\/v1\/mcp$/.test(await page.locator("section[aria-labelledby='sc-mcp-h'] dd code").first().textContent()));
 const mcpList = await mcpCall({ jsonrpc: "2.0", id: 2, method: "tools/list" });
-check("MCP-04", "then a Read only key gets the read-only tools", mcpList.status === 200 && mcpList.body?.result?.tools?.length === 9
+check("MCP-04", "then a Read only key gets the read-only tools", mcpList.status === 200 && mcpList.body?.result?.tools?.length === 11
   && mcpList.body.result.tools.every((t) => t.annotations.readOnlyHint), JSON.stringify(mcpList.body).slice(0, 120));
 await page.keyboard.press("Space");
 await page.waitForFunction(() => /Inactive:/.test(document.querySelector("#mcp-result")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
 check("MCP-05", "deactivating it stops the assistant at once", (await mcpCall({ jsonrpc: "2.0", id: 3, method: "ping" })).status === 403);
 for (const k of (await api("/api/keys")).keys.filter((k) => k.name === "Journey assistant")) await api(`/api/keys/${k.id}`, { method: "DELETE" });
+// DASH-627: Connect an AI tool, the shared wizard. Nothing is changed until the last button; the last one asks for the password,
+// turns AI tools on and makes one Read only key, shown once; the key then works on /api/v1/mcp with the three new tools.
+console.log("\n== AIT Connect an AI tool");
+await open("settings-security-ai.html");
+await page.locator(".wizard[data-wizard=connect-ai-tool] .wizard__q").first().waitFor({ timeout: 10000 });
+check("AIT-01", "AI tools are off and the page says nothing is changed until the last step", /AI tools are off/.test(await page.locator("#ai-status").innerText()) && !(await api("/api/config")).mcp_enabled);
+const aitQ = async () => (await page.locator(".wizard__step:not([hidden]) .wizard__q").first().innerText()).trim();
+await page.getByRole("button", { name: "Continue" }).click();
+check("AIT-01", "a step that needs an answer says There is a problem", await page.locator(".error-summary:not([hidden])").count() === 1);
+await page.locator("input[name=tool][value=claude-desktop]").check();
+await page.getByRole("button", { name: "Continue" }).click();
+await page.locator("input[name=where][value=here]").check();
+await page.getByRole("button", { name: "Continue" }).click();
+await page.getByRole("button", { name: "Continue" }).click();
+check("AIT-02", "four tools are ticked by default, and Library and Logs are not", await page.locator("#ai-scope-apps").isChecked() && !(await page.locator("#ai-scope-library").isChecked()) && !(await page.locator("#ai-scope-logs").isChecked()));
+await page.locator("#ai-scope-logs").check();
+await page.getByRole("button", { name: "Continue" }).click();
+check("AIT-02", "an optional step says (optional) and can be skipped", /\(optional\)/.test(await aitQ()));
+await page.getByRole("button", { name: "Skip this step" }).click();
+await page.fill("#ai-name", "Journey AI tool");
+await page.getByRole("button", { name: "Continue" }).click();
+check("AIT-03", "Check your answers lists each answer with a Change link", (await aitQ()) === "Check your answers" && await page.locator(".wizard-summary--check a", { hasText: "Change" }).count() === 5);
+check("AIT-03", "and nothing is on yet", !(await api("/api/config")).mcp_enabled);
+await page.fill("#ai-password", password);
+await page.getByRole("button", { name: "Turn on AI tools and make the key" }).click();
+await page.locator("#ai-key-made").waitFor({ timeout: 8000 });
+const aitKey = await page.locator("#ai-key-made").inputValue();
+check("AIT-04", "the key is shown hidden, once, and is a Read only key", /^sb_read_[0-9a-f]{6}_/.test(aitKey) && await page.locator("#ai-key-made").getAttribute("type") === "password");
+check("AIT-04", "the address and the Claude Desktop set-up are shown", /localhost:\d+\/api\/v1\/mcp$/.test(await page.locator(".address code").first().textContent()) && /mcp-remote/.test(await page.locator("pre.code-block").first().textContent()));
+check("AIT-04", "the key is not written out in the set-up text", !(await page.locator("pre.code-block").first().textContent()).includes(aitKey));
+check("AIT-04", "AI tools are now on", (await api("/api/config")).mcp_enabled === true);
+const aitTools = await mcpCall2(aitKey, { jsonrpc: "2.0", id: 1, method: "tools/list" });
+check("AIT-05", "the new key lists the tools for what was ticked, with read_logs", aitTools.body?.result?.tools?.some((t) => t.name === "read_logs") && aitTools.body.result.tools.some((t) => t.name === "explain_error"), JSON.stringify(aitTools.body).slice(0, 100));
+const aitLogs = await mcpCall2(aitKey, { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "read_logs", arguments: { source: "starboard", lines: 5 } } });
+const aitText = JSON.parse(aitLogs.body?.result?.content?.[0]?.text || "{}");
+check("AIT-05", "read_logs answers newest first, marked untrusted", aitText.untrusted === true && aitText.newest_first === true && aitText.source === "starboard:read_logs", JSON.stringify(aitLogs.body).slice(0, 100));
+await page.getByRole("button", { name: /^Revoke Journey AI tool/ }).waitFor({ timeout: 8000 });
+await page.getByRole("button", { name: /^Revoke Journey AI tool/ }).click();
+await page.locator("dialog[open] .btn--danger, dialog[open] button.btn--danger").first().click();
+await page.waitForFunction(() => !/Journey AI tool/.test(document.querySelector("#ai-keys")?.innerText || ""), null, { timeout: 8000 }).catch(() => {});
+check("AIT-06", "Revoke stops the key at once and takes it off the list", (await mcpCall2(aitKey, { jsonrpc: "2.0", id: 3, method: "ping" })).status === 401);
+await api("/api/config/general", { method: "PUT", body: { mcp_enabled: false } });
 // DASH-380, several places (26 November 2026): Where backups go on Settings, General, Backup/Logs, set by the example server to
 // a made-up USB disk, Google Drive and OneDrive, with a stand-in helper. Test answers beside the place and focus stays on
 // it; a wrong share is said in an alert that takes focus; a place can be deactivated and the page says if the backup is safe.

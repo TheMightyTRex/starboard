@@ -130,7 +130,7 @@ async function startSecurity() {
     section("sc-pw", "Password", "At least 10 characters; a short sentence of 4 or more words makes a strong password that you can remember. You stay signed in here and everyone else is signed out.", pwForm),
     section("sc-ses", "Sessions", "How long Remember me lasts, and signing out.", daysForm),
     wants(holder, "sc-keys") ? section("sc-keys", "API keys", "For other apps, scripts and AI assistants. Each key reads, or reads and manages, only what you choose, and is shown once.", apiKeys()) : null,
-    wants(holder, "sc-mcp") ? section("sc-mcp", "AI assistants", "Let an AI assistant that speaks MCP, the Model Context Protocol, answer questions about your server. Nothing is shared until you activate it.", mcpAssistants()) : null]));
+    wants(holder, "sc-mcp") ? section("sc-mcp", "AI assistants", "Let an AI assistant that speaks MCP, the Model Context Protocol, answer questions about your server. Nothing is shared until you turn it on.", mcpAssistants()) : null]));
   daysForm.append(
       el("ul", { class: "settings-rows" },
         el("li", { class: "setting" },
@@ -252,7 +252,7 @@ function apiKeys() {
   return box;
 }
 
-// AI assistants over MCP (DASH-464): off until activated here. What it shares is said beside the switch; each
+// AI assistants over MCP (DASH-464): off until turned on here. What it shares is said beside the switch; each
 // assistant still needs a Read only key, and reads only what that key's scopes cover. Nothing polls.
 function mcpAssistants() {
   const address = `${location.origin}/api/v1/mcp`;
@@ -281,6 +281,7 @@ function mcpAssistants() {
         el("span", { id: "mcp-h", text: "An assistant can then read the Library, what is new, coming up and playing. It can also read downloads and their problems, requests, how each app is and disk space. It cannot change anything, never gets a password or an app's key, and each question it asks is written to the audit log. Give it a Read only key with only the scopes it needs." }),
         el("label", { class: "switch" }, on), "mcp-l")),
     result, where,
-    el("p", { class: "small muted" }, "How to connect one: ", helpLink("topics/connect-an-ai-assistant-with-mcp", "Let an AI assistant answer questions"),
+    el("p", {}, el("a", { class: "btn btn--primary", href: "/settings-security-ai.html" }, icon("bot"), "Connect an AI tool")),
+    el("p", { class: "small muted" }, "How to connect one: ", helpLink("topics/connect-an-ai-tool", "Connect an AI tool"),
       ". What each tool gives back: ", helpLink("developers/mcp-tools", "MCP tools"), "."));
 }

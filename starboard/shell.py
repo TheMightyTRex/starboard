@@ -111,6 +111,7 @@ MENU = [
                                       ("settings-security-password.html", "Password", "key-round"),
                                       ("settings-security-signin.html", "Sign-in methods", "shield-check"),
                                       ("settings-security-keys.html", "API keys", "lock"),
+                                      ("settings-security-ai.html", "Connect an AI tool", "bot"),
                                       ("settings-security-sessions.html", "Sign out everywhere", "log-out")]),
         # Owner, 26 November 2026 (DASH-589, single sign-on stage 1): the people who use the apps and their passwords in each.
         ("People", "users", [("settings-people.html", "People", "users")]),
@@ -205,6 +206,7 @@ HELP = {
     "settings-security-password.html": ("topics/change-your-password.md", "changing your password"),
     "settings-security-signin.html": ("topics/set-up-a-two-step-code.md", "setting up a two-step code"),
     "settings-security-keys.html": ("topics/use-starboards-api.md", "API keys for Starboard's API"),
+    "settings-security-ai.html": ("topics/connect-an-ai-tool.md", "connecting an AI tool"),
     "settings-security-sessions.html": ("topics/sign-out-everywhere.md", "signing out everywhere"),
     "settings-downloads.html": ("topics/change-your-install.md", "your install and its VPN"),
     "settings-downloads-usenet.html": ("topics/choose-a-usenet-provider.md", "your Usenet provider"),

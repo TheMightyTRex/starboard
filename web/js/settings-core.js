@@ -600,7 +600,7 @@ const SETTINGS_STARTS = [["#app-sections", "startManageApps"], ["#general-sectio
   ["#alerts-sections", "startAlerts"], ["#jellyfin-sections", "startJellyfin"], ["#media-server-sections", "startMediaServer"], ["#media-admin-sections", "startMediaAdmin"], ["#listening-sections", "startListening"],
   ["#radio-sections", "startRadioSettings"], ["#performance-sections", "startPerformance"], ["#reelix-sections", "startReelix"],
   ["#install-sections", "startYourInstall"], ["#downloads-sections", "startDownloadsSettings"], ["#guide", "startGuide"],
-  ["#upgrade", "startUpgrade"], ["#install", "startInstall"], ["#bring-in", "startBringIn"], // DASH-455
+  ["#ai-tools", "startAiTools"], ["#upgrade", "startUpgrade"], ["#install", "startInstall"], ["#bring-in", "startBringIn"], // DASH-455
   ["#copy-sections", "startCopy"], ["#dispatcharr-sections", "startDispatcharr"], // DASH-228
   ["#version-notice", "startAbout"], ["#general-sections", "generalScrollSection"]];
 Promise.all([startPage(), settingsLoaded]).then(async ([session]) => {

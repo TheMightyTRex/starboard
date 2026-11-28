@@ -46,7 +46,7 @@ CLIENTS = [
      "line": "Anthropic's Claude app for a computer. It can reach Starboard through a small helper called mcp-remote.",
      "needs": "Node.js on the same computer, because the helper runs with npx.",
      "steps": ["In Claude Desktop, open Settings, then Developer, then Edit config. This opens the file claude_desktop_config.json.",
-               "Add the block below inside the file. If the file already has mcpServers, add only the starboard part to it.",
+               "Add the block shown with this step inside the file. If the file already has mcpServers, add only the starboard part to it.",
                "Save the file and quit Claude Desktop completely, then open it again.",
                "Start a new chat. The tools show under the tools icon. Ask it: Which of my apps have a problem?"],
      "snippets": [{"label": "Add to claude_desktop_config.json", "language": "json", "text": json.dumps(
@@ -57,7 +57,7 @@ CLIENTS = [
      "line": "Anthropic's Claude in a terminal. It speaks to Starboard directly.",
      "needs": "The claude command, on a computer that can reach Starboard.",
      "steps": ["Open a terminal on that computer.",
-               "Run the first line below. It asks for the key without showing it, so the key is not saved in your history. Paste the key and press Enter.",
+               "Run the first line shown with this step. It asks for the key without showing it, so the key is not saved in your history. Paste the key and press Enter.",
                "Run the second line to add Starboard.",
                "Start claude and ask it: Which of my apps have a problem? Use /mcp to check that starboard shows as connected."],
      "snippets": [{"label": "In a terminal", "language": "bash", "text": "read -rs STARBOARD_KEY && export STARBOARD_KEY\n"
@@ -68,7 +68,7 @@ CLIENTS = [
      "steps": ["Open the tool's settings and find where it adds an MCP server or extension.",
                "Choose the HTTP kind. It may be called Streamable HTTP or Remote.",
                "Enter the address, then add one header: Authorization, with Bearer, a space and the key.",
-               "In Goose, you can instead add the extension block below to its config file, or run goose configure and choose Add Extension, then Remote Extension.",
+               "In Goose, you can instead add the Goose extension block to its config file, or run goose configure and choose Add Extension, then Remote Extension.",
                "Ask it: Which of my apps have a problem?"],
      "snippets": [{"label": "The values to enter", "language": "text", "text": "Type: HTTP (Streamable HTTP)\nAddress: {{address}}\nHeader name: Authorization\nHeader value: Bearer {{key}}"},
                   {"label": "Goose: an extension in its config file", "language": "yaml", "text": "extensions:\n  starboard:\n    name: Starboard\n    type: streamable_http\n"
@@ -86,7 +86,7 @@ TAILSCALE = {
     "title": "Away from home: use Tailscale Serve, never Funnel",
     "steps": ["Install Tailscale on the server and on the computer that runs the AI tool, and sign in to the same Tailscale account on both.",
               "On the server, run: tailscale serve --bg 8095. This shares Starboard only with your own devices, over HTTPS. Change 8095 if Starboard uses another port.",
-              "Run tailscale serve status. It shows your server's name, such as <your-server>.<your-tailnet>.ts.net. Enter that name in the wizard.",
+              "Run tailscale serve status. It shows your server's name, such as <your-server>.<your-tailnet>.ts.net. Note it down: the wizard asks for it.",
               "Tell Starboard the name. On the server, open the .env file in the Starboard folder and add the name to STARBOARD_ALLOWED_HOSTS, for example STARBOARD_ALLOWED_HOSTS=<your-server>.<your-tailnet>.ts.net. Then run docker compose up -d. Starboard otherwise answers 421.",
               "Never run tailscale funnel for Starboard, and never open port 8095 on your router. Funnel and an open port put Starboard on the public internet. Run tailscale funnel status: it should say Funnel is off."],
 }
@@ -106,6 +106,9 @@ def tools():
 def overview(h):
     app = h.app
     info = app.network_info(h.client_address_text())
+    shown = h.headers.get("Host", "").rsplit(":", 1)[-1]  # the port this page was opened on, which is the one an AI tool needs
+    if shown.isdigit():
+        info["port"] = int(shown)
     keys = [k for k in api_v1._load(app.data_dir) if k.get("client")]
     return {"enabled": bool(app.config.data.get("mcp_enabled")), "path": mcp.PATH, "port": info["port"], "addresses": info["addresses"],
             "network_access": info["network_access"], "you_are_on_this_computer": info["you_are_on_this_computer"],

@@ -152,7 +152,8 @@ Each guide is a journey through several topics, in order.
 - [Sign out everywhere](topics/sign-out-everywhere.md)
 - [Put Starboard behind a reverse proxy](topics/reverse-proxy.md)
 - [Make an API key and use Starboard's API](topics/use-starboards-api.md)
-- [Let an AI assistant answer questions about your server](topics/connect-an-ai-assistant-with-mcp.md)
+- [Connect an AI tool to Starboard](topics/connect-an-ai-tool.md)
+- [Let an AI assistant answer questions about your server, by hand](topics/connect-an-ai-assistant-with-mcp.md)
 
 ### Backup and restore
 

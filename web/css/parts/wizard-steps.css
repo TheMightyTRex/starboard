@@ -1,0 +1,98 @@
+/* wizard-steps: a part of the shared components. Load it after components.css, on the pages that use it.
+ * Made by tools/parts.py from components.css in github.com/TheMightyTRex/design-system: change it there, not here. */
+@layer shared {
+  /* The shared wizard's steps, in script (docs/WIZARD.md, Variants): the browser's Back button going step to step (Back stays in the foot, after Continue), a Check your answers page where Change returns to that step and comes back, a question
+     marked (optional), and an error summary. `data-wizard` on .wizard turns it on; without it .wizard is only styles. */
+  .wizard__step[hidden],
+  .wizard__foot [hidden],
+  .wizard__count[hidden] {
+    display: none;
+  }
+  .wizard-mode {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+  .wizard__count {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+  .wizard__step {
+    display: grid;
+    gap: var(--space-4);
+    min-width: 0;
+  }
+  .wizard__q {
+    margin: 0;
+    font-size: var(--text-xl);
+    line-height: var(--leading-tight);
+  }
+  .wizard__optional {
+    color: var(--color-text-muted);
+    font-weight: var(--weight-regular);
+  }
+  /* How it is now, and what the plug-in or app recommends: words, never colour alone. */
+  .wizard__tag {
+    display: inline-block;
+    margin-left: var(--space-2);
+    padding: 0 var(--space-2);
+    border: 1px solid currentColor;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-strong);
+    vertical-align: middle;
+  }
+  .wizard__tag[data-tag="current"] {
+    border-color: var(--status-info-fg);
+    background: var(--status-info-bg);
+    color: var(--status-info-fg);
+  }
+  .wizard__field {
+    display: grid;
+    gap: var(--space-1);
+    max-width: 28rem;
+  }
+  .wizard__field label {
+    font-weight: var(--weight-strong);
+  }
+  /* Check your answers: one row for each answer, with a Change link that returns to its step. */
+  .wizard-summary--check li {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+  .wizard-summary--check li[data-changed] {
+    border-left: var(--status-edge-w) solid var(--status-info-fg);
+  }
+  .wizard-summary--check b,
+  .wizard-summary--check span {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+  .wizard-summary--check .wizard__was {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+  .wizard-summary--check a {
+    min-height: 24px;
+    padding: var(--space-1);
+  }
+  .wizard__change {
+    margin: 0;
+    padding: var(--space-3);
+    border-left: var(--status-edge-w) solid var(--status-info-fg);
+    background: var(--status-info-bg);
+    color: var(--color-text);
+  }
+  .wizard__same > summary {
+    min-height: 24px;
+    cursor: pointer;
+  }
+  @media (forced-colors: active) {
+    .wizard__change,
+    .wizard-summary--check li[data-changed] {
+      border-left-color: Highlight;
+    }
+  }
+}

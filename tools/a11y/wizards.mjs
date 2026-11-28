@@ -209,4 +209,61 @@ await page.keyboard.press("Enter");
 const err = await focusOn((e) => e?.id === "code");
 check("T-LOGIN2", "Enter with no code keeps focus on the code field", err.id === "code", JSON.stringify(err));
 
+// T-AITOOL Connect an AI tool (DASH-627): the shared wizard drawn from markup (part wizard-steps). By keyboard alone: choose the
+// tool and where it runs with the arrow keys, leave each step with Continue, land on the next question's heading, go back
+// with the browser's Back, change an answer from Check your answers and come back to it, enter the password, make the key,
+// and land on the result's heading with the key hidden and Copy ready. axe scans each step.
+await open("settings-security-ai.html");
+await page.waitForSelector(".wizard[data-wizard=connect-ai-tool] .wizard__q");
+const qHeading = () => focusOn((e) => e?.classList?.contains("wizard__q") || e?.id === "ai-done-h");
+const radio = async (name, value) => { await page.locator(`input[name=${name}][value=${value}]`).focus(); await page.keyboard.press("Space"); };
+const goOn = async () => { const b = await tabTo((f) => f.tag === "BUTTON" && /^(Continue|Check your answers)$/.test(f.text), 60); if (b) await page.keyboard.press("Enter"); return b; };
+await scan("T-AITOOL", "Connect an AI tool, step 1");
+check("T-AITOOL", "nothing has focus on the wizard when the page opens", await page.evaluate(() => !document.querySelector(".wizard")?.contains(document.activeElement)), "");
+await radio("tool", "claude-code");
+check("T-AITOOL", "Continue is reached by Tab", !!(await goOn()), "");
+const h2 = await qHeading();
+check("T-AITOOL", "focus lands on the next question's heading", /Where does the AI tool run/.test(h2.text), JSON.stringify(h2));
+await page.keyboard.press("Alt+ArrowLeft");
+const h1 = await qHeading();
+check("T-AITOOL", "the browser's Back button goes to the step before", /Which AI tool/.test(h1.text) && (await page.locator("input[name=tool][value=claude-code]").isChecked()), JSON.stringify(h1));
+await goOn(); await qHeading();
+await scan("T-AITOOL", "Connect an AI tool, step 2");
+await radio("where", "here");
+await goOn(); await qHeading();
+await scan("T-AITOOL", "Connect an AI tool, step 3");
+await goOn(); await qHeading();           // what it may read: the defaults are ticked
+await scan("T-AITOOL", "Connect an AI tool, step 4");
+const skip = await tabTo((f) => f.tag === "BUTTON" && /^Skip this step/.test(f.text), 60);
+check("T-AITOOL", "an optional step has Skip this step", !!skip, "");
+if (skip) await page.keyboard.press("Enter");
+const h5 = await qHeading();
+check("T-AITOOL", "Skip moves on to the name", /What should the key be called/.test(h5.text), JSON.stringify(h5));
+await goOn();
+const hc = await qHeading();
+check("T-AITOOL", "Check your answers has focus on its heading", /Check your answers/.test(hc.text), JSON.stringify(hc));
+await scan("T-AITOOL", "Connect an AI tool, Check your answers");
+const change = await tabTo((f) => f.tag === "A" && /^Change Where does|^Change /.test(f.text) && /Where/.test(f.text), 60);
+check("T-AITOOL", "Tab reaches a Change link named for its question", !!change, change ? change.text : "");
+if (change) {
+  await page.keyboard.press("Enter");
+  const back = await qHeading();
+  check("T-AITOOL", "Change goes to that question", /Where does the AI tool run/.test(back.text), JSON.stringify(back));
+  await goOn();
+  const again = await qHeading();
+  check("T-AITOOL", "and then straight back to Check your answers", /Check your answers/.test(again.text), JSON.stringify(again));
+}
+await page.locator("#ai-password").fill(password);
+const make = await tabTo((f) => f.tag === "BUTTON" && /^Turn on AI tools and make the key|^Make the key/.test(f.text), 60);
+check("T-AITOOL", "Tab reaches the button that makes the key", !!make, make ? make.text : "");
+if (make) {
+  await page.keyboard.press("Enter");
+  const done = await qHeading();
+  check("T-AITOOL", "focus lands on the result's heading", done.id === "ai-done-h", JSON.stringify(done));
+  check("T-AITOOL", "the key is hidden until Show", await page.evaluate(() => document.getElementById("ai-key-made")?.type === "password"), "");
+  await scan("T-AITOOL", "Connect an AI tool, the result");
+  const copyKey = await tabTo((f) => f.tag === "BUTTON" && /^Copy the key/.test(f.text), 30);
+  check("T-AITOOL", "Tab reaches Copy for the key", !!copyKey, copyKey ? copyKey.text : "");
+}
+
 await finish();

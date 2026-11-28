@@ -22,6 +22,7 @@
     { "id": "library-choose-download", "name": "Choose a download for a title", "files": ["web/js/library-item.js"], "tasks": ["T-CHOOSE"] },
     { "id": "find-all-wanted", "name": "Find all wanted (count, confirm, progress, stop)", "files": ["web/js/find-wanted.js"], "tasks": ["T-FINDALL", "T36"] },
     { "id": "pool-jobs", "name": "Pool: Add a disk, Balance the files, Take out of the pool", "files": ["web/js/system-pool.js", "web/system-pool.html"], "tasks": ["T-POOL"] },
+    { "id": "connect-ai-tool", "name": "Connect an AI tool: tool, where it runs, what it may read, when the key ends, name, Check your answers, then the key shown once", "files": ["web/settings-security-ai.html", "web/js/settings-ai.js"], "tasks": ["T-AITOOL"] },
     { "id": "terminal-setup", "name": "The terminal installer and set-up (install.sh, run-first.sh, terminal set-up)", "browser": false, "files": ["install.sh", "run-first.sh", "starboard/terminal_setup.py"], "covered_by": ["tests/test_terminal_setup.py", "tests/test_terminal_frame.py", "tests/test_terminal_bring_in.py"] }
   ]
 }
