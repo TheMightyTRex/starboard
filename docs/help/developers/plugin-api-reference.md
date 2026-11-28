@@ -497,33 +497,32 @@ When the router answers again, send `{"key": "check-router", "state": "cleared",
 
 ## Fetching from named sites (API 1.25)
 
-A plug-in with the permission `fetch` lists the sites it may reach in its manifest (`"fetch": ["api.openverse.org"]`) and keeps its
-own network, which has no way out. To fetch it asks Starboard:
+A plug-in with the permission `fetch` lists its sites in the manifest (`"fetch": ["api.openverse.org"]`). It keeps its own network, which
+has no way out. To fetch, it asks Starboard:
 
 ```
 POST /api/v1/plugin/fetch
 {"url": "https://api.openverse.org/v1/audio/?q=rain", "what": "Search for music", "headers": {"Accept": "application/json"}}
 ```
 
-It answers `{"ok": true, "status": 200, "host": "api.openverse.org", "content_type": "...", "size": 123, "body_base64": "..."}`. Send
-`save_as` (a file name) for a large file: Starboard keeps it in `data/<container>/fetched/` of the plug-in's own folder, which the
-plug-in reaches as `/data/fetched/<name>`, and answers `saved` instead of `body_base64`.
+It answers `{"ok": true, "status": 200, "host": "api.openverse.org", "content_type": "...", "size": 123, "body_base64": "..."}`.
+For a large file, send `save_as` (a file name). Starboard keeps the file in the plug-in's own folder, which the plug-in reaches as
+`/data/fetched/<name>`, and answers `saved` instead of `body_base64`.
 
 The rules Starboard enforces, which a plug-in cannot change:
 
-- https only, port 443, a site on the list, no user name, no `#`, no `..` in the path. Anything else is `400 bad_request`.
-- Starboard checks the name and refuses the call unless every address is on the internet. A name that points at this computer, a
-  home network address (10.x, 172.16 to 31, 192.168.x), a link-local address (169.254.x, the cloud metadata address), a shared
-  address (100.64.x), multicast or a reserved range is refused. Starboard connects to the address it checked.
-- A redirect is followed only to another site on the list, at most 3 times, checked again. A key header is not sent to a different site.
-- Only the headers `Accept`, `Authorization` and `X-Api-Key` are sent, and Starboard asks for no compression.
-- At most 25 MB (2 MB without `save_as`) and 30 seconds (up to 120 with `seconds`). Too big or too slow is `502 fetch_failed`.
-- **One fetch at a time for every plug-in together.** A second call waits up to 10 seconds, then gets `429 rate_limited` with
-  `Retry-After`. A plug-in may fetch 60 times a minute. Fetch in one thread, one job at a time, and use a progress notice for a
-  long job; do not open several calls at once.
-- Starboard keeps the last 200 fetches for the person: the time, the site, `what` (up to 60 characters, so never put a key or a
-  person's words in it), the size and the result. It keeps no path, query, header or answer and writes none to its log.
-  People read it on the plug-in's page, **What it fetched**.
+- https only, port 443, a site on the list. No user name, no `#`, no `..` in the path. Anything else is `400 bad_request`.
+- Starboard checks the name and refuses the call unless every address is on the internet. It refuses this computer and home networks
+  (10.x, 172.16 to 31, 192.168.x). It refuses link-local (169.254.x), shared (100.64.x), multicast and reserved ranges.
+  Starboard connects to the address it checked.
+- Starboard follows a redirect only to another site on the list, at most 3 times. It sends a key header to no other site.
+- Starboard sends only the headers `Accept`, `Authorization` and `X-Api-Key`, and asks for no compression.
+- The limits are 25 MB (2 MB without `save_as`) and 30 seconds (up to 120 with `seconds`). Over a limit is `502 fetch_failed`.
+- **One fetch at a time for every plug-in together.** A second call waits up to 10 seconds, then gets `429 rate_limited`
+  with `Retry-After`. A plug-in may fetch 60 times a minute. Fetch in one thread and one job at a time.
+- Starboard keeps the last 200 fetches for the person: time, site, `what`, size and result. Keep `what` to 60 characters and never put
+  a key in it. Starboard keeps no path, query, header or answer, and writes none to its log.
+- People read the record on the plug-in's page, **What it fetched**.
 - Keep an API key in a `secret` setting and send it in `headers`. Never put it in `url` or `what`.
 - Nothing runs while no plug-in asks: no thread, timer or open connection.
 
@@ -550,11 +549,15 @@ The plug-in's key must belong to a plug-in that is active and was approved `fetc
 ## Handing files to another plug-in (API 1.25)
 
 A plug-in that makes something another plug-in can use drops it in a shared folder. The sender has the permission `handoff:send`
-and the volume `handoff/<kind>:send`; the receiver has `handoff:receive` and `handoff/<kind>:receive`. Both reach the same folder, at
-`/handoff/<kind>`, read and write, so the receiver can remove what it has used. The folder is mode 0777, so a sender running as any
-user can write to it. Nothing else reaches it, and any plug-in with the permission can read and change what is in it: treat what
-arrives like an upload and check it. Write a file under a temporary name and rename it when it is whole, so the receiver never reads half a file.
-The kind names the format. `tv-pack` is a TV channel broadcast pack (a zip with a `pack.json`).
+and the volume `handoff/<kind>:send`. The receiver has `handoff:receive` and `handoff/<kind>:receive`.
+
+Both reach the same folder, at `/handoff/<kind>`, read and write, so the receiver can remove what it used. The folder is mode 0777,
+so a sender running as any user can write to it. Nothing else reaches it.
+
+Any plug-in with the permission can read and change what is in it. Treat what arrives like an upload and check it.
+
+Write a file under a temporary name and rename it when it is whole, so the receiver never reads half a file. The kind names the
+format: `tv-pack` is a TV channel broadcast pack, a zip with a `pack.json`.
 
 ## Holding heavy jobs (API 1.24)
 

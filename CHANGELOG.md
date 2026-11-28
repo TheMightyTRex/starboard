@@ -7,7 +7,9 @@ add features.
 
 ## [Unreleased]
 
-- **Plug-ins can fetch from named sites and hand files to each other (DASH-620, plug-in API 1.25, Starboard API 1.13.0):** a plug-in with the new `fetch` permission lists up to 12 sites in its manifest and asks Starboard to fetch from them with `POST /api/v1/plugin/fetch`, while it keeps a network with no way out. Starboard refuses any other site, any address on your computer or home network, and any redirect to another site, limits size (25 MB) and time (30 seconds), runs one fetch at a time and keeps a record on the plug-in's page, **What it fetched** (time, site, what for, size; never a key or what came back). The permissions `handoff:send` and `handoff:receive` give two plug-ins one shared folder for one kind of thing, such as a TV channel pack. Nothing runs while no plug-in asks. The install warning names the sites and the folder.
+- **Plug-ins can fetch from named sites (DASH-620, plug-in API 1.25, Starboard API 1.13.0):** a plug-in with the new `fetch` permission lists up to 12 sites. It keeps a network with no way out and asks Starboard to fetch, with `POST /api/v1/plugin/fetch`. Starboard refuses other sites, addresses on your computer or home network, and redirects to other sites. It limits size to 25 MB and time to 30 seconds, and runs one fetch at a time.
+- **What a plug-in fetched (DASH-620):** the plug-in's page lists each fetch under **What it fetched**: when, site, what for and size. It never shows a key or an answer.
+- **Hand-off folders (DASH-620):** the permissions `handoff:send` and `handoff:receive` give two plug-ins one shared folder, such as for a TV channel pack. Nothing runs while no plug-in asks.
 ## [0.40.0] (28 November 2026)
 
 ### Added

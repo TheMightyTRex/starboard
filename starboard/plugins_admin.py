@@ -1133,8 +1133,8 @@ def handoff_kinds(manifest):
 
 
 def ensure_handoff(data_dir, manifest):
-    """Makes data/handoff/<kind> for each kind a plug-in sends or receives. Any container user may add and remove files
-    in it (mode 0777, no sticky bit, so the receiver may remove what the sender put there), and nothing else is in it."""
+    """Makes data/handoff/<kind> for each kind a plug-in sends or receives. The mode is 0777 with no sticky bit, so any
+    container user may add files and the receiver may remove them. Nothing else lives there."""
     for kind in handoff_kinds(manifest):
         where = os.path.join(data_dir, "handoff", kind)
         os.makedirs(where, exist_ok=True)

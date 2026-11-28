@@ -30,9 +30,9 @@ shows each permission in plain words with a risk level (low, medium or high) bef
   downloads by itself. The hold ends by itself after at most 30 minutes unless the plug-in asks again, and everything
   that was waiting then starts. A job you start yourself still runs. The risk is low.
 - **Fetch from named websites** for it, only when it asks for this and you agree. Starboard shows you the exact sites before you
-  add it. The plug-in itself still has no way out: Starboard makes each request, only to those sites, one at a time, and refuses
-  anything that points at your own computer or home network. The plug-in's page lists everything it fetched under **What it
-  fetched**: when, from which site, what for and how big. The risk is medium, because what it searches for goes to those sites.
+  add it. The plug-in has no way out itself: Starboard makes each request, only to those sites, one at a time. It refuses
+  anything on your own computer or home network. The risk is medium, because its search words go to those sites.
+- **Show what it fetched.** The plug-in's page lists each fetch under **What it fetched**: when, which site, what for and how big.
 - **Share a folder with another plug-in,** only when it asks for this and you agree. One plug-in puts files there, for
   example a pack of pictures and music, and another uses them. Nothing else can reach the folder. The risk is low.
 - **Show settings and buttons** in its own section of **Settings**, then **Plug-ins**, drawn by Starboard.

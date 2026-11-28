@@ -145,8 +145,8 @@ def _unknown_hole(text):
 # ("image": "starboard") with a command, and Live TV may use the Live TV folder the installer gave ("iptv").
 BUILTIN_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "plugins")
 BUILTIN_VOLUMES = {"iptv"}
-# API 1.25 (DASH-620): a shared hand-off folder for one kind of thing, such as tv-pack. One plug-in sends (drops files in), another
-# receives (reads and removes them). Starboard makes the folder and nothing else reaches it.
+# API 1.25 (DASH-620): a shared hand-off folder for one kind of thing, such as tv-pack. One plug-in sends files, another
+# receives and removes them. Starboard makes the folder and nothing else reaches it.
 HANDOFF = r"^handoff/([a-z][a-z0-9-]{1,29}):(send|receive)$"
 HANDOFF_PERMISSION = {"send": "handoff:send", "receive": "handoff:receive"}
 SETTING = {"key", "label", "type", "hint", "default", "min", "max", "unit", "choices", "restart", "item", "required", "group"}

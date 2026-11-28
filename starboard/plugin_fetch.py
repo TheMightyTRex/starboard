@@ -111,7 +111,7 @@ def parse(url, allowed):
         raise Refused("url must be an address of up to 2000 plain characters")
     u = urllib.parse.urlsplit(url)
     if u.scheme != "https":
-        raise Refused("Only https addresses can be fetched")
+        raise Refused("Starboard fetches https addresses only")
     if u.username is not None or u.password is not None or u.fragment:
         raise Refused("The address may not have a user name, a password or a # part")
     try:
@@ -119,7 +119,7 @@ def parse(url, allowed):
     except ValueError:
         raise Refused("The address has a port that is not a number") from None
     if port not in (None, 443):
-        raise Refused("Only the usual https port can be fetched")
+        raise Refused("Starboard fetches the usual https port only")
     host = (u.hostname or "").lower().rstrip(".")
     if host not in allowed:
         raise Refused(f"{host or 'That address'} is not on this plug-in's list of sites")
@@ -150,7 +150,7 @@ def _clean_headers(headers):
     for k, v in headers.items():
         name = HEADERS.get(str(k).lower())
         if not name:
-            raise Refused("Only the headers Accept, Authorization and X-Api-Key are sent")
+            raise Refused("Starboard sends only the headers Accept, Authorization and X-Api-Key")
         if not isinstance(v, str) or len(v) > 400 or re.search(r"[\x00-\x1f\x7f]", v):
             raise Refused(f"The {name} header must be one line of up to 400 characters")
         out[name] = v
@@ -214,7 +214,7 @@ def fetch(data_dir, plugin, hosts, body, context=None, now=None):
 
 
 def _shown_host(url):
-    """The site part of an address a plug-in was refused, cleaned for the record (never the path or a query)."""
+    """The site part of an address Starboard refused a plug-in, cleaned for the record (never the path or a query)."""
     try:
         h = (urllib.parse.urlsplit(url).hostname or "").lower()
     except (ValueError, AttributeError):
@@ -359,7 +359,7 @@ def _record(data_dir, pid, host, what, size, result, now=None):
 
 
 def record_of(data_dir, pid):
-    """What a plug-in fetched, newest first, up to 200: [{at, host, what, size, result}]. Read only when its page is opened."""
+    """What a plug-in fetched, newest first, up to 200: [{at, host, what, size, result}]. Starboard reads it only when the page opens."""
     from . import plugins_admin
     path = os.path.join(plugins_admin.folder(data_dir, pid), FILE)
     out = []

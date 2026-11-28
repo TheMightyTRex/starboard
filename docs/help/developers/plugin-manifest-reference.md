@@ -466,13 +466,16 @@ them in the plug-in's `settings.json`. Read [Settings and key files](plugin-api-
 
 `"fetch": ["api.openverse.org", "api.pexels.com"]`. One to 12 different site names: lower case, letters, numbers, dots and
 hyphens, with a real ending such as `.org`. No address, no port, no `*`, and no name for a computer at home (`.local`,
-`.lan`, `.internal`, `.home.arpa`). It needs the permission `fetch`, and the permission needs the list. The install warning
-names every site. A plug-in with `fetch` can stay on the `default` network, which has no way out: Starboard does the fetching.
+`.lan`, `.internal`, `.home.arpa`).
+
+It needs the permission `fetch`, and the permission needs the list. The install warning names every site. A plug-in with `fetch` can
+stay on the `default` network, which has no way out: Starboard does the fetching.
 
 ### Hand-off volumes (API 1.25)
 
-`handoff/<kind>:send` and `handoff/<kind>:receive` in a container's `volumes`, where `<kind>` is 2 to 30 lower case letters,
-numbers and hyphens, such as `tv-pack`. Both mount the same folder, `data/handoff/<kind>`, at `/handoff/<kind>`, read and write.
+`handoff/<kind>:send` and `handoff/<kind>:receive` in a container's `volumes`. `<kind>` is 2 to 30 lower case letters, numbers and
+hyphens, such as `tv-pack`. Both mount the same folder, `data/handoff/<kind>`, at `/handoff/<kind>`, read and write.
+
 `:send` needs the permission `handoff:send` and `:receive` needs `handoff:receive`. Starboard makes the folder.
 
 ### Setting up before it starts

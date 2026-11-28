@@ -803,11 +803,12 @@ function pluginPage(p, redraw, ms = null, read = null) {
       el("div", { class: "actions" }, removeButton(p, () => { location.href = "/settings-plugins.html"; })));
   const slot = p.media_server ? mediaServerSection(p, ms) : null;
   return [
-    groupSection(`pl-${p.id}-general`, "General", stateSec, slot, versions, jobs, may, fetched, remove),
+    groupSection(`pl-${p.id}-general`, "General", stateSec, slot, versions, jobs, may, remove),
     webSection(p),
     p.id === "calibre-web" || p.id === "kavita" ? section(`pl-${p.id}-phone`, "Read on your phone", `Apps for Android and iOS that open your ${p.name} library.`, phoneApps("h3", p.id)) : null,
     adoptSection(p, redraw),
     firstSignInSection(p),
+    fetched,
     p.looks?.length ? section(`pl-${p.id}-styles`, "Styles", "Colours for Starboard from this plug-in. Choose one for this browser, as in Display.", styleGallery(p)) : null,
     appSettingsSection(p),
     ...groups.map((g) => section(g.id, g.group || "Settings", "Saved for everyone who uses this Starboard.", g.body)),
