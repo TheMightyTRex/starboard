@@ -7,6 +7,14 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Three more read-only AI tools:** `read_logs` (Starboard's log or an app's log, newest first, up to 200 lines), `list_apps_and_updates` and `explain_error` (one problem an app reports, the lines of the log about that app and the help topic, with no model). Every answer now has keys, tokens, emails, addresses, host names, folders and private names hidden by one core masker, and starts with `untrusted: true`, so a line in a log that says "ignore your rules" is data and stays data. Read [MCP tools](docs/help/developers/mcp-tools.md).
+- **More audit lines:** `key_used`, `mcp_error`, `mcp_refused`, `mcp_turned_on` and `mcp_turned_off`, and more detail in `mcp_call`, `key_created` and `key_revoked`. None holds a key or what was asked or answered.
+- **Tests that plant instructions:** fake logs, titles, app names and error text with commands, canary keys, addresses and folders go through every tool; the tests prove they cannot change a call, appear unmasked or break the marked answer. The masker is fuzzed for every kind of value it hides.
+
+### Fixed
+- A tool argument pattern such as `^[0-9a-f]{12}$` now ends at the end of the text, so a trailing line break no longer fits it.
+
 ## [0.40.0] (28 November 2026)
 
 ### Added

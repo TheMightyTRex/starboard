@@ -15,6 +15,25 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Starboard API 1.14.0 (not released yet), 28 November 2026
+
+- **Added:** MCP tools `read_logs` (Starboard's log or one app's log, newest first, up to 200 lines, masked; needs the `logs` scope),
+  `list_apps_and_updates` and `explain_error` (one problem from `app_health`, with its `id`, the log lines about the app and the help
+  topic). Read [MCP tools](mcp-tools.md).
+- **Added:** every MCP answer is marked `untrusted: true` with a `source` and a `notice`, and has private values hidden before it
+  leaves Starboard: keys, tokens, emails, addresses, host names, folders and the names Starboard knows are private. `hidden` counts what
+  was hidden. The fields an answer had before stay as they were; the three marks are added at the top. Text such as an app name or a
+  title that held an address or a folder now shows `[address 1]` or `[path 1]` in its place.
+- **Added:** `problems` in `app_health` have an `id`, which `explain_error` takes.
+- **Added:** audit log lines `key_used`, `mcp_error`, `mcp_refused`, `mcp_turned_on` and `mcp_turned_off`; `mcp_call` also has the key's name,
+  the outcome, how many values were hidden and the answer's size; `key_created` also has the scopes, the end date and where it was made;
+  `key_revoked` has the key's name. None holds a key, a password, what was asked or what was answered.
+- **Changed, not breaking:** a tool called with a name that does not exist, or one the key may not use, answers the same `-32602` as before, with
+  words that do not repeat the name that was sent. A pattern in a tool's arguments now ends at the end of the text, so `0123456789ab\n` no longer
+  fits `^[0-9a-f]{12}$`.
+- No route, route field or scope was taken away or changed. A key with no scopes still lists every tool that needs no explicit scope.
+  Starboard API 1.13.0 is plug-in API 1.25 (`fetch`).
+
 ## Plug-in API 1.24.0 and Starboard API 1.12.0 (not released yet), 27 November 2026
 
 - **Added:** the permission `power:hold` and `POST /api/v1/plugin/hold`, so a plug-in such as UPS and power asks Starboard to hold

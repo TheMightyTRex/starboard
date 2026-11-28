@@ -1561,6 +1561,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, {"off": shadows.default_off(edition), "reelix": edition, "note": shadows.NOTE})
             if path == "/api/config/general" and method == "PUT":
                 before = cfg.data.get("network_access", True)
+                mcp_before = bool(cfg.data.get("mcp_enabled"))
                 # Each key has its right (DASH-278); a signed-in person holds every right. An API key (DASH-274) will
                 # be checked with config.allowed(its right, this right) before anything is saved, and an unknown key
                 # refused; from a page, keys Starboard does not know are left out, as they always were.
@@ -1568,6 +1569,9 @@ class Handler(BaseHTTPRequestHandler):
                 general_right(incoming)
                 cfg.update_general(incoming)
                 logs.event("info", "settings", f"Changed: {', '.join(sorted(incoming)) or 'nothing'}")
+                if "mcp_enabled" in incoming and bool(incoming["mcp_enabled"]) != mcp_before:  # DASH-627: turning AI tools on or off is in the audit log
+                    from .api_v1 import audit
+                    audit(app.data_dir, "mcp_turned_on" if incoming["mcp_enabled"] else "mcp_turned_off", session=self.session_label(), via="settings")
                 if "logs" in incoming:
                     app.log.prune()  # new limits apply at once (DASH-451), with no timer
                 if "watch" in incoming:
@@ -3508,6 +3512,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, {"styles": plugins_admin.styles(app.data_dir)})
             if path.startswith("/api/plugins"):  # Settings, Plug-ins (DASH-149)
                 return self.plugins_route(method, path)
+            if path == "/api/ai-tools" or path.startswith("/api/ai-tools/"):  # Connect an AI tool (DASH-627)
+                from . import ai_tools
+                return ai_tools.route(self, method, path)
             if path == "/api/keys" and method == "GET":  # API keys (DASH-274): never their secrets
                 from . import api_v1
                 return self.json(200, {"keys": api_v1.list_keys(app.data_dir), "scopes": api_v1.ALL_SCOPES, "rights": api_v1.RIGHTS},

@@ -452,8 +452,10 @@ spec["paths"]["/api/v1/mcp"] = {"post": {
                    "Off until the owner activates AI assistants in Settings, Security, API keys (403 mcp_off). Only a Read only key "
                    "(403 read_key_needed). tools/list gives the tools the key's scopes cover: search_library (library), recently_added, "
                    "coming_up and now_playing (media), downloads_in_progress and download_problems (downloads), requests (requests), "
-                   "app_health (apps) and disk_space (system). Each reads the same as its /api/v1 route and changes nothing. "
-                   "Each tools/call is written to the audit log. An Origin header from another site is refused (403 origin_refused). "
+                   "app_health, list_apps_and_updates and explain_error (apps) and disk_space (system); read_logs needs the Logs scope, which is only given when ticked. "
+                   "Each reads the same as its /api/v1 route or the saved logs and changes nothing. Every answer has private values hidden "
+                   "(keys, emails, addresses, folders and names) and starts with untrusted: true, source and a notice, because apps and people wrote the text in it. "
+                   "Each tools/call is written to the audit log with the key's name and the outcome, never what was asked or answered. An Origin header from another site is refused (403 origin_refused). "
                    "MCP versions 2025-06-18 and 2025-03-26; send MCP-Protocol-Version after initialize.",
     "parameters": [{"name": "MCP-Protocol-Version", "in": "header", "required": False, "schema": {"type": "string", "enum": list(mcp.PROTOCOL_VERSIONS)},
                     "description": "The version initialize agreed."}],

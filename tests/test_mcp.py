@@ -26,6 +26,7 @@ class McpTest(unittest.TestCase):
         cls.app.config.upsert_service({"name": "Made-up Sonarr", "type": "sonarr", "url": "http://127.0.0.1:9", "api_key": "made-up-secret-key"})
         cls.key, cls.item = api_v1.create_key(cls.tmp.name, "AI assistant", "read", [], 90)
         cls.downloads_key, _ = api_v1.create_key(cls.tmp.name, "Downloads only", "read", ["downloads"], 90)
+        cls.full_key, _ = api_v1.create_key(cls.tmp.name, "Everything", "read", list(api_v1.ALL_SCOPES), 90)
         cls.manager, _ = api_v1.create_key(cls.tmp.name, "Manager", "manage", [], 90)
 
     @classmethod
@@ -158,8 +159,11 @@ class McpTest(unittest.TestCase):
     # Tools ----------------------------------------------------------------------------------------------------------
 
     def test_tools_list_follows_the_keys_scopes(self):
-        tools = self.rpc("tools/list")["result"]["tools"]
+        tools = self.rpc("tools/list", key=self.full_key)["result"]["tools"]
         self.assertEqual([t["name"] for t in tools], [t[0] for t in mcp.TOOLS])
+        plain = [t["name"] for t in self.rpc("tools/list")["result"]["tools"]]  # no scopes: not Logs or Updates
+        self.assertNotIn("read_logs", plain)
+        self.assertEqual(plain, [t[0] for t in mcp.TOOLS if t[3] not in api_v1.EXPLICIT_SCOPES])
         for t in tools:
             self.assertEqual(set(t), {"name", "title", "description", "inputSchema", "outputSchema", "annotations"})
             self.assertTrue(t["annotations"]["readOnlyHint"])  # nothing changes anything in this version
@@ -186,7 +190,9 @@ class McpTest(unittest.TestCase):
     def test_each_tool_answers_in_its_own_shape(self):
         args = {"search_library": {"query": "dune"}, "coming_up": {"month": "2026-11", "limit": 5}, "requests": {"pending_only": True}}
         for name, _title, _desc, _scope, schema, out_schema, _fn in mcp.TOOLS:
-            out = self.call(name, args.get(name, {}))["result"]
+            if name == "explain_error":  # needs a problem from app_health: tests/test_mcp_release1.py
+                continue
+            out = self.call(name, args.get(name, {}), key=self.full_key)["result"]
             self.assertEqual(mcp.valid(schema, args.get(name, {})), "", name)
             if name == "search_library":  # the Library needs Reelix, which the tests do not have
                 self.assertTrue(out["isError"])
@@ -195,6 +201,7 @@ class McpTest(unittest.TestCase):
             self.assertFalse(out["isError"], (name, out))
             self.assertEqual(mcp.valid(out_schema, out["structuredContent"], name), "", name)
             self.assertEqual(json.loads(out["content"][0]["text"]), out["structuredContent"], name)
+            self.assertTrue(out["structuredContent"]["untrusted"], name)  # every answer is marked
             self.assertNotIn("made-up-secret-key", json.dumps(out), name)
 
     def test_tools_read_the_same_as_the_api(self):

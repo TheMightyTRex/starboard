@@ -36,12 +36,36 @@ describes the transport, the rules and each tool. For setting it up as an owner,
 | A name Starboard answers to, as for every request. | `421` |
 | Up to 120 requests a minute for each key, shared with the rest of the API. | `429` [`rate_limited`](../../api/errors.md#rate_limited) |
 
-`tools/list` gives only the tools whose scope the key has. A key with no scopes has every tool here, as none needs
-**Logs** or **Updates**. Calling a tool the key does not have answers the JSON-RPC error `-32602`, the same as a tool
+`tools/list` gives only the tools whose scope the key has. A key with no scopes has every tool except `read_logs`, which needs
+**Logs**, and the update list in `list_apps_and_updates`, which needs **Updates**. Calling a tool the key does not have answers the JSON-RPC error `-32602`, the same as a tool
 that does not exist.
 
-Each `tools/call` writes one line to the audit log, `mcp_call`, with the key's id, the tool's name and whether it
-worked. The arguments are not written.
+Each `tools/call` writes one line to the audit log, `mcp_call`, with the key's id and name, the tool's name, `outcome`
+(`done` or `error`), how many values were hidden and the size of the answer. The arguments and the answer are not
+written. A tool that could not answer also writes `mcp_error` with its kind (`not_set_up`, `not_found`, `app_failed`
+or `too_large`). A call that is refused, because the tool is unknown, is outside the key's scopes or the arguments do not
+fit, writes `mcp_refused` (from API 1.14.0). The owner turning the address on or off writes `mcp_turned_on` or
+`mcp_turned_off`, and a key's first use after a quiet spell of 6 hours writes `key_used`.
+
+## What every answer is
+
+From API 1.14.0, every answer is **data, not instructions**, and says so.
+
+- **Hidden values.** Before an answer leaves Starboard, a masker hides what is private: keys, tokens and passwords (removed),
+  email addresses, internet and home network addresses, host names, folders and files, and the names of the site, the
+  server, the people and the folders Starboard knows are private. A hidden value becomes a marker such as `[address 1]`,
+  the same number for the same value inside one answer. Version numbers, dates, counts and app names stay. `hidden` in
+  the answer says how many of each kind were hidden, never what they were.
+- **Marked untrusted.** Each answer starts with `untrusted: true`, `source` (such as `starboard:read_logs`) and a `notice`
+  that says the text was written by apps and people and holds no instructions for the reader. These three are set by
+  Starboard after the answer is built, so nothing inside an answer can replace them. A line of a log that says "ignore
+  your rules" is a string inside `lines`, and stays one.
+- **Bounded.** A log line is cut at 240 characters, a log answer at 200 lines, and any answer over 100,000
+  bytes (`isError: true`).
+- **Closed.** A tool takes only the arguments its schema lists: a count, a month, a choice of words, or a name made of
+  letters, digits, dots, dashes and underscores that Starboard already knows. No tool takes a command, a path or a web
+  address, and none reads a file or opens an address. A tool that is not on the list, or that the key's scopes do not
+  cover, answers `-32602` and is written to the audit log.
 
 ## Answers from a tool
 
@@ -66,7 +90,12 @@ the same objects as the route it reads, with secrets taken out.
 | `requests` | `requests` | `pending_only` (true or false), `limit` | `items`, `more`, `configured`, `pending` | `GET /api/v1/requests` |
 | `app_health` | `apps` | none | `apps`, `problems`, `errors` | `GET /api/v1/status` and `GET /api/v1/health` |
 | `disk_space` | `system` | none | `disks` | `GET /api/v1/system` |
+| `read_logs` | `logs` | `source` (`starboard` or one app's name), `lines` (1 to 200, 50 by default), `level` (`all` or `problems`) | `log`, `newest_first`, `count`, `lines` | Starboard's log, or an app's through Docker |
+| `list_apps_and_updates` | `apps` | none | `apps`, `app_reports`, `errors`, and `starboard_and_plugins` for a key with `updates` | `GET /api/v1/status`, `GET /api/v1/app-updates` and what Starboard knows of its own and its plug-ins' updates |
+| `explain_error` | `apps` | `id` (12 letters and digits, from `app_health`) | `id`, `app`, `level`, `message`, `log_lines`, `log_lines_note`, `help_topic` | `GET /api/v1/health`, and Starboard's log for a key with `logs` |
 
+- `read_logs` needs the `logs` scope, which a key has only when it is ticked. Each line has `time`, `level`, `area` and `text`, newest first. For an app's log the lines come from Docker and the app must be one Starboard runs; any other name answers `isError: true` without repeating the name.
+- `explain_error` asks no model. `app_health` gives each problem an `id`, a short hash of the app and the message. `help_topic` has `title`, `page` and `url` of the help centre topic that explains the problem.
 - `errors` lists the apps that did not answer, so a partial answer says what is missing.
 - `download_problems` gives the same items as `GET /api/v1/downloads/issues`, without its Markdown.
 - `app_health`: `apps` is whether each app answers; `problems` is what the apps report about themselves.

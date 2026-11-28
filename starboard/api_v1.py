@@ -46,7 +46,7 @@ import uuid
 
 from . import deprecations, plugin_capabilities
 
-API_VERSION = "1.12.0"  # 1.12.0 (27 November 2026, DASH-572, plug-in API 1.24): POST /plugin/hold, a hold on heavy work from a plug-in with power:hold, answered only to its own key; /download-hours says what is held. 1.11.0 (26 November 2026, DASH-603): capabilities in GET /, the names of the optional plug-in parts this Starboard has. 1.10.0 (26 November 2026, DASH-603): deprecations in GET /, Deprecation and Sunset headers on a route that is going, 410 gone once removed. 1.9.0 (26 November 2026): several backup places in /backup/copies (destinations, safe, settings_zip), the test for each, and POST /backup/settings-copy. 1.8.0 (20 November 2026, plug-in API 1.17): POST /plugin/alerts, alerts from a plug-in with alerts:send, answered only to its own key. 1.7.0 (19 November 2026, DASH-464): /mcp, read-only tools for AI assistants, off until activated. 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
+API_VERSION = "1.14.0"  # 1.14.0 (28 November 2026, DASH-627): three more read-only MCP tools (read_logs, list_apps_and_updates, explain_error), every MCP answer masked and marked untrusted, new audit lines (key_used, mcp_error, mcp_refused, mcp_turned_on and mcp_turned_off, and more in mcp_call and key_created); no route changed. 1.13.0 is DASH-620 (plug-in API 1.25). 1.12.0 (27 November 2026, DASH-572, plug-in API 1.24): POST /plugin/hold, a hold on heavy work from a plug-in with power:hold, answered only to its own key; /download-hours says what is held. 1.11.0 (26 November 2026, DASH-603): capabilities in GET /, the names of the optional plug-in parts this Starboard has. 1.10.0 (26 November 2026, DASH-603): deprecations in GET /, Deprecation and Sunset headers on a route that is going, 410 gone once removed. 1.9.0 (26 November 2026): several backup places in /backup/copies (destinations, safe, settings_zip), the test for each, and POST /backup/settings-copy. 1.8.0 (20 November 2026, plug-in API 1.17): POST /plugin/alerts, alerts from a plug-in with alerts:send, answered only to its own key. 1.7.0 (19 November 2026, DASH-464): /mcp, read-only tools for AI assistants, off until activated. 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
 KEYS_FILE = "api-keys.json"
 RIGHTS = ("read", "manage")  # manage: read, and the everyday actions (DASH-274). "admin" stays with the pages
 SCOPES = ("apps", "downloads", "media", "system", "library", "requests")
@@ -130,8 +130,10 @@ def list_keys(data_dir):
     return [public(k) for k in _load(data_dir)]
 
 
-def create_key(data_dir, name, right="read", scopes=None, expires_days=90, socket_only=False, slide=False):
-    """Makes a key; returns (the key, shown this once, and its public details)."""
+def create_key(data_dir, name, right="read", scopes=None, expires_days=90, socket_only=False, slide=False, via=""):
+    """Makes a key; returns (the key, shown this once, and its public details). The key itself is never stored: only its
+    SHA-256 hash, which is enough because the key is 256 random bits, so it cannot be guessed or looked up in a table.
+    via: where it was made (the page or the Connect an AI tool wizard), for the audit log."""
     name = re.sub(r"\s+", " ", str(name or "")).strip()[:60]
     if not name:
         raise ValueError("Name the key after what will use it, such as Home Assistant or an AI assistant")
@@ -162,7 +164,7 @@ def create_key(data_dir, name, right="read", scopes=None, expires_days=90, socke
         item["slide_days"] = int(expires_days)
     keys.append(item)
     _save(data_dir, keys)
-    audit(data_dir, "key_created", key_id=kid, name=name, right=right)
+    audit(data_dir, "key_created", key_id=kid, name=name, right=right, scopes=scopes, expires_at=expires, via=via or "page")
     return key, public(item)
 
 
@@ -172,7 +174,7 @@ def revoke_key(data_dir, kid):
     if len(left) == len(keys):
         return False
     _save(data_dir, left)
-    audit(data_dir, "key_revoked", key_id=kid)
+    audit(data_dir, "key_revoked", key_id=kid, name=next((k.get("name", "") for k in keys if k["id"] == kid), ""))
     return True
 
 
@@ -200,7 +202,12 @@ def note_use(data_dir, k):
     keys = _load(data_dir)
     for item in keys:
         if item["id"] == k["id"]:
+            before = item.get("last_used_at")
             item["last_used_at"] = _iso(_now())
+            # key_used (DASH-627): the first use, and then one line after each quiet spell of 6 hours, so the audit log says
+            # when a key started and stopped being used without a line for every request. A plug-in's own key is not listed.
+            if not str(item.get("name", "")).startswith("Plug-in: ") and (not before or before < _iso(_now() - dt.timedelta(hours=6))):
+                audit(data_dir, "key_used", key_id=item["id"], name=item.get("name", ""), first=not before)
             if item.get("slide_days") and item.get("expires_at"):
                 moved = _iso(_now() + dt.timedelta(days=int(item["slide_days"])))
                 if moved > item["expires_at"]:
