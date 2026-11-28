@@ -3926,9 +3926,13 @@ Some plug-ins only make sense while another is on, such as an app that signs in 
 
 Starboard checks both when someone **turns off** a plug-in or saves its switch as off. If other plug-ins that are active list it in
 `needs_plugins`, Starboard stops, names them in plain English and asks for a yes. Nothing changes until the answer is yes. On yes it
-turns those plug-ins off first, then the one asked about. Nothing is deleted, and each can be turned on again. The route answers
+turns those plug-ins off first, then the one asked about. Nothing is deleted, and each can be turned on again.
+
+The route answers
 `409` with `error` (the words to show) and `dependents` (`id` and `name` of each), and the same request with `"confirm_dependents": true`
-does it. Turning on the switch, saving other settings and turning off a plug-in that nothing needs never ask. Starboard does not
+does it.
+
+Turning on the switch, saving other settings and turning off a plug-in that nothing needs never ask. Starboard does not
 turn on a needed plug-in for you. A plug-in that needs another still starts when that one is off, so it should say so on its card.
 A plug-in that does not use these fields works as before. Name `>=1.21` in `starboard_api` to use them.
 
@@ -4944,8 +4948,9 @@ A list without `menus` is drawn as before, so an older Starboard shows every ite
 ### Sections that fold, with a table each (API 1.8)
 
 Send `"layout": "folds"` with `columns` to show each `group` as a section that folds. A section has one line with its name,
-how many of its items are active and its own switch. It opens to a table of its items. Starboard adds a search, the All,
-Active and Inactive filter, filter chips and a tick box on each row, to turn several items on or off at once. Only open sections draw their rows.
+how many of its items are active and its own switch. It opens to a table of its items.
+
+Starboard adds a search, the All, Active and Inactive filter, filter chips and a tick box on each row. Use them to turn several items on or off at once. Only open sections draw their rows.
 
 | Field | Rules |
 |---|---|

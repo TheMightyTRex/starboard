@@ -55,7 +55,7 @@ def status(data_dir, pid, manifest=None, st=None):
     if state in STATES:
         sentence, button, action = STATES[state]
         if state == "not-supported":
-            sentence = f"{why} It is stopped. Its settings and data are kept. An update may fix it."
+            sentence = f"{why} Starboard stopped it and keeps its settings and data. An update may fix it."
         if state == "needs-setup" and missing:
             sentence = f"Fill in {', '.join(missing)}, then turn it on."
         if state == "failed" and st.get("message"):

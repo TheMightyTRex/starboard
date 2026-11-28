@@ -4020,7 +4020,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(409, {"error": pa.dependents_words(name, deps, "switch it off"), "dependents": deps})
             for d in deps:
                 pa.disable(app.data_dir, d["id"])
-                logs.event("info", "plug-ins", f"Turned off {d['id']}: it needs {pid}, which was switched off")
+                logs.event("info", "plug-ins", f"Turned off {d['id']}: it needs {pid}, and {pid} is off")
             if deps:
                 app.plugin_clock.ensure()
                 app.plugin_idle.ensure()

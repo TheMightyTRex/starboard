@@ -132,8 +132,8 @@ Starboard, Reelix, your other apps, Starboard plug-ins and Jellyfin's plug-ins c
 2. Under **When they update**, choose **In your download hours** or **In the quiet hours** (always 01:00 to 06:00).
    Without download hours, both mean 01:00 to 06:00. The line under the choices says which hours are used now.
 3. Turn on the switch of each part you want, such as **Starboard: update by itself**. Each part is off
-   until you turn it on. Beside each one, **Copy first** says what is copied before the update. **Checked by** says how the new
-   version is checked. **Way back** says how it goes back if it does not work.
+   until you turn it on. Beside each one, **Copy first**, **Checked by** and **Way back** say what Starboard copies first and how it checks the new
+   version. They also say how it goes back if the update fails.
 
    ![Settings, Updates, Update by themselves, with When they update (step 2) and Starboard: update by itself (step 3) outlined](../images/update-starboard-3-by-themselves.png)
 

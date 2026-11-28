@@ -1,0 +1,132 @@
+$ bash tools/a11y.sh
+checked apps-services.html
+checked apps-updates.html
+checked bring-in.html
+checked copy-settings.html
+checked dashboard.html
+checked discover-audiobooks.html
+checked discover-books.html
+checked discover-films.html
+checked discover-music.html
+checked discover-ondemand.html
+checked discover-radio.html
+checked discover-tv.html
+checked downloads-direct.html
+checked downloads-finished.html
+checked downloads-issues.html
+checked downloads-requests.html
+checked downloads.html
+checked history-apps.html
+checked history.html
+checked index.html
+checked install-apps.html
+checked library-artist.html
+checked library-audiobook.html
+checked library-audiobooks-authors.html
+checked library-audiobooks-narrators.html
+checked library-audiobooks-series.html
+checked library-audiobooks.html
+checked library-book.html
+checked library-books-authors.html
+checked library-books-series.html
+checked library-books.html
+checked library-film.html
+checked library-films-collections.html
+checked library-films.html
+checked library-music.html
+checked library-radio-show.html
+checked library-radio-stations.html
+checked library-radio.html
+checked library-tv-networks.html
+checked library-tv-show.html
+checked library-tv.html
+checked search-sites.html
+checked search.html
+checked settings-audiobookshelf.html
+checked settings-dispatcharr.html
+checked settings-downloads-hours.html
+checked settings-downloads-speed.html
+checked settings-downloads-usenet.html
+checked settings-downloads.html
+checked settings-general-alerts.html
+checked settings-general-appearance.html
+checked settings-general-backup.html
+checked settings-general-hours.html
+checked settings-general-lists.html
+checked settings-general-performance.html
+checked settings-general.html
+checked settings-install.html
+checked settings-jellyfin.html
+checked settings-people.html
+checked settings-plugin.html
+checked settings-plugins-catalogue.html
+checked settings-plugins.html
+checked settings-radio-library.html
+checked settings-radio-link.html
+checked settings-radio-logos.html
+checked settings-radio.html
+checked settings-reelix.html
+checked settings-releases.html
+checked settings-restore.html
+checked settings-security-keys.html
+checked settings-security-password.html
+checked settings-security-sessions.html
+checked settings-security-signin.html
+checked settings-security.html
+checked settings-tdarr.html
+checked settings-updates-plugins.html
+checked settings-updates.html
+checked settings.html
+checked setup-guide.html
+checked system-busy.html
+checked system-cleanup.html
+checked system-disks.html
+checked system-holding.html
+checked system-logs.html
+checked system-monitor.html
+checked system-network.html
+checked system-pool.html
+checked system-storage.html
+checked system.html
+checked upcoming.html
+checked upgrade.html
+checked wanted-audiobooks.html
+checked wanted-books.html
+checked wanted-films.html
+checked wanted-music.html
+checked wanted-tv.html
+checked settings-plugin.html?id=styles
+checked settings-plugin.html?id=watch-stats
+checked settings-plugin.html?id=notifications
+checked settings-plugin.html?id=audio-description-sources
+checked settings-plugin.html?id=audio-description-tracks
+checked settings-plugin.html?id=jellystat
+checked settings-plugin.html?id=tdarr
+checked settings-plugin.html?id=direct-play
+checked settings-plugin.html?id=jellyfin
+checked settings-plugin.html?id=picture-shrinker
+checked settings-plugin.html?id=on-demand
+checked settings-plugin.html?id=library-cleanup
+checked Why is this here?
+checked the Stallboard catalogue
+checked the custom card panel
+checked the custom card on the dashboard
+checked the media server plug-in
+checked the host alerts
+checked search.html?q=harbour, More filters
+checked the plug-in update
+checked Check for updates, What is new and About
+checked a download that needs attention
+checked the plug-in update list
+checked Restart where it is needed
+checked the no-VPN warning
+checked Where backups go and Connect a cloud service
+checked full backups and Reelix's backups
+checked the sign-in page's states
+
+== 7 findings on 108 pages
+  3 pages  axe light · target-size  (3)
+  2 pages  axe dark · target-size  (2)
+  2 pages  axe high contrast · target-size  (2)
+
+[exit 0]

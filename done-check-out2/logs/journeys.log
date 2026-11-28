@@ -1,0 +1,961 @@
+$ bash tools/journeys.sh
+PASS every page script parses
+
+== USE-02 Manage apps
+PASS USE-02 added: the toast says so
+PASS USE-02 added: it is in the list
+PASS USE-02 changed: the new name is in the list
+PASS USE-02 test: an app that is not there says it cannot connect
+PASS USE-02 removed: gone from the list
+
+== CON-01 Errors beside what they belong to
+PASS CON-01 a rename to a name in use says so in its row
+PASS CON-01 and not in a toast
+PASS CON-01 the next try clears it
+PASS CON-01 with nothing in use, an error toast
+PASS DASH-50 the Updates button says Check now, before and after the first check
+
+== APP-01 What is new in Reelix
+PASS APP-01 Apps, Updates shows Reelix's notice after its version went up
+PASS APP-01 and so does the Apps page
+PASS APP-01 the notice opens the changes from 0.7.0 to 0.7.1 only
+PASS APP-01 entries are text, with bold and code kept
+PASS APP-01 before updating, What is new lists the waiting 0.7.2
+PASS APP-01 under the change types, in order
+PASS APP-01 a closed notice stays closed
+
+== FB-01 Send feedback (Snaglist)
+PASS FB-01 Feedback is in the side menu
+PASS FB-01 no corner button over the page
+PASS FB-01 Feedback opens Snaglist
+PASS FB-01 its styles are let in by the content policy
+PASS FB-01 the report is saved in Starboard
+PASS FB-01 Settings, General, Backup/Logs lists it
+PASS FB-01 turned off, it is gone
+
+== WZ-01 Still to set up in the slide-out
+PASS WZ-01 the step's own page is in the slide-out
+PASS WZ-01 it shows without the menus
+PASS WZ-01 no second wizard or Send feedback inside
+PASS WZ-01 Skip goes to the next step
+
+== SEC-07 Text that looks like code
+PASS SEC-07 index.html: nothing ran
+PASS SEC-07 apps-services.html: nothing ran
+PASS SEC-07 settings.html: nothing ran
+PASS SEC-07 a saved report is shown as text
+PASS SEC-07 settings-general-backup.html: nothing ran
+PASS SEC-07 the name is shown as text
+
+== LIB-01 The Library
+PASS LIB-01 the Films wall shows covers
+PASS LIB-01 with a heading for each letter
+PASS LIB-01 the A to Z list has # and A to Z
+PASS LIB-01 letters with nothing are shown but not links
+PASS LIB-01 letters are 44px targets
+PASS LIB-01 the row is one Tab stop
+PASS LIB-01 choosing I moves focus to its heading
+PASS LIB-01 searching the wall keeps only matches
+PASS LIB-01 a changed view offers Save this view as default
+PASS LIB-01 the view is saved for the account
+PASS LIB-01 an item page has its name as the heading
+PASS LIB-01 and its episodes with a status
+PASS LIB-01 About is a tab
+PASS LIB-01 a series of two seasons shows each season, only the newest open
+PASS LIB-01 a series opens the wall with only its books
+
+== LIB-04 Play in Jellyfin
+PASS LIB-04 films Jellyfin has show Play on the wall
+PASS LIB-04 Play is a link to Jellyfin's item page at its address for browsers
+PASS LIB-04 it opens a new tab, safely
+PASS LIB-04 its name says what, where and the new tab
+PASS LIB-04 it is a 44px target
+PASS LIB-04 a film Jellyfin does not have has no Play
+PASS LIB-04 Play follows the title in the Tab order
+PASS LIB-04 with a visible focus outline
+PASS LIB-04 Enter opens it in a new tab
+PASS LIB-04 a film's page has Play as its main action
+PASS LIB-04 a film Jellyfin has not added says so, with no Play
+PASS LIB-04 each episode Jellyfin has shows Play, named with its season and number
+PASS LIB-04 an episode with its file that Jellyfin has not added says so in words
+PASS LIB-04 with only a local address, Play uses this page's host and Jellyfin's port
+PASS LIB-04 with no address a browser can open there is no Play
+PASS LIB-04 and the page says where to add it
+
+== LIB-05 one control height on item pages
+PASS LIB-05 library-film.html?id=3 at 1280px: every control is the 44px token
+PASS LIB-05 library-film.html?id=3 at 1280px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-tv-show.html?id=8 at 1280px: every control is the 44px token
+PASS LIB-05 library-tv-show.html?id=8 at 1280px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-artist.html?id=2 at 1280px: every control is the 44px token
+PASS LIB-05 library-artist.html?id=2 at 1280px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-book.html?id=4 at 1280px: every control is the 44px token
+PASS LIB-05 library-book.html?id=4 at 1280px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-audiobook.html?id=6 at 1280px: every control is the 44px token
+PASS LIB-05 library-audiobook.html?id=6 at 1280px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-radio-show.html?id=1 at 1280px: every control is the 44px token
+PASS LIB-05 library-radio-show.html?id=1 at 1280px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-radio-show.html?id=7 at 1280px: every control is the 44px token
+PASS LIB-05 library-radio-show.html?id=7 at 1280px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-radio-show.html?id=13 at 1280px: every control is the 44px token
+PASS LIB-05 library-radio-show.html?id=13 at 1280px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-film.html?id=3 at 375px: every control is the 44px token
+PASS LIB-05 library-film.html?id=3 at 375px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-tv-show.html?id=8 at 375px: every control is the 44px token
+PASS LIB-05 library-tv-show.html?id=8 at 375px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-artist.html?id=2 at 375px: every control is the 44px token
+PASS LIB-05 library-artist.html?id=2 at 375px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-book.html?id=4 at 375px: every control is the 44px token
+PASS LIB-05 library-book.html?id=4 at 375px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-audiobook.html?id=6 at 375px: every control is the 44px token
+PASS LIB-05 library-audiobook.html?id=6 at 375px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-radio-show.html?id=1 at 375px: every control is the 44px token
+PASS LIB-05 library-radio-show.html?id=1 at 375px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-radio-show.html?id=7 at 375px: every control is the 44px token
+PASS LIB-05 library-radio-show.html?id=7 at 375px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-radio-show.html?id=13 at 375px: every control is the 44px token
+PASS LIB-05 library-radio-show.html?id=13 at 375px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-film.html?id=3 at 320px: every control is the 44px token
+PASS LIB-05 library-film.html?id=3 at 320px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-tv-show.html?id=8 at 320px: every control is the 44px token
+PASS LIB-05 library-tv-show.html?id=8 at 320px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-artist.html?id=2 at 320px: every control is the 44px token
+PASS LIB-05 library-artist.html?id=2 at 320px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-book.html?id=4 at 320px: every control is the 44px token
+PASS LIB-05 library-book.html?id=4 at 320px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-audiobook.html?id=6 at 320px: every control is the 44px token
+PASS LIB-05 library-audiobook.html?id=6 at 320px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-radio-show.html?id=1 at 320px: every control is the 44px token
+PASS LIB-05 library-radio-show.html?id=1 at 320px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-radio-show.html?id=7 at 320px: every control is the 44px token
+PASS LIB-05 library-radio-show.html?id=7 at 320px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 library-radio-show.html?id=13 at 320px: every control is the 44px token
+PASS LIB-05 library-radio-show.html?id=13 at 320px: controls in one row line up and the page does not scroll sideways
+PASS LIB-05 Following keeps its label and name for screen readers
+PASS LIB-05 and is framed like the buttons beside it
+PASS LIB-05 the Following choice shows a focus outline
+
+== LIB-06 one vocabulary
+PASS LIB-06 films: the filter says Wanted
+PASS LIB-06 films: none of the old words
+PASS LIB-06 tv: the filter says Wanted
+PASS LIB-06 tv: none of the old words
+PASS LIB-06 music: the filter says Wanted
+PASS LIB-06 music: none of the old words
+PASS LIB-06 radio: the filter says Wanted
+PASS LIB-06 radio: none of the old words
+PASS LIB-06 books: the filter says Wanted
+PASS LIB-06 books: none of the old words
+PASS LIB-06 audiobooks: the filter says Wanted
+PASS LIB-06 audiobooks: none of the old words
+
+== LIB-07 one verb for searching
+PASS LIB-07 a series says Find wanted episodes with the count
+PASS LIB-07 a series page has no Get it or Get the
+PASS LIB-07 library-film.html?id=3: no Get it
+PASS LIB-07 library-book.html?id=4: no Get it
+PASS LIB-07 library-artist.html?id=2: no Get it
+
+== LIB-08 Find all wanted
+PASS LIB-08 every tab has Find all wanted first in the row
+PASS LIB-08 the button carries the count
+PASS LIB-08 Radio's button carries how many shows have wanted episodes
+PASS LIB-08 the dialog says how many
+PASS LIB-08 and what Reelix is asked, how fast and that it can be stopped
+PASS LIB-08 Cancel puts focus back on the button
+PASS LIB-08 the panel says what was searched
+PASS LIB-08 and has a way to Open Downloads
+PASS LIB-08 the Wanted page says Find all wanted
+
+== LIB-09 Select several on every tab
+PASS LIB-09 films: has Select several
+PASS LIB-09 films: Follow and Stop following and Delete
+PASS LIB-09 tv: has Select several
+PASS LIB-09 tv: Follow and Stop following and Delete
+PASS LIB-09 music: has Select several
+PASS LIB-09 music: Follow and Stop following and Delete
+PASS LIB-09 radio: has Select several
+PASS LIB-09 radio: Follow and Stop following, no Delete
+PASS LIB-09 books: has Select several
+PASS LIB-09 books: Follow and Stop following and Delete
+PASS LIB-09 audiobooks: has Select several
+PASS LIB-09 audiobooks: Follow and Stop following and Delete
+PASS LIB-02 Narrators lists each narrator
+PASS LIB-02 an audiobook's narrator links to their page
+PASS LIB-02 a narrator's page shows their recordings
+
+== INF-01 Load more as you scroll
+PASS INF-01 the wall starts with 40
+PASS INF-01 Show 40 more is a real button in the box
+PASS INF-01 while loading, a line says Loading the next 40 films
+PASS INF-01 the end coming into view loads the rest by itself
+PASS INF-01 a screen reader hears how many, politely
+PASS INF-01 focus stays where it was
+PASS INF-01 the loading line goes once loaded
+PASS INF-01 with nothing more, the box goes
+PASS INF-01 the A to Z list still jumps to W, with focus on its heading
+PASS INF-01 with the setting turned off, nothing loads by itself
+PASS INF-01 Show 40 more by keyboard loads the rest
+PASS INF-01 and moves focus to the first new title
+PASS INF-01 and says how many
+PASS INF-01 with Reduce motion, nothing loads by itself
+PASS INF-01 after three lots in a row it pauses, so the footer stays in reach
+PASS INF-01 and says so on screen
+PASS INF-01 Show more carries on, with focus on the first new row
+
+== SRCH-01 Search
+PASS SRCH-01 Search is not in the side menu
+PASS SRCH-01 the search box has a Search button you can see
+PASS SRCH-01 the Search button opens the Search page with the words
+PASS SRCH-01 the Search page opens on the Library, with each kind and its count
+PASS SRCH-01 typing searches your library first
+PASS SRCH-01 then Not in your library, with Add
+PASS SRCH-01 and Follow for radio
+PASS SRCH-01 Add sends it to Reelix and says Added
+PASS SRCH-01 on a phone, the header search button stays
+PASS SRCH-01 and the menu keeps its search field
+
+== SRCH-02 search the sites
+PASS SRCH-02 a search lists each site's releases in a table
+PASS SRCH-02 a site that did not answer is named
+PASS SRCH-02 the Site filter narrows the table and the count
+PASS SRCH-02 Get this one sends it and says where
+PASS SRCH-02 focus stays on that row
+
+== RAD-12 radio library review and a show from a link
+PASS RAD-12 files that match no episode are listed by podcast
+PASS RAD-12 Match by hand matches a file to the chosen episode
+PASS RAD-12 Find it shows the show behind the link
+PASS RAD-12 Follow this show adds it and says so
+
+== LIB-02 bring in music from disk
+PASS LIB-02 the note counts the artist folders not in the library
+PASS LIB-02 each artist folder is a row with its matches
+PASS LIB-02 a sure match is ticked; two artists of one name and no match are not
+PASS LIB-02 it says what was brought in where the note was
+
+== LIB-03 bring in a folder with your own details
+PASS LIB-03 Use my own details opens the fields, ticks the folder and moves focus to the title
+PASS LIB-03 the folder with its own details is brought in with the matched ones
+
+== DL-02 held downloads
+PASS DL-02 each held release is a row with its state, Get it now and Remove
+PASS DL-02 the soonest is first, in words
+PASS DL-02 Get it now sends it and says where
+PASS DL-02 focus moves to the next row's first button
+PASS DL-02 Remove asks first, then takes it off the list
+
+== DL-03 copy issues for an AI helper
+PASS DL-03 Queue has a Copy issues for an AI helper button and a Download as Markdown button
+PASS DL-03 the live region says Copied and the number of issues
+PASS DL-03 focus stays on the button
+PASS DL-03 the copy starts with the prompt and has each issue with its details
+PASS DL-03 no key, passkey, private address or home folder in the copy
+PASS DL-03 the page says what was copied, with a way to read it
+PASS DL-03 Download as Markdown saves a .md file
+PASS DL-03 with nothing to copy, an empty state says so
+PASS DL-03 and so does the live region
+
+== DL-04 a download that needs attention
+PASS DL-04 selecting the name opens the slide-out with focus on Close
+PASS DL-04 it says what is wrong in plain words first
+PASS DL-04 the live region says it, with the number of actions
+PASS DL-04 every action that fits is listed, with Remove and delete the files and the blocklist
+PASS DL-04 each action has its one line, tied to the button
+PASS DL-04 one primary button, the suggested one (Find another)
+PASS DL-04 the folder's files are listed with what each one is
+PASS DL-04 what is wrong comes before the actions, and the actions before the files (reading order)
+PASS DL-04 Tab stays inside the slide-out
+PASS DL-04 Escape closes it and focus goes back to the name
+PASS DL-04 Remove and delete the files asks first, naming what it deletes and the space it frees
+PASS DL-04 the question starts on Cancel
+PASS DL-04 Cancel deletes nothing and focus goes back to the button
+PASS DL-04 the result is said in the live region
+PASS DL-04 and shown in the slide-out, with focus on it
+PASS DL-04 the download has left the queue
+
+== SEC-12 and SEC-13 every page
+PASS SEC-12 content policy on all 87 pages
+PASS SEC-12 no script or style blocked
+PASS SEC-13 the saved key is in no page or answer
+
+== SEC-05 Sign-in goes only to this dashboard
+PASS SEC-05 next=//evil.example/ stays on the dashboard
+PASS SEC-05 next=/%09/evil.example stays on the dashboard
+PASS SEC-05 next=https://evil.example/ stays on the dashboard
+
+== RX-01 Settings, Reelix
+PASS RX-01 the password opens the list of sites
+PASS RX-01 a site's test answers in the form
+PASS RX-01 the added site is in the list
+PASS RX-01 each row has its state and Edit (settings pattern 8)
+PASS RX-01 removed again
+PASS RX-01 the unlocked page does not scroll sideways at 375 wide
+PASS RX-01 the password is never in an address
+PASS RX-01 the page keeps no copy in browser storage
+
+== MOVE-02 Moving over from Install apps
+PASS MOVE-02 Install apps offers to move the apps into Reelix
+PASS MOVE-02 it lists the apps it found
+PASS MOVE-02 it comes before what is installed
+
+== MOVE-01 Apps you already run
+PASS MOVE-01 the qBittorrent user name comes from its settings file
+PASS MOVE-01 the qBittorrent password says what it is for and that it is optional
+PASS MOVE-01 it says the old apps needed no qBittorrent password, and why Reelix does
+PASS MOVE-01 and that a fixed address still becomes its name without one
+PASS MOVE-01 the preview names the hidden key still needed and asks for it
+PASS MOVE-01 the key field is a password field, never filled in by the browser
+PASS MOVE-01 with the key typed, nothing is still needed
+PASS MOVE-01 the typed key is never in browser storage
+PASS MOVE-01 a ban after wrong passwords is said under the qBittorrent field, with how to clear it
+PASS MOVE-01 focus goes to the qBittorrent field
+PASS MOVE-01 the earlier error goes as soon as the next try starts
+PASS MOVE-01 a dialog opens with a task list
+PASS MOVE-01 focus is in the dialog
+PASS MOVE-01 it has a working bar and a Close that says the work carries on
+PASS MOVE-01 closed, the page says it is still running
+PASS MOVE-01 the result is in the dialog at the end
+PASS MOVE-01 the review lists held sites, each with Turn on
+PASS MOVE-01 and a site Reelix cannot search yet
+PASS MOVE-01 and points to the titles waiting for a match
+PASS MOVE-01 Turn on all leaves no held site
+PASS MOVE-01 Seerr beside Reelix: Reelix's own requests is recommended
+PASS MOVE-01 Keep Seerr takes Seerr over
+PASS MOVE-01 with a message for Seerr's users
+PASS MOVE-01 the takeover's dialog lists saving the way back, stopping, copying each app and starting
+PASS MOVE-01 after Keep it, the apps Reelix replaced can be cleared away
+PASS MOVE-01 clearing away says what was cleared
+PASS MOVE-01 and lists the holding folder
+PASS MOVE-01 Install apps opens
+PASS MOVE-02 once Starboard runs them, Install apps no longer offers a move
+
+== SETUP-271 Your drives and the Storage page
+PASS SETUP-271 System, Storage, Pool opened from the set-up offers the way back
+PASS SETUP-271 and it leads to the set-up guide
+PASS SETUP-271 opened on its own, it does not
+PASS SETUP-271 the shared words have the Storage page and API keys steps
+
+== TAB-01 Topic tabs
+PASS TAB-01 a long Settings page has a tab per topic
+PASS TAB-01 one topic shows at a time
+PASS TAB-01 choosing a tab shows its topic
+PASS TAB-01 the arrow keys move to the next tab
+PASS TAB-01 Advanced settings is a switch in the heading
+PASS TAB-01 Sign out is in the side menu
+
+== FOOT Footer and version
+PASS FOOT-01 the version at the bottom of the side menu links to Settings, Updates
+PASS FOOT-01 the footer links are Help, Discord support server, Release notes, GitHub repository, About and updates
+PASS FOOT-01 TheMightyTRexUK is on the right, one link to the GitHub profile, with the dinosaur mark
+PASS FOOT-01 the footer is under the page's own part
+PASS FOOT-02 About and updates says Update available when a newer release is out
+PASS FOOT-02 and says nothing more when Starboard is up to date
+PASS FOOT-03 Sign in has no footer
+
+== DES Design pictures
+PASS DES-01 Default design has a picture for each of the 5 designs
+PASS DES-01 each picture is drawn and hidden from screen readers (the words say what it is)
+PASS DES-02 Display's Design list has a picture for each choice
+PASS DES-02 Use the dashboard's default shows the default design's picture
+
+== DISP Dispatcharr
+PASS DISP-01 Settings, Apps, Dispatcharr shows the source, channels and Jellyfin
+PASS DISP-01 a playlist address asks for no user name
+PASS DISP-01 Xtream Codes asks for a user name and password
+PASS DISP-02 saving Xtream Codes without a user name says so at the field and in the error summary, which has focus
+PASS DISP-02 its link puts focus on the field
+PASS DISP-03 saving adds Dispatcharr to Jellyfin as a tuner with its guide
+PASS DISP-03 what was done is said beside Save, and focus stays on Save
+PASS DISP-04 Make channels makes a channel for each stream and says so
+PASS DISP-04 focus goes to the Channels heading, not the top of the page
+
+== MENU2 General on the level 2 menu
+PASS MENU2-01 General has General, Appearance, Lists, Discover, Hours, Alerts, Performance, Pictures, Backup/Logs
+PASS MENU2-01 each page shows only its own parts
+PASS MENU2-02 Appearance holds style and colours, the default design and accessibility
+PASS MENU2-02 and Style is called Appearance on the menu
+PASS MENU2-02 an accessibility option applies at once
+PASS MENU2-02 Display shows the same choice
+PASS MENU2-02 and a change in Display shows on the page
+PASS MENU2-03 Lists has Long lists
+
+== MENU2 Downloads on the level 2 menu
+PASS MENU2-04 Downloads has VPN, Usenet, Download hours and Speed limits
+PASS MENU2-04 VPN shows only the VPN
+PASS MENU2-04 Download hours on Downloads is the switch itself and saves
+PASS MENU2-04 and General, Hours shows the same
+PASS MENU2-04 Download hours on Downloads has its own page
+
+== MENU2 Radio, Performance and Security on the level 2 menu
+PASS MENU2-05 Radio has Sources, Add a show from a link, Your podcast library, Station logos
+PASS MENU2-05 Sources shows only the sources
+PASS MENU2-05 General has seven tabs: Discover is part of Lists and Pictures is part of Performance
+PASS MENU2-05 Performance has the picture cache and its Clear
+PASS MENU2-05 Security has Who can open the dashboard, Password, Sign-in methods, API keys, Sign out everywhere
+PASS MENU2-06 the old address settings-general-pictures.html opens its new page
+PASS MENU2-06 the old address settings-general-discover.html opens its new page
+PASS MENU2-06 Sign out everywhere shows its parts with Advanced settings inactive
+
+== MENU3 Rows that condense, and General's seven tabs
+PASS MENU3-01 /settings-general-discover.html answers 301 to /settings-general-lists.html#dr-films-h
+PASS MENU3-01 /settings-general-discover.html?x=1 answers 301 to /settings-general-lists.html?x=1#dr-films-h
+PASS MENU3-01 /settings-general-pictures.html answers 301 to /settings-general-performance.html#pf-pictures-h
+PASS MENU3-01 /settings-performance-pictures.html answers 301 to /settings-general-performance.html#pf-pictures-h
+PASS MENU3-02 General has seven tabs and at 375 px shows icons only
+PASS MENU3-02 every tab is at least 44 px wide
+PASS MENU3-02 only the current tab, Hours, shows its name
+PASS MENU3-03 the right arrow moves focus to the next tab, which shows its name
+PASS MENU3-03 End goes to the last tab, in view
+PASS MENU3-03 Home goes to the first tab
+PASS MENU3-04 an icon-only tab has a tooltip, and the page does not scroll sideways
+PASS MENU3-05 at 1280 px General shows every name
+
+== PLEX Sign in with Plex
+PASS PLEX-01 Sign in with Plex is not shown for another kind of app
+PASS PLEX-01 it is shown for Plex, beside the token field
+PASS PLEX-02 the code is shown with plex.tv/link
+PASS PLEX-02 focus is on Cancel
+PASS PLEX-03 Cancel says so and puts focus back on Sign in with Plex
+PASS PLEX-04 approved: it says Signed in with Plex, the token field is blank and off, and the page never has the token
+PASS PLEX-04 saved: the app has a token, and no answer from Starboard shows it
+PASS PLEX-05 nothing is asked of plex.tv once the panel is closed
+
+== BKL Settings, General, Backup/Logs
+PASS BKL-01 Backup/Logs has the section When backups are made
+PASS BKL-01 Backup/Logs has the section Full without media
+PASS BKL-01 Backup/Logs has the section Where backups go
+PASS BKL-01 Backup/Logs has the section Settings only
+PASS BKL-01 Backup/Logs has the section The whole server, by its own job
+PASS BKL-01 Backup/Logs has the section Logs
+PASS BKL-01 Backup/Logs has the section Send feedback
+PASS BKL-01 Backup/Logs has the section Delete all logs
+PASS BKL-01 the page has one heading, Backup/Logs
+PASS BKL-01 the Backup/Logs tab is the current one
+PASS BKL-02 the tab names are shown, not icons only, at 1280 pixels
+PASS BKL-02 and every tab name is visible
+PASS BKL-03 an in-page link goes to its section
+PASS BKL-03 the link to Delete all logs goes to it
+PASS BKL-04 system-backup.html answers 301
+PASS BKL-04 settings-general-logs.html#logs answers 301
+PASS BKL-04 settings-general-logs.html?x=1 answers 301
+PASS BKL-04 wanted.html answers 301
+PASS BKL-04 wanted-quality.html answers 301
+PASS BKL-04 discover-trending.html answers 301
+PASS BKL-04 settings-alerts.html answers 301
+PASS BKL-04 settings-performance.html answers 301
+PASS BKL-04 settings-media-server.html answers 301
+PASS BKL-04 the old Backup and restore address opens the new page
+
+== OWN Own style colours
+PASS OWN-01 the own style offers Mica's seven accents, Blue first
+PASS OWN-01 choosing Lime saves it for the server and uses its colours here
+PASS OWN-01 the saved note says so beside the choice
+PASS OWN-02 a plug-in style in use leaves the own colours out
+PASS OWN-02 Reset style goes back to the own style in Lime
+PASS OWN-02 and the own style's card says Lime
+
+== WN What is new in a plug-in
+PASS WN-01 an updated plug-in's State shows What is new in its version, and what it was before
+PASS WN-01 it is inside the State section, after the version line
+PASS WN-01 it is said politely
+PASS WN-02 each type of change shows its first line, with how many more
+PASS WN-02 the older version's changes are left out
+PASS WN-03 All changes opens the rest
+PASS WN-04 What is new fits at phone width
+PASS WN-05 Got it hides it and puts focus on the State heading
+PASS WN-05 Got it is kept on the server: it is not shown again
+
+== WS Read-only plug-in tables
+PASS WS-01 each section's line says how many rows it has, not how many are active
+PASS WS-02 the open section's table has only the plug-in's columns
+PASS WS-03 nothing can be ticked, turned on or off
+PASS WS-04 each row is named by its first cell
+PASS WS-05 Top titles shows the most played series first, with plays, people and hours
+PASS WS-07 a search hides the section with no match and keeps the one with a match, with no script error
+PASS WS-08 an empty search brings every section back
+PASS WS-06 the tables fit at phone width
+
+== PLA Plug-in actions and list settings
+PASS PLA-01 a button with a confirm asks first, in words from the plug-in
+PASS PLA-01 the box starts on Cancel
+PASS PLA-02 Escape closes it, runs nothing, and focus goes back to the button
+PASS PLA-03 choosing the action in the box runs it
+PASS PLA-04 a list setting is a box with one value a line
+PASS PLA-05 saving a list says nothing is wrong
+PASS PLA-05 it is kept as a list: one value a line, blank lines and spaces left out
+
+== AP App plug-ins
+PASS AP-01 an app plug-in's page has its address on the home network, with Open
+PASS AP-02 removing asks where its data goes, kept with Starboard's data by default
+PASS AP-03 Cancel puts focus back on Remove
+PASS AP-04 Your plug-ins has Open for an active app plug-in, named for a screen reader
+PASS AP-05 an inactive app plug-in offers to copy the app the main install runs
+PASS AP-06 with no such app, it says so plainly in a live region
+PASS NOTE-01 every plug-in in the catalogue says what it replaces or adds to (plug-in API 1.23, DASH-585)
+PASS AP-08 the catalogue groups the apps together, each with what it uses at rest
+PASS AP-07 an app plug-in that is not active says a port is chosen when it is
+PASS PU-01 Updates, Plug-ins lists each plug-in in a table with the version you have beside the new one, and a check button, Update all and When they update
+PASS PU-02 Check now says what it read, keeps focus on the button and writes the summary again
+PASS PU-03 pressed again at once it says how long to wait and reads nothing more
+PASS PU-04 the first row has a tick and What is new, and Update chosen shows only after a tick
+PASS PU-05 ticking a plug-in shows Update chosen with the count
+PASS PU-06 Update by themselves and History are on the page, and the menu has a Plug-ins entry under Updates
+PASS PU-07 Manage has the same update list and check button above the plug-ins
+PASS PU-08 the Catalogue has Check now and says when the catalogues were read
+PASS PU-09 a plug-in's Versions tab has Check now
+
+== AD Audio description sources
+PASS ADS-01 a row's link is named by where it goes and says it opens in a new tab
+PASS ADS-02 it goes to AudioVault's own search in a new tab, with nothing passed back
+PASS ADS-03 a link-only row says so in the plug-in's own words, not Works
+PASS ADS-04 the upload takes only a file: a labelled file picker and no address box
+PASS ADS-05 each file shows what happened in plain words
+PASS ADS-06 the plays in step choice is named for its file
+PASS ADS-07 the list fits at phone width
+
+== NT Notifications plug-in settings
+PASS NT-01 a saved bot token is never sent back to the page
+PASS NT-02 each channel has its own section
+
+== GEN Genre rows
+PASS GEN-01 Films lists the genres after the standard rows, unticked
+PASS GEN-01 in sentence case, and said to be a genre
+PASS GEN-02 ticking a genre saves it and says Saved, with focus left on the tick
+PASS GEN-03 Discover, Films shows the two ticked genres as rows, after the standard rows
+PASS GEN-03 and they are no longer chips
+PASS GEN-03 a genre row loads its covers when it comes into view
+PASS GEN-04 the TV list has its own genres, all unticked
+PASS DSC-01 Not in your library hides the covers you have, in every row, and the count follows
+PASS DSC-01 the choice is remembered for the account
+PASS DSC-01 a decade narrows it further (the filters combine)
+PASS DSC-01 a new visit starts with the same filters on
+PASS DSC-01 Clear filters shows every cover again and focus goes to All
+
+== DR Discover rows by area
+PASS DR-01 Lists has a section for each Discover area, after its own, in the Discover menu's order
+PASS DR-02 Discover, TV's Change these rows opens TV's section, with its tab chosen
+PASS DR-02 and only TV's rows were asked for
+PASS DR-02 choosing the Radio tab asks for Radio's rows then
+PASS DR-03 the old address settings-general-discover.html?discover=books opens its area
+PASS DR-04 Radio lists its shared genres after its rows, unticked
+PASS DR-04 ticking Comedy saves it
+PASS DR-05 Discover, Radio shows Comedy as a row, and not as a chip
+PASS DR-05 the Comedy row loads its shows when it comes into view
+PASS DR-05 Put back the standard rows unticks Comedy again and says so
+PASS DR-06 Books has Trending and Reelix's nine subjects, all standard rows that show
+PASS DR-06 Music has no genre rows (Reelix has no music genres)
+
+== Full without media: which disk (DASH-260)
+PASS BK-01 the copies go to the media folder's disk, not the system disk
+PASS BK-01 the page says which disk the folder is on
+PASS BK-01 the copies in the folder are listed, newest first
+PASS BK-01 a folder on the system disk is warned about
+PASS API-01 Make a key asks what it may do: Read only or Read and manage
+PASS API-01 and what it may see, one tick for each area
+PASS API-02 the key says it may manage
+PASS API-02 /api/v1/me shows its right and scope
+PASS API-02 it reads download hours
+PASS API-02 it cannot read outside its scope
+PASS API-02 it can follow the download hours again
+PASS API-03 the list says the key reads and manages
+
+== MCP AI assistants
+PASS MCP-01 AI assistants is on the API keys page, inactive at first
+PASS MCP-01 the switch has its name and says what it shares
+PASS MCP-01 the result is a live region
+PASS MCP-02 while inactive, a key gets 403 mcp_off
+PASS MCP-03 Space turns it on, focus stays on the switch and the address shows
+PASS MCP-04 then a Read only key gets the read-only tools
+PASS MCP-05 turning it off stops the assistant at once
+
+== CP Where backups go
+PASS CP-01 the section is there, after Full without media, with its heading
+PASS CP-01 three places are listed, each with its name, its logo or icon (decorative) and its last copy in words
+PASS CP-01 the page says the newest backup is safe, because each place read it back
+PASS CP-01 every kind of place can be added, with the services
+PASS CP-02 Test says Connected beside the place, with 5 full backups there (DASH-452)
+PASS CP-02 focus stays on Test
+PASS CP-02 the result is said politely
+PASS CP-03 a share written wrongly is not saved, said in an alert that takes focus
+PASS CP-03 the password box never shows a kept value
+PASS CP-04 turning off a place is said in words and a shape, and focus stays on its switch
+PASS CP-04 the page never gets a password or config back
+PASS CP-04 the API says safe only when each place read it back
+PASS CP-05 Copy the newest full backup now copies to every place that is on
+
+== Audio description, chosen in the set-up (DASH-399)
+PASS AD-01 the Catalogue offers Audio description, chosen in the set-up, as a notice people hear
+PASS AD-01 until it is in the collection, it says so and offers no install button
+PASS AD-02 Your plug-ins links to the Catalogue for it
+PASS AD-03 Not now takes the offer away, says so and puts focus on the page's heading
+PASS AD-03 and the set-up's wish is forgotten
+
+== DASH-404 Recommended Jellyfin plug-ins
+PASS JF-01 each recommended plug-in has its own choice
+PASS JF-01 what is installed shows with its version
+PASS JF-01 downloaded times name TheIntroDB on Jellyfin 12
+PASS JF-02 installing says so and asks for a restart
+PASS JF-02 focus stays in the Merge Versions choice after it is drawn again
+PASS JF-03 once Jellyfin answers, the result is shown and has focus
+PASS JF-03 after the restart Merge Versions is active and set to quiet hours
+PASS JF-04 Do not install turns off and never uninstalls
+
+== DASH-425 Recommended plug-ins and the Direct play card
+PASS REC-01 the collection starts with a Recommended group, with Direct play and Disk forecast
+PASS REC-02 each recommended entry has a Recommended chip, and is listed once
+PASS REC-03 a recommended plug-in is not added by itself: it still has Install
+PASS REC-04 Install asks for the plug-in's warning first, as for any plug-in
+PASS REC-04 the warning asks for the password
+PASS REC-04 nothing is added
+PASS DPC-01 the card says what is being converted, how far in words, the next files and the totals
+PASS DPC-02 a card at 10 seconds is asked again about every 10 seconds, both due cards in one request
+PASS DPC-03 the card asking for 2 seconds is held to 10
+PASS DPC-04 the card's words change as it is asked again, in place
+PASS DPC-05 nothing is asked while the tab is hidden
+PASS DPC-06 Pause and Resume stay on the plug-in's page
+PASS DPC-07 Card updates every offers 10 seconds to 5 minutes
+PASS DPC-07 choosing a time saves at once, with a saved note
+
+== API 1.14 Logos, the card band and job schedules
+PASS LOGO-01 Manage shows Direct play's logo, served by Starboard, beside its name and hidden from screen readers
+PASS LOGO-01 a plug-in without a logo shows its initials on the tile
+PASS LOGO-02 the logo is the cleaned SVG, sent with a policy that runs nothing
+PASS LOGO-02 a plug-in without a logo has nothing to serve
+PASS LOGO-03 a catalogue entry shows the logo catalogue.json carries, cleaned, as a data address
+PASS LOGO-04 the plug-in's page shows its logo beside the name, with its text alternative
+PASS BAND-01 Direct play's card has the grey band with its logo and its name as the card's heading
+PASS BAND-02 the chip and the time make sense alone to a screen reader
+PASS BAND-02 the chip sits at the right of the band
+PASS BAND-03 the page's headings stay in order: the cards' headings are h2 under the page's h1
+PASS BAND-04 a plug-in without a logo has its initials, and without a status only the time
+PASS BAND-05 a status with its own words keeps the chip's colour from the status
+PASS BAND-06 nothing in the band is a live region, so a refresh does not interrupt
+PASS BAND-07 every built-in card has the band, its name as the heading the card is labelled by, and a logo hidden from screen readers
+PASS BAND-07 a built-in card's band is as tall as a plug-in card's band with one line of title
+PASS BAND-08 Now playing shows Jellyfin's own logo, the same file as the Apps page
+PASS BAND-08 Downloads and Coming up show Starboard's icon (several apps); VPN shows Gluetun's
+PASS BAND-08 Starboard's own cards show a design system icon on the tile
+PASS BAND-09 Service health's state is a chip in the band, in words with no number, and the footer says when it was updated
+PASS BAND-09 a card with nothing to say has no chip and no time (Recently added, kept by the server for 5 minutes)
+PASS BAND-10 Edit dashboard keeps each built-in card's band and heading, with the card's tools under the band
+PASS BAND-10 Move later moves a banded card and keeps focus in it
+
+== TTL Titles for each card size, and the set-up button in the band
+PASS TTL-01 Go through them is in Still to set up's band, at its right
+PASS TTL-01 the card's heading comes before the button, and the button before the list
+PASS TTL-02 closing the slide-out gives focus back to Go through them
+PASS TTL-02 a click in the step's page keeps focus there, and Escape there closes the slide-out and gives focus back to Go through them
+PASS TTL-03 Picture shrinker's card hands the dashboard a title for each size
+PASS TTL-04 a small card shows its small title on one line, its name for screen readers after it
+PASS TTL-05 a small card's chip shows only its icon, its words kept for screen readers, with the time
+PASS TTL-04 a medium card shows its medium title on one line, its name for screen readers after it
+PASS TTL-05 a medium card's chip shows its words, with the time
+PASS TTL-04 a half card shows its half title on one line, its name for screen readers after it
+PASS TTL-05 a half card's chip shows its words, with the time
+PASS TTL-04 a wide card shows its wide title on one line, its name for screen readers after it
+PASS TTL-05 a wide card's chip shows its words, with the time
+PASS TTL-04 a full card shows its full title on one line, its name for screen readers after it
+PASS TTL-05 a full card's chip shows its words, with the time
+PASS TTL-06 in Edit dashboard a new size shows that size's title, and its size list keeps focus
+PASS SCH-01 the schedule setting shows how often, the date and the time, from its default
+PASS SCH-01 the side-by-side controls share one height
+PASS SCH-02 Every week shows the day, saves at once and says so
+PASS SCH-02 the schedule is kept as the person set it, with nothing stray
+PASS SCH-02 focus stays on the control just used
+PASS SCH-03 Starboard checks a schedule and says what is wrong in plain words
+PASS SCH-04 System, Jobs shows the schedule in words and when it runs next
+PASS SCH-05 Run now works as for any other job
+
+== PUP Plug-in updates and What is new
+PASS PUP-01 a newer version in a catalogue offers Update on the plug-in's page
+PASS PUP-01 before updating, What is new since 1.0.0 lists the new version's own changes
+PASS PUP-01 and how it is kept safe: the settings that move, the step before, the health wait and Roll back
+PASS PUP-02 the update opens its steps with focus on the heading
+PASS PUP-02 each step is done: ready, settings, install, health and tidy up
+PASS PUP-02 the result is focused and said in the live region
+PASS PUP-03 closing it takes focus to the plug-in's State
+PASS PUP-03 the settings moved to the new key with the value chosen
+PASS PUP-04 after the update, State shows What is new in 1.1.0
+PASS PUP-05 Roll back runs as steps and ends back on 1.0.0
+PASS PUP-05 with the settings as they were before the update
+PASS PUP-05 and focus back on State
+PASS PUP-06 Make a key offers Updates, only given when ticked
+
+== UPD Settings, Updates
+PASS UPD-05 Ready to update says in a live region what is ready
+PASS UPD-05 Starboard waits for you; the plug-in updates by itself
+PASS UPD-01 Update by themselves has a switch for each of the five parts
+PASS UPD-01 Starboard's is turned off by default
+PASS UPD-01 the hours are a choice, the download hours first
+PASS UPD-05 Recent updates lists what each did, by whom
+PASS UPD-09 Ready to update has Check for updates
+PASS UPD-09 nothing asks Jellyfin which plug-ins are new before it is pressed
+PASS UPD-09 it says in the live region when it checked and what is ready, Jellyfin's plug-ins too
+PASS UPD-09 focus stays on Check for updates
+PASS UPD-09 Jellyfin's row names the new version
+PASS UPD-09 Install all updates counts what the check found
+PASS UPD-10 each plug-in and Starboard has its picture beside its name, hidden from screen readers
+PASS UPD-10 it lists Starboard first, then Reelix and the plug-ins, each from the version you have to the new one
+PASS UPD-10 Starboard's notes are under Added, Changed, Fixed and Security
+PASS UPD-10 a plug-in's notes come from its new manifest
+PASS UPD-10 an item with no notes says so plainly
+PASS UPD-10 the release page links open in a new tab and say so
+PASS UPD-10 a jump link takes focus to its item's heading
+PASS UPD-10 Escape closes it and focus returns to What is new
+PASS UPD-11 one update waiting still offers Install 1 update and What is new
+PASS UPD-07 a part's switch saves at once
+PASS UPD-02 a newer release offers Update now on Starboard's row
+PASS UPD-02 Update now asks for the password first, with focus in the field
+PASS UPD-02 a wrong password is said under the field, and nothing starts
+PASS UPD-03 the progress dialog opens with focus on its heading
+PASS UPD-03 it follows each step and ends with the result, focused
+PASS UPD-03 closing it takes focus to Ready to update, as Update now is gone
+PASS UPD-03 the page says how it ended
+PASS UPD-04 the record says who started it and how it ended
+PASS UPD-06 Jellyfin's plug-ins update with each step and end with what is new, focused
+PASS UPD-06 and it is in Recent updates
+PASS UPD-08 Install all updates says how many are waiting
+PASS UPD-08 a wrong password is said under the field
+PASS UPD-08 the dialog's title, its button and its list count the same updates
+PASS UPD-08 the list puts Starboard last
+PASS UPD-08 each update ends with its state in words and an icon
+PASS UPD-08 the panel counts the same updates as the dialog
+PASS UPD-08 the panel says how it ended and its bar stops moving
+PASS UPD-08 Close takes the panel away and focus goes to Ready to update
+PASS UPD-08 closing it is announced
+PASS UPD-08 Recent updates records the batch as All updates
+PASS UPD-08 the batch is in the record, and nothing is left running
+
+== ZIP Plug-ins from a zip file
+PASS ZIP-01 the Catalogue has Upload a zip file, with a labelled file field
+PASS ZIP-02 Check the zip with no file says so on the field and keeps focus there
+PASS ZIP-03 a zip with a name outside it is refused before anything is shown
+PASS ZIP-04 a good zip shows what was checked, the image the build starts from, and focus goes to its name
+PASS ZIP-05 the warning says Starboard builds its image from the zip, with its limits
+PASS ZIP-06 the install runs as steps (check, build, install), each done
+PASS ZIP-07 then its own page opens, offering Update from a zip file
+PASS ZIP-08 a newer zip opens the update warning
+PASS ZIP-09 the update builds first, then runs the usual update steps
+PASS ZIP-10 the example plug-in is removed again
+PASS ZIP-11 a plug-in added from a zip updates from a zip, not an address
+
+== JFM Jellyfin's metadata
+PASS JFM-01 Settings, Jellyfin says where its pictures and details are, and offers to move them
+PASS JFM-02 the move asks for the password and says nothing is deleted
+PASS JFM-03 each step is done and the result names the watch count
+PASS JFM-04 the section then says they are outside the settings folder
+
+== Library clean-up: Put back (plug-in API 1.15, DASH-406)
+PASS HLD-01 each row in the holding folder has Put back, named with its title
+PASS HLD-02 Put back says what it did and the row leaves the list
+PASS HLD-02 focus goes to the next row's Put back
+PASS HLD-03 What it may do names the holding folder permission
+
+== VPN-01 Continue without a VPN in the set-up
+PASS VPN-01 the VPN step offers the VPN account first, as the suggested choice
+PASS VPN-01 choosing it hides the VPN account's fields
+PASS VPN-01 a warning opens as an alert dialog with its words
+PASS VPN-01 focus starts on Cancel
+PASS VPN-01 Escape cancels: still on the VPN step, with focus on the choice
+PASS VPN-01 confirming goes on to the next step
+PASS VPN-01 Back shows the VPN step with the choice kept
+
+== VPN-02 Remove the VPN in Settings
+PASS VPN-02 Remove the VPN shows the same warning, Cancel focused
+PASS VPN-02 Cancel removes nothing
+PASS VPN-02 confirmed, the VPN is removed
+
+== VPN-03 The quiet No VPN states
+PASS VPN-03 Settings, Downloads, VPN says No VPN with Add a VPN, not an error
+PASS VPN-03 Downloads says Downloading without a VPN, with the link to add one
+PASS VPN-03 Hide for 90 days hides it, with focus on the page heading
+PASS VPN-03 and it stays hidden
+PASS VPN-03 the dashboard's VPN card says No VPN, with Add a VPN
+
+== VPN-04 Add a VPN later
+PASS VPN-04 Add a VPN opens the form with focus on the provider
+PASS VPN-04 a missing detail is said by its field
+PASS VPN-04 the VPN is added back, with Gluetun
+
+== LOG-01 Log limits and Delete all logs, by keyboard (DASH-451)
+PASS LOG-01 No more than shows 50 MB, the default
+PASS LOG-01 the new limit is saved
+PASS LOG-01 the apps' own logs say what Docker keeps or that it cannot ask
+PASS LOG-01 the dialog says how much goes and what stays
+PASS LOG-01 focus starts on the password
+PASS LOG-01 Escape cancels, with focus back on Delete all logs
+PASS LOG-01 Tab goes from the password to Delete all logs
+PASS LOG-01 said in the live region, with focus on Delete all logs
+PASS LOG-01 the size is shown as next to nothing
+PASS LOG-01 the log says who deleted them
+
+== CLD Connect a cloud service, Test connection, Monthly
+PASS CLD-01 Add a place offers each service with its logo, name and how many are connected, the services in the agreed order
+PASS CLD-02 the slide-out opens at the sign-in with focus on its heading, as step 2 of 5
+PASS CLD-03 Google Drive offers both ways to sign in, the same weight
+PASS CLD-04 in this browser: the sign-in link opens in a new tab and says so
+PASS CLD-05 on the phone: a QR code with its text alternative, the page and the code written out, each with Copy
+PASS CLD-05 the code is spelt out for screen readers
+PASS CLD-05 focus stays on the choice just made
+PASS CLD-06 the wait is said in a polite live region, with the time left
+PASS CLD-06 approved on the phone: the wizard moves on by itself and says so
+PASS CLD-07 the folder step: a new folder (recommended) and the folders there already
+PASS CLD-08 the test: each check done, said in words and in the live region
+PASS CLD-09 check and save: a table of the answers, each with Change
+PASS CLD-09 a missing password is said beside its field
+PASS CLD-10 saved: the slide-out closes and focus is on Add a place
+PASS CLD-10 the second Google Drive is a new place with its own rclone remote, and the first keeps its own
+PASS CLD-10 the page is never sent the sign-in
+PASS CLD-11 Test shows Connected with when, and focus stays on the button
+PASS CLD-11 and says it in the live region
+PASS CLD-11 the result is still there when the page is opened again
+PASS CLD-12 Dropbox signs in with the link in this browser only, no QR code
+PASS CLD-12 an address from another sign-in is refused beside the field
+PASS CLD-12 closing part way: focus back on the service, nothing saved, the sign-in ended
+PASS CLD-13 the address pasted back (without http://, as a phone shows it) signs in
+PASS CLD-14 the QR step fits a phone without scrolling sideways
+PASS MON-01 When backups are made lists Off, Manual, Monthly, Weekly, Nightly
+PASS MON-01 Monthly saves at once: the 1st at 03:00, keeping 6, said in its hint
+PASS MON-01 focus stays on Monthly and the save is said
+
+== Bring in media (DASH-455)
+PASS BRING-1 the sources show in order, each said to be read only
+PASS BRING-2 a share's password is kept, and never sent back
+PASS BRING-3 Check names has Matched, Needs attention and Left where it is, with counts
+PASS BRING-4 the copy part shows what will happen before anything is copied
+
+== RESTART-01 Restart where it is needed
+PASS RESTART-01 Overview: Restart Jellyfin shows beside Restart needed
+PASS RESTART-01 the button says what it does
+PASS RESTART-01 the button is at least 44 by 44
+PASS RESTART-01 it asks first, starting on Cancel
+PASS RESTART-01 Cancel changes nothing and focus returns to the button
+PASS RESTART-01 a failure is said beside the button
+PASS RESTART-01 after a failure the button can be pressed again
+PASS RESTART-01 while it works, progress is said in words and focus stays on the button
+PASS RESTART-01 when Jellyfin answers, the status says so and takes focus
+PASS RESTART-01 the button goes and the state updates by itself
+PASS RESTART-01 the notice says Jellyfin restarted, in words and not colour alone
+PASS RESTART-01 with no restart needed, there is no Restart button
+PASS RESTART-01 Updates: Jellyfin's plug-ins say Restart needed, with Restart Jellyfin
+PASS RESTART-01 Settings, Jellyfin: Restart Jellyfin beside Jellyfin needs a restart
+PASS RESTART-01 Backup: Restart Reelix beside a restore that waits
+PASS RESTART-01 the backups show no stray word null
+PASS RESTART-01 after Reelix answers, the backups are drawn again and focus is on the result
+
+== Full backups: Checked, and Restore on this server (DASH-381, DASH-387)
+PASS BKC-01 the newest full backup says Checked, the one made before the check does not
+PASS BKC-01 the page says what Checked means
+PASS RST-01 each full backup has a danger Restore button that names its date
+PASS RST-02 the dialog says what is replaced, that a full backup is made first and that the apps stop
+PASS RST-02 it is a danger dialog with Cancel, and focus starts on the backup's password
+PASS RST-02 Escape closes it, changes nothing and focus is back on Restore
+PASS RST-03 a wrong backup password opens the dialog again with the error under that field, focus in it, and nothing started
+PASS RST-04 both passwords right: the page says it is restoring, in a live region, and says so to screen readers
+PASS RST-04 no backup can be made meanwhile, and focus is back on the Restore button
+PASS RST-05 when it ends the page says so, with the apps and where the backup of before is
+PASS RST-05 the list is drawn again with focus still on the same row, and a backup can be made again
+
+== Reelix's backups: selects that apply at once, and the folder on another disk (DASH-385, DASH-386)
+PASS RXB-01 how often and how many are selects with a label and a hint, and there is no Save button
+PASS RXB-02 a choice applies at once: Reelix has it, the saved note shows beside the select as a status, and focus stays on it
+PASS RXB-02 the second select saves with the first one's newest value
+PASS RXB-03 where Reelix keeps them names both places and their disks
+PASS RXB-03 choosing the media folder saves at once, keeps focus on the select and says Reelix must restart
+PASS RXB-04 after the restart the notice goes, the result has focus and no stray word null shows
+PASS RXB-05 the restore dialog says Reelix must restart before anything changes
+
+== SIGNIN-01 Two-step code and single sign-on
+PASS SIGNIN-01 nothing is on at first: the two-step code says Off, with its set-up button
+PASS SIGNIN-01 the settings say so, and never hold a secret
+PASS SIGNIN-02 the set-up asks for the password first, with focus in its field
+PASS SIGNIN-02 a wrong password is refused and no QR code is shown
+PASS SIGNIN-02 the QR code has a name for screen readers, and the key can be typed instead
+PASS SIGNIN-02 focus is in the code field
+PASS SIGNIN-02 a wrong code is refused beside the field and nothing is turned on
+PASS SIGNIN-02 8 different recovery codes are shown, once
+PASS SIGNIN-02 focus is on I have saved them
+PASS SIGNIN-02 it is on, and says how many recovery codes are left
+PASS SIGNIN-02 focus is not lost to the top of the page
+PASS SIGNIN-03 the code is asked for after the password, and nothing is signed in yet
+PASS SIGNIN-03 the password form is gone and the step says what to enter
+PASS SIGNIN-03 a wrong code says so under the field, keeps focus there and signs nobody in
+PASS SIGNIN-03 a recovery code signs in, once
+PASS SIGNIN-04 turning off asks first, and the safe choice is not the default
+PASS SIGNIN-04 after it, the two-step code is off again and the password alone signs in
+PASS SIGNIN-05 the secret is never in the page, only that it is kept
+PASS SIGNIN-05 Allow single sign-on is a switch with a name
+PASS SIGNIN-05 the password cannot be turned off until single sign-on is on and has been tested
+PASS SIGNIN-05 an API key, or a made-up one, cannot read any of it
+
+== TRANSCODE-01 Hardware video conversion check
+PASS TRANSCODE-01 the panel is there and offers Test now
+PASS TRANSCODE-01 nothing has been tested before the button is pressed
+PASS TRANSCODE-01 a row for VAAPI, Intel Quick Sync, NVIDIA NVENC and software
+PASS TRANSCODE-01 VAAPI works and names its device
+PASS TRANSCODE-01 Quick Sync says why not, with the fix, in words
+PASS TRANSCODE-01 the result is a status the person is moved to
+PASS TRANSCODE-01 it says nothing was opened or changed
+
+== SHADOWS-01 Remove drop shadows
+PASS SHADOWS-01 an unanswered setting follows the Lite install: removed
+PASS SHADOWS-01 shadows are kept by default here, and the page says so
+PASS SHADOWS-01 the switch has the note as its description
+PASS SHADOWS-01 turning it on removes the shadow at once and keeps the border
+PASS SHADOWS-01 it is kept on the server and in the browser for the first paint
+PASS SHADOWS-01 the saved note says so beside the switch
+PASS SHADOWS-01 shdAfter a reload the shadows are still gone, from the very first paint
+PASS SHADOWS-01 Settings, General, Appearance has the same switch, on
+PASS SHADOWS-01 the plug-in and help pages are covered by the same attribute (every page loads common.js)
+PASS SHADOWS-01 putting the shadows back works for everyone too
+
+== LOG-02 Logs shown
+PASS LOG-02 Lines shown offers 50, 100, 200, 500 and 1,000 and starts at 200
+PASS LOG-02 the count is a polite live region and says how many there are
+PASS LOG-02 choosing 100 lines is saved for the account at once, with the saved note, and keeps focus on the select
+PASS LOG-02 it is still 100 after a reload
+PASS LOG-02 Alerts only is a switch, off to start with
+PASS LOG-02 Alerts only shows errors and warnings and nothing else, and is saved
+PASS LOG-02 Download gives the same: a line saying how many, then alerts only
+
+== One notice
+PASS UI-01 the library's notice builder gives the right role, icon and tone
+
+== PTI Plug-in tab icons
+PASS PTI-01 at 375 wide the tabs show icons only, and each is at least 44 by 44
+PASS PTI-02 every plug-in tab with an icon of its own has a different one
+PASS PTI-03 a plug-in with no icon of its own gets the neutral puzzle piece
+PASS PTI-04 every icon is hidden from a screen reader, and every tab keeps its name as text and as its tooltip
+PASS PTI-05 the tab you are on shows its name beside the icon, with the bar under it, and is in view
+PASS PTI-06 Tab moves along the tabs, and the tab with focus shows its name and a focus ring
+PASS PTI-07 the row scrolls inside itself, not the page
+PASS PTI-09 at 375 wide a notice with buttons keeps its words readable (DASH-602)
+PASS PTI-08 on a computer the same icons show, and the tab name shows for the current tab
+
+== PEOPLE People and their passwords
+PASS PEOPLE-01 the owner is the first row, and Add a person is there
+PASS PEOPLE-02 the person is added, said in a saved note, and focus is on their Manage button
+PASS PEOPLE-03 a password is made, the row says so and focus is on Show password
+PASS PEOPLE-04 a wrong Starboard password shows nothing
+PASS PEOPLE-05 the right password shows a hidden 24 character value that is not in the page's markup
+PASS PEOPLE-06 saying it is set changes the row, and the password is hidden again
+PASS PEOPLE-09 Reset asks for the Starboard password at once, and offers Generate one as the default
+PASS PEOPLE-10 a password under 10 characters is refused and the dialog stays open
+PASS PEOPLE-11 after a reset the account is made, not set in the app, and says it was chosen by you
+PASS PEOPLE-12 Show password gives back the password that was typed
+PASS PEOPLE-13 More offers to make, check, pause, resume and delete the account in Jellyfin
+PASS PEOPLE-07 Remove asks first and starts on Cancel
+PASS PEOPLE-08 the person moves to Removed people, which lists them with the 30 days before they can be forgotten
+
+== Phone width
+PASS USE-01 no page scrolls sideways at 375 wide
+
+== One waiting mark
+PASS UI-02 the library's waiting mark is a hidden ring with words, and a status only when asked
+PASS UI-02 a page that waits shows the ring, not a plain Loading line
+PASS ALL no script errors on any page
+
+== 797 passed, 0 failed
+
+[exit 0]
