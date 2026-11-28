@@ -86,7 +86,9 @@ FOLDER_PART = re.compile(r"^[^/\\\x00-\x1f\x7f:*?\"<>|]{1,100}$")
 ID_RE = re.compile(r"^[A-Za-z0-9/+=_.-]{1,200}$")
 REGION_RE = re.compile(r"^[a-z0-9-]{0,40}$")
 HOST_RE = re.compile(r"^([A-Za-z0-9]([A-Za-z0-9-]{0,62})(\.[A-Za-z0-9]([A-Za-z0-9-]{0,62}))*|\[[0-9A-Fa-f:]{2,39}\])$")
-CODE_RE = re.compile(r"^[A-Za-z0-9._~/+=-]{1,2048}$")
+# The code Microsoft sends back has ! and * in it (and Google's has / and -), so those are allowed. Quotes, spaces, <, >,
+# backslash and & never are: the code is passed on url-encoded, but nothing that could end a value early gets through.
+CODE_RE = re.compile(r"^[A-Za-z0-9._~/+=!*()$,;:@-]{1,2048}$")
 STATE_RE = re.compile(r"^[A-Za-z0-9_-]{8,128}$")
 TOKEN_LINE = re.compile(r"--->\s*(.+?)\s*<---End paste", re.S)
 

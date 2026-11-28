@@ -7,6 +7,7 @@ import os
 import tempfile
 import time
 import unittest
+import urllib.parse
 from unittest import mock
 
 from starboard import backup_copies, cloud_connect as cc
@@ -103,6 +104,11 @@ class PastedAddress(unittest.TestCase):
                          "http://127.0.0.1:53682/?state=Abc123_state-XYZ&code=4%2F0AbCd-e_f")
         self.assertTrue(self.ok("http://localhost:53682/?code=xyz&state=Abc123_state-XYZ&scope=drive.file").startswith("http://127.0.0.1:53682/?"))
         self.assertTrue(self.ok("  localhost:53682/?code=xyz&state=Abc123_state-XYZ  "))  # a phone hides http://
+
+    def test_a_microsoft_code_with_exclamation_and_star_is_accepted(self):
+        code = "M.C535_BAY.2.U.Made!Up*Code!x0y*Zz9!AbC*def"
+        out = self.ok("http://localhost:53682/?code=" + code + "&state=Abc123_state-XYZ")
+        self.assertIn("code=" + urllib.parse.quote(code, safe=""), out)
 
     def test_only_the_state_and_code_are_handed_on(self):
         out = self.ok("http://127.0.0.1:53682/?state=Abc123_state-XYZ&code=abc&next=http%3A%2F%2Fevil.example")
