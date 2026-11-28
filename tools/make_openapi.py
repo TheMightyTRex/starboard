@@ -516,7 +516,7 @@ _hold = spec["paths"]["/api/v1/plugin/hold"]["post"]
 _hold["responses"].pop("403")  # a plug-in's key is never asked for manage
 _hold["requestBody"]["content"]["application/json"]["example"] = {"on": True, "reason": "On battery", "minutes": 10}
 
-# Added in 1.13.0 (plug-in API 1.25, DASH-618): a fetch from a named site for a plug-in, answered only to its own key.
+# Added in 1.13.0 (plug-in API 1.25, DASH-620): a fetch from a named site for a plug-in, answered only to its own key.
 spec["paths"]["/api/v1/plugin/fetch"] = {"post": write(
     {"type": "object", "required": ["ok", "status", "host", "size"], "properties": {
         "ok": {"type": "boolean"}, "status": {"type": "integer", "description": "The site's own HTTP status. A 4xx or 5xx is still answered 200 here, with the start of what the site said (up to 64 KB)."},

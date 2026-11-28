@@ -3921,7 +3921,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, data, got[1], {"Cache-Control": "private, max-age=86400",
                                                  "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox"})
         mfe = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/fetched$", path)
-        if mfe and method == "GET":  # What it fetched (API 1.25, DASH-618): the record of Starboard's fetches for this plug-in
+        if mfe and method == "GET":  # What it fetched (API 1.25, DASH-620): the record of Starboard's fetches for this plug-in
             from . import plugin_fetch
             if not os.path.isdir(pa.folder(app.data_dir, mfe.group(1))):
                 return self.error(404, "No such plug-in")

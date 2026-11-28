@@ -1,4 +1,4 @@
-"""Plug-in API 1.25 (28 November 2026, DASH-618): the permission fetch with a list of named sites (POST /api/v1/plugin/fetch,
+"""Plug-in API 1.25 (28 November 2026, DASH-620): the permission fetch with a list of named sites (POST /api/v1/plugin/fetch,
 Starboard API 1.13.0), the record "What it fetched", and the hand-off folders handoff:send and handoff:receive."""
 import base64
 import http.client

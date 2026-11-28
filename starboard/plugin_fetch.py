@@ -1,4 +1,4 @@
-"""Fetch from named sites for a plug-in (plug-in API 1.25, DASH-618).
+"""Fetch from named sites for a plug-in (plug-in API 1.25, DASH-620).
 
 A plug-in that was approved the permission `fetch` lists the sites it may reach in its manifest (`"fetch": ["api.openverse.org"]`).
 It keeps its own network (no way out) and asks Starboard to fetch an address with POST /api/v1/plugin/fetch. Starboard:

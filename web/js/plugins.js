@@ -25,7 +25,7 @@ const healthNote = (p) => {
   return null;
 };
 
-// What it fetched (API 1.25, DASH-618): the record Starboard keeps of what it fetched for a plug-in with the permission
+// What it fetched (API 1.25, DASH-620): the record Starboard keeps of what it fetched for a plug-in with the permission
 // fetch: when, from which site, what for, how big. Read when the page is drawn, never in the background.
 function fetchedSection(p) {
   if (!p.fetch?.length) return null;

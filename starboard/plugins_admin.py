@@ -528,7 +528,7 @@ def listing(data_dir):
                         # API 1.15: added from a zip (DASH-414), so it updates from one; its Jellyfin libraries (DASH-430)
                         "from_zip": bool(plugins.builds(m)) or os.path.isdir(os.path.join(where, "zips")),
                         "media_server": is_media_server(m),  # DASH-565: it fills the media server slot
-                        "fetch": [h for h in m.get("fetch") or [] if isinstance(h, str)] if "fetch" in (m.get("permissions") or []) else [],  # API 1.25 (DASH-618)
+                        "fetch": [h for h in m.get("fetch") or [] if isinstance(h, str)] if "fetch" in (m.get("permissions") or []) else [],  # API 1.25 (DASH-620)
                         "libraries": st.get("libraries")})
     return out
 
@@ -1122,7 +1122,7 @@ def jellyfin_metadata_dir(data_dir):
 
 
 def handoff_kinds(manifest):
-    """The hand-off kinds a plug-in sends or receives (API 1.25, DASH-618), from its volumes."""
+    """The hand-off kinds a plug-in sends or receives (API 1.25, DASH-620), from its volumes."""
     out = set()
     for c in (manifest or {}).get("containers") or []:
         for v in c.get("volumes") or [] if isinstance(c, dict) else []:
