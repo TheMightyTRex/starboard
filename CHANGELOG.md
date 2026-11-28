@@ -8,7 +8,7 @@ add features.
 ## [Unreleased]
 
 ### Added
-- **A group for AI assistants in the Catalogue (DASH-626):** Settings, Plug-ins, Catalogue lists plug-ins of this kind under their own heading, before Apps you can add. They let you ask an assistant about your server, or let an AI tool manage Starboard, with your own model or key. No plug-in is in it yet, so the heading stays hidden until the first one is listed. The plug-in reference names the groups to choose from.
+- **A group for AI assistants in the Catalogue (DASH-626):** Plug-ins of this kind have their own heading before Apps you can add. They let you ask an assistant about your server, or let an AI tool manage Starboard, with your own model or key. No plug-in is in it yet, so the heading stays hidden until the first one is listed. The plug-in reference names the groups to choose from.
 
 ## [0.40.0] (28 November 2026)
 
