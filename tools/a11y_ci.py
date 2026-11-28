@@ -10,15 +10,26 @@ sys.path.insert(0, str(ROOT / "tools"))
 import done_check as gate  # noqa: E402
 
 
+def details(path, key):
+    """What each finding said (the address it went to, the locator it waited for), by the same key the gate uses."""
+    try:
+        return {key(f): str(f.get("detail", "")) for f in gate.json.loads(path.read_text())}
+    except (OSError, ValueError, TypeError, KeyError):
+        return {}
+
+
 def main(results=ROOT / "tools" / "a11y"):
     baseline = gate.json.loads(gate.BASELINE.read_text()) if gate.BASELINE.exists() else {}
     failed = False
+    keys = {"axe": lambda f: f"{f['page']}|{f['area']}|{f['rule']}", "order": lambda f: f"{f['page']}|{f['rule']}"}
     for step, parser, name in (("axe", gate.parse_axe, "a11y.json"), ("order", gate.parse_order, "order.json")):
         found, _ = parser("", {"json": results / name})
+        said = details(results / name, keys[step])
         result, new, old = gate.judge(step, 0, found, baseline)
         print(f"{step}: {result}; {sum(old.values())} known on main")
         for key, n in new.items():
-            print(f"::error title=Accessibility ({step})::{key} ({n})")
+            more = f": {said[key]}" if said.get(key) else ""
+            print(f"::error title=Accessibility ({step})::{key} ({n}){more}")
             failed = True
     return 1 if failed else 0
 
