@@ -1,4 +1,4 @@
-"""Plug-in API 1.25 (28 November 2026): the shared wizard, a sentence, media cards, more rows, a preview and a desktop notice
+"""Plug-in API 1.26 (28 November 2026): the shared wizard, a sentence, media cards, more rows, a preview and a desktop notice
 on a plug-in's own page, drawn by Starboard from data. Additive: an older plug-in's answer is drawn as before."""
 import http.server
 import json
@@ -58,7 +58,7 @@ class Plugin(http.server.BaseHTTPRequestHandler):
         self.wfile.write(raw)
 
 
-class Api125(unittest.TestCase):
+class Api126(unittest.TestCase):
     def setUp(self):
         srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Plugin)
         threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -77,7 +77,7 @@ class Api125(unittest.TestCase):
             return plugin_custom.call(self.d, "tv-test", "setup", body)
 
     def test_the_version_and_what_this_starboard_draws(self):
-        self.assertEqual(plugins.API_VERSION, "1.25.0")
+        self.assertEqual(plugins.API_VERSION, "1.26.0")
         self.assertEqual(plugin_custom.CAN, "partial,picker,cards,wizard,sentence,media,more,desktop")
 
     def test_a_wizard_is_cleaned_to_what_starboard_draws(self):

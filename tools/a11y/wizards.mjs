@@ -209,7 +209,7 @@ await page.keyboard.press("Enter");
 const err = await focusOn((e) => e?.id === "code");
 check("T-LOGIN2", "Enter with no code keeps focus on the code field", err.id === "code", JSON.stringify(err));
 
-// T-PAGEWIZ A plug-in's page made of the shared wizard (plug-in API 1.25, the example plug-in Page parts example): Continue, the
+// T-PAGEWIZ A plug-in's page made of the shared wizard (plug-in API 1.26, the example plug-in Page parts example): Continue, the
 // preview beside the step, Play preview (only when pressed), Skip, Check your answers, Change that comes back to the answers, the
 // browser's Back button, and the confirm button that names its action. All by keyboard.
 await open("settings-plugin.html?id=page-parts");

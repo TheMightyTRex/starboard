@@ -15,7 +15,7 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
-## Plug-in API 1.25.0 (not released yet), 28 November 2026
+## Plug-in API 1.26.0 (not released yet), 28 November 2026
 
 - **Added:** a custom page may answer with the one shared wizard, `{"type": "wizard"}`: steps with one question each, a preview on each option,
   **Current** and **Recommended** tags, `mode: "again"` for a set-up run a second time (the summary then lists only what changes, with the old
@@ -26,8 +26,8 @@ the next major version.
   from your `<choices>/media` path through Starboard), `more_switch` with `more` on items (**Show more settings**), `preview` (a picture or a drawing
   made of styles, never video) and `desktop_only` (a plain notice on narrow screens).
 - Starboard names what it draws in `X-Starboard-Can`: `wizard`, `sentence`, `media`, `more` and `desktop`. An older plug-in sends none of these and
-  is drawn as before. Nothing was taken away. Name `>=1.25` in `starboard_api` to use any of them. Read
-  [Pages made of the shared parts](plugin-api-reference.md#pages-made-of-the-shared-parts-api-125).
+  is drawn as before. Nothing was taken away. Name `>=1.26` in `starboard_api` to use any of them. Read
+  [Pages made of the shared parts](plugin-api-reference.md#pages-made-of-the-shared-parts-api-126).
 
 ## Plug-in API 1.24.0 and Starboard API 1.12.0 (not released yet), 27 November 2026
 

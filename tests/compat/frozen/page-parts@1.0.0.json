@@ -8,7 +8,7 @@
  "licence": "MIT",
  "homepage": "https://example.invalid/page-parts",
  "support_url": "https://example.invalid/page-parts/issues",
- "starboard_api": ">=1.25 <2.0",
+ "starboard_api": ">=1.26 <2.0",
  "permissions": [
   "network:lan"
  ],

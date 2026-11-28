@@ -1199,7 +1199,7 @@ function customScreen(p, s) {
           el("div", { class: "row__side" }, state ? chip(...state) : null, icon("chevron-right")));
       }))));
   };
-  // Plug-in API 1.25: the wizard, a sentence, media cards, rows behind Show more settings, a preview and the desktop notice
+  // Plug-in API 1.26: the wizard, a sentence, media cards, rows behind Show more settings, a preview and the desktop notice
   // come from web/js/plugin-pages.js and the design system's parts, loaded only when a plug-in answers with one.
   const usesPages = (d) => d.type === "wizard" || d.type === "sentence" || d.desktop_only || d.preview || d.more_switch || d.layout === "media";
   let partsReady = false;
@@ -1233,7 +1233,7 @@ function customScreen(p, s) {
     const pool = at ? under.get(at) : data.items;
     const kids = menus.filter((m) => m.parent === at && (show === "all" || (under.get(m.id) || []).some(keep)));
     const shown = data.items.filter((it) => (it.menu || "") === at && keep(it) && !(data.more_switch && it.more));
-    const moreShown = data.items.filter((it) => (it.menu || "") === at && keep(it) && data.more_switch && it.more);  // behind Show more settings (API 1.25)
+    const moreShown = data.items.filter((it) => (it.menu || "") === at && keep(it) && data.more_switch && it.more);  // behind Show more settings (API 1.26)
     const sets = (data.bulk || []).filter((b) => (b.menu || "") === at);
     const here = byId.get(at);
     const add = !here && data.add ? (() => {
@@ -1274,7 +1274,7 @@ function customScreen(p, s) {
         here.detail ? el("p", { class: "small muted", text: here.detail }) : null];
     })() : [data.intro ? el("p", { class: "small muted", text: data.intro }) : null];
     const controls = [showFilter(data, pool), testAll, stay.size ? refreshButton() : null].filter(Boolean);
-    // Plug-in API 1.25: rows marked "more" wait behind Show more settings; media cards; a preview; the desktop notice.
+    // Plug-in API 1.26: rows marked "more" wait behind Show more settings; media cards; a preview; the desktop notice.
     const lv = level() + (here ? 1 : 0);
     const ctx = usesPages(data) ? pageCtx() : null;
     const listRows = [...(data.layout === "media" && ctx ? [PluginPages.mediaCards(ctx, shown, run)] : itemRows(data, shown, level() + (here ? 1 : 0))),

@@ -997,7 +997,7 @@ def _example_watch_stats(data_dir):
 
 
 def _example_page_parts(data_dir):
-    """Plug-in API 1.25: the example plug-in whose pages use the shared wizard and its parts (tools/screenshots/example_page_parts.py)."""
+    """Plug-in API 1.26: the example plug-in whose pages use the shared wizard and its parts (tools/screenshots/example_page_parts.py)."""
     import example_page_parts
     from starboard import plugin_custom, plugin_watch
     if not any(p["id"] == "page-parts" for p in plugins_admin.listing(data_dir)):
@@ -1005,7 +1005,7 @@ def _example_page_parts(data_dir):
             "manifest_version": 1, "id": "page-parts", "name": "Page parts example", "version": "1.0.0",
             "description": "An example of the shared wizard, a sentence with selects, media cards and a preview on a plug-in page.", "author": "TheMightyTRexUK",
             "licence": "MIT", "homepage": "https://example.invalid/page-parts", "support_url": "https://example.invalid/page-parts/issues",
-            "starboard_api": ">=1.25 <2.0", "permissions": ["network:lan"], "health": "/health",
+            "starboard_api": ">=1.26 <2.0", "permissions": ["network:lan"], "health": "/health",
             "containers": [{"name": "main", "image": "ghcr.io/example/page-parts@sha256:" + "d" * 64, "port": 8080, "network": "lan", "volumes": ["data"], "start": "when_needed"}],
             "settings": [{"key": "setup", "label": "Set up the breaks", "type": "custom", "choices": "/screen/setup"},
                          {"key": "sentence", "label": "In a sentence", "type": "custom", "choices": "/screen/sentence"},

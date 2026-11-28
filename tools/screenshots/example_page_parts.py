@@ -1,4 +1,4 @@
-"""The example plug-in for plug-in API 1.25 (28 November 2026): "Page parts example", answered here, in the example server's
+"""The example plug-in for plug-in API 1.26 (28 November 2026): "Page parts example", answered here, in the example server's
 process, with made-up data. It shows every part a plug-in page may use: the shared wizard (new and Run again), a sentence
 with selects, media cards with a preview that plays only when pressed, rows behind Show more settings, a preview pane and
 the desktop notice. The same answers are the model for a real plug-in (docs/help/developers/plugin-api-reference.md,

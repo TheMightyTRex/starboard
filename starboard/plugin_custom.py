@@ -32,7 +32,7 @@ its actions, a slide-out with search, filters and tick boxes, which POSTs {"acti
 "ids"} for the ticked ones; give an item an "image" ({"src": a PNG or JPEG data address of up to 64 KB, "alt"});
 and send "layout": "cards" with "hints" ({group: sentence}) to draw each menu as a card
 and each group of items as a card with its sentence. An older plug-in sends none of these and is drawn as before.
-Plug-in API 1.25 (28 November 2026, owner: Create your own TV channel's settings redesign): Starboard sends
+Plug-in API 1.26 (28 November 2026, owner: Create your own TV channel's settings redesign): Starboard sends
 X-Starboard-Can: partial,picker,cards,wizard,sentence,media,more,desktop, and a plug-in may then answer with
   {"type": "wizard", ...}   the one shared wizard (docs/WIZARD.md), drawn from steps, one question each, with Check your
                             answers at the end; POST {"action": "wizard", "answers": {step: value or [values]}};
@@ -49,8 +49,8 @@ import urllib.request
 
 MAX_BYTES = 2 * 1024 * 1024  # Live TV on the owner's server: 1,616 channels, about 420 KB (13 November 2026)
 ACTIONS = ("add", "test", "test_all", "toggle", "remove", "up", "down", "choose", "bulk", "bulk_ids", "attach", "detach", "dismiss",
-           "restore", "browse", "pick", "wizard")  # restore: API 1.15 (DASH-406), drawn as Put back; browse and pick: API 1.16, the picker; wizard: API 1.25
-CAN = "partial,picker,cards,wizard,sentence,media,more,desktop"  # what this Starboard draws (API 1.16 and 1.25), sent to the plug-in in X-Starboard-Can
+           "restore", "browse", "pick", "wizard")  # restore: API 1.15 (DASH-406), drawn as Put back; browse and pick: API 1.16, the picker; wizard: API 1.26
+CAN = "partial,picker,cards,wizard,sentence,media,more,desktop"  # what this Starboard draws (API 1.16 and 1.26), sent to the plug-in in X-Starboard-Can
 TONES = ("info", "success", "warning", "danger")
 MAX_IDS = 1000
 MAX_ITEMS = 4000
@@ -208,9 +208,9 @@ def _file(f):
 
 def clean(data):
     """Only the fields Starboard draws, every text cut to size; anything else is dropped."""
-    if isinstance(data, dict) and data.get("type") == "wizard":  # API 1.25
+    if isinstance(data, dict) and data.get("type") == "wizard":  # API 1.26
         return clean_wizard(data)
-    if isinstance(data, dict) and data.get("type") == "sentence":  # API 1.25
+    if isinstance(data, dict) and data.get("type") == "sentence":  # API 1.26
         return clean_sentence(data)
     if not isinstance(data, dict) or data.get("type") != "list" or not isinstance(data.get("items"), list):
         raise ValueError("The plug-in's page is not a list Starboard can draw")
@@ -234,7 +234,7 @@ def clean(data):
                       **({"link": _link(it["link"])} if _link(it.get("link")) else {}),
                       **({"image": _image(it["image"])} if _image(it.get("image")) else {}),
                       **({"picker": _picker(it["picker"])} if _picker(it.get("picker")) and "pick" in (it.get("actions") or []) else {}),
-                      # API 1.25: a media card's picture and short preview, and a row shown only when Show more settings is on
+                      # API 1.26: a media card's picture and short preview, and a row shown only when Show more settings is on
                       **({"media": _media(it["media"])} if _media(it.get("media")) else {}), **({"more": True} if it.get("more") is True else {})})
     out = {"type": "list", "title": _text(data.get("title"), 80), "intro": _text(data.get("intro"), 400), "items": items,
            "add": {**{k: _text(add.get(k), 120) for k in ("label", "hint", "placeholder")}, "file": _file(add.get("file")),
@@ -249,13 +249,13 @@ def clean(data):
         out["partial"] = {"menus": [_text(m, 120) for m in part["menus"][:MAX_MENUS] if m]}
     if data.get("layout") == "cards":  # API 1.16: each menu and each group of items on a card of its own
         out["layout"] = "cards"
-    if data.get("layout") == "media":  # API 1.25: items with a media object drawn as media cards in option cards
+    if data.get("layout") == "media":  # API 1.26: items with a media object drawn as media cards in option cards
         out["layout"] = "media"
-    if isinstance(data.get("more_switch"), dict):  # API 1.25: Show more settings, for the items marked "more"
+    if isinstance(data.get("more_switch"), dict):  # API 1.26: Show more settings, for the items marked "more"
         out["more_switch"] = {"label": _text(data["more_switch"].get("label"), 60) or "Show more settings", "hint": _text(data["more_switch"].get("hint"), 160)}
-    if _preview(data.get("preview")):  # API 1.25
+    if _preview(data.get("preview")):  # API 1.26
         out["preview"] = _preview(data["preview"])
-    if data.get("desktop_only") is True:  # API 1.25
+    if data.get("desktop_only") is True:  # API 1.26
         out["desktop_only"] = True
     if isinstance(data.get("hints"), dict):
         out["hints"] = {_text(k, 40): _text(v, 200) for k, v in list(data["hints"].items())[:40] if k and v}
@@ -270,7 +270,7 @@ def clean(data):
     return out
 
 
-# ---- Plug-in API 1.25 (28 November 2026): the shared wizard, a sentence, media cards, more rows, a preview, a desktop notice ----
+# ---- Plug-in API 1.26 (28 November 2026): the shared wizard, a sentence, media cards, more rows, a preview, a desktop notice ----
 STEP_KINDS = ("choice", "multi", "media", "number", "text", "select")
 MEDIA_TYPES = ("image/png", "image/jpeg", "image/webp", "video/mp4", "video/webm", "audio/mpeg", "audio/mp4", "audio/ogg", "audio/wav", "audio/x-wav")
 MAX_MEDIA = 8 * 1024 * 1024  # a short preview, never a whole film
@@ -281,7 +281,7 @@ ID = re.compile(r"[a-z][a-z0-9_-]{0,40}")
 
 
 def _preview(p):
-    """A preview (API 1.25): a picture or a drawing made of styles, never video: up to 3 lines of text, a corner label, a strip of
+    """A preview (API 1.26): a picture or a drawing made of styles, never video: up to 3 lines of text, a corner label, a strip of
     up to 12 parts with their seconds, a caption said once after a change and a total in words."""
     if not isinstance(p, dict):
         return None
@@ -295,7 +295,7 @@ def _preview(p):
 
 
 def _media(m):
-    """A media card's picture and preview (API 1.25): `thumb` is a small PNG or JPEG data address (up to 64 KB), or `thumb_path`
+    """A media card's picture and preview (API 1.26): `thumb` is a small PNG or JPEG data address (up to 64 KB), or `thumb_path`
     true to fetch it, once, through Starboard from the plug-in's own media path; `preview` true when a short clip is there to
     play, only when pressed."""
     if not isinstance(m, dict):
@@ -324,7 +324,7 @@ def _unique(ids, one):
 
 
 def clean_wizard(data):
-    """The one shared wizard drawn from a plug-in's steps (API 1.25): up to 30 steps, each a question with up to 200 options, an
+    """The one shared wizard drawn from a plug-in's steps (API 1.26): up to 30 steps, each a question with up to 200 options, an
     optional preview on each option, and `mode: "again"` for a set-up run a second time (options marked `current`)."""
     steps, seen = [], set()
     for st in (data.get("steps") or [])[:MAX_STEPS] if isinstance(data.get("steps"), list) else []:
@@ -365,7 +365,7 @@ def _sentence_parts(raw):
 
 
 def clean_sentence(data):
-    """A setting read as one sentence with a select in each gap (API 1.25): words and up to 12 gaps."""
+    """A setting read as one sentence with a select in each gap (API 1.26): words and up to 12 gaps."""
     parts = _sentence_parts(data.get("parts"))
     if not any("id" in x for x in parts):
         raise ValueError("The plug-in's sentence has no gaps Starboard can draw")
@@ -373,7 +373,7 @@ def clean_sentence(data):
 
 
 def _common(out, data):
-    """What every page type may carry (API 1.25): a preview, notices, a sentence said, and the desktop notice."""
+    """What every page type may carry (API 1.26): a preview, notices, a sentence said, and the desktop notice."""
     if _preview(data.get("preview")) and out.get("preview") is None:
         out["preview"] = _preview(data["preview"])
     if _notices(data.get("notices")):
@@ -386,7 +386,7 @@ def _common(out, data):
 
 
 def clean_answers(raw):
-    """The answers a wizard sends (API 1.25): up to 40 steps, each a text or up to 200 texts."""
+    """The answers a wizard sends (API 1.26): up to 40 steps, each a text or up to 200 texts."""
     out = {}
     for k, v in list(raw.items())[:40] if isinstance(raw, dict) else []:
         if ID.fullmatch(str(k)):
@@ -395,7 +395,7 @@ def clean_answers(raw):
 
 
 def media(data_dir, pid, key, query, opener=None):
-    """A picture or short preview for a media card or a wizard option (API 1.25), fetched from the plug-in's own `choices` path
+    """A picture or short preview for a media card or a wizard option (API 1.26), fetched from the plug-in's own `choices` path
     plus /media with its key: only a picture, a short video or a sound (up to 8 MB), whatever else it sends is refused.
     `query` may hold step, id and kind (thumb or preview). Returns (content type, bytes)."""
     import urllib.parse
@@ -501,7 +501,7 @@ def call(data_dir, pid, key, body=None, opener=None):
         browse = {"filter": _text(body.get("filter"), 40), "start": _count(body.get("start"))} if body["action"] == "browse" else {}
         body = {"action": body["action"], "id": _text(body.get("id"), 600), "value": _text(body.get("value"), 500), **browse,
                 **({"ids": [_text(i, 600) for i in ids[:MAX_IDS] if isinstance(i, str)]} if isinstance(ids, list) else {}),
-                **({"answers": clean_answers(body.get("answers"))} if body["action"] == "wizard" else {})}  # API 1.25: a wizard's answers
+                **({"answers": clean_answers(body.get("answers"))} if body["action"] == "wizard" else {})}  # API 1.26: a wizard's answers
     main = m["containers"][0]
     try:
         with open(f"{plugins_admin.folder(data_dir, pid)}/key", encoding="utf-8") as f:

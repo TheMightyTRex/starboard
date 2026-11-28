@@ -3956,7 +3956,7 @@ class Handler(BaseHTTPRequestHandler):
                 logs.event("info", "plug-ins", f"{mf.group(1)}: {out['said']}")
             return self.json(200, out)
         mm = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/custom/([a-z][a-z0-9_]{0,40})/media$", path)
-        if mm and method == "GET":  # a picture or short preview for a media card, through Starboard (API 1.25)
+        if mm and method == "GET":  # a picture or short preview for a media card, through Starboard (API 1.26)
             from . import plugin_custom
             q = {k: v[0] for k, v in urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).items()}
             try:

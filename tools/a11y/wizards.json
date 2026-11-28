@@ -22,7 +22,7 @@
     { "id": "library-choose-download", "name": "Choose a download for a title", "files": ["web/js/library-item.js"], "tasks": ["T-CHOOSE"] },
     { "id": "find-all-wanted", "name": "Find all wanted (count, confirm, progress, stop)", "files": ["web/js/find-wanted.js"], "tasks": ["T-FINDALL", "T36"] },
     { "id": "pool-jobs", "name": "Pool: Add a disk, Balance the files, Take out of the pool", "files": ["web/js/system-pool.js", "web/system-pool.html"], "tasks": ["T-POOL"] },
-    { "id": "plugin-page-parts", "name": "A plug-in's page made of the shared wizard, a sentence and more rows (plug-in API 1.25)", "files": ["web/js/plugin-pages.js", "web/js/plugins.js", "tools/screenshots/example_page_parts.py"], "tasks": ["T-PAGEWIZ", "T-PAGESENT", "T-PAGEMORE"] },
+    { "id": "plugin-page-parts", "name": "A plug-in's page made of the shared wizard, a sentence and more rows (plug-in API 1.26)", "files": ["web/js/plugin-pages.js", "web/js/plugins.js", "tools/screenshots/example_page_parts.py"], "tasks": ["T-PAGEWIZ", "T-PAGESENT", "T-PAGEMORE"] },
     { "id": "terminal-setup", "name": "The terminal installer and set-up (install.sh, run-first.sh, terminal set-up)", "browser": false, "files": ["install.sh", "run-first.sh", "starboard/terminal_setup.py"], "covered_by": ["tests/test_terminal_setup.py", "tests/test_terminal_frame.py", "tests/test_terminal_bring_in.py", "tests/test_check_your_answers.py"] }
   ]
 }

@@ -1,4 +1,4 @@
-// Plug-in pages drawn from the shared wizard and its parts (plug-in API 1.25, 28 November 2026): the wizard, a sentence with
+// Plug-in pages drawn from the shared wizard and its parts (plug-in API 1.26, 28 November 2026): the wizard, a sentence with
 // selects, media cards, rows behind Show more settings, a preview and the desktop notice. Loaded by plugins.js only when a
 // plug-in answers with one of them, with the design system's parts for it (css/parts and js/parts), so a page without them
 // loads nothing more. Everything here is drawn from data Starboard has already cleaned (starboard/plugin_custom.py).

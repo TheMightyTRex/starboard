@@ -289,7 +289,7 @@ A link on an item that goes to the plug-in's own published port, such as a page 
 address the person opened Starboard with, at that port, as **Its web page** does. The plug-in only knows the
 server's home network address (`STARBOARD_HOME_ADDRESS`), which a browser that reaches Starboard another way may not.
 
-## Pages made of the shared parts (API 1.25)
+## Pages made of the shared parts (API 1.26)
 
 Starboard sends `X-Starboard-Can: partial,picker,cards,wizard,sentence,media,more,desktop` with every call to a custom page. Use the parts the header
 names. They are the design system's one wizard and its parts, so your page is drawn and behaves as Starboard's own set-up, upgrade and restore.
