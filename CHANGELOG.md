@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Fixed
+- **The pull request accessibility check no longer fails pull requests that did nothing wrong (DASH-636):** it named the sign-in and set-up pages as findings because the example server sends a signed-in visitor on to the dashboard, which is right; and it could not open the full backups panel because the check's computer did not have the library that encrypts backups, so any pull request that touched that page failed. The check now installs the library the image has, leaves the redirect out, and says what a failed page waited for. A new problem still fails it; findings already on main still do not.
+
 ## [0.40.0] (28 November 2026)
 
 ### Added
