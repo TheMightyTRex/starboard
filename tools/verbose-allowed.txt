@@ -1,1 +1,5 @@
 CLAUDE.md	Never say a change is done	The owner's own standing rule, kept word for word in every project file and in the README
+starboard/plugins.py	When a disk is erased, added to the pool	Old permission wording, shown with the lines this change moved
+starboard/plugins.py	Real-time monitoring is deactivated	An existing message of the plug-in check, not changed here
+starboard/plugins_admin.py	Jellyfin was added as the media server plug-in	An existing log line, not changed here
+starboard/plugins_admin.py	This plug-in cannot be added	An existing message, not changed here

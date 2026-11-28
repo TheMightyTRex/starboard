@@ -147,7 +147,7 @@ def operation(spec, path, method, op, table, used):
         who = "a key made with Read and manage" if right == "manage" else "a Read only key" if method != "get" else "any key"
         if right == "plugin":  # API 1.8.0: a plug-in's own key, by its approved permission
             lines.append("- **Key:** only a plug-in's own key, while the plug-in is active and its approved permissions include "
-                         f"`{ {'/api/v1/plugin/hold': 'power:hold'}.get(path, 'alerts:send') }`. Any other key gets `404 not_found`.")
+                         f"`{ {'/api/v1/plugin/hold': 'power:hold', '/api/v1/plugin/fetch': 'fetch'}.get(path, 'alerts:send') }`. Any other key gets `404 not_found`.")
         elif scope:
             which = f"whose scopes include `{scope}`" if scope in EXPLICIT else f"whose scopes are empty or include `{scope}`"
             lines.append(f"- **Key:** {who} {which} ({SCOPE_WORDS.get(scope, scope)}). "

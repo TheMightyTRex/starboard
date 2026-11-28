@@ -528,6 +528,7 @@ def listing(data_dir):
                         # API 1.15: added from a zip (DASH-414), so it updates from one; its Jellyfin libraries (DASH-430)
                         "from_zip": bool(plugins.builds(m)) or os.path.isdir(os.path.join(where, "zips")),
                         "media_server": is_media_server(m),  # DASH-565: it fills the media server slot
+                        "fetch": [h for h in m.get("fetch") or [] if isinstance(h, str)] if "fetch" in (m.get("permissions") or []) else [],  # API 1.25 (DASH-620)
                         "libraries": st.get("libraries")})
     return out
 
@@ -1120,9 +1121,30 @@ def jellyfin_metadata_dir(data_dir):
     return f"{cfg}/jellyfin-metadata" if cfg.startswith("/") and ".." not in cfg else None
 
 
+def handoff_kinds(manifest):
+    """The hand-off kinds a plug-in sends or receives (API 1.25, DASH-620), from its volumes."""
+    out = set()
+    for c in (manifest or {}).get("containers") or []:
+        for v in c.get("volumes") or [] if isinstance(c, dict) else []:
+            m = re.match(plugins.HANDOFF, v) if isinstance(v, str) else None
+            if m:
+                out.add(m.group(1))
+    return sorted(out)
+
+
+def ensure_handoff(data_dir, manifest):
+    """Makes data/handoff/<kind> for each kind a plug-in sends or receives. The mode is 0777 with no sticky bit, so any
+    container user may add files and the receiver may remove them. Nothing else lives there."""
+    for kind in handoff_kinds(manifest):
+        where = os.path.join(data_dir, "handoff", kind)
+        os.makedirs(where, exist_ok=True)
+        os.chmod(where, 0o777)  # nosec B103: see above; the folder holds only what plug-ins hand to each other
+
+
 def base_extra(data_dir, manifest):
     """What every Compose file of this plug-in needs from the install, even before enable() (API 1.14): Jellyfin's
     metadata folder for a plug-in that mounts it. ValueError in plain words when that folder is not found."""
+    ensure_handoff(data_dir, manifest)
     if not mounts_metadata(manifest):
         return {}
     where = jellyfin_metadata_dir(data_dir)

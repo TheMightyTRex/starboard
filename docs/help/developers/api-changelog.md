@@ -15,6 +15,21 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Plug-in API 1.25.0 and Starboard API 1.13.0 (not released yet), 28 November 2026
+
+- **Added:** the permission `fetch` and the manifest field `fetch`, up to 12 site names such as `api.openverse.org`. A plug-in on its own
+  network (no way out) asks Starboard to fetch an https address from one of its sites with `POST /api/v1/plugin/fetch`. Read
+  [Fetching from named sites](plugin-api-reference.md#fetching-from-named-sites-api-125).
+- **Added:** limits Starboard enforces on a fetch. It refuses other sites and non-public addresses. It follows at most 3 redirects to
+  listed sites and stops at 25 MB and 30 seconds. It runs one fetch at a time.
+- **Added:** a record of every fetch, shown under **What it fetched** on the plug-in's page: time, site, what for, size and result.
+  It keeps the last 200 and never a path, a key or an answer.
+- **Added:** the permissions `handoff:send` and `handoff:receive` and the volumes `handoff/<kind>:send` and `handoff/<kind>:receive`.
+  They give one shared folder for one kind of thing, such as `tv-pack`. One plug-in puts files in it and another uses them. Read
+  [Handing files to another plug-in](plugin-api-reference.md#handing-files-to-another-plug-in-api-125).
+- **Added:** the capabilities `fetch` and `handoff` in `GET /api/v1/`.
+- Nothing was taken away. Name `>=1.25` in `starboard_api` to use any of these.
+
 ## Plug-in API 1.24.0 and Starboard API 1.12.0 (not released yet), 27 November 2026
 
 - **Added:** the permission `power:hold` and `POST /api/v1/plugin/hold`, so a plug-in such as UPS and power asks Starboard to hold

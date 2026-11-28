@@ -25,6 +25,25 @@ const healthNote = (p) => {
   return null;
 };
 
+// What it fetched (API 1.25, DASH-620): the record Starboard keeps of what it fetched for a plug-in with the permission
+// fetch: when, from which site, what for, how big. Read when the page is drawn, never in the background.
+function fetchedSection(p) {
+  if (!p.fetch?.length) return null;
+  const box = el("div", { class: "stack-2", "aria-live": "polite" }, el("p", { class: "small muted", text: "Loading what it fetched…" }));
+  const draw = (rows) => box.replaceChildren(rows.length
+    ? el("div", { class: "table-wrap" }, el("table", { class: "table table--middle" },
+      el("caption", { class: "visually-hidden", text: `What ${p.name} fetched, newest first` }),
+      el("thead", {}, el("tr", {}, ...["When", "Site", "What for", "Size", "Result"].map((t) => el("th", { scope: "col", text: t })))),
+      el("tbody", {}, rows.map((r) => el("tr", {},
+        el("th", { scope: "row", text: new Date(r.at * 1000).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) }),
+        el("td", { text: r.host }), el("td", { text: r.what || "Not said" }),
+        el("td", { class: "num", text: formatBytes(r.size) }), el("td", { text: r.result }))))))
+    : emptyState("Nothing fetched yet", `${p.name} has not fetched anything. It shows here each time it does.`));
+  api(`/api/plugins/${p.id}/fetched`).then((r) => draw(r.fetched || [])).catch((err) => box.replaceChildren(el("p", { class: "small", role: "alert", text: err.message })));
+  return section(`pl-${p.id}-fetched`, "What it fetched",
+    `Starboard fetches for ${p.name} from these sites only: ${p.fetch.join(", ")}. It keeps the last 200 fetches, with the site, what each was for and its size. It does not keep what came back.`, box);
+}
+
 function pluginPermissions(list) {
   if (!list.length) return el("p", { class: "small", text: "It asks for nothing beyond its own folder." });
   return el("ul", { class: "rows" }, list.map((p) => el("li", { class: "row row--no-lead" },
@@ -776,6 +795,7 @@ function pluginPage(p, redraw, ms = null, read = null) {
   const jobs = p.jobs?.length ? section(`pl-${p.id}-jobs`, "Jobs", "Starboard runs these for it, and lists them in System with when each last ran.",
     el("ul", {}, p.jobs.map((j) => el("li", { text: j }))), el("a", { class: "btn btn--quiet", href: "/system.html#jobs-panel" }, "Open System, Jobs")) : null;
   const may = section(`pl-${p.id}-may`, "What it may do", "What you allowed when you installed it.", pluginPermissions(p.permissions));
+  const fetched = fetchedSection(p);
   const remove = inUse(p, ms)
     ? section(`pl-${p.id}-remove`, "Remove", `${p.name} is your media server, so it stays added and active. Choose another media server, or none, first.`,
       el("div", { class: "actions" }, el("a", { class: "btn", href: "/settings-jellyfin.html" }, "Open the media server settings")))
@@ -788,6 +808,7 @@ function pluginPage(p, redraw, ms = null, read = null) {
     p.id === "calibre-web" || p.id === "kavita" ? section(`pl-${p.id}-phone`, "Read on your phone", `Apps for Android and iOS that open your ${p.name} library.`, phoneApps("h3", p.id)) : null,
     adoptSection(p, redraw),
     firstSignInSection(p),
+    fetched,
     p.looks?.length ? section(`pl-${p.id}-styles`, "Styles", "Colours for Starboard from this plug-in. Choose one for this browser, as in Display.", styleGallery(p)) : null,
     appSettingsSection(p),
     ...groups.map((g) => section(g.id, g.group || "Settings", "Saved for everyone who uses this Starboard.", g.body)),

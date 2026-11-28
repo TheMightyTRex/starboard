@@ -4,7 +4,7 @@
 # Plug-in manifest reference
 
 Every field of `starboard-plugin.json`, version 1, with the check Starboard runs on it and why. Starboard refuses
-any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.24.0
+any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.25.0
 (`API_VERSION` in `starboard/plugins.py`).
 
 The same rules are in a JSON Schema, `starboard/plugin-manifest.schema.json`, for editors and other tools. The
@@ -152,6 +152,9 @@ people read every one, and the plug-in's API key gets only the read permissions 
 | `library:holding` | Move films and series from your library into the holding folder in your media folder, and put them back (API 1.15) | high | none |
 | `alerts:send` | Send alerts through Starboard, to where it sends its own (ntfy, Gotify, a webhook, and plug-ins that pass them on) (API 1.17). The one thing the plug-in's read-only key may change: read [Sending alerts](plugin-api-reference.md#sending-alerts-api-117) | low | none |
 | `power:hold` | Ask Starboard to hold its heavy jobs and downloads, for example while the computer runs on battery (API 1.24) | low | none |
+| `fetch` | Fetch from the sites named in its `fetch` list, through Starboard, and nowhere else (API 1.25). Read [Fetching from named sites](plugin-api-reference.md#fetching-from-named-sites-api-125) | medium | none |
+| `handoff:send` | Put files in a shared hand-off folder, for another plug-in to use (API 1.25) | low | none |
+| `handoff:receive` | Read and remove the files another plug-in put in a shared hand-off folder (API 1.25) | low | none |
 | `slot:media-server` | Be Starboard's media server: answer for the dashboard panel, Library, Activity and System, using the address and key kept in Settings, Apps. Reserved for plug-ins that come with Starboard (Jellyfin first); any other plug-in that asks for it is refused for now | high | none |
 
 The plug-in's risk is its highest permission's risk. Read [What a plug-in can change](../basics/what-plugins-can-change.md)
@@ -458,6 +461,22 @@ them in the plug-in's `settings.json`. Read [Settings and key files](plugin-api-
 | `custom` | A list the plug-in describes, drawn by Starboard | `choices` is a path on the plug-in. Read [Custom pages](plugin-api-reference.md#custom-pages) |
 | `schedule` | How often (every day, every week or every month), the day or the date, and a time, side by side | Every day, week or month; a day of the week for a week; a date from 1 to 31 for a month; a time such as `03:30`. A month without the date runs on its last day. API 1.14. Read [A job on a schedule from its settings](#a-job-on-a-schedule-from-its-settings) |
 | `time` | A time box | One time of day such as `22:00`, kept as that text. `default` may be one. Saved when you leave the box. API 1.24 |
+
+### `fetch`: the sites Starboard fetches from (API 1.25)
+
+`"fetch": ["api.openverse.org", "api.pexels.com"]`. One to 12 different site names: lower case, letters, numbers, dots and
+hyphens, with a real ending such as `.org`. No address, no port, no `*`, and no name for a computer at home (`.local`,
+`.lan`, `.internal`, `.home.arpa`).
+
+It needs the permission `fetch`, and the permission needs the list. The install warning names every site. A plug-in with `fetch` can
+stay on the `default` network, which has no way out: Starboard does the fetching.
+
+### Hand-off volumes (API 1.25)
+
+`handoff/<kind>:send` and `handoff/<kind>:receive` in a container's `volumes`. `<kind>` is 2 to 30 lower case letters, numbers and
+hyphens, such as `tv-pack`. Both mount the same folder, `data/handoff/<kind>`, at `/handoff/<kind>`, read and write.
+
+`:send` needs the permission `handoff:send` and `:receive` needs `handoff:receive`. Starboard makes the folder.
 
 ### Setting up before it starts
 
@@ -868,6 +887,7 @@ A catalogue version may carry `capabilities_needed`, a list of the same names, n
 | 1.14 | 14 November 2026 | A card's own refresh time, `refresh_seconds`, in the manifest and in its answer, 10 seconds at the quickest; `recommended` on a catalogue entry; `logo` (and `logo`, `logo_alt` on a catalogue entry); every card drawn with a grey band holding the logo, the name, a status chip and when it last updated (`status`, `status_label` and `updated` in its answer); a `schedule` setting and a job's `schedule`; the `jellyfin:metadata` permission with the `jellyfin-metadata` volume; `update` (a `before` and an `after` step, `health_wait_seconds` and settings `migrations`), with the health wait and an automatic Roll back after every update, and **What is new** shown before an update too |
 | 1.20 | 26 November 2026 | `first_sign_in`: a password Starboard makes for an app plug-in, set by the app before it first starts and shown once on the plug-in's page |
 | 1.24 | 27 November 2026 | The `power:hold` permission, with `POST /api/v1/plugin/hold`, so a plug-in holds Starboard's heavy automatic jobs and downloads on battery; the `time` setting type |
+| 1.25 | 28 November 2026 | The `fetch` permission and manifest field (named sites Starboard fetches from, `POST /api/v1/plugin/fetch`, a record under What it fetched); `handoff:send`, `handoff:receive` and the `handoff/<kind>:send` and `handoff/<kind>:receive` volumes |
 | 1.23 | 27 November 2026 | `replaces_or_adds`: one line on what a plug-in replaces or adds to, shown on the Catalogue card, before install, on its page and in Manage; `icon`: one icon from Starboard's set for its tab in Settings, Plug-ins |
 | 1.22 | 27 November 2026 | `starboard_tested` and `capabilities`: named optional parts a plug-in needs or uses, listed by `GET /api/v1/`; the plug-in tester checks the range a plug-in names |
 | 1.21 | 27 November 2026 | `needs_plugins` and `switch`: a plug-in may list the plug-ins it needs and name its own main switch; deactivating a plug-in or saving its switch as inactive a plug-in that others need asks first and deactivates them too |

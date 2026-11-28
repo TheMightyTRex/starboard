@@ -46,7 +46,7 @@ import uuid
 
 from . import deprecations, plugin_capabilities
 
-API_VERSION = "1.12.0"  # 1.12.0 (27 November 2026, DASH-572, plug-in API 1.24): POST /plugin/hold, a hold on heavy work from a plug-in with power:hold, answered only to its own key; /download-hours says what is held. 1.11.0 (26 November 2026, DASH-603): capabilities in GET /, the names of the optional plug-in parts this Starboard has. 1.10.0 (26 November 2026, DASH-603): deprecations in GET /, Deprecation and Sunset headers on a route that is going, 410 gone once removed. 1.9.0 (26 November 2026): several backup places in /backup/copies (destinations, safe, settings_zip), the test for each, and POST /backup/settings-copy. 1.8.0 (20 November 2026, plug-in API 1.17): POST /plugin/alerts, alerts from a plug-in with alerts:send, answered only to its own key. 1.7.0 (19 November 2026, DASH-464): /mcp, read-only tools for AI assistants, off until activated. 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
+API_VERSION = "1.13.0"  # 1.13.0 (28 November 2026, DASH-620, plug-in API 1.25): POST /plugin/fetch, a fetch from a named site for a plug-in with fetch, answered only to its own key. 1.12.0 (27 November 2026, DASH-572, plug-in API 1.24): POST /plugin/hold, a hold on heavy work from a plug-in with power:hold, answered only to its own key; /download-hours says what is held. 1.11.0 (26 November 2026, DASH-603): capabilities in GET /, the names of the optional plug-in parts this Starboard has. 1.10.0 (26 November 2026, DASH-603): deprecations in GET /, Deprecation and Sunset headers on a route that is going, 410 gone once removed. 1.9.0 (26 November 2026): several backup places in /backup/copies (destinations, safe, settings_zip), the test for each, and POST /backup/settings-copy. 1.8.0 (20 November 2026, plug-in API 1.17): POST /plugin/alerts, alerts from a plug-in with alerts:send, answered only to its own key. 1.7.0 (19 November 2026, DASH-464): /mcp, read-only tools for AI assistants, off until activated. 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
 KEYS_FILE = "api-keys.json"
 RIGHTS = ("read", "manage")  # manage: read, and the everyday actions (DASH-274). "admin" stays with the pages
 SCOPES = ("apps", "downloads", "media", "system", "library", "requests")
@@ -76,6 +76,10 @@ class RateLimited(Exception):
     def __init__(self, message, wait):
         super().__init__(message)
         self.wait = wait
+
+
+class Upstream(Exception):
+    """A site a plug-in asked Starboard to fetch from did not answer as needed (API 1.13.0): 502 fetch_failed."""
 
 
 class Conflict(Exception):
@@ -707,7 +711,8 @@ def routes():
 
 PLUGIN_ONLY = "plugin"
 PLUGIN_HOLD = "plugin-hold"  # API 1.12.0 (DASH-572): the same, for a plug-in approved power:hold
-PLUGIN_PERMISSION = {PLUGIN_ONLY: "alerts:send", PLUGIN_HOLD: "power:hold"}
+PLUGIN_FETCH = "plugin-fetch"  # API 1.13.0 (DASH-620): the same, for a plug-in approved fetch
+PLUGIN_PERMISSION = {PLUGIN_ONLY: "alerts:send", PLUGIN_HOLD: "power:hold", PLUGIN_FETCH: "fetch"}
 ALERT_KEY = re.compile(r"^[A-Za-z0-9._:-]{1,80}$")
 ALERT_LEVELS = ("problem", "warning", "info")
 ALERTS_AN_HOUR = 30
@@ -960,6 +965,15 @@ def actions():
             raise ValueError("reason must be one line of words, up to 80 characters")
         return 200, {"ok": True, **power_hold.set_hold(h.api_plugin, on, reason, b.get("minutes"))}
 
+    def plugin_fetch_route(h, m, q, b):
+        """A fetch from a site on the plug-in's list (API 1.13.0, plug-in API 1.25): checked, limited and recorded by Starboard."""
+        from . import plugin_fetch, plugins_admin
+        man = plugins_admin._read_kept(os.path.join(plugins_admin.folder(h.app.data_dir, h.api_plugin["id"]), "manifest.json"), {}) or {}
+        try:
+            return 200, plugin_fetch.fetch(h.app.data_dir, h.api_plugin, plugin_fetch.hosts_of(man), b)
+        except plugin_fetch.Failed as e:
+            raise Upstream(str(e)) from None
+
     return [
         (r"^/api/v1/downloads/actions$", "POST", "downloads", download_action),
         (r"^/api/v1/download-hours$", "POST", "downloads", hours_action),
@@ -977,6 +991,7 @@ def actions():
         (r"^/api/v1/updates/all$", "POST", "updates", update_all),
         (r"^/api/v1/plugin/alerts$", "POST", PLUGIN_ONLY, plugin_alerts),  # the plug-in's own key (API 1.8.0)
         (r"^/api/v1/plugin/hold$", "POST", PLUGIN_HOLD, plugin_hold),  # the plug-in's own key (API 1.12.0)
+        (r"^/api/v1/plugin/fetch$", "POST", PLUGIN_FETCH, plugin_fetch_route),  # the plug-in's own key (API 1.13.0)
     ]
 
 
@@ -1101,6 +1116,8 @@ def _write(h, k, method, path, query, writes, base, rate, problem):
         status, code, title = 409, e.code, str(e)
     except RateLimited as e:
         status, code, title, extra = 429, "rate_limited", str(e), {"Retry-After": str(e.wait)}
+    except Upstream as e:
+        status, code, title = 502, "fetch_failed", str(e)[:300]
     except services.ServiceError as e:
         status, code, title = 502, "app_failed", "An app did not answer: " + str(e)[:300]
     audit(h.app.data_dir, "api_write", key_id=k["id"], method=method, path=path[:100], status=status)

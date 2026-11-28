@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+- **Plug-ins can fetch from named sites (DASH-620, plug-in API 1.25, Starboard API 1.13.0):** a plug-in with the new `fetch` permission lists up to 12 sites. It keeps a network with no way out and asks Starboard to fetch, with `POST /api/v1/plugin/fetch`. Starboard refuses other sites, addresses on your computer or home network, and redirects to other sites. It limits size to 25 MB and time to 30 seconds, and runs one fetch at a time.
+- **What a plug-in fetched (DASH-620):** the plug-in's page lists each fetch under **What it fetched**: when, site, what for and size. It never shows a key or an answer.
+- **Hand-off folders (DASH-620):** the permissions `handoff:send` and `handoff:receive` give two plug-ins one shared folder, such as for a TV channel pack. Nothing runs while no plug-in asks.
 - **A group for AI assistants in the Catalogue (DASH-626):** Plug-ins of this kind have their own heading before Apps you can add. They let you ask an assistant about your server, or let an AI tool manage Starboard, with your own model or key. No plug-in is in it yet, so the heading stays hidden until the first one is listed. The plug-in reference names the groups to choose from.
 
 ### Fixed
