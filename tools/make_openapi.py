@@ -516,6 +516,35 @@ _hold = spec["paths"]["/api/v1/plugin/hold"]["post"]
 _hold["responses"].pop("403")  # a plug-in's key is never asked for manage
 _hold["requestBody"]["content"]["application/json"]["example"] = {"on": True, "reason": "On battery", "minutes": 10}
 
+# Added in 1.13.0 (plug-in API 1.25, DASH-618): a fetch from a named site for a plug-in, answered only to its own key.
+spec["paths"]["/api/v1/plugin/fetch"] = {"post": write(
+    {"type": "object", "required": ["ok", "status", "host", "size"], "properties": {
+        "ok": {"type": "boolean"}, "status": {"type": "integer", "description": "The site's own HTTP status. A 4xx or 5xx is still answered 200 here, with the start of what the site said (up to 64 KB)."},
+        "host": {"type": "string", "description": "The site that answered, which is the one asked for or another on the plug-in's list it was sent to"},
+        "content_type": {"type": "string"}, "size": {"type": "integer", "description": "Bytes received"},
+        "body_base64": {"type": "string", "description": "What came back, base64, when save_as was not sent (up to 2 MB)"},
+        "saved": {"type": "string", "description": "The file name kept in the plug-in's own folder, when save_as was sent"}}},
+    "A plug-in asks Starboard to fetch an address from a site on its manifest's fetch list", "fetchForPlugin", "Plug-ins",
+    body={"type": "object", "required": ["url"], "properties": {
+        "url": {"type": "string", "maxLength": 2000, "description": "An https address on a listed site. No user name, port, # part or .. in the path."},
+        "what": {"type": "string", "maxLength": 60, "description": "What it is for, in a few plain words. Shown to people under What it fetched. Never put a key in it."},
+        "headers": {"type": "object", "description": "Up to 4 of Accept, Authorization and X-Api-Key, each one line of up to 400 characters. Never recorded or logged, and never sent to another site after a redirect."},
+        "seconds": {"type": "integer", "minimum": 1, "maximum": 120, "default": 30},
+        "max_bytes": {"type": "integer", "minimum": 1, "maximum": 26214400, "default": 26214400, "description": "Without save_as, at most 2097152"},
+        "save_as": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,80}$", "description": "Keep the file in the plug-in's own folder (data/<its first data container>/fetched/) instead of returning it"}}})
+    | {"description": "Only the plug-in's own key, while the plug-in is active and its approved permissions include fetch: any other key gets 404 not_found. "
+                      "GET only, https only, only the sites in the manifest's fetch list. Starboard checks the name itself and refuses it unless every address is "
+                      "public (never this computer, a home network address or a link-local one), follows at most 3 redirects and only to another listed site, asks for no compression "
+                      "and stops at the size and time limits. One fetch runs at a time for every plug-in together: a second waits up to 10 seconds, then gets 429 rate_limited "
+                      "with Retry-After. A plug-in may fetch up to 60 times a minute. A site that cannot be reached, is too slow or sends too much gets 502 fetch_failed. "
+                      "Every fetch, refused ones too, is recorded with its time, site, what it was for, size and result (never the path, query, header or answer), "
+                      "and shown on the plug-in's page under What it fetched."}}
+_fetch = spec["paths"]["/api/v1/plugin/fetch"]["post"]
+_fetch["responses"].pop("403")  # a plug-in's key is never asked for manage
+_fetch["responses"]["502"] = {"$ref": "#/components/responses/Problem"}
+_fetch["requestBody"]["content"]["application/json"]["example"] = {
+    "url": "https://api.openverse.org/v1/audio/?q=rain&license_type=commercial", "what": "Search for music", "headers": {"Accept": "application/json"}}
+
 
 SAMPLES = {"id": "123", "name": "livetv"}
 RUN_ID = "0123456789ab"  # an update run's id, for /api/v1/updates/runs/{id}

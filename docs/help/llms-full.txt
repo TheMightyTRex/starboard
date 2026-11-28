@@ -416,7 +416,7 @@ Source: docs/help/developers/api-reference.md
 
 # API reference
 
-This page is made from Starboard's API description, `starboard/openapi.json` (version 1.12.0), by `tools/make_api_reference.py`. It lists every address in version 1 of the API.
+This page is made from Starboard's API description, `starboard/openapi.json` (version 1.13.0), by `tools/make_api_reference.py`. It lists every address in version 1 of the API.
 
 - Every address starts with `/api/v1` on your Starboard, such as `http://192.168.1.20:8095/api/v1/apps`.
 - Every request except the description itself needs a key, sent as `Authorization: Bearer` and the key. Addresses that change something are `POST` and need a key made with **Read and manage**. Read [Authentication and keys].
@@ -2890,6 +2890,58 @@ with urllib.request.urlopen(req, timeout=10) as r:
     print(json.load(r))
 ```
 
+### POST /api/v1/plugin/fetch
+
+A plug-in asks Starboard to fetch an address from a site on its manifest's fetch list.
+
+Only the plug-in's own key, while the plug-in is active and its approved permissions include fetch: any other key gets 404 not_found. GET only, https only, only the sites in the manifest's fetch list. Starboard checks the name itself and refuses it unless every address is public (never this computer, a home network address or a link-local one), follows at most 3 redirects and only to another listed site, asks for no compression and stops at the size and time limits. One fetch runs at a time for every plug-in together: a second waits up to 10 seconds, then gets 429 rate_limited with Retry-After. A plug-in may fetch up to 60 times a minute. A site that cannot be reached, is too slow or sends too much gets 502 fetch_failed. Every fetch, refused ones too, is recorded with its time, site, what it was for, size and result (never the path, query, header or answer), and shown on the plug-in's page under What it fetched.
+
+- **Key:** only a plug-in's own key, while the plug-in is active and its approved permissions include `fetch`. Any other key gets `404 not_found`.
+- **Operation id:** `fetchForPlugin`.
+
+Parameters:
+
+| Name | In | What it is |
+|---|---|---|
+| `Idempotency-Key` | header | Send the same value again to get the first answer back without doing it twice. Kept for 24 hours. |
+
+The answer:
+
+| Field | What it is | Always there |
+|---|---|---|
+| `ok` | true or false | yes |
+| `status` | a whole number | yes |
+| `host` | text | yes |
+| `content_type` | text | no |
+| `size` | a whole number | yes |
+| `body_base64` | text | no |
+| `saved` | text | no |
+
+Errors:
+
+- **400:** [`bad_request`].
+- **401:** [`key_needed`].
+- **404:** [`not_found`].
+- **413:** [`too_large`].
+- **429:** [`too_many_attempts`], [`rate_limited`].
+- **502:** [`app_failed`].
+
+Example:
+
+```bash
+curl -s -H "Authorization: Bearer $STARBOARD_KEY" -X POST -H "Content-Type: application/json" -d '{"url": "https://api.openverse.org/v1/audio/?q=rain&license_type=commercial", "what": "Search for music", "headers": {"Accept": "application/json"}}' "http://192.168.1.20:8095/api/v1/plugin/fetch"
+```
+
+```python
+import json, os, urllib.request
+
+req = urllib.request.Request("http://192.168.1.20:8095/api/v1/plugin/fetch", method="POST", data=b'{"url": "https://api.openverse.org/v1/audio/?q=rain&license_type=commercial", "what": "Search for music", "headers": {"Accept": "application/json"}}',
+                             headers={"Authorization": "Bearer " + os.environ["STARBOARD_KEY"],
+                                      "Content-Type": "application/json"})
+with urllib.request.urlopen(req, timeout=10) as r:
+    print(json.load(r))
+```
+
 ## Objects
 
 The named objects the answers use.
@@ -3121,6 +3173,22 @@ the next major version.
   `GET /api/v1/` answers `api_version`.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added].
+
+## Plug-in API 1.25.0 and Starboard API 1.13.0 (not released yet), 28 November 2026
+
+- **Added:** the permission `fetch` and the manifest field `fetch`, up to 12 site names such as `api.openverse.org`. A plug-in on its own
+  network (no way out) asks Starboard to fetch an https address from one of its sites with `POST /api/v1/plugin/fetch`. Starboard
+  refuses any other site, checks the name itself and refuses it unless every address is public (never this computer, a home
+  network address or a link-local one), follows at most 3 redirects and only to another listed site, stops at a size limit
+  (25 MB) and a time limit (30 seconds, 120 at most), and runs one fetch at a time for every plug-in together. Read
+  [Fetching from named sites].
+- **Added:** a record of every fetch (time, site, what it was for, size, result; never the path, a key or what came back), shown on the
+  plug-in's page under **What it fetched**, newest first, the last 200.
+- **Added:** the permissions `handoff:send` and `handoff:receive` and the volumes `handoff/<kind>:send` and `handoff/<kind>:receive`:
+  one shared folder for one kind of thing, such as `tv-pack`, that one plug-in puts files in and another reads and removes. Read
+  [Handing files to another plug-in].
+- **Added:** the capabilities `fetch` and `handoff` in `GET /api/v1/`.
+- Nothing was taken away. Name `>=1.25` in `starboard_api` to use any of these.
 
 ## Plug-in API 1.24.0 and Starboard API 1.12.0 (not released yet), 27 November 2026
 
@@ -3836,7 +3904,7 @@ Source: docs/help/developers/plugin-manifest-reference.md
 # Plug-in manifest reference
 
 Every field of `starboard-plugin.json`, version 1, with the check Starboard runs on it and why. Starboard refuses
-any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.24.0
+any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.25.0
 (`API_VERSION` in `starboard/plugins.py`).
 
 The same rules are in a JSON Schema, `starboard/plugin-manifest.schema.json`, for editors and other tools. The
@@ -3984,6 +4052,9 @@ people read every one, and the plug-in's API key gets only the read permissions 
 | `library:holding` | Move films and series from your library into the holding folder in your media folder, and put them back (API 1.15) | high | none |
 | `alerts:send` | Send alerts through Starboard, to where it sends its own (ntfy, Gotify, a webhook, and plug-ins that pass them on) (API 1.17). The one thing the plug-in's read-only key may change: read [Sending alerts] | low | none |
 | `power:hold` | Ask Starboard to hold its heavy jobs and downloads, for example while the computer runs on battery (API 1.24) | low | none |
+| `fetch` | Fetch from the sites named in its `fetch` list, through Starboard, and nowhere else (API 1.25). Read [Fetching from named sites] | medium | none |
+| `handoff:send` | Put files in a shared hand-off folder, for another plug-in to use (API 1.25) | low | none |
+| `handoff:receive` | Read and remove the files another plug-in put in a shared hand-off folder (API 1.25) | low | none |
 | `slot:media-server` | Be Starboard's media server: answer for the dashboard panel, Library, Activity and System, using the address and key kept in Settings, Apps. Reserved for plug-ins that come with Starboard (Jellyfin first); any other plug-in that asks for it is refused for now | high | none |
 
 The plug-in's risk is its highest permission's risk. Read [What a plug-in can change]
@@ -4290,6 +4361,19 @@ them in the plug-in's `settings.json`. Read [Settings and key files].
 | `custom` | A list the plug-in describes, drawn by Starboard | `choices` is a path on the plug-in. Read [Custom pages] |
 | `schedule` | How often (every day, every week or every month), the day or the date, and a time, side by side | Every day, week or month; a day of the week for a week; a date from 1 to 31 for a month; a time such as `03:30`. A month without the date runs on its last day. API 1.14. Read [A job on a schedule from its settings] |
 | `time` | A time box | One time of day such as `22:00`, kept as that text. `default` may be one. Saved when you leave the box. API 1.24 |
+
+### `fetch`: the sites Starboard fetches from (API 1.25)
+
+`"fetch": ["api.openverse.org", "api.pexels.com"]`. One to 12 different site names: lower case, letters, numbers, dots and
+hyphens, with a real ending such as `.org`. No address, no port, no `*`, and no name for a computer at home (`.local`,
+`.lan`, `.internal`, `.home.arpa`). It needs the permission `fetch`, and the permission needs the list. The install warning
+names every site. A plug-in with `fetch` can stay on the `default` network, which has no way out: Starboard does the fetching.
+
+### Hand-off volumes (API 1.25)
+
+`handoff/<kind>:send` and `handoff/<kind>:receive` in a container's `volumes`, where `<kind>` is 2 to 30 lower case letters,
+numbers and hyphens, such as `tv-pack`. Both mount the same folder, `data/handoff/<kind>`, at `/handoff/<kind>`, read and write.
+`:send` needs the permission `handoff:send` and `:receive` needs `handoff:receive`. Starboard makes the folder.
 
 ### Setting up before it starts
 
@@ -4700,6 +4784,7 @@ A catalogue version may carry `capabilities_needed`, a list of the same names, n
 | 1.14 | 14 November 2026 | A card's own refresh time, `refresh_seconds`, in the manifest and in its answer, 10 seconds at the quickest; `recommended` on a catalogue entry; `logo` (and `logo`, `logo_alt` on a catalogue entry); every card drawn with a grey band holding the logo, the name, a status chip and when it last updated (`status`, `status_label` and `updated` in its answer); a `schedule` setting and a job's `schedule`; the `jellyfin:metadata` permission with the `jellyfin-metadata` volume; `update` (a `before` and an `after` step, `health_wait_seconds` and settings `migrations`), with the health wait and an automatic Roll back after every update, and **What is new** shown before an update too |
 | 1.20 | 26 November 2026 | `first_sign_in`: a password Starboard makes for an app plug-in, set by the app before it first starts and shown once on the plug-in's page |
 | 1.24 | 27 November 2026 | The `power:hold` permission, with `POST /api/v1/plugin/hold`, so a plug-in holds Starboard's heavy automatic jobs and downloads on battery; the `time` setting type |
+| 1.25 | 28 November 2026 | The `fetch` permission and manifest field (named sites Starboard fetches from, `POST /api/v1/plugin/fetch`, a record under What it fetched); `handoff:send`, `handoff:receive` and the `handoff/<kind>:send` and `handoff/<kind>:receive` volumes |
 | 1.23 | 27 November 2026 | `replaces_or_adds`: one line on what a plug-in replaces or adds to, shown on the Catalogue card, before install, on its page and in Manage; `icon`: one icon from Starboard's set for its tab in Settings, Plug-ins |
 | 1.22 | 27 November 2026 | `starboard_tested` and `capabilities`: named optional parts a plug-in needs or uses, listed by `GET /api/v1/`; the plug-in tester checks the range a plug-in names |
 | 1.21 | 27 November 2026 | `needs_plugins` and `switch`: a plug-in may list the plug-ins it needs and name its own main switch; deactivating a plug-in or saving its switch as inactive a plug-in that others need asks first and deactivates them too |
@@ -5217,6 +5302,67 @@ print(json.load(c.getresponse()))  # {"ok": true, "sent": true}
 ```
 
 When the router answers again, send `{"key": "check-router", "state": "cleared", "title": "Router is answering again"}`.
+
+## Fetching from named sites (API 1.25)
+
+A plug-in with the permission `fetch` lists the sites it may reach in its manifest (`"fetch": ["api.openverse.org"]`) and keeps its
+own network, which has no way out. To fetch it asks Starboard:
+
+```
+POST /api/v1/plugin/fetch
+{"url": "https://api.openverse.org/v1/audio/?q=rain", "what": "Search for music", "headers": {"Accept": "application/json"}}
+```
+
+It answers `{"ok": true, "status": 200, "host": "api.openverse.org", "content_type": "...", "size": 123, "body_base64": "..."}`. Send
+`save_as` (a file name) for a large file: Starboard keeps it in `data/<container>/fetched/` of the plug-in's own folder, which the
+plug-in reaches as `/data/fetched/<name>`, and answers `saved` instead of `body_base64`.
+
+The rules Starboard enforces, which a plug-in cannot change:
+
+- https only, port 443, a site on the list, no user name, no `#`, no `..` in the path. Anything else is `400 bad_request`.
+- Starboard checks the name and refuses the call unless every address is on the internet. A name that points at this computer, a
+  home network address (10.x, 172.16 to 31, 192.168.x), a link-local address (169.254.x, the cloud metadata address), a shared
+  address (100.64.x), multicast or a reserved range is refused. Starboard connects to the address it checked.
+- A redirect is followed only to another site on the list, at most 3 times, checked again. A key header is not sent to a different site.
+- Only the headers `Accept`, `Authorization` and `X-Api-Key` are sent, and Starboard asks for no compression.
+- At most 25 MB (2 MB without `save_as`) and 30 seconds (up to 120 with `seconds`). Too big or too slow is `502 fetch_failed`.
+- **One fetch at a time for every plug-in together.** A second call waits up to 10 seconds, then gets `429 rate_limited` with
+  `Retry-After`. A plug-in may fetch 60 times a minute. Fetch in one thread, one job at a time, and use a progress notice for a
+  long job; do not open several calls at once.
+- Starboard keeps the last 200 fetches for the person: the time, the site, `what` (up to 60 characters, so never put a key or a
+  person's words in it), the size and the result. It keeps no path, query, header or answer and writes none to its log.
+  People read it on the plug-in's page, **What it fetched**.
+- Keep an API key in a `secret` setting and send it in `headers`. Never put it in `url` or `what`.
+- Nothing runs while no plug-in asks: no thread, timer or open connection.
+
+A small example in Python (the example plug-in Online sources, in the starboard-plugins collection, uses it for Openverse and Pexels):
+
+```python
+import base64, json, os, socket, http.client
+
+class Socket(http.client.HTTPConnection):
+    def connect(self):
+        self.sock = socket.socket(socket.AF_UNIX)
+        self.sock.connect(os.environ["STARBOARD_API_SOCKET"])
+
+key = open("/run/starboard/key").read().strip()
+c = Socket("localhost")
+c.request("POST", "/api/v1/plugin/fetch", json.dumps({"url": "https://api.openverse.org/v1/audio/?q=rain", "what": "Search for music"}),
+          {"Authorization": f"Bearer {key}", "Content-Type": "application/json"})
+answer = json.loads(c.getresponse().read())
+results = json.loads(base64.b64decode(answer["body_base64"]))
+```
+
+The plug-in's key must belong to a plug-in that is active and was approved `fetch`; any other key gets `404 not_found`.
+
+## Handing files to another plug-in (API 1.25)
+
+A plug-in that makes something another plug-in can use drops it in a shared folder. The sender has the permission `handoff:send`
+and the volume `handoff/<kind>:send`; the receiver has `handoff:receive` and `handoff/<kind>:receive`. Both reach the same folder, at
+`/handoff/<kind>`, read and write, so the receiver can remove what it has used. The folder is mode 0777, so a sender running as any
+user can write to it. Nothing else reaches it, and any plug-in with the permission can read and change what is in it: treat what
+arrives like an upload and check it. Write a file under a temporary name and rename it when it is whole, so the receiver never reads half a file.
+The kind names the format. `tv-pack` is a TV channel broadcast pack (a zip with a `pack.json`).
 
 ## Holding heavy jobs (API 1.24)
 

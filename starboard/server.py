@@ -3920,6 +3920,12 @@ class Handler(BaseHTTPRequestHandler):
             # An SVG opened on its own must not run anything: no scripts, no outside loads (as for app icons).
             return self.send(200, data, got[1], {"Cache-Control": "private, max-age=86400",
                                                  "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox"})
+        mfe = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/fetched$", path)
+        if mfe and method == "GET":  # What it fetched (API 1.25, DASH-618): the record of Starboard's fetches for this plug-in
+            from . import plugin_fetch
+            if not os.path.isdir(pa.folder(app.data_dir, mfe.group(1))):
+                return self.error(404, "No such plug-in")
+            return self.json(200, {"fetched": plugin_fetch.record_of(app.data_dir, mfe.group(1))}, {"Cache-Control": "no-store"})
         if path == "/api/plugins/cards" and method == "GET":  # plug-in cards for the dashboard
             from . import plugin_cards
             return self.json(200, {"cards": plugin_cards.available(app.data_dir)})

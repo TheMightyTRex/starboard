@@ -22,6 +22,8 @@ CAPABILITIES = {
     "api-socket": ("Starboard's API on a Unix socket in the run folder", "1.16"),
     "update-steps": ("Steps before and after an update, a health wait and settings that move with a version", "1.14"),
     "app-plugins": ("A whole app as a plug-in, with its own port, secrets and data", "1.13"),
+    "fetch": ("Fetch from named sites through Starboard, with a record of every fetch", "1.25"),
+    "handoff": ("A shared hand-off folder one plug-in sends files to and another receives", "1.25"),
     "schedule-setting": ("A setting that is a time of day, week or month, and a job that uses it", "1.14"),
 }
 NAME = re.compile(r"^[a-z][a-z0-9-]{1,39}$")

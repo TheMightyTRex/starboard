@@ -1,5 +1,5 @@
 {
- "api_version": "1.24.0",
+ "api_version": "1.25.0",
  "card_types": [
   "stat",
   "list",
@@ -65,6 +65,7 @@
   "containers",
   "description",
   "events",
+  "fetch",
   "first_sign_in",
   "health",
   "homepage",
@@ -122,6 +123,18 @@
   "downloads:read": {
    "risk": "low",
    "scope": "downloads"
+  },
+  "fetch": {
+   "risk": "medium",
+   "scope": null
+  },
+  "handoff:receive": {
+   "risk": "low",
+   "scope": null
+  },
+  "handoff:send": {
+   "risk": "low",
+   "scope": null
   },
   "jellyfin:key": {
    "risk": "high",
@@ -183,6 +196,10 @@
     "capabilities",
     "deprecations",
     "links",
+    "media_server",
+    "media_server.capabilities",
+    "media_server.id",
+    "media_server.name",
     "starboard_version"
    ],
    "required_in": [],
@@ -849,6 +866,22 @@
    "required_in": [
     "body.key",
     "body.state"
+   ],
+   "right": "plugin",
+   "scope": null
+  },
+  "POST /api/v1/plugin/fetch": {
+   "answer": [
+    "body_base64",
+    "content_type",
+    "host",
+    "ok",
+    "saved",
+    "size",
+    "status"
+   ],
+   "required_in": [
+    "body.url"
    ],
    "right": "plugin",
    "scope": null
