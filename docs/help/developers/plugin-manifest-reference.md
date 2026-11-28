@@ -94,10 +94,10 @@ Some plug-ins only make sense while another is on, such as an app that signs in 
 
 Starboard checks both when someone **turns off** a plug-in or saves its switch as off. If other plug-ins that are active list it in
 `needs_plugins`, Starboard stops, names them in plain English and asks for a yes. Nothing changes until the answer is yes. On yes it
-turns those off plug-ins first, then the one asked about. Nothing is deleted, and each can be turned on again. The route answers
+turns those plug-ins off first, then the one asked about. Nothing is deleted, and each can be turned on again. The route answers
 `409` with `error` (the words to show) and `dependents` (`id` and `name` of each), and the same request with `"confirm_dependents": true`
 does it. Turning on the switch, saving other settings and turning off a plug-in that nothing needs never ask. Starboard does not
-turn on a needed plug-in for you, and a plug-in that needs another still starts when that one is off: it should say so on its card.
+turn on a needed plug-in for you. A plug-in that needs another still starts when that one is off, so it should say so on its card.
 A plug-in that does not use these fields works as before. Name `>=1.21` in `starboard_api` to use them.
 
 ## A first sign-in shown once (first_sign_in)
@@ -391,9 +391,9 @@ Starboard shows it under the plug-in in the catalogue, so people with a small se
 
 ## Jellyfin libraries
 
-From API 1.15, a plug-in that fills folders for Jellyfin, such as On demand's films and series, names its libraries
-in `jellyfin_libraries` and asks for `jellyfin:libraries`. Starboard adds each one Jellyfin does not have when the
-plug-in is on, and checks them again every time it is turned on, so after each install, update and **Roll back**.
+From API 1.15, a plug-in that fills folders for Jellyfin, such as On demand's films and series, names its libraries in
+`jellyfin_libraries`. It asks for `jellyfin:libraries`. Starboard adds each one Jellyfin does not have when the
+plug-in is turned on. It checks them again each time, so after each install, update and **Roll back**.
 
 ```json
 "permissions": ["jellyfin:libraries"],

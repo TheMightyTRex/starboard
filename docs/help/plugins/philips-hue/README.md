@@ -48,7 +48,7 @@ run. Schedules made in the Hue app or another app are listed under **Made in ano
 
 ## When something plays
 
-On the **When something plays** tab, turn one on scene. When Starboard finds something has started playing in Jellyfin, the
+On the **When something plays** tab, turn on one scene. When Starboard finds something has started playing in Jellyfin, the
 plug-in runs that scene. Starboard checks what is playing every 5 minutes, so the lights can change up to 5 minutes
 after it starts. **Only after sunset** (on when added) runs it only when the bridge's daylight sensor says it is dark.
 **Only when playing in these apps** limits it to apps you name, such as Jellyfin Android TV.

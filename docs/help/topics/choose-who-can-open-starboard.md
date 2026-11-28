@@ -22,7 +22,7 @@ open it. The change takes effect at once, and Starboard shows the addresses that
 
    ![Settings, Security, Who can open the dashboard, with the switch for phones and other computers (step 3) outlined, with example data](../images/choose-who-can-open-starboard-1-switch.png)
 
-4. If you turned off it, Starboard asks **Turn off access from your home network?** Select
+4. If you turned it off, Starboard asks **Turn off access from your home network?** Select
    **Turn off network access** to go ahead, or close the dialog to keep things as they are.
 
    ![The question Turn off access from your home network?, with Turn off network access (step 4) outlined, with example data](../images/choose-who-can-open-starboard-2-ask.png)
@@ -48,8 +48,8 @@ is active, **Phones and other computers**. Each address has a button to copy it.
 
 ## If it does not work
 
-- **You turned off it from a phone and now cannot get back in:** open Starboard on the server itself at
-  `http://127.0.0.1:8095` and turn on the switch again.
+- **You turned it off from a phone and now cannot get back in:** open Starboard on the server itself at
+  `http://127.0.0.1:8095`. Then turn on the switch again.
 - **The server has no monitor:** SSH (secure shell) can carry Starboard's port to your own computer. Read
   [Connect to your server from another computer](connect-with-ssh.md) first. Then run this command on your
   own computer, with your user name and the server's address in place of `sam` and `192.168.1.20`:

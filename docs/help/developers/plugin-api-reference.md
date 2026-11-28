@@ -220,10 +220,9 @@ A list without `menus` is drawn as before, so an older Starboard shows every ite
 
 ### Sections that fold, with a table each (API 1.8)
 
-Send `"layout": "folds"` with `columns` to show each `group` as a section that folds: one line with its name, how many
-of its items are active, and its own switch, which opens to a table of its items. Starboard adds a search, the All,
-Active and Inactive filter, filter chips and a tick box on each row, so several items from any section can be
-turned on or off at once. Only open sections draw their rows.
+Send `"layout": "folds"` with `columns` to show each `group` as a section that folds. A section has one line with its name,
+how many of its items are active and its own switch. It opens to a table of its items. Starboard adds a search, the All,
+Active and Inactive filter, filter chips and a tick box on each row, to turn several items on or off at once. Only open sections draw their rows.
 
 | Field | Rules |
 |---|---|

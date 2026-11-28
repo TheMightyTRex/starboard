@@ -6,7 +6,7 @@ they are in. What is kept lives in the settings file under "auth", which a setti
 
     auth.totp  = {enabled, secret, pending, last_step, recovery: [hashes]}
     auth.oidc  = {enabled, name, issuer, client_id, client_secret, redirect_uri, scopes, claim, value, tested}
-    auth.password_login = False  only when the owner turned off it
+    auth.password_login = False  only when the owner turned it off
 
 The secrets are never sent to the browser, never written to a log or the audit log, and never put in an address.
 """

@@ -274,8 +274,8 @@ the next major version.
   build runs with limits (2 GB of memory, 2 processor cores, 20 minutes, an image of up to 3 GB). Read
   [Built from a zip file](plugin-manifest-reference.md#built-from-a-zip-file).
 - **Added:** `jellyfin_libraries` and the permission `jellyfin:libraries` (medium risk, DASH-430): Jellyfin libraries
-  for folders the plug-in fills, which Starboard adds each time the plug-in is turned on, with real-time monitoring turned off unless
-  the plug-in sets `realtime_monitor`, and keeps that way. Read
+  for folders the plug-in fills. Starboard adds them each time the plug-in is turned on. Real-time monitoring stays off unless
+  the plug-in sets `realtime_monitor`. Read
   [Jellyfin libraries](plugin-manifest-reference.md#jellyfin-libraries).
 - **Changed:** a manifest with `build` from an address or a catalogue is refused, with words that point to the zip.
 - **Added:** the permission `library:holding` (high risk) with the volume `media:holding`: the media folder, read and

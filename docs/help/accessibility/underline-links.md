@@ -22,7 +22,7 @@ It is in **Display**, applies at once, and is kept in the browser you use.
 
 To stop underlining links, turn off **Underline links** the same way, or select **Reset** to put every Display
 choice back to its default. The same switch is in **Settings**, then **General**, then **Appearance**, under
-**Accessibility**: Space turns on or turns it off, focus stays on it, and **Saved** is said.
+**Accessibility**: Space turns it on or off. Focus stays on it, and **Saved** is said.
 
 ## What it changes
 

@@ -485,7 +485,7 @@ def jellyfin_plugins_restart(app, run, jf, news, sleep=time.sleep, restart_wait=
         if bad:
             step("health", "failed", ", ".join(bad))
             update_runs._end(app.data_dir, run, "failed",
-                             f"{', '.join(bad)} did not start after the update, so Jellyfin turned off it. Jellyfin keeps no older version: "
+                             f"{', '.join(bad)} did not start after the update, so Jellyfin turned it off. Jellyfin keeps no older version: "
                              "the copy from before is jellyfin-plugins-before-update.tgz beside the set-up files", app)
             return run
         step("health", "done", "Each plug-in is active")

@@ -80,7 +80,7 @@ go to **Settings**, then **General**, then **Lists**, and select **Reset Library
 - Something added in the last few minutes may take a moment to appear. Starboard reads the list again from
   Reelix when it is more than five minutes old.
 - Covers come through Starboard, so your browser never contacts the image sites. To show plain tiles instead,
-  go to **Settings**, then **General**, then **Performance**, turn on **More settings**, and turn off **Posters on Coming up
+  go to **Settings**, then **General**, then **Performance**. Turn on **More settings**, then turn off **Posters on Coming up
   and the Library**.
 - With the keyboard, Tab reaches the letter row once. Use the arrow keys to move along the letters, and Enter to
   jump. The page moves to that letter's heading.
