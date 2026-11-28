@@ -27,6 +27,11 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
+      - name: Install what the example server needs
+        # The example server's full backups panel says "This Starboard cannot make full backups yet" without the
+        # cryptography library (the image has it), so the page's checks would wait for a list that never comes (DASH-636).
+        # The version is the Dockerfile's.
+        run: python -m pip install --quiet "cryptography==50.0.2"
       - name: Find the changed pages
         id: pages
         env:
