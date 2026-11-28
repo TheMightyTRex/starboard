@@ -7,7 +7,7 @@ add features.
 
 ## [Unreleased]
 
-## [0.40.0] (27 November 2026)
+## [0.40.0] (28 November 2026)
 
 ### Added
 - **Starboard 0.40.0 is a clean break: update from 0.31.0 or later, and you cannot go back by the usual way.** The update stops before it changes anything if you have a version before 0.31.0, and says to update to 0.31.0 first. Before any other change it saves a backup of your settings, checks that it reads back, and says in plain words that you cannot go back to an older Starboard afterwards. Your settings move to the new layout once, and Starboard keeps every setting and every app it does not understand. To go back to a version before 0.40.0, run `./update.sh --to` with that version and `--restore` with the name of the backup: this is the safe way, and settings you changed since are lost. Without `--restore`, the updater warns you that your settings may not match, saves a fresh backup and goes on. Settings, Updates, Restore and the terminal settings say so. Find out more in [Update Starboard](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/update-starboard.md#update-to-0400-from-an-older-version).
