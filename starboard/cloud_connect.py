@@ -14,7 +14,18 @@ Signing in, by kind of service (web/cloud-services.json is the one list):
   as a link. After signing in, the service sends the browser to http://127.0.0.1:53682/?state=...&code=..., which does
   not load (the browser is on another device, or the listener is in a container). The person pastes that address back;
   Starboard checks it (only 127.0.0.1 or localhost, rclone's port, the state rclone made and a code) and hands a
-  rebuilt address, never the pasted text, to the listener, which swaps the code for the token. No port is published.
+  rebuilt address, never the pasted text, to the listener, which swaps the code for the token. No port is published
+  for this way.
+- Complete in this browser, caught by itself (28 November 2026): when the page is opened as localhost or 127.0.0.1, the
+  browser is on the same computer as Starboard, so the redirect can reach the helper directly. Only then, and only for
+  the minutes of the sign-in, the helper's port is published on this computer's loopback address (127.0.0.1:53682,
+  never 0.0.0.0, never another address). rclone listens on 127.0.0.1 inside the container, which a published port
+  cannot reach, so a small forwarder in the helper (busybox nc) listens on FORWARD_PORT and passes each connection to
+  rclone's listener. rclone checks the state itself, as before. The helper ends the moment rclone has the token (or
+  fails, or times out), which frees the port; Starboard also removes it when the sign-in ends, fails, runs out of time
+  or is cancelled. If something else already uses 127.0.0.1:53682, Docker refuses to start the helper with the port, so
+  the helper is made again without it and the pasted address is the way, with a sentence saying why. rclone shows the
+  browser Starboard's own plain page (PAGE) instead of its own.
 - Complete on the phone (Google Drive and OneDrive, owner, 16 November 2026): the device flow (RFC 8628). Starboard
   asks the service for a short code, shows a QR code of the service's own page and the code, and asks the service
   every few seconds until the person approves on their phone. It needs Starboard's own registered sign-in (a client
@@ -42,6 +53,9 @@ from . import backup_copies, logs, qr
 
 REMOTE = "starboard-cloud"
 PORT = 53682
+FORWARD_PORT = 53683   # inside the helper only: the published port goes here, and the forwarder passes it to rclone on PORT
+PORT_BUSY = ("Starboard could not catch the answer by itself, because something else on this computer is using port "
+             f"{PORT}. Paste the address as shown below")
 SIGNIN_LIMIT = 600     # 10 minutes to sign in, on either device
 PHONE_PAUSE = 1.0      # times the service's own poll interval; the tests make it small so they do not wait seconds
 PHONE_LIMIT = 600      # the device code lives 15 (Microsoft) or 30 (Google) minutes; Starboard waits 10
@@ -232,7 +246,7 @@ def check_pasted_config(remote, config):
 def _public(sess):
     if not sess:
         return {"state": "none"}
-    out = {k: sess.get(k) for k in ("id", "service", "way", "state", "error", "link", "user_code", "page", "folder", "test", "account")}
+    out = {k: sess.get(k) for k in ("id", "service", "way", "state", "error", "link", "user_code", "page", "folder", "test", "account", "capture", "capture_note")}
     out["seconds_left"] = max(0, int(sess["deadline"] - time.time())) if sess.get("deadline") else None
     out["signed_in"] = bool(sess.get("config"))
     if sess.get("page"):
@@ -293,8 +307,8 @@ def cancel():
     return {"state": "none"}
 
 
-def start(data_dir, sid, way="browser", read_only=False, dest=None):
-    """Starts signing in to a service: the link (browser), the code (phone), or nothing to wait for (keys, paste). read_only asks the service only to read files (Bring in media)."""
+def start(data_dir, sid, way="browser", read_only=False, dest=None, local=False):
+    """Starts signing in to a service: the link (browser), the code (phone), or nothing to wait for (keys, paste). read_only asks the service only to read files (Bring in media). local says the page was opened as localhost or 127.0.0.1, so the redirect can be caught by itself (capture "auto"); otherwise the address is pasted back (capture "paste")."""
     global _session
     s = service(sid)
     if way not in ("browser", "phone"):
@@ -307,9 +321,12 @@ def start(data_dir, sid, way="browser", read_only=False, dest=None):
     sess = {"id": secrets.token_hex(8), "service": sid, "way": way if s["signin"] == "oauth" else s["signin"], "state": "starting",
             "data_dir": data_dir, "started": time.time(), "deadline": time.time() + SIGNIN_LIMIT, "read_only": bool(read_only),
             "dest": dest or "", "rname": remote_name(data_dir, sid, dest)}
+    if s["signin"] == "oauth" and way == "browser":
+        sess["capture"] = "auto" if local else "paste"
+        sess["publish"] = bool(local)
     with _lock:
         _session = sess
-    _note(sess, "info", "started" + (" (asking only to read files)" if read_only else ""))
+    _note(sess, "info", "started" + (" (asking only to read files)" if read_only else "") + (", catching the answer by itself" if sess.get("publish") else ""))
     if s["signin"] != "oauth":
         sess.update(state="details", deadline=None)
         return _public(sess)
@@ -318,6 +335,7 @@ def start(data_dir, sid, way="browser", read_only=False, dest=None):
             _phone_start(sess)
         else:
             sess["work"] = _work(data_dir, sess["id"])
+            write_page(sess["work"])
             RUN.authorize(sess)
             threading.Thread(target=_watch_link, args=(sess,), name="cloud-signin", daemon=True).start()
     except Exception as e:
@@ -375,13 +393,38 @@ def authorize_script(sess):
     rtype = RCLONE_TYPE[sid]
     # Separate statements: "a && b && (c) &" would send a and b (the cd) to the background with c.
     return ("cd /c || exit 1; umask 077; O=$(stat -c %u:%g /c); touch out; chown $O out; "
-            f"( timeout {SIGNIN_LIMIT} rclone authorize {rtype} {arg} --auth-no-open-browser > out 2>&1; rc=$?; chown $O out; "
+            f"( timeout {SIGNIN_LIMIT} rclone authorize {rtype} {arg} --auth-no-open-browser --template /c/page.html > out 2>&1; rc=$?; chown $O out; "
             "echo $rc > done.part; chown $O done.part; mv done.part done ) & "
+            + (f"( nc -lk -p {FORWARD_PORT} -e nc 127.0.0.1 {PORT} >/dev/null 2>&1 & ); " if sess.get("publish") else "") +
             f"i=0; while [ $i -lt {LINK_WAIT} ]; do L=$(grep -oE 'http://(127[.]0[.]0[.]1|localhost):{PORT}/auth[?]state=[A-Za-z0-9_-]+' out | head -n 1); "
             "[ -n \"$L\" ] && break; sleep 1; i=$((i+1)); done; "
             "[ -n \"$L\" ] && wget -S -T 15 -O /dev/null \"$L\" 2>&1 | sed -n 's/^ *[Ll]ocation: *//p' | head -n 1 > link.part; "
             "chown $O link.part; mv link.part link; "
             "while [ ! -f done ]; do if [ -f answer ]; then wget -q -T 60 -O /dev/null \"$(cat answer)\"; rm -f answer; fi; sleep 1; done; exit 0")
+
+
+PAGE = """<!doctype html>
+<html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark"><title>Starboard sign-in</title>
+<style>body{font:1.125rem/1.5 system-ui,sans-serif;max-width:34rem;margin:3rem auto;padding:0 1rem}</style></head>
+<body><main>{{ if .OK }}<h1>Go back to Starboard</h1><p>Starboard has the answer from the service. You can close this tab.</p>
+{{ else }}<h1>That did not work</h1><p>Go back to Starboard and select Try again. You can close this tab.</p>{{ end }}</main></body></html>
+"""
+
+
+def write_page(work):
+    """rclone's own page after the redirect is replaced by this plain one. It never shows the code, the state or what
+    rclone said: only whether an answer arrived (the page itself says whether signing in worked)."""
+    fd = os.open(os.path.join(work, "page.html"), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(PAGE)
+
+
+def same_computer(host):
+    """True when the page was opened as localhost or 127.0.0.1 (the Host header), so the browser is on this computer."""
+    h = str(host or "").strip().lower()
+    name = h[1:h.find("]")] if h.startswith("[") and "]" in h else (h.rsplit(":", 1)[0] if h.count(":") == 1 else h)
+    return name in ("localhost", "127.0.0.1", "::1")
 
 
 def _read(path):
@@ -430,6 +473,8 @@ def _watch_link(sess):
         if os.path.exists(os.path.join(work, "done")):
             got = token_from_rclone(_read(os.path.join(work, "out")))
             if got:
+                if sess["state"] == "link" and sess.get("capture") == "auto":
+                    _note(sess, "info", "the answer reached the sign-in by itself")
                 try:
                     _signed_in(sess, json.loads(got))
                 except (ValueError, CloudError) as e:
@@ -864,14 +909,34 @@ class Runner:
         if not containers.available():
             raise CloudError("Starboard needs Docker access to sign in")
         backup_copies._pull(backup_copies.RCLONE_IMAGE)
+        for publish in ((True, False) if sess.get("publish") else (False,)):
+            sess["publish"] = publish
+            cid = containers.docker("POST", f"/containers/create?name=starboard-cloud-signin-{sess['id']}", self.body(sess))["Id"]
+            sess["cid"] = cid
+            try:
+                containers.docker("POST", f"/containers/{cid}/start")
+                return
+            except containers.DockerError:
+                self.remove(cid)
+                sess.pop("cid", None)
+                if not publish:
+                    raise
+                # Port 53682 on this computer is taken (Docker says so when it starts the helper): the same helper without
+                # the published port, and the person pastes the address back.
+                sess.update(capture="paste", capture_note=PORT_BUSY)
+
+    def body(self, sess):
+        """The helper's container. With sess["publish"], and only then, the forwarder's port is published on this
+        computer's loopback address and nowhere else."""
+        host = {"Binds": self._binds(sess, sess["work"]), "NetworkMode": "bridge", "Memory": 256 * 1024 ** 2,
+                "PidsLimit": 64, "CapDrop": ["ALL"], "CapAdd": ["CHOWN", "DAC_OVERRIDE", "FOWNER"],
+                "SecurityOpt": ["no-new-privileges:true"]}
         body = {"Image": backup_copies.RCLONE_IMAGE, "Entrypoint": ["sh", "-c"], "Cmd": [authorize_script(sess)],
-                "Labels": {"starboard.updater": "1", "starboard.cloud-signin": "1"},
-                "HostConfig": {"Binds": self._binds(sess, sess["work"]), "NetworkMode": "bridge", "Memory": 256 * 1024 ** 2,
-                               "PidsLimit": 64, "CapDrop": ["ALL"], "CapAdd": ["CHOWN", "DAC_OVERRIDE", "FOWNER"],
-                               "SecurityOpt": ["no-new-privileges:true"]}}
-        cid = containers.docker("POST", f"/containers/create?name=starboard-cloud-signin-{sess['id']}", body)["Id"]
-        sess["cid"] = cid
-        containers.docker("POST", f"/containers/{cid}/start")
+                "Labels": {"starboard.updater": "1", "starboard.cloud-signin": "1"}, "HostConfig": host}
+        if sess.get("publish"):
+            body["ExposedPorts"] = {f"{FORWARD_PORT}/tcp": {}}
+            host["PortBindings"] = {f"{FORWARD_PORT}/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+        return body
 
     def short(self, sess, script, work):
         """A short helper run with this work folder as /c: (exit code, output)."""

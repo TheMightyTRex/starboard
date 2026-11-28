@@ -33,6 +33,9 @@ services:
       - STARBOARD_PROXY_ADDRESSES=${STARBOARD_PROXY_ADDRESSES:-}
       - STARBOARD_ALLOWED_HOSTS=${STARBOARD_ALLOWED_HOSTS:-}
       - STARBOARD_STORYARR_IMAGE=${STARBOARD_STORYARR_IMAGE:-}
+      - STARBOARD_GOOGLE_CLIENT_ID=${STARBOARD_GOOGLE_CLIENT_ID:-}  # Starboard's own Google and Microsoft sign-ins for Complete on the phone; empty: not offered
+      - STARBOARD_GOOGLE_CLIENT_SECRET=${STARBOARD_GOOGLE_CLIENT_SECRET:-}
+      - STARBOARD_MICROSOFT_CLIENT_ID=${STARBOARD_MICROSOFT_CLIENT_ID:-}
     volumes:
       - ./data:/data
       # Your own folders (Storage, Disk health) go in compose.override.yaml, which updates leave alone.
