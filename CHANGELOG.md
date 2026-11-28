@@ -7,15 +7,13 @@ add features.
 
 ## [Unreleased]
 
-<<<<<<< ours
 ### Added
 - **OneDrive, Google Drive and Dropbox sign-ins no longer need the address pasted back on the server's own computer.** Under Copies off this computer and Bring in media, Complete in this browser moves on by itself when you open Starboard as `localhost` or `127.0.0.1`. The helper listens for the answer on this computer only, never on the network. It stops when the sign-in ends, fails, times out or is closed. The tab shows Starboard's own Go back to Starboard page. If another program already uses port 53682, Starboard says so and you paste the address as before.
 - **Paste from the clipboard.** When you must paste, a button reads the address from the clipboard and signs in with one press if it belongs to this sign-in. Pasting the right address into the box does the same. Anything else stays in the box to change. Starboard does not keep the address or log it.
 - **Your own Google and Microsoft sign-ins can reach Starboard from `.env`.** `compose.yaml` and `example.env` carry the three IDs. Fill them in to turn on Complete on the phone.
-=======
+
 ### Fixed
 - **The pull request accessibility check no longer fails pull requests that did nothing wrong (DASH-636):** it named the sign-in and set-up pages as findings because the example server sends a signed-in visitor on to the dashboard, which is right; and it could not open the full backups panel because the check's computer did not have the library that encrypts backups, so any pull request that touched that page failed. The check now installs the library the image has, leaves the redirect out, and says what a failed page waited for. A new problem still fails it; findings already on main still do not.
->>>>>>> theirs
 
 ## [0.40.0] (28 November 2026)
 
