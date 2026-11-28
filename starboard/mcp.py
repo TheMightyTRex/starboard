@@ -18,7 +18,7 @@ Rules:
 - Each tools/call writes a line to the audit log: the key, the tool, the key's name and the outcome, never the arguments
   or what was answered. A tool that fails also writes mcp_error, and a call that is refused writes mcp_refused (an
   unknown tool, a tool outside the key's scopes, arguments that do not fit). Release 1 of the AI assistant family
-  (DASH-627, API 1.14.0) adds the next three rules.
+  (DASH-655, API 1.14.0) adds the next three rules.
 - Every answer passes the core masker (starboard/masker.py): keys, tokens, emails, addresses, folders and the names
   Starboard knows are private are hidden before an assistant reads them.
 - Every answer is marked untrusted data: "untrusted": true, "source" and a "notice" at the top, then the answer. Text

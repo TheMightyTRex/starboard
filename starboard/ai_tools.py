@@ -1,4 +1,4 @@
-"""Connect an AI tool (DASH-627, release 1 of the AI assistant family): the Settings wizard's server side.
+"""Connect an AI tool (DASH-655, release 1 of the AI assistant family): the Settings wizard's server side.
 
 The wizard is a page (web/settings-security-ai.html). It turns the MCP address on (starboard/mcp.py), makes one named key
 that only reads, and shows the address and key once, with the set-up for each kind of AI tool. This module holds:

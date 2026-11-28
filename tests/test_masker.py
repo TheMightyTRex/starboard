@@ -1,4 +1,4 @@
-"""The core masker (DASH-627): what it hides, what it leaves, and fuzzing of every class it hides. A fixed seed makes the
+"""The core masker (DASH-655): what it hides, what it leaves, and fuzzing of every class it hides. A fixed seed makes the
 random cases repeatable; MASKER_FUZZ=n runs n times as many."""
 import os
 import random

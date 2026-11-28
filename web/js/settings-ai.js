@@ -1,4 +1,4 @@
-// Settings, Security, Connect an AI tool (DASH-627, release 1 of the AI assistant family).
+// Settings, Security, Connect an AI tool (DASH-655, release 1 of the AI assistant family).
 //
 // One wizard, built from the design system's shared wizard (the part wizard-steps, docs/WIZARD.md, Variants, "Step in script"):
 // which AI tool, where it runs, what it may read, when the key ends, what to call it, then Check your answers. Nothing is

@@ -1622,7 +1622,7 @@ await page.keyboard.press("Space");
 await page.waitForFunction(() => /Inactive:/.test(document.querySelector("#mcp-result")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
 check("MCP-05", "deactivating it stops the assistant at once", (await mcpCall({ jsonrpc: "2.0", id: 3, method: "ping" })).status === 403);
 for (const k of (await api("/api/keys")).keys.filter((k) => k.name === "Journey assistant")) await api(`/api/keys/${k.id}`, { method: "DELETE" });
-// DASH-627: Connect an AI tool, the shared wizard. Nothing is changed until the last button; the last one asks for the password,
+// DASH-655: Connect an AI tool, the shared wizard. Nothing is changed until the last button; the last one asks for the password,
 // turns AI tools on and makes one Read only key, shown once; the key then works on /api/v1/mcp with the three new tools.
 console.log("\n== AIT Connect an AI tool");
 await open("settings-security-ai.html");
