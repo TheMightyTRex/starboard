@@ -41,7 +41,7 @@ Added:
 
 - **Choose the backup:** Original pictures asks whether to keep a backup copy of each original or just shrink, once it is added and again after this update. Nothing is shrunk until you choose; a backup you already have is kept.
 - **Start again** in its actions, for the pictures it shrinks or for every picture: deletes the backup and the records, and has Jellyfin download the pictures again at full size. A picture Jellyfin cannot download again is put back after a day.
-- **Every picture type:** posters, photos of people, backdrops, thumbnails, logos, banners, disc art and clear art, each with its own size and all activated when you add it, with Shrink all picture types to shrink them all in one setting. Backdrops were asked for by Lentzeris in the Jellyfin version's issue #2.
+- **Every picture type:** posters, photos of people, backdrops, thumbnails, logos, banners, disc art and clear art, each with its own size and all turned on when you add it, with Shrink all picture types to shrink them all in one setting. Backdrops were asked for by Lentzeris in the Jellyfin version's issue #2.
 
 Changed:
 
@@ -67,7 +67,7 @@ Added:
 - **Shrinks Jellyfin's pictures:** posters to 900 pixels tall and photos of cast and crew to 400 pixels wide, both settings. Smaller pictures are left alone.
 - **Checked before it replaces:** each picture is written beside the original, opened again and checked, and swapped in only when it is smaller.
 - **When you choose:** every day, week or month at a time, with Shrink now, at the lowest priority.
-- **New pictures in quiet hours:** deactivated unless you activate it.
+- **New pictures in quiet hours:** turned off unless you turn it on.
 - **Space saved:** on its page and on a dashboard card.
 
 ## How an update is kept safe

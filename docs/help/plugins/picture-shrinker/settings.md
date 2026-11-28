@@ -13,10 +13,10 @@ Picture shrinker's settings are on its own tab: go to **Settings**, then **Plug-
 | **Posters no taller than** | A poster taller than this is shrunk to this height. 900 pixels is sharp on a television. A number from 300 to 3,000 pixels. | 900 pixels |
 | **Photos of people no wider than** | A photo of a cast or crew member wider than this is shrunk to this width. A number from 100 to 2,000 pixels. | 400 pixels |
 | **Original pictures** | **Keep a backup copy of each original**, or **Shrink without a backup**. Nothing is shrunk until you choose. With a backup, each original is copied once to the plug-in's own folder before its first shrink, so **Restore original pictures** can put it back. With no backup, **Start again** has Jellyfin download the pictures again instead. | None: you choose, after you add it and after the update to 1.2.0 |
-| **Shrink all picture types** | In **What to shrink**. Shrinks every type of picture in one setting. Deactivate it to choose types one by one with the ticks under it. | Activated |
-| **Posters**, **Photos of cast and crew**, **Backdrops**, **Thumbnails**, **Logos**, **Banners**, **Disc art**, **Clear art** | In **What to shrink**. Each type, used when **Shrink all picture types** is deactivated. | All activated |
+| **Shrink all picture types** | In **What to shrink**. Shrinks every type of picture in one setting. Turn it off to choose types one by one with the ticks under it. | Turned on |
+| **Posters**, **Photos of cast and crew**, **Backdrops**, **Thumbnails**, **Logos**, **Banners**, **Disc art**, **Clear art** | In **What to shrink**. Each type, used when **Shrink all picture types** is off. | All turned on |
 | **Backdrops**, **Thumbnails**, **Logos**, **Banners**, **Disc art** and **Clear art no wider than** | In **Sizes and quality**. A picture of that type wider than this is shrunk to this width. 1920 pixels for backdrops is sharp on a 1080p television or display and a little softer full-page on a 4K one. | 1920, 1280, 800, 1000, 500 and 800 pixels |
-| **Shrink new pictures in quiet hours** | Each hour of quiet hours, shrinks the posters and photos Jellyfin saved since the last pass, so they never build up. Activated or deactivated. | Deactivated |
+| **Shrink new pictures in quiet hours** | Each hour of quiet hours, shrinks the posters and photos Jellyfin saved since the last pass, so they never build up. Turned on or off. | Turned off |
 
 ## Buttons
 
@@ -31,12 +31,12 @@ These are on Picture shrinker's tab.
 
 ## Things to note
 
-- A change to the sizes is used from the next run; you do not need to deactivate it first. A smaller number saves more space. A picture already shrunk is not made larger again if you choose a larger number.
+- A change to the sizes is used from the next run; you do not need to turn it off first. A smaller number saves more space. A picture already shrunk is not made larger again if you choose a larger number.
 - A run stops itself after 115 minutes, and the next one carries on. Pictures already shrunk are only opened, never written again.
 - It shrinks every type of picture Jellyfin saves, unless you leave a type out in **What to shrink**.
 - **System**, then **Jobs**, shows when it runs next.
 - The pictures it shrank stay shrunk when you remove it. Choose **Restore original pictures** or **Start again** first to have them full size again.
-- Settings are kept when you update or deactivate it, and when you remove it they stay in its folder.
+- Settings are kept when you update or turn it off, and when you remove it they stay in its folder.
 
 ## Find out more
 

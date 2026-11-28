@@ -130,10 +130,10 @@ class OwnSourcesTest(unittest.TestCase):
             with mock.patch.object(livetv_plugin, "_guides_now"):
                 self.assertIn("Guide removed", livetv_plugin.sources_act({"action": "detach", "id": sid})["said"])
             out = livetv_plugin.sources_act({"action": "toggle", "id": sid})
-            self.assertEqual(out["said"], "a.example · list.m3u deactivated: its 2 channels leave Jellyfin now")
+            self.assertEqual(out["said"], "a.example · list.m3u turned off: its 2 channels leave Jellyfin now")
             self.assertFalse(out["items"][0]["on"])
             self.assertEqual(livetv._parse(os.path.join(self.d, "own.m3u")), [])
-            self.assertIn("activated", livetv_plugin.sources_act({"action": "toggle", "id": sid})["said"])
+            self.assertIn("turned on", livetv_plugin.sources_act({"action": "toggle", "id": sid})["said"])
             self.assertIn("answers: 2 channels", livetv_plugin.sources_act({"action": "test", "id": sid}, fetch)["said"])
             self.assertIn("removed", livetv_plugin.sources_act({"action": "remove", "id": sid})["said"])
             self.assertEqual(livetv_own.sources(self.data), [])
@@ -156,7 +156,7 @@ class OwnSourcesTest(unittest.TestCase):
         self.assertIn("1 is already in Live TV, so it came in inactive", result["text"])
         notice = livetv_own.notices(self.data)[0]
         self.assertEqual((notice["title"], notice["tone"], notice["dismiss"]), ("a.example · list.m3u: 1 of 3 channels added, 1 inactive", "success", True))
-        livetv.save_hidden(self.data, {"S1"})  # activated by hand: it stays active at the next build
+        livetv.save_hidden(self.data, {"S1"})  # turned on by hand: it stays active at the next build
         livetv_own.build(self.d, self.data, fetch, plays=lambda url, ua: True, why=lambda u: "x")
         self.assertEqual(livetv.hidden_ids(self.data), {"S1"})
         livetv_own.dismiss(self.data, livetv_own.sources(self.data)[0]["id"])

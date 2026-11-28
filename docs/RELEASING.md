@@ -81,7 +81,7 @@ upgrade guide and the notes on GitHub, so they always say the same thing.
      (`tools/update_e2e.sh` with `REELIX_FROM` and `REELIX_TO`, two published version tags). It must answer
      healthy, and go back by itself when it does not.
    - **Automatic updates:** nothing extra to run: they use the same update runs. Check the release does not change
-     a part's default (each is deactivated until the owner chooses it), and that `starboard/auto_updates.py`'s
+     a part's default (each is off until the owner chooses it), and that `starboard/auto_updates.py`'s
      words match the help.
 7. **Screenshots, at every push.** Run `tools/screenshots.sh` and look at every picture in `docs/screenshots`:
    the screens must match what changed, and only example data may appear (no real names, addresses, titles or

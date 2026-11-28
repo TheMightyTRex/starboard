@@ -166,7 +166,7 @@ def _sets(chans):
 
 
 def _lists(chans, hidden):
-    """One switch per list (owner, 12 November 2026: deactivate the original list in full, a switch for each of the
+    """One switch per list (owner, 12 November 2026: turn off the original list in full, a switch for each of the
     others). Inactive: the list is not fetched at all and its channels leave Jellyfin."""
     from . import livetv
     off = livetv.lists_off(DATA)
@@ -178,7 +178,7 @@ def _lists(chans, hidden):
                     "hint": "Inactive: not fetched, and none of its channels are in Jellyfin" if name in off
                     else f"Active: {on} of {len(ids)} channels in Jellyfin" if ids else "Active: its channels arrive at the next run"})
     # Each of the owner's own channel lists too, beside them (owner, 13 November 2026: "I would expect it to show under
-    # free tv, samsung etc. with a toggle"): the same switch as its Activate or Deactivate in Your lists and guides.
+    # free tv, samsung etc. with a toggle"): the same switch as its Turn on or Turn off in Your lists and guides.
     from . import livetv_own
     for x in livetv_own.sources(DATA):
         if x.get("kind") != "list":
@@ -293,7 +293,7 @@ def _bulk(body):
     from . import livetv
     want = str(body.get("value") or "")
     if want not in ("on", "off"):
-        raise ValueError("Choose Activate or Deactivate")
+        raise ValueError("Choose Turn on or Turn off")
     chans = livetv.all_channels(livetv.folder())
     sid = str(body.get("id") or "")
     if sid.startswith("lists:"):
@@ -317,14 +317,14 @@ def _bulk(body):
     n = len(ids)
     what = f"{name}: {n} {'channel' if n == 1 else 'channels'}"
     if want == "on":
-        return channels_screen(f"{what} activated; the lists are being rebuilt, which takes a few minutes" if done
+        return channels_screen(f"{what} turned on; the lists are being rebuilt, which takes a few minutes" if done
                                else f"{what} already active")
-    return channels_screen(f"{what} deactivated; Jellyfin drops them at its guide refresh, starting now" if done
+    return channels_screen(f"{what} turned off; Jellyfin drops them at its guide refresh, starting now" if done
                            else f"{what} already inactive")
 
 
 def _own_switch(sid, on):
-    """One of the owner's own lists, activated or deactivated from Channels (DASH-359)."""
+    """One of the owner's own lists, turned on or off from Channels (DASH-359)."""
     from . import livetv, livetv_jellyfin, livetv_own
     items = livetv_own.sources(DATA)
     x = next((x for x in items if x["id"] == sid and x.get("kind") == "list"), None)
@@ -337,10 +337,10 @@ def _own_switch(sid, on):
     if on:  # tested again on its own, with its notice
         livetv_own._update(DATA, sid, progress={"done": 0, "total": 0}, seen_result=None)
         threading.Thread(target=_quick, args=(sid,), name="livetv-add", daemon=True).start()
-        return channels_screen(f"{x['name']} activated: its channels are being tested; this page shows how far it has got")
+        return channels_screen(f"{x['name']} turned on: its channels are being tested; this page shows how far it has got")
     gone = livetv_own.drop(livetv.folder(), sid)
     livetv_jellyfin.refresh_guide(_services())
-    return channels_screen(f"{x['name']} deactivated: its {gone} {'channel leaves' if gone == 1 else 'channels leave'} Jellyfin now")
+    return channels_screen(f"{x['name']} turned off: its {gone} {'channel leaves' if gone == 1 else 'channels leave'} Jellyfin now")
 
 
 def _list_switch(name, on):
@@ -358,10 +358,10 @@ def _list_switch(name, on):
         with _lock:
             _force["now"] = True
         _wake.set()
-        return channels_screen(f"{label} activated: its channels arrive in a few minutes, once it is fetched and tested")
+        return channels_screen(f"{label} turned on: its channels arrive in a few minutes, once it is fetched and tested")
     gone = livetv.empty_list(livetv.folder(), name)
     livetv_jellyfin.refresh_guide(_services())
-    return channels_screen(f"{label} deactivated: not fetched, and its {gone} {'channel leaves' if gone == 1 else 'channels leave'} Jellyfin now")
+    return channels_screen(f"{label} turned off: not fetched, and its {gone} {'channel leaves' if gone == 1 else 'channels leave'} Jellyfin now")
 
 
 def channels_act(body):
@@ -371,7 +371,7 @@ def channels_act(body):
     if body.get("action") == "bulk_ids":  # the channels ticked in a table (DASH-359)
         want = str(body.get("value") or "")
         if want not in ("on", "off"):
-            raise ValueError("Choose Activate or Deactivate")
+            raise ValueError("Choose Turn on or Turn off")
         known = {c["id"] for c in livetv.all_channels(livetv.folder())}
         ids = {str(i) for i in body.get("ids") or []} & known
         if not ids:
@@ -379,13 +379,13 @@ def channels_act(body):
         hidden = livetv.hidden_ids(DATA)
         _apply(hidden, hidden - ids if want == "on" else hidden | ids)
         n = len(ids)
-        return channels_screen(f"{n} {'channel' if n == 1 else 'channels'} " + ("activated; the lists are being rebuilt, which takes a few minutes" if want == "on"
-                               else "deactivated; Jellyfin drops them at its guide refresh, starting now"))
+        return channels_screen(f"{n} {'channel' if n == 1 else 'channels'} " + ("turned on; the lists are being rebuilt, which takes a few minutes" if want == "on"
+                               else "turned off; Jellyfin drops them at its guide refresh, starting now"))
     if body.get("action") == "dismiss":
         livetv_own.dismiss(DATA, str(body.get("id") or ""))
         return channels_screen()
     if body.get("action") != "toggle":
-        raise ValueError("Channels can be activated or deactivated")
+        raise ValueError("Channels can be turned on or off")
     cid = str(body.get("id") or "")
     known = {c["id"]: c for c in livetv.all_channels(livetv.folder())}
     if cid not in known:
@@ -394,13 +394,13 @@ def channels_act(body):
     name = known[cid]["name"]
     if cid in hidden:  # back on: the lists are built again, with it
         _apply(hidden, hidden - {cid})
-        return channels_screen(f"{name} activated: the lists are being rebuilt, which takes a few minutes")
+        return channels_screen(f"{name} turned on: the lists are being rebuilt, which takes a few minutes")
     _apply(hidden, hidden | {cid})
-    return channels_screen(f"{name} deactivated; Jellyfin drops it at its guide refresh, starting now")
+    return channels_screen(f"{name} turned off; Jellyfin drops it at its guide refresh, starting now")
 
 
 def sources_screen(said=""):
-    """The owner's own lists and guides (DASH-359): each address its own row, with Activate or Deactivate, Test
+    """The owner's own lists and guides (DASH-359): each address its own row, with Turn on or Turn off, Test
     and Remove; Add takes an M3U playlist, a JSON channel list or an XMLTV guide."""
     from . import livetv_own
     rows = []
@@ -522,12 +522,12 @@ def sources_act(body, fetch=None):
         livetv_own.save(DATA, items)
         if item["on"]:
             _rebuild()
-            return sources_screen(f"{item['name']} activated: in Jellyfin in a few minutes, once it is tested")
+            return sources_screen(f"{item['name']} turned on: in Jellyfin in a few minutes, once it is tested")
         gone = livetv_own.drop(livetv.folder(), sid) if item["kind"] == "list" else 0
         if item["kind"] == "guide":
             _rebuild()
         livetv_jellyfin.refresh_guide(_services())
-        return sources_screen(f"{item['name']} deactivated" + (f": its {gone} {'channel leaves' if gone == 1 else 'channels leave'} Jellyfin now" if gone else ""))
+        return sources_screen(f"{item['name']} turned off" + (f": its {gone} {'channel leaves' if gone == 1 else 'channels leave'} Jellyfin now" if gone else ""))
     if action == "remove":
         livetv_own.save(DATA, [x for x in items if x["id"] != sid])
         livetv_own.forget(DATA, item)

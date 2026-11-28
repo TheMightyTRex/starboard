@@ -8,7 +8,7 @@ Wizarr has no settings in Starboard. Everything is set in the app itself, on its
 Wizarr's tab, in **Settings**, then **Plug-ins**, then **Wizarr**, has these buttons:
 
 - **Open Wizarr** opens its own page in a new tab. It is there while it is active.
-- **Activate** starts it, and Starboard chooses a free port for its page. **Deactivate** stops it and keeps its folder.
+- **Turn on** starts it, and Starboard chooses a free port for its page. **Turn off** stops it and keeps its folder.
 - **Try again** starts it again when it did not start.
 - **Check for an update** is there when this Starboard is newer than the version was made for.
 - **Remove Wizarr** stops it and takes it away. You choose where its folder goes; nothing is deleted.
@@ -19,7 +19,7 @@ Wizarr's tab, in **Settings**, then **Plug-ins**, then **Wizarr**, has these but
 - Wizarr reaches Jellyfin on this computer at `http://host.docker.internal:8096`.
 - Invitation links work on your home network only, unless you use the [Remote access](../remote-access/install.md) plug-in or your own address.
 - Wizarr keeps its invitations and choices in its own folder in Starboard's data, `data/plugins/wizarr`.
-- Its settings are kept when you update or deactivate it, and when you remove it they stay in its folder.
+- Its settings are kept when you update or turn it off, and when you remove it they stay in its folder.
 
 ## Find out more
 

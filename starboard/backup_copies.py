@@ -280,7 +280,7 @@ def title_of(s):
 def state_words(s, st):
     """The place's last copy in one or two words, and a shape (an icon name) so the state never rests on colour."""
     if not s.get("enabled", True):
-        return "Deactivated", "minus"
+        return "Off", "minus"
     state = (st or {}).get("state")
     if state == "running":
         return "Copying", "refresh-cw"
@@ -476,7 +476,7 @@ def _say(data_dir, dest=None, **kw):
 
 
 def safe(data_dir):
-    """Whether the newest full backup is safe: it counts only when every place that is activated has copied it and
+    """Whether the newest full backup is safe: it counts only when every place that is on has copied it and
     read it back. {"safe": bool, "words": one sentence, "places": [{id, title, ok, words}]}"""
     on = [d for d in destinations(data_dir) if d["enabled"]]
     try:
@@ -484,7 +484,7 @@ def safe(data_dir):
     except Exception:  # noqa: BLE001 - without Docker the folder cannot be worked out: nothing is safe yet
         newest_file = None
     if not on:
-        return {"safe": False, "words": "The newest full backup is only on this computer: no place is activated for copies", "places": []}
+        return {"safe": False, "words": "The newest full backup is only on this computer: no place is on for copies", "places": []}
     rows = []
     for d in on:
         st = status(data_dir, d["id"])
@@ -737,7 +737,7 @@ def _plain(said, s):
 
 def after_full(data_dir, file_path):
     """Called at the end of each full backup, in its own thread. Never raises: a failed copy is said on the page, in
-    the log and as an alert that names the place, and the backup itself stays good. Every place that is activated gets
+    the log and as an alert that names the place, and the backup itself stays good. Every place that is on gets
     its turn; one that fails never stops the others."""
     from . import logs
     places = [d for d in destinations(data_dir) if d["enabled"]]
@@ -800,7 +800,7 @@ def newest(data_dir):
 
 
 def copy_now(data_dir, dest=None):
-    """Copy the newest full backup now, in the background (to one place, or to every place that is activated);
+    """Copy the newest full backup now, in the background (to one place, or to every place that is on);
     refused while a backup or a copy runs."""
     from . import containers
     if not containers.available():

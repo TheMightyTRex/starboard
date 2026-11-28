@@ -69,14 +69,14 @@ If that is new to you, use a VPN (virtual private network) instead. Read
 
 7. Open `https://starboard.example.com` and sign in.
 8. When every address you use for Starboard starts with `https`, go to **Settings**, then **Security**.
-   Activate **More settings**. Then, under **Sessions**, activate **Only send the sign-in cookie over HTTPS**.
+   Turn on **More settings**. Then, under **Sessions**, turn on **Only send the sign-in cookie over HTTPS**.
 
 ## Things to note
 
 - Never forward Starboard's port, 8095, straight to the internet from your router. Only the reverse proxy
   should be reachable from outside, and only over HTTPS.
 - With 'Only send the sign-in cookie over HTTPS' active, you cannot sign in at a plain `http://` address, such
-  as `http://192.168.1.20:8095`. Deactivate it again if you still use one.
+  as `http://192.168.1.20:8095`. Turn it off again if you still use one.
 - Set `STARBOARD_TRUST_PROXY=1` only when a proxy sits in front of Starboard. Otherwise, leave it at `0`.
 - To answer to every name under your domain, start the entry with a full stop, such as
   `STARBOARD_ALLOWED_HOSTS=.example.com`.
@@ -89,7 +89,7 @@ If that is new to you, use a VPN (virtual private network) instead. Read
   exactly as it appears in the browser, without `https://`, then repeat step 5.
 - **You sign in but are sent back to the sign-in page:** **Only send the sign-in cookie over HTTPS** is active
   and the address starts with `http`. Sign in at your `https` address instead. If you still need the plain
-  address, deactivate the switch in **Settings**, **Security**, under **More settings**.
+  address, turn off the switch in **Settings**, **Security**, under **More settings**.
 - **A few wrong passwords lock everyone out, not only one device:** Starboard treats every visit as coming
   from the proxy, because it does not trust it yet. Add the proxy's address to `STARBOARD_PROXY_ADDRESSES`,
   then repeat step 5. Starboard also writes one warning in its log, with the address, the first time it

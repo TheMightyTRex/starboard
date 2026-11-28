@@ -71,7 +71,7 @@ Your Starboard's plug-in API is outside what this version of Audio description t
 - **Cannot read film** means the film's length could not be read, so the track was not added. Check that the film plays in Jellyfin.
 - **Not added** shows what went wrong, such as "Starboard has no Jellyfin key to give yet: add Jellyfin in Settings, Apps". Add Jellyfin in **Settings**, then **Apps**, then select **Check the folder now**.
 - "The last check did not finish" on the page shows the error from the last check. Select **Check the folder now** to try again.
-- "No audio-description folder yet" means the folder is missing. Select **Deactivate**, then **Activate**: Starboard makes it.
+- "No audio-description folder yet" means the folder is missing. Select **Turn off**, then **Turn on**: Starboard makes it.
 
 An upload must be up to 60 MB. For a larger file, put it in the audio-description folder in your media folder.
 

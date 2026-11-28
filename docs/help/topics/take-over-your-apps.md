@@ -48,7 +48,7 @@ The steps on the page are numbered. The numbers change with what your server nee
    ![Apps you already run, with Take over my apps (step 7) outlined, with example data](../images/take-over-your-apps-3-take.png)
 
 8. Go to **Settings**, then **Apps**, then **Reelix**. Under 'Sites to search', for each site select **More**, then
-   **Change**, activate **Active** and select **Save**. Read [Choose the sites Reelix searches](choose-sites-to-search.md).
+   **Change**, turn on **Active** and select **Save**. Read [Choose the sites Reelix searches](choose-sites-to-search.md).
 
 ## What Starboard does
 

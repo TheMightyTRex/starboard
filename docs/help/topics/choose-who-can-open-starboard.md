@@ -9,23 +9,23 @@ open it. The change takes effect at once, and Starboard shows the addresses that
 ## Before you begin
 
 - You can sign in to Starboard. If not, read [Create your password and sign in](create-your-password.md).
-- If you want to deactivate access, sign in on the server itself if you can, at `http://127.0.0.1:8095`.
+- If you want to turn off access, sign in on the server itself if you can, at `http://127.0.0.1:8095`.
   A phone or another computer loses access as soon as the switch is inactive.
 
 ## Steps
 
 1. Go to **Settings**, then **Security**.
 2. Find **Who can open the dashboard**.
-3. Activate or deactivate **Phones and other computers on your home network**:
+3. Turn on or off **Phones and other computers on your home network**:
    - Active: phones and other computers on your home network can reach the sign-in page.
    - Inactive: only the computer Starboard runs on can open it.
 
    ![Settings, Security, Who can open the dashboard, with the switch for phones and other computers (step 3) outlined, with example data](../images/choose-who-can-open-starboard-1-switch.png)
 
-4. If you deactivated it, Starboard asks **Deactivate access from your home network?** Select
-   **Deactivate network access** to go ahead, or close the dialog to keep things as they are.
+4. If you turned it off, Starboard asks **Turn off access from your home network?** Select
+   **Turn off network access** to go ahead, or close the dialog to keep things as they are.
 
-   ![The question Deactivate access from your home network?, with Deactivate network access (step 4) outlined, with example data](../images/choose-who-can-open-starboard-2-ask.png)
+   ![The question Turn off access from your home network?, with Turn off network access (step 4) outlined, with example data](../images/choose-who-can-open-starboard-2-ask.png)
 
 Starboard confirms the change and lists the addresses that open it now: **This computer** and, when the switch
 is active, **Phones and other computers**. Each address has a button to copy it.
@@ -48,8 +48,8 @@ is active, **Phones and other computers**. Each address has a button to copy it.
 
 ## If it does not work
 
-- **You deactivated it from a phone and now cannot get back in:** open Starboard on the server itself at
-  `http://127.0.0.1:8095` and activate the switch again.
+- **You turned it off from a phone and now cannot get back in:** open Starboard on the server itself at
+  `http://127.0.0.1:8095`. Then turn on the switch again.
 - **The server has no monitor:** SSH (secure shell) can carry Starboard's port to your own computer. Read
   [Connect to your server from another computer](connect-with-ssh.md) first. Then run this command on your
   own computer, with your user name and the server's address in place of `sam` and `192.168.1.20`:
@@ -59,7 +59,7 @@ is active, **Phones and other computers**. Each address has a button to copy it.
   ```
 
   While it stays connected, open `http://127.0.0.1:8095` in your own computer's browser. Starboard treats
-  you as if you were on the server, so you can activate the switch again. Enter `exit` in the terminal when you
+  you as if you were on the server, so you can turn on the switch again. Enter `exit` in the terminal when you
   have finished.
 
 ## Find out more

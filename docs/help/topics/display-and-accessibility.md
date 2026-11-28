@@ -33,10 +33,10 @@ back to its default, including the design and the style, and says "Display setti
 | **Theme** | **Match device**, **Light** (default), **Dark** | Dark text on a light page, or light text on a dark page. | [Light, dark and high contrast](../accessibility/light-dark-and-high-contrast.md) |
 | **Text size** | **100%** (default), **125%**, **150%**, **175%** | All of Starboard's text, with the page laid out again to fit. | [Text size and spacing](../accessibility/text-size-and-spacing.md) |
 | **Reduce motion** | **Match device** (default), **On**, **Off** | Slide-outs, messages and lists appear without sliding, shimmering or loading by themselves. | [Reduce motion](../accessibility/reduce-motion.md) |
-| **High contrast** | Activated or deactivated (default) | Near-black or white text, solid borders, no shadows and a bolder focus colour. | [Light, dark and high contrast](../accessibility/light-dark-and-high-contrast.md) |
-| **Underline links** | Activated or deactivated (default) | Every link is underlined, not shown by colour alone. | [Underline links](../accessibility/underline-links.md) |
-| **Wider text spacing** | Activated or deactivated (default) | More space between lines, letters and words. | [Text size and spacing](../accessibility/text-size-and-spacing.md) |
-| **Remove drop shadows** | Activated or deactivated | Cards, covers, menus, slide-outs and dialogs lose their shadow and keep their border. For everyone on this server. | [Remove drop shadows](#remove-drop-shadows) |
+| **High contrast** | Turned on or off (default) | Near-black or white text, solid borders, no shadows and a bolder focus colour. | [Light, dark and high contrast](../accessibility/light-dark-and-high-contrast.md) |
+| **Underline links** | Turned on or off (default) | Every link is underlined, not shown by colour alone. | [Underline links](../accessibility/underline-links.md) |
+| **Wider text spacing** | Turned on or off (default) | More space between lines, letters and words. | [Text size and spacing](../accessibility/text-size-and-spacing.md) |
+| **Remove drop shadows** | Turned on or off | Cards, covers, menus, slide-outs and dialogs lose their shadow and keep their border. For everyone on this server. | [Remove drop shadows](#remove-drop-shadows) |
 | **Style** | Only with a style plug-in | Colours and shape from a plug-in, checked for contrast. | [Choose a style from a plug-in](#choose-a-style-from-a-plug-in) |
 | **Design** | Five designs, or the dashboard's default | How the Apps page is laid out in this browser. | [Choose a design for the Apps page](choose-a-design.md) |
 
@@ -64,7 +64,7 @@ The set-up asks about it, straight after **How much it does**, in the browser an
   says so once.
 
 1. Select **Display** in the header.
-2. Activate **Remove drop shadows**. To bring them back, deactivate it. It also shows in **Settings**, **General**,
+2. Turn on **Remove drop shadows**. To bring them back, turn it off. It also shows in **Settings**, **General**,
    **Appearance**, under **Accessibility**.
 
 ![The Display and accessibility slide-out with Remove drop shadows (step 2) outlined, and the note about processor use under it](../images/display-and-accessibility-4-shadows-switch.png)

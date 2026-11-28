@@ -37,7 +37,7 @@ Measured:
 2. Under **Apps you can add**, find **Navidrome** and select **Install…**.
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Navidrome**. To stop, select **Cancel**: nothing is installed.
-5. Navidrome's own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Activate**.
+5. Navidrome's own tab opens under **Settings**, then **Plug-ins**, and Starboard turns it on: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Turn on**.
 
 ### Add it by its address
 
@@ -55,7 +55,7 @@ Navidrome's tab shows its address on your home network, with **Open**. Anyone on
 
 ## Set it up
 
-1. On Navidrome's tab, select **Activate** if it is not active yet.
+1. On Navidrome's tab, select **Turn on** if it is not active yet.
 2. In **Its web page**, select **Open Navidrome**.
 3. Make the first account. It is Navidrome's admin, so give it a strong password.
 4. Put your music in `music` in your media folder. Navidrome reads it there, read only.
@@ -70,7 +70,7 @@ Navidrome's tab shows its address on your home network, with **Open**. Anyone on
 
 Its containers stop and go, and its API key stops working. Nothing is deleted.
 
-To stop it for a while instead, select **Deactivate** on its tab: its settings and folder are kept.
+To stop it for a while instead, select **Turn off** on its tab: its settings and folder are kept.
 
 ## Find out more
 

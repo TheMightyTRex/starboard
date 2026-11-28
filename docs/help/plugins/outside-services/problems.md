@@ -63,8 +63,8 @@ The card says "Not answering" and the names, such as "Not answering: NAS". At th
 A new **Check every** is used only when Outside services starts.
 
 1. Go to **Settings**, then **Plug-ins**, then **Outside services**.
-2. Select **Deactivate**.
-3. Select **Activate**.
+2. Select **Turn off**.
+3. Select **Turn on**.
 
 ## Report a problem
 

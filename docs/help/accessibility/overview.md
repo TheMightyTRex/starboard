@@ -16,7 +16,7 @@ set-up. Read [Change text size, theme and other display settings](../topics/disp
 
 ## What Starboard does for everyone
 
-These are always on. Nothing needs to be activated.
+These are always on. Nothing needs to be turned on.
 
 - **Readable type:** every page uses Atkinson Hyperlegible Next, a typeface designed for readers
   with low vision. It comes with Starboard.
@@ -45,7 +45,7 @@ Each of these is in **Display**, applies at once and is kept in your browser.
 - [Reduce motion](reduce-motion.md): no sliding, shimmering or smooth scrolling.
 - [Underline links](underline-links.md): every link underlined, not shown by colour alone.
 
-![The Apps page with High contrast activated in the Dark theme: white text and white borders on black](../images/a11y-contrast-dark.png)
+![The Apps page with High contrast turned on in the Dark theme: white text and white borders on black](../images/a11y-contrast-dark.png)
 
 ## Ways to use it
 

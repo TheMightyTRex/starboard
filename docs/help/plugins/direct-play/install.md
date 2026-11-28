@@ -40,9 +40,9 @@ These figures are the most it may use.
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Direct play**. To stop, select **Cancel**: nothing is installed.
 5. Direct play's own tab opens under **Settings**, then **Plug-ins**. Select **Finish setting up**.
-6. In **Devices**, activate each kind of device anyone in your home watches on, and deactivate any you do not have.
+6. In **Devices**, turn on each kind of device anyone in your home watches on, and turn off any you do not have.
 7. In **When it works**, choose when it may convert files. **At weekends** is chosen when you add it.
-8. Select **Activate** in **General**, **State**. Its state changes to **Active**.
+8. Select **Turn on** in **General**, **State**. Its state changes to **Active**.
 9. Add its cards to your dashboard. Read [Dashboard card](../direct-play/dashboard-card.md).
 
 It starts by checking your library, then fixes one file at a time in the hours you chose.
@@ -68,7 +68,7 @@ Or run its installer, `install.py` in its folder, on any computer with Python, a
 
 Its containers stop and go, and its API key stops working. Nothing is deleted. Files it already changed in your media folder stay as they are.
 
-To stop it for a while instead, select **Deactivate** on its tab: its settings and folder are kept.
+To stop it for a while instead, select **Turn off** on its tab: its settings and folder are kept.
 
 ## Find out more
 

@@ -18,7 +18,7 @@ builder with limits: 2 GB of memory with no swap beyond it, 2 processor cores, 2
 secrets, and only the zip's own files to build from (a tar Starboard writes from the checked files, so a link in the
 zip could never point outside it). The image is tagged local/<id>:<version>, so Roll back finds the version before
 without a download; the zip is kept beside the plug-in (zips/<version>.zip, the current and the previous) so a
-missing image is built again on Activate. An image over 3 GB is removed (it is Starboard's own) and refused.
+missing image is built again on Turn on. An image over 3 GB is removed (it is Starboard's own) and refused.
 
 Nothing is downloaded from the person's computer into Starboard except the zip itself, streamed to
 data/plugins/.uploads, which is tidied after an hour."""
@@ -504,7 +504,7 @@ def tidy_kept(data_dir, pid):
 
 
 def ensure_images(data_dir, pid, say=None):
-    """Before Activate: a plug-in built from a zip whose image has gone (a prune, a new disk) is built again from its
+    """Before Turn on: a plug-in built from a zip whose image has gone (a prune, a new disk) is built again from its
     kept zip. Raises ValueError when it cannot be."""
     from . import containers
     from . import plugins_admin as pa
@@ -590,9 +590,9 @@ def start_install(data_dir, token, media_dir, after=None):
             keep(data_dir, item["id"], manifest["version"], path)
             not_on = after(item) if after else ""
             logs.event("info", "plug-ins", f"Added {manifest['name']} {manifest['version']} from a zip file")
-            # Activated once installed (owner, 19 November 2026), unless it needs setting up first.
+            # Turned on once installed (owner, 19 November 2026), unless it needs setting up first.
             _set(j, state="installed", said=f"{manifest['name']} installed and active." if after and not not_on
-                 else f"{manifest['name']} installed. {not_on or 'Activate it when you are ready'}.".replace("..", "."))
+                 else f"{manifest['name']} installed. {not_on or 'Turn it on when you are ready'}.".replace("..", "."))
         except Exception as e:  # noqa: BLE001  any failure ends the job with words
             logs.event("error", "plug-ins", f"{manifest.get('name')} from a zip file was not installed: {e}")
             _set(j, failed_at=j["state"], state="failed", said=f"{manifest['name']} was not installed. {str(e)[:300]}")

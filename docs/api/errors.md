@@ -74,7 +74,7 @@ what it said. Try again later, or open the app.
 
 ## mcp_off
 
-**403.** AI assistants cannot connect to `/api/v1/mcp` yet (API 1.7.0). The owner activates them in Starboard,
+**403.** AI assistants cannot connect to `/api/v1/mcp` yet (API 1.7.0). The owner turns them on in Starboard,
 **Settings**, **Security**, **API keys**, **AI assistants**. Nothing is shared until then.
 
 ## read_key_needed

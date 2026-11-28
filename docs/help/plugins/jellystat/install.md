@@ -43,7 +43,7 @@ Measured:
 2. Under **Apps you can add**, find **Jellystat** and select **Install…**.
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Jellystat**. To stop, select **Cancel**: nothing is installed.
-5. Jellystat's own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Activate**.
+5. Jellystat's own tab opens under **Settings**, then **Plug-ins**, and Starboard turns it on: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Turn on**.
 
 ### Add it by its address
 
@@ -71,7 +71,7 @@ Or run its installer, `install.py` in its folder, on any computer with Python, a
 
 Its containers stop and go, and its API key stops working. Nothing is deleted.
 
-To stop it for a while instead, select **Deactivate** on its tab: its settings and folder are kept.
+To stop it for a while instead, select **Turn off** on its tab: its settings and folder are kept.
 
 ## Find out more
 

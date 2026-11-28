@@ -111,7 +111,7 @@ class Rules(unittest.TestCase):
         night, day = dt.datetime(2026, 11, 14, 2), dt.datetime(2026, 11, 14, 14)
         on = {"starboard_auto_update": True}
         decide = self_update.automatic_decision
-        self.assertEqual(decide({}, night, "v0.18.0", "0.17.0", {})[0], "wait")  # deactivated
+        self.assertEqual(decide({}, night, "v0.18.0", "0.17.0", {})[0], "wait")  # turned off
         self.assertEqual(decide(on, day, "v0.18.0", "0.17.0", {}), ("wait", "Waiting for the quiet hours"))
         self.assertEqual(decide(on, night, "v0.17.0", "0.17.0", {}), ("wait", "Starboard is up to date"))
         self.assertEqual(decide(on, night, "v0.18.0-dev.1", "0.17.0", {})[0], "wait")
@@ -239,7 +239,7 @@ class Words(unittest.TestCase):
         steps = [s["id"] for s in json.loads((ROOT / "web" / "setup-steps.json").read_text(encoding="utf-8"))["steps"]]
         self.assertLess(steps.index("hours"), steps.index("updates"))
         self.assertLess(steps.index("updates"), steps.index("alerts"))
-        self.assertIn("deactivated unless you choose it", answers["later"])
+        self.assertIn("off unless you choose it", answers["later"])
         self.assertEqual([p["key"] for p in answers["parts"]], ["starboard_auto_update", "reelix_auto_update", "apps_auto_update",
                                                                "plugins_auto_update", "jellyfin_plugins_auto_update"])
         js = "".join(p.read_text(encoding="utf-8") for p in sorted((ROOT / "web" / "js").glob("settings-*.js")))

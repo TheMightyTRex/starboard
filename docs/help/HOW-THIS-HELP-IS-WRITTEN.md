@@ -10,7 +10,7 @@ Starboard's help follows the shared guides in the design system, which Starboard
   version to give an AI tool. Mark screenshots up with the design system's `tools/annotate.js`. Make them from a
   preview with example data (`tools/screenshots.sh`), and keep them in `docs/help/images`.
 - [Content design guide](https://github.com/TheMightyTRex/design-system/blob/main/docs/CONTENT-DESIGN.md): voice,
-  words and punctuation for everything on screen and in the help. For example, you activate and deactivate
+  words and punctuation for everything on screen and in the help. For example, you turn on and turn off
   settings, and never use the words for a light switch.
 
 ## Only in Starboard

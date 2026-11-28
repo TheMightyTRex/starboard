@@ -238,7 +238,7 @@ class Adopt(unittest.TestCase):
     def test_refused_while_active_and_when_missing(self):
         from starboard import containers
         pa.set_state(self.d, "stats-app", "enabled")
-        with mock.patch.object(containers, "docker", self.docker), self.assertRaisesRegex(ValueError, "Deactivate"):
+        with mock.patch.object(containers, "docker", self.docker), self.assertRaisesRegex(ValueError, "Turn off"):
             pa.adopt(self.d, "stats-app", helper=lambda f, s: (0, ""))
         pa.set_state(self.d, "stats-app", "disabled")
 

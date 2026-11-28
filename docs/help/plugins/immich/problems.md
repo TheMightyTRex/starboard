@@ -41,7 +41,7 @@ q2: What does it say after Immich?
 
 ## Enter the address and key
 
-Open the plug-in's tab, enter Immich's address and the API key, select **Save**, then **Activate**.
+Open the plug-in's tab, enter Immich's address and the API key, select **Save**, then **Turn on**.
 
 ## Check Immich itself
 

@@ -19,11 +19,11 @@ These are on VPN check's tab.
 ## Things to note
 
 - **Your home's public address** is used straight away, at the next card refresh.
-- A new **Check every** is used after VPN check starts again: select **Deactivate**, then **Activate**. Until then it keeps checking as often as before.
+- A new **Check every** is used after VPN check starts again: select **Turn off**, then **Turn on**. Until then it keeps checking as often as before.
 - To find your home's public address, find it from a device on your home network that does not use the VPN, or in your router.
 - Each check sends one request to ipinfo.io, through the VPN. Nothing else is sent anywhere.
 - It only reads. It never changes your VPN or stops downloads when the VPN shows your home address.
-- Settings are kept when you update or deactivate it, and when you remove it they stay in its folder.
+- Settings are kept when you update or turn it off, and when you remove it they stay in its folder.
 
 ## Find out more
 

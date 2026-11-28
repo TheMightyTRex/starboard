@@ -50,7 +50,7 @@ It counts only what moves in Starboard's download queue.
 
 1. Check that **Activity**, then **Downloads** opens and shows the queue.
 2. Wait a minute: the words go when a reading works again.
-3. If they stay, select **Deactivate**, then **Activate**, on its tab.
+3. If they stay, select **Turn off**, then **Turn on**, on its tab.
 4. Still there: go to **System**, then **Logs**, and find its name.
 
 ## Know what it counts
@@ -59,7 +59,7 @@ The totals are what it saw move, so they can be lower than what your apps say.
 
 - It counts from when it first finds a download, not what was done before.
 - It reads once a minute, so the last minute of a download that finishes and leaves the queue may be missed.
-- While it is deactivated or stopped, it reads nothing. When it starts again, a download still in the queue is counted for the day it starts again, and one that finished in between is not counted.
+- While it is off or stopped, it reads nothing. When it starts again, a download still in the queue is counted for the day it starts again, and one that finished in between is not counted.
 - The day starts at midnight on your server's clock, and this week means today and the 6 days before it.
 
 ## Report a problem

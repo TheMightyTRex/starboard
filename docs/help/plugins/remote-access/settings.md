@@ -28,9 +28,9 @@ Remote access's settings are on its own tab: go to **Settings**, then **Plug-ins
 
 | Setting | What it does | Default |
 |---|---|---|
-| **Share Starboard** | Starboard's own pages, away from home. Activated or deactivated. | Activated |
-| **Share Jellyfin** | Jellyfin, so the apps on phones and televisions work away from home. Activated or deactivated. | Activated |
-| **Share Audiobookshelf** | Shared only when Audiobookshelf is in Starboard's apps. Download apps are never shared. Activated or deactivated. | Activated |
+| **Share Starboard** | Starboard's own pages, away from home. Turned on or off. | Turned on |
+| **Share Jellyfin** | Jellyfin, so the apps on phones and televisions work away from home. Turned on or off. | Turned on |
+| **Share Audiobookshelf** | Shared only when Audiobookshelf is in Starboard's apps. Download apps are never shared. Turned on or off. | Turned on |
 
 ## Buttons
 
@@ -50,7 +50,7 @@ The buttons are in **Actions**, and work only while Remote access is active.
 - With Cloudflare Tunnel, a route to an app you have not shared stops the tunnel. Share the app or delete the route.
 - Starboard answers only to names it knows. To open Starboard by a Cloudflare name, or by its name on your tailnet, add that name to `STARBOARD_ALLOWED_HOSTS` in Starboard's settings file.
 - Keys and tokens never go on a command line or in the log.
-- Settings are kept when you update or deactivate it, and when you remove it they stay in its folder.
+- Settings are kept when you update or turn it off, and when you remove it they stay in its folder.
 
 ## Find out more
 

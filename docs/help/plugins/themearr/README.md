@@ -13,7 +13,7 @@ People who like a film's music to play while they browse it in Jellyfin. Themear
 
 ## Set it up
 
-1. Activate it. Within 2 minutes Starboard gives Themearr Reelix's address and key, as its Radarr, and your films folder: nothing to enter.
+1. Turn it on. Within 2 minutes Starboard gives Themearr Reelix's address and key, as its Radarr, and your films folder: nothing to enter.
 2. Make a RapidAPI account and subscribe to the youtube-mp36 service (its free plan has a monthly limit). Enter its key and your RapidAPI user name in the plug-in's settings in Starboard. Themearr fetches tunes through it.
 3. To open Themearr's own page, copy the access token from **Sign in to Themearr** on the plug-in's tab, choose **Open Themearr** and paste it there.
 

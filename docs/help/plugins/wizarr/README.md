@@ -13,7 +13,7 @@ People who share their Jellyfin with family and friends: send a link, and the pe
 
 ## Set it up
 
-1. Activate it, choose **Open Wizarr** and make its admin account.
+1. Turn it on, choose **Open Wizarr** and make its admin account.
 2. Add your Jellyfin: the address `http://host.docker.internal:8096` and an API key you make in Jellyfin's Dashboard, API keys. Starboard does not hand Wizarr its own key.
 3. Invitation links work on your home network. For people away from home, use the Remote access plug-in or your own address.
 

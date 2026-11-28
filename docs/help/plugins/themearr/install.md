@@ -47,7 +47,7 @@ Themearr's image is about 1 GB to download, as it brings its own copy of FFmpeg.
 2. Under **Apps you can add**, find **Themearr** and select **Install…**.
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Themearr**. To stop, select **Cancel**: nothing is installed.
-5. Themearr's own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Activate**.
+5. Themearr's own tab opens under **Settings**, then **Plug-ins**, and Starboard turns it on: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Turn on**.
 
 ### Add it by its address
 
@@ -66,7 +66,7 @@ Or run its installer, `install.py` in its folder, on any computer with Python, a
 3. To open Themearr's own page, open **Sign in to Themearr** on its tab and copy the access token.
 4. Under **Its web page**, select **Open Themearr**. Paste the token into Themearr's **Access token** box. Each web browser asks once.
 
-Themearr reads Reelix's films every 15 minutes and fetches a tune for each new one by itself, unless you deactivate **Fetch tunes for new films by itself**.
+Themearr reads Reelix's films every 15 minutes and fetches a tune for each new one by itself, unless you turn off **Fetch tunes for new films by itself**.
 
 ## Remove it
 
@@ -77,7 +77,7 @@ Themearr reads Reelix's films every 15 minutes and fetches a tune for each new o
 
 Its containers stop and go, and its API key stops working. Nothing is deleted: the `theme.mp3` files stay in your film folders, and Jellyfin carries on playing them.
 
-To stop it for a while instead, select **Deactivate** on its tab: its settings and folder are kept.
+To stop it for a while instead, select **Turn off** on its tab: its settings and folder are kept.
 
 ## Find out more
 

@@ -43,7 +43,7 @@ Like every plug-in, it runs read only, as a user that is not root, with no extra
 
 ![The foot of the install slide-out, with Your Starboard password filled in and Install Backups watch (step 4) outlined](../../images/plugins/backups-watch/install-3-password.png)
 
-5. Backups watch's own tab opens under **Settings**, then **Plug-ins**. Choose the tool and enter its address, then save and select **Activate**. Read [Settings](../backups-watch/settings.md).
+5. Backups watch's own tab opens under **Settings**, then **Plug-ins**. Choose the tool and enter its address, then save and select **Turn on**. Read [Settings](../backups-watch/settings.md).
 
 ### Add it by its address
 

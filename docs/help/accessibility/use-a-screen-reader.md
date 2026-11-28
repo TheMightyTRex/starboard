@@ -4,7 +4,7 @@
 # Use a screen reader
 
 We built Starboard to work with screen readers, such as NVDA and JAWS on Windows, VoiceOver on a Mac, iPhone or
-iPad, TalkBack on Android and Orca on Linux. You do not need to activate anything. This page says how the pages are
+iPad, TalkBack on Android and Orca on Linux. You do not need to turn on anything. This page says how the pages are
 laid out and what you hear.
 
 ## When would you use it

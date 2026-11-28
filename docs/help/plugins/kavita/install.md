@@ -37,7 +37,7 @@ Measured:
 2. Under **Apps you can add**, find **Kavita** and select **Install…**.
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Kavita**. To stop, select **Cancel**: nothing is installed.
-5. Kavita's own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Activate**.
+5. Kavita's own tab opens under **Settings**, then **Plug-ins**, and Starboard turns it on: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Turn on**.
 
 ### Add it by its address
 
@@ -55,7 +55,7 @@ Kavita's tab shows its address on your home network, with **Open**. Anyone on yo
 
 ## Set it up
 
-1. On Kavita's tab, select **Activate** if it is not active yet.
+1. On Kavita's tab, select **Turn on** if it is not active yet.
 2. In **Its web page**, select **Open Kavita**.
 3. Make the first account. It is Kavita's admin, so give it a strong password.
 4. In Kavita, add a library for `/media/books`.
@@ -72,7 +72,7 @@ Kavita reads both folders only, so it cannot change or delete a file. Its sign-i
 
 Its containers stop and go, and its API key stops working. Nothing is deleted.
 
-To stop it for a while instead, select **Deactivate** on its tab: its settings and folder are kept.
+To stop it for a while instead, select **Turn off** on its tab: its settings and folder are kept.
 
 ## Find out more
 

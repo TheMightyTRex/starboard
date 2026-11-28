@@ -50,7 +50,7 @@ folder, or move it somewhere safe, so you can bring your settings back if you ch
    docker compose -f compose.image.yaml down
    ```
 
-## If you activated Disk health
+## If you turned on Disk health
 
 The installer set up a small job that checks your disks every 30 minutes. It keeps running after Starboard is gone,
 so remove it too.

@@ -121,9 +121,9 @@ Starboard writes a line to its audit log, `data/logs/audit.jsonl`, in these case
 - each time someone makes or revokes a key;
 - each time a key changes something (`api_write`, with the key's id, the address and the answer's status);
 - each time Starboard refuses a wrong key, with the address it came from;
-- each time someone adds, updates, rolls back, activates or removes a plug-in;
-- each sign-in step beyond the password: the two-step code activated or off, a code or recovery code used or refused,
-  single sign-on set up, tested, activated or off, and each sign-in it allowed or refused, with the address it came
+- each time someone adds, updates, rolls back, turns on or removes a plug-in;
+- each sign-in step beyond the password: the two-step code turned on or off, a code or recovery code used or refused,
+  single sign-on set up, tested, turned on or off, and each sign-in it allowed or refused, with the address it came
   from (`totp_enabled`, `sign_in_code_ok`, `sign_in_code_failed`, `sign_in_recovery_code_used`, `sso_configured`,
   `sign_in_sso`, `sso_refused` and the like).
 

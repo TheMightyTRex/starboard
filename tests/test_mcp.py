@@ -62,7 +62,7 @@ class McpTest(unittest.TestCase):
 
     def test_off_until_activated(self):
         self.assertFalse(config.DEFAULTS["mcp_enabled"])
-        self.assertEqual(config.GENERAL_RIGHTS["mcp_enabled"], "never")  # no API key can activate it
+        self.assertEqual(config.GENERAL_RIGHTS["mcp_enabled"], "never")  # no API key can turn it on
         self.app.config.data["mcp_enabled"] = False
         r, body = self.post({"jsonrpc": "2.0", "id": 1, "method": "initialize"})
         self.assertEqual((r.status, r.getheader("Content-Type"), body["code"]), (403, "application/problem+json", "mcp_off"))

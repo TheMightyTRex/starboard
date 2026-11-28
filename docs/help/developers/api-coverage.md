@@ -75,7 +75,7 @@ Every address starts with `/api/v1`. The [API reference](api-reference.md) gives
 | The two-step code, single sign-on (OpenID Connect) and whether the password works | Signed in only, and each change asks for the password again. An API key can never read or change them | |
 | Reelix's settings, editions and moving apps into Reelix | Signed in only: they use Reelix's admin password | |
 | Your install, Install apps, taking over and rolling back | Signed in only: they change what runs on the server | |
-| Reset the password; deactivate the two-step code and single sign-on; go back to an older Starboard | On the server only, with `./reset-password.sh`, `./reset-sign-in.sh` or `./update.sh --to` | |
+| Reset the password; turn off the two-step code and single sign-on; go back to an older Starboard | On the server only, with `./reset-password.sh`, `./reset-sign-in.sh` or `./update.sh --to` | |
 
 ## Updates
 

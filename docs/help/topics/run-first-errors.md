@@ -118,7 +118,7 @@ computer, then choose **Try again**.
 ### RF-13
 
 **A software source has a signing key Linux no longer accepts.** The list of software could not be updated.
-Choose **Show the details** for the name of the source. Install that source's new key, or deactivate the source, then
+Choose **Show the details** for the name of the source. Install that source's new key, or turn off the source, then
 choose **Try again**.
 
 ### RF-14

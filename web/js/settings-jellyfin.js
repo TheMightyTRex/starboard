@@ -181,7 +181,7 @@ async function startJellyfin() {
 
   root.removeAttribute("aria-busy");
   root.replaceChildren(...[
-    welcome ? notice("success", "Starboard found Jellyfin", "These are all inactive. Activate what you want; you can change them here at any time.") : null,
+    welcome ? notice("success", "Starboard found Jellyfin", "These are all inactive. Turn on what you want; you can change them here at any time.") : null,
     top,
     livePlugin ? section("jf-live", "Live TV", "Free channels and guides for Jellyfin's Live TV.",
       notice("info", `Live TV is a plug-in now, and ${livePlugin.state === "enabled" ? "active" : "not active"}`, "Its settings and status are on its own page.",
@@ -235,7 +235,7 @@ async function drawJellyfinMetadata(holder) {
 
 // Recommended Jellyfin plug-ins (DASH-404): one choice each, installed and set up through Jellyfin's own API. The
 // section draws itself again on its own, so a choice never redraws the rest of the page.
-const PLUGIN_STATE = { Active: ["Active", "success"], Restart: ["Active after a restart", "warning"], Disabled: ["Deactivated", "muted"],
+const PLUGIN_STATE = { Active: ["Active", "success"], Restart: ["Active after a restart", "warning"], Disabled: ["Off", "muted"],
   Malfunctioned: ["Not working", "danger"], NotSupported: ["Not for this Jellyfin", "danger"], Superseded: ["Replaced by a newer version", "muted"], Superceded: ["Replaced by a newer version", "muted"] };
 
 async function drawJellyfinPlugins(holder, result = null) {
@@ -289,7 +289,7 @@ async function drawJellyfinPlugins(holder, result = null) {
       g.cost ? el("p", { class: "small muted" }, el("span", { class: "setting__cost", text: g.cost })) : null);
   });
   if (result) announce(result.text);
-  holder.replaceChildren(status, restart || "", el("p", { class: "small muted", text: `${d.name} ${d.version}. Starboard installs through Jellyfin's own plug-in catalogue, adding a plug-in's repository when Jellyfin does not have it. Another choice deactivates the old plug-in; nothing is uninstalled.` }), ...groups);
+  holder.replaceChildren(status, restart || "", el("p", { class: "small muted", text: `${d.name} ${d.version}. Starboard installs through Jellyfin's own plug-in catalogue, adding a plug-in's repository when Jellyfin does not have it. Another choice turns off the old plug-in; nothing is uninstalled.` }), ...groups);
 }
 
 // Audiobookshelf ------------------------------------------------------------

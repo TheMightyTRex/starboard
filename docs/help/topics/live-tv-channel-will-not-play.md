@@ -17,7 +17,7 @@ q2: Which channels will not play?
   Pluto TV, or no logos -> 2
   Samsung TV Plus -> 3
   One channel, others play -> 4
-1: Activate Live TV #activate-live-tv
+1: Turn on Live TV #turn-on-live-tv
   Then -> 5
 2: Let Jellyfin reach Starboard #let-jellyfin-reach-starboard
   Then -> 5
@@ -28,10 +28,10 @@ q2: Which channels will not play?
 5: Refresh the guide in Jellyfin #refresh-the-guide-in-jellyfin
 ```
 
-## Activate Live TV
+## Turn on Live TV
 
 Go to **Settings**, then **Plug-ins**, and find **Live TV**. Check that it is **Active**. If it says **Did not
-start** or **Inactive**, select **Activate**. The **Live TV** card on the dashboard says whether the last run worked.
+start** or **Inactive**, select **Turn on**. The **Live TV** card on the dashboard says whether the last run worked.
 
 ## Let Jellyfin reach Starboard
 
@@ -69,7 +69,7 @@ In Jellyfin, refresh the guide data, then try the channel again.
   Read [IN-34](run-first-errors.md#in-34).
 - **"Last run failed":** read the reason on the card. It often names the setting to change.
 - **No channels at all in Jellyfin:** read [Set up free Live TV in Jellyfin](set-up-live-tv.md#add-the-channels-and-guides-in-jellyfin).
-- If none of this helps, activate detailed logging and report the problem. Read
+- If none of this helps, turn on detailed logging and report the problem. Read
   [Read the log and report a problem](read-the-log.md#report-a-problem).
 
 ## Find out more

@@ -3,7 +3,7 @@
 
 Tdarr's tab has a **Settings** section that Starboard draws: the same choices as Starboard's own Tdarr page, in **Settings**, then **Tdarr**. Starboard writes them into Tdarr, so you never sign in to it. Tdarr's own page, opened with **Open Tdarr**, still shows everything.
 
-The section is there while Tdarr is active. When it is not, it says to activate Tdarr first. Each choice is used straight away and says so beside itself: there is nothing to save.
+The section is there while Tdarr is active. When it is not, it says to turn on Tdarr first. Each choice is used straight away and says so beside itself: there is nothing to save.
 
 ## Its settings
 
@@ -21,7 +21,7 @@ Under the choices, **Files Tdarr knows** shows how many files it has converted a
 - **Connect Tdarr** is there while Tdarr is not connected yet. It gives Tdarr a key Starboard keeps, so you never sign in to Tdarr. Tdarr restarts once, and Starboard waits up to 90 seconds for it to answer.
 - **Bring in the Tdarr you already have…**, under **Your Tdarr**, copies the Tdarr from the main install into the plug-in, with its libraries, flows and history. It is there while the plug-in is not active. Read [Install](../tdarr/install.md#set-it-up).
 - **Open Tdarr** opens Tdarr's own page in a new tab. It is there while it is active.
-- **Activate** starts it, and Starboard chooses a free port for its page. **Deactivate** stops it and keeps its folder.
+- **Turn on** starts it, and Starboard chooses a free port for its page. **Turn off** stops it and keeps its folder.
 - **Try again** starts it again when it did not start.
 - **Remove Tdarr** stops it and takes it away. You choose where its folder goes; nothing is deleted, and files it already converted stay as they are.
 
@@ -30,7 +30,7 @@ Under the choices, **Files Tdarr knows** shows how many files it has converted a
 - **Save space** replaces a file with its smaller copy, in `media/movies` and `media/tv` only. It runs as the owner of your media folder, so the new file is yours.
 - Tdarr converts in a `tdarr-cache` folder in your media folder, on the same disks as your films, so working copies of large films cannot fill the system disk.
 - Converting is heavy work: Tdarr may use up to 2 GB of memory and 2 processor cores. Keep **Conversions at once** low on a small server.
-- Its settings, history and converted-file records are kept when you update or deactivate it, and when you remove it they stay in its folder.
+- Its settings, history and converted-file records are kept when you update or turn it off, and when you remove it they stay in its folder.
 
 ## Find out more
 

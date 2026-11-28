@@ -41,7 +41,7 @@ Starboard runs its job **Send New this week on the chosen day** daily at 09:00.
 
 ### Email
 
-- **Send by email**: Activate once the email details are entered and the test arrives.
+- **Send by email**: Turn on once the email details are entered and the test arrives.
 - **Email server**: Such as smtp.example.com
 - **Port**
 - **Security**: How the connection to your email server is protected. Your email service says which to use.
@@ -52,13 +52,13 @@ Starboard runs its job **Send New this week on the chosen day** daily at 09:00.
 
 ### Telegram
 
-- **Send by Telegram**: Activate once the bot token and chat are entered and the test arrives.
+- **Send by Telegram**: Turn on once the bot token and chat are entered and the test arrives.
 - **Bot token**: From @BotFather in Telegram.
 - **Telegram chat**: One chat id a line. Send your bot a message first, so it may write to you.
 
 ### Discord
 
-- **Send by Discord**: Activate once the webhook is filled in and the test arrives.
+- **Send by Discord**: Turn on once the webhook is filled in and the test arrives.
 - **Discord webhook address**: In Discord: the channel's Edit channel, Integrations, Webhooks, Copy webhook URL.
 
 ### Signal
@@ -70,20 +70,20 @@ Starboard runs its job **Send New this week on the chosen day** daily at 09:00.
 
 ### Pushover
 
-- **Send by Pushover**: Activate once both keys are entered and the test arrives.
+- **Send by Pushover**: Turn on once both keys are entered and the test arrives.
 - **User key**
 - **Application token**: Make an application for Starboard on pushover.net.
 
 ### ntfy
 
-- **Send by ntfy**: Activate once the topic is filled in and the test arrives.
+- **Send by ntfy**: Turn on once the topic is filled in and the test arrives.
 - **ntfy server**
 - **Topic**: On ntfy.sh anyone who knows the topic can read it, so make it hard to guess.
 - **Access token**: Optional, for a server or topic that needs one.
 
 ### Webhooks
 
-- **Send to webhooks**: Activate once an address is filled in and the test arrives.
+- **Send to webhooks**: Turn on once an address is filled in and the test arrives.
 - **Webhook addresses**: One or more, separated by spaces. Each gets title, body and type as JSON, as the Apprise API's notify address takes them.
 
 ### People
@@ -110,7 +110,7 @@ then their email address, or `telegram` and their chat id. When their request is
 
 Signal has no official way for a server to send messages. If you already run
 [signal-cli-rest-api](https://github.com/bbernhard/signal-cli-rest-api) with a number registered, give its address
-and that number. Otherwise leave Signal deactivated.
+and that number. Otherwise leave Signal turned off.
 
 ## Updating
 

@@ -712,7 +712,7 @@ def start(data_dir, password, typed=None, hold=True, qbit_password=None, qbit_ho
 
 
 def activate(data_dir, password, ids):
-    """Activates held sites (DASH-190): those in `ids`, or every held one when `ids` is None; the result forgets them."""
+    """Turns on held sites (DASH-190): those in `ids`, or every held one when `ids` is None; the result forgets them."""
     admin = _admin(stack.reelix_url(data_dir), password)
     result = last_result(data_dir) or {}
     held = result.get("held_sites") or []

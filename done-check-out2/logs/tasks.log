@@ -1,0 +1,625 @@
+$ bash tools/a11y.sh
+PASS T1 the password field has focus when Sign in opens, and Enter signs in
+PASS T2 no slide-out opens by itself after signing in
+PASS T2 Go through them opens Still to set up with focus on the step
+PASS T2 Escape gives focus back to Go through them, or its card
+PASS T2 the first Tab stop is Skip to main content
+PASS T2 after Skip, the next Tab is inside the page's own part
+PASS T3 search says how much it found
+PASS T3 the results page's tab title names it
+PASS T3 focus after searching is at the page's start or in it
+PASS T4 a film can be reached with Tab
+PASS T4 the film page's h1 is its title, and the tab title starts with it
+PASS T5 focus stays on the switch after it saves
+PASS T5 the change is said (saved note)
+PASS T5b Underline links on Appearance can be reached with Tab
+PASS T5b focus stays on the switch after it applies
+PASS T5b the change is said
+PASS T5b links are underlined at once
+PASS T6 Edit on an app can be reached with Tab
+PASS T6 focus moves into the slide-out
+PASS T6 Escape closes it and focus returns to Edit
+PASS T7 Make a key can be reached with Tab
+PASS T7 Make a key starts in its first field
+PASS T7 the new key's Copy has focus, ready to copy
+PASS T7 the confirm box opens with focus on Cancel, the safe choice
+PASS T7 after Revoke, focus is not lost to the top of the page
+PASS T7 the revoke is said
+PASS T8 the list's count is said when it loads
+note T8 the example has no second page of Wanted
+PASS T9 End moves to the Files and history tab and opens it
+PASS T9 Delete this file opens a dialog with focus in it
+PASS T9 after Delete this file, focus is on the Files heading
+PASS T9 the deletion is said
+PASS T10 Select several moves focus to the first tick
+PASS T10 the ticked count updates in a polite live region
+PASS T10 after the action, focus is back on Select several
+PASS T11 Keep opens with focus on the chosen option
+PASS T11 moving through the options saves nothing
+PASS T11 after Save, focus is back on Keep
+PASS T11 the change is said
+note T12 the example has no Live TV channels
+PASS T13 Tab reaches Release notes in the footer
+PASS T13 Release notes says it opens a slide-out
+PASS T13 Enter opens the release notes with focus in the slide-out
+PASS T13 the slide-out shows the newest 3 releases
+PASS T13 then Read previous releases, to Settings, Updates, Releases
+PASS T13 Tab reaches Read previous releases inside the slide-out
+PASS T13 Escape closes it and gives focus back to Release notes
+PASS T14 What is new is a polite status
+PASS T14 Tab reaches Got it in What is new
+PASS T14 after Got it, focus is on the State heading
+PASS T14 What is new is gone
+PASS T15 Tab reaches a section's line
+PASS T15 Enter opens it with focus kept on the line
+PASS T15 the line says it is expanded
+PASS T15 the table has nothing to tick or press but its column sort buttons
+PASS T16 Tab reaches the first place's switch
+PASS T16 Tab reaches Test, named for its place
+PASS T16 after Test, focus stays on it
+PASS T16 the result is beside the place and said politely
+PASS T15 an arrow moves to Install and turn on without installing
+PASS T15 Tab reaches Apply this choice
+PASS T15 after Apply, focus stays in Trakt's choice
+PASS T15 the install is said
+PASS T18 Tab reaches the Plays in step choice for a file
+PASS T18 after choosing, focus stays on that choice
+PASS T18 what happened is said
+PASS T18 Tab reaches the row's link, which says it opens in a new tab
+PASS T18 Tab reaches the file picker for an upload
+PASS T19 Tab reaches Install for a recommended plug-in, named for a screen reader
+PASS T19 Install opens the warning with focus in it
+PASS T19 Escape closes it and focus goes back to Install
+PASS T20 Tab reaches How often in the schedule setting
+PASS T20 choosing Every week keeps focus on How often
+PASS T20 the saved note is said beside it
+PASS T20 Day is next in the Tab order once it shows
+PASS T32 Tab reaches Check for updates
+PASS T32 focus stays on Check for updates
+PASS T32 what it found is said in a polite live region
+PASS T32 What is new is just before it in the Tab order
+PASS T32 Enter opens What is new with focus inside it
+PASS T32 Tab reaches the first jump link
+PASS T32 Enter takes focus to that item's heading
+PASS T32 Escape closes it and focus returns to What is new
+PASS T29 Tab reaches Install all updates, which says how many
+PASS T29 Enter asks for the password, with focus in the field
+PASS T29 the list of what installs opens with focus on its main button
+PASS T29 it lists the updates in order, Starboard last
+PASS T29 the dialog's title and button count what it lists
+PASS T29 focus goes to the batch's panel heading
+PASS T29 the panel counts the same updates
+PASS T29 each change is said in the panel's polite live region
+PASS T29 the result takes focus at the end
+PASS T29 Tab from the result reaches Close
+PASS T29 Close takes the panel away and focus goes to Ready to update
+PASS T22 Tab reaches Update to 1.1.0
+PASS T22 the warning opens with focus inside it
+PASS T22 What is new and how it is kept safe come before the password
+PASS T22 Tab reaches the password in the warning
+PASS T22 the steps dialog opens with focus on its heading
+PASS T22 each finished step is said in the dialog's live region
+PASS T22 the result takes focus when it finishes
+PASS T22 Escape gives focus to the plug-in's State
+PASS T22 State says what is new, in a status region
+PASS T21 the card is named by its band's heading
+PASS T21 the chip and the time read on their own
+PASS T21 the band adds no Tab stops
+PASS T24 Tab reaches Copy issues for an AI helper, named for a screen reader
+PASS T24 Enter copies and the live region says how many
+PASS T24 focus stays on the button
+PASS T24 Tab goes on to Download as Markdown
+PASS T25 the zip field takes focus and is named
+PASS T25 Tab goes from the zip field to Check the zip
+PASS T25 with no file, the field says what to do and keeps focus
+PASS T26 Tab reaches Move them out of the settings folder, named for a screen reader
+PASS T26 Enter opens the confirmation with focus in it
+PASS T26 Escape closes it and focus goes back to the button
+PASS T37 Tab reaches Check it now, named for a screen reader
+PASS T37 after the check focus stays on the button, and the answer is in the status
+PASS T37 Tab reaches the chosen media server in the group, named
+PASS T37 the Down arrow moves to None
+PASS T37 Tab reaches Use this media server
+PASS T37 the question opens with focus in it
+PASS T37 after the change focus is on what was said
+PASS T37 Tab reaches Go back to Jellyfin
+PASS T37 after going back focus is on what was said, and Jellyfin is in use
+PASS T-PLEX Tab reaches Add an app
+PASS T-PLEX the panel opens with focus inside it
+PASS T-PLEX Tab reaches Kind of app
+PASS T-PLEX typing Plex chooses it, names the app and calls the key a Plex token
+PASS T-PLEX the token's hint says where to find it, and is tied to the field
+PASS T-PLEX Escape closes the panel and focus goes back to Add an app
+PASS T-WIZARD Tab reaches Switch with help
+PASS T-WIZARD the wizard opens with focus on the step's heading
+PASS T-WIZARD the step is said in words
+PASS T-WIZARD Tab reaches the way to switch, one stop for the group
+PASS T-WIZARD the Down arrow moves to the next way
+PASS T-WIZARD Tab reaches Next
+PASS T-WIZARD Next moves focus to the new step's heading
+PASS T-WIZARD Back returns to step 1 with focus on its heading
+PASS T-WIZARD Escape closes the wizard and focus goes back to Switch with help
+PASS T-COMPARE four charts, each with a level 3 heading and a table
+PASS T-COMPARE every bar says its figure in words
+PASS T-COMPARE Tab reaches a bar
+PASS T-ADMIN nothing is read from the server before a button is pressed
+PASS T-ADMIN Tab reaches Read the libraries
+PASS T-ADMIN focus stays on the button that read them
+PASS T-ADMIN the scan button is named for its library
+PASS T-ADMIN the scan is said in a polite status region
+PASS T-ADMIN focus stays on Scan
+PASS T-ADMIN a full refresh asks first
+PASS T-ADMIN Escape returns focus to Refresh everything
+PASS T-ADMIN cancelling asks the server nothing
+PASS T-ADMIN the coverage table has a caption, a row header and words in every chip
+PASS T-CAN the table has a caption, the three servers (Jellyfin, Emby, Plex) and a row header for each job
+PASS T-CAN every No says why
+PASS T-CAN it follows Installed side by side
+PASS T-WIZARD3 every tick on step 3 has its words
+PASS T-WIZARD3 Tab reaches a tick
+PASS T-WIZARD3 Tab reaches Carry across and switch
+PASS T-WIZARD3 progress is said in a polite status region, in words
+PASS T-WIZARD3 when it ends focus is on Close
+PASS T23 Reduce motion off on a device set to reduce: full movement
+PASS T23 Reduce motion device on a device set to reduce: still
+PASS T23 Reduce motion on on a device set to no-preference: still
+PASS T23 Reduce motion device on a device set to no-preference: full movement
+PASS T27 Tab reaches Put back for a film, named with its title
+PASS T27 what happened is said
+PASS T27 focus goes to the next row's Put back, not the top of the page
+PASS T28 Tab reaches the password for Remove the VPN
+PASS T28 and then Remove the VPN
+PASS T28 the warning opens as an alert dialog with focus on Cancel
+PASS T28 Escape cancels and gives focus back to Remove the VPN
+PASS T30 Tab reaches Google Drive in Add a place
+PASS T30 the slide-out opens at the sign-in with focus on its heading
+PASS T30 Tab reaches the two ways to sign in
+PASS T30 choosing Complete on the phone keeps focus on the choice
+PASS T30 Tab reaches Copy for the code, inside the slide-out
+PASS T30 Tab stays inside the slide-out
+PASS T30 Escape closes it part way and gives focus back to the button
+PASS T30 and says nothing was saved
+PASS T31 the first part opens with focus on its heading
+PASS T31 Move up says where the source is now, and keeps focus on the button
+PASS T31 Tab reaches Add a source
+PASS T31 the picker opens on its places, with focus on the first one
+PASS T31 Tab reaches a disk
+PASS T31 opening a disk puts focus on its list of folders
+PASS T31 Enter opens the folder and says where you are
+PASS T31 Backspace goes up, and from the top of the disk back to the places
+PASS T31 Escape closes the picker and gives focus back to Add a source
+PASS T31 Tab reaches Continue before bring-what
+PASS T31 bring-what: focus moves to the part's heading
+PASS T31 Tab reaches Continue before bring-names
+PASS T31 bring-names: focus moves to the part's heading
+PASS T31 Check names says its counts in a status
+PASS T31 Tab reaches Continue before bring-copy
+PASS T31 bring-copy: focus moves to the part's heading
+PASS T31 the last part's button says what it does
+PASS T33 Tab from the Jellyfin heading reaches Restart Jellyfin
+PASS T33 Enter asks first, with focus on Cancel
+PASS T33 while it works, focus stays on Restart Jellyfin and the progress is said
+PASS T33 when Jellyfin answers, focus is on the result and it is said
+PASS T36 Tab from Find all wanted reaches Select all before the list
+PASS T36 then each row's box, named for its row
+PASS T36 Space ticks it and the bar says 1 film selected
+PASS T36 Shift and Space takes the run of rows
+PASS T36 Select all is part ticked
+PASS T36 Tab reaches the bar's Stop following after the list
+PASS T36 Stop following asks first, in a dialog
+PASS T36 the question names the count
+PASS T36 after it, focus is on Select all
+PASS T36 the result is said
+PASS T36 the rows have left the list and the bar has closed
+PASS T36 Select all ticks every row and says how many
+PASS T36 Clear selection closes the bar, says so, and gives focus to Select all
+PASS T34 Tab from the list's heading reaches Restore, named with the backup's date
+PASS T34 Enter opens the dialog with focus on the backup's password
+PASS T34 Tab goes to the Starboard password, Restore this backup, then Cancel
+PASS T34 Escape closes it with focus back on Restore, and nothing started
+PASS T34 Enter in the last field starts it: focus is back on Restore and it is said
+PASS T34 when it ends the result is in the polite region and focus is still on the same Restore
+PASS T-REELIXSITES the line about failing sites can be reached with Tab
+PASS T-REELIXSITES it says how many and what it is about
+PASS T-REELIXSITES Enter opens Settings, Reelix
+PASS T35 after the password, focus is not lost
+PASS T35 Tab from Make a backup now reaches the first select
+PASS T35 an arrow key changes it, it saves at once, focus stays and Saved is said
+PASS T35 Tab reaches Where Reelix keeps them
+PASS T35 choosing the media folder keeps focus on the select, and what happens next is said
+PASS T35 choosing next to its settings again takes the restart notice away
+PASS T36 Tab from the heading reaches the Show filter, on Everything
+PASS T36 the arrow keys choose Failed, focus stays on it, the list holds only Failed and the count is said
+PASS T36 Tab reaches Delete history at the end of the page
+PASS T36 Enter asks first, with focus on Cancel
+PASS T36 after deleting, focus is back on Delete history and the result is said
+PASS T-WHY Why is this here? can be reached with Tab
+PASS T-WHY the panel opens with focus inside it
+PASS T-WHY it lists what was found and what was not, with a heading for each
+PASS T-WHY each app says what found it and what it matched on
+PASS T-WHY Escape gives focus back to Why is this here?
+PASS T-JSON a custom card's name can be reached with Tab
+PASS T-JSON the panel opens with focus inside it
+PASS T-JSON the fields it answers with are said in a polite status
+PASS T-JSON the count of fields is in a status region
+PASS T-JSON Space ticks a field and the On the card count changes
+PASS T-JSON focus stays on the ticked field
+PASS T-JSON removing a chosen field keeps focus inside the panel
+PASS T-JSON Escape gives focus back to the card's name
+PASS T-SIGNIN Set up a two-step code can be reached with Tab
+PASS T-SIGNIN the password dialog starts in the password field
+PASS T-SIGNIN the QR code slide-out starts in the code field
+PASS T-SIGNIN the recovery codes end on I have saved them
+PASS T-SIGNIN after it closes focus is not lost to the top of the page
+PASS T-SIGNIN the result is said
+PASS T-SIGNIN Turn off the two-step code can be reached with Tab
+PASS T-SIGNIN its dialog starts in the password field
+PASS T-SIGNIN after turning off, focus is not lost to the top of the page
+PASS T-BUSY the page reads once when it opens and says when
+PASS T-BUSY each table has a caption and row headings
+PASS T-BUSY Check now can be reached with Tab
+PASS T-BUSY while it reads, the button says it is busy
+PASS T-BUSY focus comes back to Check now
+PASS T-BUSY the result is said in a live region
+PASS T-PEOPLE the table has a caption and row headings
+PASS T-PEOPLE Manage can be reached with Tab
+PASS T-PEOPLE the slide-out takes focus
+PASS T-PEOPLE Escape gives focus back to the Manage button that opened it
+PASS T-PEOPLE Add a person can be reached with Tab
+PASS T-PEOPLE the form starts in the Name field
+PASS T-PEOPLE a missing name is said, and focus stays in the form
+PASS T-PEOPLE after adding, focus is not lost to the top of the page
+PASS T-PEOPLE the result is said
+PASS T-PEOPLE-PW Make a password can be reached with Tab
+PASS T-PEOPLE-PW the dialog starts in the account name
+PASS T-PEOPLE-PW Generate one is chosen and the own password box is hidden
+PASS T-PEOPLE-PW an arrow key chooses Use my own, shows its box, and focus stays on the choice
+PASS T-PEOPLE-PW Escape gives focus back to Make a password
+PASS T-PEOPLE-APP More for the Jellyfin account can be reached with Tab
+PASS T-PEOPLE-APP the arrow keys reach Delete in Jellyfin
+PASS T-PEOPLE-APP the dialog starts on Cancel, so Enter never deletes by mistake
+PASS T-PEOPLE-APP it asks for a plain yes and the Starboard password
+PASS T-PEOPLE-APP Escape closes it and focus returns to the menu button
+PASS T-TRANSCODE nothing has run before Test now is pressed
+PASS T-TRANSCODE Test now can be reached with Tab
+PASS T-TRANSCODE focus moves to the result's summary, not lost to the top
+PASS T-TRANSCODE the result is said in a live region
+PASS T-TRANSCODE the button now says Test again, and each way of converting has a row
+PASS T-STALLBOARD the Stallboard tick can be reached with Tab
+PASS T-STALLBOARD the tick has its note as its description
+PASS T-STALLBOARD focus stays on the tick after the page is drawn again
+PASS T-STALLBOARD Stallboard catalogue added is said in a live region
+PASS T-STALLBOARD the page stays on Catalogue sources and a Stallboard tab has appeared
+PASS T-STALLBOARD Space again clears it, with focus on the tick
+PASS T-SHADOWS Display can be reached with Tab
+PASS T-SHADOWS Remove drop shadows can be reached with Tab inside the panel
+PASS T-SHADOWS it is a switch with the note as its description
+PASS T-SHADOWS pressing Space applies it at once
+PASS T-SHADOWS focus stays on the switch
+PASS T-SHADOWS the saved note is said beside it
+PASS T-SHADOWS Space again puts the shadows back
+PASS T-SHADOWS Escape returns focus to Display
+PASS T-PLEX Enter shows the code and focus is on Cancel
+PASS T-PLEX the code is in a polite live region with a link to plex.tv/link
+PASS T-PLEX Cancel puts focus back on Sign in with Plex and says so
+PASS T-PLEX when it is approved, it is said and focus goes to the save button
+PASS T-GEN1 the in-page links are a list under a named navigation
+PASS T-GEN1 Tab from the heading reaches the first link, then the rest in order
+PASS T-GEN1 the links come in the order the sections do
+PASS T-GEN1 Enter moves to the section
+PASS T-GEN1 the page has one h1 and every section a heading
+PASS T-GEN1 the old address opens it
+PASS T-ROW1 Tab reaches the first tab of the row
+PASS T-ROW1 the tab with focus shows its name
+PASS T-ROW1 the right arrow moves to the next tab, in view, with its name
+PASS T-ROW1 End goes to the last tab, in view
+PASS T-ROW1 Home goes to the first tab
+PASS T-ROW1 a larger text size keeps focus on the same link, in view
+PASS T-ROW1 Enter opens the page, and its row shows that tab as current
+PASS T-PLU Tab reaches Check now
+PASS T-PLU after the check, focus is still on the button
+PASS T-PLU what it found is said in a polite live region
+PASS T-PLU Tab reaches a plug-in's tick
+PASS T-PLU Space ticks it and the count is said
+PASS T-PLU Update all asks for the password with focus in the field
+PASS T-PLU Escape closes it and focus returns to Update all
+PASS T-SPEED Tab reaches qBittorrent's Download limit
+PASS T-SPEED it has its label and a hint tied to it
+PASS T-SPEED leaving the box says Saved
+PASS T-SPEED focus moves on to Upload limit and is not lost
+PASS T-SPEED a wrong figure is refused in words tied to the box, with the old figure back
+PASS T-SPEED Tab reaches the alternative limits switch, a switch with its name
+PASS T-SPEED Space turns it on and says Saved
+PASS T-SYSBACKUP the panel has a heading and says whether the newest full backup was read back
+PASS T-SYSBACKUP Tab reaches Check and restore backups
+PASS T-SYSBACKUP Enter opens Backup/Logs at Full without media
+PASS T-PLACERULE Tab reaches the Copy select, named for its place
+PASS T-PLACERULE the arrow key changes it and the change is said
+PASS T-PLACERULE the choice is still there after a reload
+PASS T-KEYSETUP Enter opens the dialog and focus moves into it
+PASS T-KEYSETUP Suggest a password fills both fields, shows it once and says so
+PASS T-KEYSETUP Keep it waits until the stored box is ticked, with the reason beside the field
+PASS T-KEYSETUP Escape closes it with focus back on the button that opened it
+
+== 339 passed, 0 failed
+PASS T-SETUP Set-up guide, step 1 (Where are you?): focus is on the step's heading or its first control
+PASS T-SETUP Set-up guide, step 1 (Where are you?): 4 Tab stops, every one shows focus
+PASS T-SETUP Set-up guide, step 1 (Where are you?): Tab never jumps back up the page
+PASS T-SETUP Set-up guide, step 1 (Where are you?): Tab leaves at the end, no trap
+PASS T-SETUP Set-up guide, step 1 (Where are you?): Shift+Tab walks the same stops in reverse
+PASS T-SETUP Set-up guide, step 1 (Where are you?): axe finds nothing
+PASS T-SETUP Set-up guide, step 1 (Where are you?): every control's name holds its visible words
+PASS T-SETUP Set-up guide, step 2 (Which keyboard do you have?): focus is on the step's heading or its first control
+PASS T-SETUP Set-up guide, step 2 (Which keyboard do you have?): 5 Tab stops, every one shows focus
+PASS T-SETUP Set-up guide, step 2 (Which keyboard do you have?): Tab never jumps back up the page
+PASS T-SETUP Set-up guide, step 2 (Which keyboard do you have?): Tab leaves at the end, no trap
+PASS T-SETUP Set-up guide, step 2 (Which keyboard do you have?): Shift+Tab walks the same stops in reverse
+PASS T-SETUP Set-up guide, step 2 (Which keyboard do you have?): axe finds nothing
+PASS T-SETUP Set-up guide, step 2 (Which keyboard do you have?): every control's name holds its visible words
+PASS T-SETUP Set-up guide, step 3 (How do you want to start?): focus is on the step's heading or its first control
+PASS T-SETUP Set-up guide, step 3 (How do you want to start?): 5 Tab stops, every one shows focus
+PASS T-SETUP Set-up guide, step 3 (How do you want to start?): Tab never jumps back up the page
+PASS T-SETUP Set-up guide, step 3 (How do you want to start?): Tab leaves at the end, no trap
+PASS T-SETUP Set-up guide, step 3 (How do you want to start?): Shift+Tab walks the same stops in reverse
+PASS T-SETUP Set-up guide, step 3 (How do you want to start?): axe finds nothing
+PASS T-SETUP Set-up guide, step 3 (How do you want to start?): every control's name holds its visible words
+PASS T-SETUP Set-up guide, step 4 (Add the apps on this computer?): focus is on the step's heading or its first control
+PASS T-SETUP Set-up guide, step 4 (Add the apps on this computer?): 6 Tab stops, every one shows focus
+PASS T-SETUP Set-up guide, step 4 (Add the apps on this computer?): Tab never jumps back up the page
+PASS T-SETUP Set-up guide, step 4 (Add the apps on this computer?): Tab leaves at the end, no trap
+PASS T-SETUP Set-up guide, step 4 (Add the apps on this computer?): Shift+Tab walks the same stops in reverse
+PASS T-SETUP Set-up guide, step 4 (Add the apps on this computer?): axe finds nothing
+PASS T-SETUP Set-up guide, step 4 (Add the apps on this computer?): every control's name holds its visible words
+PASS T-SETUP Set-up guide, step 5 (What should happen to the apps you alrea): focus is on the step's heading or its first control
+PASS T-SETUP Set-up guide, step 5 (What should happen to the apps you alrea): 4 Tab stops, every one shows focus
+PASS T-SETUP Set-up guide, step 5 (What should happen to the apps you alrea): Tab never jumps back up the page
+PASS T-SETUP Set-up guide, step 5 (What should happen to the apps you alrea): Tab leaves at the end, no trap
+PASS T-SETUP Set-up guide, step 5 (What should happen to the apps you alrea): Shift+Tab walks the same stops in reverse
+PASS T-SETUP Set-up guide, step 5 (What should happen to the apps you alrea): axe finds nothing
+PASS T-SETUP Set-up guide, step 5 (What should happen to the apps you alrea): every control's name holds its visible words
+PASS T-SETUP Set-up guide, step 6 (How much should Starboard do in the back): focus is on the step's heading or its first control
+PASS T-SETUP Set-up guide, step 6 (How much should Starboard do in the back): 5 Tab stops, every one shows focus
+PASS T-SETUP Set-up guide, step 6 (How much should Starboard do in the back): Tab never jumps back up the page
+PASS T-SETUP Set-up guide, step 6 (How much should Starboard do in the back): Tab leaves at the end, no trap
+PASS T-SETUP Set-up guide, step 6 (How much should Starboard do in the back): Shift+Tab walks the same stops in reverse
+PASS T-SETUP Set-up guide, step 6 (How much should Starboard do in the back): axe finds nothing
+PASS T-SETUP Set-up guide, step 6 (How much should Starboard do in the back): every control's name holds its visible words
+PASS T-SETUP Set-up guide, step 7 (Remove drop shadows?): focus is on the step's heading or its first control
+PASS T-SETUP Set-up guide, step 7 (Remove drop shadows?): 5 Tab stops, every one shows focus
+PASS T-SETUP Set-up guide, step 7 (Remove drop shadows?): Tab never jumps back up the page
+PASS T-SETUP Set-up guide, step 7 (Remove drop shadows?): Tab leaves at the end, no trap
+PASS T-SETUP Set-up guide, step 7 (Remove drop shadows?): Shift+Tab walks the same stops in reverse
+PASS T-SETUP Set-up guide, step 7 (Remove drop shadows?): axe finds nothing
+PASS T-SETUP Set-up guide, step 7 (Remove drop shadows?): every control's name holds its visible words
+PASS T-SETUP Set-up guide, step 8 (Move your apps into Reelix and let Starb): focus is on the step's heading or its first control
+PASS T-SETUP Set-up guide, step 8 (Move your apps into Reelix and let Starb): 19 Tab stops, every one shows focus
+PASS T-SETUP Set-up guide, step 8 (Move your apps into Reelix and let Starb): Tab never jumps back up the page
+PASS T-SETUP Set-up guide, step 8 (Move your apps into Reelix and let Starb): Tab leaves at the end, no trap
+PASS T-SETUP Set-up guide, step 8 (Move your apps into Reelix and let Starb): Shift+Tab walks the same stops in reverse
+PASS T-SETUP Set-up guide, step 8 (Move your apps into Reelix and let Starb): axe finds nothing
+PASS T-SETUP Set-up guide, step 8 (Move your apps into Reelix and let Starb): every control's name holds its visible words
+PASS T-SETUP Set-up guide, step 9 (Give Starboard their API keys?): focus is on the step's heading or its first control
+PASS T-SETUP Set-up guide, step 9 (Give Starboard their API keys?): 5 Tab stops, every one shows focus
+PASS T-SETUP Set-up guide, step 9 (Give Starboard their API keys?): Tab never jumps back up the page
+PASS T-SETUP Set-up guide, step 9 (Give Starboard their API keys?): Tab leaves at the end, no trap
+PASS T-SETUP Set-up guide, step 9 (Give Starboard their API keys?): Shift+Tab walks the same stops in reverse
+PASS T-SETUP Set-up guide, step 9 (Give Starboard their API keys?): axe finds nothing
+PASS T-SETUP Set-up guide, step 9 (Give Starboard their API keys?): every control's name holds its visible words
+PASS T-SETUP Set-up guide, step 10 (Use Starboard's Jellyfin extras?): focus is on the step's heading or its first control
+PASS T-SETUP Set-up guide, step 10 (Use Starboard's Jellyfin extras?): 8 Tab stops, every one shows focus
+PASS T-SETUP Set-up guide, step 10 (Use Starboard's Jellyfin extras?): Tab never jumps back up the page
+PASS T-SETUP Set-up guide, step 10 (Use Starboard's Jellyfin extras?): Tab leaves at the end, no trap
+PASS T-SETUP Set-up guide, step 10 (Use Starboard's Jellyfin extras?): Shift+Tab walks the same stops in reverse
+PASS T-SETUP Set-up guide, step 10 (Use Starboard's Jellyfin extras?): axe finds nothing
+PASS T-SETUP Set-up guide, step 10 (Use Starboard's Jellyfin extras?): every control's name holds its visible words
+PASS T-SETUP Set-up guide, step 11 (Will other people use your apps?): focus is on the step's heading or its first control
+PASS T-SETUP Set-up guide, step 11 (Will other people use your apps?): 5 Tab stops, every one shows focus
+PASS T-SETUP Set-up guide, step 11 (Will other people use your apps?): Tab never jumps back up the page
+PASS T-SETUP Set-up guide, step 11 (Will other people use your apps?): Tab leaves at the end, no trap
+PASS T-SETUP Set-up guide, step 11 (Will other people use your apps?): Shift+Tab walks the same stops in reverse
+PASS T-SETUP Set-up guide, step 11 (Will other people use your apps?): axe finds nothing
+PASS T-SETUP Set-up guide, step 11 (Will other people use your apps?): every control's name holds its visible words
+PASS T-SETUP Set-up guide, step 12 (Only download at set hours?): focus is on the step's heading or its first control
+PASS T-SETUP Set-up guide, step 12 (Only download at set hours?): 7 Tab stops, every one shows focus
+PASS T-SETUP Set-up guide, step 12 (Only download at set hours?): Tab never jumps back up the page
+PASS T-SETUP Set-up guide, step 12 (Only download at set hours?): Tab leaves at the end, no trap
+PASS T-SETUP Set-up guide, step 12 (Only download at set hours?): Shift+Tab walks the same stops in reverse
+PASS T-SETUP Set-up guide, step 12 (Only download at set hours?): axe finds nothing
+PASS T-SETUP Set-up guide, step 12 (Only download at set hours?): every control's name holds its visible words
+PASS T-SETUP Set-up guide, step 13 (Install updates automatically?): focus is on the step's heading or its first control
+PASS T-SETUP Set-up guide, step 13 (Install updates automatically?): 9 Tab stops, every one shows focus
+PASS T-SETUP Set-up guide, step 13 (Install updates automatically?): Tab never jumps back up the page
+PASS T-SETUP Set-up guide, step 13 (Install updates automatically?): Tab leaves at the end, no trap
+PASS T-SETUP Set-up guide, step 13 (Install updates automatically?): Shift+Tab walks the same stops in reverse
+PASS T-SETUP Set-up guide, step 13 (Install updates automatically?): axe finds nothing
+PASS T-SETUP Set-up guide, step 13 (Install updates automatically?): every control's name holds its visible words
+PASS T-SETUP Set-up guide, step 14 (Get an alert when something stops?): focus is on the step's heading or its first control
+PASS T-SETUP Set-up guide, step 14 (Get an alert when something stops?): 8 Tab stops, every one shows focus
+PASS T-SETUP Set-up guide, step 14 (Get an alert when something stops?): Tab never jumps back up the page
+PASS T-SETUP Set-up guide, step 14 (Get an alert when something stops?): Tab leaves at the end, no trap
+PASS T-SETUP Set-up guide, step 14 (Get an alert when something stops?): Shift+Tab walks the same stops in reverse
+PASS T-SETUP Set-up guide, step 14 (Get an alert when something stops?): axe finds nothing
+PASS T-SETUP Set-up guide, step 14 (Get an alert when something stops?): every control's name holds its visible words
+PASS T-SETUP Set-up guide, step 15 (How should the Storage page keep up to d): focus is on the step's heading or its first control
+PASS T-SETUP Set-up guide, step 15 (How should the Storage page keep up to d): 7 Tab stops, every one shows focus
+PASS T-SETUP Set-up guide, step 15 (How should the Storage page keep up to d): Tab never jumps back up the page
+PASS T-SETUP Set-up guide, step 15 (How should the Storage page keep up to d): Tab leaves at the end, no trap
+PASS T-SETUP Set-up guide, step 15 (How should the Storage page keep up to d): Shift+Tab walks the same stops in reverse
+PASS T-SETUP Set-up guide, step 15 (How should the Storage page keep up to d): axe finds nothing
+PASS T-SETUP Set-up guide, step 15 (How should the Storage page keep up to d): every control's name holds its visible words
+PASS T-SETUP Set-up guide, step 16 (Ready to go): focus is on the step's heading or its first control
+PASS T-SETUP Set-up guide, step 16 (Ready to go): 11 Tab stops, every one shows focus
+PASS T-SETUP Set-up guide, step 16 (Ready to go): Tab never jumps back up the page
+PASS T-SETUP Set-up guide, step 16 (Ready to go): Tab leaves at the end, no trap
+PASS T-SETUP Set-up guide, step 16 (Ready to go): Shift+Tab walks the same stops in reverse
+PASS T-SETUP Set-up guide, step 16 (Ready to go): axe finds nothing
+PASS T-SETUP Set-up guide, step 16 (Ready to go): every control's name holds its visible words
+PASS T-SETUP Set-up guide: 16 steps reached by keyboard
+PASS T-BRING Bring in media, step 1 (Where is the media you already have?): focus is on the step's heading or its first control
+PASS T-BRING Bring in media, step 1 (Where is the media you already have?): 17 Tab stops, every one shows focus
+PASS T-BRING Bring in media, step 1 (Where is the media you already have?): Tab never jumps back up the page
+PASS T-BRING Bring in media, step 1 (Where is the media you already have?): Tab leaves at the end, no trap
+PASS T-BRING Bring in media, step 1 (Where is the media you already have?): Shift+Tab walks the same stops in reverse
+PASS T-BRING Bring in media, step 1 (Where is the media you already have?): axe finds nothing
+PASS T-BRING Bring in media, step 1 (Where is the media you already have?): every control's name holds its visible words
+PASS T-BRING Bring in media, step 2 (What is in each place?): focus is on the step's heading or its first control
+PASS T-BRING Bring in media, step 2 (What is in each place?): 19 Tab stops, every one shows focus
+PASS T-BRING Bring in media, step 2 (What is in each place?): Tab never jumps back up the page
+PASS T-BRING Bring in media, step 2 (What is in each place?): Tab leaves at the end, no trap
+PASS T-BRING Bring in media, step 2 (What is in each place?): Shift+Tab walks the same stops in reverse
+PASS T-BRING Bring in media, step 2 (What is in each place?): axe finds nothing
+PASS T-BRING Bring in media, step 2 (What is in each place?): every control's name holds its visible words
+PASS T-BRING Bring in media, step 3 (Check the new names): focus is on the step's heading or its first control
+PASS T-BRING Bring in media, step 3 (Check the new names): 6 Tab stops, every one shows focus
+PASS T-BRING Bring in media, step 3 (Check the new names): Tab never jumps back up the page
+PASS T-BRING Bring in media, step 3 (Check the new names): Tab leaves at the end, no trap
+PASS T-BRING Bring in media, step 3 (Check the new names): Shift+Tab walks the same stops in reverse
+PASS T-BRING Bring in media, step 3 (Check the new names): axe finds nothing
+PASS T-BRING Bring in media, step 3 (Check the new names): every control's name holds its visible words
+PASS T-BRING Bring in media, step 4 (Copy your media in): focus is on the step's heading or its first control
+PASS T-BRING Bring in media, step 4 (Copy your media in): 9 Tab stops, every one shows focus
+PASS T-BRING Bring in media, step 4 (Copy your media in): Tab never jumps back up the page
+PASS T-BRING Bring in media, step 4 (Copy your media in): Tab leaves at the end, no trap
+PASS T-BRING Bring in media, step 4 (Copy your media in): Shift+Tab walks the same stops in reverse
+PASS T-BRING Bring in media, step 4 (Copy your media in): axe finds nothing
+PASS T-BRING Bring in media, step 4 (Copy your media in): every control's name holds its visible words
+PASS T-BRING Bring in media: 4 steps reached by keyboard
+PASS T-UPGRADE Upgrade guide, step 1 (What is new in 9.9.9): focus is on the step's heading or its first control
+PASS T-UPGRADE Upgrade guide, step 1 (What is new in 9.9.9): 2 Tab stops, every one shows focus
+PASS T-UPGRADE Upgrade guide, step 1 (What is new in 9.9.9): Tab never jumps back up the page
+PASS T-UPGRADE Upgrade guide, step 1 (What is new in 9.9.9): Tab leaves at the end, no trap
+PASS T-UPGRADE Upgrade guide, step 1 (What is new in 9.9.9): Shift+Tab walks the same stops in reverse
+PASS T-UPGRADE Upgrade guide, step 1 (What is new in 9.9.9): axe finds nothing
+PASS T-UPGRADE Upgrade guide, step 1 (What is new in 9.9.9): every control's name holds its visible words
+PASS T-UPGRADE Upgrade guide, step 2 (How should Storage keep up to date?): focus is on the step's heading or its first control
+PASS T-UPGRADE Upgrade guide, step 2 (How should Storage keep up to date?): 6 Tab stops, every one shows focus
+PASS T-UPGRADE Upgrade guide, step 2 (How should Storage keep up to date?): Tab never jumps back up the page
+PASS T-UPGRADE Upgrade guide, step 2 (How should Storage keep up to date?): Tab leaves at the end, no trap
+PASS T-UPGRADE Upgrade guide, step 2 (How should Storage keep up to date?): Shift+Tab walks the same stops in reverse
+PASS T-UPGRADE Upgrade guide, step 2 (How should Storage keep up to date?): axe finds nothing
+PASS T-UPGRADE Upgrade guide, step 2 (How should Storage keep up to date?): every control's name holds its visible words
+PASS T-UPGRADE Upgrade guide, step 3 (Give Starboard their API keys?): focus is on the step's heading or its first control
+PASS T-UPGRADE Upgrade guide, step 3 (Give Starboard their API keys?): 4 Tab stops, every one shows focus
+PASS T-UPGRADE Upgrade guide, step 3 (Give Starboard their API keys?): Tab never jumps back up the page
+PASS T-UPGRADE Upgrade guide, step 3 (Give Starboard their API keys?): Tab leaves at the end, no trap
+PASS T-UPGRADE Upgrade guide, step 3 (Give Starboard their API keys?): Shift+Tab walks the same stops in reverse
+PASS T-UPGRADE Upgrade guide, step 3 (Give Starboard their API keys?): axe finds nothing
+PASS T-UPGRADE Upgrade guide, step 3 (Give Starboard their API keys?): every control's name holds its visible words
+PASS T-UPGRADE Upgrade guide, step 4 (Only download at set hours?): focus is on the step's heading or its first control
+PASS T-UPGRADE Upgrade guide, step 4 (Only download at set hours?): 6 Tab stops, every one shows focus
+PASS T-UPGRADE Upgrade guide, step 4 (Only download at set hours?): Tab never jumps back up the page
+PASS T-UPGRADE Upgrade guide, step 4 (Only download at set hours?): Tab leaves at the end, no trap
+PASS T-UPGRADE Upgrade guide, step 4 (Only download at set hours?): Shift+Tab walks the same stops in reverse
+PASS T-UPGRADE Upgrade guide, step 4 (Only download at set hours?): axe finds nothing
+PASS T-UPGRADE Upgrade guide, step 4 (Only download at set hours?): every control's name holds its visible words
+PASS T-UPGRADE Upgrade guide, step 5 (Get an alert when something stops?): focus is on the step's heading or its first control
+PASS T-UPGRADE Upgrade guide, step 5 (Get an alert when something stops?): 7 Tab stops, every one shows focus
+PASS T-UPGRADE Upgrade guide, step 5 (Get an alert when something stops?): Tab never jumps back up the page
+PASS T-UPGRADE Upgrade guide, step 5 (Get an alert when something stops?): Tab leaves at the end, no trap
+PASS T-UPGRADE Upgrade guide, step 5 (Get an alert when something stops?): Shift+Tab walks the same stops in reverse
+PASS T-UPGRADE Upgrade guide, step 5 (Get an alert when something stops?): axe finds nothing
+PASS T-UPGRADE Upgrade guide, step 5 (Get an alert when something stops?): every control's name holds its visible words
+PASS T-UPGRADE Upgrade guide, step 6 (How much should Starboard do in the back): focus is on the step's heading or its first control
+PASS T-UPGRADE Upgrade guide, step 6 (How much should Starboard do in the back): 4 Tab stops, every one shows focus
+PASS T-UPGRADE Upgrade guide, step 6 (How much should Starboard do in the back): Tab never jumps back up the page
+PASS T-UPGRADE Upgrade guide, step 6 (How much should Starboard do in the back): Tab leaves at the end, no trap
+PASS T-UPGRADE Upgrade guide, step 6 (How much should Starboard do in the back): Shift+Tab walks the same stops in reverse
+PASS T-UPGRADE Upgrade guide, step 6 (How much should Starboard do in the back): axe finds nothing
+PASS T-UPGRADE Upgrade guide, step 6 (How much should Starboard do in the back): every control's name holds its visible words
+PASS T-UPGRADE Upgrade guide, step 7 (Update finished): focus is on the step's heading or its first control
+PASS T-UPGRADE Upgrade guide, step 7 (Update finished): 2 Tab stops, every one shows focus
+PASS T-UPGRADE Upgrade guide, step 7 (Update finished): Tab never jumps back up the page
+PASS T-UPGRADE Upgrade guide, step 7 (Update finished): Tab leaves at the end, no trap
+PASS T-UPGRADE Upgrade guide, step 7 (Update finished): Shift+Tab walks the same stops in reverse
+PASS T-UPGRADE Upgrade guide, step 7 (Update finished): axe finds nothing
+PASS T-UPGRADE Upgrade guide, step 7 (Update finished): every control's name holds its visible words
+PASS T-UPGRADE Upgrade guide: 7 steps reached by keyboard
+PASS T-FIRSTPW Create your password: axe finds nothing
+PASS T-FIRSTPW Create your password: every control's name holds its visible words
+PASS T-FIRSTPW Create your password: 5 Tab stops, every one shows focus
+PASS T-FIRSTPW Create your password: Tab never jumps back up the page
+PASS T-FIRSTPW Create your password: Tab leaves at the end, no trap
+PASS T-FIRSTPW Create your password: Shift+Tab walks the same stops in reverse
+PASS T-FIRSTPW Enter with no set-up code puts focus on that field, with its error beside it
+PASS T-FIRSTPW a short password puts focus on the password field
+PASS T-RESTORE Saved copy slide-out: Enter opens it and focus goes inside
+PASS T-RESTORE Saved copy slide-out: 3 Tab stops, every one shows focus
+PASS T-RESTORE Saved copy slide-out: Tab never jumps back up the page
+PASS T-RESTORE Saved copy slide-out: Tab wraps and stays inside
+PASS T-RESTORE Saved copy slide-out: Shift+Tab walks the same stops in reverse
+PASS T-RESTORE Saved copy slide-out: axe finds nothing
+PASS T-RESTORE Saved copy slide-out: every control's name holds its visible words
+PASS T-RESTORE Saved copy slide-out: Escape closes it and focus goes back to the opener
+PASS T-RESTORE Tab reaches Restore this copy
+PASS T-RESTORE Restore this copy opens a dialog with focus inside it
+PASS T-RESTORE Restore this copy, the confirm dialog: axe finds nothing
+PASS T-RESTORE Restore this copy, the confirm dialog: every control's name holds its visible words
+PASS T-RESTORE Escape closes the dialog and focus returns to Restore this copy
+PASS T-POOL Add a disk: focus lands on the step's heading
+PASS T-POOL Add a disk, first step: axe finds nothing
+PASS T-POOL Add a disk, first step: every control's name holds its visible words
+PASS T-POOL Add a disk: Tab reaches Cancel
+PASS T-POOL Add a disk: Cancel puts focus on the page heading, Pool
+PASS T-POOL Balance the files: focus lands on the step's heading
+PASS T-POOL Balance the files, first step: axe finds nothing
+PASS T-POOL Balance the files, first step: every control's name holds its visible words
+PASS T-POOL Balance the files: Tab reaches Cancel
+PASS T-POOL Balance the files: Cancel puts focus on the page heading, Pool
+PASS T-ADD Add slide-out: Enter opens it and focus goes inside
+PASS T-ADD Add slide-out: 6 Tab stops, every one shows focus
+PASS T-ADD Add slide-out: Tab never jumps back up the page
+PASS T-ADD Add slide-out: Tab wraps and stays inside
+PASS T-ADD Add slide-out: Shift+Tab walks the same stops in reverse
+PASS T-ADD Add slide-out: axe finds nothing
+PASS T-ADD Add slide-out: every control's name holds its visible words
+PASS T-ADD Add slide-out: Escape closes it and focus goes back to the opener
+PASS T-FINDALL Find all wanted dialog: Enter opens it and focus goes inside
+PASS T-FINDALL Find all wanted dialog: 3 Tab stops, every one shows focus
+PASS T-FINDALL Find all wanted dialog: Tab never jumps back up the page
+PASS T-FINDALL Find all wanted dialog: Tab wraps and stays inside
+PASS T-FINDALL Find all wanted dialog: Shift+Tab walks the same stops in reverse
+PASS T-FINDALL Find all wanted dialog: axe finds nothing
+PASS T-FINDALL Find all wanted dialog: every control's name holds its visible words
+PASS T-FINDALL Find all wanted dialog: Escape closes it and focus goes back to the opener
+PASS T-INSTALL Install apps: axe finds nothing
+PASS T-INSTALL Install apps: every control's name holds its visible words
+PASS T-INSTALL Install apps: 30 Tab stops, every one shows focus
+PASS T-INSTALL Install apps: Tab never jumps back up the page
+PASS T-INSTALL Install apps: Tab leaves at the end, no trap
+PASS T-INSTALL Install apps: Shift+Tab walks the same stops in reverse
+PASS T-INSTALL Take over my apps with no password puts focus on the password field
+PASS T-WSTEPS Switch media server, step 1: axe finds nothing
+PASS T-WSTEPS Switch media server, step 1: every control's name holds its visible words
+PASS T-WSTEPS Switch media server, step 1: 4 Tab stops, every one shows focus
+PASS T-WSTEPS Switch media server, step 1: Tab never jumps back up the page
+PASS T-WSTEPS Switch media server, step 1: Tab wraps and stays inside
+PASS T-WSTEPS Switch media server, step 1: Shift+Tab walks the same stops in reverse
+PASS T-WSTEPS Switch media server, step 2: axe finds nothing
+PASS T-WSTEPS Switch media server, step 2: every control's name holds its visible words
+PASS T-WSTEPS Switch media server, step 2: 5 Tab stops, every one shows focus
+PASS T-WSTEPS Switch media server, step 2: Tab never jumps back up the page
+PASS T-WSTEPS Switch media server, step 2: Tab wraps and stays inside
+PASS T-WSTEPS Switch media server, step 2: Shift+Tab walks the same stops in reverse
+PASS T-WSTEPS Connect a cloud service, sign-in step: axe finds nothing
+PASS T-WSTEPS Connect a cloud service, sign-in step: every control's name holds its visible words
+PASS T-WSTEPS Connect a cloud service, sign-in step: 4 Tab stops, every one shows focus
+PASS T-WSTEPS Connect a cloud service, sign-in step: Tab never jumps back up the page
+PASS T-WSTEPS Connect a cloud service, sign-in step: Tab wraps and stays inside
+PASS T-WSTEPS Connect a cloud service, sign-in step: Shift+Tab walks the same stops in reverse
+PASS T-CHOOSE Choose a download slide-out: Enter opens it and focus goes inside
+PASS T-CHOOSE Choose a download slide-out: 6 Tab stops, every one shows focus
+PASS T-CHOOSE Choose a download slide-out: Tab never jumps back up the page
+PASS T-CHOOSE Choose a download slide-out: Tab wraps and stays inside
+PASS T-CHOOSE Choose a download slide-out: Shift+Tab walks the same stops in reverse
+PASS T-CHOOSE Choose a download slide-out: axe finds nothing
+PASS T-CHOOSE Choose a download slide-out: every control's name holds its visible words
+PASS T-CHOOSE Choose a download slide-out: Escape closes it and focus goes back to the opener
+PASS T-LOGIN2 after the password, focus goes to the two-step code field
+PASS T-LOGIN2 and it is said in the announcer
+PASS T-LOGIN2 Sign in, two-step code: axe finds nothing
+PASS T-LOGIN2 Sign in, two-step code: every control's name holds its visible words
+PASS T-LOGIN2 Enter with no code keeps focus on the code field
+
+== 277 passed, 0 failed
+
+[exit 0]

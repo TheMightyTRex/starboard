@@ -40,7 +40,7 @@ Your Starboard's plug-in API is outside what this version of Kavita works with, 
 ## Open its web page
 
 1. Go to **Settings**, then **Plug-ins**, then **Kavita**.
-2. Check its state is **Active**. If not, select **Activate**.
+2. Check its state is **Active**. If not, select **Turn on**.
 3. In **Its web page**, select **Open Kavita**. Use the address shown there: Starboard chooses the port, 5000 when it is free, so it may be a different one.
 4. Open it from a device on your home network. The page is not on the internet.
 

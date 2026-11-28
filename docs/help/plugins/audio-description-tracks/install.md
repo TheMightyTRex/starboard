@@ -38,7 +38,7 @@ These figures are the most it may use.
 2. Under **Accessibility**, find **Audio description tracks** and select **Install…**.
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Audio description tracks**. To stop, select **Cancel**: nothing is installed.
-5. Audio description tracks' own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it and makes the audio-description folder in your media folder. Its **State**, in **General**, says **Active**.
+5. Audio description tracks' own tab opens under **Settings**, then **Plug-ins**, and Starboard turns it on and makes the audio-description folder in your media folder. Its **State**, in **General**, says **Active**.
 6. Put a description track in the audio-description folder, named as the film and its year, such as `Dune (2021).mp3`. Or open **Description tracks to add** on its tab and select **Upload a description track**.
 7. Select **Check the folder now**.
 8. When the file shows **Added**, play the film in Jellyfin and choose the **English (Audio Description)** sound track.
@@ -65,7 +65,7 @@ Or run its installer, `install.py` in its folder, on any computer with Python, a
 
 Its containers stop and go, and its API key stops working. Nothing is deleted. Files it already changed in your media folder stay as they are.
 
-To stop it for a while instead, select **Deactivate** on its tab: its settings and folder are kept.
+To stop it for a while instead, select **Turn off** on its tab: its settings and folder are kept.
 
 ## Find out more
 

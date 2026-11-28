@@ -122,6 +122,6 @@ function startAlerts() {
     section("al-watch", "Watching", "Uptime history on each app's details needs this active.", watching),
     section("al-where", "Where alerts go", "ntfy, Gotify or a webhook. Starboard keeps the token on the server.", channelForm),
     section("al-what", "What to alert on", "Each alert is sent once, and again only after it has cleared.", alertRows),
-    section("al-host", "The server itself", "Each is deactivated until you activate it. While none is active, nothing runs. It works without Watch in the background, and sends where alerts go.", hostRows),
+    section("al-host", "The server itself", "Each is off until you turn it on. While none is active, nothing runs. It works without Watch in the background, and sends where alerts go.", hostRows),
     section("al-week", "Weekly summary", null, weekly));
 }

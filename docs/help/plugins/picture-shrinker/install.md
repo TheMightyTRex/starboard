@@ -38,9 +38,9 @@ Measured:
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Picture shrinker**. To stop, select **Cancel**: nothing is installed.
 5. Picture shrinker's own tab opens under **Settings**, then **Plug-ins**. In **Original pictures**, choose **Keep a backup copy of each original** or **Shrink without a backup**. Until you choose, it says it needs setting up.
-6. Select **Activate** in **General**, **State**. Its state changes to **Active**.
+6. Select **Turn on** in **General**, **State**. Its state changes to **Active**.
 7. Check **When to shrink**. It runs every Sunday at 03:30 unless you change it. Read [Settings](../picture-shrinker/settings.md).
-8. If you want new pictures shrunk each night, activate **Shrink new pictures in quiet hours**.
+8. If you want new pictures shrunk each night, turn on **Shrink new pictures in quiet hours**.
 9. Add its card to your dashboard. Read [Dashboard card](../picture-shrinker/dashboard-card.md).
 
 To shrink straight away, select **Shrink now** on its tab.
@@ -64,7 +64,7 @@ Or run its installer, `install.py` in its folder, on any computer with Python, a
 
 Its containers stop and go, and its API key stops working. Nothing is deleted. Pictures it already shrank stay as they are.
 
-To stop it for a while instead, select **Deactivate** on its tab: its settings and folder are kept.
+To stop it for a while instead, select **Turn off** on its tab: its settings and folder are kept.
 
 ## Find out more
 

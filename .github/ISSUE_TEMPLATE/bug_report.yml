@@ -62,7 +62,7 @@ body:
   attributes:
     label: Details from Starboard
     render: text
-    description: Go to System, then Logs, activate detailed logging, repeat the problem, then select Copy the details and
+    description: Go to System, then Logs, turn on detailed logging, repeat the problem, then select Copy the details and
       paste them here. Starboard removes passwords, API keys, addresses and names from the details it copies. Read them before
       you post all the same.
 - type: textarea

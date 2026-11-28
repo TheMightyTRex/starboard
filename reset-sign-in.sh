@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Locked out by the two-step code or single sign-on? Run this on the server, in the Starboard folder:  ./reset-sign-in.sh
 #
-# It deactivates the two-step code and single sign-on, allows the password again, signs everyone out and restarts
+# It turns off the two-step code and single sign-on, allows the password again, signs everyone out and restarts
 # Starboard. Your password, apps and settings stay as they are; so do the provider details, which stay off until you
 # turn single sign-on on again. Works for the installer (Docker or --native). With the ready-made image, see
 # docs/help (Get back in when sign-in is locked).
@@ -20,5 +20,5 @@ for _ in $(seq 1 30); do
   sleep 1
 done
 [ ! -f data/reset-sign-in ] || { echo "Stopped: Starboard did not restart. Its log says why: docker compose logs starboard (or, for --native, journalctl --user -u starboard)" >&2; exit 1; }
-echo "The two-step code and single sign-on are deactivated, the password works again and everyone is signed out."
+echo "The two-step code and single sign-on are off, the password works again and everyone is signed out."
 echo "Open Starboard and sign in with your password."

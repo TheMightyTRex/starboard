@@ -37,7 +37,7 @@ JELLYFIN_KEEP = 6 * 3600
 def _check_starboard(app):
     if not getattr(app, "repo", "") or not app.config.data.get("update_check", True):
         return {"id": "starboard", "name": "Starboard", "ok": False,
-                "said": "Not asked: Check GitHub for new releases is deactivated below, in Update Starboard on the server instead"}
+                "said": "Not asked: Check GitHub for new releases is off below, in Update Starboard on the server instead"}
     lock = getattr(app, "_latest_lock", None)
     if lock is not None:
         with lock:

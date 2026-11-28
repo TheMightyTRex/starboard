@@ -40,7 +40,7 @@ shows the same list at the top. It works like **System**, **Apps**, **Updates**.
    not answer goes back by itself, and the rest carry on. The panel says what each plug-in is doing, and the page reads
    out each change.
 
-On **Settings**, **Updates**, **Plug-ins**, **Update by themselves** activates automatic updates for plug-ins, and
+On **Settings**, **Updates**, **Plug-ins**, **Update by themselves** turns on automatic updates for plug-ins, and
 **History** lists the last updates, each with **Roll back to** when an earlier version is kept.
 
 ## Update a plug-in
@@ -112,7 +112,7 @@ select **What is new**. Read [Add a plug-in from a zip file](add-a-plugin-from-a
 - **Your settings:** when a setting is renamed or removed in the new version, its maker says how it moves, and the
   slide-out lists it before you update. A setting you never changed may take the new version's default.
 - **Only one earlier version is kept.** Updating again replaces it with the version you are on now.
-- **Inactive plug-ins** are updated straight away, with no steps: the new version starts when you activate it.
+- **Inactive plug-ins** are updated straight away, with no steps: the new version starts when you turn it on.
 - **Plug-ins built into Starboard,** such as Live TV, update with Starboard. Read [Update Starboard](update-starboard.md).
 - One update runs at a time, for Starboard, its apps and its plug-ins. To install every waiting update in one go, read
   [Install all updates at once](update-starboard.md#install-all-updates-at-once).
@@ -129,7 +129,7 @@ select **What is new**. Read [Add a plug-in from a zip file](add-a-plugin-from-a
 
 ## If a plug-in says Needs an update
 
-This Starboard cannot run that plug-in as it is, so Starboard has stopped it. The plug-in's page says why. Its settings and data are kept. Select **Check for an update**. If a newer version fits, update it and select **Activate**. If none fits yet, the plug-in stays stopped until its maker updates it. [Our promise to plug-in developers](../developers/compatibility-promise.md) explains when this can happen.
+This Starboard cannot run that plug-in as it is, so Starboard has stopped it. The plug-in's page says why. Its settings and data are kept. Select **Check for an update**. If a newer version fits, update it and select **Turn on**. If none fits yet, the plug-in stays stopped until its maker updates it. [Our promise to plug-in developers](../developers/compatibility-promise.md) explains when this can happen.
 
 ## Find out more
 

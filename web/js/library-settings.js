@@ -57,7 +57,7 @@ function discoverAreaSection(tab, name) {
 }
 
 // The sections are watched once the topic tabs have hidden all but one (settings.js draws them after the session
-// loads), so only the shown area asks Reelix. With topic tabs deactivated, each asks as it is scrolled to.
+// loads), so only the shown area asks Reelix. With topic tabs turned off, each asks as it is scrolled to.
 let discoverTopics = null;
 function discoverTopicsReady() {
   if (discoverTopics) return discoverTopics;

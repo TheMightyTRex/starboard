@@ -407,7 +407,7 @@ def status_for_pages(data):
 
 def in_use(data, pid):
     """True when the plug-in `pid` is the media server in use (the active one). A media server plug-in that is in use
-    cannot be deactivated or removed: choose another one, or none, first (Settings, Apps, the media server tab)."""
+    cannot be turned off or removed: choose another one, or none, first (Settings, Apps, the media server tab)."""
     return bool(pid) and active_id(data) == pid
 
 

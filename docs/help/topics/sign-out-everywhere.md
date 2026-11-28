@@ -9,7 +9,7 @@ after you lose a phone, or when you signed in on someone else's computer.
 ## Steps
 
 1. Go to **Settings**, then **Security**.
-2. Activate **More settings**, if it is not active already.
+2. Turn on **More settings**, if it is not active already.
 3. Under **Sessions**, find **Sign out**, then select **Sign out everywhere**.
 
    ![Settings, Security, Sessions, with Sign out everywhere (step 3) outlined, with example data](../images/sign-out-everywhere-1-button.png)

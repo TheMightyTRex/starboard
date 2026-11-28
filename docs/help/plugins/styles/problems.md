@@ -14,19 +14,19 @@ q2: What happens?
   No Style in Display -> 3
   The style changes nothing -> 4
   Another device has no style -> 5
-1: Activate it #activate-it
+1: Turn it on #turn-it-on
 2: Update it or update Starboard #update-it-or-update-starboard
 3: Open Display again #open-display-again
 4: Check High contrast #check-high-contrast
 5: Choose it in each browser #choose-it-in-each-browser
 ```
 
-## Activate it
+## Turn it on
 
 Its styles are offered in **Display** only while Styles is active.
 
 1. Go to **Settings**, then **Plug-ins**, then **Styles**.
-2. Select **Activate**. Its state changes to **Active**.
+2. Select **Turn on**. Its state changes to **Active**.
 3. Select **Display** in the header, and choose a style under **Style**.
 
 ## Update it or update Starboard
@@ -49,7 +49,7 @@ Your Starboard's plug-in API is outside what this version of Styles works with, 
 **High contrast** in **Display** always wins over a style, and so do text size, wider spacing, underlined links and reduced motion.
 
 1. Select **Display** in the header.
-2. Deactivate **High contrast** to show the style's own colours.
+2. Turn off **High contrast** to show the style's own colours.
 3. Select **Done**.
 
 If you need high contrast, keep it: it is made for that. **Large and clear** is the style made for reading with low vision.

@@ -54,7 +54,7 @@ For your own Jackett or Prowlarr, or a Usenet search site you have an account wi
 
 - **Search through the VPN** sends only Reelix's searches through Gluetun. Your internet provider can tell only that you use the
   VPN, which matters because some providers block these sites. If the VPN is down, searches wait rather than go
-  out without it. Starboard activates it when it installs Reelix with the VPN.
+  out without it. Starboard turns it on when it installs Reelix with the VPN.
 - **Addresses on your network** lets Reelix reach a site at home, such as your own Jackett. Searching through
   the VPN needs it too. Otherwise, leave it inactive.
 - The line on the **Reelix** card is read from Reelix's own health checks each time the card refreshes, and nothing
@@ -69,9 +69,9 @@ For your own Jackett or Prowlarr, or a Usenet search site you have an account wi
 
 ## If it does not work
 
-- **The test did not pass:** the site may be down, or blocked by your internet provider. Activate **Search
+- **The test did not pass:** the site may be down, or blocked by your internet provider. Turn on **Search
   through the VPN**, then test again.
-- **Reelix does not reach addresses on your own network:** activate **Addresses on your network**, then add
+- **Reelix does not reach addresses on your own network:** turn on **Addresses on your network**, then add
   the site again.
 - **Needs an account:** add the user name and password, or the API key, from your account on that site.
 

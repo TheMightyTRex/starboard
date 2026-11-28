@@ -54,11 +54,11 @@ async function startSignin() {
     } else {
       const again = el("button", { type: "button", class: "btn" }, icon("refresh-cw"), "Make new recovery codes");
       again.addEventListener("click", () => newCodes(again));
-      const off = el("button", { type: "button", class: "btn btn--danger" }, icon("x"), "Deactivate the two-step code");
+      const off = el("button", { type: "button", class: "btn btn--danger" }, icon("x"), "Turn off the two-step code");
       off.addEventListener("click", async () => {
-        const r = await askPassword({ title: "Deactivate the two-step code?", message: "Signing in then needs only the password. The recovery codes stop working.", confirm: "Deactivate", danger: true });
+        const r = await askPassword({ title: "Turn off the two-step code?", message: "Signing in then needs only the password. The recovery codes stop working.", confirm: "Turn off", danger: true });
         if (!r) return;
-        try { st = { ...st, ...(await api("/api/security/totp/off", { method: "POST", body: { password: r.password } })) }; draw(); showSaved("totp-saved", "Two-step code deactivated"); }
+        try { st = { ...st, ...(await api("/api/security/totp/off", { method: "POST", body: { password: r.password } })) }; draw(); showSaved("totp-saved", "Two-step code turned off"); }
         catch (e) { problem(e.message, off); }
       });
       body.push(el("p", { class: "small", id: "recovery-left", text: `${st.totp.recovery_left} of 8 recovery codes left. Each works once.` }),
@@ -81,7 +81,7 @@ async function startSignin() {
           el("p", { text: "Scan the QR code with an authenticator app (any that makes time-based codes). Cannot scan? Enter this key in the app instead:" }),
           el("div", { class: "command" }, el("code", { class: "code-block", id: "totp-key", text: made.secret }), copyButton(made.secret.replace(/ /g, ""), "the key")))),
       field("Code from the app", code, { hint: "6 digits. It changes every 30 seconds." }));
-    const go = el("button", { type: "submit", class: "btn btn--primary", form: "totp-form", text: "Check the code and activate" });
+    const go = el("button", { type: "submit", class: "btn btn--primary", form: "totp-form", text: "Check the code and turn on" });
     const cancel = el("button", { type: "button", class: "btn", text: "Cancel" });
     const panel = sidePanel({ title: "Set up a two-step code", opener, body: [form], foot: [go, cancel] });
     setTimeout(() => code.focus(), 0);
@@ -104,7 +104,7 @@ async function startSignin() {
     const text = codes.join("\n");
     const list = el("ul", { class: "recovery-codes", "aria-label": "Recovery codes" }, codes.map((c) => el("li", {}, el("code", { text: c }))));
     const done = el("button", { type: "button", class: "btn btn--primary", text: "I have saved them" });
-    done.addEventListener("click", () => { panel.close(); showSaved("totp-saved", "Two-step code activated"); });
+    done.addEventListener("click", () => { panel.close(); showSaved("totp-saved", "Two-step code turned on"); });
     panel.setTitle("Save your recovery codes");
     panel.body.replaceChildren(
       notice("warning", "Save these now", "Starboard shows them only this once. Each works once, if you lose your phone. Keep them somewhere safe, such as a password manager."),
@@ -179,8 +179,8 @@ async function startSignin() {
         const want = allow.checked;
         if (want && !o.tested) { allow.checked = false; problem("Run the test sign-in first. It must work before you turn this on", allow); return; }
         allow.checked = !want;
-        const r = await askPassword({ title: want ? "Allow single sign-on?" : "Deactivate single sign-on?", confirm: want ? "Allow" : "Deactivate", danger: !want,
-          message: want ? "The sign-in page then offers a button for your provider, beside the password." : "The button goes. The password works again, even if you had deactivated it." });
+        const r = await askPassword({ title: want ? "Allow single sign-on?" : "Turn off single sign-on?", confirm: want ? "Allow" : "Turn off", danger: !want,
+          message: want ? "The sign-in page then offers a button for your provider, beside the password." : "The button goes. The password works again, even if you had turned it off." });
         if (!r) { allow.focus(); return; }
         try { st = { ...st, ...(await api("/api/security/oidc/enable", { method: "POST", body: { password: r.password, enabled: want } })) }; draw(); showSaved("sso-saved", want ? "Single sign-on is on" : "Single sign-on is off"); }
         catch (err) { problem(err.message, allow); }
@@ -207,23 +207,23 @@ async function startSignin() {
     sw.addEventListener("change", async () => {
       const want = sw.checked;
       sw.checked = !want;
-      const r = await askPassword({ title: want ? "Allow the password again?" : "Deactivate password sign-in?", confirm: want ? "Allow the password" : "Deactivate password sign-in", danger: !want,
+      const r = await askPassword({ title: want ? "Allow the password again?" : "Turn off password sign-in?", confirm: want ? "Allow the password" : "Turn off password sign-in", danger: !want,
         message: want ? "The sign-in page shows the password form again." : "Only single sign-on opens Starboard after this. If it ever stops working, run ./reset-sign-in.sh on the server." });
       if (!r) { sw.focus(); return; }
       try { st = { ...st, ...(await api("/api/security/password-login", { method: "POST", body: { password: r.password, allowed: want } })) }; draw(); showSaved("pw-saved", want ? "Password sign-in is on" : "Password sign-in is off"); }
       catch (err) { problem(err.message, sw); }
     });
     const can = st.oidc.enabled && st.oidc.tested;
-    return section("sc-pwoff", "Password sign-in", "The password works unless you deactivate it on purpose. You can only do that once single sign-on is on and its test worked.",
+    return section("sc-pwoff", "Password sign-in", "The password works unless you turn it off on purpose. You can only do that once single sign-on is on and its test worked.",
       el("ul", { class: "settings-rows" }, settingRow("Allow signing in with the password",
-        el("span", { id: "pw-on-h", text: can || !on ? "Single sign-on is set up, so you may turn this off." : "Activate and test single sign-on first." }), el("label", { class: "switch" }, sw), "pw-on-l")),
+        el("span", { id: "pw-on-h", text: can || !on ? "Single sign-on is set up, so you may turn this off." : "Turn on and test single sign-on first." }), el("label", { class: "switch" }, sw), "pw-on-l")),
       el("div", { class: "actions" }, savedNote("pw-saved")));
   }
 
   // The way back in ---------------------------------------------------------------------------------------------
   function reachSection() {
     const cmd = "./reset-sign-in.sh";
-    return section("sc-reach", "If you are locked out", "On the server, in the Starboard folder, one command deactivates the two-step code and single sign-on and allows the password again. It signs everyone out, and keeps your password, apps and settings.",
+    return section("sc-reach", "If you are locked out", "On the server, in the Starboard folder, one command turns off the two-step code and single sign-on and allows the password again. It signs everyone out, and keeps your password, apps and settings.",
       el("div", { class: "command" }, el("code", { class: "code-block", text: cmd }), copyButton(cmd, "the command")));
   }
 

@@ -5,7 +5,7 @@
 
 A two-step code adds a second check to signing in. After your password, Starboard asks for a 6 digit code from an
 authenticator app on your phone. Someone who finds out your password still cannot sign in without your phone. It is
-off until you set it up, and you can deactivate it again whenever you like.
+off until you set it up, and you can turn it off again whenever you like.
 
 ## Before you begin
 
@@ -26,7 +26,7 @@ off until you set it up, and you can deactivate it again whenever you like.
 4. In **Your Starboard password**, enter the password, then select **Continue**.
 5. In your authenticator app, add an account and scan the QR code. If you cannot scan it, enter the key shown beside
    it.
-6. In **Code from the app**, enter the 6 digit code the app now shows, then select **Check the code and activate**.
+6. In **Code from the app**, enter the 6 digit code the app now shows, then select **Check the code and turn on**.
 
    ![The set-up panel, with the QR code (step 5) and Code from the app (step 6) outlined, with example data](../images/set-up-a-two-step-code-2-scan.png)
 
@@ -47,13 +47,13 @@ The section now says **On**, and shows how many recovery codes are left.
 Starboard limits wrong codes: 5 wrong codes from one address in 15 minutes, and 10 from anywhere. A code that has
 been used is never accepted again. Each use, and each refusal, is written to the audit log.
 
-## Make new recovery codes, or deactivate it
+## Make new recovery codes, or turn it off
 
-![Two-step code activated, with Make new recovery codes and Deactivate the two-step code outlined, with example data](../images/set-up-a-two-step-code-4-on.png)
+![Two-step code turned on, with Make new recovery codes and Turn off the two-step code outlined, with example data](../images/set-up-a-two-step-code-4-on.png)
 
 - Select **Make new recovery codes** when you have used several. Starboard asks for your password and a code from
   the app, and the old codes stop working.
-- Select **Deactivate the two-step code** to go back to the password alone. Starboard asks for your password.
+- Select **Turn off the two-step code** to go back to the password alone. Starboard asks for your password.
 
 ## Things to note
 

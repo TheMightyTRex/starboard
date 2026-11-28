@@ -33,7 +33,7 @@ async function renderAccess() {
     if (a.change === "installer") {
       const command = `./install.sh ${a.on ? a.off_flag : a.on_flag}`;
       return row(a, el("div", { class: "access-change" },
-        el("span", { class: "small", text: a.on ? "To deactivate it, run on the server:" : "To activate it, run on the server:" }),
+        el("span", { class: "small", text: a.on ? "To turn it off, run on the server:" : "To turn it on, run on the server:" }),
         el("div", { class: "command" }, el("code", { class: "code-block", text: command }), copyButton(command, `the command for ${a.title}`))), true);
     }
     if (a.change === "readme") {
@@ -355,7 +355,7 @@ async function stepContent(id, root, step = {}) {
     save = async () => { await saveGeneral({ download_hours: { enabled: on.checked, start: Number(start.value), end: Number(end.value) } }); return true; };
   } else if (id === "updates") {
     // DASH-417, DASH-422: which parts may update by themselves: Reelix only when it is being installed, Jellyfin's
-    // plug-ins only with Jellyfin. Each deactivated unless chosen; the same words and order as the terminal set-up
+    // plug-ins only with Jellyfin. Each turned off unless chosen; the same words and order as the terminal set-up
     // (web/setup-answers.json, terminal_setup.update_parts).
     const w = (await setupWords()).updates;
     const box = (key, label, hint) => {
@@ -693,8 +693,8 @@ async function startGuide() {
         ["Apps", `${apps} ${apps === 1 ? "app" : "apps"}${keyless.length ? `; still without a key: ${keyless.join(", ")}` : ""}`, "/settings.html"],
         ["Jellyfin extras", ["livetv", "import_keep", "defaults", "audio_description", "single_sign_on"].filter((k) => config.extras[k]).map((k) => ({ livetv: "Live TV", import_keep: "history import", defaults: "user defaults", audio_description: "audio description (to install in Settings, Plug-ins)", single_sign_on: "single sign-on (to install in Settings, Plug-ins)" })[k]).join(", ") || "None", "/settings-jellyfin.html"],
         [uw.summary, updatesSummary(uw, config), "/settings-updates.html"],
-        ["Download hours", config.download_hours.enabled ? `${String(config.download_hours.start).padStart(2, "0")}:00 to ${String(config.download_hours.end).padStart(2, "0")}:00` : "Deactivated", "/settings-downloads-hours.html"],
-        ["Alerts", config.watch.enabled ? `Activated, to ${config.watch.channel.kind || "nowhere yet"}` : "Deactivated", "/settings-general-alerts.html"],
+        ["Download hours", config.download_hours.enabled ? `${String(config.download_hours.start).padStart(2, "0")}:00 to ${String(config.download_hours.end).padStart(2, "0")}:00` : "Off", "/settings-downloads-hours.html"],
+        ["Alerts", config.watch.enabled ? `On, to ${config.watch.channel.kind || "nowhere yet"}` : "Off", "/settings-general-alerts.html"],
         ["How much it does", config.presets[config.performance.preset] || "Custom", "/settings-general-performance.html"],
         ...(config.shadows_answered ? [[(await setupWords()).shadows.summary, config.shadows_off ? "Removed" : "Kept", "/settings-general-appearance.html"]] : []),
       ];
@@ -803,7 +803,7 @@ async function startAbout() {
     if (latest && isNewer(latest, v.current)) box = notice("info", `Version ${latest} is out`, `You have ${v.current}. Read what changed, then choose Update now, or run the update command on the server.`, notes);
     else if (latest) box = notice("success", "You have the newest version", `Version ${v.current}.`);
     else if (!repo) box = notice("info", `You have version ${v.current}`, "Starboard cannot check for new versions, because STARBOARD_REPO is not set on the server.");
-    else if (!config.update_check) box = notice("info", `You have version ${v.current}`, "Checking for new versions is inactive. Activate Check GitHub for new releases to find out when one is out.");
+    else if (!config.update_check) box = notice("info", `You have version ${v.current}`, "Checking for new versions is inactive. Turn on Check GitHub for new releases to find out when one is out.");
     else box = notice("info", `You have version ${v.current}`, "GitHub did not answer, so Starboard does not know yet whether a newer version is out.");
     box.classList.add("notice--page");
     top.replaceChildren(box);
@@ -820,7 +820,7 @@ async function startAbout() {
       showVersion();
     } catch (e) { check.checked = !check.checked; problem(e.message); }
   });
-  $("#update-check-row").replaceChildren(settingRow("Check GitHub for new releases", el("span", { id: "check-h", text: "Activated: Starboard checks every 6 hours at most and shows a notice at the top." }), el("label", { class: "switch" }, check), "check-l"));
+  $("#update-check-row").replaceChildren(settingRow("Check GitHub for new releases", el("span", { id: "check-h", text: "Active: Starboard checks every 6 hours at most and shows a notice at the top." }), el("label", { class: "switch" }, check), "check-l"));
   $("#update-command").append(copyButton("./update.sh", "the update command"));
   await startSelfUpdate();
   startUpdatesPlace();
@@ -830,7 +830,7 @@ async function startAbout() {
 }
 
 // The Updates answer in the set-up's summary (DASH-422), as terminal_setup.updates_summary says it: the parts
-// chosen, such as "Starboard, Reelix and plug-ins", or Deactivated.
+// chosen, such as "Starboard, Reelix and plug-ins", or Off.
 function updatesSummary(w, cfg) {
   const names = w.parts.filter((p) => cfg[p.key]).map((p) => p.short);
   if (!names.length) return w.summary_none;
@@ -877,7 +877,7 @@ async function startUpdatesPlace() {
     const steps = t.kind === "reelix"
       ? ["A copy of Reelix's settings is made first.", `Reelix ${t.latest || "newest"} is installed.`, "If it does not answer healthy within 5 minutes, it goes back to the version before by itself."]
       : t.kind === "jellyfin-plugins"
-        ? ["A copy of Jellyfin's plug-ins folder is made first.", "Jellyfin installs the new versions of its plug-ins.", "Jellyfin restarts when nobody is watching, and each plug-in must start.", "Jellyfin keeps no older version, so a plug-in that does not start is deactivated by Jellyfin and you are told."]
+        ? ["A copy of Jellyfin's plug-ins folder is made first.", "Jellyfin installs the new versions of its plug-ins.", "Jellyfin restarts when nobody is watching, and each plug-in must start.", "Jellyfin keeps no older version, so a plug-in that does not start is turned off by Jellyfin and you are told."]
         : [`A copy of ${t.name}'s settings is made first.`, `${t.name} ${t.latest || "newest"} is installed.`, "If it does not run within 2 minutes, it goes back to the version before by itself."];
     try {
       const r = await updateWithPassword({ title: `Update ${t.name}`, steps, confirm: "Update now",
@@ -1019,7 +1019,7 @@ async function startUpdatesPlace() {
         try { await saveGeneral({ [p.key]: input.checked }, true); } catch (e) { input.checked = !input.checked; problem(e.message); }
       });
       const last = p.last ? `Last checked ${timeAgo(p.last.at * 1000)}: ${p.last.runs.length ? p.last.runs.map((r) => `${r.name} ${(RUN_WORDS[r.state] || RUN_WORDS.failed)[0].toLowerCase()}`).join(", ") : "nothing to update"}.` : "";
-      const hint = `Deactivated: it waits for you, and you are told when an update is ready.${p.id === "jellyfin_plugins" && jelly && !jelly.connected ? " Needs Jellyfin with its API key in Manage apps." : ""}${last ? ` ${last}` : ""}`;
+      const hint = `Inactive: it waits for you, and you are told when an update is ready.${p.id === "jellyfin_plugins" && jelly && !jelly.connected ? " Needs Jellyfin with its API key in Manage apps." : ""}${last ? ` ${last}` : ""}`;
       return el("li", { class: "setting" }, switchRow(`${p.name}: update by itself`, hint, input),
         el("dl", { class: "facts small" }, el("dt", { text: "Copy first" }), el("dd", { text: p.safety.copy }),
           el("dt", { text: "Checked by" }), el("dd", { text: p.safety.check }), el("dt", { text: "Way back" }), el("dd", { text: p.safety.back })));
@@ -1539,7 +1539,7 @@ function takeoverSection() {
             { hint: `${a.app} hides it and Starboard could not read it from ${a.app}'s own settings. Copy it from the site's own pages, usually under your account or API.` });
         });
         return el("fieldset", { class: "form-stack" }, el("legend", { text: `Keys to type for ${a.app}` }), ...rows,
-          el("p", { class: "small muted", text: "Choose Show what moves again to check them. If you leave one empty, that site moves without its key and stays deactivated until you add it in Settings, Reelix, Sites to search." }));
+          el("p", { class: "small muted", text: "Choose Show what moves again to check them. If you leave one empty, that site moves without its key and stays off until you add it in Settings, Reelix, Sites to search." }));
       };
       const body = () => ({ password: p2.value, qbittorrent_password: qbit.value, hold: hold.checked, secrets: typed() });
       preview.addEventListener("click", async () => {
@@ -1591,14 +1591,14 @@ function takeoverSection() {
             `qBittorrent lets in addresses from ${q.allow_list.join(", ")} without one (its allow list in Options, Web UI). Reelix reaches qBittorrent by its name, from an address that may not be on that list, so give the password in this section.`) : null,
           field("qBittorrent's password (optional)", qbit, { hint: `What it is for: Reelix sends each download to qBittorrent, so it needs qBittorrent's password. ${userLine} Starboard checks it with qBittorrent first and keeps it only in Reelix. Leave it empty to connect qBittorrent later in Settings, Reelix, Download apps. A fixed address Reelix has for it, such as Gluetun's IP address, still becomes its name.` }),
           el("label", { class: "check" }, hold, el("span", { class: "check__text" }, el("strong", { text: "Hold the sites to search" }),
-            el("span", { class: "check__hint", text: "Deactivated in Reelix after the move, so only your old apps search until Starboard runs your apps. Activate them in the review step." })))),
+            el("span", { class: "check__hint", text: "Turned off in Reelix after the move, so only your old apps search until Starboard runs your apps. Turn them on in the review step." })))),
         el("div", { class: "actions" }, preview), shown,
         el("div", { class: "actions" }, run), said);
     }
 
-    // DASH-190: after a move, the sites held off (Activate), sites Reelix cannot search yet, and titles that did not move.
+    // DASH-190: after a move, the sites held off (Turn on), sites Reelix cannot search yet, and titles that did not move.
     function reviewSection(r, n) {
-      const [p4, p4f] = pw("Activating a site changes Reelix's settings, so Starboard checks it is you.");
+      const [p4, p4f] = pw("Turning on a site changes Reelix's settings, so Starboard checks it is you.");
       const said = el("div", { class: "stack-2", "aria-live": "polite" });
       const activate = async (ids, button) => {
         fresh(p4, said);
@@ -1607,19 +1607,19 @@ function takeoverSection() {
         try {
           const out = await api("/api/reelix/move/activate", { method: "POST", body: { password: p4.value, ids } });
           p4.value = "";
-          announce(`Activated ${plural(out.changed, "site", "sites")}`);
+          announce(`Turned on ${plural(out.changed, "site", "sites")}`);
           await draw();
           $("#tk-review-h")?.setAttribute("tabindex", "-1");
           $("#tk-review-h")?.focus();
-        } catch (err) { button.disabled = false; failed(p4, err, "Nothing was activated", said); }
+        } catch (err) { button.disabled = false; failed(p4, err, "Nothing was on", said); }
       };
       const held = r.held.map((h) => {
-        const b = el("button", { type: "button", class: "btn", text: "Activate" }, el("span", { class: "visually-hidden", text: ` ${h.name}` }));
+        const b = el("button", { type: "button", class: "btn", text: "Turn on" }, el("span", { class: "visually-hidden", text: ` ${h.name}` }));
         b.addEventListener("click", () => activate([h.id], b));
         return el("li", { class: "row" }, el("div", { class: "row__text" }, el("span", { class: "row__title", text: h.name })),
           el("div", { class: "row__side" }, chip("Held", "muted"), b));
       });
-      const all = el("button", { type: "button", class: "btn btn--primary", text: "Activate all" });
+      const all = el("button", { type: "button", class: "btn btn--primary", text: "Turn on all" });
       all.addEventListener("click", () => activate(null, all));
       const sites = r.sites.map((s) => el("li", {}, el("strong", { text: s.name }), ` (from ${s.app}): `,
         s.no_definition ? "Reelix has no way to search this site yet. Add it by its Torznab or Newznab address, or wait for a Reelix update." : s.why));
@@ -1634,7 +1634,7 @@ function takeoverSection() {
             el("span", { class: "visually-hidden", text: ` ${x.name}` })))));
       return section("tk-review", n ? `Step ${n}: review the move` : "Review the move", "What the move left for you to check. Nothing here is urgent.",
         r.held.length ? el("h4", { text: `Sites to search held off (${r.held.length})` }) : null,
-        r.held.length ? el("p", { class: "small muted", text: "Held so only your old apps searched until the switch. Activate them once Starboard runs your apps, or now if your old apps no longer search." }) : null,
+        r.held.length ? el("p", { class: "small muted", text: "Held so only your old apps searched until the switch. Turn them on once Starboard runs your apps, or now if your old apps no longer search." }) : null,
         r.held.length ? el("ul", { class: "rows" }, held) : null,
         r.held.length ? el("div", { class: "form-stack" }, p4f) : null,
         r.held.length ? el("div", { class: "actions" }, all) : null, said,

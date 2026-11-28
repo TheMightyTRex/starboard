@@ -15,23 +15,23 @@ It is in **Display**, applies at once, and is kept in the browser you use.
 ## Steps
 
 1. Select **Display**, the last button in the header. The **Display and accessibility** slide-out opens.
-2. Activate **Underline links**. Every link on the page behind is underlined at once.
+2. Turn on **Underline links**. Every link on the page behind is underlined at once.
 3. Select **Done**, or press Escape.
 
 ![The Display and accessibility slide-out with Underline links (step 2) outlined](../images/a11y-panel-underline.png)
 
-To stop underlining links, deactivate **Underline links** the same way, or select **Reset** to put every Display
+To stop underlining links, turn off **Underline links** the same way, or select **Reset** to put every Display
 choice back to its default. The same switch is in **Settings**, then **General**, then **Appearance**, under
-**Accessibility**: Space activates or deactivates it, focus stays on it, and **Saved** is said.
+**Accessibility**: Space turns it on or off. Focus stays on it, and **Saved** is said.
 
 ## What it changes
 
 Links are shown in the accent colour. With **Underline links** active, every link also has a line under it,
 including links styled as buttons, such as **Manage apps**.
 
-![Settings, General, Appearance with Underline links deactivated: links are shown by their colour](../images/a11y-underline-before.png)
+![Settings, General, Appearance with Underline links turned off: links are shown by their colour](../images/a11y-underline-before.png)
 
-![The same page with Underline links activated: every link on the page is underlined](../images/a11y-underline-after.png)
+![The same page with Underline links turned on: every link on the page is underlined](../images/a11y-underline-after.png)
 
 ## Things to note
 

@@ -1,5 +1,5 @@
 // Settings, Plug-ins (DASH-149): the plug-ins added, Add a plug-in with what it may do shown before anything
-// is installed, Activate and Deactivate, Remove (its folder is kept), Deactivate all plug-ins, and each plug-in's settings,
+// is installed, Turn on and Turn off, Remove (its folder is kept), Turn off all plug-ins, and each plug-in's settings,
 // drawn by Starboard from its manifest. A plug-in never adds code to this page.
 
 const RISK = { low: ["Low", "success"], medium: ["Medium", "warning"], high: ["High", "danger"] };
@@ -20,7 +20,7 @@ const healthNote = (p) => {
   if (stateOf(p) !== "enabled") return null;
   if (p.health && p.health !== "ok") return el("div", { class: "notice", "data-tone": "warning", role: "note" }, icon("triangle-alert"),
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: STATUS.notResponding[0] }),
-      el("p", { text: `It is active, but it is not responding. ${p.health}. Deactivate it and activate it again to restart it.` })));
+      el("p", { text: `It is active, but it is not responding. ${p.health}. Turn it off and turn it on again to restart it.` })));
   if (p.resting?.length) return el("p", { class: "small", text: "Resting: nothing has used it for a while, so it is stopped to save memory. It starts again by itself when Starboard needs it." });
   return null;
 };
@@ -163,13 +163,13 @@ function pluginSettingsGroups(p, redraw) {
     try { return await api(`/api/plugins/${p.id}/settings`, { method: "PUT", body: { settings } }); }
     catch (err) {
       if (err.status !== 409 || !err.data?.dependents) throw err;
-      if (!await confirmDialog({ title: `Switch off ${p.name}?`, message: err.message, confirm: "Switch off and deactivate them", danger: true })) {
+      if (!await confirmDialog({ title: `Switch off ${p.name}?`, message: err.message, confirm: "Turn them off", danger: true })) {
         const cancelled = new Error("Cancelled");
         cancelled.cancelled = true;
         throw cancelled;
       }
       const done = await api(`/api/plugins/${p.id}/settings`, { method: "PUT", body: { settings, confirm_dependents: true } });
-      announce(`${done.deactivated.map((d) => d.name).join(", ")} deactivated`);
+      announce(`${done.deactivated.map((d) => d.name).join(", ")} turned off`);
       return done;
     }
   };
@@ -267,7 +267,7 @@ function pluginSettingsGroups(p, redraw) {
         try {
           await put(settings);
           showSaved(`${tag}-saved`);
-          if (p.status?.state === "needs-setup") { announce("Saved. Activate it on State when you are ready"); redraw(); }  // the state may have changed
+          if (p.status?.state === "needs-setup") { announce("Saved. Turn it on on State when you are ready"); redraw(); }  // the state may have changed
         }
         catch (err) { problem(err.message, form.querySelector("button[type=submit]")); }
       });
@@ -385,26 +385,26 @@ function styleGallery(p) {
   const onChange = () => (grid.isConnected ? draw() : document.removeEventListener("stylechange", onChange));
   document.addEventListener("stylechange", onChange);
   return el("div", { class: "stack-4" },
-    el("p", { class: "small", text: active ? "Light on the left, dark on the right. Your choice applies to this browser, as in Display. High contrast always wins." : "Activate the plug-in to use its styles." }),
+    el("p", { class: "small", text: active ? "Light on the left, dark on the right. Your choice applies to this browser, as in Display. High contrast always wins." : "Turn on the plug-in to use its styles." }),
     ownColoursChoice("pl-own"), grid);
 }
 
-// A plug-in that stops (deactivated or removed) takes its style with it: this browser goes back to the own style and
+// A plug-in that stops (turned off or removed) takes its style with it: this browser goes back to the own style and
 // its colours (DASH-388), as Reset style does, rather than keeping a style that is no longer there.
 function dropStyleOf(p) {
   if ((readPrefs().style || "").startsWith(`${p.id}.`)) resetStyle();
 }
 
-// Activate or Deactivate one plug-in.
+// Turn on or off one plug-in.
 // The media server slot (DASH-565): a plug-in that fills it is in use or not, in words and with a shape, never by colour
-// alone. The one in use stays on until another is chosen (Settings, Apps, the media server tab), so it has no Deactivate or Remove.
+// alone. The one in use stays on until another is chosen (Settings, Apps, the media server tab), so it has no Turn off or Remove.
 const SLOT_IN_USE = ["In use as media server", "success", "circle-check"];
 const SLOT_NOT_IN_USE = ["Not in use", "muted", "minus"];
 const inUse = (p, ms) => !!(p.media_server && ms && ms.active === p.id);
 const slotChip = (p, ms) => (p.media_server ? chip(...(inUse(p, ms) ? SLOT_IN_USE : SLOT_NOT_IN_USE)) : null);
 function stateButton(p, redraw, primary = false, ms = null) {
   if (inUse(p, ms)) return el("span", { class: "visually-hidden", text: `${p.name} stays active while it is your media server` });
-  if (stateOf(p) === "needs-setup") {  // set up first (DASH-330): Activate waits until the required settings are in
+  if (stateOf(p) === "needs-setup") {  // set up first (DASH-330): Turn on waits until the required settings are in
     return el("button", { type: "button", class: "btn btn--primary", onclick: () => {
       // The Settings part may be in a topic tab that is not showing: show it, then go to the first empty required field.
       const part = $(`#pl-${p.id}-settings-h`)?.closest("section.settings-section");
@@ -418,20 +418,20 @@ function stateButton(p, redraw, primary = false, ms = null) {
   }
   const what = p.state === "enabled" ? "disable" : "enable";
   // Primary only on the plug-in's own page: in the Manage list every row would be primary (DASH-309).
-  const b = el("button", { type: "button", class: what === "enable" && primary ? "btn btn--primary" : "btn" }, what === "enable" ? "Activate" : "Deactivate",
+  const b = el("button", { type: "button", class: what === "enable" && primary ? "btn btn--primary" : "btn" }, what === "enable" ? "Turn on" : "Turn off",
     el("span", { class: "visually-hidden", text: ` ${p.name}` }));
   b.addEventListener("click", async () => {
     b.disabled = true;
     try {
       try { await api(`/api/plugins/${p.id}/${what}`, { method: "POST" }); }
       catch (err) {
-        // API 1.21 (DASH-589): other plug-ins need this one. Say which, and ask before they are deactivated too.
+        // API 1.21 (DASH-589): other plug-ins need this one. Say which, and ask before they are off too.
         if (err.status !== 409 || !err.data?.dependents) throw err;
-        if (!await confirmDialog({ title: `Deactivate ${p.name}?`, message: err.message, confirm: "Deactivate them all", danger: true })) { b.disabled = false; return; }
+        if (!await confirmDialog({ title: `Turn off ${p.name}?`, message: err.message, confirm: "Turn them all off", danger: true })) { b.disabled = false; return; }
         await api(`/api/plugins/${p.id}/${what}`, { method: "POST", body: { confirm_dependents: true } });
       }
       if (what === "disable") dropStyleOf(p);
-      announce(`${p.name} ${what === "enable" ? "activated" : "deactivated"}`); redraw();
+      announce(`${p.name} ${what === "enable" ? "turned on" : "turned off"}`); redraw();
     }
     catch (err) { problem(err.message, b); b.disabled = false; }
   });
@@ -488,7 +488,7 @@ function loadScript(src) {
 function appSettingsSection(p) {
   const app = APP_SETTINGS[p.id];
   if (!app) return null;
-  if (p.state !== "enabled") return section(`pl-${p.id}-app`, "Settings", `Activate ${p.name} on State to change its settings.`);
+  if (p.state !== "enabled") return section(`pl-${p.id}-app`, "Settings", `Turn on ${p.name} on State to change its settings.`);
   const box = el("div", { class: "stack-4", "aria-busy": "true" }, el("p", { class: "muted", text: "Loading…" }));
   loadScript(app.script).then(() => window[app.draw]("", box, true))
     .catch((err) => { box.removeAttribute("aria-busy"); box.replaceChildren(el("p", { class: "field-error", text: err.message })); });
@@ -499,7 +499,7 @@ function webSection(p) {
   if (!p.web?.length && !(p.publishes && stateOf(p) !== "enabled")) return null;
   return section(`pl-${p.id}-web`, "Its web page", p.web?.length
     ? `${p.name} has its own page on your home network, at ${p.web.map(webAddress).join(" and ")}. Starboard chose port ${p.web.map((w) => w.port).join(" and ")} because it was free.`
-    : `Activate ${p.name} and Starboard chooses a free port for its page on your home network.`,
+    : `Turn on ${p.name} and Starboard chooses a free port for its page on your home network.`,
     p.web?.length ? el("div", { class: "actions" }, ...webLinks(p)) : null);
 }
 
@@ -532,8 +532,8 @@ function adoptSection(p, redraw) {
   });
   const done = p.adopted ? `Copied from your ${a.name} on ${new Date(p.adopted.at).toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short" })}.` : "";
   return section(`pl-${p.id}-adopt`, `Your ${a.name}`, stateOf(p) === "enabled"
-    ? `To copy the ${a.name} you already have, deactivate ${p.name} first. ${done}`.trim()
-    : `If the main install already runs ${a.name}, copy its settings and history into ${p.name} before you activate it. ${done}`.trim(),
+    ? `To copy the ${a.name} you already have, turn off ${p.name} first. ${done}`.trim()
+    : `If the main install already runs ${a.name}, copy its settings and history into ${p.name} before you turn it on. ${done}`.trim(),
     stateOf(p) === "enabled" ? null : el("div", { class: "actions" }, go), said);
 }
 
@@ -753,8 +753,8 @@ function pluginPage(p, redraw, ms = null, read = null) {
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: (STATE[st.state] || ["", ""])[0] }), el("p", { text: st.sentence }))) : null;
   const first = st.action === "rollback" ? rollbackButton(p, redraw, true)
     : st.action === "update" && p.update ? updateButton(p, redraw) : stateButton(p, redraw, true);
-  // State (issue #8): the chip at the right of the heading's line and the version under it, in the grey band; Activate
-  // or Deactivate first in the white body under the band (owner, 19 November 2026).
+  // State (issue #8): the chip at the right of the heading's line and the version under it, in the grey band; Turn on
+  // or Turn off first in the white body under the band (owner, 19 November 2026).
   const stateSec = section(`pl-${p.id}-state`, "State", stateWords(p),
     headChip(...chipOf(p)), p.media_server ? el("div", { class: "stack-2" }, el("p", {}, slotChip(p, ms)), inUse(p, ms) ? el("p", { class: "small", text: "It stays active while it is your media server." }) : null) : null, fix || healthNote(p) || (p.message ? el("p", { class: "small", text: p.message }) : null), retiringNote(p));
   if (!inUse(p, ms)) $(".settings-section__head", stateSec).after(el("div", { class: "actions" }, first));
@@ -792,12 +792,12 @@ function pluginPage(p, redraw, ms = null, read = null) {
     appSettingsSection(p),
     ...groups.map((g) => section(g.id, g.group || "Settings", "Saved for everyone who uses this Starboard.", g.body)),
     ...custom.map((c) => section(`pl-${p.id}-${c.key}`, c.label, c.hint || "", customScreen(p, c))),
-    buttons.length ? section(`pl-${p.id}-actions`, "Actions", p.state === "enabled" ? "Things it can do now, as well as on its own schedule." : "Activate it to use these.",
+    buttons.length ? section(`pl-${p.id}-actions`, "Actions", p.state === "enabled" ? "Things it can do now, as well as on its own schedule." : "Turn it on to use these.",
       el("div", { class: "actions" }, ...buttons), said) : null].filter(Boolean);
 }
 
 // A plug-in's own screen (11 November 2026): a managed list the plug-in describes as data, drawn here. Rows grouped
-// with a state, Test, Activate or Deactivate, Move and Remove; Add takes plain text, such as a name or an address; Test all checks everything.
+// with a state, Test, Turn on or Turn off, Move and Remove; Add takes plain text, such as a name or an address; Test all checks everything.
 const CUSTOM_STATE = { ok: STATUS.running, warning: STATUS.needsAttention, problem: STATUS.notResponding,
   off: STATUS.inactive, unknown: STATUS.notChecked };
 function customScreen(p, s) {
@@ -868,7 +868,7 @@ function customScreen(p, s) {
         el("div", { class: "setting__control" }, el("label", { class: "switch" }, input), note));
     };
     return el("section", { class: "stack-2", "aria-labelledby": `${head}-h` },
-      h(at, { id: `${head}-h`, text: "Activate or deactivate in bulk" }),
+      h(at, { id: `${head}-h`, text: "Turn on or off in bulk" }),
       at ? null : el("p", { class: "small muted", text: `Each switch applies at once. A group of ${noun} shows as active when all of them are.` }),
       ...[...kinds].map(([k, list]) => el("div", { class: "stack-2" }, k ? h(at + 1, { text: k }) : null,
         el("ul", { class: "settings-rows" }, list.map(row)))));
@@ -876,7 +876,7 @@ function customScreen(p, s) {
   const ACTION_WORDS = { test: ["Test", "activity"], toggle: [null, null], remove: ["Remove", "trash-2"], up: ["Move up", "arrow-up"], down: ["Move down", "arrow-down"],
     detach: ["Remove guide", "x"], restore: ["Put back", "undo-2"] };  // restore: plug-in API 1.15 (DASH-406)
   // Show all, active or inactive items (owner, 12 November 2026: "a filter to the channel list for active and not
-  // active channels"), on any list whose rows can be activated; kept while the list is drawn again. `pool` is every
+  // active channels"), on any list whose rows can be turned on; kept while the list is drawn again. `pool` is every
   // item in the open level and the sub menus under it.
   let show = "all";
   let last = null;
@@ -942,13 +942,13 @@ function customScreen(p, s) {
             sel.addEventListener("change", () => run({ action: "choose", id: it.id, value: sel.value }, sel));
             return el("label", { class: "row-choice" }, el("span", { class: "small", text: it.choice.label }), sel);
           })() : null,
-          // Test and Activate or Deactivate as buttons; Move up, Move down and Remove in a More menu, so a row has
+          // Test and Turn on or Turn off as buttons; Move up, Move down and Remove in a More menu, so a row has
           // at most two buttons after its state (DASH-309, section 10).
           it.attach && it.actions.includes("attach") ? attachButton(it) : null,
           it.picker && it.actions.includes("pick") ? pickerButton(it) : null,
           // Put back (plug-in API 1.15, DASH-406) is a button too: it is what a row of moved items is for.
           ...it.actions.filter((a) => a === "test" || a === "toggle" || a === "restore").map((a) => {
-            const [label, ic] = a === "toggle" ? [it.on ? "Deactivate" : "Activate", it.on ? "pause" : "play"] : ACTION_WORDS[a];
+            const [label, ic] = a === "toggle" ? [it.on ? "Turn off" : "Turn on", it.on ? "pause" : "play"] : ACTION_WORDS[a];
             const b = el("button", { type: "button", class: "btn btn--quiet btn--compact", "data-key": `${it.id}:${a}` }, ic ? icon(ic) : null, label,
               el("span", { class: "visually-hidden", text: ` ${it.title}` }));
             b.addEventListener("click", () => run({ action: a, id: it.id }, b));
@@ -1263,7 +1263,7 @@ function customScreen(p, s) {
   // Sections that fold, each with a table to sort and select from (plug-in API 1.8, DASH-359, owner 13 November
   // 2026: "Build option 1 with 2 in the accordions"). A section is one line until opened: its name, how many are
   // active and its own switch. Search, Show and the filter chips narrow every section at once; ticked items from any
-  // section can be activated or deactivated together. Only open sections draw their rows.
+  // section can be turned on or off together. Only open sections draw their rows.
   const fold = { open: new Set(), sort: { key: "", dir: 1 }, picked: new Set(), query: "", chips: new Map() };
   const foldBase = `fold-${p.id}-${s.key}`;
   const foldMatch = (it) => {
@@ -1357,7 +1357,7 @@ function customScreen(p, s) {
       const clear = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, "Clear");
       clear.addEventListener("click", () => { fold.picked.clear(); drawFolds(data); document.getElementById(`${foldBase}-q`)?.focus(); announce("Nothing ticked"); });
       return el("div", { class: "picked-bar", role: "group", "aria-label": `Ticked ${noun}` },
-        el("strong", { text: `${fold.picked.size} ticked` }), act("on", "Activate", "play"), act("off", "Deactivate", "pause"), clear);
+        el("strong", { text: `${fold.picked.size} ticked` }), act("on", "Turn on", "play"), act("off", "Turn off", "pause"), clear);
     })() : null;
     const switchFor = (g) => (data.bulk || []).find((b) => b.fold === g);
     const sections = [...groups].map(([g, rows]) => {
@@ -1405,14 +1405,14 @@ function customScreen(p, s) {
       const table = el("table", { class: "table table--middle" },
         el("caption", { class: "visually-hidden", text: `${g}: ${noun}` }),
         el("thead", {}, el("tr", {}, ro ? null : el("th", { scope: "col" }, all), ...cols.map(th), ro ? null : el("th", { scope: "col", text: "State" }),
-          ro ? null : el("th", { scope: "col" }, el("span", { class: "visually-hidden", text: "Activate or deactivate" })))),
+          ro ? null : el("th", { scope: "col" }, el("span", { class: "visually-hidden", text: "Turn on or off" })))),
         el("tbody", {}, sorted(shown).map((it) => {
           if (ro) return el("tr", {}, ...cols.map((c, i) => el(i === 0 ? "th" : "td", { ...(i === 0 ? { scope: "row" } : {}), class: c.type === "number" ? "num" : null, text: (it.cells || {})[c.key] || "" })));
           const tick = el("input", { type: "checkbox", "aria-label": `Tick ${it.title}`, checked: fold.picked.has(it.id), "data-key": `${it.id}:pick` });
           tick.addEventListener("change", () => { if (tick.checked) fold.picked.add(it.id); else fold.picked.delete(it.id); drawFolds(data);
             [...box.querySelectorAll("[data-key]")].find((x) => x.dataset.key === `${it.id}:pick`)?.focus(); });
           const btn = it.actions.includes("toggle") ? el("button", { type: "button", class: "btn btn--quiet btn--compact", "data-key": `${it.id}:toggle` },
-            icon(it.on ? "pause" : "play"), it.on ? "Deactivate" : "Activate", el("span", { class: "visually-hidden", text: ` ${it.title}` })) : null;
+            icon(it.on ? "pause" : "play"), it.on ? "Turn off" : "Turn on", el("span", { class: "visually-hidden", text: ` ${it.title}` })) : null;
           btn?.addEventListener("click", () => run({ action: "toggle", id: it.id }, btn));
           return el("tr", { class: it.on ? null : "is-off" }, el("td", {}, tick), ...cols.map((c) => el("td", { class: c.type === "number" ? "num" : null, text: (it.cells || {})[c.key] || "" })),
             el("td", {}, it.state_label ? chip(it.state_label, (CUSTOM_STATE[it.state] || CUSTOM_STATE.unknown)[1])
@@ -1431,7 +1431,7 @@ function customScreen(p, s) {
       ...chipRows, pickedBar, said,
       sections.length ? el("div", { class: "folds" }, ...sections) : emptyState(`No ${noun} found`, "Change the search or filters to show more.")].filter(Boolean));
   };
-  if (p.state !== "enabled") box.replaceChildren(emptyState(`${p.name} is not active`, `Activate it on State to show ${s.label.toLowerCase()}.`));
+  if (p.state !== "enabled") box.replaceChildren(emptyState(`${p.name} is not active`, `Turn it on on State to show ${s.label.toLowerCase()}.`));
   else api(path).then(draw).catch((err) => box.replaceChildren(notice("info", `${p.name} did not answer`, err.message)));
   return box;
 }
@@ -1455,7 +1455,7 @@ function testerSection() {
   return section("pl-test", "Test a plug-in", "For people who make plug-ins: every issue with how to fix it. The same tests run before any plug-in is added.", form, out);
 }
 
-// Plug-ins that ship inside Starboard, such as Live TV (DASH-285): Add asks for the password and activates it.
+// Plug-ins that ship inside Starboard, such as Live TV (DASH-285): Add asks for the password and turns it on.
 function builtinSection(list, redraw) {
   const rows = list.filter((b) => !b.added && !b.media_server);  // media servers have their own section
   if (!rows.length) return null;
@@ -1676,8 +1676,8 @@ function updateFromZip(p, redraw) {
   return form;
 }
 
-// Settings, Plug-ins, Manage (DASH-318): the plug-ins added, each with its state, Settings, Activate or Deactivate
-// and Remove; Deactivate all. Adding is on the Catalogue page.
+// Settings, Plug-ins, Manage (DASH-318): the plug-ins added, each with its state, Settings, Turn on or Turn off
+// and Remove; Turn off all. Adding is on the Catalogue page.
 // Plug-ins ticked in the first set-up (DASH-399), such as Audio description: an offer, never an install. On the
 // Catalogue (c given) it installs as any other, its permissions shown and the password asked; on Your plug-ins it
 // links to the Catalogue. Not now forgets the wish. Focus goes to the page's first heading once the offer has gone.
@@ -1735,10 +1735,10 @@ async function startPlugins() {
         emptyState("No plug-ins yet", "Add one from the catalogue.", el("a", { class: "btn btn--primary", href: "/settings-plugins-catalogue.html" }, icon("layout-grid"), "Open the catalogue"))));
       return;
     }
-    const stopAll = el("button", { type: "button", class: "btn btn--danger", text: "Deactivate all plug-ins" });
+    const stopAll = el("button", { type: "button", class: "btn btn--danger", text: "Turn off all plug-ins" });
     stopAll.addEventListener("click", async () => {
-      if (!await confirmDialog({ title: "Deactivate all plug-ins?", message: "Every active plug-in is deactivated. Their settings stay; activate each again here.", confirm: "Deactivate all", danger: true })) return;
-      try { const o = await api("/api/plugins/stop-all", { method: "POST" }); toast(o.stopped.length ? `Deactivated ${o.stopped.join(", ")}` : "No plug-in was active"); draw(); }
+      if (!await confirmDialog({ title: "Turn off all plug-ins?", message: "Every active plug-in is turned off. Their settings stay; turn on each again here.", confirm: "Turn off all", danger: true })) return;
+      try { const o = await api("/api/plugins/stop-all", { method: "POST" }); toast(o.stopped.length ? `Turned off ${o.stopped.join(", ")}` : "No plug-in was active"); draw(); }
       catch (err) { problem(err.message, stopAll); }
     });
     const active = r.plugins.filter((p) => p.state === "enabled").length;

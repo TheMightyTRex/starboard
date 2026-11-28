@@ -21,9 +21,9 @@ during the day. It pauses qBittorrent, NZBGet, SABnzbd and Soulseek. You can sti
 
    ![Settings, Downloads, Download hours, with Download hours (step 1), Start (step 2) and End (step 3) outlined](../images/set-download-hours-1-page.png)
 
-4. Activate **Only download between set hours**. Starboard says **Saved at** and the time beside it.
+4. Turn on **Only download between set hours**. Starboard says **Saved at** and the time beside it.
 
-   ![Download hours, with Only download between set hours activated (step 4) outlined](../images/set-download-hours-2-on.png)
+   ![Download hours, with Only download between set hours turned on (step 4) outlined](../images/set-download-hours-2-on.png)
 
 Each change applies at once. There is no save button. Outside the hours, Starboard pauses qBittorrent, NZBGet,
 SABnzbd and Soulseek (slskd).
@@ -56,13 +56,13 @@ Starboard downloads that one item and keeps everything else paused. Read
 - Starboard starts again only what it paused. Anything you paused yourself stays paused. Seeding is left alone.
 - Soulseek is paused by disconnecting it from the Soulseek network until the hours start.
 - Starboard checks every minute while download hours are active. To check less often, go to **Settings**, then
-  **Performance**, activate **More settings**, and change **Download hours check**. Read [Make Starboard use less of your server](make-starboard-lighter.md#background-work).
+  **Performance**, turn on **More settings**, and change **Download hours check**. Read [Make Starboard use less of your server](make-starboard-lighter.md#background-work).
 
 ## When a plug-in holds downloads
 
 A plug-in you allowed to hold heavy jobs, such as UPS and power, may pause downloads while your computer runs on battery.
 **Downloads** then says "Downloads are paused" and gives the reason. This happens even when download hours are
-deactivated, and even after you chose **Resume downloads now**. When the mains power is back, or the plug-in stops asking
+turned off, and even after you chose **Resume downloads now**. When the mains power is back, or the plug-in stops asking
 for 30 minutes at most, Starboard starts again only what it paused. Anything you stopped yourself stays stopped.
 
 ## If it does not work

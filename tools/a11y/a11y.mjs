@@ -726,7 +726,7 @@ try {
     await anon.goto(`${base}/login.html`);
     await anon.waitForTimeout(900);
     if (!(await anon.getByRole("link", { name: /Sign in with Authentik/ }).count())) add(`login.html, ${label}`, "page", "sso-button", "no sign-in button for the provider");
-    if (off && (await anon.locator("#login-form").isVisible())) add(`login.html, ${label}`, "page", "password-form", "the password form is shown while the password is deactivated");
+    if (off && (await anon.locator("#login-form").isVisible())) add(`login.html, ${label}`, "page", "password-form", "the password form is shown while the password is off");
     await axeOn(`login.html, ${label}`, "light");
     await anon.emulateMedia({ colorScheme: "dark" });
     await anon.reload();

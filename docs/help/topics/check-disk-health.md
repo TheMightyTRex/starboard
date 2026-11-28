@@ -52,7 +52,7 @@ new reports arrive in about a minute.
 - **Temperature, last 30 days** in each report is a chart of hourly readings. Starboard takes them while Disk
   health is open, or while it watches in the background.
 - **Recent events** lists self-tests and changes, newest first.
-- To be told when a disk reports a problem, read [Activate alerts](activate-alerts.md#choose-what-to-alert-on).
+- To be told when a disk reports a problem, read [Turn on alerts](activate-alerts.md#choose-what-to-alert-on).
 - The ready-made image has no installer. Set up the job by hand with `sudo deploy/install-smart.sh` and a
   folder for the reports. Then share that folder with Starboard and set `STARBOARD_SMART_DIR` to it.
 
@@ -70,7 +70,7 @@ new reports arrive in about a minute.
 ## Find out more
 
 - [Check free space and what is using it](check-storage.md)
-- [Activate alerts](activate-alerts.md)
+- [Turn on alerts](activate-alerts.md)
 - [Back up the whole server](back-up-the-server.md)
 - [The terminal: entering commands](../basics/the-terminal.md)
 

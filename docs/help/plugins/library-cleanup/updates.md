@@ -40,14 +40,14 @@ Added:
 
 - **Rules:** films watched by everyone, last watched more than 90 days ago; series that ended with every episode watched; films and series nobody has watched for 12 months. Each a setting, for the libraries you choose.
 - **Always kept:** favourites, anything someone is part way through, films in a collection, and anything tagged keep.
-- **Preview** lists what would move and the space it frees. Nothing moves until you activate **Move items each day**.
+- **Preview** lists what would move and the space it frees. Nothing moves until you turn on **Move items each day**.
 - **Never deletes:** it moves each item to `media/.holding`, keeping its folders, and **Put back** returns it.
 - **Reelix and Jellyfin are told:** Reelix stops following what moves, so it is not downloaded again, and follows it again when it is put back.
 
 ## How an update is kept safe
 
 - **Before the update** Starboard asks Library clean-up to get ready: it finishes the item it is moving and starts no new run, so nothing is left half moved. If it is still working, it says "Still working. Try again in a minute" and nothing changes.
-- **After the update,** or after a Roll back, it says when it checks again, or that **Move items each day** is deactivated. The next run carries on where it stopped.
+- **After the update,** or after a Roll back, it says when it checks again, or that **Move items each day** is off. The next run carries on where it stopped.
 - Starboard waits for the new version to answer. If it does not, Starboard goes back to the version you had by itself, with your settings as they were.
 - Your settings, its folder and what is in the holding folder are kept.
 

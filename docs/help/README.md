@@ -137,7 +137,7 @@ Each guide is a journey through several topics, in order.
 
 ### Alerts
 
-- [Activate alerts](topics/activate-alerts.md)
+- [Turn on alerts](topics/activate-alerts.md)
 - [Get a weekly summary](topics/weekly-summary.md)
 
 ### Security

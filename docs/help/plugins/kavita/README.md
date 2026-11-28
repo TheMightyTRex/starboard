@@ -13,7 +13,7 @@ People who read comics, manga and books, in the browser or in an e-reader app th
 
 ## Set it up
 
-1. Activate it, choose **Open Kavita** and make the first account, which is its admin.
+1. Turn it on, choose **Open Kavita** and make the first account, which is its admin.
 2. Add libraries for `/media/books` and `/media/comics`. It reads them only, so Kavita cannot change or delete a file. Its sign-in key is made for this install.
 
 ## What it may do

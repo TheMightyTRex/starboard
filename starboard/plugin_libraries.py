@@ -2,9 +2,9 @@
 monitoring for the two On demand libraries only and have this as the standard setting when we install on demand plugin
 - we might need to catch this for other plugins".
 
-A plug-in names its libraries in jellyfin_libraries, each a folder inside a media folder it mounts. On every Activate
+A plug-in names its libraries in jellyfin_libraries, each a folder inside a media folder it mounts. On every Turn on
 (so after each install, update and Roll back too) Starboard adds any that Jellyfin does not have, with real-time
-monitoring deactivated unless the plug-in set realtime_monitor, and puts that choice back on one that has drifted.
+monitoring turned off unless the plug-in set realtime_monitor, and puts that choice back on one that has drifted.
 Real-time monitoring makes Jellyfin watch every folder in a library, and each watch counts against the computer's
 limit (found 14 November 2026: Jellyfin's watches used the limit up before Films and TV); a plug-in that adds files
 itself tells Jellyfin to look instead. Removing the plug-in leaves the libraries in Jellyfin, as they are the person's
@@ -66,7 +66,7 @@ def ensure(data_dir, pid, services, call=None, inspect=None):
     try:
         if not service:
             raise ValueError("Starboard has no key for Jellyfin, so the libraries were not added. Connect Jellyfin in "
-                             "Settings, Apps, then deactivate and activate the plug-in")
+                             "Settings, Apps, then turn off and turn on the plug-in")
         inside = media_inside(data_dir, service, inspect).rstrip("/")
         have = _call(service, "GET", "/Library/VirtualFolders", call=call) or []
         for lib in libs:
@@ -81,13 +81,13 @@ def ensure(data_dir, pid, services, call=None, inspect=None):
                 _call(service, "POST", f"/Library/VirtualFolders?{urllib.parse.urlencode(q)}",
                       {"LibraryOptions": {"EnableRealtimeMonitor": wanted, "PathInfos": [{"Path": path}]}}, call=call)
                 done.append(f"Added the library {lib['name']} to Jellyfin, with real-time monitoring "
-                            + ("activated" if wanted else "deactivated"))
+                            + ("turned on" if wanted else "turned off"))
             else:
                 opts = found.get("LibraryOptions") or {}
                 if bool(opts.get("EnableRealtimeMonitor")) != wanted and found.get("ItemId"):
                     _call(service, "POST", "/Library/VirtualFolders/LibraryOptions",
                           {"Id": found["ItemId"], "LibraryOptions": {**opts, "EnableRealtimeMonitor": wanted}}, call=call)
-                    done.append(f"Real-time monitoring {'activated' if wanted else 'deactivated'} for {found.get('Name')} in Jellyfin")
+                    done.append(f"Real-time monitoring {'turned on' if wanted else 'turned off'} for {found.get('Name')} in Jellyfin")
             kept.append({"name": lib["name"], "path": path, "realtime_monitor": wanted})
         problem = ""
     except Exception as e:  # noqa: BLE001  a library is a help, never a reason the plug-in cannot start

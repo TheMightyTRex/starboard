@@ -38,7 +38,7 @@ Measured:
 2. Under **Apps you can add**, find **Calibre-Web** and select **Install…**.
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Calibre-Web**. To stop, select **Cancel**: nothing is installed.
-5. Calibre-Web's own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Activate**.
+5. Calibre-Web's own tab opens under **Settings**, then **Plug-ins**, and Starboard turns it on: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Turn on**.
 
 ### Add it by its address
 
@@ -70,7 +70,7 @@ The books folder is read only, so uploading and editing books in Calibre-Web are
 
 Its containers stop and go, and its API key stops working. Nothing is deleted.
 
-To stop it for a while instead, select **Deactivate** on its tab: its settings and folder are kept.
+To stop it for a while instead, select **Turn off** on its tab: its settings and folder are kept.
 
 ## Find out more
 

@@ -1350,7 +1350,7 @@ class Handler(BaseHTTPRequestHandler):
         return out
 
     def move_review(self, last):
-        """DASH-190: after a move, what to look at: sites held off (Activate), sites Reelix has no definition for,
+        """DASH-190: after a move, what to look at: sites held off (Turn on), sites Reelix has no definition for,
         and titles that did not move (Add by hand), with the waiting list's titles marked."""
         if not last or not last.get("apps"):
             return None
@@ -1591,11 +1591,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, cfg.public())
             if path == "/api/feedback/key" and method == "GET":
                 if not cfg.data.get("ux_notes"):
-                    return self.error(404, "Activate Send feedback in Settings, General first")
+                    return self.error(404, "Turn on Send feedback in Settings, General first")
                 return self.json(200, {"key": app.feedback_key(self.token())})
             if path.startswith("/api/ux-notes"):
                 if not cfg.data.get("ux_notes"):
-                    return self.error(404, "Activate Send feedback in Settings, General first")
+                    return self.error(404, "Turn on Send feedback in Settings, General first")
                 if path == "/api/ux-notes" and method == "GET":
                     return self.json(200, {"notes": app.uxnotes.list()})
                 if path == "/api/ux-notes" and method == "POST":
@@ -2644,13 +2644,13 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/reelix/move/job" and method == "GET":
                 return self.json(200, reelix_move.job())
             if path == "/api/reelix/move/activate" and method == "POST":
-                # DASH-190: activate the sites held after the move, one or all.
+                # DASH-190: turn on the sites held after the move, one or all.
                 body = self.body()
                 self.check_password(body)
                 ids = body.get("ids")
                 changed = reelix_move.activate(app.data_dir, body["password"],
                                                None if ids is None else [int(i) for i in ids if str(i).isdigit()])
-                logs.event("info", "reelix", f"Activated {changed} held {'site' if changed == 1 else 'sites'} to search")
+                logs.event("info", "reelix", f"Turned on {changed} held {'site' if changed == 1 else 'sites'} to search")
                 return self.json(200, {"changed": changed, "review": self.move_review(reelix_move.last_result(app.data_dir))})
             if path == "/api/reelix/indexers" and method == "POST":
                 # The indexers held after the move: switched on when the old apps are no longer searching.
@@ -3167,7 +3167,7 @@ class Handler(BaseHTTPRequestHandler):
                         # Detailed log for backup connections (owner, 19 November 2026): a log setting, so no password.
                         on = bool(self.body().get("on"))
                         backup_copies.set_detailed(app.data_dir, on)
-                        logs.event("info", "backup", f"Detailed log for backup connections {'activated' if on else 'deactivated'}")
+                        logs.event("info", "backup", f"Detailed log for backup connections {'turned on' if on else 'turned off'}")
                         return self.json(200, backup_copies.public(app.data_dir))
                     if path == "/api/backup/copies/test" and method == "POST":
                         # Test connection (DASH-452): write, read back, remove, room and sign-in; the result is kept.
@@ -3970,7 +3970,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/plugins/stop-all" and method == "POST":
             from . import mediaserver
             stopped = pa.stop_all(app.data_dir, keep={mediaserver.active_id(app.config.data)})  # the media server in use stays (DASH-565)
-            logs.event("info", "plug-ins", f"Deactivated every plug-in ({len(stopped)})")
+            logs.event("info", "plug-ins", f"Turned off every plug-in ({len(stopped)})")
             return self.json(200, {"stopped": stopped, "plugins": pa.listing(app.data_dir)})
         ma = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/actions/([A-Za-z0-9_-]{1,40})$", path)
         if ma and method == "POST":  # a button from the plug-in's manifest, such as Run Live TV now
@@ -4020,7 +4020,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(409, {"error": pa.dependents_words(name, deps, "switch it off"), "dependents": deps})
             for d in deps:
                 pa.disable(app.data_dir, d["id"])
-                logs.event("info", "plug-ins", f"Deactivated {d['id']}: it needs {pid}, which was switched off")
+                logs.event("info", "plug-ins", f"Turned off {d['id']}: it needs {pid}, and {pid} is off")
             if deps:
                 app.plugin_clock.ensure()
                 app.plugin_idle.ensure()
@@ -4041,10 +4041,10 @@ class Handler(BaseHTTPRequestHandler):
             deps = pa.dependents(app.data_dir, pid)
             if deps and not self.body().get("confirm_dependents"):  # API 1.21 (DASH-589): ask first, naming them
                 name = next(p["name"] for p in pa.basics(app.data_dir) if p["id"] == pid)
-                return self.json(409, {"error": pa.dependents_words(name, deps, "deactivate it"), "dependents": deps})
+                return self.json(409, {"error": pa.dependents_words(name, deps, "turn it off"), "dependents": deps})
             for d in deps:
                 pa.disable(app.data_dir, d["id"])
-                logs.event("info", "plug-ins", f"Deactivated {d['id']}: it needs {pid}, which was deactivated")
+                logs.event("info", "plug-ins", f"Turned off {d['id']}: it needs {pid}, which was off")
             pa.disable(app.data_dir, pid)
         app.plugin_clock.ensure()  # jobs start or stop with their plug-in
         app.plugin_idle.ensure()  # and idle stop with a when_needed one (DASH-357)
@@ -4263,7 +4263,7 @@ class Handler(BaseHTTPRequestHandler):
         data = self.body()
         if not app.needs_setup and not signin.password_allowed(app):
             # Turned off on purpose: said plainly, so the owner knows what to do. The way back in is on the server.
-            return self.error(403, "Password sign-in is deactivated. Use single sign-on, or run ./reset-sign-in.sh on the server", reason="password-off")
+            return self.error(403, "Password sign-in is off. Use single sign-on, or run ./reset-sign-in.sh on the server", reason="password-off")
         if app.needs_setup or not auth.check_password(str(data.get("password", "")), app.config.data["auth"]["password_hash"]):
             logs.event("warning", "sign-in", "A sign-in used the wrong password")
             return self.error(401, "That password is not right")
@@ -4355,7 +4355,7 @@ class Handler(BaseHTTPRequestHandler):
         if test and not self.signed_in():
             return fail("failed", "a test sign-in came back without a session", True)
         if not test and not signin.sso_on(app):
-            return fail("off", "single sign-on is deactivated")
+            return fail("off", "single sign-on is off")
         if not oidc.is_owner(claims, cfg.get("claim", "email"), cfg.get("value", "")):
             return fail("nomatch", f"the {cfg.get('claim', 'email')} did not match the one allowed" + (" or was not verified" if cfg.get("claim", "email") == "email" else ""), test)
         app.sso_return_limits.clear(address)

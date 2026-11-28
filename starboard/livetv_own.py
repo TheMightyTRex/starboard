@@ -1,6 +1,6 @@
 """The owner's own Live TV sources (DASH-359, owner 12 November 2026: "add json files as groups", "add XML sources -
 each one gets its own entry with a switch"). Each source is an address the person adds on the plug-in's
-"Your lists and guides" screen, kept in the plug-in's data folder with its own Activate or Deactivate:
+"Your lists and guides" screen, kept in the plug-in's data folder with its own Turn on or Turn off:
 
   a channel list: an M3U playlist, or JSON with a stream address per channel. Its channels are tested like Free-TV's
                   and go into own.m3u, grouped under the list's name; one more tuner in Jellyfin for all of them.
@@ -281,7 +281,7 @@ def _why(url):
 def build(d, data_dir, fetch=None, plays=None, only=None, why=None):
     """Writes own.m3u from every active channel list (only channels that play), then the guides. `only`: test just
     that list again, keeping the others' channels as they are (a list just added). A channel that is already in Live
-    TV, in any list, active or not, comes in inactive (owner, 13 November 2026), once: activate it at any time. Each
+    TV, in any list, active or not, comes in inactive (owner, 13 November 2026), once: turn it on at any time. Each
     list's progress and result are kept on it for the screen's notices. Returns a sentence."""
     items = sources(data_dir)
     lists = [x for x in items if x.get("on", True) and x.get("kind") == "list"]
@@ -347,7 +347,7 @@ def build(d, data_dir, fetch=None, plays=None, only=None, why=None):
         if sizes.get("all", 0) > len(chans):
             text.append(CUT.format(read=len(chans), every=sizes["all"]))
         if dupes:
-            text.append(f"{dupes} {'is' if dupes == 1 else 'are'} already in Live TV, so {'it came' if dupes == 1 else 'they came'} in inactive: activate {'it' if dupes == 1 else 'them'} in Channels when you want")
+            text.append(f"{dupes} {'is' if dupes == 1 else 'are'} already in Live TV, so {'it came' if dupes == 1 else 'they came'} in inactive: turn on {'it' if dupes == 1 else 'them'} in Channels when you want")
         for r, k in sorted(reasons.items(), key=lambda kv: -kv[1]):
             one = re.sub(r"^do not", "does not", re.sub(r"^(answer|refuse)\b", r"\1s", r))
             text.append(f"{k} {'address' if k == 1 else 'addresses'} {one if k == 1 else r}")

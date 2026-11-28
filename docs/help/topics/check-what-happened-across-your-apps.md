@@ -9,7 +9,7 @@ added, what failed and what was upgraded, in every app, newest first. Starboard 
 ## Before you begin
 
 - At least one app is in Starboard. Read [Add an app](add-an-app.md).
-- Nothing needs activating. The list fills by itself as things happen.
+- Nothing needs turning on. The list fills by itself as things happen.
 
 ## Steps
 
@@ -58,7 +58,7 @@ not come back.
   entry when work it already does finishes: an update, an alert, adding an app. What your apps added, upgraded or
   could not download is read from each app's own history only when you open the page.
 - **Apps that stopped responding, disk problems and failed backups** appear only while
-  **Watch in the background** is active with those alerts chosen. Read [Activate alerts](activate-alerts.md).
+  **Watch in the background** is active with those alerts chosen. Read [Turn on alerts](activate-alerts.md).
 - **Personal details are removed** from every entry, as in Starboard's log: addresses, email addresses and keys.
   Titles and app names stay.
 - **The weekly summary** counts the week's entries: how many were added, failed and upgraded. Read

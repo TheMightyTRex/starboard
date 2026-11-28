@@ -39,7 +39,7 @@ q2: What do you want to do?
 4. In **Lines shown**, choose 50, 100, 200, 500 or 1,000 lines. Starboard shows the newest ones and says how many
    there are beside **Log**, such as "Showing the newest 200 of 3,412 entries". It shows "Saved at" and the time
    beside your choice, and keeps it for your account. It starts at 200.
-5. To leave out information and detail, activate **Alerts only**. Starboard shows only errors and warnings, and
+5. To leave out information and detail, turn on **Alerts only**. Starboard shows only errors and warnings, and
    keeps your choice in the same way.
 
    ![System, Logs, with Lines shown (step 4) and Alerts only (step 5) outlined, with example data](../images/read-the-log-4-lines.png)
@@ -159,7 +159,7 @@ key, and when. This cannot be undone. The apps' own logs, which Docker keeps, ar
 - [Starboard does not open](starboard-does-not-open.md)
 - [An app shows as not responding](app-not-responding.md)
 - [Send feedback about a page](send-feedback.md)
-- [Activate alerts](activate-alerts.md)
+- [Turn on alerts](activate-alerts.md)
 
 <!-- footer: download rights -->
 

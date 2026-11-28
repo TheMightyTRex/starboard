@@ -18,7 +18,7 @@ q2: What does the card or test say?
   Sent, but nothing arrived -> 7
 1: Start it again #start-it-again
 2: Update it or update Starboard #update-it-or-update-starboard
-3: Activate a channel #activate-a-channel
+3: Turn on a channel #turn-on-a-channel
 4: Check the sign-in or token #check-the-sign-in-or-token
 5: Check the address #check-the-address
 6: Fill in the missing details #fill-in-the-missing-details
@@ -41,14 +41,14 @@ Your Starboard's plug-in API is outside what this version of Notifications works
 1. Select **Check for an update** on its tab.
 2. If there is none, update Starboard. Read [Update Starboard](../../topics/update-starboard.md).
 
-## Activate a channel
+## Turn on a channel
 
-"No channel is active. Activate one in Settings, Plug-ins, Notifications." means it has nowhere to send.
+"No channel is active. Turn one on in Settings, Plug-ins, Notifications." means it has nowhere to send.
 
 1. Go to **Settings**, then **Plug-ins**, then **Notifications**.
 2. Fill in the details for one way to send, such as **Email**, and select **Save**.
 3. Select its test button, such as **Send a test email**.
-4. When the test arrives, activate **Send by** that channel.
+4. When the test arrives, turn on **Send by** that channel.
 
 ## Check the sign-in or token
 
@@ -85,9 +85,9 @@ A test that says "Fill in" and some details, then "first", or "Add" and a settin
 
 When the card says a message was sent but nobody saw it:
 
-- Check that kind is activated under **What to send**. A deactivated kind is not sent and not listed.
+- Check that kind is on under **What to send**. A turned off kind is not sent and not listed.
 - For email, check the junk or spam folder of each address in **Send email to**.
-- For the person who asked, check **Tell the person who asked too** is activated, and that their line under **People** uses the name they use in Reelix or Seerr, such as `Sam, sam@example.com` or `Sam, telegram 123456`.
+- For the person who asked, check **Tell the person who asked too** is on, and that their line under **People** uses the name they use in Reelix or Seerr, such as `Sam, sam@example.com` or `Sam, telegram 123456`.
 - For New this week, it is sent at 09:00 on the day in **Send New this week on**. A week with nothing new sends nothing. Select **Send New this week now** to try it.
 
 ## Report a problem

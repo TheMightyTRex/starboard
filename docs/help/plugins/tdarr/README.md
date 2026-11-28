@@ -13,11 +13,11 @@ People who want their films and series converted to save space (H.265), and peop
 
 ## Set it up
 
-1. If the main install runs Tdarr, choose **Bring in the Tdarr you already have** on the plug-in's page **before** activating it. Starboard stops your Tdarr (it does not remove it) and copies its `server`, `configs` and `logs` folders into the plug-in, so its libraries, flows, history and its key for Starboard carry over. Your Tdarr's own folders are never moved, changed or deleted. Its cache (files part way through converting, often many gigabytes) is not copied. From 1.0.2 the plug-in converts in a `tdarr-cache` folder in your media folder, on the same disks as your films, so the system disk does not fill.
-2. Activate it. Its page is on your home network at port 8265 when that is free (it is once your old Tdarr is stopped), so Starboard's Settings, Tdarr page keeps working with the address it had.
+1. If the main install runs Tdarr, choose **Bring in the Tdarr you already have** on the plug-in's page **before** turning it on. Starboard stops your Tdarr (it does not remove it) and copies its `server`, `configs` and `logs` folders into the plug-in, so its libraries, flows, history and its key for Starboard carry over. Your Tdarr's own folders are never moved, changed or deleted. Its cache (files part way through converting, often many gigabytes) is not copied. From 1.0.2 the plug-in converts in a `tdarr-cache` folder in your media folder, on the same disks as your films, so the system disk does not fill.
+2. Turn it on. Its page is on your home network at port 8265 when that is free (it is once your old Tdarr is stopped), so Starboard's Settings, Tdarr page keeps working with the address it had.
 3. Choose what it does in the **Settings** section of the plug-in's page, or in **Settings**, **Tdarr**: **When** is **In quiet hours** by default (Starboard's download hours when they are set, otherwise 01:00 to 06:00).
 4. When the plug-in shows your libraries, remove Tdarr from the main install: **Settings**, **Install apps**, untick Tdarr and apply (or delete the `tdarr:` entry in `data/stack/compose.yaml`). Its old folders (`config/tdarr` beside the other apps' settings) stay until you move them to the holding folder in **System**, **Clean up**.
-5. A new Tdarr with no Tdarr before: activate it, then in **Settings**, **Apps**, choose **Search for new apps** so Starboard finds it and gives it a key.
+5. A new Tdarr with no Tdarr before: turn it on, then in **Settings**, **Apps**, choose **Search for new apps** so Starboard finds it and gives it a key.
 
 ## What it may do
 

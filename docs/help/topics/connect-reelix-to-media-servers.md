@@ -16,7 +16,7 @@ already has.
 ## Steps
 
 1. Go to **Settings**, then **Apps**, then **Reelix**.
-2. Activate **More settings** at the right of the heading.
+2. Turn on **More settings** at the right of the heading.
 3. Select the **Media servers** tab, then **Show media servers**. Enter your Reelix password, then select
    **Continue**.
 4. Select **Connect Jellyfin** or **Connect Audiobookshelf**. Starboard adds it to Reelix with its key, and

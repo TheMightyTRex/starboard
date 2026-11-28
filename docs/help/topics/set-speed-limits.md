@@ -22,7 +22,7 @@ Starboard, with a keyboard and a screen reader in mind.
 3. For qBittorrent, in **Upload limit**, enter how many kilobytes a second it may upload, or 0 for no limit.
 4. Move to the next control. Starboard says **Saved** beside the one you changed.
 
-To use the second pair of limits you set in qBittorrent, such as for the daytime, activate **Use the alternative speed limits**.
+To use the second pair of limits you set in qBittorrent, such as for the daytime, turn on **Use the alternative speed limits**.
 Starboard does not change those limits. Set them in qBittorrent, under **Speed**.
 
 Each change applies at once. There is no save button.

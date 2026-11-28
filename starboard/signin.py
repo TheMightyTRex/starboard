@@ -6,7 +6,7 @@ they are in. What is kept lives in the settings file under "auth", which a setti
 
     auth.totp  = {enabled, secret, pending, last_step, recovery: [hashes]}
     auth.oidc  = {enabled, name, issuer, client_id, client_secret, redirect_uri, scopes, claim, value, tested}
-    auth.password_login = False  only when the owner deactivated it
+    auth.password_login = False  only when the owner turned it off
 
 The secrets are never sent to the browser, never written to a log or the audit log, and never put in an address.
 """
@@ -187,7 +187,7 @@ def totp_confirm(app, code, address):
         app.config.data["auth"]["totp"] = {"enabled": True, "secret": pending, "last_step": step, "recovery": hashes}
         _save(app)
     audit(app, "totp_enabled", address=address)
-    logs.event("info", "sign-in", "A two-step code was activated")
+    logs.event("info", "sign-in", "A two-step code was on")
     return {"codes": codes, "status": status(app)}
 
 
@@ -196,14 +196,14 @@ def totp_off(app, address):
         app.config.data["auth"].pop("totp", None)
         _save(app)
     audit(app, "totp_disabled", address=address)
-    logs.event("warning", "sign-in", "The two-step code was deactivated")
+    logs.event("warning", "sign-in", "The two-step code was off")
     return status(app)
 
 
 def new_recovery(app, code, address):
     t = section(app, "totp")
     if not totp_on(app):
-        raise SigninError(409, "Activate the two-step code first")
+        raise SigninError(409, "Turn on the two-step code first")
     step = totp.verify(t["secret"], code, t.get("last_step", 0))
     if step is None:
         audit(app, "recovery_codes_refused", address=address)
@@ -285,7 +285,7 @@ def oidc_enable(app, on, address):
             app.config.data["auth"]["password_login"] = True  # turning single sign-on off must never leave nobody able to sign in
         _save(app)
     audit(app, "sso_enabled" if on else "sso_disabled", address=address)
-    logs.event("info" if on else "warning", "sign-in", "Single sign-on was " + ("activated" if on else "deactivated"))
+    logs.event("info" if on else "warning", "sign-in", "Single sign-on was " + ("turned on" if on else "turned off"))
     return status(app)
 
 
@@ -306,7 +306,7 @@ def set_password_login(app, allowed, address):
     if not allowed:
         o = section(app, "oidc")
         if not (sso_on(app) and o.get("tested")):
-            raise SigninError(409, "Activate single sign-on and test it first. Then the password can be deactivated")
+            raise SigninError(409, "Turn on single sign-on and test it first. Then the password can be turned off")
     with app.config.lock:
         if allowed:
             app.config.data["auth"].pop("password_login", None)
@@ -314,7 +314,7 @@ def set_password_login(app, allowed, address):
             app.config.data["auth"]["password_login"] = False
         _save(app)
     audit(app, "password_sign_in_on" if allowed else "password_sign_in_off", address=address)
-    logs.event("warning" if not allowed else "info", "sign-in", "Password sign-in was " + ("activated" if allowed else "deactivated"))
+    logs.event("warning" if not allowed else "info", "sign-in", "Password sign-in was " + ("turned on" if allowed else "turned off"))
     return status(app)
 
 
@@ -339,5 +339,5 @@ def reset(app):
         a["session_version"] = a.get("session_version", 1) + 1
         _save(app)
     app.sessions.end_all()
-    logs.event("warning", "security", "The two-step code and single sign-on were deactivated on the server. Everyone is signed out; the password works")
+    logs.event("warning", "security", "The two-step code and single sign-on were turned off on the server. Everyone is signed out; the password works")
     api_v1.audit(app.data_dir, "sign_in_reset")

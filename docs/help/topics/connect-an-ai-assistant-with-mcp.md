@@ -5,7 +5,7 @@
 
 An AI assistant that speaks MCP, the Model Context Protocol, can ask Starboard about your media server for you: "Is
 the new series downloading?", "Which apps have a problem?", "How much space is left?". It reads only, with a key you
-make for it, and only once you activate **Let AI assistants connect**. It cannot change anything.
+make for it, and only once you turn on **Let AI assistants connect**. It cannot change anything.
 
 ## What an assistant can read
 
@@ -29,10 +29,10 @@ assistant is not built yet.
 
 ## Steps
 
-### Activate AI assistants
+### Turn on AI assistants
 
 1. Go to **Settings**, then **Security**, then **API keys**.
-2. Under **AI assistants**, activate **Let AI assistants connect**. Starboard says **Active** and shows the
+2. Under **AI assistants**, turn on **Let AI assistants connect**. Starboard says **Active** and shows the
    **Address for the assistant**, such as `http://192.0.2.10:8095/api/v1/mcp`.
 
    ![Settings, Security, API keys, with Let AI assistants connect (step 2) outlined, with example data](../images/connect-an-ai-assistant-with-mcp-1-switch.png)
@@ -90,7 +90,7 @@ Then ask the assistant a question, such as "Which of my apps are not answering?"
 
 ## Things to note
 
-- **Deactivate it at any time.** Deactivate **Let AI assistants connect** and every assistant stops at once, whatever
+- **Turn it off at any time.** Turn off **Let AI assistants connect** and every assistant stops at once, whatever
   key it has. Its key still works for the rest of the API until you revoke it.
 - **Stop one assistant.** Revoke its key in **Settings**, **Security**, **API keys**.
 - **What the assistant is told.** It gets only the tools its key's scopes cover. A key with only **Downloads**, for

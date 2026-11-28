@@ -220,10 +220,10 @@ A list without `menus` is drawn as before, so an older Starboard shows every ite
 
 ### Sections that fold, with a table each (API 1.8)
 
-Send `"layout": "folds"` with `columns` to show each `group` as a section that folds: one line with its name, how many
-of its items are active, and its own switch, which opens to a table of its items. Starboard adds a search, the All,
-Active and Inactive filter, filter chips and a tick box on each row, so several items from any section can be
-activated or deactivated at once. Only open sections draw their rows.
+Send `"layout": "folds"` with `columns` to show each `group` as a section that folds. A section has one line with its name,
+how many of its items are active and its own switch. It opens to a table of its items.
+
+Starboard adds a search, the All, Active and Inactive filter, filter chips and a tick box on each row. Use them to turn several items on or off at once. Only open sections draw their rows.
 
 | Field | Rules |
 |---|---|
@@ -237,7 +237,7 @@ Ticked items are sent as `{"action": "bulk_ids", "ids": ["news-1", "news-2"], "v
 ### Tables to read only (API 1.11)
 
 Send `"readonly": true` with `"layout": "folds"` for figures people read but do not change, such as watch statistics.
-Each section opens to a table with only your `columns`: no tick boxes, no **State** column, no **Activate** buttons
+Each section opens to a table with only your `columns`: no tick boxes, no **State** column, no **Turn on** buttons
 and no All, Active and Inactive filter. Its line says how many rows it has. The first column is each row's header, so
 a screen reader names the row by it. Search, sorting by any column and the filter chips still work. Use a custom
 setting for each table, so each has its own columns and its own tab. An older Starboard ignores `readonly` and draws
@@ -259,8 +259,8 @@ the table as before.
 
 `action` is one of `add`, `test`, `test_all`, `toggle`, `remove`, `up`, `down`, `choose`, `bulk` and, from API 1.8,
 `bulk_ids`, `attach`, `detach` and `dismiss`, from API 1.15 `restore`, and from API 1.16 `browse` and `pick`. `id` is the row,
-and `value` is what the person entered or chose. For `bulk`, `id` is the set and `value` is `on` to activate every item
-in it or `off` to deactivate them. Answer with the whole list again, in the same shape, with `said`
+and `value` is what the person entered or chose. For `bulk`, `id` is the set and `value` is `on` to turn on every item
+in it or `off` to turn them off. Answer with the whole list again, in the same shape, with `said`
 added: one sentence, up to 200 characters, that Starboard shows. To refuse, answer with an HTTP error status and
 `{"error": "A sentence saying why"}`; Starboard shows the sentence.
 
@@ -380,7 +380,7 @@ the path from `STARBOARD_API`, any `Host` and the plug-in's own key. The socket 
 that plug-in's key: another key is refused with `401`. A plug-in with no container on the `lan` network can reach no other address, so its key works on the socket alone, and the port refuses it. A plug-in on the `lan` network may use either. The helper
 `sbplugin.py` in the example plug-ins uses the socket whenever `STARBOARD_API_SOCKET` names one that is there.
 
-Starboard writes `reelix.json` and `usenet.json` again each time it starts and each time the plug-in is activated,
+Starboard writes `reelix.json` and `usenet.json` again each time it starts and each time the plug-in is turned on,
 so a changed password reaches the plug-in without a reinstall.
 
 Starboard does not restart a plug-in when its settings change, but the new `settings.json` is there at once:
@@ -553,17 +553,17 @@ Starboard keeps one state for each plug-in, and shows each with one sentence and
 
 | State | What it means | The button |
 |---|---|---|
-| `installed` | Added, not started yet. From Starboard 0.23.0 a plug-in is activated as soon as it is installed, so it stays `installed` only when it needs setting up first or did not start | **Activate** |
-| `enabled` | Active and running | **Deactivate** |
-| `disabled` | Deactivated: stopped, with its settings and data kept | **Activate** |
+| `installed` | Added, not started yet. From Starboard 0.23.0 a plug-in is turned on as soon as it is installed, so it stays `installed` only when it needs setting up first or did not start | **Turn on** |
+| `enabled` | Active and running | **Turn off** |
+| `disabled` | Inactive: stopped, with its settings and data kept | **Turn on** |
 | `failed` | It did not start, or stopped answering. The message says why | **Try again**, or **Roll back** to the version before within 10 minutes of an update |
 | `needs-setup` | A required setting is empty, or `setup_required` and it has never been set up | **Finish setting up** |
 | `not-supported` | Shown as **Needs an update**. This Starboard cannot run the plug-in: its `starboard_api` leaves out this Starboard's plug-in API, or it uses something this Starboard no longer has. Starboard stops it, keeps its settings and data, and says why | **Check for an update** |
 
 The first four are stored in the plug-in's `state.json`. Starboard works out `needs-setup` and `not-supported` each
-time, and a plug-in in either cannot be activated. When Starboard starts, it stops every active plug-in that is
+time, and a plug-in in either cannot be turned on. When Starboard starts, it stops every active plug-in that is
 **Needs an update**. It stops the containers, never removes them, and keeps the settings, data and key. Docker does not
-start a stopped container again, whatever its restart policy says. **Deactivate all plug-ins** stops every active plug-in at once.
+start a stopped container again, whatever its restart policy says. **Turn off all plug-ins** stops every active plug-in at once.
 
 ## Updates and Roll back
 

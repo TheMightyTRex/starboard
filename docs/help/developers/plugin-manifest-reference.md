@@ -50,7 +50,7 @@ runs it too. For a first plug-in, read [Make your first plug-in](make-a-plugin.m
 | `adopt` | no | An app the main install may already run, which Starboard can copy into the plug-in | Read [App plug-ins](#app-plug-ins). API 1.13 |
 | `logo` | no | A small logo, shown in **Settings**, **Plug-ins** and on its dashboard cards | Read [Logo](#logo). API 1.14 |
 | `update` | no | How it updates safely: a step before and after, the health wait and settings migrations | Read [Updates](#updates). API 1.14 |
-| `jellyfin_libraries` | no | Jellyfin libraries for folders it fills, which Starboard adds with real-time monitoring deactivated | Read [Jellyfin libraries](#jellyfin-libraries). API 1.15 |
+| `jellyfin_libraries` | no | Jellyfin libraries for folders it fills, which Starboard adds with real-time monitoring turned off | Read [Jellyfin libraries](#jellyfin-libraries). API 1.15 |
 
 ## What it needs (requires)
 
@@ -92,12 +92,18 @@ Some plug-ins only make sense while another is on, such as an app that signs in 
 - **`needs_plugins`** lists the ids of the plug-ins this one needs, up to 10. It cannot list itself.
 - **`switch`** names one of the plug-in's own `switch` settings as its main switch, such as `enabled`.
 
-Starboard checks both when someone **deactivates** a plug-in or saves its switch as off. If other plug-ins that are active list it in
+Starboard checks both when someone **turns off** a plug-in or saves its switch as off. If other plug-ins that are active list it in
 `needs_plugins`, Starboard stops, names them in plain English and asks for a yes. Nothing changes until the answer is yes. On yes it
-deactivates those plug-ins first, then the one asked about. Nothing is deleted, and each can be activated again. The route answers
+turns those plug-ins off first, then the one asked about. 
+
+Nothing is deleted, and each can be turned on again. The route answers
 `409` with `error` (the words to show) and `dependents` (`id` and `name` of each), and the same request with `"confirm_dependents": true`
-does it. Activating the switch, saving other settings and deactivating a plug-in that nothing needs never ask. Starboard does not
-activate a needed plug-in for you, and a plug-in that needs another still starts when that one is off: it should say so on its card.
+does it.
+
+Turning on the switch, saving other settings and turning off a plug-in that nothing needs never ask.
+
+Starboard does not
+turn on a needed plug-in for you. A plug-in that needs another still starts when that one is off, so it should say so on its card.
 A plug-in that does not use these fields works as before. Name `>=1.21` in `starboard_api` to use them.
 
 ## A first sign-in shown once (first_sign_in)
@@ -258,7 +264,7 @@ climb out with `..` or start with `/`, no backslashes, no two files with the sam
 minutes. The build can reach the internet to fetch what the Dockerfile names, never the server's own network, folders,
 Docker or other apps. No build arguments or secrets are passed. An image over 3 GB is refused. The image is tagged
 `local/<id>:<version>`, so **Roll back** finds the version before without a download, and Starboard keeps the zips of
-the current and the previous version beside the plug-in, so an image that has gone is built again on **Activate**.
+the current and the previous version beside the plug-in, so an image that has gone is built again on **Turn on**.
 
 People read before they add it: "Starboard builds its image, local/on-demand:0.9.2, from the Dockerfile in the zip",
 with the limits and the image it starts from. Make the zip from your committed files, as On demand's
@@ -391,9 +397,9 @@ Starboard shows it under the plug-in in the catalogue, so people with a small se
 
 ## Jellyfin libraries
 
-From API 1.15, a plug-in that fills folders for Jellyfin, such as On demand's films and series, names its libraries
-in `jellyfin_libraries` and asks for `jellyfin:libraries`. Starboard adds each one Jellyfin does not have when the
-plug-in is activated, and checks them again on every activation, so after each install, update and **Roll back**.
+From API 1.15, a plug-in that fills folders for Jellyfin, such as On demand's films and series, names its libraries in
+`jellyfin_libraries`. It asks for `jellyfin:libraries`. Starboard adds each one Jellyfin does not have when the
+plug-in is turned on. It checks them again each time, so after each install, update and **Roll back**.
 
 ```json
 "permissions": ["jellyfin:libraries"],
@@ -410,11 +416,11 @@ plug-in is activated, and checks them again on every activation, so after each i
 | `folder` | yes | Its folder | Inside a media folder one of its containers mounts, such as `media/on-demand/films`, up to 3 folders deep |
 | `realtime_monitor` | no | Whether Jellyfin watches the folder for new files | `true` or `false`; `false` when left out |
 
-- **Real-time monitoring is deactivated unless you set it.** Jellyfin watching a folder costs one of the computer's
+- **Real-time monitoring is off unless you set it.** Jellyfin watching a folder costs one of the computer's
   folder watches for every folder in it, and a large library can use them all up before the person's own Films and
   TV. A plug-in that adds files itself tells Jellyfin to check (a library refresh) instead.
-- **Starboard keeps it as you set it.** Someone who activates monitoring in Jellyfin finds it deactivated again on the
-  next activation of the plug-in. Nothing else about the library is changed.
+- **Starboard keeps it as you set it.** Someone who turns on monitoring in Jellyfin finds it turned off again on the
+  next time the plug-in is turned on. Nothing else about the library is changed.
 - **Found by its folder, then by its name.** A library Jellyfin already has, from an older version or made by hand,
   is used, not added twice.
 - **The folders are made first,** owned by the container's user, because Jellyfin will not add a folder that is not
@@ -424,7 +430,7 @@ plug-in is activated, and checks them again on every activation, so after each i
   what went wrong.
 
 People read before they add it: "Jellyfin: Starboard adds 2 libraries On demand Films and On demand TV, for folders it
-fills in your media folder. Real-time monitoring is deactivated for On demand Films and On demand TV, as the plug-in
+fills in your media folder. Real-time monitoring is off for On demand Films and On demand TV, as the plug-in
 refreshes them itself."
 
 ## Settings
@@ -449,7 +455,7 @@ them in the plug-in's `settings.json`. Read [Settings and key files](plugin-api-
 |---|---|---|
 | `text` | A text box | Up to 500 characters |
 | `number` | A number box | A number from `min` to `max` |
-| `switch` | Activate or deactivate | Saved as `true` or `false` |
+| `switch` | Turn on or off | Saved as `true` or `false` |
 | `choice` | A list | One of `choices` |
 | `address` | An address box | An address Starboard is allowed to call |
 | `secret` | A password box | Never sent back to the browser; shown as set or not set. Up to 2000 characters |
@@ -870,10 +876,10 @@ A catalogue version may carry `capabilities_needed`, a list of the same names, n
 | 1.24 | 27 November 2026 | The `power:hold` permission, with `POST /api/v1/plugin/hold`, so a plug-in holds Starboard's heavy automatic jobs and downloads on battery; the `time` setting type |
 | 1.23 | 27 November 2026 | `replaces_or_adds`: one line on what a plug-in replaces or adds to, shown on the Catalogue card, before install, on its page and in Manage; `icon`: one icon from Starboard's set for its tab in Settings, Plug-ins |
 | 1.22 | 27 November 2026 | `starboard_tested` and `capabilities`: named optional parts a plug-in needs or uses, listed by `GET /api/v1/`; the plug-in tester checks the range a plug-in names |
-| 1.21 | 27 November 2026 | `needs_plugins` and `switch`: a plug-in may list the plug-ins it needs and name its own main switch; deactivating a plug-in or saving its switch as inactive a plug-in that others need asks first and deactivates them too |
+| 1.21 | 27 November 2026 | `needs_plugins` and `switch`: a plug-in may list the plug-ins it needs and name its own main switch; turning off a plug-in or saving its switch as inactive a plug-in that others need asks first and turns them off too |
 | 1.19 | 25 November 2026 | `requires`: the system a plug-in needs, shown as a tag (Jellyfin only, Plex or Emby, Needs Reelix), worked out from the permissions of older manifests; 1.18 is DASH-572's |
 | 1.17 | 20 November 2026 | The `sparkline` card: a small line for each series, with the latest, lowest and highest value in words; the `alerts:send` permission, with `POST /api/v1/plugin/alerts` to raise and clear alerts through Starboard's own |
-| 1.16 | 19 November 2026 | The `disk.changed` event; a plug-in is activated when installed; a custom setting's `add` box and an item's `attach` form take plain text; `STARBOARD_HOME_ADDRESS` for a container with `publish` on the `lan` network |
+| 1.16 | 19 November 2026 | The `disk.changed` event; a plug-in is turned on when installed; a custom setting's `add` box and an item's `attach` form take plain text; `STARBOARD_HOME_ADDRESS` for a container with `publish` on the `lan` network |
 | 1.15 | 15 November 2026 | `build` on a container, for an image Starboard builds from the `Dockerfile` in the plug-in's zip file, installed with **Upload a zip file** and updated with **Update from a zip file**; `jellyfin_libraries` with the `jellyfin:libraries` permission; the `library:holding` permission with the `media:holding` volume (the media folder, read and write, for its holding folder `media/.holding/<id>`), and `restore` on a custom setting's item, drawn as **Put back**; `titles` on a card, a title for each card size that fits on one line in that size |
 
 Use the lowest version that has what you use in `starboard_api`, such as `">=1.4 <2.0"` for a plug-in with jobs.

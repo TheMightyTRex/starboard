@@ -326,7 +326,7 @@ function rxKindSection(kind, description) {
       if (!r) { priv.checked = !priv.checked; return; }
       search = r; draw(); settingSaved();
     }));
-    rows.push(switchRow("Addresses on your network", "Lets Reelix reach a site at home, such as your own Jackett. Searching through the VPN needs it too. Otherwise, leave it deactivated.", priv));
+    rows.push(switchRow("Addresses on your network", "Lets Reelix reach a site at home, such as your own Jackett. Searching through the VPN needs it too. Otherwise, leave it turned off.", priv));
     return el("div", { class: "stack-2" }, el("h3", { text: "How Reelix searches" }), rows,
       search.flaresolverr ? el("p", { class: "small muted", text: `Sites with a browser check go through FlareSolverr at ${search.flaresolverr}.` }) : null);
   };

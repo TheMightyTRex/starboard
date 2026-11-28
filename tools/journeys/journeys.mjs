@@ -167,7 +167,7 @@ check("FB-01", "Settings, General, Backup/Logs lists it", await page.locator("#f
 for (const n of saved) await api("/api/ux-notes/remove", { method: "POST", body: { id: n.id } });
 await api("/api/config/general", { method: "PUT", body: { ux_notes: false } });
 await open("index.html");
-check("FB-01", "deactivated, it is gone", await page.locator("snag-list").count() === 0 && !(await page.locator(".rail__feedback").isVisible()));
+check("FB-01", "turned off, it is gone", await page.locator("snag-list").count() === 0 && !(await page.locator(".rail__feedback").isVisible()));
 await api("/api/config/general", { method: "PUT", body: { ux_notes: fbBefore } });  // on by default since 0.15.2
 
 // WZ-01: Still to set up, one step at a time, each Starboard step set up inside the slide-out (DASH-289)
@@ -473,7 +473,7 @@ await open("library-films.html");
 await page.locator("#lib-wall .media-card").first().waitFor({ timeout: 10000 }).catch(() => {});
 await page.locator("#lib-more").evaluate((e) => e.scrollIntoView({ block: "end" }));
 await page.waitForTimeout(1800);
-check("INF-01", "with the setting deactivated, nothing loads by itself", await cards() === 40, String(await cards()));
+check("INF-01", "with the setting turned off, nothing loads by itself", await cards() === 40, String(await cards()));
 await page.locator("#lib-more button").focus();
 await page.keyboard.press("Enter");
 await page.waitForTimeout(1800);
@@ -817,7 +817,7 @@ check("RX-01", "the page keeps no copy in browser storage",
 // MOVE-01: Apps you already run (DASH-249 to 254, DASH-190 to 192), on the example server's made-up server set up by
 // hand: Moving over says what moves where; a qBittorrent ban is said under its field and goes when the next try
 // starts; the move opens a dialog with a task list and a result, focus goes to the dialog and back; the review lists
-// held sites with Activate, a site Reelix cannot search and the waiting titles; the requests choice; the takeover's
+// held sites with Turn on, a site Reelix cannot search and the waiting titles; the requests choice; the takeover's
 // dialog; Keep it; Clear away; Change your install leaves out the apps from the person's own Compose file.
 // MOVE-02: Install apps offers the move itself (DASH-127): once the server is set up, it opens on Apps you already run
 // while Starboard finds apps Reelix replaces, with the same steps as Settings, Your install.
@@ -885,13 +885,13 @@ check("MOVE-01", "the result is in the dialog at the end", (await dlg.locator(".
 await dlg.getByRole("button", { name: "Done" }).click();
 await tk.locator("[aria-labelledby=tk-review-h]").waitFor({ timeout: 10000 });
 const review = tk.locator("[aria-labelledby=tk-review-h]");
-check("MOVE-01", "the review lists held sites, each with Activate", await review.getByRole("button", { name: /^Activate (?!all)/ }).count() === 3);
+check("MOVE-01", "the review lists held sites, each with Turn on", await review.getByRole("button", { name: /^Turn on (?!all)/ }).count() === 3);
 check("MOVE-01", "and a site Reelix cannot search yet", (await review.textContent()).includes("Knaben"));
 check("MOVE-01", "and points to the titles waiting for a match", await tk.locator("[aria-labelledby=tk-waiting-h] .row").count() === 3);
 await review.locator("input[type=password]").fill(password);
-await review.getByRole("button", { name: "Activate all" }).click();
+await review.getByRole("button", { name: "Turn on all" }).click();
 await page.waitForTimeout(1500);
-check("MOVE-01", "Activate all leaves no held site", await tk.locator("[aria-labelledby=tk-review-h]").getByRole("button", { name: /^Activate / }).count() === 0);
+check("MOVE-01", "Turn on all leaves no held site", await tk.locator("[aria-labelledby=tk-review-h]").getByRole("button", { name: /^Turn on / }).count() === 0);
 const rq = tk.locator("[aria-labelledby=tk-requests-h]");
 check("MOVE-01", "Seerr beside Reelix: Reelix's own requests is recommended", (await rq.locator(".option-card").first().textContent()).includes("Use Reelix's own requests (recommended)"));
 await rq.locator("input[value=seerr]").check();
@@ -1262,7 +1262,7 @@ check("WN-05", "Got it hides it and puts focus on the State heading",
 await open("settings-plugin.html?id=styles");
 check("WN-05", "Got it is kept on the server: it is not shown again", !(await page.locator("#pl-styles-whats-new").count()));
 // DASH-402: a plug-in's tables to read only (plug-in API 1.11), on the example Watch statistics plug-in: each table is
-// its own tab, a section opens to its table with only the plug-in's columns, and nothing can be ticked or activated.
+// its own tab, a section opens to its table with only the plug-in's columns, and nothing can be ticked or turned on.
 console.log("\n== WS Read-only plug-in tables");
 await open("settings-plugin.html?id=watch-stats");  // topic tabs are off here, so the three tables are on one page
 await page.locator(".fold__toggle").first().waitFor({ timeout: 10000 }).catch(() => {});
@@ -1272,8 +1272,8 @@ await page.locator(".fold__toggle").first().click();
 await page.waitForTimeout(300);
 const wsHeads = await page.locator(".fold__panel").first().locator("table th[scope=col]").allInnerTexts();
 check("WS-02", "the open section's table has only the plug-in's columns", wsHeads.join(",") === "Time,Person,Title,Device,Minutes", wsHeads.join(","));
-check("WS-03", "nothing can be ticked, activated or deactivated",
-  !(await page.locator(".fold__panel input[type=checkbox]").count()) && !(await page.locator(".fold__panel").getByRole("button", { name: /^(Activate|Deactivate)/ }).count()));
+check("WS-03", "nothing can be ticked, turned on or off",
+  !(await page.locator(".fold__panel input[type=checkbox]").count()) && !(await page.locator(".fold__panel").getByRole("button", { name: /^(Turn on|Turn off)/ }).count()));
 check("WS-04", "each row is named by its first cell", (await page.locator(".fold__panel tbody th[scope=row]").count()) === 2);
 await page.locator(".fold__toggle", { hasText: "Series" }).click();
 await page.waitForTimeout(300);
@@ -1587,8 +1587,8 @@ await page.waitForTimeout(400);
 check("API-03", "the list says the key reads and manages", /read and manage/.test(await page.locator("#security-sections .row", { hasText: "Journey manager" }).textContent()));
 const listed = await api("/api/keys");
 for (const k of listed.keys.filter((k) => k.name === "Journey manager")) await api(`/api/keys/${k.id}`, { method: "DELETE" });
-// DASH-464: AI assistants over MCP, on the same page. Off until activated; the switch says what it shares, keeps focus
-// and says the result in a live region; a Read only key then gets the tools, and deactivating stops it at once. The
+// DASH-464: AI assistants over MCP, on the same page. Off until turned on; the switch says what it shares, keeps focus
+// and says the result in a live region; a Read only key then gets the tools, and turning off stops it at once. The
 // assistant's calls go from here, as an assistant's would, not from the page.
 console.log("\n== MCP AI assistants");
 await open("settings-security-keys.html");
@@ -1608,7 +1608,7 @@ check("MCP-02", "while inactive, a key gets 403 mcp_off", mcpOff.status === 403 
 await mcpOn.focus();
 await page.keyboard.press("Space");
 await page.waitForFunction(() => /Active:/.test(document.querySelector("#mcp-result")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
-check("MCP-03", "Space activates it, focus stays on the switch and the address shows",
+check("MCP-03", "Space turns it on, focus stays on the switch and the address shows",
   await mcpOn.isChecked() && await page.evaluate(() => document.activeElement?.id === "mcp-on")
   && /\/api\/v1\/mcp$/.test(await page.locator("section[aria-labelledby='sc-mcp-h'] dd code").first().textContent()));
 const mcpList = await mcpCall({ jsonrpc: "2.0", id: 2, method: "tools/list" });
@@ -1616,11 +1616,11 @@ check("MCP-04", "then a Read only key gets the read-only tools", mcpList.status 
   && mcpList.body.result.tools.every((t) => t.annotations.readOnlyHint), JSON.stringify(mcpList.body).slice(0, 120));
 await page.keyboard.press("Space");
 await page.waitForFunction(() => /Inactive:/.test(document.querySelector("#mcp-result")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
-check("MCP-05", "deactivating it stops the assistant at once", (await mcpCall({ jsonrpc: "2.0", id: 3, method: "ping" })).status === 403);
+check("MCP-05", "turning it off stops the assistant at once", (await mcpCall({ jsonrpc: "2.0", id: 3, method: "ping" })).status === 403);
 for (const k of (await api("/api/keys")).keys.filter((k) => k.name === "Journey assistant")) await api(`/api/keys/${k.id}`, { method: "DELETE" });
 // DASH-380, several places (26 November 2026): Where backups go on Settings, General, Backup/Logs, set by the example server to
 // a made-up USB disk, Google Drive and OneDrive, with a stand-in helper. Test answers beside the place and focus stays on
-// it; a wrong share is said in an alert that takes focus; a place can be deactivated and the page says if the backup is safe.
+// it; a wrong share is said in an alert that takes focus; a place can be turned off and the page says if the backup is safe.
 console.log("\n== CP Where backups go");
 await open("settings-general-backup.html");
 const cp = page.locator("#copies-body");
@@ -1653,9 +1653,9 @@ await page.keyboard.press("Escape");
 await page.waitForFunction(() => !document.querySelector(".side-panel"));
 await page.locator("#place-on-d1a2b3").focus();
 await page.keyboard.press("Space");
-await page.waitForFunction(() => /Deactivated/.test(document.querySelector("#place-d1a2b3 .place-state")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
-check("CP-04", "deactivating a place is said in words and a shape, and focus stays on its switch",
-  /Deactivated/.test(await page.locator("#place-d1a2b3 .place-state").innerText()) && await page.evaluate(() => document.activeElement.id) === "place-on-d1a2b3");
+await page.waitForFunction(() => /^Off/.test(document.querySelector("#place-d1a2b3 .place-state")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
+check("CP-04", "turning off a place is said in words and a shape, and focus stays on its switch",
+  /^Off/.test(await page.locator("#place-d1a2b3 .place-state").innerText()) && await page.evaluate(() => document.activeElement.id) === "place-on-d1a2b3");
 await page.keyboard.press("Space");
 await page.waitForFunction(() => /Copied and read back/.test(document.querySelector("#place-d1a2b3 .place-state")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
 const copiesNow = await api("/api/backup/copies");
@@ -1663,7 +1663,7 @@ check("CP-04", "the page never gets a password or config back", !JSON.stringify(
 check("CP-04", "the API says safe only when each place read it back", copiesNow.safe.safe === true && copiesNow.safe.places.length === 3);
 await page.locator("#copies-now").click();
 await page.waitForFunction(() => /Copied and read back|Copying/.test(document.querySelector("#copies-body")?.textContent || ""), null, { timeout: 8000 }).catch(() => {});
-check("CP-05", "Copy the newest full backup now copies to every place that is activated", /Copied and read back|Copying/.test(await page.locator("#copies-body").innerText()));
+check("CP-05", "Copy the newest full backup now copies to every place that is on", /Copied and read back|Copying/.test(await page.locator("#copies-body").innerText()));
 console.log("\n== Audio description, chosen in the set-up (DASH-399)");
 await open("settings-plugins-catalogue.html");
 const adOffer = page.locator('[data-offer="audio-description"]');
@@ -1707,7 +1707,7 @@ const after = await api("/api/jellyfin/plugins");
 check("JF-03", "after the restart Merge Versions is active and set to quiet hours",
   after.groups.find((g) => g.id === "merge").installed[0]?.status === "Active" && /Set up after the restart/.test(await plug.textContent()), JSON.stringify(after.finished));
 const moved = await api("/api/jellyfin/plugins", { method: "POST", body: { group: "playback", choice: "none" } });
-check("JF-04", "Do not install deactivates and never uninstalls", moved.done[0] === "Deactivated Playback Reporting (still installed)", moved.done.join("; "));
+check("JF-04", "Do not install turns off and never uninstalls", moved.done[0] === "Turned off Playback Reporting (still installed)", moved.done.join("; "));
 await api("/api/jellyfin/plugins", { method: "POST", body: { group: "playback", choice: "on" } });
 
 // DASH-425 (owner, 14 November 2026): recommended plug-ins in the catalogue, and Direct play's card on the dashboard
@@ -2067,7 +2067,7 @@ check("UPD-05", "Starboard waits for you; the plug-in updates by itself", (await
 const autoSwitches = page.locator("#updates-auto").getByRole("switch");
 check("UPD-01", "Update by themselves has a switch for each of the five parts", (await autoSwitches.count()) === 5);
 const auto = page.getByRole("switch", { name: "Starboard: update by itself" });
-check("UPD-01", "Starboard's is deactivated by default", (await auto.count()) === 1 && !(await auto.isChecked()));
+check("UPD-01", "Starboard's is turned off by default", (await auto.count()) === 1 && !(await auto.isChecked()));
 check("UPD-01", "the hours are a choice, the download hours first", (await page.locator("#updates-auto input[type=radio]").count()) === 2
   && await page.locator('#updates-auto input[value="download"]').isChecked());
 check("UPD-05", "Recent updates lists what each did, by whom", (await page.locator("#updates-recent li").count()) >= 3
@@ -2859,7 +2859,7 @@ await page.unroute(/\/api\/status\?id=/, rxStatus);
 
 // DASH-512: the two-step code and single sign-on for Starboard's own sign-in. Both are off until set up; set-up asks for
 // the password, shows a QR code and the recovery codes once; signing in then asks for the code after the password;
-// deactivating puts it back. The example server takes 123456 as the right code (tools/screenshots/example_server.py).
+// turning off puts it back. The example server takes 123456 as the right code (tools/screenshots/example_server.py).
 console.log("\n== SIGNIN-01 Two-step code and single sign-on");
 const problemsBefore = problems.length;  // the refusals below are answered 401 and 409 on purpose; the browser logs each as an error
 await page.setViewportSize({ width: 1280, height: 860 });
@@ -2912,8 +2912,8 @@ await other.waitForURL((u) => !u.pathname.endsWith("login.html"), { timeout: 800
 check("SIGNIN-03", "a recovery code signs in, once", !/login/.test(other.url()) && (await api("/api/security/signin")).totp.recovery_left === 7);
 await other.context().close();
 await open("settings-security-signin.html");
-await page.getByRole("button", { name: "Deactivate the two-step code" }).click();
-check("SIGNIN-04", "deactivating asks first, and the safe choice is not the default", await page.getByRole("dialog").count() === 1);
+await page.getByRole("button", { name: "Turn off the two-step code" }).click();
+check("SIGNIN-04", "turning off asks first, and the safe choice is not the default", await page.getByRole("dialog").count() === 1);
 await page.fill("#signin-password", password);
 await page.keyboard.press("Enter");
 await page.getByRole("button", { name: "Set up a two-step code" }).waitFor({ timeout: 8000 }).catch(() => {});
@@ -2923,7 +2923,7 @@ await page.getByRole("tab", { name: "Single sign-on" }).click().catch(() => {});
 check("SIGNIN-05", "the secret is never in the page, only that it is kept", await page.locator("#sso-secret").getAttribute("placeholder") === "Kept. Leave blank to keep it" && !(await page.content()).includes("made-up-client-secret"));
 check("SIGNIN-05", "Allow single sign-on is a switch with a name", await page.getByRole("switch", { name: /Allow single sign-on/ }).count() === 1);
 const pwOff = await page.evaluate(async () => { try { await api("/api/security/password-login", { method: "POST", body: { password: "example-password", allowed: false } }); return "allowed"; } catch (e) { return e.message; } });
-check("SIGNIN-05", "the password cannot be deactivated until single sign-on is on and has been tested", /Activate single sign-on and test it first/.test(pwOff), pwOff);
+check("SIGNIN-05", "the password cannot be turned off until single sign-on is on and has been tested", /Turn on single sign-on and test it first/.test(pwOff), pwOff);
 const asKey = await page.evaluate(async () => (await fetch("/api/security/signin", { credentials: "omit", headers: { Authorization: "Bearer sb_manage_000000_nope" } })).status);
 check("SIGNIN-05", "an API key, or a made-up one, cannot read any of it", asKey === 401, String(asKey));
 problems.splice(problemsBefore, problems.length, ...problems.slice(problemsBefore).filter((m) => !/status of (401|409)/.test(m)));

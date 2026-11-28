@@ -4,7 +4,7 @@ Everything goes through Jellyfin's own API with the key in Manage apps (checked 
 13 November 2026): /Repositories to add a plug-in repository, /Packages/Installed/{name} to install (Jellyfin picks the
 newest version that suits its own version), /Plugins to read what is installed, /Plugins/{id}/{version}/Enable and
 Disable, /Plugins/{id}/Configuration, /ScheduledTasks/{id}/Triggers, and /System/Restart. Starboard never uninstalls
-a plug-in: switching to another choice deactivates the old one, which stays installed so it can come back.
+a plug-in: switching to another choice turns off the old one, which stays installed so it can come back.
 
 The choices (research, 13 November 2026, from each project's manifest and source):
 - Skip intros and credits, three ways:
@@ -14,7 +14,7 @@ The choices (research, 13 November 2026, from each project's manifest and source
     its own Media segment scan. Only shows other people have timed are covered.
   - Analysed on this server: Intro Skipper (Jellyfin 10.11.11 and later). Starboard sets it to analyse only in quiet
     hours: its "Detect and Analyze Media Segments" task runs daily at the start of download hours and stops at their
-    end, analysis of new items as they arrive is deactivated, and one episode at a time (MaxParallelism 1).
+    end, analysis of new items as they arrive is off, and one episode at a time (MaxParallelism 1).
   - Not skipped.
 - Playback Reporting (Jellyfin's own repository): play statistics, which the lighter watch statistics plug-in reads.
 - Merge Versions (danieladov's repository): copies of the same film or episode become one item with a version choice.
@@ -68,20 +68,20 @@ GROUPS = [
           "hint": "Times other people have marked, downloaded when Jellyfin scans. Almost no processor or memory. Shows nobody has timed yet have no Skip button."},
          {"id": "analysed", "label": "Analysed on this server, in quiet hours",
           "hint": "Intro Skipper listens to each episode to find the intro and credits. It covers every show, but uses a processor core for each episode, so Starboard keeps it to quiet hours, one episode at a time."},
-         {"id": "none", "label": "Do not skip", "hint": "Nothing is added. A plug-in Starboard installed before is deactivated, not removed."}]},
+         {"id": "none", "label": "Do not skip", "hint": "Nothing is added. A plug-in Starboard installed before is off, not removed."}]},
     {"id": "playback", "title": "Playback Reporting",
      "what": "Keeps a record of what each person plays, for watch statistics. The lighter watch statistics plug-in reads it, so a Full install can do without Jellystat.",
-     "choices": [{"id": "on", "label": "Install and activate"}, {"id": "none", "label": "Do not install"}]},
+     "choices": [{"id": "on", "label": "Install and turn on"}, {"id": "none", "label": "Do not install"}]},
     {"id": "merge", "title": "Merge Versions",
      "what": "Two copies of the same film or episode, for example HD and 4K, become one item with a choice of version.",
-     "choices": [{"id": "on", "label": "Install and activate", "hint": "Starboard sets its merge to run once a day, at the start of quiet hours."},
+     "choices": [{"id": "on", "label": "Install and turn on", "hint": "Starboard sets its merge to run once a day, at the start of quiet hours."},
                  {"id": "none", "label": "Do not install"}]},
     {"id": "trakt", "title": "Trakt",
      "what": "Records what each person watches on trakt.tv, and can bring their Trakt history in. Each person links their own Trakt account in Jellyfin afterwards.",
-     "choices": [{"id": "on", "label": "Install and activate"}, {"id": "none", "label": "Do not install"}]},
+     "choices": [{"id": "on", "label": "Install and turn on"}, {"id": "none", "label": "Do not install"}]},
     {"id": "pictures", "title": "Picture shrinker",
      "what": "Shrinks the posters and photos of cast and crew Jellyfin keeps, so they take less space, with a backup of each original. It runs inside Jellyfin, in its Scheduled Tasks; Starboard's own Picture shrinker plug-in stays idle while it is installed.",
-     "choices": [{"id": "on", "label": "Install and activate", "hint": "It runs every Sunday at 03:30 until you change it in Jellyfin's Scheduled Tasks. Its settings are in Jellyfin's Dashboard, Plugins."},
+     "choices": [{"id": "on", "label": "Install and turn on", "hint": "It runs every Sunday at 03:30 until you change it in Jellyfin's Scheduled Tasks. Its settings are in Jellyfin's Dashboard, Plugins."},
                  {"id": "none", "label": "Do not install"}]},
 ]
 COST = {"skip": {"downloaded": "A few MB inside Jellyfin; a short download for each episode when Jellyfin scans.",
@@ -232,7 +232,7 @@ def _chosen(group, installed):
 
 def status(services, data_dir, cfg_data=None, opener=None):
     """What is installed and chosen, for Settings, Apps, Jellyfin. Finishes the set-up of a plug-in Starboard
-    installed or activated that has become active since (after Jellyfin's restart), once for each version. A plug-in
+    installed or turned on that has become active since (after Jellyfin's restart), once for each version. A plug-in
     the owner added in Jellyfin is only read, never changed (DASH-409)."""
     jf = find(services)
     if not jf:
@@ -328,7 +328,7 @@ def _install(jf, key, installed, opener=None):
     if have:
         if have["status"] == "Disabled":
             _call(jf["url"], jf["api_key"], "POST", f"/Plugins/{have['id']}/{urllib.parse.quote(have['version'])}/Enable", opener=opener)
-            return f"Activated {pkg['name']} again"
+            return f"Turned on {pkg['name']} again"
         return None
     added = _ensure_repo(jf, pkg["repo"], opener)
     q = urllib.parse.urlencode({"assemblyGuid": pkg["guid"], "repositoryUrl": pkg["repo"][1]})
@@ -346,11 +346,11 @@ def _deactivate(jf, key, installed, opener=None):
     if not have or have["status"] not in ("Active", "Restart"):
         return None
     _call(jf["url"], jf["api_key"], "POST", f"/Plugins/{have['id']}/{urllib.parse.quote(have['version'])}/Disable", opener=opener)
-    return f"Deactivated {PACKAGES[key]['name']} (still installed)"
+    return f"Turned off {PACKAGES[key]['name']} (still installed)"
 
 
 def choose(services, data_dir, group, choice, cfg_data=None, opener=None):
-    """Install, activate or deactivate for one group's choice. Returns what was done, in words."""
+    """Install, turn on or off for one group's choice. Returns what was done, in words."""
     g = next((x for x in GROUPS if x["id"] == group), None)
     if not g or choice not in [c["id"] for c in g["choices"]]:
         raise ValueError("Choose one of the offered plug-ins")
@@ -417,7 +417,7 @@ def _set_task(jf, tasks, key, trigger, opener=None):
 
 
 def _mark_ours(data_dir, key):
-    """Note that Starboard installed or activated this plug-in, so its set-up may be finished later (DASH-409)."""
+    """Note that Starboard installed or turned on this plug-in, so its set-up may be finished later (DASH-409)."""
     state = _read(data_dir)
     ours = state.setdefault("ours", [])
     if key not in ours:
@@ -427,7 +427,7 @@ def _mark_ours(data_dir, key):
 
 def finish_setup(jf, data_dir, installed, cfg_data=None, opener=None):
     """Set up Intro Skipper and Merge Versions once they are active, once for each installed version, so a change
-    the owner makes in Jellyfin afterwards stays. Only for a plug-in Starboard installed or activated: one the owner
+    the owner makes in Jellyfin afterwards stays. Only for a plug-in Starboard installed or turned on: one the owner
     added in Jellyfin keeps its own settings, so reading the list changes nothing (DASH-409). Returns what was done,
     in words."""
     state = _read(data_dir)

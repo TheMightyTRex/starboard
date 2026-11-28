@@ -44,18 +44,18 @@ q2: What does it say after the tool's name?
 
 ## Enter the address
 
-Open Backups watch's tab, choose the tool, enter its address and select **Save**, then **Activate**.
+Open Backups watch's tab, choose the tool, enter its address and select **Save**, then **Turn on**.
 
 ## Check the alerts
 
-1. Alerts are on by default: check **Send alerts through Starboard** is activated.
+1. Alerts are on by default: check **Send alerts through Starboard** is on.
 2. Check Starboard's own alerts are on in **Settings**, then **Alerts**. Backups watch uses the same place.
 3. A backup is only overdue after **Overdue after** hours with no good run. A failed run alerts at the next hourly check.
 4. Starboard before 0.26.0 does not take alerts from plug-ins: the card then says so, and updating Starboard fixes it.
 
 ## Accept the certificate
 
-The Kopia server makes its own certificate unless you gave it one. On your own network, activate **Accept a self-signed certificate** and select **Save**.
+The Kopia server makes its own certificate unless you gave it one. On your own network, turn on **Accept a self-signed certificate** and select **Save**.
 
 ## Things this version does not do
 

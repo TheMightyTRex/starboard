@@ -7,7 +7,7 @@ Add Tdarr from Starboard's **Catalogue**, where it is listed under **Apps you ca
 
 - Starboard with plug-in API 1.14 or later. An older Starboard is offered an earlier version: read [Updates](../tdarr/updates.md).
 - Your Starboard password. Adding and removing a plug-in ask for it.
-- If the main install already runs Tdarr: bring it in before you activate the plug-in, so its libraries, flows and history carry over. Read [Set it up](#set-it-up).
+- If the main install already runs Tdarr: bring it in before you turn on the plug-in, so its libraries, flows and history carry over. Read [Set it up](#set-it-up).
 
 ## What it may do
 
@@ -39,7 +39,7 @@ Measured:
 2. Under **Apps you can add**, find **Tdarr** and select **Install…**.
 3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Tdarr**. To stop, select **Cancel**: nothing is installed.
-5. Tdarr's own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Activate**.
+5. Tdarr's own tab opens under **Settings**, then **Plug-ins**, and Starboard turns it on: its **State**, in **General**, says **Active**. If it needs settings first, it says what to enter: save them, then select **Turn on**.
 
 ### Add it by its address
 
@@ -60,14 +60,14 @@ When Tdarr is already on this computer, Starboard leaves the plug-in inactive af
 1. On Tdarr's tab, under **Your Tdarr**, select **Bring in the Tdarr you already have…**.
 2. Read which folders Starboard copies: Tdarr's `server`, `configs` and `logs` folders.
 3. Enter your Starboard password and select **Copy**.
-4. Select **Activate** in **General**, **State**. Its page is on your home network at port 8265 when that is free, as it is once your old Tdarr is stopped.
+4. Select **Turn on** in **General**, **State**. Its page is on your home network at port 8265 when that is free, as it is once your old Tdarr is stopped.
 5. Check the plug-in shows your libraries, then remove Tdarr from the main install: go to **Settings**, then **Install apps**, untick Tdarr and apply.
 
 Starboard stops your Tdarr to copy its files whole. It does not remove it, and its own folders are never moved, changed or deleted. Its cache, the files part way through converting, is not copied. Its old folders (`config/tdarr`, beside the other apps' settings) stay until you move them to the holding folder in **System**, **Clean up**.
 
 ### A new Tdarr
 
-1. Starboard activates Tdarr when it is installed, as there is no Tdarr to bring in. If its state is not **Active**, select **Activate** in **General**, **State**.
+1. Starboard turns on Tdarr when it is installed, as there is no Tdarr to bring in. If its state is not **Active**, select **Turn on** in **General**, **State**.
 2. Go to **Settings**, then **Apps**, and select **Search for new apps**, so Starboard finds Tdarr and gives it a key.
 3. If its tab says **Tdarr is not connected yet** under **Settings**, select **Connect Tdarr**. Tdarr restarts once.
 4. Choose its libraries, what it does and when. Read [Settings](../tdarr/settings.md).
@@ -85,7 +85,7 @@ Tdarr's tab shows its address on your home network, under **Its web page**, with
 
 Its containers stop and go, and its API key stops working. Nothing is deleted. Files it already changed in your media folder stay as they are.
 
-To stop it for a while instead, select **Deactivate** on its tab: its settings and folder are kept.
+To stop it for a while instead, select **Turn off** on its tab: its settings and folder are kept.
 
 ## Find out more
 

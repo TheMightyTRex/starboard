@@ -27,7 +27,7 @@ These are on Jellystat's tab.
 - Starboard gives Jellystat your Jellyfin's address and key once, the first time it starts with an empty database, so you never enter them.
 - The backup must be a PostgreSQL backup made with `pg_dump -Fc`, in `data/plugins/jellystat/data/main/restore` in Starboard's data folder. Jellystat's own JSON backups are restored in Jellystat itself.
 - A restore goes into a new database first. Only when that worked is it swapped in. If it fails, nothing is changed.
-- Settings are kept when you update or deactivate it, and when you remove it they stay in its folder, with its database.
+- Settings are kept when you update or turn it off, and when you remove it they stay in its folder, with its database.
 
 ## Find out more
 

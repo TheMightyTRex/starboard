@@ -2,7 +2,7 @@
 // an issue needs (personal details removed) and links to GitHub. Download and Delete all logs sit in the page head.
 
 const LEVEL_WORDS = { error: ["Error", "danger"], warning: ["Warning", "warning"], info: ["Info", "neutral", "info"], detail: ["Detail", "muted"] };
-const DETAIL_WORDS = { off: "Off", day: "For 24 hours", on: "Until I deactivate it" };
+const DETAIL_WORDS = { off: "Off", day: "For 24 hours", on: "Until I turn it off" };
 const SHOW_LINES = [50, 100, 200, 500, 1000];  // DASH-534: the most lines shown, the same in Copy and Download
 let level = "all";
 let query = "";
@@ -87,7 +87,7 @@ function renderHead() {
   $("#logs-notice").replaceChildren(...(state.detailed
     ? [notice("info", "Detailed logging is active", state.settings.detail === "day"
       ? `Until ${new Date(state.settings.detail_until * 1000).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}. It records every page request and every call to your apps, to help find a problem.`
-      : "Until you deactivate it. It records every page request and every call to your apps, to help find a problem.")]
+      : "Until you turn it off. It records every page request and every call to your apps, to help find a problem.")]
     : []));
 }
 
@@ -102,7 +102,7 @@ async function setDetail(mode) {
   select.focus();
   const note = el("span", { class: "saved-note", hidden: true });
   select.after(note);
-  window.SharedComponents.savedNote(note, mode === "off" ? "Deactivated" : mode === "day" ? "Activated for 24 hours" : "Activated");
+  window.SharedComponents.savedNote(note, mode === "off" ? "Off" : mode === "day" ? "Turned on for 24 hours" : "On");
 }
 
 function renderReport() {
@@ -133,7 +133,7 @@ function renderReport() {
     : el("p", { class: "small muted", text: "Set STARBOARD_REPO on the server to link straight to the issue page." });
   box.replaceChildren(
     el("ol", { class: "steps-list" },
-      el("li", {}, el("strong", { text: state.detailed ? "Detailed logging is active. " : "Activate detailed logging. " }),
+      el("li", {}, el("strong", { text: state.detailed ? "Detailed logging is active. " : "Turn on detailed logging. " }),
         "It records every page request and every call to your apps.",
         el("div", { class: "field field--short" }, el("label", { for: "detail-choice", text: "Detailed logging" }), detailSelect)),
       el("li", {}, el("strong", { text: "Do the thing that went wrong again. " })),

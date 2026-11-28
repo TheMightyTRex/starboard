@@ -4,7 +4,7 @@
 # Make Starboard use less of your server
 
 Starboard is built to be light, but some of its features do work in the background. The Performance page lets
-you choose a preset, or activate and deactivate each piece of work one by one.
+you choose a preset, or turn on and turn off each piece of work one by one.
 
 ## Steps
 
@@ -19,7 +19,7 @@ you choose a preset, or activate and deactivate each piece of work one by one.
 
    ![Settings, General, Performance, with the presets Small server and Balanced (step 2) outlined, with example data](../images/make-starboard-lighter-1-preset.png)
 
-3. Optional: to change single items, activate **More settings**. Then change any item under
+3. Optional: to change single items, turn on **More settings**. Then change any item under
    **Background work** or **While a page is open**. Each one applies at once.
 
    ![Settings, General, Performance, with the Background work tab (step 3) outlined, with example data](../images/make-starboard-lighter-2-background.png)
@@ -31,7 +31,7 @@ and what is **Running**.
 
 ## Remove drop shadows
 
-Drop shadows cost a little processor on every scroll, so removing them helps small and older computers. In **Display**, activate **Remove drop shadows**: cards, covers, menus and slide-outs keep their borders and lose
+Drop shadows cost a little processor on every scroll, so removing them helps small and older computers. In **Display**, turn on **Remove drop shadows**: cards, covers, menus and slide-outs keep their borders and lose
 their shadows. The set-up asks about it too, and a Reelix Lite install starts with the shadows removed. Read
 [Remove drop shadows](display-and-accessibility.md#remove-drop-shadows).
 
@@ -46,7 +46,7 @@ This runs with no page open.
 - **System history:** readings for the charts on System, Overview. Under 0.01% of the processor and up to 1.5 MB
   of memory.
 - **Watching and alerts:** checks your apps and sends alerts. About 0.02 seconds of processor per check, and
-  under 1 MB of memory. Read [Activate alerts](activate-alerts.md).
+  under 1 MB of memory. Read [Turn on alerts](activate-alerts.md).
 - **Download hours check:** every minute or every 5 minutes, only while download hours are in use. Every 5
   minutes uses a fifth of the requests. Read [Set download hours](set-download-hours.md).
 - **Keep applying imported history:** up to 40 MB more memory for about 20 seconds an hour.
@@ -79,7 +79,7 @@ This runs only while the page is open and in view. A hidden tab asks for nothing
 ## Find out more
 
 - [Find out what each app is using](monitor-apps.md)
-- [Activate alerts](activate-alerts.md)
+- [Turn on alerts](activate-alerts.md)
 - [What you need to run Starboard](what-you-need.md)
 - [What a home server is](../basics/what-is-a-home-server.md)
 

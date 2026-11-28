@@ -1,10 +1,10 @@
 [Help centre](../README.md) · Alerts · how-to
 <!-- help: use / alerts -->
 
-# Activate alerts
+# Turn on alerts
 
 Starboard can send a message to your phone when an app stops answering, a disk has a problem or fills up, a
-download is stuck, a backup fails or a certificate runs out. Alerts are inactive until you activate watching.
+download is stuck, a backup fails or a certificate runs out. Alerts are inactive until you turn on watching.
 
 ## Before you begin
 
@@ -33,19 +33,19 @@ Choose where alerts go. Starboard can send them to one of these:
 
 7. Check your phone. The test message says that alerts from Starboard reach you there.
 
-### Activate watching
+### Turn on watching
 
 The rest of the Alerts page is under **More settings**.
 
-1. On the same page, activate **More settings**.
-2. Under **Watching**, activate **Watch in the background**. Starboard now checks your apps with no page open.
+1. On the same page, turn on **More settings**.
+2. Under **Watching**, turn on **Watch in the background**. Starboard now checks your apps with no page open.
 3. In **How often**, choose how often it checks. **Every 5 minutes** is plenty for a home server.
 
    ![Settings, General, Alerts, Watching, with Watch in the background (step 2) and How often (step 3) outlined, with example data](../images/activate-alerts-2-watching.png)
 
 ### Choose what to alert on
 
-Under **What to alert on**, each alert is active unless you deactivate it. Each change applies at once.
+Under **What to alert on**, each alert is active unless you turn it off. Each change applies at once.
 
 ![Settings, General, Alerts, What to alert on, the list of alerts that can be active or inactive, with example data](../images/activate-alerts-3-what.png)
 
@@ -63,7 +63,7 @@ Under **What to alert on**, each alert is active unless you deactivate it. Each 
 
 ### Choose what to alert on for the server itself
 
-Under **The server itself**, each alert is deactivated until you activate it. Each has a limit and a time, so a
+Under **The server itself**, each alert is off until you turn it on. Each has a limit and a time, so a
 short spike never alerts. An alert fires only when the value stays at or over the limit for the whole time.
 
 ![Settings, General, Alerts, The server itself, with The processor is too hot, its switch, limit and time outlined, with example data](../images/activate-alerts-4-server.png)

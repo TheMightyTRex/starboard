@@ -40,7 +40,7 @@ The three plug-in prompts end with the same checklist. The assistant must follow
 - **Card refresh times:** cards answer from a small file the plug-in keeps, never by doing the work when asked;
   `refresh_seconds` (10 to 3600) only for a card that shows progress, and the slowest one that still feels current.
 - **The content rules:** British English, sentence case, no em dashes, no contractions, no exclamation marks; settings
-  are activated or deactivated.
+  are turned on or off.
 
 ### A card plug-in
 
@@ -100,7 +100,7 @@ Rules:
 - If it fills folders that Jellyfin shows as libraries, ask for "jellyfin:libraries" and name each library
   in "jellyfin_libraries" (name, type and a folder inside a media folder it mounts). Leave out
   "realtime_monitor" unless Jellyfin must notice files the plug-in does not tell it about: Starboard keeps
-  real-time monitoring deactivated, so the plug-in must ask Jellyfin to refresh the library after it adds
+  real-time monitoring turned off, so the plug-in must ask Jellyfin to refresh the library after it adds
   files.
 - If I will share it only as a zip file (a private plug-in), mark the container "build": true with the
   image "local/<id>:<version>", and keep the Dockerfile to the rules in "Built from a zip file" in the
@@ -120,7 +120,7 @@ Then follow this checklist and say, for each line, what you did:
    health path that answers 200 only when it can work.
 5. Card refresh times: the card reads a file; refresh_seconds only for progress.
 6. Content rules: British English, sentence case, no em dashes, no contractions, no exclamation marks;
-   settings are activated or deactivated.
+   settings are turned on or off.
 Use an image tag for now (unless it is a zip file), and tell me how to pin it by digest before I share it.
 After the files, list each permission, network and folder it asks for, in plain words.
 
@@ -164,7 +164,7 @@ Then follow this checklist and say, for each line, what you did:
 5. Card refresh times: an app plug-in needs no card; if you add one, it reads a file and has no
    refresh_seconds.
 6. Content rules: British English, sentence case, no em dashes, no contractions, no exclamation marks;
-   settings are activated or deactivated.
+   settings are turned on or off.
 
 The pages:
 [paste the pages here]
@@ -173,9 +173,9 @@ The pages:
 ### A plug-in that converts files
 
 For a plug-in that changes files in the media folder or Jellyfin's pictures, one at a time, such as Direct play or
-Picture shrinker. Paste in [Plug-in manifest reference](plugin-manifest-reference.md) (in particular
+Picture shrinker. Paste in [Plug-in manifest reference](plugin-manifest-reference.md), in particular
 [Adding files to the media folder](plugin-manifest-reference.md#adding-files-to-the-media-folder),
-[Jellyfin's metadata folder](plugin-manifest-reference.md#jellyfins-metadata-folder) and [Updates](plugin-manifest-reference.md#updates)),
+[Jellyfin's metadata folder](plugin-manifest-reference.md#jellyfins-metadata-folder) and [Updates](plugin-manifest-reference.md#updates). Paste in
 [Plug-in API reference](plugin-api-reference.md) and [Write a plug-in that updates safely](update-a-plugin-safely.md).
 
 ```text
@@ -222,7 +222,7 @@ Then follow this checklist and say, for each line, what you did:
 5. Card refresh times: refresh_seconds only on the progress card, from the setting; the stat card asked
    every 10 minutes ("refresh_minutes": 10).
 6. Content rules: British English, sentence case, no em dashes, no contractions, no exclamation marks;
-   settings are activated or deactivated.
+   settings are turned on or off.
 
 The pages:
 [paste the pages here]

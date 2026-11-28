@@ -15,7 +15,7 @@ These are on Library health's tab.
 - It needs Jellyfin added to Starboard first: go to **Settings**, then **Apps**.
 - It only reads from Jellyfin. To fix a title, change it in Jellyfin, such as by refreshing its metadata or adding a poster, then select **Check now**.
 - It checks films and series only, not episodes, music or books.
-- It keeps the last result in its folder, and the folder is kept when you update or deactivate it.
+- It keeps the last result in its folder, and the folder is kept when you update or turn it off.
 
 ## Find out more
 

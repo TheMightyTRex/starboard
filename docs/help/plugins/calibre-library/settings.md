@@ -16,7 +16,7 @@ Calibre library maker has one page, **Make a Calibre library from your books**, 
 
 - **Make the library** asks first, then copies the books that are not in the library yet. It takes about 3 seconds a book.
 - **Stop** ends the run after the books it is adding now. Run it again to carry on.
-- **Deactivate** stops the plug-in and keeps its folder. **Remove Calibre library maker** takes it away; nothing is deleted.
+- **Turn off** stops the plug-in and keeps its folder. **Remove Calibre library maker** takes it away; nothing is deleted.
 
 ## Things to note
 

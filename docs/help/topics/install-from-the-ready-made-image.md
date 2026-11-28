@@ -86,7 +86,7 @@ to answer. At the end, Starboard is running and you have the set-up code for cho
 ## Optional extras
 
 The Compose file has some extra lines that start with `#`, which means they are inactive. Each has a comment
-that explains it. To activate one, follow
+that explains it. To turn one on, follow
 [If you used the ready-made image](change-what-starboard-can-access.md#if-you-used-the-ready-made-image).
 
 - **Folders for System, Storage:** shows how full your disks are. You need two lines: the `STARBOARD_DISKS` line,

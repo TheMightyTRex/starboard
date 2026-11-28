@@ -28,8 +28,8 @@ q2: What does the Direct play card say?
 
 1. Go to **Settings**, then **Plug-ins**, then **Direct play**.
 2. Select **Finish setting up**.
-3. In **Devices**, activate each kind of device anyone in your home watches on. The card says "No devices chosen" until at least one is activated.
-4. Select **Activate**.
+3. In **Devices**, turn on each kind of device anyone in your home watches on. The card says "No devices chosen" until at least one is on.
+4. Select **Turn on**.
 
 ## Start it again
 
@@ -58,8 +58,8 @@ Your Starboard's plug-in API is outside what this version of Direct play works w
 
 The card says "Nothing left to do", but a file still does not play directly.
 
-- A file is fixed only when one of the devices chosen in **Devices** cannot play it. Activate every kind of device anyone watches on.
-- HEVC files are left alone unless you activate **Convert HEVC to H.264**, and then only when none of your devices plays HEVC.
+- A file is fixed only when one of the devices chosen in **Devices** cannot play it. Turn on every kind of device anyone watches on.
+- HEVC files are left alone unless you turn on **Convert HEVC to H.264**, and then only when none of your devices plays HEVC.
 - A new file is found at the next check of the library. Select **Check the library now** to check straight away.
 
 ## Read why it was not fixed

@@ -48,7 +48,7 @@ Like every plug-in, it runs read only, as a user that is not root, with no extra
 
    ![The foot of the install slide-out, with Your Starboard password filled in and Install Philips Hue (step 4) outlined](../../images/plugins/philips-hue/add-3-password.png)
 
-5. Philips Hue's own tab opens under **Settings**, then **Plug-ins**, and Starboard activates it: its **State**, in **General**, says **Active**.
+5. Philips Hue's own tab opens under **Settings**, then **Plug-ins**, and Starboard turns it on: its **State**, in **General**, says **Active**.
 
 ### Add it by its address
 
@@ -63,7 +63,7 @@ Or run its installer, `install.py` in its folder, on any computer with Python, a
 ## Pair it with your bridge
 
 1. Go to **Settings**, then **Plug-ins**, then **Philips Hue**, then **Bridge**.
-2. In **Pair with a bridge**, enter the bridge's address, such as `192.168.1.20`, and select **Pair with a bridge**. The address is in the Hue app: **Settings**, then **My Hue system**, then your bridge, then **IP address**. A bridge found on your network is listed under **Found on your network**: select **Activate** beside it instead.
+2. In **Pair with a bridge**, enter the bridge's address, such as `192.168.1.20`, and select **Pair with a bridge**. The address is in the Hue app: **Settings**, then **My Hue system**, then your bridge, then **IP address**. A bridge found on your network is listed under **Found on your network**: select **Turn on** beside it instead.
 
    ![The Bridge tab before pairing, with the address box and Pair with a bridge (step 2) outlined](../../images/plugins/philips-hue/install-1-pair.png)
 
@@ -75,7 +75,7 @@ Or run its installer, `install.py` in its folder, on any computer with Python, a
 
    ![The Bridge tab after pairing, with the notice Paired with Hue Bridge (step 4) and the bridge's Paired row outlined](../../images/plugins/philips-hue/install-3-paired.png)
 
-If you did not press the button in time, the page says **The link button was not pressed in time**. Select **Activate** beside the bridge and press the button again.
+If you did not press the button in time, the page says **The link button was not pressed in time**. Select **Turn on** beside the bridge and press the button again.
 
 Then put its cards on your dashboard. Read [Dashboard card](../philips-hue/dashboard-card.md).
 
@@ -86,7 +86,7 @@ Then put its cards on your dashboard. Read [Dashboard card](../philips-hue/dashb
 3. Choose where its folder goes: **Keep it with Starboard's data** (in `data/plugins/.removed`) or **Move it to the holding folder**, listed in **System**, **Clean up**.
 4. Enter your Starboard password and select **Remove**.
 
-Its container stops and its API key stops working. Nothing is deleted. Your lights, scenes and the schedules it made stay on the bridge and keep running. If you no longer want those schedules, remove them first on **Schedules**. The Hue app lists it among the bridge's connected apps as `starboard#philips-hue`, where you can remove its key too. To stop it for a while instead, select **Deactivate** on its tab.
+Its container stops and its API key stops working. Nothing is deleted. Your lights, scenes and the schedules it made stay on the bridge and keep running. If you no longer want those schedules, remove them first on **Schedules**. The Hue app lists it among the bridge's connected apps as `starboard#philips-hue`, where you can remove its key too. To stop it for a while instead, select **Turn off** on its tab.
 
 ## Find out more
 

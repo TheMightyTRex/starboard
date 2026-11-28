@@ -40,7 +40,7 @@ to return.
 ### Change how far ahead it shows
 
 1. On the Coming up page, select **Change how far ahead**. This opens **Settings**, then **General**, then
-   **Lists**. The **Coming up** section shows when **More settings** is active: activate it if the
+   **Lists**. The **Coming up** section shows when **More settings** is active: turn it on if the
    section is not there.
 2. In **How far ahead**, choose **1 week**, **2 weeks**, **30 days**, **60 days** or **90 days**. The change
    applies at once.
@@ -67,8 +67,8 @@ To stop every calendar that uses the address, select **Add to your calendar**, t
 
 ### Show or hide posters
 
-1. Go to **Settings**, then **General**, then **Performance**, and activate **More settings**.
-2. Select the **Background work** tab, then activate or deactivate **Posters on Coming up and the Library**. When it is
+1. Go to **Settings**, then **General**, then **Performance**, and turn on **More settings**.
+2. Select the **Background work** tab, then turn on or off **Posters on Coming up and the Library**. When it is
    inactive, each release shows its app's icon instead.
 
 ## Things to note
@@ -80,7 +80,7 @@ To stop every calendar that uses the address, select **Add to your calendar**, t
 - When an app keeps no small posters of its own, such as Reelix, Starboard uses the picture address the app gives
   for the item, then TMDB's poster through the app's own search, at a small size. With no picture anywhere, the
   item shows the app's icon, and Starboard asks again after an hour.
-- The **Small server** preset deactivates posters. Read
+- The **Small server** preset turns off posters. Read
   [Make Starboard use less of your server](make-starboard-lighter.md).
 - The calendar address opens Coming up as a calendar and nothing else in Starboard. Anyone with the address can
   read it, so give it only to your own devices. If it gets out, make a new address.

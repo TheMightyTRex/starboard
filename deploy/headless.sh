@@ -86,7 +86,7 @@ applies() {
 now() {
   case "$1" in
     sleep) local m; m="$(systemctl is-enabled sleep.target 2>/dev/null || true)"
-           if [ "$m" = masked ]; then echo "sleep is deactivated"; else echo "it can sleep or suspend when idle or when asked"; fi ;;
+           if [ "$m" = masked ]; then echo "sleep is off"; else echo "it can sleep or suspend when idle or when asked"; fi ;;
     power) if [ -f "$LOGIND" ]; then echo "set by this script"; else echo "closing a laptop's lid suspends it"; fi ;;
     bootmenu) local t; t="$(sed -n 's/^GRUB_TIMEOUT=//p' /etc/default/grub /etc/default/grub.d/*.cfg 2>/dev/null | tail -n 1 | tr -d '"')"
               echo "the boot menu waits ${t:-an unknown number of} seconds, and for ever after a failed start" ;;
@@ -97,7 +97,7 @@ now() {
 }
 will() {
   case "$1" in
-    sleep) echo "sleep, suspend and hibernate are deactivated: systemctl mask ${SLEEP_TARGETS[*]}" ;;
+    sleep) echo "sleep, suspend and hibernate are off: systemctl mask ${SLEEP_TARGETS[*]}" ;;
     power) echo "the lid is ignored, and one short press of the power button shuts down cleanly: $LOGIND" ;;
     bootmenu) echo "the menu waits 2 seconds, and 5 after a failed start: $GRUB_DROP, then update-grub" ;;
     repair) if pi; then echo "fsck.repair=yes added to $PI_CMDLINE (a copy is saved first)"

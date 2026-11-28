@@ -271,15 +271,15 @@ class JellyfinPluginsTest(unittest.TestCase):
         jp.choose(self.services, self.dir, "skip", "downloaded", self.cfg)
         jp.restart(self.services)
         out = jp.choose(self.services, self.dir, "skip", "analysed", self.cfg)
-        self.assertIn("Deactivated TheIntroDB (still installed)", out["done"])
+        self.assertIn("Turned off TheIntroDB (still installed)", out["done"])
         jp.restart(self.services)
         names = {p["Name"]: p["Status"] for p in self.jf.plugins}
         self.assertEqual(names, {"TheIntroDB": "Disabled", "Intro Skipper": "Active"})
         self.assertEqual(self.group(self.status(), "skip")["chosen"], "analysed")
-        # Back again: activated, not installed twice
+        # Back again: turned on, not installed twice
         out = jp.choose(self.services, self.dir, "skip", "downloaded", self.cfg)
-        self.assertIn("Activated TheIntroDB again", out["done"])
-        self.assertIn("Deactivated Intro Skipper (still installed)", out["done"])
+        self.assertIn("Turned on TheIntroDB again", out["done"])
+        self.assertIn("Turned off Intro Skipper (still installed)", out["done"])
         self.assertEqual(len(self.jf.plugins), 2)
         self.assertNotIn(("DELETE", "/Plugins"), [(m, r[:8]) for m, r in self.jf.calls])
 
@@ -288,7 +288,7 @@ class JellyfinPluginsTest(unittest.TestCase):
         jp.choose(self.services, self.dir, "trakt", "on", self.cfg)
         jp.restart(self.services)
         out = jp.choose(self.services, self.dir, "trakt", "none", self.cfg)
-        self.assertEqual(out["done"], ["Deactivated Trakt (still installed)"])
+        self.assertEqual(out["done"], ["Turned off Trakt (still installed)"])
 
     def test_old_jellyfin_refuses_what_it_cannot_run(self):
         self.start(version="10.11.6")

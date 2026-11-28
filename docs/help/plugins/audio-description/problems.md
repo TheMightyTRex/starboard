@@ -25,7 +25,7 @@ q2: What is wrong?
 4: Add Reelix or stop preferring #add-reelix-or-stop-preferring
 5: Check for described titles now #check-for-described-titles-now
 6: Check the track name #check-the-track-name
-7: Activate the person #activate-the-person
+7: Turn on the person #turn-on-the-person
 8: Check the app accepts it #check-the-app-accepts-it
 9: Idle beside the Jellyfin version #idle-beside-the-jellyfin-version
 10: Enter Jellyfin's address for links #enter-jellyfins-address-for-links
@@ -61,7 +61,7 @@ Your Starboard's plug-in API is outside what this version of Audio description w
 
 - If you use Reelix, add it in **Settings**, then **Apps**. Then set **Audio description** to **Prefer** in **Settings**, **Reelix**, **Picture quality**, and select **Check the Reelix choice now** on Audio description's tab to check.
 - "Reelix has no Audio description format yet" means your Reelix is older than the one with its own Audio description format. It comes with the next Reelix update.
-- If you do not use Reelix, deactivate **Prefer releases with audio description**.
+- If you do not use Reelix, turn off **Prefer releases with audio description**.
 
 ## Check for described titles now
 
@@ -82,12 +82,12 @@ It finds a described track by its name, because Jellyfin does not read the flag 
 - A track with no name, or another name, is not found. In Jellyfin, play the film and open its list of sound tracks: it shows their names.
 - A film added since the last check is found at the next one. Select **Check for described titles now** to check straight away.
 
-## Activate the person
+## Turn on the person
 
-Jellyfin cannot pick a described track by itself. For each person activated, Jellyfin remembers the sound track they choose.
+Jellyfin cannot pick a described track by itself. For each person turned on, Jellyfin remembers the sound track they choose.
 
 1. Open **People who want audio description** on Audio description's tab.
-2. Activate the person. Starboard says "Audio description activated for" and their name.
+2. Turn on the person. Starboard says "Audio description turned on for" and their name.
 3. In Jellyfin, they choose the described track once for each film and series.
 
 If Starboard says "That person is not in Jellyfin any more. Reload the page", reload the page and try again.
@@ -96,7 +96,7 @@ If Starboard says "That person is not in Jellyfin any more. Reload the page", re
 
 **Play the described track** asks the person's app to change the sound track, with Jellyfin's own command. Not every Jellyfin app accepts it.
 
-1. Open **Play the described track** on Audio description's tab, and check the person is activated.
+1. Open **Play the described track** on Audio description's tab, and check the person is on.
 2. Read the last line of the page's introduction. "does not accept the command to change the sound track" names an app that does not: in that app, choose the described track in the player.
 3. The change comes within about half a minute of the start, when Starboard notices the film playing. A title with no described track, or one already playing it, is left as it is.
 
