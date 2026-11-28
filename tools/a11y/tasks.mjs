@@ -1626,7 +1626,7 @@ const f2c = await focus();
 check("T-PLEX", "when it is approved, it is said and focus goes to the save button", /Signed in with Plex/.test(await page.locator(".plex-link [aria-live=polite]").innerText()) && /Add app|Save app|Save and continue/.test(f2c.text), f2c.text);
 await page.keyboard.press("Escape");
 
-// T-GEN1 Settings, General, Backup/Logs (DASH-595, then DASH-633: the topics are page topics, not a list of links), by keyboard
+// T-GEN1 Settings, General, Backup/Logs (DASH-595, then DASH-635: the topics are page topics, not a list of links), by keyboard
 // alone. Tab from the heading reaches the selected tab, the arrow keys, Home and End move along the tabs with focus following,
 // the address names the tab, Tab goes from the tab into its panel, and an old address (#logs, #bk-full-h) opens the right tab.
 await page.goto(`${base}/settings-general-backup.html`);

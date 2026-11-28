@@ -1182,7 +1182,7 @@ await page.waitForTimeout(5000);
 check("PLEX-05", "nothing is asked of plex.tv once the panel is closed", plexAsked === closedAt, `${plexAsked} asked, ${closedAt} when it closed`);
 if (plexApp) await api(`/api/services/${plexApp.id}`, { method: "DELETE" });
 
-// DASH-595, then DASH-633: Backup and restore and Logs and feedback are one tab, Settings, General, Backup/Logs, and its topics
+// DASH-595, then DASH-635: Backup and restore and Logs and feedback are one tab, Settings, General, Backup/Logs, and its topics
 // are page topics (tabs), not a list of links. Each topic is a tab in the order people do things; Delete all logs is an
 // action inside Logs; the old addresses answer 301 and open it, and the old anchors open the right tab; the General tab names fit.
 console.log("\n== BKL Settings, General, Backup/Logs");

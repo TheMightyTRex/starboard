@@ -526,7 +526,7 @@ let topicCurrent = null;
 
 // A page that has page topics draws them once at the start. A script that fills a tab's panel waits for that
 // (topicsReady), then runs only when its tab is open (whenTopicOpen): a hidden panel makes no request and starts no
-// timer until it is opened (the lightweight rule, DASH-633).
+// timer until it is opened (the lightweight rule, DASH-635).
 let topicsDone;
 const topicsReady = new Promise((done) => { topicsDone = done; });
 

@@ -144,7 +144,7 @@ class BackupLogsTabTest(unittest.TestCase):
         self.assertIn("<h1>Backup/Logs</h1>", html)
 
     def test_the_topics_are_tabs_not_a_list_of_links(self):
-        """DASH-633 (owner, 28 November 2026): 'The on this page should be separate tabs as standard.' The page has no
+        """DASH-635 (owner, 28 November 2026): 'The on this page should be separate tabs as standard.' The page has no
         On this page list; each topic is a section that the page topics script makes a tab, in the order people do
         things, and the old anchors still name something inside the right tab."""
         html = read(WEB, self.PAGE)

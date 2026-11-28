@@ -1,4 +1,4 @@
-"""DASH-631 (owner, 28 November 2026): a page with more than one topic uses page topics (tabs), never an On this page list
+"""DASH-633 (owner, 28 November 2026): a page with more than one topic uses page topics (tabs), never an On this page list
 of jump links. This runs the design system's check over Starboard's own pages and scripts."""
 import pathlib
 import subprocess
