@@ -288,7 +288,7 @@ async function cloudWizard({ opener = document.activeElement, startAt = "service
     const card = el("div", { class: "signin-card" }, el("ol", { class: "signin-steps" }, open, finish,
       el("li", {}, auto ? el("p", { text: "Only if your browser shows a page that does not load, such as This site cannot be reached, copy its whole address. It starts http://127.0.0.1:53682/ or http://localhost:53682/." }) : null, field)),
     sess.capture_note ? el("p", { class: "small", id: "cloud-capture-note", text: `${sess.capture_note}.` }) : null,
-    auto ? el("p", { class: "small muted", text: "Why this works by itself: this page is open on the same computer as Starboard, so the service can send its answer straight to Starboard's sign-in helper, which is open only for these minutes and only on this computer." })
+    auto ? el("p", { class: "small muted", text: "Why this works by itself: this page is open on the same computer as Starboard. The service sends its answer straight to the sign-in helper, which listens only on this computer and only for these minutes." })
       : el("p", { class: "small muted", text: "Why: the sign-in answers an address on the computer that asked for it. Starboard runs in its own container, so you carry the answer across." }),
     waitingLine(sess, auto));
     const go = el("button", { type: "button", class: "btn btn--primary", id: "cloud-answer-go", text: "Continue" });
